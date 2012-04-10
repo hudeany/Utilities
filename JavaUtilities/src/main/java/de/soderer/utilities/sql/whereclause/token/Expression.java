@@ -12,6 +12,11 @@ public class Expression extends Value {
 		"sysdate()"
 	}));
 	
+	public static final Set<String> SINGLE_PARAMETER_STRING_FUNCTION_SIGNS = new HashSet<String>(Arrays.asList(new String[]{
+		"lower",
+		"upper"
+	}));
+	
 	public static final Set<String> DATE_FUNCTION_SIGNS = new HashSet<String>(Arrays.asList(new String[]{
 		"date",
 		"to_date",
@@ -29,9 +34,8 @@ public class Expression extends Value {
 		"is not null"
 	}));
 	
-	public static final Set<String> NUMBER_ONLY_OPERATOR_SIGNS = new HashSet<String>(Arrays.asList(new String[]{
-		"mod"
-	}));
+	public static final String MOD_FUNCTION_SIGN = "mod";	
+	public static final String BEANSHELL_MOD_SIGN = "%";
 
 	public static final Set<String> COMPARE_OPERATOR_SIGNS = new HashSet<String>(Arrays.asList(new String[]{
 		"<",
@@ -41,6 +45,11 @@ public class Expression extends Value {
 		"<>",
 		">=",
 		">"
+	}));
+
+	public static final Set<String> CALCULATION_OPERATOR_SIGNS = new HashSet<String>(Arrays.asList(new String[]{
+		"-",
+		"+"
 	}));
 	
 	public static final Set<String> STRING_ONLY_COMPARE_OPERATOR_SIGNS = new HashSet<String>(Arrays.asList(new String[]{
@@ -70,21 +79,19 @@ public class Expression extends Value {
 
 	public Expression(Value value1, Operator infixOperator, Value value2) {
 		if (!COMPARE_OPERATOR_SIGNS.contains(infixOperator.sign)
+				&& !CALCULATION_OPERATOR_SIGNS.contains(infixOperator.sign)
 				&& !STRING_ONLY_COMPARE_OPERATOR_SIGNS.contains(infixOperator.sign)
-				&& !NUMBER_ONLY_OPERATOR_SIGNS.contains(infixOperator.sign)
 				&& !BOOL_ONLY_OPERATOR_SIGNS.contains(infixOperator.sign)) {
 			throw new IllegalArgumentException("Invalid operator: " + infixOperator.sign);
-		} else if (value1.type != value2.type) {
-			throw new IllegalArgumentException("Invalid value types for infix operator: " + infixOperator.sign);
-		} else if (STRING_ONLY_COMPARE_OPERATOR_SIGNS.contains(infixOperator.sign) && value1.type != Type.String) {
-			throw new IllegalArgumentException("Invalid value types for string infix operator: " + infixOperator.sign);
-		} else if (BOOL_ONLY_OPERATOR_SIGNS.contains(infixOperator.sign) && value1.type != Type.Bool) {
+		} else if (CALCULATION_OPERATOR_SIGNS.contains(infixOperator.sign) && (value1.type == Type.String || value2.type != Type.Number)) {
 			throw new IllegalArgumentException("Invalid value types for bool infix operator: " + infixOperator.sign);
-		} else if (NUMBER_ONLY_OPERATOR_SIGNS.contains(infixOperator.sign) && value1.type != Type.Number) {
+		} else if (STRING_ONLY_COMPARE_OPERATOR_SIGNS.contains(infixOperator.sign) && (value1.type != Type.String || value2.type != Type.String)) {
+			throw new IllegalArgumentException("Invalid value types for string infix operator: " + infixOperator.sign);
+		} else if (BOOL_ONLY_OPERATOR_SIGNS.contains(infixOperator.sign) && (value1.type != Type.Bool || value2.type != Type.Bool)) {
 			throw new IllegalArgumentException("Invalid value types for bool infix operator: " + infixOperator.sign);
 		} else {
-			if (NUMBER_ONLY_OPERATOR_SIGNS.contains(infixOperator.sign)) {
-				this.type = Type.Number;
+			if (CALCULATION_OPERATOR_SIGNS.contains(infixOperator.sign)) {
+				this.type = value1.type;
 			} else {
 				this.type = Type.Bool;
 			}
@@ -94,25 +101,46 @@ public class Expression extends Value {
 		}
 	}
 
+	public Expression(Operator functionOperator, Value value1) {
+		if (!SINGLE_PARAMETER_STRING_FUNCTION_SIGNS.contains(functionOperator.sign)) {
+			throw new IllegalArgumentException("Invalid operator: " + functionOperator.sign);
+		} else if (SINGLE_PARAMETER_STRING_FUNCTION_SIGNS.contains(functionOperator.sign) && value1.type == Type.Date) {
+			throw new IllegalArgumentException("Invalid value type for function operator: " + functionOperator.sign);
+		} else {
+			this.type = Type.String;
+			this.functionOperator = functionOperator;
+			this.value1 = value1;
+		}
+	}
+
 	public Expression(Operator functionOperator, Value value1, Value value2) {
 		if (!DATE_FUNCTION_SIGNS.contains(functionOperator.sign)
-				&& !CHAR_FUNCTION_SIGNS.contains(functionOperator.sign)) {
+				&& !CHAR_FUNCTION_SIGNS.contains(functionOperator.sign)
+				&& !MOD_FUNCTION_SIGN.equals(functionOperator.sign)) {
 			throw new IllegalArgumentException("Invalid operator: " + functionOperator.sign);
 		} else if (DATE_FUNCTION_SIGNS.contains(functionOperator.sign) && (value1.type != Type.String || value2.type != Type.String)) {
 			throw new IllegalArgumentException("Invalid value types for function operator: " + functionOperator.sign);
 		} else if (CHAR_FUNCTION_SIGNS.contains(functionOperator.sign) && (value1.type != Type.Date || value2.type != Type.String)) {
 			throw new IllegalArgumentException("Invalid value types for function operator: " + functionOperator.sign);
-		} else {
-			if (DATE_FUNCTION_SIGNS.contains(functionOperator.sign)) {
-				functionOperator.sign = "date";
-				this.type = Type.Date;
-			} else {
-				functionOperator.sign = "char";
-				this.type = Type.String;
-			}
+		}  else if (MOD_FUNCTION_SIGN.equals(functionOperator.sign) && (value1.type != Type.Number || value2.type != Type.Number)) {
+			throw new IllegalArgumentException("Invalid value types for function operator: " + functionOperator.sign);
+		} else if (DATE_FUNCTION_SIGNS.contains(functionOperator.sign)) {
+			functionOperator.sign = "date";
 			this.functionOperator = functionOperator;
 			this.value1 = value1;
 			this.value2 = new Value(value2.stringValue.replace("%d", "dd").replace("%m", "mm").replace("%Y", "yyyy").replace("%y", "yy"));
+			this.type = Type.Date;
+		} else if (CHAR_FUNCTION_SIGNS.contains(functionOperator.sign)) {
+			functionOperator.sign = "char";
+			this.functionOperator = functionOperator;
+			this.value1 = value1;
+			this.value2 = new Value(value2.stringValue.replace("%d", "dd").replace("%m", "mm").replace("%Y", "yyyy").replace("%y", "yy"));
+			this.type = Type.String;
+		} else {
+			this.functionOperator = functionOperator;
+			this.value1 = value1;
+			this.value2 = value2;
+			this.type = Type.Number;
 		}
 	}
 
@@ -148,17 +176,19 @@ public class Expression extends Value {
 	}
 	
 	@Override
-	public String toString(RulePart.StringType stringType) {
-		if (stringType == StringType.BeanShell && infixOperator != null && infixOperator.sign.equalsIgnoreCase("mod")) {
-			throw new IllegalArgumentException("No beanshell representation available for operator: " + infixOperator.sign);
-		}
-		
+	public String toString(RulePart.StringType stringType) {		
 		boolean bracketizeValue1 = infixOperator != null && value1 instanceof Expression && ((Expression)value1).infixOperator != null && BOOL_ONLY_OPERATOR_SIGNS.contains(((Expression)value1).infixOperator.sign) && !((Expression)value1).infixOperator.sign.equalsIgnoreCase(infixOperator.sign);
 		boolean bracketizeValue2 = infixOperator != null && value2 != null && value2 instanceof Expression && ((Expression)value2).infixOperator != null && BOOL_ONLY_OPERATOR_SIGNS.contains(((Expression)value2).infixOperator.sign) && !((Expression)value2).infixOperator.sign.equalsIgnoreCase(infixOperator.sign);
 		
 		StringBuilder returnValue = new StringBuilder();
 		
-		if (infixOperator != null) {
+		if (stringType == StringType.BeanShell && functionOperator != null && "mod".equalsIgnoreCase(functionOperator.sign)) {
+			returnValue.append(value1.toString(stringType));
+			returnValue.append(" ");
+			returnValue.append(BEANSHELL_MOD_SIGN);
+			returnValue.append(" ");
+			returnValue.append(value2.toString(stringType));
+		} else if (infixOperator != null) {
 			if (bracketizeValue1) returnValue.append("(");
 			returnValue.append(value1.toString(stringType));
 			if (bracketizeValue1) returnValue.append(")");

@@ -21,7 +21,7 @@ public class ListExpression extends Value {
 		this.value = value;
 		this.operator = operator;
 		for (Value valueItem : values) {
-			if (value.type == valueItem.type) {
+			if (value.type == valueItem.type || valueItem instanceof SubSelect) {
 				valueList.add(valueItem);
 			} else {
 				throw new IllegalArgumentException("Illegal list value: " + valueItem);

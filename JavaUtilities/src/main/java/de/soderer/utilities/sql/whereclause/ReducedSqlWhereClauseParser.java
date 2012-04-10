@@ -13,7 +13,8 @@ import de.soderer.utilities.sql.whereclause.token.Expression;
 import de.soderer.utilities.sql.whereclause.token.ListExpression;
 import de.soderer.utilities.sql.whereclause.token.Operator;
 import de.soderer.utilities.sql.whereclause.token.RulePart;
-import de.soderer.utilities.sql.whereclause.token.SuplementalPart;
+import de.soderer.utilities.sql.whereclause.token.SubSelect;
+import de.soderer.utilities.sql.whereclause.token.SupplementalPart;
 import de.soderer.utilities.sql.whereclause.token.Value;
 import de.soderer.utilities.sql.whereclause.token.Value.Type;
 
@@ -40,8 +41,11 @@ import de.soderer.utilities.sql.whereclause.token.Value.Type;
  * 
  */
 public class ReducedSqlWhereClauseParser {
-	public RulePart parse(String formula, Map<String, Value.Type> fieldDescriptors2) {
-		Map<String, Value.Type> fieldDescriptors = new HashMap<String, Value.Type>(fieldDescriptors2);
+	public RulePart parse(String formula, Map<String, Value.Type> descriptors) {
+		Map<String, Value.Type> fieldDescriptors = new HashMap<String, Value.Type>();
+		for (String value : descriptors.keySet()) {
+			fieldDescriptors.put(value.toLowerCase(), descriptors.get(value));
+		}
 		for (String value : Expression.SYSDATE_VALUES) {
 			fieldDescriptors.put(value, Value.Type.Date);
 		}
@@ -58,11 +62,14 @@ public class ReducedSqlWhereClauseParser {
 		Set<String> operators = new HashSet<String>();
 		operators.addAll(Expression.BOOL_UNARY_POSTFIX_OPERATOR_SIGNS);
 		operators.addAll(Expression.COMPARE_OPERATOR_SIGNS);
+		operators.addAll(Expression.CALCULATION_OPERATOR_SIGNS);
 		operators.addAll(Expression.STRING_ONLY_COMPARE_OPERATOR_SIGNS);
 		operators.addAll(Expression.BOOL_ONLY_OPERATOR_SIGNS);
-		operators.addAll(Expression.NUMBER_ONLY_OPERATOR_SIGNS);
+		operators.add(Expression.MOD_FUNCTION_SIGN);
+		operators.add(Expression.BEANSHELL_MOD_SIGN);
 		operators.addAll(Expression.DATE_FUNCTION_SIGNS);
 		operators.addAll(Expression.CHAR_FUNCTION_SIGNS);
+		operators.addAll(Expression.SINGLE_PARAMETER_STRING_FUNCTION_SIGNS);
 		operators.addAll(ListExpression.SIGNS);
 		
 		// Alle Strings die eine Bedeutung haben
@@ -78,16 +85,16 @@ public class ReducedSqlWhereClauseParser {
 			if (current == '\'') {
 				if (charIndex + 1 < length && formula.charAt(charIndex + 1) == '\'') {
 					if (readingString) {
-						// Doppeltes Quote in einem String ist die Escapesequenz f�r ein Quote im String
+						// Doppeltes Quote in einem String ist die Escapesequenz für ein Quote im String
 						currentString.append(current);
 						charIndex += 2;
 					} else if (charIndex + 2 < length && formula.charAt(charIndex + 2) == '\'')  {
-						// Tripple Quote au�erhalb eines Strings bedeutet ein String der mit einem escapten Quote beginnt
+						// Tripple Quote außerhalb eines Strings bedeutet ein String der mit einem escapten Quote beginnt
 						currentString.append(current);
 						readingString = true;
 						charIndex += 3;
 					} else {
-						// Doppeltes Quote au�erhalb eines Strings bedeutet ein Empty String
+						// Doppeltes Quote außerhalb eines Strings bedeutet ein Empty String
 						parts.add(new Value(""));
 						charIndex += 2;
 					}
@@ -105,15 +112,15 @@ public class ReducedSqlWhereClauseParser {
 				currentString.append(current);
 				charIndex++;   
 			} else if (current == ','){
-                parts.add(new SuplementalPart(SuplementalPart.Type.Separator));
+                parts.add(new SupplementalPart(SupplementalPart.Type.Separator));
                 charIndex++;
 			} else if (!Character.isWhitespace(current)) {
 				if (current == '(') {
-					parts.add(new SuplementalPart(SuplementalPart.Type.OpeningBracket));
+					parts.add(new SupplementalPart(SupplementalPart.Type.OpeningBracket));
 					openBrackets++;
 					charIndex++;
 				} else if (current == ')') {
-					parts.add(new SuplementalPart(SuplementalPart.Type.ClosingBracket));
+					parts.add(new SupplementalPart(SupplementalPart.Type.ClosingBracket));
 					openBrackets--;
 					if (openBrackets < 0) {
 						throw new IllegalArgumentException("Too many closing brackets");
@@ -138,21 +145,34 @@ public class ReducedSqlWhereClauseParser {
 					parts.add(new Value(Double.parseDouble(formula.substring(charIndex, end))));
 					charIndex = end;
 				} else {
-					// Ein Platzhalter f�r eine Operation, Funktion oder Konstante wird gelesen.
+					// Ein Platzhalter für eine Operation, Funktion oder Konstante wird gelesen.
 					int bestLength = 0;
 
 					for (String check : texts) {
 						if (lowerFormula.startsWith(check, charIndex)) {
 							if (check.length() > bestLength) {
-								// der l�ngste m�gliche String wird erkannt
+								// der längste mögliche String wird erkannt
 								bestLength = check.length();
 							}
 						}
 					}
 
 					if (bestLength == 0) {
-						// String gefunden der keinem bekannten Operator oder Field entspricht
-						throw new IllegalArgumentException("Invalid data found at position " + charIndex + " starting with " + current);
+						if (parts.size() > 2
+							&& parts.get(parts.size() - 2) instanceof Operator && (((Operator)parts.get(parts.size() - 2)).sign.equalsIgnoreCase("in") || ((Operator)parts.get(parts.size() - 2)).sign.equalsIgnoreCase("not in"))
+							&& parts.get(parts.size() - 1) instanceof SupplementalPart && ((SupplementalPart)parts.get(parts.size() - 1)).type == SupplementalPart.Type.OpeningBracket) {
+							SubSelect subSelect = searchSubselect(formula, charIndex);
+							if (subSelect != null) {
+								parts.add(subSelect);
+								charIndex += subSelect.value.length();
+							} else {
+								// String gefunden der keinem bekannten Operator oder Field entspricht
+								throw new IllegalArgumentException("Invalid data found at position " + charIndex + " starting with " + current);
+							}
+						} else {
+							// String gefunden der keinem bekannten Operator oder Field entspricht
+							throw new IllegalArgumentException("Invalid data found at position " + charIndex + " starting with " + current);
+						}
 					} else {
 						String value = formula.substring(charIndex, charIndex + bestLength);
 						if (operators.contains(value.toLowerCase())) {
@@ -193,31 +213,58 @@ public class ReducedSqlWhereClauseParser {
 		for (int i = parts.size() - 1; i >= 0; i--) {
 			if (parts.get(i) instanceof Operator) {
 				Operator operator = (Operator)parts.get(i);
-				if (Expression.NUMBER_ONLY_OPERATOR_SIGNS.contains(operator.sign)) {
-						if (i - 1 < 0 || i + 1 >= parts.size()
-							|| !(parts.get(i - 1) instanceof Value)
-							|| !(parts.get(i + 1) instanceof Value)) {
-							throw new IllegalArgumentException("Invalid definition for operator: " + operator.sign);
-						} else {
-							Expression newValue = new Expression(((Value)(parts.get(i - 1))), operator, ((Value)(parts.get(i + 1))));
-							parts.remove(i + 1);
-							parts.remove(i);
-							parts.set(i - 1, newValue);
-							changed = true;
-						}
-				} else if ((Expression.DATE_FUNCTION_SIGNS.contains(operator.sign)
-					|| Expression.CHAR_FUNCTION_SIGNS.contains(operator.sign))) {
+				if (Expression.BEANSHELL_MOD_SIGN.equals(operator.sign)) {
+					if (i - 1 < 0 || i + 1 >= parts.size()
+						|| !(parts.get(i - 1) instanceof Value)
+						|| !(parts.get(i + 1) instanceof Value)) {
+						throw new IllegalArgumentException("Invalid definition for operator: " + operator.sign);
+					} else {
+						Expression newValue = new Expression(new Operator(Expression.MOD_FUNCTION_SIGN), ((Value)(parts.get(i - 1))), ((Value)(parts.get(i + 1))));
+						parts.remove(i + 1);
+						parts.remove(i);
+						parts.set(i - 1, newValue);
+						changed = true;
+					}
+				} else if (Expression.CALCULATION_OPERATOR_SIGNS.contains(operator.sign)) {
+					if (i - 1 < 0 || i + 1 >= parts.size()
+						|| !(parts.get(i - 1) instanceof Value)
+						|| !(parts.get(i + 1) instanceof Value)) {
+						throw new IllegalArgumentException("Invalid definition for operator: " + operator.sign);
+					} else {
+						Expression newValue = new Expression(((Value)(parts.get(i - 1))), operator, ((Value)(parts.get(i + 1))));
+						parts.remove(i + 1);
+						parts.remove(i);
+						parts.set(i - 1, newValue);
+						changed = true;
+					}
+				} else if (Expression.DATE_FUNCTION_SIGNS.contains(operator.sign)
+						|| Expression.CHAR_FUNCTION_SIGNS.contains(operator.sign)
+						|| Expression.MOD_FUNCTION_SIGN.equals(operator.sign)) {
 					if (i + 5 >= parts.size()
-						|| !(parts.get(i + 1) instanceof SuplementalPart) || ((SuplementalPart)parts.get(i + 1)).type != SuplementalPart.Type.OpeningBracket
+						|| !(parts.get(i + 1) instanceof SupplementalPart) || ((SupplementalPart)parts.get(i + 1)).type != SupplementalPart.Type.OpeningBracket
 						|| !(parts.get(i + 2) instanceof Value)
-						|| !(parts.get(i + 3) instanceof SuplementalPart) || ((SuplementalPart)parts.get(i + 3)).type != SuplementalPart.Type.Separator
+						|| !(parts.get(i + 3) instanceof SupplementalPart) || ((SupplementalPart)parts.get(i + 3)).type != SupplementalPart.Type.Separator
 						|| !(parts.get(i + 4) instanceof Value)
-						|| !(parts.get(i + 5) instanceof SuplementalPart) || ((SuplementalPart)parts.get(i + 5)).type != SuplementalPart.Type.ClosingBracket) {
+						|| !(parts.get(i + 5) instanceof SupplementalPart) || ((SupplementalPart)parts.get(i + 5)).type != SupplementalPart.Type.ClosingBracket) {
 						throw new IllegalArgumentException("Invalid definition for function: " + operator.sign);
 					} else {
-						Expression newValue = new Expression(operator, ((Value)(parts.get(i + 2))), ((Value)(parts.get(i + 4))));
+						Expression newValue = new Expression(operator, (Value)(parts.get(i + 2)), (Value)(parts.get(i + 4)));
 						parts.remove(i + 5);
 						parts.remove(i + 4);
+						parts.remove(i + 3);
+						parts.remove(i + 2);
+						parts.remove(i + 1);
+						parts.set(i, newValue);
+						changed = true;
+					}
+				} else if (Expression.SINGLE_PARAMETER_STRING_FUNCTION_SIGNS.contains(operator.sign)) {
+					if (i + 3 >= parts.size()
+						|| !(parts.get(i + 1) instanceof SupplementalPart) || ((SupplementalPart)parts.get(i + 1)).type != SupplementalPart.Type.OpeningBracket
+						|| !(parts.get(i + 2) instanceof Value)
+						|| !(parts.get(i + 3) instanceof SupplementalPart) || ((SupplementalPart)parts.get(i + 3)).type != SupplementalPart.Type.ClosingBracket) {
+						throw new IllegalArgumentException("Invalid definition for function: " + operator.sign);
+					} else {
+						Expression newValue = new Expression(operator, (Value)parts.get(i + 2));
 						parts.remove(i + 3);
 						parts.remove(i + 2);
 						parts.remove(i + 1);
@@ -261,19 +308,19 @@ public class ReducedSqlWhereClauseParser {
 				} else if (ListExpression.SIGNS.contains(operator.sign)) {
 					if (i - 1 < 0
 						|| !(parts.get(i - 1) instanceof Value)
-						|| !(parts.get(i + 1) instanceof SuplementalPart) || ((SuplementalPart)parts.get(i + 1)).type != SuplementalPart.Type.OpeningBracket) {
+						|| !(parts.get(i + 1) instanceof SupplementalPart) || ((SupplementalPart)parts.get(i + 1)).type != SupplementalPart.Type.OpeningBracket) {
 						throw new IllegalArgumentException("Invalid definition for list operator: " + operator.sign);
 					} else {
 						// search next closing bracket
 						int closingPosition = -1;
 						List<Value> values = new ArrayList<Value>();
 						for (int j = i + 2; j < parts.size(); j++) {
-							if (parts.get(j) instanceof SuplementalPart && ((SuplementalPart)parts.get(j)).type == SuplementalPart.Type.ClosingBracket) {
+							if (parts.get(j) instanceof SupplementalPart && ((SupplementalPart)parts.get(j)).type == SupplementalPart.Type.ClosingBracket) {
 								closingPosition = j;
 								break;
 							} else if (parts.get(j) instanceof Value) {
 								values.add((Value)parts.get(j));
-							} else if (!(parts.get(j) instanceof SuplementalPart) || ((SuplementalPart)parts.get(j)).type != SuplementalPart.Type.Separator) {
+							} else if (!(parts.get(j) instanceof SupplementalPart) || ((SupplementalPart)parts.get(j)).type != SupplementalPart.Type.Separator) {
 								throw new IllegalArgumentException("Invalid list definition");
 							}
 						}
@@ -298,12 +345,12 @@ public class ReducedSqlWhereClauseParser {
 	private boolean removeUnusedBrackets(List<RulePart> parts) {
 		boolean changed = false;
 		for (int i = parts.size() - 1; i >= 0; i--) {
-			if (parts.get(i) instanceof SuplementalPart && ((SuplementalPart)parts.get(i)).type == SuplementalPart.Type.OpeningBracket) {
-				if (i + 1 < parts.size() && parts.get(i) instanceof SuplementalPart && ((SuplementalPart)parts.get(i)).type == SuplementalPart.Type.ClosingBracket) {
+			if (parts.get(i) instanceof SupplementalPart && ((SupplementalPart)parts.get(i)).type == SupplementalPart.Type.OpeningBracket) {
+				if (i + 1 < parts.size() && parts.get(i) instanceof SupplementalPart && ((SupplementalPart)parts.get(i)).type == SupplementalPart.Type.ClosingBracket) {
 					parts.remove(i + 1);
 					parts.remove(i);
 					changed = true;
-				} else if (i + 2 < parts.size() && parts.get(i + 2) instanceof SuplementalPart && ((SuplementalPart)parts.get(i + 2)).type == SuplementalPart.Type.ClosingBracket) {
+				} else if (i + 2 < parts.size() && parts.get(i + 2) instanceof SupplementalPart && ((SupplementalPart)parts.get(i + 2)).type == SupplementalPart.Type.ClosingBracket) {
 					parts.remove(i + 2);
 					parts.remove(i);
 					changed = true;
@@ -320,10 +367,10 @@ public class ReducedSqlWhereClauseParser {
 		int currentBracketLevel = 0;
 		int position = -1;
 		for (int i = parts.size() - 1; i >= 0; i--) {
-			if ((parts.get(i) instanceof SuplementalPart)) {
-				if (((SuplementalPart)parts.get(i)).type == SuplementalPart.Type.OpeningBracket) {
+			if ((parts.get(i) instanceof SupplementalPart)) {
+				if (((SupplementalPart)parts.get(i)).type == SupplementalPart.Type.OpeningBracket) {
 					currentBracketLevel--;
-				} else if (((SuplementalPart)parts.get(i)).type == SuplementalPart.Type.ClosingBracket) {
+				} else if (((SupplementalPart)parts.get(i)).type == SupplementalPart.Type.ClosingBracket) {
 					currentBracketLevel++;
 				}
 			} else if (parts.get(i) instanceof Operator && Expression.BOOL_ONLY_OPERATOR_SIGNS.contains(((Operator)parts.get(i)).sign.toLowerCase())) {
@@ -348,6 +395,30 @@ public class ReducedSqlWhereClauseParser {
 			changed = true;
 		}
 		return changed;
+	}
+	
+	private static SubSelect searchSubselect(String text, int startIndex) {
+		int openBrackets = 0;
+		int charIndex = startIndex;
+		StringBuilder subSelectString = new StringBuilder();
+
+		while (charIndex < text.length()) {
+			char currentChar = text.charAt(charIndex);
+			if (currentChar == '(') {
+				openBrackets++;
+			} else if (currentChar == ')') {
+				openBrackets--;
+				if (openBrackets == -1) {
+					// Schließende Klammer des Subselects gefunden
+					return new SubSelect(subSelectString.toString());
+				}
+			}
+				
+			subSelectString.append(currentChar);
+			charIndex++;
+		}
+		
+		return null;
 	}
 	
 	/**
