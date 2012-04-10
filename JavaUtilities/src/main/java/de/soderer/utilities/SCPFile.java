@@ -13,9 +13,9 @@ public class SCPFile {
 	private String filename = null; // erlaubt sind auch Wildcards wie '*'
 
 	/**
-	 * Diese Klasse kapselt Dateibezeichner und stellt deren Einzelteile zur Verf�gung.
-	 * Es wir dabei explizit auch mit Laufzeitsystem-fremden Fileseparatoren gearbeitet, welche durch die Verarbeitungen NICHT ver�ndert werden.
-	 * Die Klasse java.io.File w�rde die Separatoren stets auf das Laufzeitsystem �ndern.
+	 * Diese Klasse kapselt Dateibezeichner und stellt deren Einzelteile zur Verfügung.
+	 * Es wir dabei explizit auch mit Laufzeitsystem-fremden Fileseparatoren gearbeitet, welche durch die Verarbeitungen NICHT verändert werden.
+	 * Die Klasse java.io.File würde die Separatoren stets auf das Laufzeitsystem ändern.
 	 * 
 	 * Erlaubte Formate:
 	 *   "\\hostname\path1\path2\filename" => DOS-Datei

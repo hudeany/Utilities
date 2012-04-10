@@ -210,7 +210,7 @@ public class JschWrapper {
 	}
 
 	/**
-	 * L�schen von Dateien via SCP
+	 * Löschen von Dateien via SCP
 	 * 
 	 * @param remoteHostname
 	 * @param checkHostKey
@@ -233,7 +233,7 @@ public class JschWrapper {
 	}
 
 	/**
-	 * L�schen von Dateien via SCP
+	 * Löschen von Dateien via SCP
 	 * 
 	 * @param remoteHostname
 	 * @param checkHostKey
@@ -309,7 +309,7 @@ public class JschWrapper {
 	 * @param remoteHostname
 	 * @param checkHostKey
 	 * @param remoteHostPathAndFileName
-	 *            Verzeichnis ist als Ziel erlaubt, mu� aber bereits existieren
+	 *            Verzeichnis ist als Ziel erlaubt, muß aber bereits existieren
 	 * @param localPathAndFileName
 	 *            KEINE Wildcards(*?) erlaubt
 	 * @param username
@@ -334,7 +334,7 @@ public class JschWrapper {
 	 * @param remoteHostname
 	 * @param checkHostKey
 	 * @param remoteHostPathAndFileName
-	 *            Verzeichnis ist als Ziel erlaubt, mu� aber bereits existieren
+	 *            Verzeichnis ist als Ziel erlaubt, muß aber bereits existieren
 	 * @param localPathAndFileName
 	 *            KEINE Wildcards(*?) erlaubt
 	 * @param username
@@ -461,7 +461,7 @@ public class JschWrapper {
 	}
 
 	public static void uploadFileData(String remoteHostname, boolean checkHostKey, String remoteHostPath, String remoteHostFileName, byte[] fileData, String username, String password, byte[] privateKey) throws Exception {
-		//Directory auslesen um zu Pr�fen, ob das Verzeichnis existiert aber die Datei noch nicht
+		//Directory auslesen um zu Prüfen, ob das Verzeichnis existiert aber die Datei noch nicht
 		List<String> directory = listFiles(remoteHostname, checkHostKey, remoteHostPath, username, password, privateKey);
 		if (!directory.contains("."))
 			throw new Exception("Fehler bei SCP-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
@@ -631,7 +631,7 @@ public class JschWrapper {
 	}
 
 	/**
-	 * Hinzuf�gen von public Hostkeys zu der KnownHosts-Datei
+	 * Hinzufügen von public Hostkeys zu der KnownHosts-Datei
 	 * 
 	 * @param hostname
 	 * @param username
@@ -793,7 +793,7 @@ public class JschWrapper {
 	private static void setKnownHostKeys(JSch jsch) throws Exception {
 		try {
 			// Nicht mit der URI arbeiten, einen Pfad zu einer Resource in einem JAR-File gibts nicht
-			// Wann immer m�glich im JavaEE-Umfeld mit Streams arbeiten!
+			// Wann immer möglich im JavaEE-Umfeld mit Streams arbeiten!
 			// So nicht: InputStream knownHostsKeysInputStream = Utilities.getResource("KnownHostsKeysForSCP");
 			InputStream knownHostsKeysInputStream = Utilities.getResourceAsStream("KnownHostsKeysForSCP");
 			logger.debug("KnownHostsKeysForSCP " + (knownHostsKeysInputStream == null ? "NOT " : "") + "found");
@@ -801,7 +801,7 @@ public class JschWrapper {
 				jsch.setKnownHosts(knownHostsKeysInputStream);
 			}
 			else {
-				throw new Exception("KnownHostsKeysForSCP f�r SCP-Verbindung nicht gefunden");
+				throw new Exception("KnownHostsKeysForSCP für SCP-Verbindung nicht gefunden");
 			}
 			
 		}
