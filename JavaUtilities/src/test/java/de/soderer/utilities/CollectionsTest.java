@@ -9,6 +9,9 @@ import java.util.Map.Entry;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
+import de.soderer.utilities.collection.MapUtils;
+
 public class CollectionsTest {
 
 	@Test

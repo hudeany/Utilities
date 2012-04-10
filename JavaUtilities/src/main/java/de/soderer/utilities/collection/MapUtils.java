@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.collection;
 
 import java.util.Collections;
 import java.util.Comparator;

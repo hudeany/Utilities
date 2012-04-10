@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.xml;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;

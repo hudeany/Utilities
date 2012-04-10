@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.xml;
 
 import java.io.InputStream;
 import java.util.Hashtable;
