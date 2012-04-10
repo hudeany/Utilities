@@ -86,8 +86,4 @@ public class MapUtils {
          }
          return returnMap;
      }
-     
-     public abstract class Predicate<K> {
-    	 public abstract boolean evaluate(K object);
-     }
 }
