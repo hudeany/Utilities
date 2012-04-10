@@ -51,7 +51,7 @@ public class SendMail {
 		mailtext.append(lineFeed + lineFeed);
 		mailtext.append(
 			"HINWEIS: Diese E-Mail wurde automatisch von D7-IT-KuV3-B6 erstellt." + lineFeed);
-				//+ "Bitte schicken Sie keine Antwort an die absendende interne Mailadresse, da dort eine weitere Bearbeitung nicht m�glich ist." + lineFeed);
+				//+ "Bitte schicken Sie keine Antwort an die absendende interne Mailadresse, da dort eine weitere Bearbeitung nicht möglich ist." + lineFeed);
 
 		try {
 			return sendStraightMail(zielEmailAdressen, null, null, subject.toString(), mailtext.toString(), null, null, null, true);
@@ -80,7 +80,7 @@ public class SendMail {
 	}
 	
 	/**
-	 * Versenden einer Email mit Standardtextanh�ngen ohne die R�ckgabe einer Exception => Optimistisch
+	 * Versenden einer Email mit Standardtextanhängen ohne die Rückgabe einer Exception => Optimistisch
 	 * @return 
 	 * @throws Exception 
 	 */
@@ -98,7 +98,7 @@ public class SendMail {
 		mailtext.append(lineFeed + lineFeed);
 		mailtext.append(
 			"HINWEIS: Diese E-Mail wurde automatisch von D7-IT-KuV3-B6 erstellt." + lineFeed);
-				//+ "Bitte schicken Sie keine Antwort an die absendende interne Mailadresse, da dort eine weitere Bearbeitung nicht m�glich ist." + lineFeed);
+				//+ "Bitte schicken Sie keine Antwort an die absendende interne Mailadresse, da dort eine weitere Bearbeitung nicht möglich ist." + lineFeed);
 		
 		try {
 			return sendStraightMail(pTO, pCC, pBCC, subject.toString(), mailtext.toString(), null, null, null, sendAsHtmlMail, filesToAttach);
@@ -118,9 +118,9 @@ public class SendMail {
 			sessionProperties.put("mail.smtp.host", "techuser1.mail.allianz");
 			Session session = Session.getInstance(sessionProperties);
 			session.setDebug(log.isDebugEnabled());
-			// Email-Betreff darf auf keinen Fall Zeilenumbr�che enthalten
+			// Email-Betreff darf auf keinen Fall Zeilenumbrüche enthalten
 			pBetreff = pBetreff.replaceAll("\r", "").replaceAll("\n", " ");
-			// Emailobjekt erzeugen und gegebenfalls Anh�nge anf�gen
+			// Emailobjekt erzeugen und gegebenfalls Anhänge anfügen
 			if (!ArrayUtils.isEmpty(filesToAttach) || !ArrayUtils.isEmpty(pFileData)) {
 				// Create new Mail
 				mimeMessage = new MimeMessage(session);
@@ -196,7 +196,7 @@ public class SendMail {
 				if ((bccAddress != null) && (bccAddress.length > 0))
 					mimeMessage.setRecipients(Message.RecipientType.BCC, bccAddress);
 			}
-			// Tats�chlich senden
+			// Tatsächlich senden
 			Transport transport = session.getTransport("smtp");
 			transport.connect();
 			Transport.send(mimeMessage);

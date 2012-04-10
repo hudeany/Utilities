@@ -234,13 +234,13 @@ public class Utilities {
 
 	/**
 	 * Erzeugen einer Backupcopy im Backupverzeichnis zur Sicherung Diese
-	 * Sicherungs Datei enth�lt dann alle Daten, auch eventuell nicht in diesem
+	 * Sicherungs Datei enthält dann alle Daten, auch eventuell nicht in diesem
 	 * Job erzeugte Daten
 	 * 
 	 * @param fileNameToBackup
 	 *            kompletter Dateiname der zu sichernden Datei
 	 * @param backupPath
-	 *            Zielverzeichnis f�r Backups
+	 *            Zielverzeichnis für Backups
 	 * @throws Exception
 	 */
 	public static void generateBackupCopy(String fileNameToBackup, String backupPath)
@@ -255,7 +255,7 @@ public class Utilities {
 
 		// wenn 7 Dateien mit gleichem Namen erzeugt wurden,
 		// muss das Verzeichnis einen ZNHostZielnamen enthalten und der wird
-		// dann angeh�ngt
+		// dann angehängt
 		for (String znHostName : ZN_HOST_NAMES) {
 			if (fileNameToBackup.indexOf(znHostName) > -1) {
 				znExtension = "." + znHostName;
@@ -304,7 +304,7 @@ public class Utilities {
 					bufferedFileOutputStream.write(copybuffer, 0, countbytes);
 				}
 
-				// Pr�fen ob tats�chlich auch die Zieldatei erzeugt wurde
+				// Prüfen ob tatsächlich auch die Zieldatei erzeugt wurde
 				// (!Rechte!)
 				if (!destinationFile.exists()) {
 					throw new Exception(
@@ -520,7 +520,7 @@ public class Utilities {
 	}
 
 	/**
-	 * Einen String als InputStream zur Verf�gung stellen
+	 * Einen String als InputStream zur Verfügung stellen
 	 * 
 	 * @throws UnsupportedEncodingException
 	 */
@@ -541,7 +541,7 @@ public class Utilities {
 	public static byte[] readStreamInArray(InputStream inputStream)
 			throws Exception {
 		// Wenn keine Daten aus dem Stream gelesen werden konnten
-		// Wird mehrfach diese Thread-Wartezeit einger�umt
+		// Wird mehrfach diese Thread-Wartezeit eingeräumt
 		final int WAIT_TIME = 50;
 
 		// Maximale Anzahl von Wartezyklen mit WAIT_TIME
@@ -567,7 +567,7 @@ public class Utilities {
 					readBlockCount = inputStream.read(Buff);
 
 					if (readBlockCount > -1) {
-						// �bergabe der Daten an den Writer
+						// Übergabe der Daten an den Writer
 						for (int i = 0; i < readBlockCount; i++) {
 							returnArrayBuffer.write((char) Buff[i]);
 						}
@@ -581,7 +581,7 @@ public class Utilities {
 					waitCycleCount++;
 				}
 
-				// Pr�fen ob max. Wartzeit ueberschritten?
+				// Prüfen ob max. Wartzeit ueberschritten?
 				if (waitCycleCount > MAX_WAIT_COUNT) {
 					throw new Exception(
 							"Fehler in readStreamInArray WaitExceed");
@@ -636,7 +636,7 @@ public class Utilities {
 
 		// Suchen der Importfilenames
 		for (int i = 0; i < alleStammnamen.size(); i++) {
-			// Zusammenf�hren aller FileArrays zu Einem
+			// Zusammenführen aller FileArrays zu Einem
 			importFiles
 					.addAll(Utilities
 							.getArrayOfFilesByStammname((String) alleStammnamen
@@ -705,19 +705,19 @@ public class Utilities {
 	}
 
 	/**
-	 * Ermitteln des n�chsten geplanten Startzeitpunktes
+	 * Ermitteln des nächsten geplanten Startzeitpunktes
 	 * Der Timingparameter kann Wochentage, Zeiten, Monats-, Quartalsplanungen und Feiertage enthalten
 	 * 
-	 * M�gliche Auspr�gungen:
+	 * Mögliche Ausprägungen:
 	 * "ONCE"                      => nur einmalig (returns null)
-	 * "0600;0800"                 => t�glich um 06:00 und um 08:00
+	 * "0600;0800"                 => täglich um 06:00 und um 08:00
 	 * "MoMi:1700"                 => Montags und Mittwochs um 17:00
 	 * "M05:1600"                  => jeden 05.ten im Monat um 16:00
 	 * "Q:1600"                    => Jeden ersten Tag im Quartal um 16:00
 	 * "QW:1600"                   => Jeden ersten Werktag im Quartal um 16:00
 	 * "MoDiMiDoFr:1700;!23012011" => Mo bis Fr um 17:00 aber nicht am 23.01.2011 (Feiertagsregelung durch '!'-Zeichen)
 	 * 
-	 * Alle Auspr�gungen k�nnen beliebig kombiniert werden, werden dann durch Semikolons getrennt aufgelistet
+	 * Alle Ausprägungen können beliebig kombiniert werden, werden dann durch Semikolons getrennt aufgelistet
 	 * 
 	 * @param timingString
 	 * @return
@@ -756,15 +756,15 @@ public class Utilities {
 				continue;
 			}
 			else if (!timingParameter.contains(":")) {
-				// t�gliche Verarbeitung zur gegebenen Uhrzeit
+				// tägliche Verarbeitung zur gegebenen Uhrzeit
 				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(timingParameter.substring(
 						0, 2)));
 				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(timingParameter.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 
-				// n�chsten Start solange in die Zukunft verschieben (+1Tag) bis
-				// Parameter-Bedingung erf�llt ist
+				// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
+				// Parameter-Bedingung erfüllt ist
 				// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
 				while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)
 						|| dayListIncludes(excludedDays, nextStartByThisParameter))
@@ -780,7 +780,7 @@ public class Utilities {
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 				
-				// Den n�chsten passenden Monat finden
+				// Den nächsten passenden Monat finden
 				while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart))
 					nextStartByThisParameter.add(GregorianCalendar.MONTH, 1);
 				
@@ -840,7 +840,7 @@ public class Utilities {
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 			}
 			else {
-				// WochenTagessteuerung (erm�glicht auch Werktagssteuerung)
+				// WochenTagessteuerung (ermöglicht auch Werktagssteuerung)
 				String wochenTage = timingParameter.substring(0, timingParameter.indexOf(":"));
 				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
 				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
@@ -848,8 +848,8 @@ public class Utilities {
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 
-				// n�chsten Start solange in die Zukunft verschieben (+1Tag) bis
-				// Parameter-Bedingung erf�llt ist
+				// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
+				// Parameter-Bedingung erfüllt ist
 				// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
 				while ((nextStartByThisParameter.before(now)
 						|| !wochenTage.contains(DateUtils.getWochenTagNamensKuerzel(nextStartByThisParameter))) && nextStartByThisParameter.before(returnStart)
@@ -930,7 +930,7 @@ public class Utilities {
 		int timeout = 2000; // 2 Sekunden
 		if (endPoint.isUnresolved()) {
 			throw new Exception("Hostname '" + hostname
-					+ "' konnte nicht aufgel�st werden");
+					+ "' konnte nicht aufgelöst werden");
 		} else {
 			try {
 				socket.connect(endPoint, timeout);
@@ -970,7 +970,7 @@ public class Utilities {
 
 	/***
 	 * AUfteilen der Originalliste in kleinere Listen zu je maximal
-	 * chunkSize-gro�en Listen
+	 * chunkSize-großen Listen
 	 * 
 	 * @param <E>
 	 * @param originalList
@@ -998,7 +998,7 @@ public class Utilities {
 		return returnList;
 	}
 
-	private static final char[] randomCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ���a���bcde���fghijklmnopqrstuvwxyz����"
+	private static final char[] randomCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuvwxyzäöüß"
 			.toCharArray();
 	private static final char[] randomAlphaNumericCharacters = (new String(
 			randomCharacters) + "0123456789").toCharArray();
