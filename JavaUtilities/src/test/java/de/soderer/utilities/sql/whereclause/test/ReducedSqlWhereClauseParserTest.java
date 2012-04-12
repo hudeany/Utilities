@@ -67,10 +67,10 @@ public class ReducedSqlWhereClauseParserTest extends TestCase {
 	}
 	
 	public void testModFormula() {
-		String formula = "Nummer Mod 3 = 2";
+		String formula = "Mod(Nummer, 3) = 2";
 		RulePart rule = new ReducedSqlWhereClauseParser().parse(formula, getDefaultFields());
 		Assert.assertEquals(
-			"nummer mod 3 = 2",
+			"mod(nummer, 3) = 2",
 			rule.toString());
 	}
 	
@@ -103,35 +103,35 @@ public class ReducedSqlWhereClauseParserTest extends TestCase {
 	}
 	
 	public void testFullFormula() {
-		String formula = "Email not like '%teXt%' and Email != 'abc@soderer.de' and Email is not null OR TExt = 'ein Text, als ''Zitat''' AND (Nummer <= 2 OR Nummer = 3) anD Geburtstag = to_Date('23.01.1977', 'dd.mm.yyyy') or char(geburtstag, 'dd.mm') = '23.01' oR Nummer Mod 3 = 2 or TExt in ('abc', '1', 'ghi')";
+		String formula = "Email not like '%teXt%' and Email != 'abc@soderer.de' and Email is not null OR TExt = 'ein Text, als ''Zitat''' AND (Nummer <= 2 OR Nummer = 3) anD Geburtstag = to_Date('23.01.1977', 'dd.mm.yyyy') or char(geburtstag, 'dd.mm') = '23.01' oR Mod(Nummer, 3) = 2 or TExt in ('abc', '1', 'ghi')";
 		RulePart rule = new ReducedSqlWhereClauseParser().parse(formula, getDefaultFields());
 		Assert.assertEquals(
-			"(email not like '%teXt%' and email != 'abc@soderer.de' and email is not null) or (text = 'ein Text, als ''Zitat''' and (nummer <= 2 or nummer = 3) and geburtstag = date('23.01.1977', 'dd.mm.yyyy')) or char(geburtstag, 'dd.mm') = '23.01' or nummer mod 3 = 2 or text in ('abc', '1', 'ghi')",
+			"(email not like '%teXt%' and email != 'abc@soderer.de' and email is not null) or (text = 'ein Text, als ''Zitat''' and (nummer <= 2 or nummer = 3) and geburtstag = date('23.01.1977', 'dd.mm.yyyy')) or char(geburtstag, 'dd.mm') = '23.01' or mod(nummer, 3) = 2 or text in ('abc', '1', 'ghi')",
 			rule.toString());
 		Assert.assertEquals(
-			"(email NOT LIKE '%teXt%' AND email != 'abc@soderer.de' AND email IS NOT NULL) OR (text = 'ein Text, als ''Zitat''' AND (nummer <= 2 OR nummer = 3) AND geburtstag = TO_DATE('23.01.1977', 'dd.mm.yyyy')) OR TO_CHAR(geburtstag, 'dd.mm') = '23.01' OR nummer MOD 3 = 2 OR text IN ('abc', '1', 'ghi')",
+			"(email NOT LIKE '%teXt%' AND email != 'abc@soderer.de' AND email IS NOT NULL) OR (text = 'ein Text, als ''Zitat''' AND (nummer <= 2 OR nummer = 3) AND geburtstag = TO_DATE('23.01.1977', 'dd.mm.yyyy')) OR TO_CHAR(geburtstag, 'dd.mm') = '23.01' OR MOD(nummer, 3) = 2 OR text IN ('abc', '1', 'ghi')",
 			rule.toString(RulePart.StringType.Oracle));
 		Assert.assertEquals(
-			"(email NOT LIKE '%teXt%' AND email != 'abc@soderer.de' AND email IS NOT NULL) OR (text = 'ein Text, als ''Zitat''' AND (nummer <= 2 OR nummer = 3) AND geburtstag = STR_TO_DATE('23.01.1977', '%d.%m.%Y')) OR DATE_FORMAT(geburtstag, '%d.%m') = '23.01' OR nummer MOD 3 = 2 OR text IN ('abc', '1', 'ghi')",
+			"(email NOT LIKE '%teXt%' AND email != 'abc@soderer.de' AND email IS NOT NULL) OR (text = 'ein Text, als ''Zitat''' AND (nummer <= 2 OR nummer = 3) AND geburtstag = STR_TO_DATE('23.01.1977', '%d.%m.%Y')) OR DATE_FORMAT(geburtstag, '%d.%m') = '23.01' OR MOD(nummer, 3) = 2 OR text IN ('abc', '1', 'ghi')",
 			rule.toString(RulePart.StringType.MySQL));
 	}
 	
 	public void testFullFormulaBeanShell() {
-		String formula = "Email not like '%teXt%' and Email != 'abc@soderer.de' and Email is not null OR TExt = 'ein Text, als ''Zitat''' AND (Nummer <= 2 OR Nummer = 3) anD Geburtstag = to_Date('23.01.1977', 'dd.mm.yyyy') or TExt in ('abc', '1', 'ghi')";
+		String formula = "Email != 'abc@soderer.de' and Email is not null OR TExt = 'ein Text, als ''Zitat''' AND (Nummer <= 2 OR Nummer = 3) anD Geburtstag = to_Date('23.01.1977', 'dd.mm.yyyy') or TExt in ('abc', '1', 'ghi')";
 		RulePart rule = new ReducedSqlWhereClauseParser().parse(formula, getDefaultFields());
 		Assert.assertEquals(
-			"(email not like '%teXt%' and email != 'abc@soderer.de' and email is not null) or (text = 'ein Text, als ''Zitat''' and (nummer <= 2 or nummer = 3) and geburtstag = date('23.01.1977', 'dd.mm.yyyy')) or text in ('abc', '1', 'ghi')",
+			"(email != 'abc@soderer.de' and email is not null) or (text = 'ein Text, als ''Zitat''' and (nummer <= 2 or nummer = 3) and geburtstag = date('23.01.1977', 'dd.mm.yyyy')) or text in ('abc', '1', 'ghi')",
 			rule.toString(RulePart.StringType.BeanShell));
 	}
 	
-	public void testEqualsFormula_Negative() {
-		String formula = "TExt = 1";
+	public void testLikeFormula_Negative() {
+		String formula = "TExt like 1";
 		try {
 			new ReducedSqlWhereClauseParser().parse(formula, getDefaultFields());
 			fail("IllegalArgumentException was excepted");
 		}
 		catch (IllegalArgumentException ex) {
-			assertEquals("Expected exception: ", "Invalid value types for infix operator: =", ex.getMessage());
+			assertEquals("Expected exception: ", "Invalid value types for string infix operator: like", ex.getMessage());
 		}
 	}
 	
@@ -158,14 +158,14 @@ public class ReducedSqlWhereClauseParserTest extends TestCase {
 	}
 	
 	public void testFullFormulaBeanShell_Negative() {
-		String formula = "Email not like '%teXt%' and Email != 'abc@soderer.de' and Email is not null OR TExt = 'ein Text, als ''Zitat''' AND (Nummer <= 2 OR Nummer = 3) anD Geburtstag = to_Date('23.01.77', 'dd.mm.yy') oR Nummer Mod 3 = 2 or TExt in ('abc', '1', 'ghi')";
+		String formula = "Email not like '%teXt%' and Email != 'abc@soderer.de' and Email is not null OR TExt = 'ein Text, als ''Zitat''' AND (Nummer <= 2 OR Nummer = 3) anD Geburtstag = to_Date('23.01.77', 'dd.mm.yy') oR Mod(Nummer, 3) = 2 or TExt in ('abc', '1', 'ghi')";
 		RulePart rule = new ReducedSqlWhereClauseParser().parse(formula, getDefaultFields());
 		try {
 			rule.toString(RulePart.StringType.BeanShell);
 			fail("IllegalArgumentException was excepted");
 		}
 		catch (IllegalArgumentException ex) {
-			assertEquals("Expected exception: ", "No beanshell representation available for operator: mod", ex.getMessage());
+			assertEquals("Expected exception: ", "No beanshell representation available for function: not like", ex.getMessage());
 		}
 	}
 	
