@@ -5,7 +5,6 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -30,7 +29,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	@Override
 	protected void createComponents(Shell shell) {
 		shell.setText(applicationName + " " + LangResources.get("CONFIGURATION"));
-		shell.setImage(new Image(shell.getDisplay(), getClass().getResourceAsStream("wrench.png")));
 		shell.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		shell.setLayout(new GridLayout(2, false));
 		
