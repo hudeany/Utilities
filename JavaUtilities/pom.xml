@@ -4,7 +4,7 @@
 
 	<groupId>de.soderer</groupId>
 	<artifactId>utilities</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>utilities</name>
@@ -61,6 +61,11 @@
 			<groupId>com.jcraft</groupId>
 			<artifactId>jsch</artifactId>
 			<version>0.1.46</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.swt.win32.win32</groupId>
+			<artifactId>x86</artifactId>
+			<version>3.3.0-v3346</version>
 		</dependency>
 	</dependencies>
 </project>

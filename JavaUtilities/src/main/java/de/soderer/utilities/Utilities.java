@@ -1126,4 +1126,39 @@ public class Utilities {
 			FileUtils.deleteQuietly(file);
 		}
 	}
+	
+	public static int getMinimumOfAllowedValues(int allowedValueMinimum, int... values) {
+		int returnValue = Integer.MAX_VALUE;
+		if (values != null) {
+			for (int value : values) {
+				if (value >= allowedValueMinimum) {
+					returnValue = Math.min(returnValue, value);
+				}
+			}
+		}
+		return returnValue;
+	}
+	
+	public static boolean interpretAsBool(String value) {
+		if (StringUtils.isNotEmpty(value)) {
+			value = value.trim();
+			return value.equalsIgnoreCase("true")
+					|| value.equalsIgnoreCase("+")
+					|| value.equalsIgnoreCase("yes")
+					|| value.equalsIgnoreCase("ja");
+		} else {
+			return false;
+		}
+	}
+	
+	public static boolean anyCharsAreEqual(char... values) {
+		for (int i = 0; i < values.length; i++) {
+			for (int j = i + 1; j < values.length; j++) {
+				if (values[i] == values[j]) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 }
