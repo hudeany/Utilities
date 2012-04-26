@@ -1,5 +1,6 @@
 package de.soderer.utilities.sql.whereclause.token;
 
+
 public class Operator extends RulePart {
 	public String sign;
 	

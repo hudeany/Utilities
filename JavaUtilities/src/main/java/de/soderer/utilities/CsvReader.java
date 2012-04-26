@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public class CsvReader {
 	public static final String DEFAULT_ENCODING = "UTF-8";
-	public static final char DEFAULT_SEPARATOR = ';';
+	public static final char DEFAULT_SEPARATOR = ',';
 	public static final char DEFAULT_STRING_QUOTE = '"';
 	
 	private char separator;
@@ -20,11 +20,13 @@ public class CsvReader {
 	private InputStream inputStream;
 	private Charset encoding;
 	
+	private boolean singleReadStarted = false;
 	private int numberOfColumns = -1; 
 	private char[] readBuffer = new char[1024];
 	private int readCount = 0;
 	private int readPosition = 0;
 	private InputStreamReader inputStreamReader = null;
+	private int readLines = 0;
 
 	public CsvReader(InputStream inputStream) {
 		this(inputStream, Charset.forName(DEFAULT_ENCODING), DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE);
@@ -72,6 +74,8 @@ public class CsvReader {
 	}
 	
 	public List<String> readNextCsvLine() throws IOException {
+		readLines++;
+		singleReadStarted = true;
 		List<String> returnList = new ArrayList<String>();
 		StringBuilder nextValue = new StringBuilder();
 		boolean insideString = false;
@@ -88,7 +92,7 @@ public class CsvReader {
 					}
 					if (returnList.size() > 0) {
 						if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-							throw new IllegalStateException("Inconsistent number of values");
+							throw new IllegalStateException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")");
 						}
 						numberOfColumns = returnList.size();
 						return returnList;
@@ -122,6 +126,23 @@ public class CsvReader {
 				close();
 				return null;
 			}
+		}
+	}
+	
+	public List<List<String>> readAll() throws IOException {
+		if (singleReadStarted) {
+			throw new IllegalStateException("Single readNextCsvLine was called before readAll");
+		}
+		
+		try {
+			List<List<String>> csvValues = new ArrayList<List<String>>();
+			List<String> lineValues;
+			while ((lineValues = readNextCsvLine()) != null) {
+				csvValues.add(lineValues);
+			}
+			return csvValues;
+		} finally {
+			close();
 		}
 	}
 	

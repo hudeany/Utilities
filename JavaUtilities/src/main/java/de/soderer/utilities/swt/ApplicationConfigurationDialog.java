@@ -13,14 +13,14 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import de.soderer.utilities.ApplicationConfiguration;
+import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.LangResources;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private String applicationName;
-	private ApplicationConfiguration applicationConfiguration;
+	private ConfigurationProperties applicationConfiguration;
 	
-	public ApplicationConfigurationDialog(Shell shell, ApplicationConfiguration applicationConfiguration, String applicationName) throws Exception {   
+	public ApplicationConfigurationDialog(Shell shell, ConfigurationProperties applicationConfiguration, String applicationName) throws Exception {   
 		super(shell);
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;

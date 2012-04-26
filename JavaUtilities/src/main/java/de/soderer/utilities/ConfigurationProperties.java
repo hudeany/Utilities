@@ -13,11 +13,11 @@ import java.util.Properties;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-public class ApplicationConfiguration {
+public class ConfigurationProperties {
 	private Properties properties = new Properties();
 	private String applicationName;
 	
-	public ApplicationConfiguration(String applicationName) {
+	public ConfigurationProperties(String applicationName) {
 		FileInputStream fileInputStream = null;
 		try {
 			this.applicationName = applicationName;
