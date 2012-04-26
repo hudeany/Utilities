@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.collection;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -6,8 +6,15 @@ import java.util.LinkedList;
 public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 	private static final long serialVersionUID = 2008975571883451672L;
 	
-	private int size;
+	private int size = -1;
 	
+	/**
+	 * No length of queue set means the elements are only stored unique and double storeage puts the item to the end.
+	 * Thats the same effect as an infinite queue length.
+	 */
+	public UniqueFifoQueuedList() {
+	}
+
 	public UniqueFifoQueuedList(int size) {
 		this.size = size;
 	}
@@ -16,7 +23,7 @@ public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 	public boolean add(T item) {
 		if (contains(item)) {
 			remove(item);
-		} else if (super.size() >= size) {
+		} else if (size > -1 && super.size() >= size) {
 			remove(0);
 		}
 
