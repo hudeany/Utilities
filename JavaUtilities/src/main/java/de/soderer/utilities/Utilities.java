@@ -51,16 +51,6 @@ import org.apache.commons.lang3.StringUtils;
  * Initialisierung genutzt wird
  */
 public class Utilities {
-	// QDAO ist der SchulungsHOST
-	public static final List<String> ZN_HOST_NAMES = Arrays.asList("RVA0",
-			"HVA0", "KVA0", "DVA0", "SVA0", "BVA0", "FVA0", "QDA0");
-
-	private static final GregorianCalendar cloneStartUpTime = new GregorianCalendar();
-
-	private Utilities() {
-		super();
-	}
-
 	public static String generateUUID() {
 		return UUID.randomUUID().toString().toUpperCase().replaceAll("-", "");
 	}
@@ -103,38 +93,6 @@ public class Utilities {
 		} catch (UnsupportedEncodingException e) {
 			throw new Exception("Fehler in der URL-Decodierung", e);
 		}
-
-		// alte Hand-zu-Fuss Methode
-		// StringBuffer decoded = new StringBuffer();
-		// char nextChar;
-		// Integer encInteger;
-		//
-		// // String Zeichen fuer Zeichen abklappern ...
-		// for (int index = 0; index < decode.length(); index++) {
-		// // abholen des naechsten Zeichens
-		// nextChar = decode.charAt(index);
-		//
-		// // '+' wird zu ' ' (Space/Blanc/Leerzeichen)
-		// if (nextChar == '+') {
-		// decoded.append(" ");
-		// } else {
-		// // wenn das Zeichen ein '%' ist, so bedeuted dies, dass
-		// // als naechstes ein 16bit kodiertes Zeichen folgt:
-		// if (nextChar == '%') {
-		// encInteger = Integer.valueOf(decode.substring(index + 1, index + 3),
-		// 16);
-		// nextChar = (char) encInteger.intValue();
-		// decoded.append(nextChar);
-		//
-		// index += 2;
-		// } else {
-		// // eigentlich kann's nun nur noch ein normales Zeichen sein:
-		// decoded.append(nextChar);
-		// }
-		// }
-		// }
-		//
-		// return decoded.toString();
 	}
 
 	public static byte[] encodeToZippedBase64(byte[] clearArrayToEncode) {
@@ -149,46 +107,11 @@ public class Utilities {
 		} catch (IOException e) {
 			return null;
 		}
-
-		/*
-		 * Komprimierung in Format ZLIB !!!nicht GZIP!!!
-		 * 
-		 * int steplength = 100; ByteArrayOutputStream encoded = new
-		 * ByteArrayOutputStream(); byte[] result = new byte[steplength];
-		 * 
-		 * Deflater compresser = new Deflater();
-		 * compresser.setInput(clearArrayToEncode); compresser.finish();
-		 * 
-		 * int resultLength = compresser.deflate(result, 0, steplength); while
-		 * (resultLength > 0) { encoded.write(result, 0, resultLength);
-		 * resultLength = compresser.deflate(result, 0, steplength); }
-		 * 
-		 * return Base64.encodeBase64(encoded.toByteArray());
-		 */
 	}
 
 	public static byte[] decodeFromZippedBase64(byte[] zipedArrayToDecode)
 			throws Exception {
 		return unzipByteArray(Base64.decodeBase64(zipedArrayToDecode));
-
-		/*
-		 * Dekomprimierung in Format ZLIB !!!nicht GZIP!!!
-		 * 
-		 * try { int steplength = 100; ByteArrayOutputStream decoded = new
-		 * ByteArrayOutputStream(); byte[] result = new byte[steplength];
-		 * 
-		 * // Decompress the bytes Inflater decompresser = new Inflater();
-		 * decompresser.setInput(Base64.decodeBase64(zipedArrayToDecode));
-		 * 
-		 * int resultLength = decompresser.inflate(result, 0, steplength); while
-		 * (resultLength > 0) { decoded.write(result, 0, resultLength);
-		 * resultLength = decompresser.inflate(result, 0, steplength); }
-		 * 
-		 * decompresser.end();
-		 * 
-		 * return decoded.toByteArray(); } catch (DataFormatException e) {
-		 * return null; }
-		 */
 	}
 
 	/**
@@ -233,104 +156,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Erzeugen einer Backupcopy im Backupverzeichnis zur Sicherung Diese
-	 * Sicherungs Datei enthält dann alle Daten, auch eventuell nicht in diesem
-	 * Job erzeugte Daten
-	 * 
-	 * @param fileNameToBackup
-	 *            kompletter Dateiname der zu sichernden Datei
-	 * @param backupPath
-	 *            Zielverzeichnis für Backups
-	 * @throws Exception
-	 */
-	public static void generateBackupCopy(String fileNameToBackup, String backupPath)
-			throws Exception {
-		// Timestampstring erzeugen
-		String timeStamp = DateUtils.YYYYMMDD_HHMMSS.format(new Date());
-		String znExtension = "";
-
-		if (!backupPath.endsWith("/") && !backupPath.endsWith("\\")) {
-			backupPath += File.separator;
-		}
-
-		// wenn 7 Dateien mit gleichem Namen erzeugt wurden,
-		// muss das Verzeichnis einen ZNHostZielnamen enthalten und der wird
-		// dann angehängt
-		for (String znHostName : ZN_HOST_NAMES) {
-			if (fileNameToBackup.indexOf(znHostName) > -1) {
-				znExtension = "." + znHostName;
-			}
-		}
-
-		File sourceFile = new File(fileNameToBackup);
-		String destinationFileName = backupPath + "ATSBackup."
-				+ sourceFile.getName() + "." + timeStamp + znExtension;
-		File destinationFile = new File(destinationFileName);
-
-		// Evtl. erzeugen des Verzeichnisses/Verzeichnisbaumes
-		if (!destinationFile.getParentFile().exists())
-			destinationFile.getParentFile().mkdirs();
-
-		BufferedInputStream bufferedFileInputStream = null;
-		BufferedOutputStream bufferedFileOutputStream = null;
-
-		try {
-			if (!sourceFile.exists())
-				throw new Exception(
-						"Fehler beim Erstellen einer Backupkopie: Das Quellfile "
-								+ sourceFile.getAbsolutePath()
-								+ " existiert nicht");
-			else if (destinationFile.exists())
-				throw new Exception(
-						"Fehler beim Erstellen einer Backupkopie: Das Zielfile "
-								+ destinationFile.getAbsolutePath()
-								+ " existiert bereits");
-			else {
-				// evtl. erzeugen der Zielverzeichnisse
-				if (!destinationFile.getParentFile().exists()) {
-					destinationFile.getParentFile().mkdirs();
-				}
-
-				bufferedFileInputStream = new BufferedInputStream(
-						new FileInputStream(sourceFile));
-				bufferedFileOutputStream = new BufferedOutputStream(
-						new FileOutputStream(destinationFile));
-
-				byte copybuffer[] = new byte[1024];
-				int countbytes;
-
-				// das eigentliche Kopieren der Datei
-				while ((countbytes = bufferedFileInputStream.read(copybuffer)) != -1) {
-					bufferedFileOutputStream.write(copybuffer, 0, countbytes);
-				}
-
-				// Prüfen ob tatsächlich auch die Zieldatei erzeugt wurde
-				// (!Rechte!)
-				if (!destinationFile.exists()) {
-					throw new Exception(
-							"Fehler beim Erstellen einer Backupkopie: Das Zielfile "
-									+ destinationFile.getAbsolutePath()
-									+ " wurde nicht geschrieben");
-				}
-			}
-		} catch (IOException e) {
-			throw new Exception(
-					"Fehler beim Erstellen einer Backupkopie", e);
-		} finally {
-			if (bufferedFileInputStream != null)
-				try {
-					bufferedFileInputStream.close();
-				} catch (IOException e) {
-				}
-			if (bufferedFileOutputStream != null)
-				try {
-					bufferedFileOutputStream.close();
-				} catch (IOException e) {
-				}
-		}
-	}
-
-	/**
 	 * Auslesen eines DateiVerzeichnisses und Ermitteln aller Dateien die mit
 	 * einem Stammnamen beginnen
 	 * 
@@ -340,12 +165,10 @@ public class Utilities {
 	 */
 	public static ArrayList<File> getArrayOfFilesByStammname(
 			String stammNamenListe) {
-		return getArrayOfFilesByStammname(Arrays.asList(stammNamenListe
-				.split(";")));
+		return getArrayOfFilesByStammname(Arrays.asList(stammNamenListe.split(";")));
 	}
 
-	public static ArrayList<File> getArrayOfFilesByStammname(
-			List<String> stammNamenListe) {
+	public static ArrayList<File> getArrayOfFilesByStammname(List<String> stammNamenListe) {
 		ArrayList<File> ergebnisListe = new ArrayList<File>();
 
 		for (String stammName : stammNamenListe) {
@@ -415,77 +238,19 @@ public class Utilities {
 		return outputString.toString();
 	}
 
-	public static boolean checkForValidZNSmNr(String znSmNr) {
-		if (znSmNr == null)
-			return false;
-		else if (znSmNr.contains("/")) {
-			return checkForValidZN(znSmNr.substring(0, znSmNr.indexOf("/")))
-					&& checkForValidSmNr(znSmNr
-							.substring(znSmNr.indexOf("/") + 1));
-		} else {
-			return checkForValidZN(znSmNr.substring(0, 2))
-					&& checkForValidSmNr(znSmNr.substring(2));
-		}
-	}
-
 	public static boolean checkForValidVorgangsID(String vorgangsID) {
 		return vorgangsID != null
 				&& vorgangsID.matches("[\\dABCDEFabcdef]{32}");
-	}
-
-	public static boolean checkForValidAntragsNr(String antragsNr) {
-		return antragsNr != null && antragsNr.matches("[\\d]{10}|[\\d]{18}");
-	}
-
-	public static boolean checkForValidZN(String value) {
-		return value != null
-				&& value.matches("10|30|40|50|60|70|90|91|93|94|95|96|97");
-	}
-
-	public static boolean checkForValidSmNr(String value) {
-		return value != null && value.matches("[0-9]{1,7}");
-	}
-
-	public static boolean checkForValidIntervals(String value) {
-		return value != null
-				&& value
-						.matches("(((\\d+){0,1}-\\d+)|(\\d+\\+{0,1}))(;(((\\d+){0,1}-\\d+)|(\\d+\\+{0,1})))*");
 	}
 
 	public static boolean checkForValidUserName(String value) {
 		return value != null && value.matches("[A-Za-z0-9]*");
 	}
 
-	public static boolean checkForValidVersandkz(String value) {
-		return value != null && value.matches("[A-Z0-9_]{2,8}");
-	}
-
-	public static boolean checkForValidBausteinkz(String value) {
-		return value != null && value.matches("[A-Z0-9_]{2,8}");
-	}
-	
-	public static boolean checkForValidAbsZielStage(String value) {
-		return value == null || value.matches("ATA0|ATA1|ATA2|ATE1|ATE2|ATT1");
-	}
-
 	public static String[] convertArrayListOfStringsToStringArray(
 			ArrayList<String> pArrayListOfStrings) {
 		String[] arrayofStrings = new String[0];
 		return pArrayListOfStrings.toArray(arrayofStrings);
-	}
-
-	private static String cloneID = null;
-
-	public static String getCloneID() {
-		if (cloneID == null) {
-			try {
-				cloneID = generateUUID();
-			} catch (Exception e) {
-				cloneID = "CloneID nicht erzeugbar";
-			}
-		}
-
-		return cloneID;
 	}
 
 	public static int getIndex(int searchInt, int[] intArray) {
@@ -969,7 +734,7 @@ public class Utilities {
 	}
 
 	/***
-	 * AUfteilen der Originalliste in kleinere Listen zu je maximal
+	 * Aufteilen der Originalliste in kleinere Listen zu je maximal
 	 * chunkSize-großen Listen
 	 * 
 	 * @param <E>
@@ -998,18 +763,16 @@ public class Utilities {
 		return returnList;
 	}
 
-	private static final char[] randomCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuvwxyzäöüß"
-			.toCharArray();
-	private static final char[] randomAlphaNumericCharacters = (new String(
-			randomCharacters) + "0123456789").toCharArray();
+	private static final char[] randomCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuvwxyzäöüß".toCharArray();
+	
+	private static final char[] randomAlphaNumericCharacters = (new String(randomCharacters) + "0123456789").toCharArray();
+	
 	private static final Random random = new Random();
 
 	public static String getRandomString(int length) {
 		StringBuilder sb = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {
-			sb
-					.append(randomCharacters[random
-							.nextInt(randomCharacters.length)]);
+			sb.append(randomCharacters[random.nextInt(randomCharacters.length)]);
 		}
 		return sb.toString();
 	}
@@ -1017,8 +780,7 @@ public class Utilities {
 	public static String getRandomAlphanumericString(int length) {
 		StringBuilder sb = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {
-			sb.append(randomAlphaNumericCharacters[random
-					.nextInt(randomAlphaNumericCharacters.length)]);
+			sb.append(randomAlphaNumericCharacters[random.nextInt(randomAlphaNumericCharacters.length)]);
 		}
 		return sb.toString();
 	}
@@ -1037,10 +799,6 @@ public class Utilities {
 		} catch (UnknownHostException e) {
 			return "unbekannter Rechnername";
 		}
-	}
-
-	public static GregorianCalendar getCloneStartUpTime() {
-		return (GregorianCalendar) cloneStartUpTime.clone();
 	}
 
 	public static String convertCollectionToString(Collection<?> collection,
@@ -1099,7 +857,6 @@ public class Utilities {
 			return false;
 	}
 	
-
 	public static String getSameFilenameInParentDirectory(String file) {
 		return getSameFilenameInParentDirectory(new File(file)).getAbsolutePath();
 	}
@@ -1160,5 +917,25 @@ public class Utilities {
 			}
 		}
 		return false;
+	}
+	
+	public static String trimToMaxNumberOfLines(String value, int maxLines) {
+		value = normalizeLineBreaks(value);
+		int count = 0;
+		int nextLinebreak = 0;
+		while (nextLinebreak != -1 && count < maxLines) {
+			nextLinebreak = value.indexOf("\n", nextLinebreak + 1);
+			count++;
+		}
+		
+		if (nextLinebreak != -1) {
+			return value.substring(0, nextLinebreak + 1) + "...";
+		} else {
+			return value;
+		}
+	}
+
+	public static String normalizeLineBreaks(String value) {
+		return value.replace("\r\n", "\n").replace("\r", "\n");
 	}
 }
