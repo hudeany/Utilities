@@ -897,7 +897,8 @@ public class Utilities {
 			return value.equalsIgnoreCase("true")
 					|| value.equalsIgnoreCase("+")
 					|| value.equalsIgnoreCase("yes")
-					|| value.equalsIgnoreCase("ja");
+					|| value.equalsIgnoreCase("ja")
+					|| value.equalsIgnoreCase("ok");
 		} else {
 			return false;
 		}
