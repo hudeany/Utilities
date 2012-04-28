@@ -1,6 +1,5 @@
 package de.soderer.utilities;
 
-import java.io.Writer;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
@@ -13,7 +12,7 @@ public class DebugUtils {
 
 	private static final transient Logger logger = LoggerFactory.getLogger(DebugUtils.class);
 
-	public static final void printProperties(Properties properties, Writer writer) {
+	public static final void printProperties(Properties properties) {
 		Enumeration<?> elementsEnum = properties.keys();
 		while(elementsEnum.hasMoreElements()) {
 			String key = (String) elementsEnum.nextElement();
