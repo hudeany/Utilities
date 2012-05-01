@@ -22,10 +22,11 @@ public abstract class MainDialog extends Shell {
 	public void run() {
 		open();
 		Display display = getDisplay();
-	    while (!this.isDisposed()) {
-	      if (!display.readAndDispatch())
-	        display.sleep();
-	    }
+		while (!this.isDisposed()) {
+			if (!display.readAndDispatch()) {
+				display.sleep();
+			}
+		}
 	}
 	
 	@Override

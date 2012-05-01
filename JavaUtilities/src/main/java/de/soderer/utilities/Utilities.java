@@ -788,6 +788,12 @@ public class Utilities {
 		return sb.toString();
 	}
 
+	public static byte getRandomByte() {
+		byte[] resutlt = new byte[1];
+		random.nextBytes(resutlt);
+		return resutlt[0];
+	}
+
 	public static String getAtsHostName() {
 		try {
 			return InetAddress.getLocalHost().getHostName();
@@ -933,5 +939,31 @@ public class Utilities {
 
 	public static String normalizeLineBreaks(String value) {
 		return value.replace("\r\n", "\n").replace("\r", "\n");
+	}
+	
+	public static byte[] xor(byte[]... byteArrays) {
+		return xor(Arrays.asList(byteArrays));
+	}
+	
+	public static byte[] xor(List<byte[]> byteArrays) {
+		byte[] returnArray = new byte[byteArrays.get(0).length];
+		
+		for (int i = 0; i < byteArrays.size(); i++) {
+			for (int j = 0; j < returnArray.length; j++) {
+				returnArray[j] = xor(returnArray[j], byteArrays.get(i)[j]);
+			}
+		}
+		
+		return returnArray;
+	}
+	
+	public static byte xor(byte... keyData) {
+		byte resultItem = 0;
+		
+		for (byte key : keyData) {
+			resultItem = (byte) (resultItem ^ key);
+		}
+		
+		return resultItem;
 	}
 }
