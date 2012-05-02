@@ -47,7 +47,7 @@ public class DbUtilities {
 				csvWriter.writeValues(values);
 			}
 			
-			return csvWriter.getDataLinesWritten();
+			return csvWriter.getWrittenLines();
 		} finally {			
 			if (resultSet != null)
 				resultSet.close();

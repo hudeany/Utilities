@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,16 +18,15 @@ public class CsvReader {
 	
 	private char separator;
 	private char stringQuote;
+	private boolean useStringQuote;
 	private InputStream inputStream;
 	private Charset encoding;
 	
 	private boolean singleReadStarted = false;
-	private int numberOfColumns = -1; 
-	private char[] readBuffer = new char[1024];
-	private int readCount = 0;
-	private int readPosition = 0;
-	private InputStreamReader inputStreamReader = null;
+	private int numberOfColumns = -1;
+	private BufferedReader inputReader = null;
 	private int readLines = 0;
+	private int readCharacters = 0;
 
 	public CsvReader(InputStream inputStream) {
 		this(inputStream, Charset.forName(DEFAULT_ENCODING), DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE);
@@ -51,16 +51,25 @@ public class CsvReader {
 	public CsvReader(InputStream inputStream, Charset encoding, char separator) {
 		this(inputStream, encoding, separator, DEFAULT_STRING_QUOTE);
 	}
+
+	public CsvReader(InputStream inputStream, char separator, Character stringQuote) {
+		this(inputStream, Charset.forName(DEFAULT_ENCODING), separator, stringQuote);
+	}
 	
-	public CsvReader(InputStream inputStream, String encoding, char separator, char stringQuote) {
+	public CsvReader(InputStream inputStream, String encoding, char separator, Character stringQuote) {
 		this(inputStream, Charset.forName(encoding), separator, stringQuote);
 	}
 	
-	public CsvReader(InputStream inputStream, Charset encoding, char separator, char stringQuote) {
+	public CsvReader(InputStream inputStream, Charset encoding, char separator, Character stringQuote) {
 		this.inputStream = inputStream;
 		this.encoding = encoding;
 		this.separator = separator;
-		this.stringQuote = stringQuote;
+		if (stringQuote != null) {
+			this.stringQuote = stringQuote;
+			this.useStringQuote = true;
+		} else {
+			this.useStringQuote = false;
+		}
 		
 		if (this.encoding == null) {
 			throw new IllegalArgumentException("Encoding is null");
@@ -68,21 +77,30 @@ public class CsvReader {
 			throw new IllegalArgumentException("InputStream is null");
 		} else if (Utilities.anyCharsAreEqual(this.separator, '\r', '\n')) {
 			throw new IllegalArgumentException("Separator '" + this.separator + "' is invalid");
-		} else if (Utilities.anyCharsAreEqual(this.separator, this.stringQuote, '\r', '\n')) {
+		} else if (useStringQuote && Utilities.anyCharsAreEqual(this.separator, this.stringQuote, '\r', '\n')) {
 			throw new IllegalArgumentException("Stringquote '" + this.stringQuote + "' is invalid");
 		}
 	}
 	
 	public List<String> readNextCsvLine() throws IOException {
+		if (inputReader == null) {
+			if (inputStream == null) {
+				throw new IllegalStateException("CsvReader is already closed");
+			}
+			inputReader = new BufferedReader(new InputStreamReader(inputStream, encoding));
+		}
+		
 		readLines++;
 		singleReadStarted = true;
 		List<String> returnList = new ArrayList<String>();
 		StringBuilder nextValue = new StringBuilder();
 		boolean insideString = false;
 		int nextCharInt = -1;
-		while ((nextCharInt = readNextChar()) != -1) {
+		
+		while ((nextCharInt = inputReader.read()) != -1) {
+			readCharacters++;
 			char nextChar = (char) nextCharInt;
-			if (nextChar == stringQuote) {
+			if (useStringQuote && nextChar == stringQuote) {
 				insideString = !insideString;
 				nextValue.append(nextChar);
 			} else if (!insideString) {
@@ -118,7 +136,7 @@ public class CsvReader {
 		
 			if (returnList.size() > 0) {
 				if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-					throw new IllegalStateException("Inconsistent number of values");
+					throw new IllegalStateException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")");
 				}
 				numberOfColumns = returnList.size();
 				return returnList;
@@ -146,26 +164,6 @@ public class CsvReader {
 		}
 	}
 	
-	private int readNextChar() throws IOException {
-		if (inputStreamReader == null) {
-			if (inputStream == null) {
-				throw new IllegalStateException("CsvReader is already closed");
-			}
-			inputStreamReader = new InputStreamReader(inputStream, encoding);
-		}
-		
-		if (readPosition >= readCount) {
-			readCount = inputStreamReader.read(readBuffer);
-			readPosition = 0;
-		}
-		
-		if (readCount <= 0) {
-			return -1;
-		} else {
-			return (int) readBuffer[readPosition++];
-		}
-	}
-	
 	private String parseValue(String rawValue) {
 		String returnValue = rawValue;
 		
@@ -181,9 +179,17 @@ public class CsvReader {
 	}
 
 	public void close() {
-		IOUtils.closeQuietly(inputStreamReader);
-		inputStreamReader = null;
+		IOUtils.closeQuietly(inputReader);
+		inputReader = null;
 		IOUtils.closeQuietly(inputStream);
 		inputStream = null;
+	}
+
+	public int getReadLines() {
+		return readLines;
+	}
+	
+	public int getReadChracters() {
+		return readCharacters;
 	}
 }

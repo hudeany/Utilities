@@ -147,7 +147,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			return "Details <<<";
 		} else if (Locale.getDefault().getLanguage() == "de") {
 			if ("CLOSE".equalsIgnoreCase(key)) {
-				return "Schlie�en";
+				return "Schließen";
 			} else if ("ERROR".equalsIgnoreCase(key)) {
 				return "Fehler";
 			}else if ("ERROR_OCCURRED".equalsIgnoreCase(key)) {
