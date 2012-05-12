@@ -11,6 +11,8 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import org.apache.commons.io.IOUtils;
+
 import de.soderer.utilities.CsvWriter;
 
 public class DbUtilities {
@@ -58,8 +60,7 @@ public class DbUtilities {
 			if (connection != null)
 				connection.close();
 			
-			if (csvWriter != null)
-				csvWriter.close();
+			IOUtils.closeQuietly(csvWriter);
 		}
 	}
 }

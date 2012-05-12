@@ -966,4 +966,18 @@ public class Utilities {
 		
 		return resultItem;
 	}
+	
+	public static int square(int value) {
+		return value * value;
+	}
+	
+	public static int pow(int base, int exp) {
+		if (exp < 0) {
+			throw new IllegalArgumentException("Invalid negative exponent");
+		} else if (exp == 0) {
+			return 1;
+		} else {
+			return square(pow(base, exp / 2)) * (exp % 2 == 1 ? base : 1);
+		}
+	}
 }

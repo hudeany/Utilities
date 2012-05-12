@@ -1,15 +1,17 @@
 package de.soderer.utilities;
 
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 
-public class CsvWriter {
+public class CsvWriter extends Writer {
 	public static final String DEFAULT_ENCODING = "UTF-8";
 	public static final char DEFAULT_SEPARATOR = ',';
 	public static final char DEFAULT_STRING_QUOTE = '"';
@@ -91,9 +93,9 @@ public class CsvWriter {
 		writeValues(Arrays.asList(values));
 	}
 	
-	public void writeValues(List<? extends Object> values) throws Exception {
+	public void writeValues(List<? extends Object> values) throws CsvDataException, IOException {
 		if (numberOfColumns != -1 && (values == null || numberOfColumns != values.size())) {
-			throw new IllegalArgumentException("Inconsistent number of values after " + writtenLines + " written lines (expected: " + numberOfColumns + " was: " + (values == null ? "null" : values.size()) + ")");
+			throw new CsvDataException("Inconsistent number of values after " + writtenLines + " written lines (expected: " + numberOfColumns + " was: " + (values == null ? "null" : values.size()) + ")", writtenLines);
 		}
 		
 		if (outputWriter == null) {
@@ -124,11 +126,11 @@ public class CsvWriter {
 		}
 	}
 	
-	private String escapeValue(Object value) throws Exception {
+	private String escapeValue(Object value) throws CsvDataException {
 		String valueString = value.toString();
 		if (valueString.contains(String.valueOf(separator)) || valueString.contains("\r") || valueString.contains("\n") || (useStringQuote && valueString.contains(String.valueOf(stringQuote)))) {
 			if (!useStringQuote) {
-				throw new Exception("StringQuote is needed for csv-value but was deactivated");
+				throw new CsvDataException("StringQuote was deactivated but is needed for csv-value after " + writtenLines + " written lines", writtenLines);
 			} else {
 				return stringQuote + valueString.replace(String.valueOf(stringQuote), String.valueOf(stringQuote) + String.valueOf(stringQuote)) + stringQuote;
 			}
@@ -137,6 +139,7 @@ public class CsvWriter {
 		}
 	}
 
+	@Override
 	public void close() {
 		IOUtils.closeQuietly(outputWriter);
 		outputWriter = null;
@@ -146,5 +149,20 @@ public class CsvWriter {
 	
 	public int getWrittenLines() {
 		return writtenLines;
+	}
+
+	/**
+	 * Not supported method
+	 */
+	@Override
+	public void write(char[] cbuf, int off, int len) throws IOException {
+		throw new IOException("Write by offset and length is not supported by " + getClass().getSimpleName());
+	}
+
+	@Override
+	public void flush() throws IOException {
+		if (outputWriter != null) {
+			outputWriter.flush();
+		}
 	}
 }

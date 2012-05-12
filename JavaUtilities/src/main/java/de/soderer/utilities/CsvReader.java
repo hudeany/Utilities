@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-public class CsvReader {
+public class CsvReader extends Reader {
 	public static final String DEFAULT_ENCODING = "UTF-8";
 	public static final char DEFAULT_SEPARATOR = ',';
 	public static final char DEFAULT_STRING_QUOTE = '"';
@@ -21,6 +22,9 @@ public class CsvReader {
 	private boolean useStringQuote;
 	private InputStream inputStream;
 	private Charset encoding;
+	
+	private boolean lineBreakInDataAllowed = true;
+	private boolean escapedStringQuoteInDataAllowed = true;
 	
 	private boolean singleReadStarted = false;
 	private int numberOfColumns = -1;
@@ -82,7 +86,7 @@ public class CsvReader {
 		}
 	}
 	
-	public List<String> readNextCsvLine() throws IOException {
+	public List<String> readNextCsvLine() throws IOException, CsvDataException {
 		if (inputReader == null) {
 			if (inputStream == null) {
 				throw new IllegalStateException("CsvReader is already closed");
@@ -110,7 +114,7 @@ public class CsvReader {
 					}
 					if (returnList.size() > 0) {
 						if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-							throw new IllegalStateException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")");
+							throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")", readLines);
 						}
 						numberOfColumns = returnList.size();
 						return returnList;
@@ -121,14 +125,18 @@ public class CsvReader {
 				} else {
 					nextValue.append(nextChar);
 				}
-			} else {
-				nextValue.append(nextChar);
+			} else { // insideString
+				if ((nextChar == '\r' || nextChar == '\n') && !lineBreakInDataAllowed) {
+					throw new CsvDataException("Not allowed linebreak in data in line " + readLines, readLines);
+				} else {
+					nextValue.append(nextChar);
+				}
 			}
 		}
 		
 		if (insideString) {
 			close();
-			throw new IOException("Unexpected EOF");
+			throw new IOException("Unexpected EOF after quoted csv-value was started");
 		} else {
 			if (returnList.size() > 0) {
 				returnList.add(parseValue(nextValue.toString()));
@@ -136,7 +144,7 @@ public class CsvReader {
 		
 			if (returnList.size() > 0) {
 				if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-					throw new IllegalStateException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")");
+					throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")", readLines);
 				}
 				numberOfColumns = returnList.size();
 				return returnList;
@@ -147,7 +155,7 @@ public class CsvReader {
 		}
 	}
 	
-	public List<List<String>> readAll() throws IOException {
+	public List<List<String>> readAll() throws IOException, CsvDataException {
 		if (singleReadStarted) {
 			throw new IllegalStateException("Single readNextCsvLine was called before readAll");
 		}
@@ -164,20 +172,27 @@ public class CsvReader {
 		}
 	}
 	
-	private String parseValue(String rawValue) {
+	private String parseValue(String rawValue) throws CsvDataException {
 		String returnValue = rawValue;
 		
 		if (StringUtils.isNotEmpty(returnValue)) {
-			if (returnValue.charAt(0) == DEFAULT_STRING_QUOTE
-					&& returnValue.charAt(returnValue.length() - 1) == DEFAULT_STRING_QUOTE) {
+			if (useStringQuote
+					&& returnValue.charAt(0) == stringQuote
+					&& returnValue.charAt(returnValue.length() - 1) == stringQuote) {
 				returnValue = returnValue.substring(1, returnValue.length() - 1);
+				returnValue = returnValue.replace("\"\"", "\"");
 			}
-			returnValue = returnValue.replace("\"\"", "\"").replace("\r\n", "\n").replace('\r', '\n');
+			returnValue = returnValue.replace("\r\n", "\n").replace('\r', '\n');
 		}
+		
+		if (!escapedStringQuoteInDataAllowed && returnValue.indexOf(stringQuote) >= 0) {
+			throw new CsvDataException("Not allowed stringquote in data in line " + readLines, readLines);
+		} 
 
 		return returnValue;
 	}
 
+	@Override
 	public void close() {
 		IOUtils.closeQuietly(inputReader);
 		inputReader = null;
@@ -191,5 +206,54 @@ public class CsvReader {
 	
 	public int getReadChracters() {
 		return readCharacters;
+	}
+
+	/**
+	 * Not supported method
+	 */
+	@Override
+	public int read(char[] cbuf, int off, int len) throws IOException {
+		throw new IOException("Read by offset and length is not supported by " + getClass().getSimpleName());
+	}
+
+	public boolean isLineBreakInDataAllowed() {
+		return lineBreakInDataAllowed;
+	}
+
+	public void setLineBreakInDataAllowed(boolean lineBreakInDataAllowed) {
+		this.lineBreakInDataAllowed = lineBreakInDataAllowed;
+	}
+
+	public boolean isEscapedStringQuoteInDataAllowed() {
+		return escapedStringQuoteInDataAllowed;
+	}
+
+	public void setEscapedStringQuoteInDataAllowed(boolean escapedStringQuoteInDataAllowed) {
+		this.escapedStringQuoteInDataAllowed = escapedStringQuoteInDataAllowed;
+	}
+	
+	/**
+	 * This method reads the stream to the end and counts all csv value lines,
+	 * which can be less than the absolute linebreak count of the stream for the reason of quoted linebreaks.
+	 * The result also contains the first line, which may consist of columnheaders.
+	 * 
+	 * @return
+	 * @throws IOException
+	 * @throws CsvDataException 
+	 */
+	public int getCsvLineCount() throws IOException, CsvDataException {
+		if (singleReadStarted) {
+			throw new IllegalStateException("Single readNextCsvLine was called before getCsvLineCount");
+		}
+		
+		try {
+			int csvLineCount = 0;
+			while (readNextCsvLine() != null) {
+				csvLineCount++;
+			}
+			return csvLineCount;
+		} finally {
+			close();
+		}
 	}
 }
