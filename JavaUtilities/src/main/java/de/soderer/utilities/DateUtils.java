@@ -1,9 +1,13 @@
 package de.soderer.utilities;
 
 import java.sql.Timestamp;
+import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class DateUtils {
 	public static SimpleDateFormat DD_MM_YYYY_HH_MM_SS = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
@@ -23,15 +27,43 @@ public class DateUtils {
 
 	public static String getWochenTagNamensKuerzel(GregorianCalendar datum) {
 		int tagesInt = datum.get(GregorianCalendar.DAY_OF_WEEK);
-		switch (tagesInt) {
-			case GregorianCalendar.SUNDAY: return "So"; // in GregorianCalendar ist die 1 der Sonntag
-			case GregorianCalendar.MONDAY: return "Mo";
-			case GregorianCalendar.TUESDAY: return "Di";
-			case GregorianCalendar.WEDNESDAY: return "Mi";
-			case GregorianCalendar.THURSDAY: return "Do";
-			case GregorianCalendar.FRIDAY: return "Fr";
-			case GregorianCalendar.SATURDAY: return "Sa";
-			default: return "unbekannt"; // kann gem. Definition nicht vorkommen
+		String dayString = DateFormatSymbols.getInstance().getWeekdays()[tagesInt];
+		return dayString.substring(0, 2);
+	}
+
+	public static int getWeekdayIndex(String weekday) {
+		return getWeekdayIndex(weekday, true);
+	}
+	
+	public static int getWeekdayIndex(String weekday, boolean useLocaleStringsFirst) {
+		if (StringUtils.isBlank(weekday)) {
+			return -1;
+		} else {
+			weekday = weekday.toLowerCase().trim();
+			String[] localeWeekdays = DateFormatSymbols.getInstance().getWeekdays();
+			for (int i = 0; i < localeWeekdays.length; i++) {
+				if (localeWeekdays[i].toLowerCase().startsWith(weekday)) {
+					return i;
+				}
+			}
+			
+			if (weekday.startsWith("so") || weekday.startsWith("su")) {
+				return Calendar.SUNDAY;
+			} else if (weekday.startsWith("mo")) {
+				return Calendar.MONDAY;
+			} else if (weekday.startsWith("di") || weekday.startsWith("tu")) {
+				return Calendar.TUESDAY;
+			} else if (weekday.startsWith("mi") || weekday.startsWith("we")) {
+				return Calendar.WEDNESDAY;
+			} else if (weekday.startsWith("do") || weekday.startsWith("th")) {
+				return Calendar.THURSDAY;
+			} else if (weekday.startsWith("fr")) {
+				return Calendar.FRIDAY;
+			} else if (weekday.startsWith("sa")) {
+				return Calendar.SATURDAY;
+			} else {
+				return -1;
+			}
 		}
 	}
 	

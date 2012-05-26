@@ -516,19 +516,38 @@ public class Utilities {
 				continue;
 			}
 			else if (!timingParameter.contains(":")) {
-				// tägliche Verarbeitung zur gegebenen Uhrzeit
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(timingParameter.substring(
-						0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(timingParameter.substring(2)));
-				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
+				if (isNumber(timingParameter)) {
+					// tägliche Verarbeitung zur gegebenen Uhrzeit
+					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(timingParameter.substring(0, 2)));
+					nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(timingParameter.substring(2)));
+					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
+					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
+	
+					// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
+					// Parameter-Bedingung erfüllt ist
+					// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
+					while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)
+							|| dayListIncludes(excludedDays, nextStartByThisParameter))
+						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+				} else {
+					// wochentägliche Verarbeitung um 00:00 Uhr
+					List<Integer> weekdayIndexes = new ArrayList<Integer>();
+					for (String weekDay : chopToChunks(timingParameter, 2)) {
+						weekdayIndexes.add(DateUtils.getWeekdayIndex(weekDay));
+					}
+					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,0);
+					nextStartByThisParameter.set(GregorianCalendar.MINUTE, 0);
+					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
+					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 
-				// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
-				// Parameter-Bedingung erfüllt ist
-				// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
-				while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)
-						|| dayListIncludes(excludedDays, nextStartByThisParameter))
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+					// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
+					// Parameter-Bedingung erfüllt ist
+					// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
+					while ((nextStartByThisParameter.before(now)
+							|| !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
+							|| dayListIncludes(excludedDays, nextStartByThisParameter))
+						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+				}
 			}
 			else if (timingParameter.length() == 8) {
 				// Monatssteuerung "M01:1700"
@@ -603,6 +622,10 @@ public class Utilities {
 				// WochenTagessteuerung (ermöglicht auch Werktagssteuerung)
 				String wochenTage = timingParameter.substring(0, timingParameter.indexOf(":"));
 				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
+				List<Integer> weekdayIndexes = new ArrayList<Integer>();
+				for (String weekDay : chopToChunks(wochenTage, 2)) {
+					weekdayIndexes.add(DateUtils.getWeekdayIndex(weekDay));
+				}
 				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
 				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
@@ -612,7 +635,7 @@ public class Utilities {
 				// Parameter-Bedingung erfüllt ist
 				// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
 				while ((nextStartByThisParameter.before(now)
-						|| !wochenTage.contains(DateUtils.getWochenTagNamensKuerzel(nextStartByThisParameter))) && nextStartByThisParameter.before(returnStart)
+						|| !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
 						|| dayListIncludes(excludedDays, nextStartByThisParameter))
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
 			}
@@ -737,8 +760,7 @@ public class Utilities {
 	 * @param chunkSize
 	 * @return
 	 */
-	public static <E> List<List<E>> chopListToChunks(List<E> originalList,
-			int chunkSize) {
+	public static <E> List<List<E>> chopListToChunks(List<E> originalList, int chunkSize) {
 		if (originalList == null || originalList.size() <= 0 || chunkSize <= 0)
 			return null;
 
@@ -753,6 +775,35 @@ public class Utilities {
 				endIndex = originalList.size();
 
 			returnList.add(originalList.subList(startIndex, endIndex));
+		}
+
+		return returnList;
+	}
+	
+	/***
+	 * Aufteilen der Originalliste in kleinere Listen zu je maximal
+	 * chunkSize-großen Listen
+	 * 
+	 * @param <E>
+	 * @param originalList
+	 * @param chunkSize
+	 * @return
+	 */
+	public static List<String> chopToChunks(String value, int chunkSize) {
+		if (StringUtils.isEmpty(value) || chunkSize <= 0)
+			return null;
+
+		List<String> returnList = new ArrayList<String>();
+		int endIndex = 0;
+
+		while (endIndex < value.length()) {
+			int startIndex = endIndex;
+			if (chunkSize < value.length() - endIndex)
+				endIndex += chunkSize;
+			else
+				endIndex = value.length();
+
+			returnList.add(value.substring(startIndex, endIndex));
 		}
 
 		return returnList;
