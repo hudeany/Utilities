@@ -789,21 +789,11 @@ public class Utilities {
 	 * @param chunkSize
 	 * @return
 	 */
-	public static List<String> chopToChunks(String value, int chunkSize) {
-		if (StringUtils.isEmpty(value) || chunkSize <= 0)
-			return null;
+	public static List<String> chopToChunks(String text, int chunkSize) {
+		List<String> returnList = new ArrayList<String>((text.length() + chunkSize - 1) / chunkSize);
 
-		List<String> returnList = new ArrayList<String>();
-		int endIndex = 0;
-
-		while (endIndex < value.length()) {
-			int startIndex = endIndex;
-			if (chunkSize < value.length() - endIndex)
-				endIndex += chunkSize;
-			else
-				endIndex = value.length();
-
-			returnList.add(value.substring(startIndex, endIndex));
+		for (int start = 0; start < text.length(); start += chunkSize) {
+			returnList.add(text.substring(start, Math.min(text.length(), start + chunkSize)));
 		}
 
 		return returnList;
