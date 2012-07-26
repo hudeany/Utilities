@@ -34,8 +34,7 @@ public class DebugUtils {
 				logger.debug("Classloader (Interface): " + interfaces[i]);
 			}
 			if (classLoader instanceof URLClassLoader) {
-				URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
-				URL[] urls = urlClassLoader.getURLs();
+				URL[] urls = ((URLClassLoader) classLoader).getURLs();
 				for (int i = 0; i < urls.length; i++) {
 					logger.debug("Library: " + urls[i].toString());
 				}

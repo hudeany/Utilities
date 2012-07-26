@@ -706,32 +706,37 @@ public class Utilities {
 		}
 	}
 
-	public static boolean testConnection(String hostname, int port)
-			throws Exception {
-		Socket socket = new Socket();
-		InetSocketAddress endPoint = new InetSocketAddress(hostname, port);
-		int timeout = 2000; // 2 Sekunden
-		if (endPoint.isUnresolved()) {
-			throw new Exception("Hostname '" + hostname
-					+ "' konnte nicht aufgelöst werden");
-		} else {
-			try {
-				socket.connect(endPoint, timeout);
-				return true;
-			} catch (IOException ioe) {
-				throw new Exception("Verbindung zum Host '" + hostname
-						+ "' auf Port " + port
-						+ " konnte nicht aufgebaut werden: "
-						+ ioe.getClass().getSimpleName() + ": "
-						+ ioe.getMessage());
-			} finally {
-				if (socket != null) {
-					try {
-						socket.close();
-					} catch (IOException ioe) {
+	public static boolean testConnection(String hostname, int port) throws Exception {
+		Socket socket = null;
+		try {
+			socket = new Socket();
+			InetSocketAddress endPoint = new InetSocketAddress(hostname, port);
+			int timeout = 2000; // 2 Sekunden
+			if (endPoint.isUnresolved()) {
+				throw new Exception("Hostname '" + hostname + "' konnte nicht aufgelöst werden");
+			} else {
+				try {
+					socket.connect(endPoint, timeout);
+					return true;
+				} catch (IOException ioe) {
+					throw new Exception("Verbindung zum Host '" + hostname
+							+ "' auf Port " + port
+							+ " konnte nicht aufgebaut werden: "
+							+ ioe.getClass().getSimpleName() + ": "
+							+ ioe.getMessage());
+				} finally {
+					if (socket != null) {
+						try {
+							socket.close();
+						} catch (IOException ioe) {
+						}
+						socket = null;
 					}
-					socket = null;
 				}
+			}
+		} finally {
+			if (socket != null) {
+				socket.close();
 			}
 		}
 	}
