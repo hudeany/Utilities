@@ -48,4 +48,44 @@ public class CsvTest {
 			}
 		}
 	}
+	
+	@Test
+	public void test3() {
+		CsvReader reader = null;
+		try {
+			String csvData = "abc;def;123\nabc;def";
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', null);
+			reader.setFillMissingTrailingColumnsWithNull(true);
+			List<List<String>> dataLines = reader.readAll();
+			Assert.assertEquals("abc", dataLines.get(0).get(0));
+			Assert.assertEquals("def", dataLines.get(0).get(1));
+			Assert.assertEquals("123", dataLines.get(0).get(2));
+			Assert.assertEquals("abc", dataLines.get(1).get(0));
+			Assert.assertEquals("def", dataLines.get(1).get(1));
+			Assert.assertEquals(null, dataLines.get(1).get(2));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+		}
+	}
+	
+	@Test
+	public void test3_Error() {
+		CsvReader reader = null;
+		try {
+			String csvData = "abc;def;123\nabc;def";
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', null);
+			reader.readAll();
+			Assert.fail("Missing Exception");
+		} catch (Exception e) {
+			Assert.assertEquals("Inconsistent number of values in line 2 (expected: 3 was: 2)", e.getMessage());
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+		}
+	}
 }
