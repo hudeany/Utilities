@@ -646,6 +646,10 @@ public class Utilities {
 
 		return new Timestamp(returnStart.getTimeInMillis());
 	}
+	
+	public static String repeatString(String itemString, int repeatTimes) {
+		return repeatString(itemString, repeatTimes, null);
+	}
 
 	/***
 	 * Aufbau eines Strings mit Wiederholungen. 0 Wiederholungen liefert einen
@@ -660,8 +664,7 @@ public class Utilities {
 	 *            Anzahl der Wiederholungen
 	 * @return
 	 */
-	public static String repeatString(String itemString,
-			String separatorString, int repeatTimes) {
+	public static String repeatString(String itemString, int repeatTimes, String separatorString) {
 		StringBuilder returnStringBuilder = new StringBuilder();
 		for (int i = 0; i < repeatTimes; i++) {
 			if (returnStringBuilder.length() > 0)

@@ -47,7 +47,7 @@ public class TextTable {
 		columnRightAligned = new ArrayList<Boolean>();
 		lineColors = new ArrayList<String>();
 		
-		//Erste Zeile enth�lt die Header
+		//Erste Zeile enthält die Header
 		columnNames.add(new ArrayList<String>());
 	}
 	
@@ -74,7 +74,7 @@ public class TextTable {
 		columnNames.get(0).add(columnName);
 		columnColors.add(farbe);
 		
-		// Zweite Zeile einf�gen
+		// Zweite Zeile einfügen
 		if (columnNameLine2 != null && columnNames.size() == 1)
 			columnNames.add(new ArrayList<String>());
 		
@@ -90,7 +90,7 @@ public class TextTable {
 		
 		columnRightAligned.add(alignRight);
 		
-		// Alle bestehenden Zeilen auf die Header-L�nge bringen
+		// Alle bestehenden Zeilen auf die Header-Länge bringen
 		for (List<String> line : content) {
 			while (line.size() < columnNames.get(0).size())
 				line.add("");
@@ -106,14 +106,14 @@ public class TextTable {
 		
 		columnRightAligned.remove(index);
 		
-		// Alle bestehenden Zeilen auf die Header-L�nge bringen
+		// Alle bestehenden Zeilen auf die Header-Länge bringen
 		for (List<String> line : content)
 			line.remove(index);
 	}
 	
 	public void setAlignmentForColumn(int columnIndex, boolean alignRight) throws Exception {
 		if (columnIndex < 0 || columnIndex >= columnNames.get(0).size())
-			throw new Exception("Ung�ltige Spalten-Indexangabe: " + columnIndex);
+			throw new Exception("Ungültige Spalten-Indexangabe: " + columnIndex);
 		
 		columnRightAligned.set(columnIndex, alignRight);
 	}
@@ -128,7 +128,7 @@ public class TextTable {
 		currentLineIndex++;
 		currentColumnIndex = 0;
 		
-		// Neue Zeile auf die Header-L�nge bringen
+		// Neue Zeile auf die Header-Länge bringen
 		while (content.get(currentLineIndex).size() < columnNames.get(0).size())
 			content.get(currentLineIndex).add("");
 	}
@@ -160,7 +160,7 @@ public class TextTable {
 			contentLines.add(new StringBuilder());
 		}
 		
-		//�ber alle Spalten iterieren
+		//Über alle Spalten iterieren
 		for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 			int size = getMaxSizeOfColumn(columnIndex);
 			
@@ -174,7 +174,7 @@ public class TextTable {
 					columnNamesLines.get(lineIndex).append(Utilities.trimStringToLengthAlignedLeft(columnNames.get(lineIndex).get(columnIndex), size));
 			}
 			
-			//�ber alle Zeilen iterieren
+			//Über alle Zeilen iterieren
 			for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 				if (columnIndex > 0)
 					contentLines.get(lineIndex).append(" ");
@@ -203,9 +203,9 @@ public class TextTable {
 		StringBuilder csvText = new StringBuilder();
 		
 		//Zuerst die Columnheader wegschreiben
-		//�ber alle HeaderZeilen iterieren
+		//Über alle HeaderZeilen iterieren
 		for (int lineIndex = 0; lineIndex < columnNames.size(); lineIndex++) {
-			//�ber alle Spalten iterieren
+			//Über alle Spalten iterieren
 			for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 				csvText.append("\"" + columnNames.get(lineIndex).get(columnIndex) + "\";");
 			}
@@ -213,9 +213,9 @@ public class TextTable {
 		}
 		
 		//Dann den Datenzeileninhalt wegschreiben
-		//�ber alle Zeilen iterieren
+		//Über alle Zeilen iterieren
 		for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
-			//�ber alle Spalten iterieren
+			//Über alle Spalten iterieren
 			for (int columnIndex = 0 ; columnIndex < content.get(0).size(); columnIndex++) {
 				csvText.append("\"" + content.get(lineIndex).get(columnIndex) + "\";");
 			}
@@ -229,11 +229,11 @@ public class TextTable {
 		StringBuilder csvText = new StringBuilder();
 		
 		//Zuerst die Columnheader wegschreiben
-		//�ber alle HeaderZeilen iterieren
+		//Über alle HeaderZeilen iterieren
 		for (int lineIndex = 0; lineIndex < columnNames.size(); lineIndex++) {
 			csvText.append("\"" + METADATA_HEADER + "\";");
 			
-			//�ber alle Spalten iterieren
+			//Über alle Spalten iterieren
 			for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 				csvText.append("\"" + columnNames.get(lineIndex).get(columnIndex) + "\";");
 			}
@@ -253,13 +253,13 @@ public class TextTable {
 		csvText.append("\n");
 		
 		//Dann den Datenzeileninhalt wegschreiben
-		//�ber alle Zeilen iterieren
+		//Über alle Zeilen iterieren
 		for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 			csvText.append("\"" + lineColors.get(lineIndex) + "\";");
 			
-			//�ber alle Spalten iterieren
+			//Über alle Spalten iterieren
 			for (int columnIndex = 0 ; columnIndex < content.get(0).size(); columnIndex++) {
-				//F�hrendes Apostroph abschneiden
+				//Führendes Apostroph abschneiden
 				String cellContentString = content.get(lineIndex).get(columnIndex);
 				if (cellContentString != null && cellContentString.startsWith("'") && !cellContentString.endsWith("'"))
 					cellContentString = cellContentString.substring(1);
@@ -305,12 +305,12 @@ public class TextTable {
 		if (fontsizeInPt > 0)
 			htmlTableStringBuffer.append("<STYLE TYPE=\"text/css\"><!--TD{font-family: Arial; font-size: " + fontsizeInPt + "pt;}---></STYLE>");
 		htmlTableStringBuffer.append("<table border='1' cellspacing='1' cellpadding='1'>\n");
-		// Alternative f�r volle Breite: "<table border='1' width='100%' cellspacing='1' cellpadding='1'>\n");
+		// Alternative für volle Breite: "<table border='1' width='100%' cellspacing='1' cellpadding='1'>\n");
 	
 		int rowcount = 0;
 		
 		htmlTableStringBuffer.append("<tr align='center'>");
-		//�ber alle Spalten iterieren
+		//Über alle Spalten iterieren
 		for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 			if (columnColors.get(columnIndex) == null)
 				htmlTableStringBuffer.append("<td>");
@@ -324,7 +324,7 @@ public class TextTable {
 		}
 		htmlTableStringBuffer.append("</tr>\n");
 		
-		//�ber alle Zeilen iterieren
+		//Über alle Zeilen iterieren
 		for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 			if (lineColors.get(lineIndex) != null)
 				htmlTableStringBuffer.append("<tr align='right' bgcolor='" + lineColors.get(lineIndex) + "'>");
@@ -333,9 +333,9 @@ public class TextTable {
 			else
 				htmlTableStringBuffer.append("<tr align='right' bgcolor='lightblue'>");
 			
-			//�ber alle Spalten iterieren
+			//Über alle Spalten iterieren
 			for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
-				//F�hrendes Apostroph abschneiden
+				//Führendes Apostroph abschneiden
 				String cellContentString = content.get(lineIndex).get(columnIndex);
 				if (cellContentString != null && cellContentString.startsWith("'") && !cellContentString.endsWith("'"))
 					cellContentString = cellContentString.substring(1);
@@ -371,11 +371,11 @@ public class TextTable {
 			excelWorkbook = Workbook.createWorkbook(outputStream, settings);
 			
 			sheetTitle = sheetTitle.replace("/", " ").replace(":", " ").replace("[", "").replace("]", "");
-			if (sheetTitle.length() > 31) // ExcelSheet-Titel ist in der L�nge auf max. 31 Stellen begrenzt
+			if (sheetTitle.length() > 31) // ExcelSheet-Titel ist in der Länge auf max. 31 Stellen begrenzt
 				sheetTitle = sheetTitle.substring(0, 31);
 			WritableSheet sheet = excelWorkbook.createSheet(sheetTitle, 1);
 
-			// Spaltennamen f�llen
+			// Spaltennamen füllen
 			for (int spaltenIndex = 0; spaltenIndex < columnNames.get(0).size(); spaltenIndex++) {
 				Colour columnHeaderColor = getColourByString(columnColors.get(spaltenIndex));
 
@@ -438,7 +438,7 @@ public class TextTable {
 			if (freezeColumn != 0) 
 				sheet.getSettings().setHorizontalFreeze(freezeColumn);
 			
-			// ZeilenWerte bef�llen
+			// ZeilenWerte befüllen
 			for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 				WritableCellFormat lineFormat = new WritableCellFormat();
 				lineFormat.setBorder(Border.TOP, BorderLineStyle.THIN);
@@ -456,7 +456,7 @@ public class TextTable {
 					if (Utilities.isNumber(cellContentString))
 						sheet.addCell(new Number(columnIndex, lineIndex + columnNames.size(), Integer.parseInt(cellContentString), lineFormat));
 					else {
-						//F�hrendes Apostroph abschneiden
+						//Führendes Apostroph abschneiden
 						if (cellContentString != null && cellContentString.startsWith("'") && !cellContentString.endsWith("'"))
 							cellContentString = cellContentString.substring(1);
 						sheet.addCell(new Label(columnIndex, lineIndex + columnNames.size(), cellContentString, lineFormat));
@@ -617,7 +617,7 @@ public class TextTable {
 		else if ("YELLOW2".equalsIgnoreCase(colourName))
 			return Colour.YELLOW2;
 		else if ("WOCHENENDE".equalsIgnoreCase(colourName))
-			//Spezielle Farbanpassung f�r ExcelVerdistatistik
+			//Spezielle Farbanpassung für ExcelVerdistatistik
 			return Colour.LIGHT_TURQUOISE;
 		else
 			return Colour.WHITE;
@@ -654,7 +654,7 @@ public class TextTable {
 		else if ("ROSE".equalsIgnoreCase(xlsColor))
 			return "fuchsia";
 		else if ("WOCHENENDE".equalsIgnoreCase(xlsColor))
-			//Spezielle Farbanpassung f�r HtmlVerdistatistik
+			//Spezielle Farbanpassung für HtmlVerdistatistik
 			return "coral";
 		else
 			return "white";
@@ -757,7 +757,7 @@ public class TextTable {
 	
 	public String getHeader(int headerLineIndex, int columnIndex) throws Exception {
 		if (columnNames.size() <= headerLineIndex || columnNames.get(headerLineIndex).size() <= columnIndex)
-			throw new Exception("Ung�ltige Datenabfrage an Spalten�berschriften Zeilenindex " + headerLineIndex + " Spaltenindex " + columnIndex);
+			throw new Exception("Ungültige Datenabfrage an Spaltenüberschriften Zeilenindex " + headerLineIndex + " Spaltenindex " + columnIndex);
 		return columnNames.get(headerLineIndex).get(columnIndex);
 	}
 	
@@ -771,7 +771,7 @@ public class TextTable {
 	
 	public String getData(int lineIndex, int columnIndex) throws Exception {
 		if (content.size() <= lineIndex || content.get(lineIndex).size() <= columnIndex)
-			throw new Exception("Ung�ltige Datenabfrage an Zeilenindex " + lineIndex + " Spaltenindex " + columnIndex);
+			throw new Exception("Ungültige Datenabfrage an Zeilenindex " + lineIndex + " Spaltenindex " + columnIndex);
 		return content.get(lineIndex).get(columnIndex);
 	}
 }

@@ -31,6 +31,8 @@ public class CsvReader extends Reader {
 	private BufferedReader inputReader = null;
 	private int readLines = 0;
 	private int readCharacters = 0;
+	
+	private boolean fillMissingTrailingColumnsWithNull = false;
 
 	public CsvReader(InputStream inputStream) {
 		this(inputStream, Charset.forName(DEFAULT_ENCODING), DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE);
@@ -86,6 +88,14 @@ public class CsvReader extends Reader {
 		}
 	}
 	
+	public boolean isFillMissingTrailingColumnsWithNull() {
+		return fillMissingTrailingColumnsWithNull;
+	}
+
+	public void setFillMissingTrailingColumnsWithNull(boolean fillMissingTrailingColumnsWithNull) {
+		this.fillMissingTrailingColumnsWithNull = fillMissingTrailingColumnsWithNull;
+	}
+	
 	public List<String> readNextCsvLine() throws IOException, CsvDataException {
 		if (inputReader == null) {
 			if (inputStream == null) {
@@ -109,12 +119,18 @@ public class CsvReader extends Reader {
 				nextValue.append(nextChar);
 			} else if (!insideString) {
 				if (nextChar == '\r' || nextChar == '\n') {
-					if (returnList.size() > 0) {
+					if (nextValue.length() > 0) {
 						returnList.add(parseValue(nextValue.toString()));
 					}
 					if (returnList.size() > 0) {
 						if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-							throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")", readLines);
+							if (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull) {
+								while (returnList.size() < numberOfColumns) {
+									returnList.add(null);
+								}
+							} else {
+								throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")", readLines);
+							}
 						}
 						numberOfColumns = returnList.size();
 						return returnList;
@@ -138,13 +154,19 @@ public class CsvReader extends Reader {
 			close();
 			throw new IOException("Unexpected EOF after quoted csv-value was started");
 		} else {
-			if (returnList.size() > 0) {
+			if (nextValue.length() > 0) {
 				returnList.add(parseValue(nextValue.toString()));
 			}
 		
 			if (returnList.size() > 0) {
 				if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-					throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")", readLines);
+					if (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull) {
+						while (returnList.size() < numberOfColumns) {
+							returnList.add(null);
+						}
+					} else {
+						throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")", readLines);
+					}
 				}
 				numberOfColumns = returnList.size();
 				return returnList;
@@ -239,7 +261,7 @@ public class CsvReader extends Reader {
 	 * 
 	 * @return
 	 * @throws IOException
-	 * @throws CsvDataException 
+	 * @throws CsvDataException
 	 */
 	public int getCsvLineCount() throws IOException, CsvDataException {
 		if (singleReadStarted) {
