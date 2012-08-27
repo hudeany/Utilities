@@ -1,10 +1,10 @@
 package de.soderer.utilities;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-public class CsvReader extends Reader {
+public class CsvReader implements Closeable {
 	public static final String DEFAULT_ENCODING = "UTF-8";
 	public static final char DEFAULT_SEPARATOR = ',';
 	public static final char DEFAULT_STRING_QUOTE = '"';
@@ -228,14 +228,6 @@ public class CsvReader extends Reader {
 	
 	public int getReadChracters() {
 		return readCharacters;
-	}
-
-	/**
-	 * Not supported method
-	 */
-	@Override
-	public int read(char[] cbuf, int off, int len) throws IOException {
-		throw new IOException("Read by offset and length is not supported by " + getClass().getSimpleName());
 	}
 
 	public boolean isLineBreakInDataAllowed() {

@@ -24,14 +24,14 @@ public class SelectionDialog extends ModalDialog<String> {
 	private Combo comboBox;
 	private Button okButton;
 
-	public SelectionDialog(Shell shell, String title, String text, List<String> items) throws Exception {   
+	public SelectionDialog(Shell shell, String title, String text, List<String> items) {   
 		super(shell);
 		this.title = title;
 		this.text = text;
 		this.items = items;
 	}
 	
-	public SelectionDialog(Shell shell, String text, List<String> items) throws Exception {   
+	public SelectionDialog(Shell shell, String text, List<String> items) {   
 		super(shell);
 		this.text = text;
 		this.items = items;
@@ -64,13 +64,13 @@ public class SelectionDialog extends ModalDialog<String> {
 	    
 	    okButton = new Button(composite, SWT.PUSH);
 	    okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		okButton.setText(LangResources.get("OK"));
+		okButton.setText(LangResources.get("ok"));
 		okButton.setEnabled(comboBox.getItemCount() > 0);
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 		
 	    Button cancelButton = new Button(composite, SWT.PUSH);
 	    cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-	    cancelButton.setText(LangResources.get("CANCEL"));
+	    cancelButton.setText(LangResources.get("cancel"));
 	    cancelButton.addSelectionListener(new CancelButtonSelectionListener());
 	}
 

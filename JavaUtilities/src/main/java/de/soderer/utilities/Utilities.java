@@ -4,9 +4,12 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -203,22 +206,20 @@ public class Utilities {
 		return ergebnisListe;
 	}
 
-	public static String trimStringToLengthAlignedRight(String inputString,
-			int laenge) {
+	public static String trimStringToLengthAlignedRight(String inputString, int laenge) {
 		if (inputString.length() > laenge)
 			// nimmt die ersten Zeichen in der Anzahl "laenge"
-			return inputString.subSequence(0, laenge).toString();
+			return inputString.subSequence(inputString.length() - laenge, inputString.length()).toString();
 		else
-			return String.format("%1$#" + laenge + "s", inputString);
+			return String.format("%" + laenge + "s", inputString);
 	}
 
-	public static String trimStringToLengthAlignedLeft(String inputString,
-			int laenge) {
+	public static String trimStringToLengthAlignedLeft(String inputString, int laenge) {
 		if (inputString.length() > laenge)
 			// nimmt die ersten Zeichen in der Anzahl "laenge"
 			return inputString.subSequence(0, laenge).toString();
 		else
-			return String.format("%1$-" + laenge + "s", inputString);
+			return String.format("%-" + laenge + "s", inputString);
 	}
 
 	public static String replicateString(String inputString, int anzahl) {
@@ -1028,5 +1029,55 @@ public class Utilities {
 		} else {
 			return square(pow(base, exp / 2)) * (exp % 2 == 1 ? base : 1);
 		}
+	}
+	
+	public static int getLineCount(File file) throws IOException {
+		LineNumberReader lineNumberReader = null;
+		try {
+			lineNumberReader = new LineNumberReader(new InputStreamReader(new FileInputStream(file)));
+	        while (lineNumberReader.readLine() != null) {
+	        }
+	
+	        return lineNumberReader.getLineNumber();
+		} finally {
+			IOUtils.closeQuietly(lineNumberReader);
+		}
+	}
+	
+	public static int getLineCount(String dataString) throws IOException {
+		LineNumberReader lineNumberReader = null;
+		try {
+			lineNumberReader = new LineNumberReader(new StringReader(dataString));
+	        while (lineNumberReader.readLine() != null) {
+	        }
+	
+	        return lineNumberReader.getLineNumber();
+		} finally {
+			IOUtils.closeQuietly(lineNumberReader);
+		}
+	}
+	
+	public static int countWords(String dataString){
+	    int counter = 0;
+	    boolean isWord = false;
+	    int endOfLine = dataString.length() - 1;
+
+	    for (int i = 0; i < dataString.length(); i++) {
+	        if (!Character.isWhitespace(dataString.charAt(i)) && i != endOfLine) {
+	        	isWord = true;
+	        } else if (Character.isWhitespace(dataString.charAt(i)) && isWord) {
+	            counter++;
+	            isWord = false;
+	        } else if (!Character.isWhitespace(dataString.charAt(i)) && i == endOfLine) {
+	            counter++;
+	        }
+	    }
+	    return counter;
+	}
+
+	public static <T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
+		List<T> list = new ArrayList<T>(c);
+		java.util.Collections.sort(list);
+		return list;
 	}
 }

@@ -15,6 +15,7 @@ import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private String applicationName;
@@ -32,7 +33,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		shell.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		shell.setLayout(new GridLayout(2, false));
 		
-		for (String key : applicationConfiguration.getKeyList()) {
+		for (String key : Utilities.asSortedList(applicationConfiguration.getKeyList())) {
 			Label label = new Label(shell, SWT.FILL);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 			label.setText(key);
@@ -52,7 +53,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		Button storeButton = new Button(buttonArea, SWT.PUSH);
 		storeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		storeButton.setText(LangResources.get("SAVE"));
+		storeButton.setText(LangResources.get("save"));
 		storeButton.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -67,7 +68,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		Button cancelButton = new Button(buttonArea, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		cancelButton.setText(LangResources.get("CANCEL"));
+		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {

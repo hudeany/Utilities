@@ -1,12 +1,13 @@
 package de.soderer.utilities;
 
+import java.text.MessageFormat;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
 public class LangResources {
 	private static PropertyResourceBundle propertyResourceBundle;
 	
-	public static String get(String resourceKey) {
+	public static String get(String resourceKey, Object... arguments) {
 		if (propertyResourceBundle == null) {
 			try {
 				propertyResourceBundle = (PropertyResourceBundle) ResourceBundle.getBundle("LanguageProperties");
@@ -16,9 +17,11 @@ public class LangResources {
 			}
 		}
 	
-		if (propertyResourceBundle.containsKey(resourceKey))
-			return propertyResourceBundle.getString(resourceKey);
-		else
+		if (propertyResourceBundle.containsKey(resourceKey)) {
+			String pattern = propertyResourceBundle.getString(resourceKey);
+			return MessageFormat.format(pattern, arguments);
+		} else {
 			return "Missing resourceKey: " + resourceKey;
+		}
 	}
 }

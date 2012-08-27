@@ -148,6 +148,19 @@ public class TextTable {
 		currentColumnIndex++;
 	}
 	
+	public void setNumericColumnsRightALigned() {
+		for (int columnIndex = 0; columnIndex < columnRightAligned.size(); columnIndex++) {
+			boolean isNumeric = true;
+			for (List<String> line : content) {
+				if (StringUtils.isNotBlank(line.get(columnIndex)) && !Utilities.isNumber(line.get(columnIndex))) {
+					isNumeric = false;
+					break;
+				}
+			}
+			columnRightAligned.set(columnIndex, isNumeric);
+		}
+	}
+	
 	@Override
 	public String toString() {
 		List<StringBuilder> columnNamesLines = new ArrayList<StringBuilder>();
