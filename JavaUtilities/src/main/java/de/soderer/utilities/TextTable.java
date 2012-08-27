@@ -181,10 +181,7 @@ public class TextTable {
 				if (columnIndex > 0)
 					columnNamesLines.get(lineIndex).append(" ");
 				
-				if (columnRightAligned.get(columnIndex))
-					columnNamesLines.get(lineIndex).append(Utilities.trimStringToLengthAlignedRight(columnNames.get(lineIndex).get(columnIndex), size));
-				else
-					columnNamesLines.get(lineIndex).append(Utilities.trimStringToLengthAlignedLeft(columnNames.get(lineIndex).get(columnIndex), size));
+				columnNamesLines.get(lineIndex).append(Utilities.trimStringToLengthAlignedLeft(columnNames.get(lineIndex).get(columnIndex), size));
 			}
 			
 			//Über alle Zeilen iterieren
