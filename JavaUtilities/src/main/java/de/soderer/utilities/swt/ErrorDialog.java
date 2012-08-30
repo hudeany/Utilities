@@ -50,7 +50,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
 		gridData.widthHint = 500;
 		
-		Text keyTextfield1 = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
+		Text keyTextfield1 = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY | SWT.V_SCROLL);
 		keyTextfield1.setLayoutData(gridData);
 		keyTextfield1.setText(text1);
 		
