@@ -3,7 +3,9 @@ package de.soderer.utilities;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
@@ -199,5 +201,52 @@ public class TextFilePropertiesReader {
 
 	public String getEncoding() {
 		return encoding;
+	}
+	
+	public static List<Charset> detectTextEncoding(File file, List<Charset> charsetsToCheck) throws IOException {
+		return detectTextEncoding(file, charsetsToCheck, null);
+	}
+	
+	public static List<Charset> detectTextEncoding(File file, List<Charset> charsetsToCheck, Charset defaultEncoding) throws IOException {
+		byte[] data = FileUtils.readFileToByteArray(file);
+		return detectTextEncoding(data, charsetsToCheck, defaultEncoding);
+	}
+	
+	public static List<Charset> detectTextEncoding(byte[] data, List<Charset> charsetsToCheck) {
+		return detectTextEncoding(data, charsetsToCheck, null);
+	}
+	
+	public static List<Charset> detectTextEncoding(byte[] data, List<Charset> charsetsToCheck, Charset defaultEncoding) {
+		List<Charset> validEncodings = new ArrayList<Charset>();
+		if (data.length > 2 && ((BitUtilities.getUnsignedValue(data[0]) == 0xFF && BitUtilities.getUnsignedValue(data[1]) == 0xFE) || (BitUtilities.getUnsignedValue(data[0]) == 0xFE && BitUtilities.getUnsignedValue(data[1]) == 0xFF))) {
+			// Detected UTF-16 BOM (FF FE or FE FF)
+			validEncodings.add(Charset.forName("UTF-16"));
+			return validEncodings;
+		} else if (data.length > 3 && BitUtilities.getUnsignedValue(data[0]) == 0xEF && BitUtilities.getUnsignedValue(data[1]) == 0xBB && BitUtilities.getUnsignedValue(data[2]) == 0xBF) {
+			// Detected UTF-8 BOM (EF BB BF)
+			validEncodings.add(Charset.forName("UTF-8"));
+			return validEncodings;
+		}
+		
+		for (Charset charset : charsetsToCheck) {
+			String dataString = new String(data, charset);
+			if (!dataString.contains("�")) {
+				if (defaultEncoding != null && charset == defaultEncoding) {
+					validEncodings = new ArrayList<Charset>();
+					validEncodings.add(defaultEncoding);
+					return validEncodings;
+				} else {
+					validEncodings.add(charset);
+				}
+			}
+		}
+		
+		if (validEncodings.size() == 0) {
+			return null;
+		} else if (validEncodings.size() == 1) {
+			return validEncodings;
+		} else {
+			return validEncodings;
+		}
 	}
 }

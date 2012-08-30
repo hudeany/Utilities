@@ -49,6 +49,8 @@ import org.apache.commons.lang3.StringUtils;
  * Initialisierung genutzt wird
  */
 public class Utilities {
+	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"´`^°²³*#.,;:=+-~_|";
+	
 	public static String generateUUID() {
 		return UUID.randomUUID().toString().toUpperCase().replaceAll("-", "");
 	}
@@ -161,8 +163,7 @@ public class Utilities {
 	 * @return Array of Files mit den Dateien die gefunden wurden. Im Fehlerfall
 	 *         null
 	 */
-	public static ArrayList<File> getArrayOfFilesByStammname(
-			String stammNamenListe) {
+	public static ArrayList<File> getArrayOfFilesByStammname(String stammNamenListe) {
 		return getArrayOfFilesByStammname(Arrays.asList(stammNamenListe.split(";")));
 	}
 
@@ -175,12 +176,9 @@ public class Utilities {
 			// NICHT mit File-Class arbeiten
 			int unixLastIndexOfSeparator = stammName.lastIndexOf("/");
 			int dosLastIndexOfSeparator = stammName.lastIndexOf("\\");
-			int lastIndexOfSeparator = Math.max(unixLastIndexOfSeparator,
-					dosLastIndexOfSeparator);
-			String suchVerzeichnis = stammName.substring(0,
-					lastIndexOfSeparator + 1);
-			String stammFileName = stammName
-					.substring(lastIndexOfSeparator + 1);
+			int lastIndexOfSeparator = Math.max(unixLastIndexOfSeparator, dosLastIndexOfSeparator);
+			String suchVerzeichnis = stammName.substring(0, lastIndexOfSeparator + 1);
+			String stammFileName = stammName.substring(lastIndexOfSeparator + 1);
 
 			// Dateiliste erstellen
 			File searchPath = new File(suchVerzeichnis);
@@ -188,22 +186,37 @@ public class Utilities {
 				File[] partList = searchPath.listFiles();
 				for (int i = 0; i < partList.length; i++) {
 					if (partList[i].isFile()
-							&& ((stammFileName.endsWith("*") && partList[i]
-									.getName()
-									.startsWith(
-											stammFileName.substring(0,
-													stammFileName.length() - 1))) || (!stammFileName
-									.endsWith("*") && partList[i].getName()
-									.equals(stammFileName)))) {
+						&& ((stammFileName.endsWith("*")
+							&& partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1)))
+							|| (!stammFileName.endsWith("*") && partList[i].getName().equals(stammFileName)))) {
 						// Datei gefunden: partList[i].getName());
-						if (!ergebnisListe.contains(partList[i]))
+						if (!ergebnisListe.contains(partList[i])) {
 							ergebnisListe.add(partList[i]);
+						}
 					}
 				}
 			}
 		}
 
 		return ergebnisListe;
+	}
+	
+	public static List<File> getFilesByPattern(File startDirectory, String patternString, boolean traverseCompletely) {
+		return getFilesByPattern(startDirectory, Pattern.compile(patternString), traverseCompletely);
+	}
+	
+	public static List<File> getFilesByPattern(File startDirectory, Pattern pattern, boolean traverseCompletely) {
+		List<File> files = new ArrayList<File>();
+		if (startDirectory.isDirectory()) {
+			for (File file : startDirectory.listFiles()) {
+				if (file.isDirectory() && traverseCompletely) {
+					files.addAll(getFilesByPattern(file, pattern, traverseCompletely));
+				} else if (file.isFile() && pattern.matcher(file.getName()).matches()) {
+					files.add(file);
+				}
+			}
+		}
+		return files;
 	}
 
 	public static String trimStringToLengthAlignedRight(String inputString, int laenge) {
@@ -234,13 +247,8 @@ public class Utilities {
 		return outputString.toString();
 	}
 
-	public static boolean checkForValidVorgangsID(String vorgangsID) {
-		return vorgangsID != null
-				&& vorgangsID.matches("[\\dABCDEFabcdef]{32}");
-	}
-
 	public static boolean checkForValidUserName(String value) {
-		return value != null && value.matches("[A-Za-z0-9]*");
+		return value != null && value.matches("[A-Za-z0-9_-]*");
 	}
 
 	public static String[] convertArrayListOfStringsToStringArray(
@@ -1079,5 +1087,42 @@ public class Utilities {
 		List<T> list = new ArrayList<T>(c);
 		java.util.Collections.sort(list);
 		return list;
+	}
+	
+	public static int getStartIndexOfLine(String dataString, int lineNumber) {
+		if (dataString == null || lineNumber <= 1) {
+			return 0;
+		} else {
+			int lineCount = 1;
+			int position = 0;
+			while (lineCount < lineNumber) {
+				int nextLineBreakMac = dataString.indexOf("\r", position);
+				int nextLineBreakUnix = dataString.indexOf("\n", position);
+				int nextLineBreakWindows = dataString.indexOf("\r\n", position);
+				int nextPosition = -1;
+				int lineBreakSize = 0;
+				if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac < nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac < nextLineBreakWindows)) {
+					nextPosition = nextLineBreakMac;
+					lineBreakSize = 1;
+				} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix < nextLineBreakWindows)) {
+					nextPosition = nextLineBreakUnix;
+					lineBreakSize = 1;
+				} else if (nextLineBreakWindows >= 0) {
+					nextPosition = nextLineBreakWindows;
+					lineBreakSize = 2;
+				}
+				
+				if (nextPosition >= 0) {
+					position = nextPosition + lineBreakSize;
+					if (position >= dataString.length()) {
+						break;
+					}
+				} else {
+					break;
+				}
+				lineCount++;
+			}
+			return position;
+		}
 	}
 }

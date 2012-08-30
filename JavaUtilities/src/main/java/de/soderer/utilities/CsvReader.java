@@ -196,13 +196,14 @@ public class CsvReader implements Closeable {
 	
 	private String parseValue(String rawValue) throws CsvDataException {
 		String returnValue = rawValue;
+		String stringQuoteString = Character.toString(stringQuote);
 		
 		if (StringUtils.isNotEmpty(returnValue)) {
 			if (useStringQuote
 					&& returnValue.charAt(0) == stringQuote
 					&& returnValue.charAt(returnValue.length() - 1) == stringQuote) {
 				returnValue = returnValue.substring(1, returnValue.length() - 1);
-				returnValue = returnValue.replace("\"\"", "\"");
+				returnValue = returnValue.replace(stringQuoteString + stringQuoteString, stringQuoteString);
 			}
 			returnValue = returnValue.replace("\r\n", "\n").replace('\r', '\n');
 		}
@@ -269,5 +270,59 @@ public class CsvReader implements Closeable {
 		} finally {
 			close();
 		}
+	}
+	
+	public static List<String> parseCsvLine(char separator, char stringQuote, String csvLine) throws IOException {
+		List<String> returnList = new ArrayList<String>();
+		StringBuilder nextValue = new StringBuilder();
+		boolean insideString = false;
+		
+		for (char nextChar : csvLine.toCharArray()) {
+			if (nextChar == stringQuote) {
+				insideString = !insideString;
+				nextValue.append(nextChar);
+			} else if (!insideString) {
+				if (nextChar == separator) {
+					returnList.add(parseValue(stringQuote, nextValue.toString()));
+					nextValue = new StringBuilder();
+				} else {
+					nextValue.append(nextChar);
+				}
+			} else { // insideString
+				nextValue.append(nextChar);
+			}
+		}
+		
+		if (insideString) {
+			throw new IOException("Unexpected EOL after quoted csv-value was started");
+		} else {
+			if (nextValue.length() > 0) {
+				returnList.add(parseValue(stringQuote, nextValue.toString()));
+			}
+		
+			if (returnList.size() > 0) {
+				return returnList;
+			} else {
+				return null;
+			}
+		}
+	}
+	
+
+	
+	private static String parseValue(char stringQuote, String rawValue) {
+		String returnValue = rawValue;
+		String stringQuoteString = Character.toString(stringQuote);
+		
+		if (StringUtils.isNotEmpty(returnValue)) {
+			if (returnValue.charAt(0) == stringQuote
+					&& returnValue.charAt(returnValue.length() - 1) == stringQuote) {
+				returnValue = returnValue.substring(1, returnValue.length() - 1);
+				returnValue = returnValue.replace(stringQuoteString + stringQuoteString, stringQuoteString);
+			}
+			returnValue = returnValue.replace("\r\n", "\n").replace('\r', '\n');
+		} 
+
+		return returnValue;
 	}
 }

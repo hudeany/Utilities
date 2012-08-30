@@ -165,4 +165,28 @@ public class CsvWriter extends Writer {
 			outputWriter.flush();
 		}
 	}
+	
+	public static String getCsvLine(char separator, char stringQuote, Object... values) {
+		StringBuilder returnValue = new StringBuilder();
+		String separatorString = Character.toString(separator);
+		String stringQuoteString = Character.toString(stringQuote);
+		if (values != null) {
+			for (Object value : values) {
+				if (returnValue.length() > 0) {
+					returnValue.append(separator);
+				}
+				if (value != null) {
+					String valueString = value.toString();
+					if (valueString.contains(separatorString) || valueString.contains(stringQuoteString)) {
+						returnValue.append(stringQuote);
+					}
+					returnValue.append(valueString.replace(stringQuoteString, stringQuoteString + stringQuoteString));
+					if (valueString.contains(separatorString) || valueString.contains(stringQuoteString)) {
+						returnValue.append(stringQuote);
+					}
+				}
+			}
+		}
+		return returnValue.toString();
+	}
 }
