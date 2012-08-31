@@ -29,7 +29,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 	@Override
 	protected void createComponents(Shell shell) {
-		shell.setText(applicationName + " " + LangResources.get("CONFIGURATION"));
+		shell.setText(applicationName + " " + LangResources.get("configuration"));
 		shell.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		shell.setLayout(new GridLayout(2, false));
 		
