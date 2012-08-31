@@ -1,9 +1,5 @@
 package de.soderer.utilities;
 
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -143,6 +139,62 @@ public class UtilitiesTest {
 		try {
 			int index = Utilities.getStartIndexOfLine("123\n456\n789", 5);
 			Assert.assertEquals(8, index);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testPunycode1() {
+		try {
+			String punycode = PunycodeCodec.encode(Utilities.GERMAN_TEST_STRING);
+			Assert.assertEquals("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !?@$%&/\\<>(){}[]'\"`^*#.,;:=+-~_|-3dd50g5fvd9dyd97f80c3ryjzs95dssz547y", punycode);
+			String result = PunycodeCodec.decode(punycode);
+			Assert.assertEquals(Utilities.GERMAN_TEST_STRING, result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testPunycode2() {
+		try {
+			String result = PunycodeCodec.encode("abcdefghijklmnopqrstuvwxyz-ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890");
+			Assert.assertEquals("abcdefghijklmnopqrstuvwxyz-ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testPunycode3() {
+		try {
+			String result = PunycodeCodec.encode("österreich.at");
+			Assert.assertEquals("sterreich.at-3ib", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testPunycode4() {
+		try {
+			String punycode = PunycodeCodec.encodeDomainName("Östereich.aäd");
+			Assert.assertEquals("xn--stereich-m4a.xn--ad-via", punycode);
+			String result = PunycodeCodec.decodeDomainName(punycode);
+			Assert.assertEquals("östereich.aäd", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testPunycode5() {
+		try {
+			String punycode = PunycodeCodec.encodeEmailAdress("Jemand@Östereich.at");
+			Assert.assertEquals("Jemand@xn--stereich-m4a.at", punycode);
+			String result = PunycodeCodec.decodeEmailAdress(punycode);
+			Assert.assertEquals("Jemand@östereich.at", result);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
