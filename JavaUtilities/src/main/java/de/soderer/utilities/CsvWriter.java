@@ -18,7 +18,10 @@ public class CsvWriter extends Writer {
 	public static final String DEFAULT_LINEBREAK = "\n";
 	
 	private char separator;
+	private String separatorString;
 	private char stringQuote;
+	private String stringQuoteString;
+	private String doubleStringQuoteString;
 	private boolean useStringQuote;
 	private String lineBreak;
 	private OutputStream outputStream;
@@ -68,9 +71,12 @@ public class CsvWriter extends Writer {
 		this.outputStream = outputStream;
 		this.encoding = encoding;
 		this.separator = separator;
+		separatorString = Character.toString(separator);
 		this.lineBreak = lineBreak;
 		if (stringQuote != null) {
 			this.stringQuote = stringQuote;
+			stringQuoteString = Character.toString(stringQuote);
+			doubleStringQuoteString = stringQuoteString + stringQuoteString;
 			this.useStringQuote = true;
 		} else {
 			this.useStringQuote = false;
@@ -128,11 +134,15 @@ public class CsvWriter extends Writer {
 	
 	private String escapeValue(Object value) throws CsvDataException {
 		String valueString = value.toString();
-		if (valueString.contains(String.valueOf(separator)) || valueString.contains("\r") || valueString.contains("\n") || (useStringQuote && valueString.contains(String.valueOf(stringQuote)))) {
+		if (valueString.contains(separatorString) || valueString.contains("\r") || valueString.contains("\n") || (useStringQuote && valueString.contains(stringQuoteString))) {
 			if (!useStringQuote) {
 				throw new CsvDataException("StringQuote was deactivated but is needed for csv-value after " + writtenLines + " written lines", writtenLines);
 			} else {
-				return stringQuote + valueString.replace(String.valueOf(stringQuote), String.valueOf(stringQuote) + String.valueOf(stringQuote)) + stringQuote;
+				StringBuilder escapedValue = new StringBuilder(); 
+				escapedValue.append(stringQuote);
+				escapedValue.append(valueString.replace(stringQuoteString, doubleStringQuoteString));
+				escapedValue.append(stringQuote);
+				return escapedValue.toString();
 			}
 		} else {
 			return valueString;
@@ -166,10 +176,15 @@ public class CsvWriter extends Writer {
 		}
 	}
 	
+	public static String getCsvLine(char separator, char stringQuote, List<? extends Object> values) {
+		return getCsvLine(separator, stringQuote, values.toArray());
+	}
+	
 	public static String getCsvLine(char separator, char stringQuote, Object... values) {
 		StringBuilder returnValue = new StringBuilder();
 		String separatorString = Character.toString(separator);
 		String stringQuoteString = Character.toString(stringQuote);
+		String doubleStringQuoteString = stringQuoteString + stringQuoteString;
 		if (values != null) {
 			for (Object value : values) {
 				if (returnValue.length() > 0) {
@@ -177,12 +192,12 @@ public class CsvWriter extends Writer {
 				}
 				if (value != null) {
 					String valueString = value.toString();
-					if (valueString.contains(separatorString) || valueString.contains(stringQuoteString)) {
-						returnValue.append(stringQuote);
-					}
-					returnValue.append(valueString.replace(stringQuoteString, stringQuoteString + stringQuoteString));
-					if (valueString.contains(separatorString) || valueString.contains(stringQuoteString)) {
-						returnValue.append(stringQuote);
+					if (valueString.contains(separatorString) || valueString.contains("\r") || valueString.contains("\n") || valueString.contains(stringQuoteString)) {
+						returnValue.append(stringQuoteString);
+						returnValue.append(valueString.replace(stringQuoteString, doubleStringQuoteString));
+						returnValue.append(stringQuoteString);
+					} else {
+						returnValue.append(valueString);
 					}
 				}
 			}

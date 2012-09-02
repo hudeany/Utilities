@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -52,13 +51,19 @@ public class ConfigurationProperties {
 	}
 	
 	public List<String> getList(String name) {
-		if (properties.containsKey(name))
-			return Arrays.asList(properties.getProperty(name).split(";"));
-		else return new ArrayList<String>();
+		if (properties.containsKey(name) && StringUtils.isNotEmpty(properties.getProperty(name)) ) {
+			try {
+				return CsvReader.parseCsvLine(';', '"', properties.getProperty(name));
+			} catch (IOException e) {
+				return new ArrayList<String>();
+			}
+		} else {
+			return new ArrayList<String>();
+		}
 	}
 	
 	public void set(String name, List<String> list) {
-		properties.setProperty(name, StringUtils.join(list, ";"));
+		properties.setProperty(name, CsvWriter.getCsvLine(';', '"', list));
 	}
 	
 	public void save() {

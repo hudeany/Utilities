@@ -1125,4 +1125,76 @@ public class Utilities {
 			return position;
 		}
 	}
+	
+	public static int searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
+		if (text != null && searchTextOrPattern != null) {
+			String fullText = text;
+			String textToSearch = searchTextOrPattern;
+			
+			if (!searchCaseSensitive) {
+				fullText = fullText.toLowerCase();
+				textToSearch = textToSearch.toLowerCase();
+			}
+			
+			int nextPosition = -1;
+			if (searchTextIsRegularExpression) {
+				if (searchReversely) {
+					Pattern searchPattern = Pattern.compile(textToSearch);
+					Matcher matcher = searchPattern.matcher(fullText);
+					int maxFindStart = -1;
+					while (matcher.find()) {
+						maxFindStart = matcher.start();
+						if (matcher.start() < startPosition) {
+							nextPosition = matcher.start();
+						} else {
+							break;
+						}
+					}
+					if (nextPosition == -1) {
+						while (matcher.find()) {
+							maxFindStart = matcher.start();
+						}
+						if (maxFindStart > -1) {
+							nextPosition = maxFindStart;
+						}
+					}
+					return nextPosition;
+				} else {
+					Pattern searchPattern = Pattern.compile(textToSearch);
+					Matcher matcher = searchPattern.matcher(fullText);
+					if (matcher.find(startPosition)) {
+						nextPosition = matcher.start();
+					}
+					if (startPosition > 0 && nextPosition < 0) {
+						if (matcher.find(0)) {
+							nextPosition = matcher.start();
+						}
+					}
+					return nextPosition;
+				}
+			} else {
+				if (searchReversely) {
+					fullText = new StringBuilder(fullText).reverse().toString();
+					textToSearch = new StringBuilder(textToSearch).reverse().toString();
+					startPosition = fullText.length() - startPosition - textToSearch.length() + 1;
+					nextPosition = fullText.indexOf(textToSearch, startPosition);
+					if (startPosition > 0 && nextPosition < 0) {
+						nextPosition = fullText.indexOf(textToSearch, 0);
+					}
+					if (nextPosition >= 0) {
+						nextPosition = fullText.length() - nextPosition - textToSearch.length();
+					}
+					return nextPosition;
+				} else {
+					nextPosition = fullText.indexOf(textToSearch, startPosition);
+					if (startPosition > 0 && nextPosition < 0) {
+						nextPosition = fullText.indexOf(textToSearch, 0);
+					}
+					return nextPosition;
+				}
+			}
+		} else {
+			return -1;
+		}
+	}
 }
