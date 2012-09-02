@@ -1131,15 +1131,15 @@ public class Utilities {
 			String fullText = text;
 			String textToSearch = searchTextOrPattern;
 			
-			if (!searchCaseSensitive) {
-				fullText = fullText.toLowerCase();
-				textToSearch = textToSearch.toLowerCase();
-			}
-			
 			int nextPosition = -1;
 			if (searchTextIsRegularExpression) {
+				Pattern searchPattern;
+				if (!searchCaseSensitive) {
+					searchPattern = Pattern.compile(textToSearch, Pattern.CASE_INSENSITIVE);
+				} else {
+					searchPattern = Pattern.compile(textToSearch);
+				}
 				if (searchReversely) {
-					Pattern searchPattern = Pattern.compile(textToSearch);
 					Matcher matcher = searchPattern.matcher(fullText);
 					int maxFindStart = -1;
 					while (matcher.find()) {
@@ -1160,7 +1160,6 @@ public class Utilities {
 					}
 					return nextPosition;
 				} else {
-					Pattern searchPattern = Pattern.compile(textToSearch);
 					Matcher matcher = searchPattern.matcher(fullText);
 					if (matcher.find(startPosition)) {
 						nextPosition = matcher.start();
@@ -1173,6 +1172,10 @@ public class Utilities {
 					return nextPosition;
 				}
 			} else {
+				if (!searchCaseSensitive) {
+					fullText = fullText.toLowerCase();
+					textToSearch = textToSearch.toLowerCase();
+				}
 				if (searchReversely) {
 					fullText = new StringBuilder(fullText).reverse().toString();
 					textToSearch = new StringBuilder(textToSearch).reverse().toString();
@@ -1192,6 +1195,45 @@ public class Utilities {
 					}
 					return nextPosition;
 				}
+			}
+		} else {
+			return -1;
+		}
+	}
+	
+	public static int countOccurences(String text, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive) {
+		if (text != null && searchTextOrPattern != null) {
+			String fullText = text;
+			String textToSearch = searchTextOrPattern;
+			int occurences = 0;
+			
+			if (searchTextIsRegularExpression) {
+				Pattern searchPattern;
+				if (!searchCaseSensitive) {
+					searchPattern = Pattern.compile(textToSearch, Pattern.CASE_INSENSITIVE);
+				} else {
+					searchPattern = Pattern.compile(textToSearch);
+				}
+				Matcher matcher = searchPattern.matcher(fullText);
+				while (matcher.find()) {
+					occurences++;
+				}
+				return occurences;
+			} else {
+				if (!searchCaseSensitive) {
+					fullText = fullText.toLowerCase();
+					textToSearch = textToSearch.toLowerCase();
+				}
+				
+				int nextPosition = 0;
+				while (nextPosition != -1) {
+					nextPosition = fullText.indexOf(textToSearch, nextPosition);
+					if (nextPosition >= 0) {
+						occurences++;
+						nextPosition++;
+					}
+				}
+				return occurences;
 			}
 		} else {
 			return -1;
