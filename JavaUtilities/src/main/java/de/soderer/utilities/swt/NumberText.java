@@ -45,6 +45,7 @@ public class NumberText extends Text {
 		
 		setText("0");
 	}
+	
 	@Override
 	protected void checkSubclass() {
 	}

@@ -8,8 +8,7 @@ import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
 
 public class StochasticUtilities {
-	@SafeVarargs
-	public static <T> Collection<List<T>> createPermutations(T... items) {
+	public static <T> Collection<List<T>> createPermutations(@SuppressWarnings("unchecked") T... items) {
 		if (items == null || items.length == 0) {
 			return new LinkedList<List<T>>();
 		} else if (items.length == 1) {
@@ -36,8 +35,7 @@ public class StochasticUtilities {
 		}
 	}
 
-	@SafeVarargs
-	public static <T> Collection<List<T>> createCombinations(int length, T... items) {
+	public static <T> Collection<List<T>> createCombinations(int length, @SuppressWarnings("unchecked") T... items) {
 		if (length <= 0 || items == null || items.length == 0) {
 			return new LinkedList<List<T>>();
 		} else if (length == 1) {

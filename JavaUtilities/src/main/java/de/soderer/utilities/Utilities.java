@@ -17,6 +17,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
 import java.security.cert.X509Certificate;
@@ -1238,5 +1239,16 @@ public class Utilities {
 		} else {
 			return -1;
 		}
+	}
+	
+	public static String getClassPath() {
+		ClassLoader sysClassLoader = ClassLoader.getSystemClassLoader();
+		URL[] urls = ((URLClassLoader)sysClassLoader).getURLs();
+
+		StringBuilder classpath = new StringBuilder();
+		for(int i=0; i< urls.length; i++) {
+			classpath.append(urls[i].getFile() + "\n");
+		}
+		return classpath.toString();
 	}
 }
