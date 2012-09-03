@@ -35,6 +35,28 @@ public class ConfigurationProperties {
 			return properties.getProperty(name);
 		else return null;
 	}
+
+	/**
+	 * Ensure this key is enclosed in the configuration within the saved file
+	 * 
+	 * @param name
+	 */
+	public void ensure(String name) {
+		if (!properties.containsKey(name)) {
+			properties.setProperty(name, "");
+		}
+	}
+
+	/**
+	 * Ensure this key is enclosed in the configuration within the saved file
+	 * 
+	 * @param name
+	 */
+	public void ensure(String name, boolean defaultValue) {
+		if (!properties.containsKey(name)) {
+			properties.setProperty(name, defaultValue ? "true" : "false");
+		}
+	}
 	
 	public void set(String name, String value) {
 		properties.setProperty(name, value);

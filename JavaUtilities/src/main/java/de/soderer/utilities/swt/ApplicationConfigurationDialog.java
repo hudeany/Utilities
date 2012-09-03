@@ -38,13 +38,25 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 			label.setText(key);
 			
-			Text keyTextfield = new Text(shell, SWT.BORDER);
-			GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1);
-			gridData.widthHint = 300;
-			keyTextfield.setLayoutData(gridData);
-			keyTextfield.setText(applicationConfiguration.get(key));
-			keyTextfield.setSize(100, 20);
-			keyTextfield.addModifyListener(new ValueChangeListener(key));
+			String value = applicationConfiguration.get(key);
+			boolean isBooleanValue = "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value);
+			if (isBooleanValue) {
+				Button keyCheckBox = new Button(shell, SWT.CHECK);
+				GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1);
+				gridData.widthHint = 300;
+				keyCheckBox.setLayoutData(gridData);
+				keyCheckBox.setSelection(Utilities.interpretAsBool(value));
+				keyCheckBox.setSize(100, 20);
+				keyCheckBox.addSelectionListener(new BooleanValueChangeListener(key));
+			} else {
+				Text keyTextfield = new Text(shell, SWT.BORDER);
+				GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1);
+				gridData.widthHint = 300;
+				keyTextfield.setLayoutData(gridData);
+				keyTextfield.setText(value);
+				keyTextfield.setSize(100, 20);
+				keyTextfield.addModifyListener(new StringValueChangeListener(key));
+			}
 		}
 		
 		Composite buttonArea = new Composite(shell, SWT.NONE);
@@ -84,16 +96,34 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		shell.pack();
 	}
 	
-	private class ValueChangeListener implements ModifyListener {
+	private class StringValueChangeListener implements ModifyListener {
 		private String key;
 		
-		private ValueChangeListener(String key) {
+		private StringValueChangeListener(String key) {
 			this.key = key;
 		}
 		
 		@Override
 		public void modifyText(ModifyEvent e) {
 			applicationConfiguration.set(key, ((Text)e.widget).getText());
+		}
+	}
+	
+	private class BooleanValueChangeListener implements SelectionListener {
+		private String key;
+		
+		private BooleanValueChangeListener(String key) {
+			this.key = key;
+		}
+
+		@Override
+		public void widgetDefaultSelected(SelectionEvent e) {
+			applicationConfiguration.set(key, ((Button)e.widget).getSelection());
+		}
+
+		@Override
+		public void widgetSelected(SelectionEvent e) {
+			applicationConfiguration.set(key, ((Button)e.widget).getSelection());
 		}
 	}
 }
