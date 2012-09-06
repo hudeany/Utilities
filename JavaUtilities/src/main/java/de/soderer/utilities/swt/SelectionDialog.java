@@ -57,7 +57,7 @@ public class SelectionDialog extends ModalDialog<String> {
 		comboBox = new Combo(composite, SWT.FILL | SWT.READ_ONLY);
 		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
-	    if (items.size() > 0) {
+	    if (items != null && items.size() > 0) {
 		    comboBox.setItems(items.toArray(new String[items.size()]));
 	    	comboBox.select(comboBox.getItemCount() - 1);
 	    }

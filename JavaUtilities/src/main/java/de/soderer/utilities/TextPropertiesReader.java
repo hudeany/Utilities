@@ -12,19 +12,23 @@ public class TextPropertiesReader {
 		Windows
 	}
 	
-	private String dataString;
+	protected String dataString = null;
+	
 	private int characters = -1;
 	private Map<Character, Integer> foundCharacters = null;
 	private int nonWhitespaceCharacters = -1;
 	private int lines = -1;
 	private int words = -1;
 	private LineBreakType linebreaks = LineBreakType.Unknown;
+	
+	protected TextPropertiesReader() throws Exception {
+	}
 
 	public TextPropertiesReader(String dataString) throws Exception {
 		this.dataString = dataString;
 	}
 	
-	public void readProperties() {
+	public void readProperties() throws Exception {
 		foundCharacters = new HashMap<Character, Integer>();
 		int lineCount = 0;
 		int nonWhitespaceCharactersCount = 0;

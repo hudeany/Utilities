@@ -1,38 +1,20 @@
 package de.soderer.utilities;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 
-public class TextFilePropertiesReader {
-	private static final Charset[] CHARSETS_TO_CHECK = new Charset[] {
-		Charset.forName("UTF-8"),
-		Charset.forName("ISO-8859-1"),
-		Charset.forName("UTF-16"),
-		Charset.forName("ISO-8859-15"),
-		Charset.forName("ASCII")
-	};
-	
+public class TextFilePropertiesReader extends TextPropertiesReader {
 	private File file;
-	private String encoding = null;
-	
+	private Tuple<String, Boolean> encodingData = null;
 	private long filesize = -1;
-	private int characters = -1;
-	private Map<Character, Integer> foundCharacters = null;
-	private int nonWhitespaceCharacters = -1;
-	private int lines = -1;
-	private int words = -1;
-	private TextPropertiesReader.LineBreakType linebreaks = TextPropertiesReader.LineBreakType.Unknown;
 
-	public TextFilePropertiesReader(String filePath, String encoding) throws Exception {
-		this(new File(filePath), encoding);
+	public TextFilePropertiesReader(String filePath, Tuple<String, Boolean> encodingData) throws Exception {
+		this(new File(filePath), encodingData);
 	}
 	
 	public TextFilePropertiesReader(String filePath) throws Exception {
@@ -43,7 +25,7 @@ public class TextFilePropertiesReader {
 		this(file, null);
 	}
 	
-	public TextFilePropertiesReader(File file, String encoding) throws Exception {
+	public TextFilePropertiesReader(File file, Tuple<String, Boolean> encodingData) throws Exception {
 		this.file = file;
 		
 		if (!file.exists()) {
@@ -52,201 +34,158 @@ public class TextFilePropertiesReader {
 			throw new Exception("Path isn't a file");
 		}
 		
-		if (StringUtils.isBlank(encoding)) {
-			this.encoding = null;
-		} else {
-			try {
-				this.encoding = Charset.forName(encoding).name();
-			} catch (Exception e) {
-				throw new Exception("Invalid encoding: '" + encoding + "'");
-			}
-		}
+		this.encodingData = encodingData;
 	}
 	
-	public String readFileToString() throws IOException {
+	public String readFileToString() throws Exception {
 		filesize = file.length();
-		foundCharacters = new HashMap<Character, Integer>();
 		byte[] data = FileUtils.readFileToByteArray(file);
-		if (encoding != null) {
-			String dataString = new String(data, encoding);
-			readPropertiesOfString(dataString);
-			return dataString;
-		} else {
-			for (Charset charset : CHARSETS_TO_CHECK) {
-				String dataString = new String(data, charset);
-				if (!dataString.contains("�")) {
-					encoding = charset.name();
-					readPropertiesOfString(dataString);
-					return dataString;
-				}
-			}
-			
-			// File doesn't fit any given charset
-			String dataString = new String(data, Charset.forName("UTF-8"));
-			readPropertiesOfString(dataString);
-			return dataString;
+		if (encodingData == null) {
+			encodingData = detectEncoding(data);
 		}
+		if (encodingData == null) {
+			// File encoding cannot be detected so use UTF-8
+			encodingData = new Tuple<String, Boolean>("UTF-8", false);
+		}
+		dataString = decodeByteArray(data, encodingData);
+		super.readProperties();
+		return dataString;
 	}
 	
-	private void readPropertiesOfString(String dataString) {
-		int lineCount = 0;
-		int nonWhitespaceCharactersCount = 0;
-		int wordCount = 0;
-		boolean foundLineBreakUnix = false;
-		boolean foundLineBreakMac = false;
-		boolean foundLineBreakWindows = false;
-		boolean isWithinWord = false;
-		
-		for (int i = 0; i < dataString.length(); i++) {
-			char character = dataString.charAt(i);
-			
-			if (foundCharacters.containsKey(character)) {
-				foundCharacters.put(character, foundCharacters.get(character) + 1);
-			} else {
-				foundCharacters.put(character, 1);
-			}
-				
-			if (character == '\r') {
-				if (dataString.charAt(i + 1) == '\n') {
-					i++;
-					foundLineBreakWindows = true;
-				} else {
-					foundLineBreakMac = true;
-				}
-
-				if (isWithinWord) {
-					wordCount++;
-				}
-				isWithinWord = false;
-				
-				lineCount++;
-			} else if (character == '\n') {
-				foundLineBreakUnix = true;
-
-				if (isWithinWord) {
-					wordCount++;
-				}
-				isWithinWord = false;
-				
-				lineCount++;
-			} else if (!Character.isWhitespace(character)) {
-				nonWhitespaceCharactersCount++;
-				
-				isWithinWord = true;
-				
-				if (i == dataString.length() - 1) {
-					lineCount++;
-				}
-			} else {
-				if (isWithinWord) {
-					wordCount++;
-				}
-				isWithinWord = false;
-				
-				if (i == dataString.length() - 1) {
-					lineCount++;
-				}
-			}
-		}
-
-		if (isWithinWord) {
-			wordCount++;
-		}
-		
-		if ((foundLineBreakUnix && foundLineBreakMac) || (foundLineBreakWindows && foundLineBreakMac) || (foundLineBreakUnix && foundLineBreakWindows)) {
-			linebreaks = TextPropertiesReader.LineBreakType.Mixed;
-		} else if (foundLineBreakUnix) {
-			linebreaks = TextPropertiesReader.LineBreakType.Unix;
-		} else if (foundLineBreakMac) {
-			linebreaks = TextPropertiesReader.LineBreakType.Mac;
-		} else if (foundLineBreakWindows) {
-			linebreaks = TextPropertiesReader.LineBreakType.Windows;
-		} else {
-			linebreaks = TextPropertiesReader.LineBreakType.Unknown;
-		}
-		
-		lines = lineCount;
-		characters = dataString.length();
-		nonWhitespaceCharacters = nonWhitespaceCharactersCount;
-		words = wordCount;
+	@Override
+	public void readProperties() throws Exception {
+		readFileToString();
 	}
 
 	public long getFilesize() {
 		return filesize;
 	}
 
-	public int getCharactersCount() {
-		return characters;
-	}
-
-	public Map<Character, Integer> getFoundCharacters() {
-		return foundCharacters;
-	}
-
-	public int getNonWhitespaceCharactersCount() {
-		return nonWhitespaceCharacters;
-	}
-
-	public int getLinesCount() {
-		return lines;
-	}
-
-	public int getWordsCount() {
-		return words;
-	}
-
-	public TextPropertiesReader.LineBreakType getLinebreakType() {
-		return linebreaks;
-	}
-
-	public String getEncoding() {
-		return encoding;
+	public Tuple<String, Boolean> getEncoding() {
+		return encodingData;
 	}
 	
-	public static List<Charset> detectTextEncoding(File file, List<Charset> charsetsToCheck) throws IOException {
-		return detectTextEncoding(file, charsetsToCheck, null);
-	}
-	
-	public static List<Charset> detectTextEncoding(File file, List<Charset> charsetsToCheck, Charset defaultEncoding) throws IOException {
-		byte[] data = FileUtils.readFileToByteArray(file);
-		return detectTextEncoding(data, charsetsToCheck, defaultEncoding);
-	}
-	
-	public static List<Charset> detectTextEncoding(byte[] data, List<Charset> charsetsToCheck) {
-		return detectTextEncoding(data, charsetsToCheck, null);
-	}
-	
-	public static List<Charset> detectTextEncoding(byte[] data, List<Charset> charsetsToCheck, Charset defaultEncoding) {
-		List<Charset> validEncodings = new ArrayList<Charset>();
-		if (data.length > 2 && ((BitUtilities.getUnsignedValue(data[0]) == 0xFF && BitUtilities.getUnsignedValue(data[1]) == 0xFE) || (BitUtilities.getUnsignedValue(data[0]) == 0xFE && BitUtilities.getUnsignedValue(data[1]) == 0xFF))) {
-			// Detected UTF-16 BOM (FF FE or FE FF)
-			validEncodings.add(Charset.forName("UTF-16"));
-			return validEncodings;
-		} else if (data.length > 3 && BitUtilities.getUnsignedValue(data[0]) == 0xEF && BitUtilities.getUnsignedValue(data[1]) == 0xBB && BitUtilities.getUnsignedValue(data[2]) == 0xBF) {
-			// Detected UTF-8 BOM (EF BB BF)
-			validEncodings.add(Charset.forName("UTF-8"));
-			return validEncodings;
+	public static Tuple<String, Boolean> getEncodingData(String encodingString) {
+		if ("UnicodeBig".equalsIgnoreCase(encodingString)
+			|| "UTF-16BE-BOM".equalsIgnoreCase(encodingString)) {
+			return new Tuple<String, Boolean>("UTF-16BE", true);
+		} else if ("UnicodeLittle".equalsIgnoreCase(encodingString)
+			|| "UTF-16LE-BOM".equalsIgnoreCase(encodingString)) {
+			return new Tuple<String, Boolean>("UTF-16LE", true);
+		} else if ("UTF-8-BOM".equalsIgnoreCase(encodingString)) {
+			return new Tuple<String, Boolean>("UTF-8", true);
+		} else {
+			return new Tuple<String, Boolean>(encodingString, false);
 		}
-		
-		for (Charset charset : charsetsToCheck) {
-			String dataString = new String(data, charset);
-			if (!dataString.contains("�")) {
-				if (defaultEncoding != null && charset == defaultEncoding) {
-					validEncodings = new ArrayList<Charset>();
-					validEncodings.add(defaultEncoding);
-					return validEncodings;
+	}
+	
+	public static String getEncodingDisplayString(Tuple<String, Boolean> encodingData) {
+		if ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+			return "UTF-16BE-BOM";
+		} else if ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
+			return "UTF-16BE";
+		} else if ("UnicodeBig".equalsIgnoreCase(encodingData.getFirst())) {
+			return "UTF-16BE-BOM";
+		} else if ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+			return "UTF-16BE-BOM";
+		} else if ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
+			return "UTF-16BE";
+		} else if ("UnicodeLittle".equalsIgnoreCase(encodingData.getFirst())) {
+			return "UTF-16LE-BOM";
+		} else if ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+			return "UTF-16LE-BOM";
+		} else if ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
+			return "UTF-16LE";
+		} else if ("UTF-8".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+			return "UTF-8-BOM";
+		} else {
+			return encodingData.getFirst();
+		}
+	}
+	
+	public static byte[] encodeString(String text, Tuple<String, Boolean> encodingData) throws IOException {
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		String encoding = encodingData.getFirst();
+		if ("UnicodeBig".equalsIgnoreCase(encodingData.getFirst())
+			|| ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())
+			|| ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())) {
+			output.write(Utilities.UTF_16_BE_BOM);
+			encoding = "UTF-16BE";
+		} else if ("UnicodeLittle".equalsIgnoreCase(encodingData.getFirst())
+			|| ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())) {
+			output.write(Utilities.UTF_16_LE_BOM);
+			encoding = "UTF-16LE";
+		} else if ("UTF-8".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+			output.write(Utilities.UTF_8_BOM);
+		}
+		output.write(text.getBytes(encoding));
+		return output.toByteArray();
+	}
+	
+	public static String decodeByteArray(byte[] data, Tuple<String, Boolean> encodingData) throws IOException {
+		if (data.length > 2 && data[0] == Utilities.UTF_16_BE_BOM[0] && data[1] == Utilities.UTF_16_BE_BOM[1]) {
+			return new String(data, 2, data.length - 2, encodingData.getFirst());
+		} else if (data.length > 2 && data[0] == Utilities.UTF_16_LE_BOM[0] && data[1] == Utilities.UTF_16_LE_BOM[1]) {
+			return new String(data, 2, data.length - 2, encodingData.getFirst());
+		} else if (data.length > 3 && data[0] == Utilities.UTF_8_BOM[0] && data[1] == Utilities.UTF_8_BOM[1] && data[2] == Utilities.UTF_8_BOM[2]) {
+			return new String(data, 3, data.length - 3, encodingData.getFirst());
+		} else {
+			return new String(data, encodingData.getFirst());
+		}
+	}
+	
+	public static Tuple<String, Boolean> detectEncoding(byte[] data) throws UnsupportedEncodingException {
+		if (data.length > 2 && data[0] == Utilities.UTF_16_BE_BOM[0] && data[1] == Utilities.UTF_16_BE_BOM[1]) {
+			return new Tuple<String, Boolean>("UTF-16BE", true);
+		} else if (data.length > 2 && data[0] == Utilities.UTF_16_LE_BOM[0] && data[1] == Utilities.UTF_16_LE_BOM[1]) {
+			return new Tuple<String, Boolean>("UTF-16LE", true);
+		} else if (data.length > 3 && data[0] == Utilities.UTF_8_BOM[0] && data[1] == Utilities.UTF_8_BOM[1] && data[2] == Utilities.UTF_8_BOM[2]) {
+			return new Tuple<String, Boolean>("UTF-8", true);
+		} else {
+			String interimString = new String(data, 0, 100, "UTF-8").toLowerCase();
+			
+			// Detect Xml Encoding
+			try {
+				String reducedInterimString = interimString.replace("\u0000", "");
+				int encodingStart = reducedInterimString.indexOf("encoding");
+				if (encodingStart >= 0) {
+					encodingStart = reducedInterimString.indexOf("=", encodingStart);
+					if (encodingStart >= 0) {
+						encodingStart++;
+						while (reducedInterimString.charAt(encodingStart) == ' ') {
+							encodingStart++;
+						}
+						if (reducedInterimString.charAt(encodingStart) == '"' || reducedInterimString.charAt(encodingStart) == '\'') {
+							encodingStart++;
+						}
+						StringBuilder encodingString = new StringBuilder();
+						while (Character.isLetter(reducedInterimString.charAt(encodingStart)) || Character.isDigit(reducedInterimString.charAt(encodingStart)) || reducedInterimString.charAt(encodingStart) == '-') {
+							encodingString.append(reducedInterimString.charAt(encodingStart));
+							encodingStart++;
+						}
+						Charset.forName(encodingString.toString());
+						if (encodingString.toString().startsWith("utf-16") && data[0] == 0) {
+							return new Tuple<String, Boolean>("UTF-16BE", false);
+						} else if (encodingString.toString().startsWith("utf-16") && data[1] == 0) {
+							return new Tuple<String, Boolean>("UTF-16LE", false);
+						} else {
+							return new Tuple<String, Boolean>(encodingString.toString().toUpperCase(), false);
+						}
+					}
+				}
+			} catch (Exception e) {
+			}
+			
+			int zeroIndex = interimString.indexOf('\u0000');
+			if (zeroIndex >= 0) {
+				if (zeroIndex % 2 == 0) {
+					return new Tuple<String, Boolean>("UTF-16BE", false);
 				} else {
-					validEncodings.add(charset);
+					return new Tuple<String, Boolean>("UTF-16LE", false);
 				}
 			}
-		}
-		
-		if (validEncodings.size() == 0) {
+			
 			return null;
-		} else if (validEncodings.size() == 1) {
-			return validEncodings;
-		} else {
-			return validEncodings;
 		}
 	}
 }

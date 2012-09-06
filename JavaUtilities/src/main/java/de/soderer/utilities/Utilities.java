@@ -52,6 +52,10 @@ import org.apache.commons.lang3.StringUtils;
 public class Utilities {
 	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"´`^°²³*#.,;:=+-~_|";
 	
+	public static final byte[] UTF_16_LE_BOM = new byte[]{(byte)0xFF, (byte)0xFE};
+	public static final byte[] UTF_16_BE_BOM = new byte[]{(byte)0xFE, (byte)0xFF};
+	public static final byte[] UTF_8_BOM = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF};
+	
 	public static String generateUUID() {
 		return UUID.randomUUID().toString().toUpperCase().replaceAll("-", "");
 	}
@@ -1127,13 +1131,25 @@ public class Utilities {
 		}
 	}
 	
-	public static int searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
+	/**
+	 * 
+	 * 
+	 * @param text
+	 * @param startPosition
+	 * @param searchTextOrPattern
+	 * @param searchTextIsRegularExpression
+	 * @param searchCaseSensitive
+	 * @param searchReversely
+	 * @return Tuple First = Startindex, Second = Length of found substring
+	 */
+	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
 		if (text != null && searchTextOrPattern != null) {
 			String fullText = text;
 			String textToSearch = searchTextOrPattern;
 			
 			int nextPosition = -1;
 			if (searchTextIsRegularExpression) {
+				int length = -1;
 				Pattern searchPattern;
 				if (!searchCaseSensitive) {
 					searchPattern = Pattern.compile(textToSearch, Pattern.CASE_INSENSITIVE);
@@ -1142,35 +1158,43 @@ public class Utilities {
 				}
 				if (searchReversely) {
 					Matcher matcher = searchPattern.matcher(fullText);
-					int maxFindStart = -1;
 					while (matcher.find()) {
-						maxFindStart = matcher.start();
 						if (matcher.start() < startPosition) {
 							nextPosition = matcher.start();
+							length = matcher.end() - nextPosition;
 						} else {
 							break;
 						}
 					}
-					if (nextPosition == -1) {
-						while (matcher.find()) {
-							maxFindStart = matcher.start();
+					if (nextPosition < 0) {
+						if (matcher.start() > 0) {
+							nextPosition = matcher.start();
+							length = matcher.end() - nextPosition;
 						}
-						if (maxFindStart > -1) {
-							nextPosition = maxFindStart;
+						while (matcher.find()) {
+							nextPosition = matcher.start();
+							length = matcher.end() - nextPosition;
 						}
 					}
-					return nextPosition;
+
+					if (nextPosition < 0) {
+						return null;
+					} else {
+						return new Tuple<Integer, Integer>(nextPosition, length);
+					}
 				} else {
 					Matcher matcher = searchPattern.matcher(fullText);
 					if (matcher.find(startPosition)) {
 						nextPosition = matcher.start();
+						length = matcher.end() - nextPosition;
 					}
 					if (startPosition > 0 && nextPosition < 0) {
 						if (matcher.find(0)) {
 							nextPosition = matcher.start();
+							length = matcher.end() - nextPosition;
 						}
 					}
-					return nextPosition;
+					return new Tuple<Integer, Integer>(nextPosition, length);
 				}
 			} else {
 				if (!searchCaseSensitive) {
@@ -1187,18 +1211,24 @@ public class Utilities {
 					}
 					if (nextPosition >= 0) {
 						nextPosition = fullText.length() - nextPosition - textToSearch.length();
+						return new Tuple<Integer, Integer>(nextPosition, textToSearch.length());
+					} else {
+						return null;
 					}
-					return nextPosition;
 				} else {
 					nextPosition = fullText.indexOf(textToSearch, startPosition);
 					if (startPosition > 0 && nextPosition < 0) {
 						nextPosition = fullText.indexOf(textToSearch, 0);
 					}
-					return nextPosition;
+					if (nextPosition >= 0) {
+						return new Tuple<Integer, Integer>(nextPosition, textToSearch.length());
+					} else {
+						return null;
+					}
 				}
 			}
 		} else {
-			return -1;
+			return null;
 		}
 	}
 	
@@ -1250,5 +1280,20 @@ public class Utilities {
 			classpath.append(urls[i].getFile() + "\n");
 		}
 		return classpath.toString();
+	}
+	
+	public static boolean compare(byte[] byteArray1, byte[] byteArray2) {
+		if (byteArray1 == byteArray2) {
+			return true;
+		} else if (byteArray1 == null || byteArray2 == null || byteArray1.length != byteArray2.length) {
+			return false;
+		} else {
+			for (int i = 0; i < byteArray1.length; i++) {
+				if (byteArray1[i] != byteArray2[i]) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
 }
