@@ -9,14 +9,21 @@ public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 	private int size = -1;
 	
 	/**
-	 * No length of queue set means the elements are only stored unique and double storeage puts the item to the end.
+	 * No length of queue set means the elements are only stored uniquely and double storage puts the item to the end.
 	 * Thats the same effect as an infinite queue length.
 	 */
 	public UniqueFifoQueuedList() {
 	}
 
 	public UniqueFifoQueuedList(int size) {
+		this(size, null);
+	}
+
+	public UniqueFifoQueuedList(int size, Collection<T> initialContent) {
 		this.size = size;
+		if (initialContent != null) {
+			addAll(initialContent);
+		}
 	}
 	
 	@Override

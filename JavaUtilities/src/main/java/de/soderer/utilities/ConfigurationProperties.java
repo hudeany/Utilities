@@ -12,7 +12,11 @@ import java.util.Properties;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import de.soderer.utilities.collection.UniqueFifoQueuedList;
+
 public class ConfigurationProperties {
+	public static String MAXSIZE_EXTENSION = ".maxSize";
+	
 	private Properties properties = new Properties();
 	private String applicationName;
 	
@@ -58,14 +62,33 @@ public class ConfigurationProperties {
 		}
 	}
 	
+	public void ensureRecentList(String name, int maxSize) {
+		if (!properties.containsKey(name)) {
+			properties.setProperty(name, "");
+		}
+		if (!properties.containsKey(name + MAXSIZE_EXTENSION)) {
+			properties.setProperty(name + MAXSIZE_EXTENSION, Integer.toString(maxSize));
+		}
+	}
+	
 	public void set(String name, String value) {
 		properties.setProperty(name, value);
 	}
 	
+	public int getInteger(String name) {
+		if (properties.containsKey(name)) {
+			return Integer.parseInt(properties.getProperty(name));
+		} else {
+			return 0;
+		}
+	}
+	
 	public boolean getBoolean(String name) {
-		if (properties.containsKey(name))
+		if (properties.containsKey(name)) {
 			return Utilities.interpretAsBool(properties.getProperty(name));
-		else return false;
+		} else {
+			return false;
+		}
 	}
 	
 	public void set(String name, boolean value) {
@@ -86,6 +109,16 @@ public class ConfigurationProperties {
 	
 	public void set(String name, List<String> list) {
 		properties.setProperty(name, CsvWriter.getCsvLine(';', '"', list));
+	}
+	
+	public void addRecentListEntry(String name, String value) {
+		List<String> valueList = new UniqueFifoQueuedList<String>(getInteger(name + MAXSIZE_EXTENSION), getList(name));
+		valueList.add(value);
+		set(name, valueList);
+	}
+	
+	public String getLatestRecentValue(String name) {
+		return new UniqueFifoQueuedList<String>(getInteger(name + MAXSIZE_EXTENSION), getList(name)).getLatestAdded();
 	}
 	
 	public void save() {

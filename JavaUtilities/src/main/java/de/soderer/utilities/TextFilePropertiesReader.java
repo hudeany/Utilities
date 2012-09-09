@@ -80,26 +80,30 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	}
 	
 	public static String getEncodingDisplayString(Tuple<String, Boolean> encodingData) {
-		if ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
-			return "UTF-16BE-BOM";
-		} else if ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
-			return "UTF-16BE";
-		} else if ("UnicodeBig".equalsIgnoreCase(encodingData.getFirst())) {
-			return "UTF-16BE-BOM";
-		} else if ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
-			return "UTF-16BE-BOM";
-		} else if ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
-			return "UTF-16BE";
-		} else if ("UnicodeLittle".equalsIgnoreCase(encodingData.getFirst())) {
-			return "UTF-16LE-BOM";
-		} else if ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
-			return "UTF-16LE-BOM";
-		} else if ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
-			return "UTF-16LE";
-		} else if ("UTF-8".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
-			return "UTF-8-BOM";
+		if (encodingData == null) {
+			return "";
 		} else {
-			return encodingData.getFirst();
+			if ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+				return "UTF-16BE-BOM";
+			} else if ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
+				return "UTF-16BE";
+			} else if ("UnicodeBig".equalsIgnoreCase(encodingData.getFirst())) {
+				return "UTF-16BE-BOM";
+			} else if ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+				return "UTF-16BE-BOM";
+			} else if ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
+				return "UTF-16BE";
+			} else if ("UnicodeLittle".equalsIgnoreCase(encodingData.getFirst())) {
+				return "UTF-16LE-BOM";
+			} else if ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+				return "UTF-16LE-BOM";
+			} else if ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
+				return "UTF-16LE";
+			} else if ("UTF-8".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+				return "UTF-8-BOM";
+			} else {
+				return encodingData.getFirst();
+			}
 		}
 	}
 	
@@ -142,7 +146,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		} else if (data.length > 3 && data[0] == Utilities.UTF_8_BOM[0] && data[1] == Utilities.UTF_8_BOM[1] && data[2] == Utilities.UTF_8_BOM[2]) {
 			return new Tuple<String, Boolean>("UTF-8", true);
 		} else {
-			String interimString = new String(data, 0, 100, "UTF-8").toLowerCase();
+			String interimString = new String(data, 0, Math.min(data.length, 100), "UTF-8").toLowerCase();
 			
 			// Detect Xml Encoding
 			try {

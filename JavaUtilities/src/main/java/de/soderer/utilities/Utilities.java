@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +42,7 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -223,6 +225,25 @@ public class Utilities {
 		}
 		return files;
 	}
+	
+	public static List<File> getFilesWithWildcards(File startDirectory, String fileFilterWithWildcards, boolean traverseCompletely) {
+		List<File> files = new ArrayList<File>();
+		if (startDirectory.isDirectory()) {
+			FileFilter fileFilter = new WildcardFileFilter(fileFilterWithWildcards);
+			for (File file : startDirectory.listFiles(fileFilter)) {
+				files.add(file);
+			}
+
+			if (traverseCompletely) {
+				for (File file : startDirectory.listFiles()) {
+					if (file.isDirectory()) {
+						files.addAll(getFilesWithWildcards(file, fileFilterWithWildcards, traverseCompletely));
+					}
+				}
+			}
+		}
+		return files;
+	}
 
 	public static String trimStringToLengthAlignedRight(String inputString, int laenge) {
 		if (inputString.length() > laenge)
@@ -312,8 +333,7 @@ public class Utilities {
 		return nf.format((long) value);
 	}
 
-	public static byte[] readStreamInArray(InputStream inputStream)
-			throws Exception {
+	public static byte[] readStreamInArray(InputStream inputStream) throws Exception {
 		// Wenn keine Daten aus dem Stream gelesen werden konnten
 		// Wird mehrfach diese Thread-Wartezeit eingeräumt
 		final int WAIT_TIME = 50;
@@ -1230,6 +1250,17 @@ public class Utilities {
 		} else {
 			return null;
 		}
+	}
+	
+	public static boolean fileContainsText(File searchFile, String searchText, boolean searchCaseSensitive, boolean searchRegularExpression, String defaultEncoding) throws Exception {
+		byte[] data = FileUtils.readFileToByteArray(searchFile);
+		Tuple<String, Boolean> encodingData = TextFilePropertiesReader.detectEncoding(data);
+		if (encodingData == null) {
+			encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
+		}
+		String fileText = TextFilePropertiesReader.decodeByteArray(data, encodingData);
+		Tuple<Integer,Integer> foundIndex = searchNextPosition(fileText, 0, searchText, searchRegularExpression, searchCaseSensitive, false);
+		return foundIndex != null && foundIndex.getFirst() >= 0;
 	}
 	
 	public static int countOccurences(String text, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive) {

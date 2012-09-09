@@ -10,11 +10,11 @@ public abstract class ModalDialog<T> extends Dialog {
 	private T returnValue;
 	
 	public ModalDialog(Shell parentShell) {   
-		super(parentShell);
+		super(new Shell(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
 	}
 	
 	public ModalDialog(Shell parentShell, int style) {   
-		super(parentShell, style);
+		super(new Shell(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
 	}
 	
 	protected Shell getShell() {
@@ -22,8 +22,7 @@ public abstract class ModalDialog<T> extends Dialog {
 	}
 	
 	public T open() {
-		shell = new Shell(getParent(), SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
-		
+		shell = getParent();
 		try {
 			createComponents(shell);
 		} catch (Exception e) {
@@ -49,8 +48,8 @@ public abstract class ModalDialog<T> extends Dialog {
 	protected void setPosition(Shell shell) {
 		// Sets the position centered of parent
 		shell.setLocation(
-			getParent().getLocation().x + getParent().getSize().x / 2 - shell.getSize().x / 2,
-	    	getParent().getLocation().y + getParent().getSize().y / 2 - shell.getSize().y / 2);
+				shell.getParent().getLocation().x + shell.getParent().getSize().x / 2 - shell.getSize().x / 2,
+				shell.getParent().getLocation().y + shell.getParent().getSize().y / 2 - shell.getSize().y / 2);
 	}
 	
 	protected abstract void createComponents(Shell parentShell) throws Exception;
