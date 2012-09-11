@@ -53,11 +53,14 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Utilities {
 	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"´`^°²³*#.,;:=+-~_|";
-	
-	public static final byte[] UTF_16_LE_BOM = new byte[]{(byte)0xFF, (byte)0xFE};
-	public static final byte[] UTF_16_BE_BOM = new byte[]{(byte)0xFE, (byte)0xFF};
-	public static final byte[] UTF_8_BOM = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF};
-	
+
+	public static final byte[] UTF_16_LE_BOM = new byte[] { (byte) 0xFF,
+			(byte) 0xFE };
+	public static final byte[] UTF_16_BE_BOM = new byte[] { (byte) 0xFE,
+			(byte) 0xFF };
+	public static final byte[] UTF_8_BOM = new byte[] { (byte) 0xEF,
+			(byte) 0xBB, (byte) 0xBF };
+
 	public static String generateUUID() {
 		return UUID.randomUUID().toString().toUpperCase().replaceAll("-", "");
 	}
@@ -128,8 +131,7 @@ public class Utilities {
 	 * @return unzippedData
 	 * @throws Exception
 	 */
-	public static byte[] unzipByteArray(byte[] zippedData)
-			throws Exception {
+	public static byte[] unzipByteArray(byte[] zippedData) throws Exception {
 		try {
 			ByteArrayOutputStream decoded = new ByteArrayOutputStream();
 			ByteArrayInputStream encoded = new ByteArrayInputStream(zippedData);
@@ -170,11 +172,14 @@ public class Utilities {
 	 * @return Array of Files mit den Dateien die gefunden wurden. Im Fehlerfall
 	 *         null
 	 */
-	public static ArrayList<File> getArrayOfFilesByStammname(String stammNamenListe) {
-		return getArrayOfFilesByStammname(Arrays.asList(stammNamenListe.split(";")));
+	public static ArrayList<File> getArrayOfFilesByStammname(
+			String stammNamenListe) {
+		return getArrayOfFilesByStammname(Arrays.asList(stammNamenListe
+				.split(";")));
 	}
 
-	public static ArrayList<File> getArrayOfFilesByStammname(List<String> stammNamenListe) {
+	public static ArrayList<File> getArrayOfFilesByStammname(
+			List<String> stammNamenListe) {
 		ArrayList<File> ergebnisListe = new ArrayList<File>();
 
 		for (String stammName : stammNamenListe) {
@@ -183,9 +188,12 @@ public class Utilities {
 			// NICHT mit File-Class arbeiten
 			int unixLastIndexOfSeparator = stammName.lastIndexOf("/");
 			int dosLastIndexOfSeparator = stammName.lastIndexOf("\\");
-			int lastIndexOfSeparator = Math.max(unixLastIndexOfSeparator, dosLastIndexOfSeparator);
-			String suchVerzeichnis = stammName.substring(0, lastIndexOfSeparator + 1);
-			String stammFileName = stammName.substring(lastIndexOfSeparator + 1);
+			int lastIndexOfSeparator = Math.max(unixLastIndexOfSeparator,
+					dosLastIndexOfSeparator);
+			String suchVerzeichnis = stammName.substring(0,
+					lastIndexOfSeparator + 1);
+			String stammFileName = stammName
+					.substring(lastIndexOfSeparator + 1);
 
 			// Dateiliste erstellen
 			File searchPath = new File(suchVerzeichnis);
@@ -193,9 +201,13 @@ public class Utilities {
 				File[] partList = searchPath.listFiles();
 				for (int i = 0; i < partList.length; i++) {
 					if (partList[i].isFile()
-						&& ((stammFileName.endsWith("*")
-							&& partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1)))
-							|| (!stammFileName.endsWith("*") && partList[i].getName().equals(stammFileName)))) {
+							&& ((stammFileName.endsWith("*") && partList[i]
+									.getName()
+									.startsWith(
+											stammFileName.substring(0,
+													stammFileName.length() - 1))) || (!stammFileName
+									.endsWith("*") && partList[i].getName()
+									.equals(stammFileName)))) {
 						// Datei gefunden: partList[i].getName());
 						if (!ergebnisListe.contains(partList[i])) {
 							ergebnisListe.add(partList[i]);
@@ -207,37 +219,47 @@ public class Utilities {
 
 		return ergebnisListe;
 	}
-	
-	public static List<File> getFilesByPattern(File startDirectory, String patternString, boolean traverseCompletely) {
-		return getFilesByPattern(startDirectory, Pattern.compile(patternString), traverseCompletely);
+
+	public static List<File> getFilesByPattern(File startDirectory,
+			String patternString, boolean traverseCompletely) {
+		return getFilesByPattern(startDirectory,
+				Pattern.compile(patternString), traverseCompletely);
 	}
-	
-	public static List<File> getFilesByPattern(File startDirectory, Pattern pattern, boolean traverseCompletely) {
+
+	public static List<File> getFilesByPattern(File startDirectory,
+			Pattern pattern, boolean traverseCompletely) {
 		List<File> files = new ArrayList<File>();
 		if (startDirectory.isDirectory()) {
 			for (File file : startDirectory.listFiles()) {
 				if (file.isDirectory() && traverseCompletely) {
-					files.addAll(getFilesByPattern(file, pattern, traverseCompletely));
-				} else if (file.isFile() && pattern.matcher(file.getName()).matches()) {
+					files.addAll(getFilesByPattern(file, pattern,
+							traverseCompletely));
+				} else if (file.isFile()
+						&& pattern.matcher(file.getName()).matches()) {
 					files.add(file);
 				}
 			}
 		}
 		return files;
 	}
-	
-	public static List<File> getFilesWithWildcards(File startDirectory, String fileFilterWithWildcards, boolean traverseCompletely) {
+
+	public static List<File> getFilesWithWildcards(File startDirectory,
+			String fileFilterWithWildcards, boolean traverseCompletely) {
 		List<File> files = new ArrayList<File>();
 		if (startDirectory.isDirectory()) {
-			FileFilter fileFilter = new WildcardFileFilter(fileFilterWithWildcards);
+			FileFilter fileFilter = new WildcardFileFilter(
+					fileFilterWithWildcards);
 			for (File file : startDirectory.listFiles(fileFilter)) {
-				files.add(file);
+				if (file.isFile()) {
+					files.add(file);
+				}
 			}
 
 			if (traverseCompletely) {
 				for (File file : startDirectory.listFiles()) {
 					if (file.isDirectory()) {
-						files.addAll(getFilesWithWildcards(file, fileFilterWithWildcards, traverseCompletely));
+						files.addAll(getFilesWithWildcards(file,
+								fileFilterWithWildcards, traverseCompletely));
 					}
 				}
 			}
@@ -245,15 +267,18 @@ public class Utilities {
 		return files;
 	}
 
-	public static String trimStringToLengthAlignedRight(String inputString, int laenge) {
+	public static String trimStringToLengthAlignedRight(String inputString,
+			int laenge) {
 		if (inputString.length() > laenge)
 			// nimmt die ersten Zeichen in der Anzahl "laenge"
-			return inputString.subSequence(inputString.length() - laenge, inputString.length()).toString();
+			return inputString.subSequence(inputString.length() - laenge,
+					inputString.length()).toString();
 		else
 			return String.format("%" + laenge + "s", inputString);
 	}
 
-	public static String trimStringToLengthAlignedLeft(String inputString, int laenge) {
+	public static String trimStringToLengthAlignedLeft(String inputString,
+			int laenge) {
 		if (inputString.length() > laenge)
 			// nimmt die ersten Zeichen in der Anzahl "laenge"
 			return inputString.subSequence(0, laenge).toString();
@@ -333,7 +358,8 @@ public class Utilities {
 		return nf.format((long) value);
 	}
 
-	public static byte[] readStreamInArray(InputStream inputStream) throws Exception {
+	public static byte[] readStreamInArray(InputStream inputStream)
+			throws Exception {
 		// Wenn keine Daten aus dem Stream gelesen werden konnten
 		// Wird mehrfach diese Thread-Wartezeit eingeräumt
 		final int WAIT_TIME = 50;
@@ -383,9 +409,8 @@ public class Utilities {
 			}
 		} catch (InterruptedException ex) {
 			// Wird von der Methode "Sleep" geworfen
-			throw new Exception(
-					"Interrupted-Fehler in readStreamInArray: "
-							+ ex.getMessage(), ex);
+			throw new Exception("Interrupted-Fehler in readStreamInArray: "
+					+ ex.getMessage(), ex);
 		} catch (IOException ex) {
 			throw new Exception("IO-Fehler in readStreamInArray: "
 					+ ex.getMessage(), ex);
@@ -469,8 +494,8 @@ public class Utilities {
 	}
 
 	public static String getEmailFromCertificate(X509Certificate cert) {
-		String[] nameParts = cert.getSubjectX500Principal().toString().split(
-				",");
+		String[] nameParts = cert.getSubjectX500Principal().toString()
+				.split(",");
 		for (String namePart : nameParts) {
 			if (namePart.matches("^[ \\t]*EMAILADDRESS=.*"))
 				return namePart.substring(namePart.indexOf("=") + 1).trim();
@@ -480,8 +505,8 @@ public class Utilities {
 	}
 
 	public static String getCnFromCertificate(X509Certificate cert) {
-		String[] nameParts = cert.getSubjectX500Principal().toString().split(
-				",");
+		String[] nameParts = cert.getSubjectX500Principal().toString()
+				.split(",");
 		for (String namePart : nameParts) {
 			if (namePart.matches("^[ \\t]*CN=.*"))
 				return namePart.substring(namePart.indexOf("=") + 1).trim();
@@ -489,29 +514,31 @@ public class Utilities {
 
 		return null;
 	}
-	
-	public static boolean dayListIncludes(List<GregorianCalendar> listOfDays, GregorianCalendar day) {
+
+	public static boolean dayListIncludes(List<GregorianCalendar> listOfDays,
+			GregorianCalendar day) {
 		for (GregorianCalendar listDay : listOfDays) {
-			if (listDay.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR))
+			if (listDay.get(Calendar.DAY_OF_YEAR) == day
+					.get(Calendar.DAY_OF_YEAR))
 				return true;
 		}
 		return false;
 	}
 
 	/**
-	 * Ermitteln des nächsten geplanten Startzeitpunktes
-	 * Der Timingparameter kann Wochentage, Zeiten, Monats-, Quartalsplanungen und Feiertage enthalten
+	 * Ermitteln des nächsten geplanten Startzeitpunktes Der Timingparameter
+	 * kann Wochentage, Zeiten, Monats-, Quartalsplanungen und Feiertage
+	 * enthalten
 	 * 
-	 * Mögliche Ausprägungen:
-	 * "ONCE"                      => nur einmalig (returns null)
-	 * "0600;0800"                 => täglich um 06:00 und um 08:00
-	 * "MoMi:1700"                 => Montags und Mittwochs um 17:00
-	 * "M05:1600"                  => jeden 05.ten im Monat um 16:00
-	 * "Q:1600"                    => Jeden ersten Tag im Quartal um 16:00
-	 * "QW:1600"                   => Jeden ersten Werktag im Quartal um 16:00
-	 * "MoDiMiDoFr:1700;!23012011" => Mo bis Fr um 17:00 aber nicht am 23.01.2011 (Feiertagsregelung durch '!'-Zeichen)
+	 * Mögliche Ausprägungen: "ONCE" => nur einmalig (returns null) "0600;0800"
+	 * => täglich um 06:00 und um 08:00 "MoMi:1700" => Montags und Mittwochs um
+	 * 17:00 "M05:1600" => jeden 05.ten im Monat um 16:00 "Q:1600" => Jeden
+	 * ersten Tag im Quartal um 16:00 "QW:1600" => Jeden ersten Werktag im
+	 * Quartal um 16:00 "MoDiMiDoFr:1700;!23012011" => Mo bis Fr um 17:00 aber
+	 * nicht am 23.01.2011 (Feiertagsregelung durch '!'-Zeichen)
 	 * 
-	 * Alle Ausprägungen können beliebig kombiniert werden, werden dann durch Semikolons getrennt aufgelistet
+	 * Alle Ausprägungen können beliebig kombiniert werden, werden dann durch
+	 * Semikolons getrennt aufgelistet
 	 * 
 	 * @param timingString
 	 * @return
@@ -521,10 +548,10 @@ public class Utilities {
 		GregorianCalendar now = new GregorianCalendar();
 		GregorianCalendar returnStart = new GregorianCalendar();
 		returnStart.add(GregorianCalendar.YEAR, 1);
-		
-		//Feiertage die explizit ausgeschlossen werden
+
+		// Feiertage die explizit ausgeschlossen werden
 		List<GregorianCalendar> excludedDays = new ArrayList<GregorianCalendar>();
-		
+
 		if (timingString.equalsIgnoreCase("once"))
 			return null;
 
@@ -533,145 +560,197 @@ public class Utilities {
 			if (timingParameter.startsWith("!")) {
 				try {
 					GregorianCalendar exclusionDate = new GregorianCalendar();
-					exclusionDate.setTime(DateUtils.DDMMYYYY.parse(timingParameter.substring(1)));
+					exclusionDate.setTime(DateUtils.DDMMYYYY
+							.parse(timingParameter.substring(1)));
 					excludedDays.add(exclusionDate);
 				} catch (ParseException e) {
 					e.printStackTrace();
 				}
 			}
 		}
-		
+
 		for (String timingParameter : timingParameterList) {
 			GregorianCalendar nextStartByThisParameter = new GregorianCalendar();
 			nextStartByThisParameter.setTime(now.getTime());
 
 			if (timingParameter.startsWith("!")) {
-				//Exclusionen wurden bereits verarbeitet
+				// Exclusionen wurden bereits verarbeitet
 				continue;
-			}
-			else if (!timingParameter.contains(":")) {
+			} else if (!timingParameter.contains(":")) {
 				if (isNumber(timingParameter)) {
 					// tägliche Verarbeitung zur gegebenen Uhrzeit
-					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(timingParameter.substring(0, 2)));
-					nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(timingParameter.substring(2)));
+					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,
+							Integer.parseInt(timingParameter.substring(0, 2)));
+					nextStartByThisParameter.set(GregorianCalendar.MINUTE,
+							Integer.parseInt(timingParameter.substring(2)));
 					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-	
-					// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
+					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND,
+							0);
+
+					// nächsten Start solange in die Zukunft verschieben (+1Tag)
+					// bis
 					// Parameter-Bedingung erfüllt ist
-					// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
-					while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)
-							|| dayListIncludes(excludedDays, nextStartByThisParameter))
-						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+					// Bei treffender Feiertagseintragung auch um einen Tag
+					// weiterschieben
+					while (nextStartByThisParameter.before(now)
+							&& nextStartByThisParameter.before(returnStart)
+							|| dayListIncludes(excludedDays,
+									nextStartByThisParameter))
+						nextStartByThisParameter.add(
+								GregorianCalendar.DAY_OF_MONTH, 1);
 				} else {
 					// wochentägliche Verarbeitung um 00:00 Uhr
 					List<Integer> weekdayIndexes = new ArrayList<Integer>();
 					for (String weekDay : chopToChunks(timingParameter, 2)) {
 						weekdayIndexes.add(DateUtils.getWeekdayIndex(weekDay));
 					}
-					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,0);
+					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,
+							0);
 					nextStartByThisParameter.set(GregorianCalendar.MINUTE, 0);
 					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
+					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND,
+							0);
 
-					// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
+					// nächsten Start solange in die Zukunft verschieben (+1Tag)
+					// bis
 					// Parameter-Bedingung erfüllt ist
-					// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
-					while ((nextStartByThisParameter.before(now)
-							|| !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
-							|| dayListIncludes(excludedDays, nextStartByThisParameter))
-						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+					// Bei treffender Feiertagseintragung auch um einen Tag
+					// weiterschieben
+					while ((nextStartByThisParameter.before(now) || !weekdayIndexes
+							.contains(nextStartByThisParameter
+									.get(Calendar.DAY_OF_WEEK)))
+							&& nextStartByThisParameter.before(returnStart)
+							|| dayListIncludes(excludedDays,
+									nextStartByThisParameter))
+						nextStartByThisParameter.add(
+								GregorianCalendar.DAY_OF_MONTH, 1);
 				}
-			}
-			else if (timingParameter.length() == 8) {
+			} else if (timingParameter.length() == 8) {
 				// Monatssteuerung "M01:1700"
-				String tag = timingParameter.substring(1, timingParameter.indexOf(":"));
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, Integer.parseInt(tag));
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
+				String tag = timingParameter.substring(1,
+						timingParameter.indexOf(":"));
+				String zeit = timingParameter.substring(timingParameter
+						.indexOf(":") + 1);
+				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH,
+						Integer.parseInt(tag));
+				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,
+						Integer.parseInt(zeit.substring(0, 2)));
+				nextStartByThisParameter.set(GregorianCalendar.MINUTE,
+						Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-				
+
 				// Den nächsten passenden Monat finden
-				while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart))
+				while (nextStartByThisParameter.before(now)
+						&& nextStartByThisParameter.before(returnStart))
 					nextStartByThisParameter.add(GregorianCalendar.MONTH, 1);
-				
-				// Bei treffender Feiertagseintragung um einen Tag weiterschieben
+
+				// Bei treffender Feiertagseintragung um einen Tag
+				// weiterschieben
 				while (dayListIncludes(excludedDays, nextStartByThisParameter))
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR, 1);
-			}
-			else if (timingParameter.startsWith("Q:")) {
-				//Quartalsweise Planung (Q:1200): Start am ersten Kalendertag im Quartal
+					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR,
+							1);
+			} else if (timingParameter.startsWith("Q:")) {
+				// Quartalsweise Planung (Q:1200): Start am ersten Kalendertag
+				// im Quartal
 				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL)
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.APRIL);
+					nextStartByThisParameter.set(GregorianCalendar.MONTH,
+							GregorianCalendar.APRIL);
 				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY)
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JULY);
+					nextStartByThisParameter.set(GregorianCalendar.MONTH,
+							GregorianCalendar.JULY);
 				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER)
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.OCTOBER);
+					nextStartByThisParameter.set(GregorianCalendar.MONTH,
+							GregorianCalendar.OCTOBER);
 				else {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JANUARY);
+					nextStartByThisParameter.set(GregorianCalendar.MONTH,
+							GregorianCalendar.JANUARY);
 					nextStartByThisParameter.add(GregorianCalendar.YEAR, 1);
 				}
-				
+
 				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, 1);
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
+				String zeit = timingParameter.substring(timingParameter
+						.indexOf(":") + 1);
+				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,
+						Integer.parseInt(zeit.substring(0, 2)));
+				nextStartByThisParameter.set(GregorianCalendar.MINUTE,
+						Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-				
-				// Bei treffender Feiertagseintragung um einen Tag weiterschieben
+
+				// Bei treffender Feiertagseintragung um einen Tag
+				// weiterschieben
 				while (dayListIncludes(excludedDays, nextStartByThisParameter))
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR, 1);
-			}
-			else if (timingParameter.startsWith("QW:")) {
-				//Quartalsweise Planung (QW:1200): Start am ersten Werktag im Quartal
+					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR,
+							1);
+			} else if (timingParameter.startsWith("QW:")) {
+				// Quartalsweise Planung (QW:1200): Start am ersten Werktag im
+				// Quartal
 				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL)
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.APRIL);
+					nextStartByThisParameter.set(GregorianCalendar.MONTH,
+							GregorianCalendar.APRIL);
 				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY)
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JULY);
+					nextStartByThisParameter.set(GregorianCalendar.MONTH,
+							GregorianCalendar.JULY);
 				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER)
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.OCTOBER);
+					nextStartByThisParameter.set(GregorianCalendar.MONTH,
+							GregorianCalendar.OCTOBER);
 				else {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JANUARY);
+					nextStartByThisParameter.set(GregorianCalendar.MONTH,
+							GregorianCalendar.JANUARY);
 					nextStartByThisParameter.add(GregorianCalendar.YEAR, 1);
 				}
-				
+
 				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, 1);
 
-				// Bei treffender Feiertagseintragung oder Wochentagsregelung um einen Tag weiterschieben
-				while (nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SATURDAY
-					|| nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY
-					|| dayListIncludes(excludedDays, nextStartByThisParameter))
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
-				
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
+				// Bei treffender Feiertagseintragung oder Wochentagsregelung um
+				// einen Tag weiterschieben
+				while (nextStartByThisParameter
+						.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SATURDAY
+						|| nextStartByThisParameter
+								.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY
+						|| dayListIncludes(excludedDays,
+								nextStartByThisParameter))
+					nextStartByThisParameter.add(
+							GregorianCalendar.DAY_OF_MONTH, 1);
+
+				String zeit = timingParameter.substring(timingParameter
+						.indexOf(":") + 1);
+				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,
+						Integer.parseInt(zeit.substring(0, 2)));
+				nextStartByThisParameter.set(GregorianCalendar.MINUTE,
+						Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-			}
-			else {
+			} else {
 				// WochenTagessteuerung (ermöglicht auch Werktagssteuerung)
-				String wochenTage = timingParameter.substring(0, timingParameter.indexOf(":"));
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
+				String wochenTage = timingParameter.substring(0,
+						timingParameter.indexOf(":"));
+				String zeit = timingParameter.substring(timingParameter
+						.indexOf(":") + 1);
 				List<Integer> weekdayIndexes = new ArrayList<Integer>();
 				for (String weekDay : chopToChunks(wochenTage, 2)) {
 					weekdayIndexes.add(DateUtils.getWeekdayIndex(weekDay));
 				}
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
+				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,
+						Integer.parseInt(zeit.substring(0, 2)));
+				nextStartByThisParameter.set(GregorianCalendar.MINUTE,
+						Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 
 				// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
 				// Parameter-Bedingung erfüllt ist
-				// Bei treffender Feiertagseintragung auch um einen Tag weiterschieben
-				while ((nextStartByThisParameter.before(now)
-						|| !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
-						|| dayListIncludes(excludedDays, nextStartByThisParameter))
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+				// Bei treffender Feiertagseintragung auch um einen Tag
+				// weiterschieben
+				while ((nextStartByThisParameter.before(now) || !weekdayIndexes
+						.contains(nextStartByThisParameter
+								.get(Calendar.DAY_OF_WEEK)))
+						&& nextStartByThisParameter.before(returnStart)
+						|| dayListIncludes(excludedDays,
+								nextStartByThisParameter))
+					nextStartByThisParameter.add(
+							GregorianCalendar.DAY_OF_MONTH, 1);
 			}
 
 			if (nextStartByThisParameter.before(returnStart))
@@ -680,7 +759,7 @@ public class Utilities {
 
 		return new Timestamp(returnStart.getTimeInMillis());
 	}
-	
+
 	public static String repeatString(String itemString, int repeatTimes) {
 		return repeatString(itemString, repeatTimes, null);
 	}
@@ -698,7 +777,8 @@ public class Utilities {
 	 *            Anzahl der Wiederholungen
 	 * @return
 	 */
-	public static String repeatString(String itemString, int repeatTimes, String separatorString) {
+	public static String repeatString(String itemString, int repeatTimes,
+			String separatorString) {
 		StringBuilder returnStringBuilder = new StringBuilder();
 		for (int i = 0; i < repeatTimes; i++) {
 			if (returnStringBuilder.length() > 0)
@@ -743,14 +823,16 @@ public class Utilities {
 		}
 	}
 
-	public static boolean testConnection(String hostname, int port) throws Exception {
+	public static boolean testConnection(String hostname, int port)
+			throws Exception {
 		Socket socket = null;
 		try {
 			socket = new Socket();
 			InetSocketAddress endPoint = new InetSocketAddress(hostname, port);
 			int timeout = 2000; // 2 Sekunden
 			if (endPoint.isUnresolved()) {
-				throw new Exception("Hostname '" + hostname + "' konnte nicht aufgelöst werden");
+				throw new Exception("Hostname '" + hostname
+						+ "' konnte nicht aufgelöst werden");
 			} else {
 				try {
 					socket.connect(endPoint, timeout);
@@ -779,9 +861,9 @@ public class Utilities {
 	}
 
 	public static GregorianCalendar getDayWithoutTime(GregorianCalendar value) {
-		return new GregorianCalendar(value.get(GregorianCalendar.YEAR), value
-				.get(GregorianCalendar.MONTH), value
-				.get(GregorianCalendar.DAY_OF_MONTH));
+		return new GregorianCalendar(value.get(GregorianCalendar.YEAR),
+				value.get(GregorianCalendar.MONTH),
+				value.get(GregorianCalendar.DAY_OF_MONTH));
 	}
 
 	public static UUID getUUIDFromString(String value) {
@@ -802,7 +884,8 @@ public class Utilities {
 	 * @param chunkSize
 	 * @return
 	 */
-	public static <E> List<List<E>> chopListToChunks(List<E> originalList, int chunkSize) {
+	public static <E> List<List<E>> chopListToChunks(List<E> originalList,
+			int chunkSize) {
 		if (originalList == null || originalList.size() <= 0 || chunkSize <= 0)
 			return null;
 
@@ -821,7 +904,7 @@ public class Utilities {
 
 		return returnList;
 	}
-	
+
 	/***
 	 * Aufteilen der Originalliste in kleinere Listen zu je maximal
 	 * chunkSize-großen Listen
@@ -832,19 +915,24 @@ public class Utilities {
 	 * @return
 	 */
 	public static List<String> chopToChunks(String text, int chunkSize) {
-		List<String> returnList = new ArrayList<String>((text.length() + chunkSize - 1) / chunkSize);
+		List<String> returnList = new ArrayList<String>((text.length()
+				+ chunkSize - 1)
+				/ chunkSize);
 
 		for (int start = 0; start < text.length(); start += chunkSize) {
-			returnList.add(text.substring(start, Math.min(text.length(), start + chunkSize)));
+			returnList.add(text.substring(start,
+					Math.min(text.length(), start + chunkSize)));
 		}
 
 		return returnList;
 	}
 
-	private static final char[] randomCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuvwxyzäöüß".toCharArray();
-	
-	private static final char[] randomAlphaNumericCharacters = (new String(randomCharacters) + "0123456789").toCharArray();
-	
+	private static final char[] randomCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuvwxyzäöüß"
+			.toCharArray();
+
+	private static final char[] randomAlphaNumericCharacters = (new String(
+			randomCharacters) + "0123456789").toCharArray();
+
 	private static final Random random = new Random();
 
 	public static String getRandomString(int length) {
@@ -858,7 +946,8 @@ public class Utilities {
 	public static String getRandomAlphanumericString(int length) {
 		StringBuilder sb = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {
-			sb.append(randomAlphaNumericCharacters[random.nextInt(randomAlphaNumericCharacters.length)]);
+			sb.append(randomAlphaNumericCharacters[random
+					.nextInt(randomAlphaNumericCharacters.length)]);
 		}
 		return sb.toString();
 	}
@@ -940,35 +1029,44 @@ public class Utilities {
 		else
 			return false;
 	}
-	
+
 	public static String getSameFilenameInParentDirectory(String file) {
-		return getSameFilenameInParentDirectory(new File(file)).getAbsolutePath();
+		return getSameFilenameInParentDirectory(new File(file))
+				.getAbsolutePath();
 	}
-	
+
 	public static File getSameFilenameInParentDirectory(File file) {
-		return new File(file.getParentFile().getParent() + File.separator + file.getName());
+		return new File(file.getParentFile().getParent() + File.separator
+				+ file.getName());
 	}
-	
-	public static SCPFile getSameFilenameInParentDirectory(SCPFile file) throws Exception {
-		return new SCPFile(file.getHostname(), file.getDirectory().getParent().getPath(), file.getFilename());
+
+	public static SCPFile getSameFilenameInParentDirectory(SCPFile file)
+			throws Exception {
+		return new SCPFile(file.getHostname(), file.getDirectory().getParent()
+				.getPath(), file.getFilename());
 	}
-	
-	public static File[] getSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
+
+	public static File[] getSubfilesByNameAndExtension(File directory,
+			String nameStart, String extension) {
 		List<File> files = new LinkedList<File>();
 		for (File file : directory.listFiles()) {
-			if (file.getName().startsWith(nameStart) && file.getName().endsWith("." + extension))
+			if (file.getName().startsWith(nameStart)
+					&& file.getName().endsWith("." + extension))
 				files.add(file);
 		}
 		return files.toArray(new File[0]);
 	}
-	
-	public static void deleteSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
-		for (File file : getSubfilesByNameAndExtension(directory, nameStart, extension)) {
+
+	public static void deleteSubfilesByNameAndExtension(File directory,
+			String nameStart, String extension) {
+		for (File file : getSubfilesByNameAndExtension(directory, nameStart,
+				extension)) {
 			FileUtils.deleteQuietly(file);
 		}
 	}
-	
-	public static int getMinimumOfAllowedValues(int allowedValueMinimum, int... values) {
+
+	public static int getMinimumOfAllowedValues(int allowedValueMinimum,
+			int... values) {
 		int returnValue = Integer.MAX_VALUE;
 		if (values != null) {
 			for (int value : values) {
@@ -979,7 +1077,7 @@ public class Utilities {
 		}
 		return returnValue;
 	}
-	
+
 	public static boolean interpretAsBool(String value) {
 		if (StringUtils.isNotEmpty(value)) {
 			value = value.trim();
@@ -992,7 +1090,7 @@ public class Utilities {
 			return false;
 		}
 	}
-	
+
 	public static boolean anyCharsAreEqual(char... values) {
 		for (int i = 0; i < values.length; i++) {
 			for (int j = i + 1; j < values.length; j++) {
@@ -1003,7 +1101,7 @@ public class Utilities {
 		}
 		return false;
 	}
-	
+
 	public static String trimToMaxNumberOfLines(String value, int maxLines) {
 		value = normalizeLineBreaks(value);
 		int count = 0;
@@ -1012,7 +1110,7 @@ public class Utilities {
 			nextLinebreak = value.indexOf("\n", nextLinebreak + 1);
 			count++;
 		}
-		
+
 		if (nextLinebreak != -1) {
 			return value.substring(0, nextLinebreak + 1) + "...";
 		} else {
@@ -1023,37 +1121,37 @@ public class Utilities {
 	public static String normalizeLineBreaks(String value) {
 		return value.replace("\r\n", "\n").replace("\r", "\n");
 	}
-	
+
 	public static byte[] xor(byte[]... byteArrays) {
 		return xor(Arrays.asList(byteArrays));
 	}
-	
+
 	public static byte[] xor(List<byte[]> byteArrays) {
 		byte[] returnArray = new byte[byteArrays.get(0).length];
-		
+
 		for (int i = 0; i < byteArrays.size(); i++) {
 			for (int j = 0; j < returnArray.length; j++) {
 				returnArray[j] = xor(returnArray[j], byteArrays.get(i)[j]);
 			}
 		}
-		
+
 		return returnArray;
 	}
-	
+
 	public static byte xor(byte... keyData) {
 		byte resultItem = 0;
-		
+
 		for (byte key : keyData) {
 			resultItem = (byte) (resultItem ^ key);
 		}
-		
+
 		return resultItem;
 	}
-	
+
 	public static int square(int value) {
 		return value * value;
 	}
-	
+
 	public static int pow(int base, int exp) {
 		if (exp < 0) {
 			throw new IllegalArgumentException("Invalid negative exponent");
@@ -1063,57 +1161,61 @@ public class Utilities {
 			return square(pow(base, exp / 2)) * (exp % 2 == 1 ? base : 1);
 		}
 	}
-	
+
 	public static int getLineCount(File file) throws IOException {
 		LineNumberReader lineNumberReader = null;
 		try {
-			lineNumberReader = new LineNumberReader(new InputStreamReader(new FileInputStream(file)));
-	        while (lineNumberReader.readLine() != null) {
-	        }
-	
-	        return lineNumberReader.getLineNumber();
+			lineNumberReader = new LineNumberReader(new InputStreamReader(
+					new FileInputStream(file)));
+			while (lineNumberReader.readLine() != null) {
+			}
+
+			return lineNumberReader.getLineNumber();
 		} finally {
 			IOUtils.closeQuietly(lineNumberReader);
 		}
 	}
-	
+
 	public static int getLineCount(String dataString) throws IOException {
 		LineNumberReader lineNumberReader = null;
 		try {
-			lineNumberReader = new LineNumberReader(new StringReader(dataString));
-	        while (lineNumberReader.readLine() != null) {
-	        }
-	
-	        return lineNumberReader.getLineNumber();
+			lineNumberReader = new LineNumberReader(
+					new StringReader(dataString));
+			while (lineNumberReader.readLine() != null) {
+			}
+
+			return lineNumberReader.getLineNumber();
 		} finally {
 			IOUtils.closeQuietly(lineNumberReader);
 		}
 	}
-	
-	public static int countWords(String dataString){
-	    int counter = 0;
-	    boolean isWord = false;
-	    int endOfLine = dataString.length() - 1;
 
-	    for (int i = 0; i < dataString.length(); i++) {
-	        if (!Character.isWhitespace(dataString.charAt(i)) && i != endOfLine) {
-	        	isWord = true;
-	        } else if (Character.isWhitespace(dataString.charAt(i)) && isWord) {
-	            counter++;
-	            isWord = false;
-	        } else if (!Character.isWhitespace(dataString.charAt(i)) && i == endOfLine) {
-	            counter++;
-	        }
-	    }
-	    return counter;
+	public static int countWords(String dataString) {
+		int counter = 0;
+		boolean isWord = false;
+		int endOfLine = dataString.length() - 1;
+
+		for (int i = 0; i < dataString.length(); i++) {
+			if (!Character.isWhitespace(dataString.charAt(i)) && i != endOfLine) {
+				isWord = true;
+			} else if (Character.isWhitespace(dataString.charAt(i)) && isWord) {
+				counter++;
+				isWord = false;
+			} else if (!Character.isWhitespace(dataString.charAt(i))
+					&& i == endOfLine) {
+				counter++;
+			}
+		}
+		return counter;
 	}
 
-	public static <T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
+	public static <T extends Comparable<? super T>> List<T> asSortedList(
+			Collection<T> c) {
 		List<T> list = new ArrayList<T>(c);
 		java.util.Collections.sort(list);
 		return list;
 	}
-	
+
 	public static int getStartIndexOfLine(String dataString, int lineNumber) {
 		if (dataString == null || lineNumber <= 1) {
 			return 0;
@@ -1126,17 +1228,20 @@ public class Utilities {
 				int nextLineBreakWindows = dataString.indexOf("\r\n", position);
 				int nextPosition = -1;
 				int lineBreakSize = 0;
-				if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac < nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac < nextLineBreakWindows)) {
+				if (nextLineBreakMac >= 0
+						&& (nextLineBreakUnix < 0 || nextLineBreakMac < nextLineBreakUnix)
+						&& (nextLineBreakWindows < 0 || nextLineBreakMac < nextLineBreakWindows)) {
 					nextPosition = nextLineBreakMac;
 					lineBreakSize = 1;
-				} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix < nextLineBreakWindows)) {
+				} else if (nextLineBreakUnix >= 0
+						&& (nextLineBreakWindows < 0 || nextLineBreakUnix < nextLineBreakWindows)) {
 					nextPosition = nextLineBreakUnix;
 					lineBreakSize = 1;
 				} else if (nextLineBreakWindows >= 0) {
 					nextPosition = nextLineBreakWindows;
 					lineBreakSize = 2;
 				}
-				
+
 				if (nextPosition >= 0) {
 					position = nextPosition + lineBreakSize;
 					if (position >= dataString.length()) {
@@ -1150,7 +1255,7 @@ public class Utilities {
 			return position;
 		}
 	}
-	
+
 	/**
 	 * 
 	 * 
@@ -1162,17 +1267,21 @@ public class Utilities {
 	 * @param searchReversely
 	 * @return Tuple First = Startindex, Second = Length of found substring
 	 */
-	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
+	public static Tuple<Integer, Integer> searchNextPosition(String text,
+			int startPosition, String searchTextOrPattern,
+			boolean searchTextIsRegularExpression, boolean searchCaseSensitive,
+			boolean searchReversely) {
 		if (text != null && searchTextOrPattern != null) {
 			String fullText = text;
 			String textToSearch = searchTextOrPattern;
-			
+
 			int nextPosition = -1;
 			if (searchTextIsRegularExpression) {
 				int length = -1;
 				Pattern searchPattern;
 				if (!searchCaseSensitive) {
-					searchPattern = Pattern.compile(textToSearch, Pattern.CASE_INSENSITIVE);
+					searchPattern = Pattern.compile(textToSearch,
+							Pattern.CASE_INSENSITIVE);
 				} else {
 					searchPattern = Pattern.compile(textToSearch);
 				}
@@ -1223,25 +1332,32 @@ public class Utilities {
 				}
 				if (searchReversely) {
 					fullText = new StringBuilder(fullText).reverse().toString();
-					textToSearch = new StringBuilder(textToSearch).reverse().toString();
-					startPosition = fullText.length() - startPosition - textToSearch.length() + 1;
-					nextPosition = fullText.indexOf(textToSearch, startPosition);
+					textToSearch = new StringBuilder(textToSearch).reverse()
+							.toString();
+					startPosition = fullText.length() - startPosition
+							- textToSearch.length() + 1;
+					nextPosition = fullText
+							.indexOf(textToSearch, startPosition);
 					if (startPosition > 0 && nextPosition < 0) {
 						nextPosition = fullText.indexOf(textToSearch, 0);
 					}
 					if (nextPosition >= 0) {
-						nextPosition = fullText.length() - nextPosition - textToSearch.length();
-						return new Tuple<Integer, Integer>(nextPosition, textToSearch.length());
+						nextPosition = fullText.length() - nextPosition
+								- textToSearch.length();
+						return new Tuple<Integer, Integer>(nextPosition,
+								textToSearch.length());
 					} else {
 						return null;
 					}
 				} else {
-					nextPosition = fullText.indexOf(textToSearch, startPosition);
+					nextPosition = fullText
+							.indexOf(textToSearch, startPosition);
 					if (startPosition > 0 && nextPosition < 0) {
 						nextPosition = fullText.indexOf(textToSearch, 0);
 					}
 					if (nextPosition >= 0) {
-						return new Tuple<Integer, Integer>(nextPosition, textToSearch.length());
+						return new Tuple<Integer, Integer>(nextPosition,
+								textToSearch.length());
 					} else {
 						return null;
 					}
@@ -1251,28 +1367,83 @@ public class Utilities {
 			return null;
 		}
 	}
-	
-	public static boolean fileContainsText(File searchFile, String searchText, boolean searchCaseSensitive, boolean searchRegularExpression, String defaultEncoding) throws Exception {
-		byte[] data = FileUtils.readFileToByteArray(searchFile);
-		Tuple<String, Boolean> encodingData = TextFilePropertiesReader.detectEncoding(data);
-		if (encodingData == null) {
-			encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
+
+	public static boolean fileContainsText(File searchFile, String searchText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
+		if (searchFile.length() > 0 && searchText != null) {
+			FileInputStream input = null;
+			BufferedReader br = null;
+			try {
+				input = new FileInputStream(searchFile);
+				byte[] encodingBufferInterim = new byte[100];
+				int bytesRead = input.read(encodingBufferInterim);
+				byte[] encodingBuffer = new byte[bytesRead];
+				for (int i = 0; i < bytesRead; i++) {
+					encodingBuffer[i] = encodingBufferInterim[i];
+				}
+				Tuple<String, Boolean> encodingData = TextFilePropertiesReader.detectEncoding(encodingBuffer);
+				if (encodingData == null) {
+					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
+				}
+				input.close();
+				input = null;
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(searchFile), encodingData.getFirst()));
+				if (searchTextIsRegularExpression) {
+					Pattern searchPattern;
+					if (!searchCaseSensitive) {
+						searchPattern = Pattern.compile(searchText, Pattern.CASE_INSENSITIVE);
+					} else {
+						searchPattern = Pattern.compile(searchText);
+					}
+
+					String line;
+					while ((line = br.readLine()) != null) {
+						Matcher matcher = searchPattern.matcher(line);
+						if (matcher.find()) {
+							br.close();
+							br = null;
+							return true;
+						}
+					}
+				} else {
+					if (!searchCaseSensitive) {
+						searchText = searchText.toLowerCase();
+					}
+					
+					String line;
+					while ((line = br.readLine()) != null) {
+						if (!searchCaseSensitive) {
+							line = line.toLowerCase();
+						}
+						
+						if (line.contains(searchText)) {
+							br.close();
+							br = null;
+							return true;
+						}
+					}
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				IOUtils.closeQuietly(input);
+				IOUtils.closeQuietly(br);
+			}
 		}
-		String fileText = TextFilePropertiesReader.decodeByteArray(data, encodingData);
-		Tuple<Integer,Integer> foundIndex = searchNextPosition(fileText, 0, searchText, searchRegularExpression, searchCaseSensitive, false);
-		return foundIndex != null && foundIndex.getFirst() >= 0;
+		return false;
 	}
-	
-	public static int countOccurences(String text, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive) {
+
+	public static int countOccurences(String text, String searchTextOrPattern,
+			boolean searchTextIsRegularExpression, boolean searchCaseSensitive) {
 		if (text != null && searchTextOrPattern != null) {
 			String fullText = text;
 			String textToSearch = searchTextOrPattern;
 			int occurences = 0;
-			
+
 			if (searchTextIsRegularExpression) {
 				Pattern searchPattern;
 				if (!searchCaseSensitive) {
-					searchPattern = Pattern.compile(textToSearch, Pattern.CASE_INSENSITIVE);
+					searchPattern = Pattern.compile(textToSearch,
+							Pattern.CASE_INSENSITIVE);
 				} else {
 					searchPattern = Pattern.compile(textToSearch);
 				}
@@ -1286,7 +1457,7 @@ public class Utilities {
 					fullText = fullText.toLowerCase();
 					textToSearch = textToSearch.toLowerCase();
 				}
-				
+
 				int nextPosition = 0;
 				while (nextPosition != -1) {
 					nextPosition = fullText.indexOf(textToSearch, nextPosition);
@@ -1301,22 +1472,23 @@ public class Utilities {
 			return -1;
 		}
 	}
-	
+
 	public static String getClassPath() {
 		ClassLoader sysClassLoader = ClassLoader.getSystemClassLoader();
-		URL[] urls = ((URLClassLoader)sysClassLoader).getURLs();
+		URL[] urls = ((URLClassLoader) sysClassLoader).getURLs();
 
 		StringBuilder classpath = new StringBuilder();
-		for(int i=0; i< urls.length; i++) {
+		for (int i = 0; i < urls.length; i++) {
 			classpath.append(urls[i].getFile() + "\n");
 		}
 		return classpath.toString();
 	}
-	
+
 	public static boolean compare(byte[] byteArray1, byte[] byteArray2) {
 		if (byteArray1 == byteArray2) {
 			return true;
-		} else if (byteArray1 == null || byteArray2 == null || byteArray1.length != byteArray2.length) {
+		} else if (byteArray1 == null || byteArray2 == null
+				|| byteArray1.length != byteArray2.length) {
 			return false;
 		} else {
 			for (int i = 0; i < byteArray1.length; i++) {
