@@ -38,6 +38,7 @@ public class BitUtilities {
 	
 	/**
 	 * Returns the value as a Byte which contains only signed values in Java
+
 	 * @param value
 	 * @return
 	 * @throws Exception
