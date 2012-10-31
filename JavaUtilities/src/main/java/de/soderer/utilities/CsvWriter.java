@@ -133,7 +133,11 @@ public class CsvWriter extends Writer {
 	}
 	
 	private String escapeValue(Object value) throws CsvDataException {
-		String valueString = value.toString();
+		String valueString = "";
+		if (value != null) {
+			valueString = value.toString();
+		}
+		
 		if (valueString.contains(separatorString) || valueString.contains("\r") || valueString.contains("\n") || (useStringQuote && valueString.contains(stringQuoteString))) {
 			if (!useStringQuote) {
 				throw new CsvDataException("StringQuote was deactivated but is needed for csv-value after " + writtenLines + " written lines", writtenLines);
