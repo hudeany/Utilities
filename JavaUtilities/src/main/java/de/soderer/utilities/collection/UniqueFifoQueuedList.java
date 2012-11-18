@@ -30,7 +30,7 @@ public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 	public boolean add(T item) {
 		if (contains(item)) {
 			remove(item);
-		} else if (size > -1 && super.size() >= size) {
+		} else if (size > -1 && super.size() >= size && super.size() > 0) {
 			remove(0);
 		}
 

@@ -73,15 +73,14 @@ public class CsvTest {
 	}
 	
 	@Test
-	public void test3_Error() {
+	public void test5() {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc;def;123\nabc;def";
 			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', null);
 			reader.readAll();
-			Assert.fail("Missing Exception");
 		} catch (Exception e) {
-			Assert.assertEquals("Inconsistent number of values in line 2 (expected: 3 was: 2)", e.getMessage());
+			Assert.fail(e.getMessage());
 		} finally {
 			if (reader != null) {
 				reader.close();
