@@ -132,4 +132,21 @@ public class BitUtilities {
 		}
 		return result;
 	}
+	
+	public static String getHexString(byte[] data, String separator, int bytesBeforeLinebreak) {
+		StringBuilder returnString = new StringBuilder();
+		int byteCount = 0;
+		for (byte dataByte : data) {
+			if (byteCount > 0) {
+				if (bytesBeforeLinebreak > 0 && byteCount % bytesBeforeLinebreak == 0) {
+					returnString.append('\n');
+				} else {
+					returnString.append(separator);
+				}
+			}
+			returnString.append(String.format("%02X", dataByte));
+			byteCount++;
+		}
+		return returnString.toString();
+	}
 }
