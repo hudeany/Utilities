@@ -133,20 +133,45 @@ public class BitUtilities {
 		return result;
 	}
 	
-	public static String getHexString(byte[] data, String separator, int bytesBeforeLinebreak) {
+	public static String getHexString(byte[] data, String separator, int bytesBeforeLinebreak, boolean insertHexLineNumber, boolean insertAsciiText) {
 		StringBuilder returnString = new StringBuilder();
 		int byteCount = 0;
+		StringBuilder asciiTextLine = new StringBuilder();
 		for (byte dataByte : data) {
 			if (byteCount > 0) {
 				if (bytesBeforeLinebreak > 0 && byteCount % bytesBeforeLinebreak == 0) {
+					if (insertAsciiText) {
+						returnString.append(" ; ");
+						returnString.append(asciiTextLine);
+						asciiTextLine = new StringBuilder();
+					}
 					returnString.append('\n');
+					if (insertHexLineNumber) {
+						returnString.append(String.format("%08Xh: ", byteCount));
+					}
 				} else {
 					returnString.append(separator);
 				}
 			}
 			returnString.append(String.format("%02X", dataByte));
+			if (dataByte >= 0 && dataByte < 32) {
+				asciiTextLine.append('.');
+			} else {
+				asciiTextLine.append(new String(new byte[]{dataByte}));
+			}
 			byteCount++;
 		}
-		return returnString.toString();
+		
+		if (insertAsciiText && asciiTextLine.length() > 0) {
+			returnString.append(Utilities.repeatString("   ", bytesBeforeLinebreak - (byteCount % bytesBeforeLinebreak)));
+			returnString.append(" ; ");
+			returnString.append(asciiTextLine.toString());
+		}
+		
+		if (insertHexLineNumber) {
+			return String.format("%08Xh: ", 0) + returnString.toString();
+		} else {
+			return returnString.toString();
+		}
 	}
 }

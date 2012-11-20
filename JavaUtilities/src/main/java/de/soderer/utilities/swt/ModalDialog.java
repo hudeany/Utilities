@@ -9,7 +9,7 @@ public abstract class ModalDialog<T> extends Dialog {
 	private Shell shell;
 	private T returnValue;
 	
-	public ModalDialog(Shell parentShell) {   
+	public ModalDialog(Shell parentShell) {
 		super(new Shell(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
 	}
 	

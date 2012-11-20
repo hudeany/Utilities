@@ -39,10 +39,11 @@ public class SelectionDialog extends ModalDialog<String> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title))
+		if (StringUtils.isEmpty(title)) {
 			shell.setText(getText());
-		else
+		} else {
 			shell.setText(title);
+		}
 		shell.setLayout(new FillLayout());
 		shell.setSize(475, 120);
 		shell.setMinimumSize(475, 120);
@@ -84,8 +85,9 @@ public class SelectionDialog extends ModalDialog<String> {
 	private class OkButtonSelectionListener extends SelectionAdapter {
 		@Override
 		public void widgetSelected(SelectionEvent e) {
-			if (comboBox.getSelectionIndex() > -1)
+			if (comboBox.getSelectionIndex() > -1) {
 				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
+			}
 			getShell().close();
 		}
 	}

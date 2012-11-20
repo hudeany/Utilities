@@ -670,8 +670,9 @@ public class Utilities {
 	public static String repeatString(String itemString, int repeatTimes, String separatorString) {
 		StringBuilder returnStringBuilder = new StringBuilder();
 		for (int i = 0; i < repeatTimes; i++) {
-			if (returnStringBuilder.length() > 0)
+			if (separatorString != null && returnStringBuilder.length() > 0) {
 				returnStringBuilder.append(separatorString);
+			}
 			returnStringBuilder.append(itemString);
 		}
 		return returnStringBuilder.toString();
@@ -1020,6 +1021,22 @@ public class Utilities {
 			}
 
 			return lineNumberReader.getLineNumber();
+		} finally {
+			IOUtils.closeQuietly(lineNumberReader);
+		}
+	}
+	
+	public static List<String> getLines(String dataString) throws IOException {
+		List<String> list = new ArrayList<String>();
+		LineNumberReader lineNumberReader = null;
+		try {
+			lineNumberReader = new LineNumberReader(new StringReader(dataString));
+			String line;
+			while ((line = lineNumberReader.readLine()) != null) {
+				list.add(line);
+			}
+
+			return list;
 		} finally {
 			IOUtils.closeQuietly(lineNumberReader);
 		}
