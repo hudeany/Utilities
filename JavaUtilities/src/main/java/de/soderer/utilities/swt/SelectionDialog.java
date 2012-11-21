@@ -25,14 +25,14 @@ public class SelectionDialog extends ModalDialog<String> {
 	private Button okButton;
 
 	public SelectionDialog(Shell shell, String title, String text, List<String> items) {   
-		super(shell);
+		super(shell, SWT.RESIZE);
 		this.title = title;
 		this.text = text;
 		this.items = items;
 	}
 	
 	public SelectionDialog(Shell shell, String text, List<String> items) {   
-		super(shell);
+		super(shell, SWT.RESIZE);
 		this.text = text;
 		this.items = items;
 	}
@@ -59,7 +59,8 @@ public class SelectionDialog extends ModalDialog<String> {
 		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
 	    if (items != null && items.size() > 0) {
-		    comboBox.setItems(items.toArray(new String[items.size()]));
+	    	String[] comboBoxItems = items.toArray(new String[items.size()]);
+		    comboBox.setItems(comboBoxItems);
 	    	comboBox.select(comboBox.getItemCount() - 1);
 	    }
 	    

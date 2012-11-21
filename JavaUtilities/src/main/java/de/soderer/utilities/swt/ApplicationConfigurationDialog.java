@@ -51,7 +51,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		dataPart.setLayout(new GridLayout(3, false));
 		
 		scrolledPart.setContent(dataPart);
-		scrolledPart.setMinSize(200, 280);
 		scrolledPart.setExpandHorizontal(true);
 		scrolledPart.setExpandVertical(true);
 		
@@ -92,6 +91,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				}
 			}
 		}
+		
+		scrolledPart.pack();
+		scrolledPart.setMinSize(200, scrolledPart.getSize().y);
 		
 		Composite buttonArea = new Composite(mainComposite, SWT.NONE);
 		buttonArea.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
