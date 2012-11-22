@@ -164,7 +164,7 @@ public class TextTable {
 				if (columnIndex > 0)
 					columnNamesLines.get(lineIndex).append(" ");
 				
-				columnNamesLines.get(lineIndex).append(Utilities.trimStringToLengthAlignedLeft(columnNames.get(lineIndex).get(columnIndex), size));
+				columnNamesLines.get(lineIndex).append(TextUtilities.trimStringToLengthAlignedLeft(columnNames.get(lineIndex).get(columnIndex), size));
 			}
 			
 			//Über alle Zeilen iterieren
@@ -173,9 +173,9 @@ public class TextTable {
 					contentLines.get(lineIndex).append(" ");
 				
 				if (columnRightAligned.get(columnIndex))
-					contentLines.get(lineIndex).append(Utilities.trimStringToLengthAlignedRight(content.get(lineIndex).get(columnIndex), size));
+					contentLines.get(lineIndex).append(TextUtilities.trimStringToLengthAlignedRight(content.get(lineIndex).get(columnIndex), size));
 				else
-					contentLines.get(lineIndex).append(Utilities.trimStringToLengthAlignedLeft(content.get(lineIndex).get(columnIndex), size));
+					contentLines.get(lineIndex).append(TextUtilities.trimStringToLengthAlignedLeft(content.get(lineIndex).get(columnIndex), size));
 			}
 		}
 		
@@ -184,7 +184,7 @@ public class TextTable {
 			text.append(columnNamesLines.get(lineIndex) + "\n");
 		}
 		//Headerline abtrennen
-		text.append(Utilities.replicateString("-", columnNamesLines.get(0).length()) + "\n");
+		text.append(TextUtilities.repeatString("-", columnNamesLines.get(0).length()) + "\n");
 		for (int lineIndex = 0 ; lineIndex < contentLines.size(); lineIndex++) {
 			text.append(contentLines.get(lineIndex) + "\n");
 		}

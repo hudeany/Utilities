@@ -7,7 +7,7 @@ public class UtilitiesTest {
 	@Test
 	public void testRightAlign1() {
 		try {
-			String test = Utilities.trimStringToLengthAlignedRight("123  ", 7);
+			String test = TextUtilities.trimStringToLengthAlignedRight("123  ", 7);
 			Assert.assertEquals("  123  ", test);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -17,7 +17,7 @@ public class UtilitiesTest {
 	@Test
 	public void testRightAlign2() {
 		try {
-			String test = Utilities.trimStringToLengthAlignedRight("abc", 15);
+			String test = TextUtilities.trimStringToLengthAlignedRight("abc", 15);
 			Assert.assertEquals("            abc", test);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -27,7 +27,7 @@ public class UtilitiesTest {
 	@Test
 	public void testRightAlign3() {
 		try {
-			String test = Utilities.trimStringToLengthAlignedRight("abc12345", 5);
+			String test = TextUtilities.trimStringToLengthAlignedRight("abc12345", 5);
 			Assert.assertEquals("12345", test);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -37,7 +37,7 @@ public class UtilitiesTest {
 	@Test
 	public void testRightAlign4() {
 		try {
-			String test = Utilities.trimStringToLengthAlignedRight("123", 7);
+			String test = TextUtilities.trimStringToLengthAlignedRight("123", 7);
 			Assert.assertEquals("    123", test);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -47,7 +47,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLeftAlign1() {
 		try {
-			String test = Utilities.trimStringToLengthAlignedLeft("  123", 7);
+			String test = TextUtilities.trimStringToLengthAlignedLeft("  123", 7);
 			Assert.assertEquals("  123  ", test);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -57,7 +57,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLeftAlign2() {
 		try {
-			String test = Utilities.trimStringToLengthAlignedLeft("abc", 15);
+			String test = TextUtilities.trimStringToLengthAlignedLeft("abc", 15);
 			Assert.assertEquals("abc            ", test);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -67,7 +67,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLeftAlign3() {
 		try {
-			String test = Utilities.trimStringToLengthAlignedLeft("12345abc", 5);
+			String test = TextUtilities.trimStringToLengthAlignedLeft("12345abc", 5);
 			Assert.assertEquals("12345", test);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -77,7 +77,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLeftAlign4() {
 		try {
-			String test = Utilities.trimStringToLengthAlignedLeft("123", 7);
+			String test = TextUtilities.trimStringToLengthAlignedLeft("123", 7);
 			Assert.assertEquals("123    ", test);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -87,7 +87,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLineNumber1() {
 		try {
-			int index = Utilities.getStartIndexOfLine("123", 1);
+			int index = TextUtilities.getStartIndexOfLine("123", 1);
 			Assert.assertEquals(0, index);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -97,7 +97,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLineNumber2() {
 		try {
-			int index = Utilities.getStartIndexOfLine("123", 3);
+			int index = TextUtilities.getStartIndexOfLine("123", 3);
 			Assert.assertEquals(0, index);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -107,7 +107,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLineNumber3() {
 		try {
-			int index = Utilities.getStartIndexOfLine("123\n456\n789", 1);
+			int index = TextUtilities.getStartIndexOfLine("123\n456\n789", 1);
 			Assert.assertEquals(0, index);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -117,7 +117,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLineNumber4() {
 		try {
-			int index = Utilities.getStartIndexOfLine("123\n456\n789", 3);
+			int index = TextUtilities.getStartIndexOfLine("123\n456\n789", 3);
 			Assert.assertEquals(8, index);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -127,7 +127,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLineNumber5() {
 		try {
-			int index = Utilities.getStartIndexOfLine("123\r\n456\r\n789", 2);
+			int index = TextUtilities.getStartIndexOfLine("123\r\n456\r\n789", 2);
 			Assert.assertEquals(5, index);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -137,7 +137,7 @@ public class UtilitiesTest {
 	@Test
 	public void testLineNumber6() {
 		try {
-			int index = Utilities.getStartIndexOfLine("123\n456\n789", 5);
+			int index = TextUtilities.getStartIndexOfLine("123\n456\n789", 5);
 			Assert.assertEquals(8, index);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());

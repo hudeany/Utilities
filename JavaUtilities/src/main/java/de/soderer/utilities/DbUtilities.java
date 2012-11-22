@@ -157,7 +157,7 @@ public class DbUtilities {
 			
 			// Insert data
 			Map<Integer, Object[]> notInsertedData = new HashMap<Integer, Object[]>();
-			String insertStatementString = "INSERT INTO " + tableName + " (" + StringUtils.join(tableColumns, ", ") + ") VALUES (" + Utilities.repeatString("?", tableColumns.length, ", ") + ")";
+			String insertStatementString = "INSERT INTO " + tableName + " (" + StringUtils.join(tableColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", tableColumns.length, ", ") + ")";
 			preparedStatement = connection.prepareStatement(insertStatementString);
 			boolean hasOpenData = false;
 			List<Object[]> currentUncommitedLines = new ArrayList<Object[]>();
@@ -325,7 +325,7 @@ public class DbUtilities {
 			}
 
 			Map<Integer, List<String>> notInsertedData = new HashMap<Integer, List<String>>();
-			String insertStatementString = "INSERT INTO " + tableName + " (" + StringUtils.join(dbColumns, ", ") + ") VALUES (" + Utilities.repeatString("?", dbColumns.size(), ", ") + ")";
+			String insertStatementString = "INSERT INTO " + tableName + " (" + StringUtils.join(dbColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", dbColumns.size(), ", ") + ")";
 			preparedStatement = connection.prepareStatement(insertStatementString);
 
 			// Read and insert data
@@ -552,7 +552,7 @@ public class DbUtilities {
 			callableStatement = null;
 			
 			if (parameters != null) {
-				callableStatement = connection.prepareCall("{call " + procedureName + "(" + Utilities.repeatString("?", parameters.length, ", ") + ")}");
+				callableStatement = connection.prepareCall("{call " + procedureName + "(" + TextUtilities.repeatString("?", parameters.length, ", ") + ")}");
 				for (int i = 0; i < parameters.length; i++) {
 					callableStatement.setObject(i + 1, parameters[i]);
 				}

@@ -17,7 +17,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import de.soderer.utilities.Utilities;
+import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.VisibleException;
 
 public class ErrorDialog extends ModalDialog<Boolean> {
@@ -113,7 +113,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 					stackTraceBuilder.append("\n");
 				}
 				text3 = stackTraceBuilder.toString();
-				text3 = Utilities.trimToMaxNumberOfLines(text3, 15);
+				text3 = TextUtilities.trimToMaxNumberOfLines(text3, 15);
 			}
 			
 			GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);

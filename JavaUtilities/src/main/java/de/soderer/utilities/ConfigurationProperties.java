@@ -75,6 +75,10 @@ public class ConfigurationProperties {
 		properties.setProperty(name, value);
 	}
 	
+	public void set(String name, int value) {
+		properties.setProperty(name, Integer.toString(value));
+	}
+	
 	public int getInteger(String name) {
 		if (properties.containsKey(name)) {
 			return Integer.parseInt(properties.getProperty(name));

@@ -163,7 +163,10 @@ public class BitUtilities {
 		}
 		
 		if (insertAsciiText && asciiTextLine.length() > 0) {
-			returnString.append(Utilities.repeatString("   ", bytesBeforeLinebreak - (byteCount % bytesBeforeLinebreak)));
+			int bytesInLastLine = byteCount % bytesBeforeLinebreak;
+			if (bytesInLastLine > 0) {
+				returnString.append(TextUtilities.repeatString("   ", bytesBeforeLinebreak - bytesInLastLine));
+			}
 			returnString.append(" ; ");
 			returnString.append(asciiTextLine.toString());
 		}
