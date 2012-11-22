@@ -40,6 +40,21 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		this.buttonTextClose = buttonTextClose;
 	}
 	
+	public ShowDataDialog(String title, String dataString, Shell shell, String buttonTextClose) {   
+		super(shell);
+		this.title = title;
+		this.dataString = dataString;
+		buttonTextSave = null;
+		this.buttonTextClose = buttonTextClose;
+	}
+	
+	public ShowDataDialog(String dataString, Shell shell, String buttonTextClose) {   
+		super(shell);
+		this.dataString = dataString;
+		buttonTextSave = null;
+		this.buttonTextClose = buttonTextClose;
+	}
+	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		if (StringUtils.isEmpty(title)) {
@@ -55,29 +70,32 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		Text textField = new Text(composite, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1);
 		gridData.heightHint = 200;
+		gridData.widthHint = 200;
 		textField.setLayoutData(gridData);
 		textField.setText(dataString);
-		textField.setSize(100, 200);
+		textField.setSize(200, 200);
 	    
-		Button buttonSave = new Button(composite, SWT.PUSH);
-		buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		buttonSave.setText(buttonTextSave);
-		buttonSave.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				try {
-					saveDataInteractive(LangResources.get("savedata"), dataString.getBytes("UTF-8"), getShell());
-				} catch (UnsupportedEncodingException e1) {
-					e1.printStackTrace();
+		if (buttonTextSave != null) {
+			Button buttonSave = new Button(composite, SWT.PUSH);
+			buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+			buttonSave.setText(buttonTextSave);
+			buttonSave.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					try {
+						saveDataInteractive(LangResources.get("savedata"), dataString.getBytes("UTF-8"), getShell());
+					} catch (UnsupportedEncodingException e1) {
+						e1.printStackTrace();
+					}
+			        
+					setReturnValue(0);
+					getShell().close();
 				}
-		        
-				setReturnValue(0);
-				getShell().close();
-			}
-		});
+			});
+		}
 
 		Button buttonClose = new Button(composite, SWT.PUSH);
-		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, (buttonTextSave == null ? 2 : 1), 1));
 		buttonClose.setText(buttonTextClose);
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
