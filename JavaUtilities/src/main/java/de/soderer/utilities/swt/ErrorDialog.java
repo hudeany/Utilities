@@ -164,4 +164,9 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		}
 		return key;
 	}
+	
+	@Override
+	protected Boolean getDefaultReturnValue() {
+		return false;
+	}
 }

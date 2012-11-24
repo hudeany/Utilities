@@ -38,7 +38,11 @@ public abstract class ModalDialog<T> extends Dialog {
 	    		display.sleep();
 	    }
 	    
-	    return returnValue;
+	    if (returnValue == null) {
+	    	return getDefaultReturnValue();
+	    } else {
+	    	return returnValue;
+	    }
 	}
 	
 	protected void setReturnValue(T value) {
@@ -50,6 +54,10 @@ public abstract class ModalDialog<T> extends Dialog {
 		shell.setLocation(
 				shell.getParent().getLocation().x + shell.getParent().getSize().x / 2 - shell.getSize().x / 2,
 				shell.getParent().getLocation().y + shell.getParent().getSize().y / 2 - shell.getSize().y / 2);
+	}
+	
+	protected T getDefaultReturnValue() {
+		return null;
 	}
 	
 	protected abstract void createComponents(Shell parentShell) throws Exception;

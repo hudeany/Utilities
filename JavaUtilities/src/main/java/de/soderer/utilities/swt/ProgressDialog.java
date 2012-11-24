@@ -108,4 +108,9 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 		setReturnValue(false);
 		getShell().close();
 	}
+	
+	@Override
+	protected Boolean getDefaultReturnValue() {
+		return false;
+	}
 }

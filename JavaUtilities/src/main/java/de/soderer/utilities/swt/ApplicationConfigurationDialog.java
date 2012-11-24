@@ -175,4 +175,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			applicationConfiguration.set(key, ((Button)e.widget).getSelection());
 		}
 	}
+	
+	@Override
+	protected Boolean getDefaultReturnValue() {
+		return false;
+	}
 }

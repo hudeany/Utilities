@@ -198,87 +198,63 @@ public class TextUtilities {
 			boolean searchReversely) {
 		if (text != null && searchTextOrPattern != null) {
 			String fullText = text;
-			String textToSearch = searchTextOrPattern;
-
 			int nextPosition = -1;
+			int length = -1;
+			
+			Pattern searchPattern;
 			if (searchTextIsRegularExpression) {
-				int length = -1;
-				Pattern searchPattern;
-				if (!searchCaseSensitive) {
-					searchPattern = Pattern.compile(textToSearch, Pattern.CASE_INSENSITIVE);
+				if (searchCaseSensitive) {
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.MULTILINE);
 				} else {
-					searchPattern = Pattern.compile(textToSearch);
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 				}
-				if (searchReversely) {
-					Matcher matcher = searchPattern.matcher(fullText);
-					while (matcher.find()) {
-						if (matcher.start() < startPosition) {
-							nextPosition = matcher.start();
-							length = matcher.end() - nextPosition;
-						} else {
-							break;
-						}
-					}
-					if (nextPosition < 0) {
-						if (matcher.start() > 0) {
-							nextPosition = matcher.start();
-							length = matcher.end() - nextPosition;
-						}
-						while (matcher.find()) {
-							nextPosition = matcher.start();
-							length = matcher.end() - nextPosition;
-						}
-					}
-
-					if (nextPosition < 0) {
-						return null;
-					} else {
-						return new Tuple<Integer, Integer>(nextPosition, length);
-					}
+			} else {
+				if (searchCaseSensitive) {
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.LITERAL | Pattern.MULTILINE);
 				} else {
-					Matcher matcher = searchPattern.matcher(fullText);
-					if (matcher.find(startPosition)) {
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.MULTILINE);
+				}
+			}
+			
+			if (searchReversely) {
+				Matcher matcher = searchPattern.matcher(fullText);
+				while (matcher.find()) {
+					if (matcher.start() < startPosition) {
+						nextPosition = matcher.start();
+						length = matcher.end() - nextPosition;
+					} else {
+						break;
+					}
+				}
+				if (nextPosition < 0) {
+					if (matcher.start() > 0) {
 						nextPosition = matcher.start();
 						length = matcher.end() - nextPosition;
 					}
-					if (startPosition > 0 && nextPosition < 0) {
-						if (matcher.find(0)) {
-							nextPosition = matcher.start();
-							length = matcher.end() - nextPosition;
-						}
+					while (matcher.find()) {
+						nextPosition = matcher.start();
+						length = matcher.end() - nextPosition;
 					}
+				}
+
+				if (nextPosition < 0) {
+					return null;
+				} else {
 					return new Tuple<Integer, Integer>(nextPosition, length);
 				}
 			} else {
-				if (!searchCaseSensitive) {
-					fullText = fullText.toLowerCase();
-					textToSearch = textToSearch.toLowerCase();
+				Matcher matcher = searchPattern.matcher(fullText);
+				if (matcher.find(startPosition)) {
+					nextPosition = matcher.start();
+					length = matcher.end() - nextPosition;
 				}
-				if (searchReversely) {
-					fullText = new StringBuilder(fullText).reverse().toString();
-					textToSearch = new StringBuilder(textToSearch).reverse().toString();
-					startPosition = fullText.length() - startPosition - textToSearch.length() + 1;
-					nextPosition = fullText.indexOf(textToSearch, startPosition);
-					if (startPosition > 0 && nextPosition < 0) {
-						nextPosition = fullText.indexOf(textToSearch, 0);
-					}
-					if (nextPosition >= 0) {
-						nextPosition = fullText.length() - nextPosition - textToSearch.length();
-						return new Tuple<Integer, Integer>(nextPosition, textToSearch.length());
-					} else {
-						return null;
-					}
-				} else {
-					nextPosition = fullText.indexOf(textToSearch, startPosition);
-					if (startPosition > 0 && nextPosition < 0) {
-						nextPosition = fullText.indexOf(textToSearch, 0);
-					}
-					if (nextPosition >= 0) {
-						return new Tuple<Integer, Integer>(nextPosition, textToSearch.length());
-					} else {
-						return null;
+				if (startPosition > 0 && nextPosition < 0) {
+					if (matcher.find(0)) {
+						nextPosition = matcher.start();
+						length = matcher.end() - nextPosition;
 					}
 				}
+				return new Tuple<Integer, Integer>(nextPosition, length);
 			}
 		} else {
 			return null;
@@ -288,37 +264,28 @@ public class TextUtilities {
 	public static int countOccurences(String text, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive) {
 		if (text != null && searchTextOrPattern != null) {
 			String fullText = text;
-			String textToSearch = searchTextOrPattern;
 			int occurences = 0;
-
+			
+			Pattern searchPattern;
 			if (searchTextIsRegularExpression) {
-				Pattern searchPattern;
-				if (!searchCaseSensitive) {
-					searchPattern = Pattern.compile(textToSearch, Pattern.CASE_INSENSITIVE);
+				if (searchCaseSensitive) {
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.MULTILINE);
 				} else {
-					searchPattern = Pattern.compile(textToSearch);
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 				}
-				Matcher matcher = searchPattern.matcher(fullText);
-				while (matcher.find()) {
-					occurences++;
-				}
-				return occurences;
 			} else {
-				if (!searchCaseSensitive) {
-					fullText = fullText.toLowerCase();
-					textToSearch = textToSearch.toLowerCase();
+				if (searchCaseSensitive) {
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.LITERAL | Pattern.MULTILINE);
+				} else {
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.MULTILINE);
 				}
-
-				int nextPosition = 0;
-				while (nextPosition != -1) {
-					nextPosition = fullText.indexOf(textToSearch, nextPosition);
-					if (nextPosition >= 0) {
-						occurences++;
-						nextPosition++;
-					}
-				}
-				return occurences;
 			}
+
+			Matcher matcher = searchPattern.matcher(fullText);
+			while (matcher.find()) {
+				occurences++;
+			}
+			return occurences;
 		} else {
 			return -1;
 		}
@@ -341,21 +308,21 @@ public class TextUtilities {
 		}
 	}
 	
-	public static int getNumberOfLineContainingText(String dataString, String searchText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression) throws IOException {
+	public static int getNumberOfLineContainingText(String dataString, String searchTextOrPattern, boolean searchCaseSensitive, boolean searchTextIsRegularExpression) throws IOException {
 		LineNumberReader lineNumberReader = null;
 		try {
 			Pattern searchPattern;
 			if (searchTextIsRegularExpression) {
 				if (searchCaseSensitive) {
-					searchPattern = Pattern.compile(searchText);
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.MULTILINE);
 				} else {
-					searchPattern = Pattern.compile(searchText, Pattern.CASE_INSENSITIVE);
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 				}
 			} else {
 				if (searchCaseSensitive) {
-					searchPattern = Pattern.compile(searchText, Pattern.LITERAL);
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.LITERAL | Pattern.MULTILINE);
 				} else {
-					searchPattern = Pattern.compile(searchText, Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.MULTILINE);
 				}
 			}
 			
