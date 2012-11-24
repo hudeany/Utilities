@@ -215,9 +215,10 @@ public class TextUtilities {
 					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.MULTILINE);
 				}
 			}
+
+			Matcher matcher = searchPattern.matcher(fullText);
 			
 			if (searchReversely) {
-				Matcher matcher = searchPattern.matcher(fullText);
 				while (matcher.find()) {
 					if (matcher.start() < startPosition) {
 						nextPosition = matcher.start();
@@ -236,14 +237,7 @@ public class TextUtilities {
 						length = matcher.end() - nextPosition;
 					}
 				}
-
-				if (nextPosition < 0) {
-					return null;
-				} else {
-					return new Tuple<Integer, Integer>(nextPosition, length);
-				}
 			} else {
-				Matcher matcher = searchPattern.matcher(fullText);
 				if (matcher.find(startPosition)) {
 					nextPosition = matcher.start();
 					length = matcher.end() - nextPosition;
@@ -254,6 +248,11 @@ public class TextUtilities {
 						length = matcher.end() - nextPosition;
 					}
 				}
+			}
+
+			if (nextPosition < 0) {
+				return null;
+			} else {
 				return new Tuple<Integer, Integer>(nextPosition, length);
 			}
 		} else {
