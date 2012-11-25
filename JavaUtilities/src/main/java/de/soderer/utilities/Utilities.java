@@ -28,9 +28,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -1059,5 +1062,40 @@ public class Utilities {
 		} finally {
 			IOUtils.closeQuietly(input);
 		}
+	}
+	
+	public static String getOsName() {
+		return System.getProperty("os.name");
+	}
+	
+	public static boolean isJavaWebstartApp() {
+		return System.getProperty("javawebstart.version") != null;
+	}
+	
+	public static Map<String, String> getSystemPropertiesMap() {
+		Map<String, String> propertiesMap = new HashMap<String, String>();
+		for (Object key : System.getProperties().keySet()) {
+			propertiesMap.put((String) key, System.getProperties().getProperty((String) key));
+		}
+		return propertiesMap;
+	}
+	
+	public static String getStringFromMap(Map<String, ? extends Object> map, String entrySeparator, String keySeparator, boolean sort) {
+		List<String> keyList = new ArrayList<String>(map.keySet());
+		if (sort) {
+			Collections.sort(keyList);
+		}
+
+		StringBuilder builder = new StringBuilder();
+		for (Object key : keyList) {
+			if (builder.length() > 0) {
+				builder.append(entrySeparator);
+			}
+			builder.append(key == null ? "" : key);
+			builder.append(keySeparator);
+			Object value = map.get(key);
+			builder.append(value == null ? "" : value.toString());
+		}
+		return builder.toString();
 	}
 }

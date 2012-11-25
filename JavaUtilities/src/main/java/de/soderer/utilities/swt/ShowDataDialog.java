@@ -8,7 +8,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -26,7 +25,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 	private String buttonTextClose;
 
 	public ShowDataDialog(String title, String dataString, Shell shell, String buttonTextSave, String buttonTextClose) {   
-		super(shell);
+		super(shell, SWT.RESIZE);
 		this.title = title;
 		this.dataString = dataString;
 		this.buttonTextSave = buttonTextSave;
@@ -34,14 +33,14 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 	}
 	
 	public ShowDataDialog(String dataString, Shell shell, String buttonTextSave, String buttonTextClose) {   
-		super(shell);
+		super(shell, SWT.RESIZE);
 		this.dataString = dataString;
 		this.buttonTextSave = buttonTextSave;
 		this.buttonTextClose = buttonTextClose;
 	}
 	
 	public ShowDataDialog(String title, String dataString, Shell shell, String buttonTextClose) {   
-		super(shell);
+		super(shell, SWT.RESIZE);
 		this.title = title;
 		this.dataString = dataString;
 		buttonTextSave = null;
@@ -49,7 +48,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 	}
 	
 	public ShowDataDialog(String dataString, Shell shell, String buttonTextClose) {   
-		super(shell);
+		super(shell, SWT.RESIZE);
 		this.dataString = dataString;
 		buttonTextSave = null;
 		this.buttonTextClose = buttonTextClose;
@@ -62,18 +61,16 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		} else {
 			shell.setText(title);
 		}
-		shell.setLayout(new FillLayout());
+		shell.setLayout(new GridLayout());
 		
 		Composite composite = new Composite(shell, SWT.NONE);
+		GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, true, true);
+		composite.setLayoutData(gridData);
 		composite.setLayout(new GridLayout(2, true));
 		
 		Text textField = new Text(composite, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-		GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1);
-		gridData.heightHint = 200;
-		gridData.widthHint = 200;
-		textField.setLayoutData(gridData);
+		textField.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		textField.setText(dataString);
-		textField.setSize(200, 200);
 	    
 		if (buttonTextSave != null) {
 			Button buttonSave = new Button(composite, SWT.PUSH);
@@ -106,6 +103,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		});
 
 		shell.pack();
+		shell.setSize(300, 300);
 	}
 	
 	public static String saveDataInteractive(String title, byte[] data, Shell shell) {

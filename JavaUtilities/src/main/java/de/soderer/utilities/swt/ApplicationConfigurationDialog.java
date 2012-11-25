@@ -1,17 +1,26 @@
 package de.soderer.utilities.swt;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.commons.io.FileUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
@@ -19,18 +28,26 @@ import org.eclipse.swt.widgets.Text;
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.swt.ModalDialog;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private String applicationName;
 	private ConfigurationProperties applicationConfiguration;
+	private Image iconImage;
 	
 	public ApplicationConfigurationDialog(Shell shell, ConfigurationProperties applicationConfiguration, String applicationName) throws Exception {   
 		super(shell, SWT.RESIZE);
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
+		this.iconImage = null;
 	}
 
+	public ApplicationConfigurationDialog(Shell shell, ConfigurationProperties applicationConfiguration, String applicationName, Image iconImage) throws Exception {   
+		super(shell, SWT.RESIZE);
+		this.applicationConfiguration = applicationConfiguration;
+		this.applicationName = applicationName;
+		this.iconImage = iconImage;
+	}
+	
 	@Override
 	protected void createComponents(Shell shell) {
 		shell.setText(applicationName + " " + LangResources.get("configuration"));
@@ -107,6 +124,154 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(true);
 				getShell().close();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+		
+		Button createLinkButton = new Button(buttonArea, SWT.PUSH);
+		createLinkButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
+		createLinkButton.setText(LangResources.get("createDesktopLink"));
+		createLinkButton.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (!Utilities.isJavaWebstartApp()) {
+					if (Utilities.getOsName().toLowerCase().contains("windows")) {
+						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".lnk";
+						if (new File(desktopLinkFilePath).exists()) {
+							new File(desktopLinkFilePath).delete();
+						}
+						
+						String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".ico";
+						if (new File(iconPath).exists()) {
+							new File(iconPath).delete();
+						}
+	
+			        	String tempScriptFile = System.getProperty("java.io.tmpdir") + File.separator + applicationName + "_createlink.vbs";
+			        	if (new File(tempScriptFile).exists()) {
+							new File(tempScriptFile).delete();
+						}
+						
+						if (iconImage != null) {
+							ImageLoader loader = new ImageLoader();
+						    loader.data = new ImageData[] {iconImage.getImageData()};
+						    loader.save(iconPath, SWT.IMAGE_ICO);
+						}
+						
+						FileDialog dialog = new FileDialog(getShell(), SWT.OPEN);
+				        dialog.setText(LangResources.get("createDesktopLink"));
+				        String fileName = dialog.open();
+				        if (fileName != null) {
+							StringBuilder data = new StringBuilder();
+							data.append("set shortcut = CreateObject(\"WScript.Shell\").CreateShortcut(\"" + desktopLinkFilePath + "\")\n");
+							data.append("shortcut.Description = \""+ applicationName + "\"\n");
+							data.append("shortcut.TargetPath = \"" + fileName + "\"\n");
+							data.append("shortcut.IconLocation = \"" + iconPath + "\"\n");
+							data.append("shortcut.Save\n");
+							
+							try {
+								FileUtils.writeStringToFile(new File(tempScriptFile), data.toString(), "UTF-8");
+								
+								Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
+								
+								MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
+								messageBox.setText(LangResources.get("createDesktopLink"));
+								messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+								messageBox.open();
+								
+								new File(tempScriptFile).delete();
+							} catch (IOException e1) {
+								MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+								messageBox.setText(LangResources.get("createDesktopLink"));
+								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+								messageBox.open();
+							}
+				        }	
+					} else if (Utilities.getOsName().toLowerCase().contains("nix") || Utilities.getOsName().toLowerCase().contains("nux")) {
+						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+						if (new File(desktopLinkFilePath).exists()) {
+							new File(desktopLinkFilePath).delete();
+						}
+						
+						String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
+						if (new File(iconPath).exists()) {
+							new File(iconPath).delete();
+						}
+						
+						FileDialog dialog = new FileDialog(getShell(), SWT.OPEN);
+				        dialog.setText(LangResources.get("createDesktopLink"));
+				        String fileName = dialog.open();
+				        if (fileName != null) {
+							StringBuilder data = new StringBuilder();
+							data.append("[Desktop Entry]\n");
+							data.append("Encoding=UTF-8\n");
+							data.append("Name=" + applicationName + "\n");
+							
+							if (iconImage != null) {
+								ImageLoader loader = new ImageLoader();
+							    loader.data = new ImageData[] {iconImage.getImageData()};
+							    loader.save(iconPath, SWT.IMAGE_PNG);
+							    
+								data.append("Icon=" + iconPath + "\n");
+							}
+							
+							data.append("Exec=java -jar " + fileName + "\n");
+							data.append("Terminal=false\n");
+							data.append("Type=Application\n");
+							
+							try {
+								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
+								
+								MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
+								messageBox.setText(LangResources.get("createDesktopLink"));
+								messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+								messageBox.open();
+							} catch (IOException e1) {
+								MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+								messageBox.setText(LangResources.get("createDesktopLink"));
+								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+								messageBox.open();
+							}
+				        }
+					}
+				} else {
+//					try {
+//						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+//						if (new File(desktopLinkFilePath).exists()) {
+//							new File(desktopLinkFilePath).delete();
+//						}
+//						
+//						Runtime.getRuntime().exec("javaws -uninstall http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
+//						Runtime.getRuntime().exec("javaws -import http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
+//						Runtime.getRuntime().exec("javaws -import -silent -shortcut http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
+//						
+//						MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
+//						messageBox.setText(LangResources.get("createDesktopLink"));
+//						messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+//						messageBox.open();
+//					} catch (IOException e1) {
+//						MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+//						messageBox.setText(LangResources.get("createDesktopLink"));
+//						messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+//						messageBox.open();
+//					}
+				}
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+
+		Button showPropertiesButton = new Button(buttonArea, SWT.PUSH);
+		showPropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
+		showPropertiesButton.setText(LangResources.get("showSystemProperties"));
+		showPropertiesButton.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				new ShowDataDialog(applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(Utilities.getSystemPropertiesMap(), "\n", " = ", true), getShell(), LangResources.get("close")).open();
 			}
 
 			@Override
