@@ -17,6 +17,18 @@ import org.apache.commons.io.IOUtils;
  */
 public class TextUtilities {
 	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"´`^°²³*#.,;:=+-~_|";
+	
+	public enum LineBreakType {
+		Unknown,
+		Mixed,
+		Unix,
+		Mac,
+		Windows
+	}
+	
+	public static String LinebreakMac = "\r";
+	public static String LinebreakUnix = "\n";
+	public static String LinebreakWindows = "\r\n";
 
 	public static String trimStringToLengthAlignedRight(String inputString, int laenge) {
 		if (inputString.length() > laenge)
@@ -79,23 +91,37 @@ public class TextUtilities {
 	}
 
 	public static String trimToMaxNumberOfLines(String value, int maxLines) {
-		value = normalizeLineBreaks(value);
+		String normalizedValue = normalizeLineBreaks(value, LineBreakType.Unix);
 		int count = 0;
 		int nextLinebreak = 0;
 		while (nextLinebreak != -1 && count < maxLines) {
-			nextLinebreak = value.indexOf("\n", nextLinebreak + 1);
+			nextLinebreak = normalizedValue.indexOf(LinebreakUnix, nextLinebreak + 1);
 			count++;
 		}
 
 		if (nextLinebreak != -1) {
-			return value.substring(0, nextLinebreak + 1) + "...";
+			LineBreakType originalLineBreakType = detectLinebreakType(value);
+			return normalizeLineBreaks(normalizedValue.substring(0, nextLinebreak + 1), originalLineBreakType) + "...";
 		} else {
 			return value;
 		}
 	}
 
-	public static String normalizeLineBreaks(String value) {
-		return value.replace("\r\n", "\n").replace("\r", "\n");
+	public static LineBreakType detectLinebreakType(String value) {
+		TextPropertiesReader textPropertiesReader = new TextPropertiesReader(value);
+		textPropertiesReader.readProperties();
+		return textPropertiesReader.getLinebreakType();
+	}
+	
+	public static String normalizeLineBreaks(String value, LineBreakType type) {
+		String returnString = value.replace(LinebreakWindows, LinebreakUnix).replace(LinebreakMac, LinebreakUnix);
+		if (type == LineBreakType.Mac) {
+			return returnString.replace(LinebreakUnix, LinebreakMac);
+		} else if (type == LineBreakType.Windows) {
+			return returnString.replace(LinebreakUnix, LinebreakWindows);
+		} else {
+			return returnString;
+		}
 	}
 	
 	public static List<String> getLines(String dataString) throws IOException {
@@ -153,9 +179,9 @@ public class TextUtilities {
 			int lineCount = 1;
 			int position = 0;
 			while (lineCount < lineNumber) {
-				int nextLineBreakMac = dataString.indexOf("\r", position);
-				int nextLineBreakUnix = dataString.indexOf("\n", position);
-				int nextLineBreakWindows = dataString.indexOf("\r\n", position);
+				int nextLineBreakMac = dataString.indexOf(LinebreakMac, position);
+				int nextLineBreakUnix = dataString.indexOf(LinebreakUnix, position);
+				int nextLineBreakWindows = dataString.indexOf(LinebreakWindows, position);
 				int nextPosition = -1;
 				int lineBreakSize = 0;
 				if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac < nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac < nextLineBreakWindows)) {
@@ -194,8 +220,7 @@ public class TextUtilities {
 	 * @param searchReversely
 	 * @return Tuple First = Startindex, Second = Length of found substring
 	 */
-	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive,
-			boolean searchReversely) {
+	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
 		if (text != null && searchTextOrPattern != null) {
 			String fullText = text;
 			int nextPosition = -1;
@@ -297,7 +322,7 @@ public class TextUtilities {
 			try {
 				String textPart = dataString.substring(0, textPosition);
 				int lineNumber = getLineCount(textPart);
-				if (textPart.endsWith("\n") || textPart.endsWith("\r")) {
+				if (textPart.endsWith(LinebreakUnix) || textPart.endsWith(LinebreakMac)) {
 					lineNumber++;
 				}
 				return lineNumber;

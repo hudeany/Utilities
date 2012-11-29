@@ -998,15 +998,15 @@ public class Utilities {
 				Pattern searchPattern;
 				if (searchTextIsRegularExpression) {
 					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i));
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE);
 					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE);
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
 					}
 				} else {
 					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.LITERAL);
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.LITERAL);
 					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
 					}
 				}
 				Matcher matcher = searchPattern.matcher(dataString);

@@ -22,4 +22,34 @@ public class Triple<T1, T2, T3> {
 	public T3 getThird() {
 		return value3;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder returnString = new StringBuilder("<");
+		
+		if (value1 != null) {
+			returnString.append(value1.toString());
+		} else {
+			returnString.append("<null>");
+		}
+		
+		returnString.append(", ");
+		
+		if (value2 != null) {
+			returnString.append(value2.toString());
+		} else {
+			returnString.append("<null>");
+		}
+		
+		returnString.append(", ");
+
+		if (value3 != null) {
+			returnString.append(value3.toString());
+		} else {
+			returnString.append("<null>");
+		}
+		
+		returnString.append(">");
+		return returnString.toString();
+	}
 }

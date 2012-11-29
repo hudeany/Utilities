@@ -53,8 +53,11 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	}
 	
 	@Override
-	public void readProperties() throws Exception {
-		readFileToString();
+	public void readProperties() {
+		try {
+			readFileToString();
+		} catch (Exception e) {
+		}
 	}
 
 	public long getFilesize() {

@@ -16,4 +16,26 @@ public class Tuple<T1, T2> {
 	public T2 getSecond() {
 		return value2;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder returnString = new StringBuilder("<");
+		
+		if (value1 != null) {
+			returnString.append(value1.toString());
+		} else {
+			returnString.append("<null>");
+		}
+		
+		returnString.append(", ");
+
+		if (value2 != null) {
+			returnString.append(value2.toString());
+		} else {
+			returnString.append("<null>");
+		}
+		
+		returnString.append(">");
+		return returnString.toString();
+	}
 }

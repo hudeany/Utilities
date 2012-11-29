@@ -3,15 +3,9 @@ package de.soderer.utilities;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.soderer.utilities.TextUtilities.LineBreakType;
+
 public class TextPropertiesReader {
-	public enum LineBreakType {
-		Unknown,
-		Mixed,
-		Unix,
-		Mac,
-		Windows
-	}
-	
 	protected String dataString = null;
 	
 	private int characters = -1;
@@ -24,11 +18,11 @@ public class TextPropertiesReader {
 	protected TextPropertiesReader() throws Exception {
 	}
 
-	public TextPropertiesReader(String dataString) throws Exception {
+	public TextPropertiesReader(String dataString) {
 		this.dataString = dataString;
 	}
 	
-	public void readProperties() throws Exception {
+	public void readProperties() {
 		foundCharacters = new HashMap<Character, Integer>();
 		int lineCount = 0;
 		int nonWhitespaceCharactersCount = 0;
