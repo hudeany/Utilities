@@ -397,13 +397,10 @@ public class TextUtilities {
 		} else if (data.length > 3 && data[0] == Utilities.UTF_8_BOM[0] && data[1] == Utilities.UTF_8_BOM[1] && data[2] == Utilities.UTF_8_BOM[2]) {
 			return new Tuple<String, Boolean>("UTF-8", true);
 		} else {
-			// Use first data part only to speed up
-			//String interimString = new String(data, 0, Math.min(data.length, 100), "UTF-8").toLowerCase();
-			// Or use full data to improve detection quality
-			String interimString = new String(data, "UTF-8").toLowerCase();
-			
 			// Detect Xml Encoding
 			try {
+				// Use first data part only to speed up
+				String interimString = new String(data, 0, Math.min(data.length, 100), "UTF-8").toLowerCase();
 				String reducedInterimString = interimString.replace("\u0000", "");
 				int encodingStart = reducedInterimString.indexOf("encoding");
 				if (encodingStart >= 0) {
@@ -434,6 +431,7 @@ public class TextUtilities {
 			} catch (Exception e) {
 			}
 			
+			String interimString = new String(data, "UTF-8").toLowerCase();
 			int zeroIndex = interimString.indexOf('\u0000');
 			if (zeroIndex >= 0) {
 				if (zeroIndex % 2 == 0) {
