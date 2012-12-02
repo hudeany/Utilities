@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Allgemeine Utilities
@@ -444,5 +445,17 @@ public class TextUtilities {
 			
 			return null;
 		}
+	}
+	
+	public static String replaceIndentingBlanks(String data, int blankCount, String replacement) {
+		String result = data;
+		Pattern pattern = Pattern.compile("^(  )+", Pattern.MULTILINE);
+		Matcher matcher = pattern.matcher(result);
+		while (matcher.find()) {
+			int replacementCount = (matcher.end() - matcher.start()) / blankCount;
+			result = matcher.replaceFirst(StringUtils.repeat(replacement, replacementCount));
+			matcher = pattern.matcher(result);
+		}
+		return result;
 	}
 }

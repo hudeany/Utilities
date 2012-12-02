@@ -248,4 +248,26 @@ public class TextUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 	}
+	
+	@Test
+	public void testIndention1() {
+		try {
+			String data = "123\n  456\n    789\n  456\n123";
+			String result = TextUtilities.replaceIndentingBlanks(data, 1, "\t");
+			Assert.assertEquals("123\n\t\t456\n\t\t\t\t789\n\t\t456\n123", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testIndention2() {
+		try {
+			String data = "123\n  456\n    789\n  456\n123";
+			String result = TextUtilities.replaceIndentingBlanks(data, 2, "\t");
+			Assert.assertEquals("123\n\t456\n\t\t789\n\t456\n123", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
 }
