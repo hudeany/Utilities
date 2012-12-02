@@ -1,10 +1,13 @@
 package de.soderer.utilities.xml;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URL;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
@@ -14,8 +17,40 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import de.soderer.utilities.TextUtilities;
 
 public class XmlUtilities {
+	public static Document parseXmlData(byte[] xmlData, boolean throwExceptionOnError) throws ParserConfigurationException, SAXException, IOException {
+		ByteArrayInputStream inputStream = null;
+		try {
+			inputStream = new ByteArrayInputStream(xmlData);
+			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			Document document = documentBuilder.parse(new InputSource(inputStream));
+			return document;
+		} catch (ParserConfigurationException e) {
+			if (throwExceptionOnError) {
+				throw e;
+			} else {
+				return null;
+			}
+		} catch (SAXException e) {
+			if (throwExceptionOnError) {
+				throw e;
+			} else {
+				return null;
+			}
+		} catch (IOException e) {
+			if (throwExceptionOnError) {
+				throw e;
+			} else {
+				return null;
+			}
+		}
+	}
+	
 	public static Document downloadAndParseXmlFile(String url) {
 		BufferedInputStream bufferedInputStream = null;
 		try {
@@ -46,5 +81,134 @@ public class XmlUtilities {
 				return null;
 			}
 		}
+	}
+	
+	public static String formatXmlDocument(Document xmlDocument, boolean throwExceptionOnError) throws Exception {
+		try {
+			StringBuilder result = new StringBuilder();
+			result.append("<?xml version=\"");
+			result.append(xmlDocument.getXmlVersion());
+			result.append("\" encoding=\"");
+			result.append(xmlDocument.getXmlEncoding());
+			result.append("\" standalone=\"");
+			result.append(xmlDocument.getXmlStandalone() ? "yes" : "no");
+			result.append("\"?>\n");
+			
+			for (int i = 0; i < xmlDocument.getChildNodes().getLength(); i++) {
+				Node xmlNode = xmlDocument.getChildNodes().item(i);
+				result.append(formatXmlNode(xmlNode, 0));
+			}
+			return result.toString();
+		} catch (Exception e) {
+			if (throwExceptionOnError) {
+				throw e;
+			} else {
+				return null;
+			}
+		}
+	}
+	
+	public static String formatXmlNode(Node xmlNode, int indentationLevel) {
+		if (xmlNode.getNodeType() == Node.TEXT_NODE) {
+			if (StringUtils.isBlank(xmlNode.getNodeValue())) {
+				return "";
+			} else {
+				return xmlNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;");
+			}
+		} else if (xmlNode.getNodeType() == Node.COMMENT_NODE) {
+			if (StringUtils.isBlank(xmlNode.getNodeValue())) {
+				return "";
+			} else {
+				StringBuilder result = new StringBuilder();
+				result.append(TextUtilities.repeatString("\t", indentationLevel));
+				result.append("<!--");
+				result.append(xmlNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
+				result.append("-->\n");
+				return result.toString();
+			}
+		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
+			if (StringUtils.isBlank(xmlNode.getChildNodes().item(0).getNodeValue())) {
+				StringBuilder result = new StringBuilder();
+				result.append(TextUtilities.repeatString("\t", indentationLevel));
+				result.append("<");
+				result.append(xmlNode.getNodeName());
+				result.append(formatAttributes(xmlNode, indentationLevel));
+				result.append(" />\n");
+				return result.toString();
+			} else {
+				StringBuilder result = new StringBuilder();
+				result.append(TextUtilities.repeatString("\t", indentationLevel));
+				result.append("<");
+				result.append(xmlNode.getNodeName());
+				result.append(formatAttributes(xmlNode, indentationLevel));
+				result.append(">");
+				result.append(xmlNode.getChildNodes().item(0).getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
+				result.append("</");
+				result.append(xmlNode.getNodeName());
+				result.append(">\n");
+				return result.toString();
+			}
+		} else {
+			StringBuilder innerXml = new StringBuilder();
+			if (xmlNode.getChildNodes() != null && xmlNode.getChildNodes().getLength() > 0) {
+				for (int nodeIndex = 0; nodeIndex < xmlNode.getChildNodes().getLength(); nodeIndex++) {
+					Node xmlSubNode = xmlNode.getChildNodes().item(nodeIndex);
+					if (xmlSubNode.getNodeType() == Node.TEXT_NODE) {
+						if (StringUtils.isNotBlank(xmlSubNode.getNodeValue())) {
+							innerXml.append(xmlSubNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
+						}
+					} else {
+						innerXml.append(formatXmlNode(xmlSubNode, indentationLevel + 1));
+					}
+				}
+			}
+
+			StringBuilder result = new StringBuilder();
+			result.append(TextUtilities.repeatString("\t", indentationLevel));
+			result.append("<");
+			result.append(xmlNode.getNodeName());
+			result.append(formatAttributes(xmlNode, indentationLevel));
+			if (innerXml.length() == 0) {
+				result.append(" />\n");
+			} else {
+				result.append(">\n");
+				result.append(innerXml);
+				result.append(TextUtilities.repeatString("\t", indentationLevel));
+				result.append("</");
+				result.append(xmlNode.getNodeName());
+				result.append(">\n");
+			}
+			return result.toString();
+		}
+	}
+
+	private static String formatAttributes(Node xmlNode, int indentationLevel) {
+		StringBuilder result = new StringBuilder();
+		if (xmlNode.getAttributes() != null && xmlNode.getAttributes().getLength() > 0) {
+			if (xmlNode.getAttributes().getLength() <= 5) {
+				for (int attributeIndex = 0; attributeIndex < xmlNode.getAttributes().getLength(); attributeIndex++) {
+					Node attributeNode = xmlNode.getAttributes().item(attributeIndex);
+					result.append(" ");
+					result.append(attributeNode.getNodeName());
+					result.append("=\"");
+					result.append(attributeNode.getNodeValue());
+					result.append("\"");
+				}
+			} else {
+				result.append("\n");
+				for (int attributeIndex = 0; attributeIndex < xmlNode.getAttributes().getLength(); attributeIndex++) {
+					if (attributeIndex > 0) {
+						result.append("\n");
+					}
+					Node attributeNode = xmlNode.getAttributes().item(attributeIndex);
+					result.append(TextUtilities.repeatString("\t", indentationLevel + 1));
+					result.append(attributeNode.getNodeName());
+					result.append("=\"");
+					result.append(attributeNode.getNodeValue());
+					result.append("\"");
+				}
+			}
+		}
+		return result.toString();
 	}
 }

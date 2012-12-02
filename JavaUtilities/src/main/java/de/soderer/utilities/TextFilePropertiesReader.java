@@ -3,13 +3,12 @@ package de.soderer.utilities;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 
 import org.apache.commons.io.FileUtils;
 
 public class TextFilePropertiesReader extends TextPropertiesReader {
 	private File file;
+	private Tuple<String, Boolean> defaultEncoding = new Tuple<String, Boolean>("UTF-8", false);
 	private Tuple<String, Boolean> encodingData = null;
 	private long filesize = -1;
 
@@ -41,13 +40,27 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		filesize = file.length();
 		byte[] data = FileUtils.readFileToByteArray(file);
 		if (encodingData == null) {
-			encodingData = detectEncoding(data);
+			// try to detect encoding
+			encodingData = TextUtilities.detectEncoding(data);
+			
+			if (encodingData == null) {
+				// File encoding cannot be detected so use defaultEncoding
+				encodingData = defaultEncoding;
+			}
+			
+			dataString = decodeByteArray(data, encodingData);
+			
+			// Check for invalid UTF-8 character
+			if (encodingData != null && encodingData.getFirst().equalsIgnoreCase("UTF-8") && dataString.contains("�")) {
+				// If encoding was UTF-8 (detected or default) but contains illegal chars, then try most common other encoding
+				encodingData = new Tuple<String, Boolean>("ISO-8859-1", false);
+				dataString = decodeByteArray(data, encodingData);
+			}
+		} else {
+			// only use defined encoding
+			dataString = decodeByteArray(data, encodingData);
 		}
-		if (encodingData == null) {
-			// File encoding cannot be detected so use UTF-8
-			encodingData = new Tuple<String, Boolean>("UTF-8", false);
-		}
-		dataString = decodeByteArray(data, encodingData);
+		
 		super.readProperties();
 		return dataString;
 	}
@@ -141,58 +154,9 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 	
-	public static Tuple<String, Boolean> detectEncoding(byte[] data) throws UnsupportedEncodingException {
-		if (data.length > 2 && data[0] == Utilities.UTF_16_BE_BOM[0] && data[1] == Utilities.UTF_16_BE_BOM[1]) {
-			return new Tuple<String, Boolean>("UTF-16BE", true);
-		} else if (data.length > 2 && data[0] == Utilities.UTF_16_LE_BOM[0] && data[1] == Utilities.UTF_16_LE_BOM[1]) {
-			return new Tuple<String, Boolean>("UTF-16LE", true);
-		} else if (data.length > 3 && data[0] == Utilities.UTF_8_BOM[0] && data[1] == Utilities.UTF_8_BOM[1] && data[2] == Utilities.UTF_8_BOM[2]) {
-			return new Tuple<String, Boolean>("UTF-8", true);
-		} else {
-			String interimString = new String(data, 0, Math.min(data.length, 100), "UTF-8").toLowerCase();
-			
-			// Detect Xml Encoding
-			try {
-				String reducedInterimString = interimString.replace("\u0000", "");
-				int encodingStart = reducedInterimString.indexOf("encoding");
-				if (encodingStart >= 0) {
-					encodingStart = reducedInterimString.indexOf("=", encodingStart);
-					if (encodingStart >= 0) {
-						encodingStart++;
-						while (reducedInterimString.charAt(encodingStart) == ' ') {
-							encodingStart++;
-						}
-						if (reducedInterimString.charAt(encodingStart) == '"' || reducedInterimString.charAt(encodingStart) == '\'') {
-							encodingStart++;
-						}
-						StringBuilder encodingString = new StringBuilder();
-						while (Character.isLetter(reducedInterimString.charAt(encodingStart)) || Character.isDigit(reducedInterimString.charAt(encodingStart)) || reducedInterimString.charAt(encodingStart) == '-') {
-							encodingString.append(reducedInterimString.charAt(encodingStart));
-							encodingStart++;
-						}
-						Charset.forName(encodingString.toString());
-						if (encodingString.toString().startsWith("utf-16") && data[0] == 0) {
-							return new Tuple<String, Boolean>("UTF-16BE", false);
-						} else if (encodingString.toString().startsWith("utf-16") && data[1] == 0) {
-							return new Tuple<String, Boolean>("UTF-16LE", false);
-						} else {
-							return new Tuple<String, Boolean>(encodingString.toString().toUpperCase(), false);
-						}
-					}
-				}
-			} catch (Exception e) {
-			}
-			
-			int zeroIndex = interimString.indexOf('\u0000');
-			if (zeroIndex >= 0) {
-				if (zeroIndex % 2 == 0) {
-					return new Tuple<String, Boolean>("UTF-16BE", false);
-				} else {
-					return new Tuple<String, Boolean>("UTF-16LE", false);
-				}
-			}
-			
-			return null;
+	public void setDefaultEncodingData(Tuple<String, Boolean> value) {
+		if (value != null) {
+			defaultEncoding = value;
 		}
 	}
 }

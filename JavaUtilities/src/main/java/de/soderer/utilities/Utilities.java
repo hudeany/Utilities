@@ -55,7 +55,9 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Utilities {
 	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"´`^°²³*#.,;:=+-~_|";
-
+	public static final String STANDARD_XML = "<?xml version=\"1.0\" encoding=\"<encoding>\" standalone=\"yes\"?>\n<root>\n</root>\n";
+	public static final String STANDARD_HTML = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=<encoding>\" />\n\t\t<title>HtmlTitle</title>\n\t\t<meta name=\"Title\" content=\"HtmlTitle\" />\n\t</head>\n\t<body>\n\t</body>\n</html>\n";
+	
 	public static final byte[] UTF_16_LE_BOM = new byte[] { (byte)0xFF, (byte)0xFE };
 	public static final byte[] UTF_16_BE_BOM = new byte[] { (byte)0xFE, (byte)0xFF };
 	public static final byte[] UTF_8_BOM = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
@@ -942,7 +944,7 @@ public class Utilities {
 	public static boolean fileSearchText(File searchFile, List<String> searchTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
 		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
 			byte[] encodingBuffer = Utilities.readFirstFileData(searchFile, 100);
-			Tuple<String, Boolean> encodingData = TextFilePropertiesReader.detectEncoding(encodingBuffer);
+			Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
 			if (encodingData == null) {
 				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
 			}
@@ -987,7 +989,7 @@ public class Utilities {
 		boolean foundAndReplaced = false;
 		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0 && replacementTexts != null && replacementTexts.size() > 0) {
 			byte[] encodingBuffer = Utilities.readFirstFileData(searchFile, 100);
-			Tuple<String, Boolean> encodingData = TextFilePropertiesReader.detectEncoding(encodingBuffer);
+			Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
 			if (encodingData == null) {
 				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
 			}

@@ -3,6 +3,8 @@ package de.soderer.utilities;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -383,6 +385,64 @@ public class TextUtilities {
 			return dataBuilder.toString();
 		} else {
 			return dataString;
+		}
+	}
+
+	public static Tuple<String, Boolean> detectEncoding(byte[] data) throws UnsupportedEncodingException {
+		if (data.length > 2 && data[0] == Utilities.UTF_16_BE_BOM[0] && data[1] == Utilities.UTF_16_BE_BOM[1]) {
+			return new Tuple<String, Boolean>("UTF-16BE", true);
+		} else if (data.length > 2 && data[0] == Utilities.UTF_16_LE_BOM[0] && data[1] == Utilities.UTF_16_LE_BOM[1]) {
+			return new Tuple<String, Boolean>("UTF-16LE", true);
+		} else if (data.length > 3 && data[0] == Utilities.UTF_8_BOM[0] && data[1] == Utilities.UTF_8_BOM[1] && data[2] == Utilities.UTF_8_BOM[2]) {
+			return new Tuple<String, Boolean>("UTF-8", true);
+		} else {
+			// Use first data part only to speed up
+			//String interimString = new String(data, 0, Math.min(data.length, 100), "UTF-8").toLowerCase();
+			// Or use full data to improve detection quality
+			String interimString = new String(data, "UTF-8").toLowerCase();
+			
+			// Detect Xml Encoding
+			try {
+				String reducedInterimString = interimString.replace("\u0000", "");
+				int encodingStart = reducedInterimString.indexOf("encoding");
+				if (encodingStart >= 0) {
+					encodingStart = reducedInterimString.indexOf("=", encodingStart);
+					if (encodingStart >= 0) {
+						encodingStart++;
+						while (reducedInterimString.charAt(encodingStart) == ' ') {
+							encodingStart++;
+						}
+						if (reducedInterimString.charAt(encodingStart) == '"' || reducedInterimString.charAt(encodingStart) == '\'') {
+							encodingStart++;
+						}
+						StringBuilder encodingString = new StringBuilder();
+						while (Character.isLetter(reducedInterimString.charAt(encodingStart)) || Character.isDigit(reducedInterimString.charAt(encodingStart)) || reducedInterimString.charAt(encodingStart) == '-') {
+							encodingString.append(reducedInterimString.charAt(encodingStart));
+							encodingStart++;
+						}
+						Charset.forName(encodingString.toString());
+						if (encodingString.toString().startsWith("utf-16") && data[0] == 0) {
+							return new Tuple<String, Boolean>("UTF-16BE", false);
+						} else if (encodingString.toString().startsWith("utf-16") && data[1] == 0) {
+							return new Tuple<String, Boolean>("UTF-16LE", false);
+						} else {
+							return new Tuple<String, Boolean>(encodingString.toString().toUpperCase(), false);
+						}
+					}
+				}
+			} catch (Exception e) {
+			}
+			
+			int zeroIndex = interimString.indexOf('\u0000');
+			if (zeroIndex >= 0) {
+				if (zeroIndex % 2 == 0) {
+					return new Tuple<String, Boolean>("UTF-16BE", false);
+				} else {
+					return new Tuple<String, Boolean>("UTF-16LE", false);
+				}
+			}
+			
+			return null;
 		}
 	}
 }
