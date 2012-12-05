@@ -231,7 +231,7 @@ public class TextUtilities {
 			} else if (nextLineBreakWindows >= 0) {
 				return nextLineBreakWindows + LinebreakWindows.length();
 			} else {
-				return -1;
+				return 0;
 			}
 		}
 	}
@@ -247,13 +247,13 @@ public class TextUtilities {
 			int nextLineBreakWindows = dataString.indexOf(LinebreakWindows, index);
 			
 			if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac > nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac > nextLineBreakWindows)) {
-				return nextLineBreakMac;
-			} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix > nextLineBreakWindows)) {
-				return nextLineBreakUnix;
+				return nextLineBreakMac - 1;
+			} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix - 1 > nextLineBreakWindows)) {
+				return nextLineBreakUnix - 1;
 			} else if (nextLineBreakWindows >= 0) {
-				return nextLineBreakWindows;
+				return nextLineBreakWindows - 1;
 			} else {
-				return -1;
+				return dataString.length() - 1;
 			}
 		}
 	}

@@ -270,4 +270,48 @@ public class TextUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 	}
+	
+	@Test
+	public void testEndIndex() {
+		try {
+			String dataString = "123\n  456";
+			int result = TextUtilities.getEndIndexOfLineAtIndex(dataString, 6);
+			Assert.assertEquals(8, result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testEndIndex2() {
+		try {
+			String dataString = "123\n  456\n789";
+			int result = TextUtilities.getEndIndexOfLineAtIndex(dataString, 6);
+			Assert.assertEquals(8, result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testEndIndex3() {
+		try {
+			String dataString = "123\r\n456";
+			int result = TextUtilities.getEndIndexOfLineAtIndex(dataString, 5);
+			Assert.assertEquals(7, result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testEndIndex4() {
+		try {
+			String dataString = "123\r\n456\r\n789";
+			int result = TextUtilities.getEndIndexOfLineAtIndex(dataString, 5);
+			Assert.assertEquals(7, result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
 }
