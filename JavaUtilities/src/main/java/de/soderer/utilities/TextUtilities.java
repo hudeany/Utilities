@@ -176,7 +176,9 @@ public class TextUtilities {
 	}
 
 	public static int getStartIndexOfLine(String dataString, int lineNumber) {
-		if (dataString == null || lineNumber <= 1) {
+		if (dataString == null || lineNumber < 0) {
+			return -1;
+		} else if (lineNumber == 1) {
 			return 0;
 		} else {
 			int lineCount = 1;
@@ -209,6 +211,50 @@ public class TextUtilities {
 				lineCount++;
 			}
 			return position;
+		}
+	}
+
+	public static int getStartIndexOfLineAtIndex(String dataString, int index) {
+		if (dataString == null || index < 0) {
+			return -1;
+		} else if (index == 0) {
+			return 0;
+		} else {
+			int nextLineBreakMac = dataString.lastIndexOf(LinebreakMac, index);
+			int nextLineBreakUnix = dataString.lastIndexOf(LinebreakUnix, index);
+			int nextLineBreakWindows = dataString.lastIndexOf(LinebreakWindows, index);
+			
+			if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac < nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac < nextLineBreakWindows)) {
+				return nextLineBreakMac + LinebreakMac.length();
+			} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix < nextLineBreakWindows)) {
+				return nextLineBreakUnix + LinebreakUnix.length();
+			} else if (nextLineBreakWindows >= 0) {
+				return nextLineBreakWindows + LinebreakWindows.length();
+			} else {
+				return -1;
+			}
+		}
+	}
+
+	public static int getEndIndexOfLineAtIndex(String dataString, int index) {
+		if (dataString == null || index < 0) {
+			return -1;
+		} else if (index == 0) {
+			return 0;
+		} else {
+			int nextLineBreakMac = dataString.indexOf(LinebreakMac, index);
+			int nextLineBreakUnix = dataString.indexOf(LinebreakUnix, index);
+			int nextLineBreakWindows = dataString.indexOf(LinebreakWindows, index);
+			
+			if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac > nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac > nextLineBreakWindows)) {
+				return nextLineBreakMac;
+			} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix > nextLineBreakWindows)) {
+				return nextLineBreakUnix;
+			} else if (nextLineBreakWindows >= 0) {
+				return nextLineBreakWindows;
+			} else {
+				return -1;
+			}
 		}
 	}
 
@@ -455,5 +501,17 @@ public class TextUtilities {
 			matcher = pattern.matcher(result);
 		}
 		return result;
+	}
+
+	public static String removeLeadingBlank(String data) {
+		Pattern pattern = Pattern.compile("^\\s", Pattern.MULTILINE);
+		Matcher matcher = pattern.matcher(data);
+		return matcher.replaceAll("");
+	}
+
+	public static String addLeadingTab(String data) {
+		Pattern pattern = Pattern.compile("^", Pattern.MULTILINE);
+		Matcher matcher = pattern.matcher(data);
+		return matcher.replaceAll("\t");
 	}
 }

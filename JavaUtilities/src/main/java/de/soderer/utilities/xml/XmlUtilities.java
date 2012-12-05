@@ -83,13 +83,38 @@ public class XmlUtilities {
 		}
 	}
 	
+	public static String formatXmlDocument(Document xmlDocument, String encoding, boolean throwExceptionOnError) throws Exception {
+		try {
+			StringBuilder result = new StringBuilder();
+			result.append("<?xml version=\"");
+			result.append(xmlDocument.getXmlVersion());
+			result.append("\" encoding=\"");
+			result.append(encoding.toUpperCase());
+			result.append("\" standalone=\"");
+			result.append(xmlDocument.getXmlStandalone() ? "yes" : "no");
+			result.append("\"?>\n");
+			
+			for (int i = 0; i < xmlDocument.getChildNodes().getLength(); i++) {
+				Node xmlNode = xmlDocument.getChildNodes().item(i);
+				result.append(formatXmlNode(xmlNode, 0));
+			}
+			return result.toString();
+		} catch (Exception e) {
+			if (throwExceptionOnError) {
+				throw e;
+			} else {
+				return null;
+			}
+		}
+	}
+	
 	public static String formatXmlDocument(Document xmlDocument, boolean throwExceptionOnError) throws Exception {
 		try {
 			StringBuilder result = new StringBuilder();
 			result.append("<?xml version=\"");
 			result.append(xmlDocument.getXmlVersion());
 			result.append("\" encoding=\"");
-			result.append(xmlDocument.getXmlEncoding());
+			result.append(xmlDocument.getXmlEncoding() == null ? "UTF-8" : xmlDocument.getXmlEncoding());
 			result.append("\" standalone=\"");
 			result.append(xmlDocument.getXmlStandalone() ? "yes" : "no");
 			result.append("\"?>\n");

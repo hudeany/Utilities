@@ -1,5 +1,12 @@
 package de.soderer.utilities;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
@@ -75,5 +82,90 @@ public class JsonUtilities {
 			}
 		}
 		return jsonObject;
+	}
+	
+	public static Document convertToXmlDocument(JSONObject jsonObject, boolean throwExceptionOnError) throws Exception {
+		try {
+			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			Document xmlDocument = documentBuilder.newDocument();
+			xmlDocument.setXmlStandalone(true);
+			List<Node> mainNodes = convertToXmlNodes(jsonObject, xmlDocument);
+			if (mainNodes == null || mainNodes.size() < 1) {
+				throw new Exception("No data found");
+			} else if (mainNodes.size() == 1) {
+				xmlDocument.appendChild(mainNodes.get(0));
+			} else {
+				Node rootNode = xmlDocument.createElement("root");
+				for (Node subNode : mainNodes) {
+					rootNode.appendChild(subNode);
+				}
+				xmlDocument.appendChild(rootNode);
+			}
+			return xmlDocument;
+		} catch (Exception e) {
+			if (throwExceptionOnError) {
+				throw new Exception("Invalid data", e);
+			} else {
+				return null;
+			}
+		}
+	}
+	
+	public static List<Node> convertToXmlNodes(JSONObject jsonObject, Document xmlDocument) {
+		List<Node> list = new ArrayList<Node>();
+		
+		for (Object keyObject : jsonObject.keySet()) {
+			String key = (String) keyObject;
+			Object subItem = jsonObject.get(key);
+			if (subItem instanceof JSONObject) {
+				Node newNode = xmlDocument.createElement(key);
+				list.add(newNode);
+				for (Node subNode : convertToXmlNodes((JSONObject) subItem, xmlDocument)) {
+					newNode.appendChild(subNode);
+				}
+			} else if (subItem instanceof JSONArray) {
+				for (Node subNode : convertToXmlNodes((JSONArray) subItem, key, xmlDocument)) {
+					list.add(subNode);
+				}
+			} else {
+				Node newNode = xmlDocument.createElement(key);
+				list.add(newNode);
+				newNode.setTextContent(subItem.toString());
+			}
+		}
+		
+		return list;
+	}
+	
+	public static List<Node> convertToXmlNodes(JSONArray jsonArray, String nodeName, Document xmlDocument) {
+		List<Node> list = new ArrayList<Node>();
+		
+		if (jsonArray.size() > 0) {
+			for (Object subItem : jsonArray) {
+				if (subItem instanceof JSONObject) {
+					Node newNode = xmlDocument.createElement(nodeName);
+					list.add(newNode);
+					for (Node subNode : convertToXmlNodes((JSONObject) subItem, xmlDocument)) {
+						newNode.appendChild(subNode);
+					}
+				} else if (subItem instanceof JSONArray) {
+					Node newNode = xmlDocument.createElement(nodeName);
+					list.add(newNode);
+					for (Node subNode : convertToXmlNodes((JSONArray) subItem, nodeName, xmlDocument)) {
+						newNode.appendChild(subNode);
+					}
+				} else {
+					Node newNode = xmlDocument.createElement(nodeName);
+					list.add(newNode);
+					newNode.setTextContent(subItem.toString());
+				}
+			}
+		} else {
+			Node newNode = xmlDocument.createElement(nodeName);
+			list.add(newNode);
+		}
+		
+		return list;
 	}
 }
