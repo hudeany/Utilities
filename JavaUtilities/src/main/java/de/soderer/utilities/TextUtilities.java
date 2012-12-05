@@ -514,4 +514,29 @@ public class TextUtilities {
 		Matcher matcher = pattern.matcher(data);
 		return matcher.replaceAll("\t");
 	}
+	
+	public static List<String> truncate(String value, int length) {
+		List<String> parts = new ArrayList<String>();
+		int valueLength = value.length();
+		for (int i = 0; i < valueLength; i += length) {
+			parts.add(value.substring(i, Math.min(valueLength, i + length)));
+		}
+		return parts;
+	}
+	
+	public static List<String> truncate(String[] lines, int length) {
+		List<String> linesTruncated = new ArrayList<String>();
+		for (String line : lines) {
+			linesTruncated.addAll(truncate(line, length));
+		}
+		return linesTruncated;
+	}
+	
+	public static List<String> truncate(List<String> lines, int length) {
+		List<String> linesTruncated = new ArrayList<String>();
+		for (String line : lines) {
+			linesTruncated.addAll(truncate(line, length));
+		}
+		return linesTruncated;
+	}
 }
