@@ -1,47 +1,37 @@
 package de.soderer.utilities;
 
 public class DbColumnType {
-	private String name;
-	private int jsqlType;
-	private int length;
+	private String typeName;
+	private int characterLength; // only for VARCHAR and VARCHAR2 types
+	private int numericPrecision; // only for numeric types
+	private int numericScale; // only for numeric types
 	private boolean nullable;
 	
-	public DbColumnType(String dbTypeName, int jsqlType, int length, boolean nullable) {
-		this.name = dbTypeName;
-		this.jsqlType = jsqlType;
-		this.length = length;
+	public DbColumnType(String typeName, int characterLength, int numericPrecision, int numericScale, boolean nullable) {
+		this.typeName = typeName;
+		this.characterLength = characterLength;
+		this.numericPrecision = numericPrecision;
+		this.numericScale = numericScale;
 		this.nullable = nullable;
 	}
-
-	public String getName() {
-		return name;
+	
+	public String getTypeName() {
+		return typeName;
 	}
-
-	public void setName(String name) {
-		this.name = name;
+	
+	public int getCharacterLength() {
+		return characterLength;
 	}
-
-	public int getJsqlType() {
-		return jsqlType;
+	
+	public int getNumericPrecision() {
+		return numericPrecision;
 	}
-
-	public void setJsqlType(int jsqlType) {
-		this.jsqlType = jsqlType;
+	
+	public int getNumericScale() {
+		return numericScale;
 	}
-
-	public int getLength() {
-		return length;
-	}
-
-	public void setLength(int length) {
-		this.length = length;
-	}
-
+	
 	public boolean isNullable() {
 		return nullable;
-	}
-
-	public void setNullable(boolean nullable) {
-		this.nullable = nullable;
 	}
 }

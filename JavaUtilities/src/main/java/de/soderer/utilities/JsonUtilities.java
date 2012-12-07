@@ -7,6 +7,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import net.sf.json.JSONArray;
+import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
@@ -29,19 +30,97 @@ public class JsonUtilities {
 		}
 	}
 	
-	public static String formatJsonObject(JSONObject jsonObject, boolean throwExceptionOnError) throws Exception {
+	public static String formatJsonObject(JSONObject jsonObject) throws Exception {
+		return formatJsonObject(jsonObject, "\t", "\n");
+	}
+
+	public static String formatJsonObject(JSONObject jsonObject, String indention, String linebreak) throws Exception {
 		try {
-			return TextUtilities.replaceIndentingBlanks(jsonObject.toString(2), 2, "\t");
-		} catch (Exception e) {
-			if (throwExceptionOnError) {
-				throw new Exception("Error formatting JSON data", e);
+			if (jsonObject.size() > 0) {
+				boolean isFirstKey = true;
+				StringBuilder result = new StringBuilder("{");
+				
+				for (Object keyObject : jsonObject.keySet()) {
+					if (!isFirstKey) {
+						result.append(",");
+					}
+					
+					result.append(linebreak);
+					String key = (String) keyObject;
+					result.append(indention);
+					result.append("\"");
+					result.append(key);
+					result.append("\": ");
+					Object subItem = jsonObject.get(key);
+					if (subItem == null || subItem instanceof JSONNull) {
+						result.append("null");
+					} else if (subItem instanceof JSONObject) {
+						result.append(TextUtilities.addLeadingTab(formatJsonObject((JSONObject) subItem, indention, linebreak)).trim());
+					} else if (subItem instanceof JSONArray) {
+						result.append(TextUtilities.addLeadingTab(formatJsonArray((JSONArray) subItem, indention, linebreak)).trim());
+					} else if (subItem instanceof String) {
+						result.append("\"");
+						result.append(subItem);
+						result.append("\"");
+					} else {
+						result.append(subItem.toString());
+					}
+					
+					isFirstKey = false;
+				}
+				
+				result.append(linebreak);
+				result.append("}");
+				result.append(linebreak);
+				
+				return result.toString();
 			} else {
-				return null;
+				return "{}";
 			}
+		} catch (Exception e) {
+			throw new Exception("Error formatting JSON data", e);
+		}
+	}
+
+	public static String formatJsonArray(JSONArray jsonArray, String indention, String linebreak) throws Exception {
+		try {
+			if (jsonArray.size() > 0) {
+				boolean isFirstItem = true;
+				StringBuilder result = new StringBuilder("[ ");
+				
+				for (Object subItem : jsonArray) {
+					if (!isFirstItem) {
+						result.append(", ");
+					}
+					
+					if (subItem == null || subItem instanceof JSONNull) {
+						result.append("null");
+					} else if (subItem instanceof JSONObject) {
+						result.append(TextUtilities.addLeadingTab(formatJsonObject((JSONObject) subItem, indention, linebreak)).trim());
+					} else if (subItem instanceof JSONArray) {
+						result.append(TextUtilities.addLeadingTab(formatJsonArray((JSONArray) subItem, indention, linebreak)).trim());
+					} else if (subItem instanceof String) {
+						result.append("\"");
+						result.append(subItem);
+						result.append("\"");
+					} else {
+						result.append(subItem.toString());
+					}
+					
+					isFirstItem = false;
+				}
+				
+				result.append(" ]");
+				
+				return result.toString();
+			} else {
+				return "[]";
+			}
+		} catch (Exception e) {
+			throw new Exception("Error formatting JSON data", e);
 		}
 	}
 	
-
 	public static JSONObject convertXmlDocument(Document xmlDocument, boolean throwExceptionOnError) throws Exception {
 		try {
 			JSONObject jsonObject = new JSONObject();

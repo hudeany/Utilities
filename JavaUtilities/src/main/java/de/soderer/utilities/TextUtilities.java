@@ -247,13 +247,13 @@ public class TextUtilities {
 			int nextLineBreakWindows = dataString.indexOf(LinebreakWindows, index);
 			
 			if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac > nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac > nextLineBreakWindows)) {
-				return nextLineBreakMac - 1;
+				return nextLineBreakMac;
 			} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix - 1 > nextLineBreakWindows)) {
-				return nextLineBreakUnix - 1;
+				return nextLineBreakUnix;
 			} else if (nextLineBreakWindows >= 0) {
-				return nextLineBreakWindows - 1;
+				return nextLineBreakWindows;
 			} else {
-				return dataString.length() - 1;
+				return dataString.length();
 			}
 		}
 	}
@@ -510,9 +510,13 @@ public class TextUtilities {
 	}
 
 	public static String addLeadingTab(String data) {
+		return addLeadingTabs(data, 1);
+	}
+
+	public static String addLeadingTabs(String data, int numberOfTabs) {
 		Pattern pattern = Pattern.compile("^", Pattern.MULTILINE);
 		Matcher matcher = pattern.matcher(data);
-		return matcher.replaceAll("\t");
+		return matcher.replaceAll(StringUtils.repeat("\t", numberOfTabs));
 	}
 	
 	public static List<String> truncate(String value, int length) {

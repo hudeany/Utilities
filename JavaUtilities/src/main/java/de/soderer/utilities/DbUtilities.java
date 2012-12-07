@@ -689,28 +689,80 @@ public class DbUtilities {
 	
 	public static DbColumnType getColumnDataType(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
-			throw new Exception("Invalid empty dataSource for getDefaultValueOf");
+			throw new Exception("Invalid empty dataSource for getColumnDataType");
 		} else if (StringUtils.isBlank(tableName)) {
-			throw new Exception("Invalid empty tableName for getDefaultValueOf");
+			throw new Exception("Invalid empty tableName for getColumnDataType");
 		} else if (StringUtils.isBlank(columnName)) {
-			throw new Exception("Invalid empty columnName for getDefaultValueOf");
+			throw new Exception("Invalid empty columnName for getColumnDataType");
 		} else {
 			Connection connection = null;
-			Statement statement = null;
+			PreparedStatement preparedStatement = null;
 			ResultSet resultSet = null;
 			try {
 				connection = dataSource.getConnection();
-				statement = connection.createStatement();
-		    	String sql = "SELECT " + getSQLSafeString(columnName) + " FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
-		        try {
-					resultSet = statement.executeQuery(sql);
-					return new DbColumnType(resultSet.getMetaData().getColumnTypeName(1), resultSet.getMetaData().getColumnType(1), resultSet.getMetaData().getPrecision(1), resultSet.getMetaData().isNullable(1) != ResultSetMetaData.columnNoNulls);
-				} catch (Exception e) {
-					return null;
-				}
+				int characterLength;
+				int numericPrecision;
+				int numericScale;
+				boolean isNullable;
+				if (checkDbVendorIsOracle(dataSource)) {
+					// Watchout: Oracle's timestamp datatype is "TIMESTAMP(6)", so remove the bracket value
+					String sql = "SELECT NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) as data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE lower(table_name) = lower(?) AND lower(column_name) = lower(?)";
+					preparedStatement = connection.prepareStatement(sql);
+					preparedStatement.setString(1, tableName);
+					preparedStatement.setString(2, columnName);
+					resultSet = preparedStatement.executeQuery();
+					
+					if (resultSet.next()) {
+						characterLength = resultSet.getInt("data_length");
+						if (resultSet.wasNull()) {
+							characterLength = -1;
+						}
+						numericPrecision = resultSet.getInt("data_precision");
+						if (resultSet.wasNull()) {
+							numericPrecision = -1;
+						}
+						numericScale = resultSet.getInt("data_scale");
+						if (resultSet.wasNull()) {
+							numericScale = -1;
+						}
+						isNullable = resultSet.getString("nullable").equalsIgnoreCase("y");
+						
+						return new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable);
+					} else {
+						return null;
+					}
+	        	} else {
+	        		String sql = "SELECT data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = schema() AND lower(table_name) = lower(?) AND lower(column_name) = lower(?)";
+					preparedStatement = connection.prepareStatement(sql);
+					preparedStatement.setString(1, tableName);
+					preparedStatement.setString(2, columnName);
+					resultSet = preparedStatement.executeQuery();
+
+					if (resultSet.next()) {
+						characterLength = resultSet.getInt("character_maximum_length");
+						if (resultSet.wasNull()) {
+							characterLength = -1;
+						}
+						numericPrecision = resultSet.getInt("numeric_precision");
+						if (resultSet.wasNull()) {
+							numericPrecision = -1;
+						}
+						numericScale = resultSet.getInt("numeric_scale");
+						if (resultSet.wasNull()) {
+							numericScale = -1;
+						}
+						isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+						
+						return new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable);
+					} else {
+						return null;
+					}
+	        	}
+			} catch (Exception e) {
+				return null;
 			} finally {
 		        DbUtilities.closeQuietly(resultSet);
-		        DbUtilities.closeQuietly(statement);
+		        DbUtilities.closeQuietly(preparedStatement);
 		        DbUtilities.closeQuietly(connection);
 			}
 		}
@@ -718,28 +770,68 @@ public class DbUtilities {
 
 	public static CaseInsensitiveMap<DbColumnType> getColumnDataTypes(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
-			throw new Exception("Invalid empty dataSource for getDataTypes");
+			throw new Exception("Invalid empty dataSource for getColumnDataTypes");
 		} else if (StringUtils.isBlank(tableName)) {
-			throw new Exception("Invalid empty tableName for getDataTypes");
+			throw new Exception("Invalid empty tableName for getColumnDataTypes");
 		} else {
 			Connection connection = null;
-			Statement statement = null;
+			PreparedStatement preparedStatement = null;
 			ResultSet resultSet = null;
 			try {
 				CaseInsensitiveMap<DbColumnType> returnMap = new CaseInsensitiveMap<DbColumnType>();
 				connection = dataSource.getConnection();
-				statement = connection.createStatement();
-		    	String sql = "SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
-		        resultSet = statement.executeQuery(sql);
-		        for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
-		        	returnMap.put(resultSet.getMetaData().getColumnName(i), new DbColumnType(resultSet.getMetaData().getColumnTypeName(i), resultSet.getMetaData().getColumnType(i), resultSet.getMetaData().getPrecision(i), resultSet.getMetaData().isNullable(i) != ResultSetMetaData.columnNoNulls));
-		        }
+				if (checkDbVendorIsOracle(dataSource)) {
+					// Watchout: Oracle's timestamp datatype is "TIMESTAMP(6)", so remove the bracket value
+					String sql = "SELECT column_name, NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) as data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE lower(table_name) = lower(?)";
+					preparedStatement = connection.prepareStatement(sql);
+					preparedStatement.setString(1, tableName);
+					resultSet = preparedStatement.executeQuery();
+					while (resultSet.next()) {
+						int characterLength = resultSet.getInt("data_length");
+						if (resultSet.wasNull()) {
+							characterLength = -1;
+						}
+						int numericPrecision = resultSet.getInt("data_precision");
+						if (resultSet.wasNull()) {
+							numericPrecision = -1;
+						}
+						int numericScale = resultSet.getInt("data_scale");
+						if (resultSet.wasNull()) {
+							numericScale = -1;
+						}
+						boolean isNullable = resultSet.getString("nullable").equalsIgnoreCase("y");
+						
+						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable));
+					}
+	        	} else {
+	        		String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = schema() AND lower(table_name) = lower(?)";
+					preparedStatement = connection.prepareStatement(sql);
+					preparedStatement.setString(1, tableName);
+					resultSet = preparedStatement.executeQuery();
+					while (resultSet.next()) {
+						int characterLength = resultSet.getInt("character_maximum_length");
+						if (resultSet.wasNull()) {
+							characterLength = -1;
+						}
+						int numericPrecision = resultSet.getInt("numeric_precision");
+						if (resultSet.wasNull()) {
+							numericPrecision = -1;
+						}
+						int numericScale = resultSet.getInt("numeric_scale");
+						if (resultSet.wasNull()) {
+							numericScale = -1;
+						}
+						boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+
+						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable));
+					}
+	        	}
 		        return returnMap;
 			} catch (Exception e) {
 				throw e;
 			} finally {
 		        DbUtilities.closeQuietly(resultSet);
-		        DbUtilities.closeQuietly(statement);
+		        DbUtilities.closeQuietly(preparedStatement);
 		        DbUtilities.closeQuietly(connection);
 			}
 		}
