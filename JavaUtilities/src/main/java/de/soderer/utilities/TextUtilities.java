@@ -503,7 +503,7 @@ public class TextUtilities {
 		return result;
 	}
 
-	public static String removeLeadingBlank(String data) {
+	public static String removeFirstLeadingWhitespace(String data) {
 		Pattern pattern = Pattern.compile("^\\s", Pattern.MULTILINE);
 		Matcher matcher = pattern.matcher(data);
 		return matcher.replaceAll("");
@@ -542,5 +542,17 @@ public class TextUtilities {
 			linesTruncated.addAll(truncate(line, length));
 		}
 		return linesTruncated;
+	}
+	
+	public static String removeLeadingAndTrailingWhitespaces(String data) {
+		Pattern pattern1 = Pattern.compile("^\\s*", Pattern.MULTILINE);
+		Matcher matcher1 = pattern1.matcher(data);
+		data = matcher1.replaceAll("");
+		
+		Pattern pattern2 = Pattern.compile("\\s*$", Pattern.MULTILINE);
+		Matcher matcher2 = pattern2.matcher(data);
+		data = matcher2.replaceAll("");
+		
+		return data;
 	}
 }
