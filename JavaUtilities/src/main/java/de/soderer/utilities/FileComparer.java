@@ -60,7 +60,6 @@ public class FileComparer {
 		result.append(StringUtils.repeat(FILE2_SIGN, 3) + " " + file2.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file2.lastModified())) + "\n");
 		
 		result.append(generateUnifiedDiff(dataString1, dataString2, ignoreLeadingAndTrailingWhitespaces, blockSensitiveCompare));
-		result.append("\n");
 		
 		return result.toString();
 	}
