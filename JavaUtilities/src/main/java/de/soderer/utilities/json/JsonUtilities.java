@@ -101,14 +101,18 @@ public class JsonUtilities {
 		}
 		if (xmlNode.getChildNodes() != null && xmlNode.getChildNodes().getLength() > 0) {
 			for (int i = 0; i < xmlNode.getChildNodes().getLength(); i++) {
-				if (xmlNode.getChildNodes().item(i).getNodeType() == Node.TEXT_NODE) {
-					if (StringUtils.isNotBlank(xmlNode.getChildNodes().item(i).getNodeValue())) {
-						jsonObject.add("text", xmlNode.getChildNodes().item(i).getNodeValue());
+				Node childNode = xmlNode.getChildNodes().item(i);
+				if (childNode.getNodeType() == Node.TEXT_NODE) {
+					if (StringUtils.isNotBlank(childNode.getNodeValue())) {
+						jsonObject.add("text", childNode.getNodeValue());
 					}
-				} else if (xmlNode.getChildNodes().item(i).getNodeType() == Node.COMMENT_NODE) {
+				} else if (childNode.getNodeType() == Node.COMMENT_NODE) {
 					// do nothing
+				} else if (childNode.getChildNodes().getLength() == 1 && childNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
+					// only one textnode under this node
+					jsonObject.add(childNode.getNodeName(), childNode.getChildNodes().item(0).getNodeValue());
 				} else {
-					Node xmlSubNode = xmlNode.getChildNodes().item(i);
+					Node xmlSubNode = childNode;
 					JsonObject nodeJsonObject = convertXmlNode(xmlSubNode);
 					if (nodeJsonObject != null) {
 						jsonObject.add(xmlSubNode.getNodeName(), nodeJsonObject);

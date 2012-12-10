@@ -36,34 +36,50 @@ public class JsonObject {
 	private void add(String key, Object object) {
 		if (properties.containsKey(key)) {
 			Object oldObject = properties.remove(key);
-			JsonArray replacementArray = new JsonArray();
-			if (oldObject == null) {
-				replacementArray.addNullValue();
-			} else if (oldObject instanceof JsonObject) {
-				replacementArray.add((JsonObject) oldObject);
-			} else if (oldObject instanceof JsonArray) {
-				replacementArray.add((JsonArray) oldObject);
-			} else if (oldObject instanceof String) {
-				replacementArray.add((String) oldObject);
-			} else if (oldObject instanceof Number) {
-				replacementArray.add((Number) oldObject);
-			} else if (oldObject instanceof Boolean) {
-				replacementArray.add((Boolean) oldObject);
+			if (oldObject instanceof JsonArray) {
+				if (object == null) {
+					((JsonArray) oldObject).addNullValue();
+				} else if (object instanceof JsonObject) {
+					((JsonArray) oldObject).add((JsonObject) object);
+				} else if (object instanceof JsonArray) {
+					((JsonArray) oldObject).add((JsonArray) object);
+				} else if (object instanceof String) {
+					((JsonArray) oldObject).add((String) object);
+				} else if (object instanceof Number) {
+					((JsonArray) oldObject).add((Number) object);
+				} else if (object instanceof Boolean) {
+					((JsonArray) oldObject).add((Boolean) object);
+				}
+			} else {
+				JsonArray replacementArray = new JsonArray();
+				if (oldObject == null) {
+					replacementArray.addNullValue();
+				} else if (oldObject instanceof JsonObject) {
+					replacementArray.add((JsonObject) oldObject);
+				} else if (oldObject instanceof JsonArray) {
+					replacementArray.add((JsonArray) oldObject);
+				} else if (oldObject instanceof String) {
+					replacementArray.add((String) oldObject);
+				} else if (oldObject instanceof Number) {
+					replacementArray.add((Number) oldObject);
+				} else if (oldObject instanceof Boolean) {
+					replacementArray.add((Boolean) oldObject);
+				}
+				if (object == null) {
+					replacementArray.addNullValue();
+				} else if (object instanceof JsonObject) {
+					replacementArray.add((JsonObject) object);
+				} else if (object instanceof JsonArray) {
+					replacementArray.add((JsonArray) object);
+				} else if (object instanceof String) {
+					replacementArray.add((String) object);
+				} else if (object instanceof Number) {
+					replacementArray.add((Number) object);
+				} else if (object instanceof Boolean) {
+					replacementArray.add((Boolean) object);
+				}
+				properties.put(key, replacementArray);
 			}
-			if (object == null) {
-				replacementArray.addNullValue();
-			} else if (object instanceof JsonObject) {
-				replacementArray.add((JsonObject) object);
-			} else if (object instanceof JsonArray) {
-				replacementArray.add((JsonArray) object);
-			} else if (object instanceof String) {
-				replacementArray.add((String) object);
-			} else if (object instanceof Number) {
-				replacementArray.add((Number) object);
-			} else if (object instanceof Boolean) {
-				replacementArray.add((Boolean) object);
-			}
-			properties.put(key, replacementArray);
 		} else {
 			properties.put(key, object);
 		}
