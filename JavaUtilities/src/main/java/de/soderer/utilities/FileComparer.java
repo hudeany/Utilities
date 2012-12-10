@@ -175,7 +175,7 @@ public class FileComparer {
 		
 		while (true) {
 			Tuple<Integer, Integer> equationBlockPosition = findLargestBlockEquation(startPosition1, endPosition1, list1, startPosition2, endPosition2, list2);
-			if (equationBlockPosition.getFirst() < endPosition1 || equationBlockPosition.getSecond() < endPosition2) {
+			if (equationBlockPosition != null && (equationBlockPosition.getFirst() < endPosition1 || equationBlockPosition.getSecond() < endPosition2)) {
 				endPosition1 = equationBlockPosition.getFirst();
 				endPosition2 = equationBlockPosition.getSecond();
 			} else {
