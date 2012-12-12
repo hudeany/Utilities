@@ -8,6 +8,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -123,13 +124,13 @@ public class JsonUtilities {
 		return jsonObject;
 	}
 	
-	public static Document convertToXmlDocument(JsonObject jsonObject, boolean throwExceptionOnError) throws Exception {
+	public static Document convertToXmlDocument(JsonObject jsonObject, boolean useAttributes) throws Exception {
 		try {
 			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			Document xmlDocument = documentBuilder.newDocument();
 			xmlDocument.setXmlStandalone(true);
-			List<Node> mainNodes = convertToXmlNodes(jsonObject, xmlDocument);
+			List<Node> mainNodes = convertToXmlNodes(jsonObject, xmlDocument, useAttributes);
 			if (mainNodes == null || mainNodes.size() < 1) {
 				throw new Exception("No data found");
 			} else if (mainNodes.size() == 1) {
@@ -137,36 +138,43 @@ public class JsonUtilities {
 			} else {
 				Node rootNode = xmlDocument.createElement("root");
 				for (Node subNode : mainNodes) {
-					rootNode.appendChild(subNode);
+					if (subNode instanceof Attr) {
+						rootNode.getAttributes().setNamedItem(subNode);
+					} else {
+						rootNode.appendChild(subNode);
+					}
 				}
 				xmlDocument.appendChild(rootNode);
 			}
 			return xmlDocument;
 		} catch (Exception e) {
-			if (throwExceptionOnError) {
-				throw new Exception("Invalid data", e);
-			} else {
-				return null;
-			}
+			throw new Exception("Invalid data", e);
 		}
 	}
 	
-	public static List<Node> convertToXmlNodes(JsonObject jsonObject, Document xmlDocument) {
+	public static List<Node> convertToXmlNodes(JsonObject jsonObject, Document xmlDocument, boolean useAttributes) {
 		List<Node> list = new ArrayList<Node>();
 		
-		for (Object keyObject : jsonObject.keySet()) {
-			String key = (String) keyObject;
+		for (String key : jsonObject.keySet()) {
 			Object subItem = jsonObject.get(key);
 			if (subItem instanceof JsonObject) {
 				Node newNode = xmlDocument.createElement(key);
 				list.add(newNode);
-				for (Node subNode : convertToXmlNodes((JsonObject) subItem, xmlDocument)) {
-					newNode.appendChild(subNode);
+				for (Node subNode : convertToXmlNodes((JsonObject) subItem, xmlDocument, useAttributes)) {
+					if (subNode instanceof Attr) {
+						newNode.getAttributes().setNamedItem(subNode);
+					} else {
+						newNode.appendChild(subNode);
+					}
 				}
 			} else if (subItem instanceof JsonArray) {
-				for (Node subNode : convertToXmlNodes((JsonArray) subItem, key, xmlDocument)) {
+				for (Node subNode : convertToXmlNodes((JsonArray) subItem, key, xmlDocument, useAttributes)) {
 					list.add(subNode);
 				}
+			} else if (useAttributes) {
+				Attr newAttr = xmlDocument.createAttribute(key);
+				newAttr.setNodeValue(subItem.toString());
+				list.add(newAttr);
 			} else {
 				Node newNode = xmlDocument.createElement(key);
 				list.add(newNode);
@@ -177,7 +185,7 @@ public class JsonUtilities {
 		return list;
 	}
 	
-	public static List<Node> convertToXmlNodes(JsonArray jsonArray, String nodeName, Document xmlDocument) {
+	public static List<Node> convertToXmlNodes(JsonArray jsonArray, String nodeName, Document xmlDocument, boolean useAttributes) {
 		List<Node> list = new ArrayList<Node>();
 		
 		if (jsonArray.size() > 0) {
@@ -185,13 +193,17 @@ public class JsonUtilities {
 				if (subItem instanceof JsonObject) {
 					Node newNode = xmlDocument.createElement(nodeName);
 					list.add(newNode);
-					for (Node subNode : convertToXmlNodes((JsonObject) subItem, xmlDocument)) {
-						newNode.appendChild(subNode);
+					for (Node subNode : convertToXmlNodes((JsonObject) subItem, xmlDocument, useAttributes)) {
+						if (subNode instanceof Attr) {
+							newNode.getAttributes().setNamedItem(subNode);
+						} else {
+							newNode.appendChild(subNode);
+						}
 					}
 				} else if (subItem instanceof JsonArray) {
 					Node newNode = xmlDocument.createElement(nodeName);
 					list.add(newNode);
-					for (Node subNode : convertToXmlNodes((JsonArray) subItem, nodeName, xmlDocument)) {
+					for (Node subNode : convertToXmlNodes((JsonArray) subItem, nodeName, xmlDocument, useAttributes)) {
 						newNode.appendChild(subNode);
 					}
 				} else {

@@ -217,7 +217,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 								data.append("Icon=" + iconPath + "\n");
 							}
 							
-							data.append("Exec=java -jar " + fileName + "\n");
+							// %U-parameter allows drag and drop of files in unity on starter
+							data.append("Exec=java -jar " + fileName + " %U\n");
 							data.append("Terminal=false\n");
 							data.append("Type=Application\n");
 							

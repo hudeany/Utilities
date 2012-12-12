@@ -35,7 +35,7 @@ public class JsonObject {
 	
 	private void add(String key, Object object) {
 		if (properties.containsKey(key)) {
-			Object oldObject = properties.remove(key);
+			Object oldObject = properties.get(key);
 			if (oldObject instanceof JsonArray) {
 				if (object == null) {
 					((JsonArray) oldObject).addNullValue();
@@ -52,6 +52,7 @@ public class JsonObject {
 				}
 			} else {
 				JsonArray replacementArray = new JsonArray();
+				properties.put(key, replacementArray);
 				if (oldObject == null) {
 					replacementArray.addNullValue();
 				} else if (oldObject instanceof JsonObject) {
@@ -78,7 +79,6 @@ public class JsonObject {
 				} else if (object instanceof Boolean) {
 					replacementArray.add((Boolean) object);
 				}
-				properties.put(key, replacementArray);
 			}
 		} else {
 			properties.put(key, object);
