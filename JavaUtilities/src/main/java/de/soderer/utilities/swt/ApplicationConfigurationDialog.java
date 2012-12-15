@@ -2,6 +2,8 @@ package de.soderer.utilities.swt;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.swt.SWT;
@@ -266,13 +268,49 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		Button showPropertiesButton = new Button(buttonArea, SWT.PUSH);
-		showPropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		showPropertiesButton.setText(LangResources.get("showSystemProperties"));
-		showPropertiesButton.addSelectionListener(new SelectionListener() {
+		Button showSystemPropertiesButton = new Button(buttonArea, SWT.PUSH);
+		showSystemPropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
+		showSystemPropertiesButton.setText(LangResources.get("showSystemProperties"));
+		showSystemPropertiesButton.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				new ShowDataDialog(applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(Utilities.getSystemPropertiesMap(), "\n", " = ", true), getShell(), LangResources.get("close")).open();
+				Map<String, String> properties = Utilities.getSystemPropertiesMap();
+				for (Entry<String, String> entry : properties.entrySet()) {
+					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
+				}
+				new ShowDataDialog(applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), LangResources.get("close")).open();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+		
+		Button showRuntimePropertiesButton = new Button(buttonArea, SWT.PUSH);
+		showRuntimePropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
+		showRuntimePropertiesButton.setText(LangResources.get("showRuntimeProperties"));
+		showRuntimePropertiesButton.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Map<String, String> properties = Utilities.getRuntimeProperties(true);
+				for (Entry<String, String> entry : properties.entrySet()) {
+					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
+				}
+				new ShowDataDialog(applicationName + " " + LangResources.get("runtimeProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), LangResources.get("close")).open();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+		
+		Button showSwtPropertiesButton = new Button(buttonArea, SWT.PUSH);
+		showSwtPropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
+		showSwtPropertiesButton.setText(LangResources.get("showSwtProperties"));
+		showSwtPropertiesButton.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				new ShowDataDialog(applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(null), "\n", " = ", true), getShell(), LangResources.get("close")).open();
 			}
 
 			@Override

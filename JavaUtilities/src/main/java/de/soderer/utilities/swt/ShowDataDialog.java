@@ -64,12 +64,12 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		shell.setLayout(new GridLayout());
 		
 		Composite composite = new Composite(shell, SWT.NONE);
-		GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, true, true);
+		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		composite.setLayoutData(gridData);
 		composite.setLayout(new GridLayout(2, true));
 		
 		Text textField = new Text(composite, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-		textField.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		textField.setText(dataString);
 	    
 		if (buttonTextSave != null) {

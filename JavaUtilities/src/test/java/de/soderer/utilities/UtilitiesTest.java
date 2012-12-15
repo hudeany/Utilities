@@ -60,6 +60,116 @@ public class UtilitiesTest {
 		}
 	}
 	
+	@Test
+	public void testHumanReadable1() {
+		try {
+			String result = Utilities.getHumanReadableNumber(0.1);
+			Assert.assertEquals("0,10000", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable8() {
+		try {
+			String result = Utilities.getHumanReadableNumber(1.0);
+			Assert.assertEquals("1,0000", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable9() {
+		try {
+			String result = Utilities.getHumanReadableNumber(1, "Unit");
+			Assert.assertEquals("1 Unit", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable10() {
+		try {
+			String result = Utilities.getHumanReadableNumber(10000, "Unit");
+			Assert.assertEquals("10,000 kUnit", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable11() {
+		try {
+			String result = Utilities.getHumanReadableNumber(10000, "Unit", false);
+			Assert.assertEquals("9,7656 KiUnit", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable2() {
+		try {
+			String result = Utilities.getHumanReadableNumber(1);
+			Assert.assertEquals("1", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable3() {
+		try {
+			String result = Utilities.getHumanReadableNumber(10);
+			Assert.assertEquals("10", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable4() {
+		try {
+			String result = Utilities.getHumanReadableNumber(100);
+			Assert.assertEquals("100", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable5() {
+		try {
+			String result = Utilities.getHumanReadableNumber(1000);
+			Assert.assertEquals("1,0000 k", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable6() {
+		try {
+			String result = Utilities.getHumanReadableNumber(10000);
+			Assert.assertEquals("10,000 k", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testHumanReadable7() {
+		try {
+			String result = Utilities.getHumanReadableNumber(100000);
+			Assert.assertEquals("100,00 k", result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
 //	@Test
 //	public void testEncodingUTF_8() {
 //		try {

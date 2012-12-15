@@ -48,6 +48,8 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import de.soderer.utilities.collection.CaseInsensitiveMap;
+
 /**
  * Allgemeine Utilities
  * 
@@ -1101,9 +1103,26 @@ public class Utilities {
 		return builder.toString();
 	}
 	
-	public static long getMemoryUsed() {
+	public static Map<String, String> getRuntimeProperties(boolean humanReadable) {
 		Runtime runtime = Runtime.getRuntime();
-		return runtime.totalMemory() - runtime.freeMemory();
+		Map<String, String> resultMap = new CaseInsensitiveMap<String>();
+		if (humanReadable) {
+			resultMap.put("Memory.Total", getHumanReadableNumber(runtime.totalMemory(), "B", false));
+			resultMap.put("Memory.Free", getHumanReadableNumber(runtime.freeMemory(), "B", false));
+			resultMap.put("Memory.Used", getHumanReadableNumber(runtime.totalMemory() - runtime.freeMemory(), "B", false));
+			resultMap.put("Memory.Max", getHumanReadableNumber(runtime.maxMemory(), "B", false));
+		} else {
+			resultMap.put("Memory.Total", Long.toString(runtime.totalMemory()));
+			resultMap.put("Memory.Free", Long.toString(runtime.freeMemory()));
+			resultMap.put("Memory.Used", Long.toString(runtime.totalMemory() - runtime.freeMemory()));
+			resultMap.put("Memory.Max", Long.toString(runtime.maxMemory()));
+		}
+		resultMap.put("Processors.Available", Long.toString(runtime.availableProcessors()));
+		return resultMap;
+	}
+
+	public static String getHumanReadableNumber(Number value) {
+		return getHumanReadableNumber(value, null, true);
 	}
 	
 	public static String getHumanReadableNumber(Number value, String unitTypeSign) {
@@ -1113,12 +1132,38 @@ public class Utilities {
 	public static String getHumanReadableNumber(Number value, String unitTypeSign, boolean siUnits) {
 	    int unit = siUnits ? 1000 : 1024;
 	    double interimValue = value.doubleValue();
+	    String unitExtension = "";
 	    if (interimValue < unit) {
-	    	return String.format("%.1f", value) + (StringUtils.isBlank(unitTypeSign) ? "" : (" " + unitTypeSign));
+	    	if (StringUtils.isNotBlank(unitTypeSign)) {
+	    		unitExtension = " " + unitTypeSign;
+	    	}
+	    	
+	    	if (value instanceof Integer || value instanceof Long) {
+	    		return value + unitExtension;
+	    	}
 	    } else {
 		    int exp = (int) (Math.log(interimValue) / Math.log(unit));
-		    String pre = (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
-		    return String.format("%.1f %s" + unitTypeSign, interimValue / Math.pow(unit, exp), pre);
+		    unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
+	    	if (StringUtils.isNotBlank(unitTypeSign)) {
+	    		unitExtension += unitTypeSign;
+	    	}
+		    interimValue = interimValue / Math.pow(unit, exp);
 	    }
+	    
+	    String valueString;
+	    if (interimValue >= 1000) {
+	    	valueString = String.format("%.1f", interimValue);
+	    } else if (interimValue >= 100) {
+	    	valueString = String.format("%.2f", interimValue);
+	    } else if (interimValue >= 10) {
+	    	valueString = String.format("%.3f", interimValue);
+	    } else if (interimValue >= 1) {
+	    	valueString = String.format("%.4f", interimValue);
+	    } else {
+	    	valueString = String.format("%.5f", interimValue);
+	    }
+	    
+	    
+	    return valueString + unitExtension;
 	}
 }
