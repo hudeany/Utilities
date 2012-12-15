@@ -26,6 +26,8 @@ public class CsvWriter extends Writer {
 	private String lineBreak;
 	private OutputStream outputStream;
 	private Charset encoding;
+	private boolean alwaysQuote = false;
+	private boolean quoteAllStrings = false;
 	
 	private int writtenLines = 0;
 	private int numberOfColumns = -1;
@@ -95,6 +97,28 @@ public class CsvWriter extends Writer {
 		}
 	}
 	
+	public boolean isAlwaysQuote() {
+		return alwaysQuote;
+	}
+
+	public void setAlwaysQuote(boolean alwaysQuote) {
+		this.alwaysQuote = alwaysQuote;
+		if (alwaysQuote) {
+			quoteAllStrings = false;
+		}
+	}
+
+	public boolean isQuoteAllStrings() {
+		return quoteAllStrings;
+	}
+
+	public void setQuoteAllStrings(boolean quoteAllStrings) {
+		this.quoteAllStrings = quoteAllStrings;
+		if (quoteAllStrings) {
+			alwaysQuote = false;
+		}
+	}
+	
 	public void writeValues(Object... values) throws Exception {
 		writeValues(Arrays.asList(values));
 	}
@@ -138,7 +162,7 @@ public class CsvWriter extends Writer {
 			valueString = value.toString();
 		}
 		
-		if (valueString.contains(separatorString) || valueString.contains("\r") || valueString.contains("\n") || (useStringQuote && valueString.contains(stringQuoteString))) {
+		if (alwaysQuote || (quoteAllStrings && value instanceof String) || valueString.contains(separatorString) || valueString.contains("\r") || valueString.contains("\n") || (useStringQuote && valueString.contains(stringQuoteString))) {
 			if (!useStringQuote) {
 				throw new CsvDataException("StringQuote was deactivated but is needed for csv-value after " + writtenLines + " written lines", writtenLines);
 			} else {

@@ -1100,4 +1100,25 @@ public class Utilities {
 		}
 		return builder.toString();
 	}
+	
+	public static long getMemoryUsed() {
+		Runtime runtime = Runtime.getRuntime();
+		return runtime.totalMemory() - runtime.freeMemory();
+	}
+	
+	public static String getHumanReadableNumber(Number value, String unitTypeSign) {
+		return getHumanReadableNumber(value, unitTypeSign, true);
+	}
+	
+	public static String getHumanReadableNumber(Number value, String unitTypeSign, boolean siUnits) {
+	    int unit = siUnits ? 1000 : 1024;
+	    double interimValue = value.doubleValue();
+	    if (interimValue < unit) {
+	    	return String.format("%.1f", value) + (StringUtils.isBlank(unitTypeSign) ? "" : (" " + unitTypeSign));
+	    } else {
+		    int exp = (int) (Math.log(interimValue) / Math.log(unit));
+		    String pre = (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
+		    return String.format("%.1f %s" + unitTypeSign, interimValue / Math.pow(unit, exp), pre);
+	    }
+	}
 }

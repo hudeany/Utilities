@@ -479,7 +479,7 @@ public class TextUtilities {
 			
 			String interimString = new String(data, "UTF-8").toLowerCase();
 			int zeroIndex = interimString.indexOf('\u0000');
-			if (zeroIndex >= 0) {
+			if (zeroIndex >= 0 && zeroIndex <= 100) {
 				if (zeroIndex % 2 == 0) {
 					return new Tuple<String, Boolean>("UTF-16BE", false);
 				} else {
