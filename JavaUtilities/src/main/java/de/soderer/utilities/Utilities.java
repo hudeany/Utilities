@@ -20,6 +20,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
+import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
 import java.sql.Timestamp;
 import java.text.NumberFormat;
@@ -1163,7 +1164,30 @@ public class Utilities {
 	    	valueString = String.format("%.5f", interimValue);
 	    }
 	    
-	    
 	    return valueString + unitExtension;
+	}
+	
+	public static byte[] getMD5Hash(String data) throws Exception {
+		try {
+			return MessageDigest.getInstance("MD5").digest(data.getBytes("UTF-8"));
+		} catch (Exception e) {
+			throw new Exception("Error while MD5 hashing", e);
+		}
+	}
+	
+	public static byte[] getSHA1Hash(String data) throws Exception {
+		try {
+			return MessageDigest.getInstance("SHA-1").digest(data.getBytes("UTF-8"));
+		} catch (Exception e) {
+			throw new Exception("Error while SHA-1 hashing", e);
+		}
+	}
+	
+	public static byte[] getSHA512Hash(String data) throws Exception {
+		try {
+			return MessageDigest.getInstance("SHA-512").digest(data.getBytes("UTF-8"));
+		} catch (Exception e) {
+			throw new Exception("Error while SHA-512 hashing", e);
+		}
 	}
 }

@@ -2,6 +2,8 @@ package de.soderer.utilities;
 
 import java.util.regex.Pattern;
 
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 
 public class BitUtilities {
@@ -133,6 +135,10 @@ public class BitUtilities {
 		return result;
 	}
 	
+	public static String getHexString(byte[] data) {
+		return getHexString(data, "", 0, false, false);
+	}
+	
 	public static String getHexString(byte[] data, String separator, int bytesBeforeLinebreak, boolean insertHexLineNumber, boolean insertAsciiText) {
 		StringBuilder returnString = new StringBuilder();
 		int byteCount = 0;
@@ -175,6 +181,14 @@ public class BitUtilities {
 			return String.format("%08Xh: ", 0) + returnString.toString();
 		} else {
 			return returnString.toString();
+		}
+	}
+	
+	public static byte[] getByteArrayFromHexString(String value) {
+		try {
+			return Hex.decodeHex(value.toCharArray());
+		} catch (DecoderException e) {
+			return null;
 		}
 	}
 }
