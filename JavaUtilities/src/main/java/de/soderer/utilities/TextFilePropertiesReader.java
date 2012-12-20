@@ -123,23 +123,27 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 	
-	public static byte[] encodeString(String text, Tuple<String, Boolean> encodingData) throws IOException {
-		ByteArrayOutputStream output = new ByteArrayOutputStream();
-		String encoding = encodingData.getFirst();
-		if ("UnicodeBig".equalsIgnoreCase(encodingData.getFirst())
-			|| ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())
-			|| ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())) {
-			output.write(Utilities.UTF_16_BE_BOM);
-			encoding = "UTF-16BE";
-		} else if ("UnicodeLittle".equalsIgnoreCase(encodingData.getFirst())
-			|| ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())) {
-			output.write(Utilities.UTF_16_LE_BOM);
-			encoding = "UTF-16LE";
-		} else if ("UTF-8".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
-			output.write(Utilities.UTF_8_BOM);
+	public static byte[] encodeString(String text, Tuple<String, Boolean> encodingData) throws Exception {
+		if (encodingData == null) {
+			throw new Exception("Missing encoding data");
+		} else {
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			String encoding = encodingData.getFirst();
+			if ("UnicodeBig".equalsIgnoreCase(encodingData.getFirst())
+				|| ("UTF-16BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())
+				|| ("UTF-16".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())) {
+				output.write(Utilities.UTF_16_BE_BOM);
+				encoding = "UTF-16BE";
+			} else if ("UnicodeLittle".equalsIgnoreCase(encodingData.getFirst())
+				|| ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())) {
+				output.write(Utilities.UTF_16_LE_BOM);
+				encoding = "UTF-16LE";
+			} else if ("UTF-8".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+				output.write(Utilities.UTF_8_BOM);
+			}
+			output.write(text.getBytes(encoding));
+			return output.toByteArray();
 		}
-		output.write(text.getBytes(encoding));
-		return output.toByteArray();
 	}
 	
 	public static String decodeByteArray(byte[] data, Tuple<String, Boolean> encodingData) throws IOException {

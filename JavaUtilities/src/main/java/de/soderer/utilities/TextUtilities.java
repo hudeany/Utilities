@@ -148,7 +148,6 @@ public class TextUtilities {
 		try {
 			lineNumberReader = new LineNumberReader(new StringReader(dataString));
 			while (lineNumberReader.readLine() != null) {
-				System.out.println("");
 			}
 
 			return lineNumberReader.getLineNumber();
@@ -369,13 +368,20 @@ public class TextUtilities {
 			return -1;
 		} else {
 			try {
-				String textPart = dataString.substring(0, textPosition);
+				String textPart = dataString;
+				if (dataString.length() > textPosition) {
+					textPart = dataString.substring(0, textPosition);
+				}
 				int lineNumber = getLineCount(textPart);
 				if (textPart.endsWith(LinebreakUnix) || textPart.endsWith(LinebreakMac)) {
 					lineNumber++;
 				}
 				return lineNumber;
 			} catch (IOException e) {
+				e.printStackTrace();
+				return -1;
+			} catch (Exception e) {
+				e.printStackTrace();
 				return -1;
 			}
 		}

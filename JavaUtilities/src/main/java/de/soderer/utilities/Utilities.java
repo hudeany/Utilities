@@ -78,10 +78,9 @@ public class Utilities {
 			else
 				return null;
 		} catch (Exception e) {
-			System.out.println("[ATS] Looking for Resource '" + resourceName + "' on the classpath root");
-			System.out.println("[ATS] " + e.getClass().getName() + ": " + e.getMessage());
-
-			System.err.println("[ATS] " + e.getClass().getName() + ": " + e.getMessage());
+			System.out.println("Looking for Resource '" + resourceName + "' on the classpath root");
+			System.out.println(e.getClass().getName() + ": " + e.getMessage());
+			System.err.println(e.getClass().getName() + ": " + e.getMessage());
 			return null;
 		}
 	}

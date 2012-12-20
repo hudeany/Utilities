@@ -10,10 +10,11 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
 
 import de.soderer.utilities.LangResources;
 
@@ -21,7 +22,7 @@ public class SelectionDialog extends ModalDialog<String> {
 	private String title;
 	private String text;
 	private List<String> items;
-	private Combo comboBox;
+	private Table table;
 	private Button okButton;
 
 	public SelectionDialog(Shell shell, String title, String text, List<String> items) {   
@@ -45,8 +46,8 @@ public class SelectionDialog extends ModalDialog<String> {
 			shell.setText(title);
 		}
 		shell.setLayout(new FillLayout());
-		shell.setSize(475, 120);
-		shell.setMinimumSize(475, 120);
+		shell.setSize(475, 250);
+		shell.setMinimumSize(475, 250);
 		Composite composite = new Composite(shell, SWT.NONE);
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		composite.setLayout(new GridLayout(2, false));
@@ -54,20 +55,27 @@ public class SelectionDialog extends ModalDialog<String> {
 		Label label = new Label(composite, SWT.FILL);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
-		
-		comboBox = new Combo(composite, SWT.FILL | SWT.READ_ONLY);
-		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
-		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
+	    
+	    table = new Table(composite, SWT.FILL);
+	    table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+	    table.setHeaderVisible(false);
+	    table.setLinesVisible(true);
+	    table.addSelectionListener(new ItemSelectionListener());
 	    if (items != null && items.size() > 0) {
-	    	String[] comboBoxItems = items.toArray(new String[items.size()]);
-		    comboBox.setItems(comboBoxItems);
-	    	comboBox.select(comboBox.getItemCount() - 1);
+	    	for (String itemText : items) {
+	    		TableItem tableItem = new TableItem(table, SWT.FILL);
+	    		tableItem.setText(itemText);
+	    	}
+	    	table.select(items.size() - 1);
+	    } else {
+			okButton.setEnabled(false);
 	    }
+	    table.pack();
+	    table.setRedraw(true);
 	    
 	    okButton = new Button(composite, SWT.PUSH);
 	    okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
-		okButton.setEnabled(comboBox.getItemCount() > 0);
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 		
 	    Button cancelButton = new Button(composite, SWT.PUSH);
@@ -76,7 +84,7 @@ public class SelectionDialog extends ModalDialog<String> {
 	    cancelButton.addSelectionListener(new CancelButtonSelectionListener());
 	}
 
-	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
+	private class ItemSelectionListener extends SelectionAdapter {
 		@Override
 		public void widgetSelected(SelectionEvent e) {
 			okButton.setEnabled(true);
@@ -86,8 +94,8 @@ public class SelectionDialog extends ModalDialog<String> {
 	private class OkButtonSelectionListener extends SelectionAdapter {
 		@Override
 		public void widgetSelected(SelectionEvent e) {
-			if (comboBox.getSelectionIndex() > -1) {
-				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
+			if (table.getSelectionIndex() > -1) {
+				setReturnValue(table.getItems()[table.getSelectionIndex()].getText());
 			}
 			getShell().close();
 		}
