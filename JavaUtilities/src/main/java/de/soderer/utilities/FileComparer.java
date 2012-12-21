@@ -11,8 +11,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class FileComparer {
-	public static final String FILE1_SIGN = "-";
-	public static final String FILE2_SIGN = "+";
+	public static final String SOURCE1_SIGN = "-";
+	public static final String SOURCE2_SIGN = "+";
 	
 	@SuppressWarnings("resource")
 	public boolean compareExactly(File file1, File file2) throws IOException {
@@ -56,15 +56,15 @@ public class FileComparer {
 		String dataString2 = fileReader2.readFileToString();
 		
 		StringBuilder result = new StringBuilder();
-		result.append(StringUtils.repeat(FILE1_SIGN, 3) + " " + file1.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file1.lastModified())) + "\n");
-		result.append(StringUtils.repeat(FILE2_SIGN, 3) + " " + file2.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file2.lastModified())) + "\n");
-		
-		result.append(generateUnifiedDiff(dataString1, dataString2, ignoreLeadingAndTrailingWhitespaces, blockSensitiveCompare));
+		result.append(generateUnifiedDiff(
+				file1.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file1.lastModified())), dataString1,
+				file2.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file2.lastModified())), dataString2,
+				ignoreLeadingAndTrailingWhitespaces, blockSensitiveCompare));
 		
 		return result.toString();
 	}
 	
-	public static String generateUnifiedDiff(String dataString1, String dataString2, boolean ignoreLeadingAndTrailingWhitespaces, boolean blockSensitiveCompare) throws Exception {
+	public static String generateUnifiedDiff(String sourceName1, String dataString1, String sourceName2, String dataString2, boolean ignoreLeadingAndTrailingWhitespaces, boolean blockSensitiveCompare) throws Exception {
 		if (dataString1 == null) {
 			throw new Exception("Datastring 1 is invalid");
 		} else if (dataString2 == null) {
@@ -82,6 +82,8 @@ public class FileComparer {
 		int position2 = 0;
 		
 		StringBuilder result = new StringBuilder();
+		result.append(StringUtils.repeat(SOURCE1_SIGN, 3) + " " + sourceName1 + "\n");
+		result.append(StringUtils.repeat(SOURCE2_SIGN, 3) + " " + sourceName2 + "\n");
 		
 		while (position1 < lines1.size() && position2 < lines2.size()) {
 			if (lines1.get(position1).equals(lines2.get(position2))) {
@@ -104,13 +106,13 @@ public class FileComparer {
 				} else {
 					// print differences up to next equation
 					while (position1 < nextEquationPosition.getFirst()) {
-						result.append(FILE1_SIGN);
+						result.append(SOURCE1_SIGN);
 						result.append(lines1.get(position1));
 						result.append("\n");
 						position1++;
 					}
 					while (position2 < nextEquationPosition.getSecond()) {
-						result.append(FILE2_SIGN);
+						result.append(SOURCE2_SIGN);
 						result.append(lines2.get(position2));
 						result.append("\n");
 						position2++;
@@ -121,13 +123,13 @@ public class FileComparer {
 		
 		// add file tails not contained in other file
 		while (position1 < lines1.size()) {
-			result.append(FILE1_SIGN);
+			result.append(SOURCE1_SIGN);
 			result.append(lines1.get(position1));
 			result.append("\n");
 			position1++;
 		}
 		while (position2 < lines2.size()) {
-			result.append(FILE2_SIGN);
+			result.append(SOURCE2_SIGN);
 			result.append(lines2.get(position2));
 			result.append("\n");
 			position2++;
