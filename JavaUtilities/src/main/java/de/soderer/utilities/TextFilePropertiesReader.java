@@ -1,10 +1,14 @@
 package de.soderer.utilities;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 public class TextFilePropertiesReader extends TextPropertiesReader {
 	private File file;
@@ -39,6 +43,54 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	public String readFileToString() throws Exception {
 		filesize = file.length();
 		byte[] data = FileUtils.readFileToByteArray(file);
+		if (encodingData == null) {
+			// try to detect encoding
+			encodingData = TextUtilities.detectEncoding(data);
+			
+			if (encodingData == null) {
+				// File encoding cannot be detected so use defaultEncoding
+				encodingData = defaultEncoding;
+			}
+			
+			dataString = decodeByteArray(data, encodingData);
+			
+			// Check for invalid UTF-8 character
+			if (encodingData != null && encodingData.getFirst().equalsIgnoreCase("UTF-8") && dataString.contains("�")) {
+				// If encoding was UTF-8 (detected or default) but contains illegal chars, then try most common other encoding
+				encodingData = new Tuple<String, Boolean>("ISO-8859-1", false);
+				dataString = decodeByteArray(data, encodingData);
+			}
+		} else {
+			// only use defined encoding
+			dataString = decodeByteArray(data, encodingData);
+		}
+		
+		super.readProperties();
+		return dataString;
+	}
+	
+	public String readFileToString(long startPosition, int length) throws Exception {
+		filesize = file.length();
+		if (startPosition < 0) {
+			startPosition = 0;
+		}
+		if (filesize < length) {
+			length = (int) filesize;
+		}
+		if (filesize < startPosition + length) {
+			startPosition = filesize - length;
+		}
+
+		byte[] data = new byte[length];
+		FileInputStream inputStream = null;
+		try {
+			inputStream = new FileInputStream(file);
+			inputStream.skip(startPosition);
+			inputStream.read(data);
+		} finally {
+			IOUtils.closeQuietly(inputStream);
+		}
+		
 		if (encodingData == null) {
 			// try to detect encoding
 			encodingData = TextUtilities.detectEncoding(data);
@@ -161,6 +213,30 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	public void setDefaultEncodingData(Tuple<String, Boolean> value) {
 		if (value != null) {
 			defaultEncoding = value;
+		}
+	}
+	
+	public List<Long> scanLineStartIndexes() {
+		BufferedInputStream input = null;
+		try {
+			input = new BufferedInputStream(new FileInputStream(file));
+			return TextUtilities.scanLineStartIndexes(input);
+		} catch (Exception e) {
+			return null;
+		} finally {
+			IOUtils.closeQuietly(input);
+		}
+	}
+	
+	public List<Long> scanLinebreakIndexes() {
+		BufferedInputStream input = null;
+		try {
+			input = new BufferedInputStream(new FileInputStream(file));
+			return TextUtilities.scanLinebreakIndexes(input);
+		} catch (Exception e) {
+			return null;
+		} finally {
+			IOUtils.closeQuietly(input);
 		}
 	}
 }

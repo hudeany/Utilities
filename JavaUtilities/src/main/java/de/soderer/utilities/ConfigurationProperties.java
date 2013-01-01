@@ -6,11 +6,16 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.translate.AggregateTranslator;
+import org.apache.commons.lang3.text.translate.LookupTranslator;
 
 import de.soderer.utilities.collection.UniqueFifoQueuedList;
 
@@ -25,7 +30,11 @@ public class ConfigurationProperties {
 		try {
 			this.applicationName = applicationName;
 			fileInputStream = new FileInputStream(System.getProperty("user.home") + File.separator + "." + applicationName + ".config");
-		    properties.load(fileInputStream);
+			Properties propertiesLoaded = new Properties();
+		    propertiesLoaded.load(fileInputStream);
+		    for (Entry<Object, Object> entry : propertiesLoaded.entrySet()) {
+		    	properties.setProperty((String) entry.getKey(), unEscape((String) entry.getValue()));
+			}
 		} catch (FileNotFoundException e) {
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -111,6 +120,21 @@ public class ConfigurationProperties {
 		}
 	}
 	
+	public boolean removeFromList(String name, String value) {
+		if (properties.containsKey(name) && StringUtils.isNotEmpty(properties.getProperty(name)) ) {
+			try {
+				List<String> currentList = CsvReader.parseCsvLine(';', '"', properties.getProperty(name));
+				boolean removedValue = currentList.remove(value);
+				set(name, currentList);
+				return removedValue;
+			} catch (IOException e) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+	
 	public void set(String name, List<String> list) {
 		properties.setProperty(name, CsvWriter.getCsvLine(';', '"', list));
 	}
@@ -121,6 +145,18 @@ public class ConfigurationProperties {
 		set(name, valueList);
 	}
 	
+	public void addListEntry(String name, String value) {
+		List<String> valueList = getList(name);
+		valueList.add(value);
+		set(name, valueList);
+	}
+	
+	public void addSetEntry(String name, String value) {
+		Set<String> valueSet = new HashSet<String>(getList(name));
+		valueSet.add(value);
+		set(name, new ArrayList<String>(valueSet));
+	}
+	
 	public String getLatestRecentValue(String name) {
 		return new UniqueFifoQueuedList<String>(getInteger(name + MAXSIZE_EXTENSION), getList(name)).getLatestAdded();
 	}
@@ -129,7 +165,11 @@ public class ConfigurationProperties {
 		FileOutputStream fileOutputStream = null;
 		try {
 			fileOutputStream = new FileOutputStream(System.getProperty("user.home") + File.separator + "." + applicationName + ".config");
-			properties.store(fileOutputStream, applicationName + ".config");
+			Properties propertiesToStore = new Properties();
+			for (Entry<Object, Object> entry : properties.entrySet()) {
+				propertiesToStore.setProperty((String) entry.getKey(), escape((String) entry.getValue()));
+			}
+			propertiesToStore.store(fileOutputStream, applicationName + ".config");
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -147,5 +187,21 @@ public class ConfigurationProperties {
 	
 	public boolean containsKey(String name) {
 		return properties.containsKey(name);
+	}
+	
+	public static String escape(String value) {
+		AggregateTranslator escapeScript = new AggregateTranslator(
+			new LookupTranslator(new String[][] { { "\\", "\\\\" }, { "\r", "\\r" }, { "\n", "\\n" }, { "\t", "\\t" } })
+		);
+		
+		return escapeScript.translate(value);
+	}
+	
+	public static String unEscape(String value) {
+		AggregateTranslator unescapeScript = new AggregateTranslator(
+			new LookupTranslator(new String[][] { { "\\\\", "\\" }, { "\\r", "\r" }, { "\\n", "\n" }, { "\\t", "\t" } })
+		);
+		
+		return unescapeScript.translate(value);
 	}
 }

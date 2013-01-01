@@ -45,6 +45,10 @@ public abstract class ModalDialog<T> extends Dialog {
 	    }
 	}
 	
+	public boolean isDisposed() {
+		return shell.isDisposed();
+	}
+	
 	protected void setReturnValue(T value) {
 		returnValue = value;
 	}

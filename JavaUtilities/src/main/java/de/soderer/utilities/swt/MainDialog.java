@@ -11,8 +11,6 @@ public abstract class MainDialog extends Shell {
 		super(display, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MIN | SWT.MAX);
 		
 		this.display = display;
-		
-		createWidgets();
 	}
 	
 	public Display getDisplay() {
@@ -32,6 +30,4 @@ public abstract class MainDialog extends Shell {
 	@Override
 	protected void checkSubclass() {
 	}
-	
-	public abstract void createWidgets() throws Exception;
 }

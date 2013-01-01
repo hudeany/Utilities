@@ -1189,4 +1189,12 @@ public class Utilities {
 			throw new Exception("Error while SHA-512 hashing", e);
 		}
 	}
+	
+	public static byte[] getByteArray(List<Byte> data) {
+		byte[] returnArray = new byte[data.size()];
+		for (int i = 0; i < data.size(); i++) {
+			returnArray[i] = data.get(i);
+		}
+		return returnArray;
+	}
 }

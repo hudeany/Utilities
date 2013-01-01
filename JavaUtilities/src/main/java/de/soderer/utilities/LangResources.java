@@ -24,4 +24,8 @@ public class LangResources {
 			return "Missing resourceKey: " + resourceKey;
 		}
 	}
+	
+	public static boolean existsKey(String resourceKey) {
+		return propertyResourceBundle.containsKey(resourceKey);
+	}
 }

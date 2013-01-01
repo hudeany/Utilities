@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -310,6 +313,97 @@ public class TextUtilitiesTest {
 			String dataString = "123\r\n456\r\n789";
 			int result = TextUtilities.getEndIndexOfLineAtIndex(dataString, 5);
 			Assert.assertEquals(8, result);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testScanLineStarts1() {
+		try {
+			String dataString = "123\r\n456\n789\r101112";
+			List<Long> result = TextUtilities.scanLineStartIndexes(new ByteArrayInputStream(dataString.getBytes("UTF-8")));
+			Assert.assertEquals(4, result.size());
+			Assert.assertEquals(new Long(0), result.get(0));
+			Assert.assertEquals(new Long(5), result.get(1));
+			Assert.assertEquals(new Long(9), result.get(2));
+			Assert.assertEquals(new Long(13), result.get(3));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testScanLineStarts2() {
+		try {
+			String dataString = "123\r\n456\n789\r101112\r\n";
+			List<Long> result = TextUtilities.scanLineStartIndexes(new ByteArrayInputStream(dataString.getBytes("UTF-8")));
+			Assert.assertEquals(5, result.size());
+			Assert.assertEquals(new Long(0), result.get(0));
+			Assert.assertEquals(new Long(5), result.get(1));
+			Assert.assertEquals(new Long(9), result.get(2));
+			Assert.assertEquals(new Long(13), result.get(3));
+			Assert.assertEquals(new Long(21), result.get(4));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testScanLineStarts3() {
+		try {
+			String dataString = "123\r\n456\n789\r101112\r";
+			List<Long> result = TextUtilities.scanLineStartIndexes(new ByteArrayInputStream(dataString.getBytes("UTF-8")));
+			Assert.assertEquals(5, result.size());
+			Assert.assertEquals(new Long(0), result.get(0));
+			Assert.assertEquals(new Long(5), result.get(1));
+			Assert.assertEquals(new Long(9), result.get(2));
+			Assert.assertEquals(new Long(13), result.get(3));
+			Assert.assertEquals(new Long(20), result.get(4));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testScanLinebreakIndexes1() {
+		try {
+			String dataString = "123\r\n456\n789\r101112";
+			List<Long> result = TextUtilities.scanLinebreakIndexes(new ByteArrayInputStream(dataString.getBytes("UTF-8")));
+			Assert.assertEquals(3, result.size());
+			Assert.assertEquals(new Long(3), result.get(0));
+			Assert.assertEquals(new Long(8), result.get(1));
+			Assert.assertEquals(new Long(12), result.get(2));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testScanLinebreakIndexes2() {
+		try {
+			String dataString = "123\r\n456\n789\r101112\r\n";
+			List<Long> result = TextUtilities.scanLinebreakIndexes(new ByteArrayInputStream(dataString.getBytes("UTF-8")));
+			Assert.assertEquals(4, result.size());
+			Assert.assertEquals(new Long(3), result.get(0));
+			Assert.assertEquals(new Long(8), result.get(1));
+			Assert.assertEquals(new Long(12), result.get(2));
+			Assert.assertEquals(new Long(19), result.get(3));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testScanLinebreakIndexes3() {
+		try {
+			String dataString = "123\r\n456\n789\r101112\r";
+			List<Long> result = TextUtilities.scanLinebreakIndexes(new ByteArrayInputStream(dataString.getBytes("UTF-8")));
+			Assert.assertEquals(4, result.size());
+			Assert.assertEquals(new Long(3), result.get(0));
+			Assert.assertEquals(new Long(8), result.get(1));
+			Assert.assertEquals(new Long(12), result.get(2));
+			Assert.assertEquals(new Long(19), result.get(3));
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}

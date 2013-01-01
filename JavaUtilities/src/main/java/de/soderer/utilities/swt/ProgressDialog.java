@@ -93,9 +93,9 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 		}
 	}
 	
-	public void setProgress(int todo, int done) {
+	public void setProgress(long todo, long done) {
 		if (bar != null) {
-			bar.setSelection(done * 100 / todo);
+			bar.setSelection((int) (done * 100 / todo));
 		}
 		
 		if (commentLabel != null) {

@@ -6,10 +6,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
@@ -67,7 +69,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		
 		Composite dataPart = new Composite(scrolledPart, SWT.NONE);
 		dataPart.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		dataPart.setLayout(new GridLayout(3, false));
+		dataPart.setLayout(new GridLayout(4, false));
 		
 		scrolledPart.setContent(dataPart);
 		scrolledPart.setExpandHorizontal(true);
@@ -75,11 +77,16 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		
 		for (String key : Utilities.asSortedList(applicationConfiguration.getKeyList())) {
 			if (!key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION)) {
+				String description = key;
+				if (LangResources.existsKey("conf." + key) && StringUtils.isNotBlank(LangResources.get("conf." + key))) {
+					description = LangResources.get("conf." + key);
+				}
+				
 				Label label = new Label(dataPart, SWT.FILL);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
-				label.setText(key);
+				label.setText(description);
 				
-				String value = applicationConfiguration.get(key);
+				String value = ConfigurationProperties.escape(applicationConfiguration.get(key));
 				if (applicationConfiguration.containsKey(key + ConfigurationProperties.MAXSIZE_EXTENSION)) {
 					Spinner maxSizeTextfield = new Spinner(dataPart, SWT.NONE);
 					maxSizeTextfield.setValues(applicationConfiguration.getInteger(key + ConfigurationProperties.MAXSIZE_EXTENSION), 1, 50, 0, 1, 10);
@@ -107,6 +114,23 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					keyTextfield.setText(value);
 					keyTextfield.setSize(100, 20);
 					keyTextfield.addModifyListener(new TextValueChangeListener(key));
+				}
+				
+				// add Help Icon
+				if (LangResources.existsKey("conf." + key + ".help") && StringUtils.isNotBlank(LangResources.get("conf." + key + ".help"))) {
+					final String helpText = LangResources.get("conf." + key + ".help");
+					Button button = new Button(dataPart, SWT.PUSH);
+				    button.setImage(new Image(shell.getDisplay(), getClass().getResourceAsStream("question.png")));
+				    button.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
+				    button.addSelectionListener(new SelectionAdapter() {
+						@Override
+						public void widgetSelected(SelectionEvent arg0) {
+							new QuestionDialog(applicationName, helpText, getShell(), LangResources.get("ok")).open();
+						}
+					});
+				} else {
+					Label dummyLabel = new Label(dataPart, SWT.FILL);
+					dummyLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 				}
 			}
 		}
@@ -358,7 +382,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		
 		@Override
 		public void modifyText(ModifyEvent e) {
-			applicationConfiguration.set(key, ((Text)e.widget).getText());
+			applicationConfiguration.set(key, ConfigurationProperties.unEscape(((Text)e.widget).getText()));
 		}
 	}
 	

@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
@@ -52,59 +54,66 @@ public class SelectionDialog extends ModalDialog<String> {
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		composite.setLayout(new GridLayout(2, false));
 		
-		Label label = new Label(composite, SWT.FILL);
-		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
+		Label label = new Label(composite, SWT.NONE);
+		label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 		label.setText(text);
 	    
 	    table = new Table(composite, SWT.FILL);
 	    table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 	    table.setHeaderVisible(false);
 	    table.setLinesVisible(true);
-	    table.addSelectionListener(new ItemSelectionListener());
+	    table.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				checkStatus();
+			}
+		});
 	    if (items != null && items.size() > 0) {
 	    	for (String itemText : items) {
 	    		TableItem tableItem = new TableItem(table, SWT.FILL);
 	    		tableItem.setText(itemText);
 	    	}
 	    	table.select(items.size() - 1);
-	    } else {
-			okButton.setEnabled(false);
 	    }
+		table.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseDoubleClick(MouseEvent arg0) {
+				if (table.getSelectionIndex() > -1) {
+					setReturnValue(table.getSelection()[0].getText());
+					getShell().close();
+				}
+			}
+		});
 	    table.pack();
 	    table.setRedraw(true);
 	    
 	    okButton = new Button(composite, SWT.PUSH);
 	    okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
-		okButton.addSelectionListener(new OkButtonSelectionListener());
+		okButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (table.getSelectionIndex() > -1) {
+					setReturnValue(table.getSelection()[0].getText());
+				}
+				getShell().close();
+			}
+		});
 		
 	    Button cancelButton = new Button(composite, SWT.PUSH);
 	    cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 	    cancelButton.setText(LangResources.get("cancel"));
-	    cancelButton.addSelectionListener(new CancelButtonSelectionListener());
-	}
-
-	private class ItemSelectionListener extends SelectionAdapter {
-		@Override
-		public void widgetSelected(SelectionEvent e) {
-			okButton.setEnabled(true);
-		}
-	}
-
-	private class OkButtonSelectionListener extends SelectionAdapter {
-		@Override
-		public void widgetSelected(SelectionEvent e) {
-			if (table.getSelectionIndex() > -1) {
-				setReturnValue(table.getItems()[table.getSelectionIndex()].getText());
+	    cancelButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				getShell().close();
 			}
-			getShell().close();
-		}
+		});
+	    
+	    checkStatus();
 	}
 
-	private class CancelButtonSelectionListener extends SelectionAdapter {
-		@Override
-		public void widgetSelected(SelectionEvent e) {
-			getShell().close();
-		}
+	private void checkStatus() {
+		okButton.setEnabled(table.getSelectionCount() > 0);
 	}
 }

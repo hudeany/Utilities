@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.LineNumberReader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
@@ -26,7 +27,19 @@ public class TextUtilities {
 		Mixed,
 		Unix,
 		Mac,
-		Windows
+		Windows;
+		
+		public static LineBreakType getLineBreakTypeByName(String lineBreakTypeName) {
+			if ("WINDOWS".equalsIgnoreCase(lineBreakTypeName)) {
+				return LineBreakType.Windows;
+			} else if ("UNIX".equalsIgnoreCase(lineBreakTypeName)) {
+				return LineBreakType.Unix;
+			} else if ("MAC".equalsIgnoreCase(lineBreakTypeName)) {
+				return LineBreakType.Mac;
+			} else {
+				return LineBreakType.Unknown;
+			}
+		}
 	}
 	
 	public static String LinebreakMac = "\r";
@@ -560,5 +573,45 @@ public class TextUtilities {
 		data = matcher2.replaceAll("");
 		
 		return data;
+	}
+	
+	public static List<Long> scanLineStartIndexes(InputStream dataInputStream) throws IOException {
+		List<Long> returnList = new ArrayList<Long>();
+		long position = 0;
+		int bufferPrevious = 0;
+		int bufferNext;
+		returnList.add(0L);
+		while ((bufferNext = dataInputStream.read()) != -1) {
+			if ((char) bufferNext == '\n') {
+				returnList.add(position + 1);
+			} else if ((char) bufferPrevious == '\r') {
+				returnList.add(position);
+			}
+			
+			bufferPrevious = bufferNext;
+			position++;
+		}
+		if ((char) bufferPrevious == '\r') {
+			returnList.add(position);
+		}
+		return returnList;
+	}
+	
+	public static List<Long> scanLinebreakIndexes(InputStream dataInputStream) throws IOException {
+		List<Long> returnList = new ArrayList<Long>();
+		long position = 0;
+		int bufferPrevious = 0;
+		int bufferNext;
+		while ((bufferNext = dataInputStream.read()) != -1) {
+			if ((char) bufferNext == '\n' && (char) bufferPrevious != '\r') {
+				returnList.add(position);
+			} else if ((char) bufferNext == '\r') {
+				returnList.add(position);
+			}
+			
+			bufferPrevious = bufferNext;
+			position++;
+		}
+		return returnList;
 	}
 }
