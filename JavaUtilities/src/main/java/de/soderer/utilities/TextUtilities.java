@@ -575,13 +575,13 @@ public class TextUtilities {
 		return data;
 	}
 	
-	public static List<Long> scanLineStartIndexes(InputStream dataInputStream) throws IOException {
+	public static List<Long> scanLineStartIndexes(InputStream input) throws IOException {
 		List<Long> returnList = new ArrayList<Long>();
 		long position = 0;
 		int bufferPrevious = 0;
 		int bufferNext;
 		returnList.add(0L);
-		while ((bufferNext = dataInputStream.read()) != -1) {
+		while ((bufferNext = input.read()) != -1) {
 			if ((char) bufferNext == '\n') {
 				returnList.add(position + 1);
 			} else if ((char) bufferPrevious == '\r') {
@@ -591,9 +591,11 @@ public class TextUtilities {
 			bufferPrevious = bufferNext;
 			position++;
 		}
+		
 		if ((char) bufferPrevious == '\r') {
 			returnList.add(position);
 		}
+		
 		return returnList;
 	}
 	
