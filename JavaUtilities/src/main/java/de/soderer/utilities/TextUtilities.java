@@ -282,7 +282,9 @@ public class TextUtilities {
 	 * @return Tuple First = Startindex, Second = Length of found substring
 	 */
 	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
-		if (text != null && searchTextOrPattern != null) {
+		if (StringUtils.isBlank(text) || startPosition < 0 || text.length() <= startPosition || StringUtils.isBlank(searchTextOrPattern)) {
+			return null;
+		} else {
 			String fullText = text;
 			int nextPosition = -1;
 			int length = -1;
@@ -341,8 +343,6 @@ public class TextUtilities {
 			} else {
 				return new Tuple<Integer, Integer>(nextPosition, length);
 			}
-		} else {
-			return null;
 		}
 	}
 
@@ -615,5 +615,9 @@ public class TextUtilities {
 			position++;
 		}
 		return returnList;
+	}
+	
+	public static List<String> getCommonTextParts(String[] texts) {
+		return null;
 	}
 }

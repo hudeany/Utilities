@@ -17,13 +17,18 @@ public abstract class MainDialog extends Shell {
 		return display;
 	}
 	
-	public void run() {
-		open();
-		Display display = getDisplay();
-		while (!this.isDisposed()) {
-			if (!display.readAndDispatch()) {
-				display.sleep();
+	public void run() throws Exception {
+		try {
+			open();
+			Display display = getDisplay();
+			while (!this.isDisposed()) {
+				if (!display.readAndDispatch()) {
+					display.sleep();
+				}
 			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw e;
 		}
 	}
 	
