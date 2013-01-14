@@ -2302,10 +2302,10 @@ public class TextFileScanner implements Iterator<String> {
     }
     
     public long getLastMatchStart() {
-    	return dataRead - buf.capacity() + match().start();
+    	return dataRead - buf.length() + match().start();
     }
     
     public long getLastMatchEnd() {
-    	return dataRead - buf.capacity() + match().end();
+    	return dataRead - buf.length() + match().end();
     }
 }
