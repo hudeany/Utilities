@@ -599,6 +599,35 @@ public class TextUtilities {
 		return returnList;
 	}
 	
+	public static List<Long> scanLineStartIndexes(InputStream input, long startIndex) throws IOException {
+		List<Long> returnList = new ArrayList<Long>();
+		long position = 0;
+		int bufferPrevious = 0;
+		int bufferNext;
+		if (startIndex <= 0) {
+			returnList.add(0L);
+		} else {
+			input.skip(startIndex);
+			position = startIndex;
+		}
+		while ((bufferNext = input.read()) != -1) {
+			if ((char) bufferNext == '\n') {
+				returnList.add(position + 1);
+			} else if ((char) bufferPrevious == '\r') {
+				returnList.add(position);
+			}
+			
+			bufferPrevious = bufferNext;
+			position++;
+		}
+		
+		if ((char) bufferPrevious == '\r') {
+			returnList.add(position);
+		}
+		
+		return returnList;
+	}
+	
 	public static List<Long> scanLinebreakIndexes(InputStream dataInputStream) throws IOException {
 		List<Long> returnList = new ArrayList<Long>();
 		long position = 0;
