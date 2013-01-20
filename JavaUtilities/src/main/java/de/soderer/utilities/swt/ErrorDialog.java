@@ -4,11 +4,12 @@ import java.util.Locale;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -17,19 +18,25 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import de.soderer.utilities.TextUtilities;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 
 public class ErrorDialog extends ModalDialog<Boolean> {
 	private String applicationName;
+	private String emailRecipient;
 	private Throwable throwable;
 	private Button detailButton;
 	private Composite detailPart;
 	
-	public ErrorDialog(Shell shell, String applicationName, Throwable throwable) {   
+	public ErrorDialog(Shell shell, String applicationName, Throwable throwable) {
+		this(shell, applicationName, "", throwable);
+	}
+	
+	public ErrorDialog(Shell shell, String applicationName, String emailRecipient, Throwable throwable) {
 		super(shell);
 		this.throwable = throwable;
 		this.applicationName = applicationName;
+		this.emailRecipient = emailRecipient;
 	}
 
 	@Override
@@ -53,11 +60,23 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		Text keyTextfield1 = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY | SWT.V_SCROLL);
 		keyTextfield1.setLayoutData(gridData);
 		keyTextfield1.setText(text1);
+
+		Composite buttonComposite = new Composite(shell, SWT.NONE);
+		buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+		buttonComposite.setLayout(new FillLayout());
 		
-		detailButton = new Button(shell, SWT.PUSH);
-		detailButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, false));
+		Button sendMailButton = new Button(buttonComposite, SWT.PUSH);
+		sendMailButton.setText(getText("SEND_MAIL"));
+		sendMailButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Utilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, Utilities.throwableToString(throwable));
+			}
+		});
+		
+		detailButton = new Button(buttonComposite, SWT.PUSH);
 		detailButton.setText(getText("DETAILS_MORE"));
-		detailButton.addSelectionListener(new SelectionListener() {
+		detailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (detailButton.getText().equals(getText("DETAILS_MORE"))) {
@@ -66,10 +85,6 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 					detailButton.setText(getText("DETAILS_MORE"));
 				}
 				setupDetailPart();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
 			}
 		});
 
@@ -82,15 +97,11 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		Button closeButton = new Button(shell, SWT.PUSH);
 		closeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		closeButton.setText(getText("CLOSE"));
-		closeButton.addSelectionListener(new SelectionListener() {
+		closeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
 				getShell().close();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
 			}
 		});
 		
@@ -105,27 +116,18 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		if (detailButton.getText().equals(getText("DETAILS_LESS"))) {
 			String text2 = throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
 			
-			String text3 = null;
-			if (throwable.getStackTrace() != null) {
-				StringBuilder stackTraceBuilder = new StringBuilder();
-				for (StackTraceElement element : throwable.getStackTrace()) {
-					stackTraceBuilder.append(element);
-					stackTraceBuilder.append("\n");
-				}
-				text3 = stackTraceBuilder.toString();
-				text3 = TextUtilities.trimToMaxNumberOfLines(text3, 15);
-			}
-			
-			GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
-			gridData.widthHint = 500;
+			String text3 = Utilities.throwableToString(throwable);
 			
 			Text keyTextfield2 = new Text(detailPart, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
+			GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
+			gridData.widthHint = 500;
 			keyTextfield2.setLayoutData(gridData);
 			keyTextfield2.setText(text2);
 			if (StringUtils.isNotEmpty(text3)) {
+				//TODO: make scrollable
+				Text keyTextfield3 = new Text(detailPart, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
 				GridData gridData2 = new GridData(SWT.FILL, SWT.FILL, true, false);
 				gridData.widthHint = 500;
-				Text keyTextfield3 = new Text(detailPart, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
 				keyTextfield3.setLayoutData(gridData2);
 				keyTextfield3.setText(text3);
 				FontData[] fontData = keyTextfield3.getFont().getFontData();
@@ -146,7 +148,9 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		} else if ("DETAILS_LESS".equalsIgnoreCase(key)) {
 			return "Details <<<";
 		} else if (Locale.getDefault().getLanguage() == "de") {
-			if ("CLOSE".equalsIgnoreCase(key)) {
+			if ("SEND_MAIL".equalsIgnoreCase(key)) {
+				return "Mail mit Fehlerdaten an den Entwickler senden";
+			} else if ("CLOSE".equalsIgnoreCase(key)) {
 				return "Schließen";
 			} else if ("ERROR".equalsIgnoreCase(key)) {
 				return "Fehler";
@@ -154,7 +158,9 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				return "Es ist ein Fehler aufgetreten";
 			}
 		} else  {
-			if ("CLOSE".equalsIgnoreCase(key)) {
+			if ("SEND_MAIL".equalsIgnoreCase(key)) {
+				return "Send mail with errordata to developer";
+			} else if ("CLOSE".equalsIgnoreCase(key)) {
 				return "Close";
 			} else if ("ERROR".equalsIgnoreCase(key)) {
 				return "Error";

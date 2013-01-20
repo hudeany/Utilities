@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -19,6 +20,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
@@ -30,17 +32,29 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import javax.mail.Message;
+import javax.mail.Multipart;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
@@ -1196,5 +1210,133 @@ public class Utilities {
 			returnArray[i] = data.get(i);
 		}
 		return returnArray;
+	}
+	
+	public static String stacktraceToString(StackTraceElement[] stackTrace) {
+		StringBuilder returnBuilder = new StringBuilder();
+		if (stackTrace != null) {
+			for (StackTraceElement stackTraceElement : stackTrace) {
+				returnBuilder.append(stackTraceElement.toString());
+				returnBuilder.append("\n");
+			}
+		}
+		return returnBuilder.toString();
+	}
+	
+	public static String throwableToString(Throwable throwable) {
+		return throwableToString(throwable, 5);
+	}
+	
+	public static String throwableToString(Throwable throwable, int maxLevel) {
+		StringBuilder returnBuilder = new StringBuilder(throwable.getMessage() + "\n" + Utilities.stacktraceToString(throwable.getStackTrace()));
+		int level = 0;
+		Throwable subException = throwable.getCause();
+		while (level < maxLevel && subException != null) {
+			returnBuilder.append("\n\n" + subException.getMessage() + "\n" + Utilities.stacktraceToString(subException.getStackTrace()));
+			level++;
+			subException = subException.getCause();
+		}
+		if (level == maxLevel) {
+			returnBuilder.append("\n\n... cut after level " + maxLevel + " ...");
+		}
+		return returnBuilder.toString();
+	}
+	
+	public static boolean sendEmail(String senderAdress, String toAdressList, String ccAdressList, String subject, String bodyText, String bodyHtml, int mailtype, String charset) {
+		try {
+			// create some properties and get the default Session
+			Properties props = new Properties();
+			props.put("system.mail.host", "localhost");
+			Session session = Session.getDefaultInstance(props, null);
+			// session.setDebug(debug);
+
+			// create a message
+			MimeMessage msg = new MimeMessage(session);
+			msg.setFrom(new InternetAddress(senderAdress));
+			msg.setSubject(subject, charset);
+			msg.setSentDate(new Date());
+
+			// Set to-recipient email addresses
+			InternetAddress[] toAddresses = getEmailAddressesFromList(toAdressList);
+			if (toAddresses != null && toAddresses.length > 0) {
+				msg.setRecipients(Message.RecipientType.TO, toAddresses);
+			}
+
+			// Set cc-recipient email addresses
+			InternetAddress[] ccAddresses = getEmailAddressesFromList(ccAdressList);
+			if (ccAddresses != null && ccAddresses.length > 0) {
+				msg.setRecipients(Message.RecipientType.CC, ccAddresses);
+			}
+
+			switch (mailtype) {
+			case 0:
+				msg.setText(bodyText, charset);
+				break;
+
+			case 1:
+				Multipart mp = new MimeMultipart("alternative");
+				MimeBodyPart mbp = new MimeBodyPart();
+				mbp.setText(bodyText, charset);
+				mp.addBodyPart(mbp);
+				mbp = new MimeBodyPart();
+				mbp.setContent(bodyHtml, "text/html; charset=" + charset);
+				mp.addBodyPart(mbp);
+				msg.setContent(mp);
+				break;
+			}
+
+			Transport.send(msg);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	public static InternetAddress[] getEmailAddressesFromList(String listString) {
+		if (StringUtils.isNotBlank(listString)) {
+			List<InternetAddress> emailAddresses = new ArrayList<InternetAddress>();
+			for (String singleAdr : listString.split(";|,| ")) {
+				singleAdr = singleAdr.trim();
+				if (StringUtils.isNotBlank(singleAdr)) {
+					try {
+						InternetAddress nextAddress = new InternetAddress(singleAdr.trim());
+						nextAddress.validate();
+						emailAddresses.add(nextAddress);
+					} catch (AddressException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+			return emailAddresses.toArray(new InternetAddress[emailAddresses.size()]);
+		} else {
+			return new InternetAddress[0];
+		}
+	}
+
+	public static boolean openMailInStandardClient(String toAdress, String subject, String body) {
+		return openMailInStandardClient(toAdress, null, subject, body);
+	}
+	
+	public static boolean openMailInStandardClient(String toAdress, String ccAdress, String subject, String body) {
+		try {
+			if (Desktop.isDesktopSupported()) {
+				Desktop desktop = Desktop.getDesktop();
+				if ((desktop = Desktop.getDesktop()).isSupported(Desktop.Action.MAIL)) {
+					URI mailto = new URI("mailto:" + toAdress + "?" + (StringUtils.isNotBlank(ccAdress) ? "cc=" + ccAdress + "&" : "") + "subject=" + URLEncoder.encode(subject, "UTF-8") + "&body=" + URLEncoder.encode(body, "UTF-8"));
+					// &attachment="/path/file"
+					desktop.mail(mailto);
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 }
