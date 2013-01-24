@@ -6,6 +6,7 @@ import java.io.UnsupportedEncodingException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -14,13 +15,13 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
 
 public class ShowDataDialog extends ModalDialog<Integer> {
 	private String title;
 	private String dataString;
+	private boolean wordWrap = false;
 	private String buttonTextSave;
 	private String buttonTextClose;
 
@@ -54,6 +55,10 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		this.buttonTextClose = buttonTextClose;
 	}
 	
+	public void setWordWrap(boolean value) {
+		wordWrap = value;
+	}
+	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		if (StringUtils.isEmpty(title)) {
@@ -68,9 +73,10 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		composite.setLayoutData(gridData);
 		composite.setLayout(new GridLayout(2, true));
 		
-		Text textField = new Text(composite, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
+		StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		textField.setText(dataString);
+		textField.setWordWrap(wordWrap);
 	    
 		if (buttonTextSave != null) {
 			Button buttonSave = new Button(composite, SWT.PUSH);

@@ -282,7 +282,7 @@ public class TextUtilities {
 	 * @return Tuple First = Startindex, Second = Length of found substring
 	 */
 	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
-		if (StringUtils.isBlank(text) || startPosition < 0 || text.length() <= startPosition || StringUtils.isBlank(searchTextOrPattern)) {
+		if (StringUtils.isBlank(text) || startPosition < 0 || text.length() <= startPosition || StringUtils.isEmpty(searchTextOrPattern)) {
 			return null;
 		} else {
 			String fullText = text;

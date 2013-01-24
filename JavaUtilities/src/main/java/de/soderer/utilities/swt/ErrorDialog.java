@@ -66,11 +66,14 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		buttonComposite.setLayout(new FillLayout());
 		
 		Button sendMailButton = new Button(buttonComposite, SWT.PUSH);
-		sendMailButton.setText(getText("SEND_MAIL"));
+		sendMailButton.setText(getText("OPEN_MAIL"));
 		sendMailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				Utilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, Utilities.throwableToString(throwable));
+				boolean success = Utilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, Utilities.throwableToString(throwable));
+				if (!success) {
+					new QuestionDialog(getText(), getText("CANNOT_OPEN_MAIL"), getShell(), "OK").open();
+				}
 			}
 		});
 		
@@ -148,8 +151,10 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		} else if ("DETAILS_LESS".equalsIgnoreCase(key)) {
 			return "Details <<<";
 		} else if (Locale.getDefault().getLanguage() == "de") {
-			if ("SEND_MAIL".equalsIgnoreCase(key)) {
-				return "Mail mit Fehlerdaten an den Entwickler senden";
+			if ("OPEN_MAIL".equalsIgnoreCase(key)) {
+				return "Mail mit Fehlerdaten an den Entwickler öffnen";
+			} else if ("CANNOT_OPEN_MAIL".equalsIgnoreCase(key)) {
+				return "Email client konnte nicht gefunden werden.";
 			} else if ("CLOSE".equalsIgnoreCase(key)) {
 				return "Schließen";
 			} else if ("ERROR".equalsIgnoreCase(key)) {
@@ -158,8 +163,10 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				return "Es ist ein Fehler aufgetreten";
 			}
 		} else  {
-			if ("SEND_MAIL".equalsIgnoreCase(key)) {
-				return "Send mail with errordata to developer";
+			if ("OPEN_MAIL".equalsIgnoreCase(key)) {
+				return "Open mail with errordata to developer";
+			} else if ("CANNOT_OPEN_MAIL".equalsIgnoreCase(key)) {
+				return "Email client was not found.";
 			} else if ("CLOSE".equalsIgnoreCase(key)) {
 				return "Close";
 			} else if ("ERROR".equalsIgnoreCase(key)) {
