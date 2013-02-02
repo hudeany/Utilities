@@ -24,12 +24,18 @@ public class ConfigurationProperties {
 	
 	private Properties properties = new Properties();
 	private String applicationName;
+	private boolean useSubDirectory = false;
 	
 	public ConfigurationProperties(String applicationName) {
+		this(applicationName, false);
+	}
+	
+	public ConfigurationProperties(String applicationName, boolean useSubDirectory) {
+		this.useSubDirectory = useSubDirectory;
 		FileInputStream fileInputStream = null;
 		try {
 			this.applicationName = applicationName;
-			fileInputStream = new FileInputStream(System.getProperty("user.home") + File.separator + "." + applicationName + ".config");
+			fileInputStream = new FileInputStream(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
 			Properties propertiesLoaded = new Properties();
 		    propertiesLoaded.load(fileInputStream);
 		    for (Entry<Object, Object> entry : propertiesLoaded.entrySet()) {
@@ -164,7 +170,10 @@ public class ConfigurationProperties {
 	public void save() {
 		FileOutputStream fileOutputStream = null;
 		try {
-			fileOutputStream = new FileOutputStream(System.getProperty("user.home") + File.separator + "." + applicationName + ".config");
+			if (useSubDirectory && !new File(System.getProperty("user.home") + File.separator + "." + applicationName).exists()) {
+				new File(System.getProperty("user.home") + File.separator + "." + applicationName).mkdirs();
+			}
+			fileOutputStream = new FileOutputStream(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
 			Properties propertiesToStore = new Properties();
 			for (Entry<Object, Object> entry : properties.entrySet()) {
 				propertiesToStore.setProperty((String) entry.getKey(), escape((String) entry.getValue()));
