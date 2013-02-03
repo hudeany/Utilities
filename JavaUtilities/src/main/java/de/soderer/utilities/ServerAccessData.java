@@ -3,7 +3,11 @@ package de.soderer.utilities;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class ServerAccessData {
+	public static final String PRELUDE = "\\\\";
+	
 	private String entryname;
 	private String hostname;
 	private int port;
@@ -71,11 +75,27 @@ public class ServerAccessData {
 		return CsvWriter.getCsvLine(',', '"', entryname, hostname, port, username, keyFile, password);
 	}
 	
-	public String toDisplayString() {
-		return CsvWriter.getCsvLine(',', '"', entryname, hostname, port, username, keyFile, password);
+	public String toStorageString() {
+		return PRELUDE + entryname + ":";
 	}
 	
 	public boolean getCheckHostKey() {
 		return checkHostKey;
+	}
+	
+	public static String parseFilestringToServerEntryName(String fileName) throws Exception {
+		if (StringUtils.isNotBlank(fileName) && fileName.startsWith(PRELUDE) && fileName.contains(":")) {
+			return fileName.substring(PRELUDE.length(), fileName.lastIndexOf(":"));
+		} else {
+			throw new Exception("Invalid SSH-filename");
+		}
+	}
+	
+	public static String parseFilestringToFilePath(String fileName) throws Exception {
+		if (StringUtils.isNotBlank(fileName) && fileName.startsWith(PRELUDE) && fileName.contains(":")) {
+			return fileName.substring(fileName.lastIndexOf(":") + 1);
+		} else {
+			throw new Exception("Invalid SSH-filename");
+		}
 	}
 }

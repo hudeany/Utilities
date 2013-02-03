@@ -84,7 +84,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				// on Enter-key
-				if (e.keyCode == 13) {
+				if (e.keyCode == SWT.CR || e.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(textField.getText());
 					getShell().close();
 				}

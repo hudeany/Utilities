@@ -53,6 +53,7 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 	private Button saveServerEntryButton;
 	private Button connectButton;
 	private Button openButton;
+	private String inMemoryPassword;
 	private File keystoreFile;
 	private ServerEntryKeyStore keyStore = null;
 	
@@ -60,12 +61,14 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 		super(parentShell);
 		this.title = title;
 		this.keystoreFile = null;
+		this.inMemoryPassword = null;
 	}
 	
-	public OpenFileViaSshDialog(Shell parentShell, String title, File keystoreFile) {
+	public OpenFileViaSshDialog(Shell parentShell, String title, File keystoreFile, String inMemoryPassword) {
 		super(parentShell);
 		this.title = title;
 		this.keystoreFile = keystoreFile;
+		this.inMemoryPassword = inMemoryPassword;
 	}
 
 	@Override
@@ -89,6 +92,7 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 			serverEntriesCombo = new Combo(serverEntriesComposite, SWT.NONE);
 			serverEntriesCombo.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		    serverEntriesCombo.setItems(new String[]{});
+		    serverEntryName = serverEntriesCombo.getText();
 		    serverEntriesCombo.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(ModifyEvent e) {
@@ -116,40 +120,7 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 		    loadServerEntriesButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
-					if (keystoreFile.exists()) {
-						String password = new PasswordDialog(LangResources.get("enterKeystorePassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel")).open();
-						if (password != null) {
-							try {
-								keyStore = new ServerEntryKeyStore(keystoreFile);
-								keyStore.loadKeyStore(password.toCharArray());
-							} catch (Exception e) {
-								new QuestionDialog(title, LangResources.get("cannotLoadKeystore"), getShell(), LangResources.get("ok")).open();
-								keyStore = null;
-							}
-						} else {
-							keyStore = null;
-						}
-					} else {
-						keyStore = null;
-					}
-					
-					if (keyStore != null) {
-						serverEntriesCombo.setItems(keyStore.getServerEntryNames().toArray(new String[0]));
-						if (serverEntriesCombo.getItemCount() > 0) {
-							serverEntriesCombo.select(0);
-							String selectionName = serverEntriesCombo.getText();
-							if (StringUtils.isNotBlank(selectionName)) {
-								ServerAccessData entry = keyStore.getEntry(selectionName);
-								hostnameField.setText(entry.getHostname());
-								usernameField.setText(entry.getUsername());
-								keyFile = entry.getKeyFile();
-								useKeyFileButton.setSelection(StringUtils.isNotBlank(keyFile));
-								passwordField.setText(entry.getPassword());
-							}
-						}
-					} else {
-						serverEntriesCombo.setItems(new String[] {});
-					}
+					loadServerEntries();
 					
 					checkButtonStatus();
 				}
@@ -167,6 +138,13 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 						serverEntriesCombo.setText("");
 					}
 					
+					serverEntryName = null;
+					hostnameField.setText("");
+					usernameField.setText("");
+					keyFile = "";
+					useKeyFileButton.setSelection(false);
+					passwordField.setText("");
+					
 					checkButtonStatus();
 				}
 			});
@@ -179,11 +157,14 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 					if (keyStore == null) {
 						keyStore = new ServerEntryKeyStore(keystoreFile);
 					}
+					String newEntryName = serverEntriesCombo.getText();
 					keyStore.setEntry(serverEntriesCombo.getText(), new ServerAccessData(serverEntriesCombo.getText(), hostnameOrIp, username, keyFile, password));
 					String password = new PasswordDialog(LangResources.get("enterKeystorePassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel")).open();
 					if (password != null) {
 						keyStore.saveKeyStore(password.toCharArray());
 					}
+					serverEntriesCombo.setItems(keyStore.getServerEntryNames().toArray(new String[0]));
+					serverEntriesCombo.setText(newEntryName);
 				}
 			});
 		}
@@ -196,7 +177,7 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 		hostnameLabel.setText(LangResources.get("hostnameOrIp"));
 		hostnameField = new Text(sshCredentialsComposite, SWT.BORDER);
 		GridData hostnameFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
-		hostnameFieldGridData.widthHint = 200;
+		hostnameFieldGridData.widthHint = 150;
 		hostnameField.setLayoutData(hostnameFieldGridData);
 		hostnameField.addModifyListener(new ModifyListener() {
 			@Override
@@ -209,6 +190,9 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 		Label usernameLabel = new Label(sshCredentialsComposite, SWT.NONE);
 		usernameLabel.setText(LangResources.get("username"));
 		usernameField = new Text(sshCredentialsComposite, SWT.BORDER);
+		GridData usernameFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
+		usernameFieldGridData.widthHint = 100;
+		usernameField.setLayoutData(usernameFieldGridData);
 		usernameField.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent event) {
@@ -364,6 +348,8 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 			}
 		});
 	    
+	    loadServerEntries();
+	    
 	    parentShell.pack();
 		
 		checkButtonStatus();
@@ -398,18 +384,42 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 
 	private void disconnect() {
 		connected = false;
+		folderTree.removeAll();
+		selectedFilePath = null;
+		filesTree.removeAll();
+		selectedFileName = null;
 	}
 
 	private void checkButtonStatus() {
-		if (keystoreFile != null) {
-			serverEntriesCombo.setEnabled(serverEntriesCombo.getItemCount() > 0 || (StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username)));
-			loadServerEntriesButton.setEnabled(keystoreFile.exists());
-			removeServerEntryButton.setEnabled(StringUtils.isNotBlank(serverEntriesCombo.getText()));
-			saveServerEntryButton.setEnabled(StringUtils.isNotBlank(serverEntriesCombo.getText()) && StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username));
+		if (connected) {
+			if (keystoreFile != null) {
+				serverEntriesCombo.setEnabled(false);
+				loadServerEntriesButton.setEnabled(false);
+				removeServerEntryButton.setEnabled(false);
+				saveServerEntryButton.setEnabled(false);
+			}
+			connectButton.setEnabled(true);
+			connectButton.setText(LangResources.get("disconnect"));
+			openButton.setEnabled(true);
+			hostnameField.setEnabled(false);
+			usernameField.setEnabled(false);
+			passwordField.setEnabled(false);
+			useKeyFileButton.setEnabled(false);
+		} else {
+			if (keystoreFile != null) {
+				serverEntriesCombo.setEnabled(serverEntriesCombo.getItemCount() > 0 || (StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username)));
+				loadServerEntriesButton.setEnabled(keystoreFile.exists());
+				removeServerEntryButton.setEnabled(StringUtils.isNotBlank(serverEntriesCombo.getText()));
+				saveServerEntryButton.setEnabled(StringUtils.isNotBlank(serverEntriesCombo.getText()) && StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username));
+			}
+			connectButton.setEnabled(StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username));
+			connectButton.setText(LangResources.get("connect"));
+			openButton.setEnabled(false);
+			hostnameField.setEnabled(true);
+			usernameField.setEnabled(true);
+			passwordField.setEnabled(true);
+			useKeyFileButton.setEnabled(true);
 		}
-		connectButton.setEnabled(StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username));
-		connectButton.setText(connected ? LangResources.get("disconnect") : LangResources.get("connect"));
-		openButton.setEnabled(StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username) && StringUtils.isNotBlank(selectedFilePath) && StringUtils.isNotBlank(selectedFileName));
 	}
 
 	public ServerAccessData getServerEntry() {
@@ -418,5 +428,66 @@ public class OpenFileViaSshDialog extends ModalDialog<Boolean> {
 
 	public String getSelectedFile() {
 		return selectedFilePath + (selectedFilePath.endsWith("/") ? "" : "/") + selectedFileName;
+	}
+
+	public String getInMemoryPassword() {
+		return inMemoryPassword;
+	}
+	
+	private void loadServerEntries() {
+		if (keystoreFile.exists()) {
+			String password = inMemoryPassword;
+			
+			if (password == null) {
+				// try to use empty password
+				try {
+					password = "";
+					keyStore = new ServerEntryKeyStore(keystoreFile);
+					keyStore.loadKeyStore(password.toCharArray());
+				} catch (Exception e1) {
+					password = null;
+					keyStore = null;
+				}
+			}
+			
+			if (password == null && keyStore == null) {
+				PasswordDialog dialog = new PasswordDialog(LangResources.get("enterKeystorePassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel"), LangResources.get("keepPasswordInMemory"));
+				password = dialog.open();
+				if (dialog.keepInMemory()) {
+					inMemoryPassword = password;
+				}
+			}
+			
+			if (password != null && keyStore == null) {
+				try {
+					keyStore = new ServerEntryKeyStore(keystoreFile);
+					keyStore.loadKeyStore(password.toCharArray());
+				} catch (Exception e) {
+					new QuestionDialog(title, LangResources.get("cannotLoadKeystore"), getShell(), LangResources.get("ok")).open();
+					keyStore = null;
+				}
+			}
+		} else {
+			keyStore = null;
+		}
+		
+		if (keyStore != null) {
+			serverEntriesCombo.setItems(keyStore.getServerEntryNames().toArray(new String[0]));
+			if (serverEntriesCombo.getItemCount() > 0) {
+				serverEntriesCombo.select(0);
+				String selectionName = serverEntriesCombo.getText();
+				if (StringUtils.isNotBlank(selectionName)) {
+					ServerAccessData entry = keyStore.getEntry(selectionName);
+					hostnameField.setText(entry.getHostname());
+					usernameField.setText(entry.getUsername());
+					keyFile = entry.getKeyFile();
+					useKeyFileButton.setSelection(StringUtils.isNotBlank(keyFile));
+					passwordField.setText(entry.getPassword());
+				}
+			}
+		} else {
+			serverEntriesCombo.setItems(new String[] {});
+		}
+	    serverEntryName = serverEntriesCombo.getText();
 	}
 }

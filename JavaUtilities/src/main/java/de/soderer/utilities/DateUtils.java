@@ -24,6 +24,8 @@ public class DateUtils {
 	public static SimpleDateFormat YYYYMMDD_HHMMSS = new SimpleDateFormat("yyyyMMdd-HHmmss");
 	public static SimpleDateFormat DD_MMM_YYYY_ENG = new SimpleDateFormat("dd-MMM-yy", Locale.ENGLISH);
 	public static SimpleDateFormat DD_MMM_YYYY_GER = new SimpleDateFormat("dd-MMM-yy", Locale.GERMAN);
+	public static SimpleDateFormat MMM_D_HHMM = new SimpleDateFormat("MMM d HH:mm", Locale.ENGLISH);
+	public static SimpleDateFormat MMM_D_YYYY = new SimpleDateFormat("MMM d yyyy", Locale.ENGLISH);
 
 	public static String getWochenTagNamensKuerzel(GregorianCalendar datum) {
 		int tagesInt = datum.get(GregorianCalendar.DAY_OF_WEEK);

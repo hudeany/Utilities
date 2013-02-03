@@ -4,7 +4,6 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -211,27 +210,75 @@ public class JschWrapper {
 			channel = session.openChannel("exec");
 			((ChannelExec)channel).setCommand("scp -f " + filePath);
 
-			OutputStream out = channel.getOutputStream();
+			OutputStream outStream = channel.getOutputStream();
 			InputStream inStream = channel.getInputStream();
-			InputStream inErrorStream = channel.getExtInputStream();
+//			InputStream inErrorStream = channel.getExtInputStream();
 
 			channel.connect();
 
-			byte[] buf = new byte[1024];
-			buf[0] = 0;
-			out.write(buf, 0, 1);
-			out.flush();
+			// send '\0' to start data transfer
+			sendZeroByte(outStream);
 
-			int c1 = checkAck(inStream);
-			int c2 = checkAck(inStream);
-			int c3 = checkAck(inStream);
-			int c4 = checkAck(inStream);
+			while (true) {
+				if (checkAcknowledge(inStream) != 'C') {
+					break;
+				}
 
-			byte[] successData = IOUtils.toByteArray(inStream);
-			String successString = new String(successData, "UTF-8");
+				// read rights key like '0644 ' (5 bytes)
+				byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+				@SuppressWarnings("unused")
+				String rights = null;
+				if (rightsData != null && rightsData.length > 0) {
+					rights = new String(rightsData, "UTF-8");
+				}
 
-			byte[] errorData = IOUtils.toByteArray(inErrorStream);
-			String errorString = new String(errorData, "UTF-8");
+				// read filesize (if empty filesize read until no more data)
+				byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+				long filesize = -1;
+				if (filesizeData != null && filesizeData.length > 0) {
+					filesize = Long.parseLong(new String(filesizeData));
+				}
+
+				// read filename (even if it is not used on single download)
+				byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+				@SuppressWarnings("unused")
+				String filename = null;
+				if (filenameData != null && filenameData.length > 0) {
+					filename = new String(filenameData, "UTF-8");
+				}
+
+				// send '\0' to start data transfer
+				sendZeroByte(outStream);
+
+				// read file content
+				if (filesize > 0) {
+					int nextReadLength;
+					byte[] buffer = new byte[1024];
+					while (true) {
+						if (buffer.length < filesize) {
+							nextReadLength = buffer.length;
+						} else {
+							nextReadLength = (int) filesize;
+						}
+						nextReadLength = inStream.read(buffer, 0, nextReadLength);
+						if (nextReadLength < 0) {
+							// error
+							break;
+						} else {
+							bos.write(buffer, 0, nextReadLength);
+							filesize -= nextReadLength;
+							if (filesize <= 0) {
+								break;
+							}
+						}
+					}
+				}
+
+				checkAcknowledge(inStream);
+
+				// send '\0' to start data transfer of next file (if this is a multi download)
+				sendZeroByte(outStream);
+			}
 
 			return bos.toByteArray();
 		} catch (Exception e) {
@@ -241,145 +288,59 @@ public class JschWrapper {
 			closeQuietly(channel);
 			closeQuietly(session);
 		}
-	} 
-	
-	static int checkAck(InputStream in) throws IOException{
-		int b=in.read();
-		// b may be 0 for success,
-		// 1 for error,
-		// 2 for fatal error,
-		// -1
-		if(b==0) return b;
-		if(b==-1) return b;
-		 
-		if(b==1 || b==2){
-		StringBuffer sb=new StringBuffer();
-		int c;
-		do {
-		c=in.read();
-		sb.append((char)c);
-		}
-		while(c!='\n');
-		if(b==1){ // error
-		System.out.print(sb.toString());
-		}
-		if(b==2){ // fatal error
-		System.out.print(sb.toString());
-		}
-		}
-		return b;
 	}
-
-	/**
-	 * Download von Dateien via SCP
-	 * 
-	 * @param remoteHostname
-	 * @param checkHostKey
-	 * @param remoteHostPathAndFileName
-	 *            auch Wildcards(*?) sind erlaubt
-	 * @param localPathAndFileName
-	 *            auch ein Verzeichnisse ist erlaubt
-	 * @param username
-	 * @param privateKey
-	 * @param password
-	 *            des PrivateKey falls notwendig
-	 * @throws Exception
-	 */
-	public static void downloadFile(ServerAccessData serverEntry, String remoteHostPathAndFileName, String localPathAndFileName) throws Exception {
+	
+	private static void sendZeroByte(OutputStream outputStream) throws IOException {
+		outputStream.write(new byte[] { 0 });
+		outputStream.flush();
+	}
+	
+	private static byte[] readStreamUntilBlankOrEndOrLinefeed(InputStream inStream) throws IOException {
+		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
+		int nextByte;
+		while (true) {
+			nextByte = inStream.read();
+			if (nextByte < 0) {
+				// error
+				break;
+			} else if (nextByte == ' ' || nextByte == '\n') {
+				break;
+			} else {
+				returnData.write(nextByte);
+			}
+		}
+		return returnData.toByteArray();
+	}
+	
+	public static JschFileData getFileData(ServerAccessData serverEntry, String filePath) throws Exception {
 		Session session = openSession(serverEntry);
 		Channel channel = null;
-		FileOutputStream fos = null;
 		try {
-			// exec 'scp -f rfile' remotely
-			String command = "scp -f " + remoteHostPathAndFileName;
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
+			((ChannelExec)channel).setCommand("ls -l " + filePath);
 
-			// get I/O streams for remote scp
-			OutputStream out = channel.getOutputStream();
-			InputStream in = channel.getInputStream();
+			// Streams must be fetched before channel connect
+			InputStream inStream = channel.getInputStream();
+			InputStream inErrorStream = channel.getExtInputStream();
 
 			channel.connect();
-
-			byte[] buf = new byte[1024];
-
-			// send '\0'
-			buf[0] = 0;
-			out.write(buf, 0, 1);
-			out.flush();
-
-			while (true) {
-				if (checkAcknowledge(in) != 'C') {
-					break;
-				}
-
-				// read '0644 '
-				in.read(buf, 0, 5);
-
-				long filesize = 0L;
-				while (true) {
-					if (in.read(buf, 0, 1) < 0) {
-						// error
-						break;
-					}
-					if (buf[0] == ' ')
-						break;
-					filesize = filesize * 10L + (long)(buf[0] - '0');
-				}
-
-				String filename = null;
-				for (int i = 0;; i++) {
-					in.read(buf, i, 1);
-					if (buf[i] == (byte)0x0a) {
-						filename = new String(buf, 0, i, "UTF-8");
-						break;
-					}
-				}
-
-				// send '\0'
-				buf[0] = 0;
-				out.write(buf, 0, 1);
-				out.flush();
-
-				// read a content of lfile
-				fos = new FileOutputStream(new File("c:\\temp\\test.txt"));
-				int foo;
-				while (true) {
-					if (buf.length < filesize)
-						foo = buf.length;
-					else
-						foo = (int)filesize;
-					foo = in.read(buf, 0, foo);
-					if (foo < 0) {
-						// error
-						break;
-					}
-					fos.write(buf, 0, foo);
-					filesize -= foo;
-					if (filesize == 0L)
-						break;
-				}
-				fos.close();
-				fos = null;
-
-				checkAcknowledge(in);
-
-				// send '\0'
-				buf[0] = 0;
-				out.write(buf, 0, 1);
-				out.flush();
+			
+			byte[] successData = IOUtils.toByteArray(inStream);
+			String successString = new String(successData, "UTF-8");
+			
+			byte[] errorData = IOUtils.toByteArray(inErrorStream);
+			
+			if (errorData != null && errorData.length > 0) {
+				return null;
+			} else {
+				return new JschFileData(successString);
 			}
-
-			session.disconnect();
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Download\n" + ExceptionUtils.toString(e), e);
 		} finally {
-			IOUtils.closeQuietly(fos);
 			closeQuietly(channel);
 			closeQuietly(session);
 		}
 	}
-
+	
 	/**
 	 * Löschen von Dateien via SCP
 	 * 

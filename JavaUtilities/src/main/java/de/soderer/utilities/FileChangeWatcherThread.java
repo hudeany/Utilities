@@ -4,12 +4,12 @@ import java.io.File;
 import java.util.Date;
 
 public class FileChangeWatcherThread extends Thread {
-	private File file;
-	private Listener listener;
-	private Date lastChangeDate = null;
-	private long lastFileSize = 0L;
+	protected File file;
+	protected Listener listener;
+	protected Date lastChangeDate = null;
+	protected long lastFileSize = 0L;
 	private static final long delay = 1000L;
-	private boolean running = true;
+	protected boolean running = true;
 
 	public FileChangeWatcherThread(File file, Listener listener) {
 		this.file = file;
@@ -37,7 +37,7 @@ public class FileChangeWatcherThread extends Thread {
 		}
 	}
 
-	private void handleInterrupt() {
+	protected void handleInterrupt() {
 		if (running) {
 			run();
 		}

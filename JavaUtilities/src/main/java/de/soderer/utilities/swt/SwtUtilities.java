@@ -16,6 +16,8 @@ import org.eclipse.swt.widgets.Display;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class SwtUtilities {
+	public static final int BOTTOM_RIGHT_ENTER_KEY = 16777296;
+	
 	public static CaseInsensitiveMap<Integer> getSwtHandlesStatus(Display display) {
 		DeviceData swtDeviceData = display.getDeviceData();
 		

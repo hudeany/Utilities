@@ -18,7 +18,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 public class PasswordDialog extends ModalDialog<String> {
-	private String title;
+	private String title = null;
 	private String text;
 	private Text textField;
 	private String currentText = "";
@@ -26,7 +26,24 @@ public class PasswordDialog extends ModalDialog<String> {
 	private String[] buttonTexts;
 	private Pattern inputPattern = null;
 	private boolean isTechnicalChange = false;
+	private String keepInMemoryText = null;
+	private boolean keepInMemory = false;
 
+	public PasswordDialog(String title, String text, Shell shell, String buttonTextOk, String buttonTextCancel, String keepInMemoryText) {   
+		super(shell);
+		this.title = title;
+		this.text = text;
+		this.buttonTexts = new String[]{buttonTextOk, buttonTextCancel};
+		this.keepInMemoryText = keepInMemoryText;
+	}
+
+	public PasswordDialog(String text, Shell shell, String buttonTextOk, String buttonTextCancel, String keepInMemoryText) {   
+		super(shell);
+		this.text = text;
+		this.buttonTexts = new String[]{buttonTextOk, buttonTextCancel};
+		this.keepInMemoryText = keepInMemoryText;
+	}
+	
 	public PasswordDialog(String title, String text, Shell shell, String buttonTextOk, String buttonTextCancel) {   
 		super(shell);
 		this.title = title;
@@ -83,7 +100,7 @@ public class PasswordDialog extends ModalDialog<String> {
 		textField.addKeyListener(new KeyListener() {
 			@Override
 			public void keyReleased(KeyEvent event) {
-				if (event.keyCode == 13) {
+				if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(textField.getText());
 					getShell().close();
 				}
@@ -93,6 +110,18 @@ public class PasswordDialog extends ModalDialog<String> {
 			public void keyPressed(KeyEvent event) {
 			}
 		});
+		
+		if (StringUtils.isNotBlank(keepInMemoryText)) {
+			Button keepInMemoryButton = new Button(shell, SWT.CHECK);
+			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, buttonTexts.length, 1));
+			keepInMemoryButton.setText(keepInMemoryText);
+			keepInMemoryButton.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					keepInMemory = ((Button) e.widget).getSelection();
+				}
+			});
+		}
 	    
 		for (int i = 0; i < buttonTexts.length; i++) {
 			String buttonText = buttonTexts[i];
@@ -114,5 +143,9 @@ public class PasswordDialog extends ModalDialog<String> {
 		}
 
 		shell.pack();
+	}
+	
+	public boolean keepInMemory() {
+		return keepInMemory;
 	}
 }
