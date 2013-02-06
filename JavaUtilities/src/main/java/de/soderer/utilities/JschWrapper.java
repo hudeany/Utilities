@@ -27,7 +27,7 @@ import com.jcraft.jsch.Session;
 public class JschWrapper {
 	private static final transient Logger logger = LoggerFactory.getLogger(JschWrapper.class);
 	
-	private static Session openSession(ServerAccessData serverEntry) throws Exception {
+	public static Session openSession(ServerAccessData serverEntry) throws Exception {
 		Session session = null;
 		try {
 			JSch jsch = new JSch();
@@ -54,8 +54,7 @@ public class JschWrapper {
 		}
 	}
 	
-	public static boolean exists(ServerAccessData serverEntry, String filePath) throws Exception {
-		Session session = openSession(serverEntry);
+	public static boolean exists(Session session, String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
@@ -74,12 +73,10 @@ public class JschWrapper {
 			return errorData == null || errorData.length == 0;
 		} finally {
 			closeQuietly(channel);
-			closeQuietly(session);
 		}
 	}
 	
-	public static boolean isFile(ServerAccessData serverEntry, String filePath) throws Exception {
-		Session session = openSession(serverEntry);
+	public static boolean isFile(Session session, String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
@@ -103,12 +100,10 @@ public class JschWrapper {
 			}
 		} finally {
 			closeQuietly(channel);
-			closeQuietly(session);
 		}
 	}
 	
-	public static boolean isFolder(ServerAccessData serverEntry, String filePath) throws Exception {
-		Session session = openSession(serverEntry);
+	public static boolean isFolder(Session session, String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
@@ -132,12 +127,10 @@ public class JschWrapper {
 			}
 		} finally {
 			closeQuietly(channel);
-			closeQuietly(session);
 		}
 	}
 	
-	public static Tuple<List<String>, List<String>> getDirectory(ServerAccessData serverEntry, String filePath) throws Exception {
-		Session session = openSession(serverEntry);
+	public static Tuple<List<String>, List<String>> getDirectory(Session session, String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			// Read folders
@@ -198,12 +191,352 @@ public class JschWrapper {
 			throw new Exception("Error in getDirectory", e);
 		} finally {
 			closeQuietly(channel);
-			closeQuietly(session);
 		}
 	}
 	
-	public static byte[] downloadFileData(ServerAccessData serverEntry, String filePath) throws Exception {
-		Session session = openSession(serverEntry);
+	public static void createFolder(Session session, String selectedFilePath, String folderName) throws Exception {
+		executeCommand(session, "mkdir " + selectedFilePath + "/" + folderName);
+	}
+	
+	public static void uploadFileData(Session session, String filePath, byte[] fileData) throws Exception {
+		Channel channel = null;
+		OutputStream outStream = null;
+		InputStream inStream = null;
+		try {
+			String command = "scp -p -t " + filePath;
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand(command);
+
+			outStream = channel.getOutputStream();
+			inStream = channel.getInputStream();
+
+			channel.connect();
+
+			checkAcknowledge(inStream);
+
+			// send command "C0664 filesize filename"
+			String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+			command = "C0664 " + fileData.length + " " + fileName + "\n";
+			outStream.write(command.getBytes("UTF-8"));
+			outStream.flush();
+			
+			checkAcknowledge(inStream);
+
+			// send content of file
+			outStream.write(fileData, 0, fileData.length);
+
+			// send '\0' as EOF
+			sendZeroByte(outStream);
+			
+			checkAcknowledge(inStream);
+		} catch (Exception e) {
+			throw new Exception("Error in uploadFileData", e);
+		} finally {
+			IOUtils.closeQuietly(outStream);
+			IOUtils.closeQuietly(inStream);
+			closeQuietly(channel);
+		}
+	}
+	
+	public static JschFileData getFileData(Session session, String filePath) throws Exception {
+		Channel channel = null;
+		try {
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand("ls -l " + filePath);
+
+			// Streams must be fetched before channel connect
+			InputStream inStream = channel.getInputStream();
+			InputStream inErrorStream = channel.getExtInputStream();
+
+			channel.connect();
+			
+			byte[] successData = IOUtils.toByteArray(inStream);
+			String successString = new String(successData, "UTF-8");
+			
+			byte[] errorData = IOUtils.toByteArray(inErrorStream);
+			
+			if (errorData != null && errorData.length > 0) {
+				return null;
+			} else {
+				return new JschFileData(successString);
+			}
+		} finally {
+			closeQuietly(channel);
+		}
+	}
+	
+	/**
+	 * Löschen von Dateien via SSH
+	 * 
+	 * @param remoteHostname
+	 * @param checkHostKey
+	 * @param remoteHostPathAndFileName
+	 *            auch Wildcards(*?) sind erlaubt
+	 * @param username
+	 * @param privateKey
+	 * @param password
+	 *            des PrivateKey falls notwendig
+	 * @throws Exception
+	 */
+	public static void deleteFile(Session session, String remoteHostPathAndFileName) throws Exception {
+		Channel channel = null;
+		try {
+			// exec 'rm /full/path/to/file' remotely
+			String command = "rm -f " + remoteHostPathAndFileName;
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand(command);
+
+			// get I/O stream for remote scp
+			InputStream in = channel.getInputStream();
+
+			channel.connect();
+
+			checkAcknowledge(in);
+
+			session.disconnect();
+		} catch (Exception e) {
+			throw new Exception("Fehler bei SCP-Delete: " + e.getMessage());
+		} finally {
+			closeQuietly(channel);
+		}
+	}
+
+	/**
+	 * Upload von Dateien via SCP
+	 * 
+	 * @param remoteHostname
+	 * @param checkHostKey
+	 * @param remoteHostPathAndFileName
+	 *            Verzeichnis ist als Ziel erlaubt, muß aber bereits existieren
+	 * @param localPathAndFileName
+	 *            KEINE Wildcards(*?) erlaubt
+	 * @param username
+	 * @param privateKey
+	 * @param password
+	 *            des PrivateKey falls notwendig
+	 * @throws Exception
+	 */
+	public static void uploadFile(Session session, String remoteHostPathAndFileName, String localPathAndFileName) throws Exception {
+		if (localPathAndFileName.contains("*") || localPathAndFileName.contains("?"))
+			throw new Exception("Fehler bei SCP-Upload: Wildcards in localPathAndFileName sind bei SCP-Upload nicht erlaubt");
+
+		if (!new File(localPathAndFileName).exists())
+			throw new Exception("Fehler bei SCP-Upload: Quelldatei '" + localPathAndFileName + "' existiert nicht");
+
+		String remoteHostPath = getPathOfPathAndFileName(remoteHostPathAndFileName);
+		String remoteHostFileName = getFileNameOfPathAndFileName(remoteHostPathAndFileName);
+		if (StringUtils.isEmpty(remoteHostFileName))
+			remoteHostFileName = getFileNameOfPathAndFileName(localPathAndFileName);
+
+		List<String> directory = listFiles(session, remoteHostPath);
+		if (!directory.contains("."))
+			throw new Exception("Fehler bei SCP-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
+		if (directory.contains(remoteHostFileName))
+			throw new Exception("Fehler bei SCP-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
+
+		Channel channel = null;
+		BufferedInputStream bufferedFileInputStream = null;
+		try {
+			// exec 'scp -t rfile' remotely
+			String command = "scp -p -t " + remoteHostPathAndFileName;
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand(command);
+
+			// get I/O streams for remote scp
+			OutputStream out = channel.getOutputStream();
+			InputStream in = channel.getInputStream();
+
+			channel.connect();
+
+			checkAcknowledge(in);
+
+			// send "C0664 filesize filename", where filename should not include '/'
+			long filesize = (new File(localPathAndFileName)).length();
+			command = "C0664 " + filesize + " " + remoteHostFileName + "\n";
+			out.write(command.getBytes("UTF-8"));
+			out.flush();
+			checkAcknowledge(in);
+
+			// send a content of lfile
+			bufferedFileInputStream = new BufferedInputStream(new FileInputStream(localPathAndFileName));
+			byte[] buf = new byte[1024];
+			while (true) {
+				int len = bufferedFileInputStream.read(buf);
+				if (len <= 0)
+					break;
+				out.write(buf, 0, len); // out.flush();
+			}
+			bufferedFileInputStream.close();
+			bufferedFileInputStream = null;
+			// send '\0'
+			sendZeroByte(out);
+			
+			checkAcknowledge(in);
+			
+			out.close();
+
+			channel.disconnect();
+			session.disconnect();
+		} catch (Exception e) {
+			throw new Exception("Fehler bei SCP-Upload: " + e.getMessage());
+		} finally {
+			IOUtils.closeQuietly(bufferedFileInputStream);
+			closeQuietly(channel);
+		}
+	}
+
+	public static void uploadFileData(Session session, String remoteHostPath, String remoteHostFileName, byte[] fileData) throws Exception {
+		// Directory auslesen um zu Prüfen, ob das Verzeichnis existiert aber die Datei noch nicht
+		List<String> directory = listFiles(session, remoteHostPath);
+		if (!directory.contains("."))
+			throw new Exception("Fehler bei SCP-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
+		if (directory.contains(remoteHostFileName))
+			throw new Exception("Fehler bei SCP-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
+
+		Channel channel = null;
+		try {
+			// exec 'scp -t rfile' remotely
+			String command = "scp -p -t " + remoteHostPath + "/" + remoteHostFileName;
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand(command);
+
+			// get I/O streams for remote scp
+			OutputStream out = channel.getOutputStream();
+			InputStream in = channel.getInputStream();
+
+			channel.connect();
+
+			checkAcknowledge(in);
+
+			// send command "C0664 filesize filename"
+			command = "C0664 " + fileData.length + " " + remoteHostFileName + "\n";
+			out.write(command.getBytes("UTF-8"));
+			out.flush();
+			checkAcknowledge(in);
+
+			// send content of file
+			out.write(fileData, 0, fileData.length);
+
+			// send '\0' as EOF
+			sendZeroByte(out);
+			
+			checkAcknowledge(in);
+			out.close();
+
+			channel.disconnect();
+			session.disconnect();
+		} catch (Exception e) {
+			throw new Exception("Fehler bei SCP-Upload: " + e.getMessage());
+		} finally {
+			closeQuietly(channel);
+		}
+	}
+
+	public static List<String> listFiles(Session session, String remoteHostPath) throws Exception {
+		Channel channel = null;
+		try {
+			List<String> returnList = new ArrayList<String>();
+			
+			// exec 'ls -1 pathn' remotely
+			String command = "ls -1a " + remoteHostPath;
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand(command);
+
+			// get I/O streams for remote scp
+			// OutputStream out = channel.getOutputStream();
+			InputStream in = channel.getInputStream();
+
+			channel.connect();
+
+			// byte[] buf = new byte[1024];
+
+			// send '\0'
+			//sendZeroByte(out);
+
+			int charValue = checkAcknowledge(in);
+			StringBuilder inputString = new StringBuilder();
+
+			while (charValue != -1) { // EOF
+				if (charValue == (int)'\n') { // EOL
+					returnList.add(inputString.toString());
+					inputString = new StringBuilder();
+				} else {
+					inputString.append((char)charValue);
+				}
+				charValue = checkAcknowledge(in);
+			}
+
+			session.disconnect();
+
+			return returnList;
+		} catch (Exception e) {
+			throw new Exception("Fehler bei SCP-Download\n" + ExceptionUtils.toString(e), e);
+		} finally {
+			closeQuietly(channel);
+		}
+	}
+
+	/**
+	 * Hinzufügen von public Hostkeys zu der KnownHosts-Datei
+	 * 
+	 * @param hostname
+	 * @param username
+	 * @param password
+	 */
+	public static void addHostKeyToKnownHostKeys(String hostname, String username, String password, byte[] privateKey) {
+		Session session = null;
+		try {
+			JSch jsch = new JSch();
+			setKnownHostKeys(jsch);
+
+			System.out.println("KnownHosts (before adding):");
+			printKnownHostKeys(jsch);
+
+			session = jsch.getSession(username, hostname, 22);
+			if (privateKey != null) {
+				// privateKey wird durch die Benutzung geleert
+				jsch.addIdentity(username, privateKey.clone(), null, password == null ? new byte[0] : password.getBytes("UTF-8"));
+			} else {
+				session.setPassword(password);
+			}
+			session.setConfig("StrictHostKeyChecking", "no"); // automatische
+			// Aufnahme
+			// neuer
+			// HostPublicKeys
+			// session.setConfig("HashKnownHosts", "yes"); // In adding to
+			// known_hosts file, host names will be hashed
+			session.connect();
+
+			HostKey hk = session.getHostKey();
+			System.out.println("Adding HostKey: " + hk.getHost() + " " + hk.getType() + " " + hk.getFingerPrint(jsch) + "\n");
+
+			// Channel channel = session.openChannel("shell");
+			//
+			// channel.setInputStream(System.in);
+			// channel.setOutputStream(System.out);
+			//
+			// channel.connect();
+
+			System.out.println("KnownHosts (after adding):");
+			printKnownHostKeys(jsch);
+			System.out.println("");
+
+			session.disconnect();
+		} catch (Exception e) {
+			System.out.println(e);
+		} finally {
+			if (session != null) {
+				try {
+					session.disconnect();
+					session = null;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	public static byte[] downloadFileData(Session session, String filePath) throws Exception {
 		Channel channel = null;
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
@@ -286,546 +619,14 @@ public class JschWrapper {
 		} finally {
 			IOUtils.closeQuietly(bos);
 			closeQuietly(channel);
-			closeQuietly(session);
-		}
-	}
-	
-	private static void sendZeroByte(OutputStream outputStream) throws IOException {
-		outputStream.write(new byte[] { 0 });
-		outputStream.flush();
-	}
-	
-	private static byte[] readStreamUntilBlankOrEndOrLinefeed(InputStream inStream) throws IOException {
-		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
-		int nextByte;
-		while (true) {
-			nextByte = inStream.read();
-			if (nextByte < 0) {
-				// error
-				break;
-			} else if (nextByte == ' ' || nextByte == '\n') {
-				break;
-			} else {
-				returnData.write(nextByte);
-			}
-		}
-		return returnData.toByteArray();
-	}
-	
-	public static JschFileData getFileData(ServerAccessData serverEntry, String filePath) throws Exception {
-		Session session = openSession(serverEntry);
-		Channel channel = null;
-		try {
-			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("ls -l " + filePath);
-
-			// Streams must be fetched before channel connect
-			InputStream inStream = channel.getInputStream();
-			InputStream inErrorStream = channel.getExtInputStream();
-
-			channel.connect();
-			
-			byte[] successData = IOUtils.toByteArray(inStream);
-			String successString = new String(successData, "UTF-8");
-			
-			byte[] errorData = IOUtils.toByteArray(inErrorStream);
-			
-			if (errorData != null && errorData.length > 0) {
-				return null;
-			} else {
-				return new JschFileData(successString);
-			}
-		} finally {
-			closeQuietly(channel);
-			closeQuietly(session);
-		}
-	}
-	
-	/**
-	 * Löschen von Dateien via SCP
-	 * 
-	 * @param remoteHostname
-	 * @param checkHostKey
-	 * @param remoteHostPathAndFileName
-	 *            auch Wildcards(*?) sind erlaubt
-	 * @param username
-	 * @param password
-	 * @throws Exception
-	 */
-	public static void deleteFile(String remoteHostname, boolean checkHostKey, String remoteHostPathAndFileName, String username, String password) throws Exception {
-		deleteFile(remoteHostname, checkHostKey, remoteHostPathAndFileName, username, password, null);
-	}
-
-	public static void deleteFile(boolean checkHostKey, SCPFile fileToDelete, String username, String password) throws Exception {
-		deleteFile(fileToDelete.getHostname(), checkHostKey, fileToDelete.getPathAndFilename(), username, password, null);
-	}
-
-	public static void deleteFile(boolean checkHostKey, SCPFile fileToDelete, String username, String password, byte[] privateKey) throws Exception {
-		deleteFile(fileToDelete.getHostname(), checkHostKey, fileToDelete.getPathAndFilename(), username, password, privateKey);
-	}
-
-	/**
-	 * Löschen von Dateien via SCP
-	 * 
-	 * @param remoteHostname
-	 * @param checkHostKey
-	 * @param remoteHostPathAndFileName
-	 *            auch Wildcards(*?) sind erlaubt
-	 * @param username
-	 * @param privateKey
-	 * @param password
-	 *            des PrivateKey falls notwendig
-	 * @throws Exception
-	 */
-	public static void deleteFile(String remoteHostname, boolean checkHostKey, String remoteHostPathAndFileName, String username, String password, byte[] privateKey) throws Exception {
-		Session session = null;
-		Channel channel = null;
-		try {
-			JSch jsch = new JSch();
-			session = jsch.getSession(username, remoteHostname, 22);
-			if (privateKey != null) {
-				// privateKey wird durch die Benutzung geleert
-				jsch.addIdentity(username, privateKey.clone(), null, password == null ? new byte[0] : password.getBytes("UTF-8"));
-			} else {
-				session.setPassword(password);
-			}
-			if (checkHostKey)
-				setKnownHostKeys(jsch);
-			else
-				session.setConfig("StrictHostKeyChecking", "no");
-			session.connect();
-
-			// exec 'rm /full/path/to/file' remotely
-			String command = "rm -f " + remoteHostPathAndFileName;
-			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
-
-			// get I/O stream for remote scp
-			InputStream in = channel.getInputStream();
-
-			channel.connect();
-
-			checkAcknowledge(in);
-
-			session.disconnect();
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Delete: " + e.getMessage());
-		} finally {
-			if (channel != null) {
-				try {
-					channel.disconnect();
-					channel = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-
-			if (session != null) {
-				try {
-					session.disconnect();
-					session = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
 		}
 	}
 
-	/**
-	 * Upload von Dateien via SCP
-	 * 
-	 * @param remoteHostname
-	 * @param checkHostKey
-	 * @param remoteHostPathAndFileName
-	 *            Verzeichnis ist als Ziel erlaubt, muß aber bereits existieren
-	 * @param localPathAndFileName
-	 *            KEINE Wildcards(*?) erlaubt
-	 * @param username
-	 * @param password
-	 * @throws Exception
-	 */
-	public static void uploadFile(String remoteHostname, boolean checkHostKey, String remoteHostPathAndFileName, String localPathAndFileName, String username, String password) throws Exception {
-		uploadFile(remoteHostname, checkHostKey, remoteHostPathAndFileName, localPathAndFileName, username, password, null);
-	}
-
-	public static void uploadFile(boolean checkHostKey, SCPFile fileToUpload, String localPathAndFileName, String username, String password) throws Exception {
-		uploadFile(fileToUpload.getHostname(), checkHostKey, fileToUpload.getPathAndFilename(), localPathAndFileName, username, password, null);
-	}
-
-	public static void uploadFile(boolean checkHostKey, SCPFile fileToUpload, String localPathAndFileName, String username, String password, byte[] privateKey) throws Exception {
-		uploadFile(fileToUpload.getHostname(), checkHostKey, fileToUpload.getPathAndFilename(), localPathAndFileName, username, password, privateKey);
-	}
-
-	/**
-	 * Upload von Dateien via SCP
-	 * 
-	 * @param remoteHostname
-	 * @param checkHostKey
-	 * @param remoteHostPathAndFileName
-	 *            Verzeichnis ist als Ziel erlaubt, muß aber bereits existieren
-	 * @param localPathAndFileName
-	 *            KEINE Wildcards(*?) erlaubt
-	 * @param username
-	 * @param privateKey
-	 * @param password
-	 *            des PrivateKey falls notwendig
-	 * @throws Exception
-	 */
-	public static void uploadFile(String remoteHostname, boolean checkHostKey, String remoteHostPathAndFileName, String localPathAndFileName, String username, String password, byte[] privateKey)
-			throws Exception {
-		if (localPathAndFileName.contains("*") || localPathAndFileName.contains("?"))
-			throw new Exception("Fehler bei SCP-Upload: Wildcards in localPathAndFileName sind bei SCP-Upload nicht erlaubt");
-
-		if (!new File(localPathAndFileName).exists())
-			throw new Exception("Fehler bei SCP-Upload: Quelldatei '" + localPathAndFileName + "' existiert nicht");
-
-		String remoteHostPath = getPathOfPathAndFileName(remoteHostPathAndFileName);
-		String remoteHostFileName = getFileNameOfPathAndFileName(remoteHostPathAndFileName);
-		if (StringUtils.isEmpty(remoteHostFileName))
-			remoteHostFileName = getFileNameOfPathAndFileName(localPathAndFileName);
-
-		List<String> directory = listFiles(remoteHostname, checkHostKey, remoteHostPath, username, password, privateKey);
-		if (!directory.contains("."))
-			throw new Exception("Fehler bei SCP-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
-		if (directory.contains(remoteHostFileName))
-			throw new Exception("Fehler bei SCP-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
-
-		Session session = null;
-		Channel channel = null;
-		BufferedInputStream bufferedFileInputStream = null;
-		try {
-			JSch jsch = new JSch();
-			session = jsch.getSession(username, remoteHostname, 22);
-			if (privateKey != null) {
-				jsch.addIdentity(username, privateKey, null, password == null ? new byte[0] : password.getBytes("UTF-8"));
-			} else {
-				session.setPassword(password);
-			}
-			if (checkHostKey)
-				setKnownHostKeys(jsch);
-			else
-				session.setConfig("StrictHostKeyChecking", "no");
-			session.connect();
-
-			// exec 'scp -t rfile' remotely
-			String command = "scp -p -t " + remoteHostPathAndFileName;
-			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
-
-			// get I/O streams for remote scp
-			OutputStream out = channel.getOutputStream();
-			InputStream in = channel.getInputStream();
-
-			channel.connect();
-
-			checkAcknowledge(in);
-
-			// send "C0664 filesize filename", where filename should not include '/'
-			long filesize = (new File(localPathAndFileName)).length();
-			command = "C0664 " + filesize + " " + remoteHostFileName + "\n";
-			out.write(command.getBytes("UTF-8"));
-			out.flush();
-			checkAcknowledge(in);
-
-			// send a content of lfile
-			bufferedFileInputStream = new BufferedInputStream(new FileInputStream(localPathAndFileName));
-			byte[] buf = new byte[1024];
-			while (true) {
-				int len = bufferedFileInputStream.read(buf);
-				if (len <= 0)
-					break;
-				out.write(buf, 0, len); // out.flush();
-			}
-			bufferedFileInputStream.close();
-			bufferedFileInputStream = null;
-			// send '\0'
-			buf[0] = 0;
-			out.write(buf, 0, 1);
-			out.flush();
-			checkAcknowledge(in);
-			out.close();
-
-			channel.disconnect();
-			session.disconnect();
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Upload: " + e.getMessage());
-		} finally {
-			if (bufferedFileInputStream != null) {
-				try {
-					bufferedFileInputStream.close();
-					bufferedFileInputStream = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-
-			if (channel != null) {
-				try {
-					channel.disconnect();
-					channel = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-
-			if (session != null) {
-				try {
-					session.disconnect();
-					session = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-
-	public static void uploadFileData(boolean checkHostKey, SCPFile fileToUpload, byte[] fileData, String username, String password, byte[] privateKey) throws Exception {
-		uploadFileData(fileToUpload.getHostname(), checkHostKey, fileToUpload.getPathAndFilename(), fileToUpload.getFilename(), fileData, username, password, privateKey);
-	}
-
-	public static void uploadFileData(String remoteHostname, boolean checkHostKey, String remoteHostPath, String remoteHostFileName, byte[] fileData, String username, String password,
-			byte[] privateKey) throws Exception {
-		// Directory auslesen um zu Prüfen, ob das Verzeichnis existiert aber die Datei noch nicht
-		List<String> directory = listFiles(remoteHostname, checkHostKey, remoteHostPath, username, password, privateKey);
-		if (!directory.contains("."))
-			throw new Exception("Fehler bei SCP-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
-		if (directory.contains(remoteHostFileName))
-			throw new Exception("Fehler bei SCP-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
-
-		Session session = null;
-		Channel channel = null;
-		try {
-			JSch jsch = new JSch();
-			session = jsch.getSession(username, remoteHostname, 22);
-			if (privateKey != null) {
-				jsch.addIdentity(username, privateKey, null, password == null ? new byte[0] : password.getBytes("UTF-8"));
-			} else {
-				session.setPassword(password);
-			}
-			if (checkHostKey)
-				setKnownHostKeys(jsch);
-			else
-				session.setConfig("StrictHostKeyChecking", "no");
-			session.connect();
-
-			// exec 'scp -t rfile' remotely
-			String command = "scp -p -t " + remoteHostPath + "/" + remoteHostFileName;
-			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
-
-			// get I/O streams for remote scp
-			OutputStream out = channel.getOutputStream();
-			InputStream in = channel.getInputStream();
-
-			channel.connect();
-
-			checkAcknowledge(in);
-
-			// send command "C0664 filesize filename"
-			command = "C0664 " + fileData.length + " " + remoteHostFileName + "\n";
-			out.write(command.getBytes("UTF-8"));
-			out.flush();
-			checkAcknowledge(in);
-
-			// send content of file
-			out.write(fileData, 0, fileData.length);
-
-			// send '\0' as EOF
-			out.write(0);
-			out.flush();
-			checkAcknowledge(in);
-			out.close();
-
-			channel.disconnect();
-			session.disconnect();
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Upload: " + e.getMessage());
-		} finally {
-			if (channel != null) {
-				try {
-					channel.disconnect();
-					channel = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-
-			if (session != null) {
-				try {
-					session.disconnect();
-					session = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-
-	public static List<String> listFiles(String remoteHostname, boolean checkHostKey, String remoteHostPath, String username, String password) throws Exception {
-		return listFiles(remoteHostname, checkHostKey, remoteHostPath, username, password, null);
-	}
-
-	public static List<String> listFiles(String remoteHostname, boolean checkHostKey, String remoteHostPath, String username, String password, byte[] privateKey) throws Exception {
-		Session session = null;
-		Channel channel = null;
-		try {
-			List<String> returnList = new ArrayList<String>();
-
-			JSch jsch = new JSch();
-			session = jsch.getSession(username, remoteHostname, 22);
-			if (privateKey != null) {
-				// privateKey wird durch die Benutzung geleert
-				jsch.addIdentity(username, privateKey.clone(), null, password == null ? new byte[0] : password.getBytes("UTF-8"));
-			} else {
-				session.setPassword(password);
-			}
-			if (checkHostKey)
-				setKnownHostKeys(jsch);
-			else
-				session.setConfig("StrictHostKeyChecking", "no");
-			session.connect();
-
-			// exec 'ls -1 pathn' remotely
-			String command = "ls -1a " + remoteHostPath;
-			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
-
-			// get I/O streams for remote scp
-			// OutputStream out = channel.getOutputStream();
-			InputStream in = channel.getInputStream();
-
-			channel.connect();
-
-			// byte[] buf = new byte[1024];
-
-			// send '\0'
-			// buf[0] = 0;
-			// out.write(buf, 0, 1);
-			// out.flush();
-
-			int charValue = checkAcknowledge(in);
-			StringBuilder inputString = new StringBuilder();
-
-			while (charValue != -1) { // EOF
-				if (charValue == (int)'\n') { // EOL
-					returnList.add(inputString.toString());
-					inputString = new StringBuilder();
-				} else {
-					inputString.append((char)charValue);
-				}
-				charValue = checkAcknowledge(in);
-			}
-
-			session.disconnect();
-
-			return returnList;
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Download\n" + ExceptionUtils.toString(e), e);
-		} finally {
-			if (channel != null) {
-				try {
-					channel.disconnect();
-					channel = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-
-			if (session != null) {
-				try {
-					session.disconnect();
-					session = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-
-	public static void addHostKeyToKnownHostKeys(String remoteHostname, String username, String password) throws Exception {
-		addHostKeyToKnownHostKeys(remoteHostname, username, password, null);
-	}
-
-	/**
-	 * Hinzufügen von public Hostkeys zu der KnownHosts-Datei
-	 * 
-	 * @param hostname
-	 * @param username
-	 * @param password
-	 */
-	public static void addHostKeyToKnownHostKeys(String hostname, String username, String password, byte[] privateKey) {
-		Session session = null;
-		try {
-			JSch jsch = new JSch();
-			setKnownHostKeys(jsch);
-
-			System.out.println("KnownHosts (before adding):");
-			printKnownHostKeys(jsch);
-
-			session = jsch.getSession(username, hostname, 22);
-			if (privateKey != null) {
-				// privateKey wird durch die Benutzung geleert
-				jsch.addIdentity(username, privateKey.clone(), null, password == null ? new byte[0] : password.getBytes("UTF-8"));
-			} else {
-				session.setPassword(password);
-			}
-			session.setConfig("StrictHostKeyChecking", "no"); // automatische
-			// Aufnahme
-			// neuer
-			// HostPublicKeys
-			// session.setConfig("HashKnownHosts", "yes"); // In adding to
-			// known_hosts file, host names will be hashed
-			session.connect();
-
-			HostKey hk = session.getHostKey();
-			System.out.println("Adding HostKey: " + hk.getHost() + " " + hk.getType() + " " + hk.getFingerPrint(jsch) + "\n");
-
-			// Channel channel = session.openChannel("shell");
-			//
-			// channel.setInputStream(System.in);
-			// channel.setOutputStream(System.out);
-			//
-			// channel.connect();
-
-			System.out.println("KnownHosts (after adding):");
-			printKnownHostKeys(jsch);
-			System.out.println("");
-
-			session.disconnect();
-		} catch (Exception e) {
-			System.out.println(e);
-		} finally {
-			if (session != null) {
-				try {
-					session.disconnect();
-					session = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-
-	public static String executeCommand(String remoteHostname, boolean checkHostKey, String command, String username, String password, byte[] privateKey) throws Exception {
-		Session session = null;
+	public static String executeCommand(Session session, String command) throws Exception {
 		Channel channel = null;
 		try {
 			String returnText = "";
-
-			JSch jsch = new JSch();
-			session = jsch.getSession(username, remoteHostname, 22);
-			if (privateKey != null) {
-				// privateKey wird durch die Benutzung geleert
-				jsch.addIdentity(username, privateKey.clone(), null, password == null ? new byte[0] : password.getBytes("UTF-8"));
-			} else {
-				session.setPassword(password);
-			}
-			if (checkHostKey)
-				setKnownHostKeys(jsch);
-			else
-				session.setConfig("StrictHostKeyChecking", "no");
-			session.connect();
-
+			
 			channel = session.openChannel("exec");
 			((ChannelExec)channel).setCommand(command);
 
@@ -836,12 +637,8 @@ public class JschWrapper {
 
 			channel.connect();
 
-			byte[] buf = new byte[1024];
-
 			// send '\0'
-			buf[0] = 0;
-			out.write(buf, 0, 1);
-			out.flush();
+			sendZeroByte(out);
 
 			int charValue = checkAcknowledge(in);
 			StringBuilder inputString = new StringBuilder();
@@ -879,23 +676,7 @@ public class JschWrapper {
 		} catch (Exception e) {
 			throw new Exception("Fehler bei SSH-Command\n" + ExceptionUtils.toString(e), e);
 		} finally {
-			if (channel != null) {
-				try {
-					channel.disconnect();
-					channel = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-
-			if (session != null) {
-				try {
-					session.disconnect();
-					session = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
+			closeQuietly(channel);
 		}
 	}
 
@@ -970,6 +751,28 @@ public class JschWrapper {
 			int lastIndexOfPathSeparator = Math.max(pathAndFileName.lastIndexOf("/"), pathAndFileName.lastIndexOf("\\"));
 			return pathAndFileName.substring(0, lastIndexOfPathSeparator + 1);
 		}
+	}
+	
+	private static void sendZeroByte(OutputStream outputStream) throws IOException {
+		outputStream.write(new byte[] { 0 });
+		outputStream.flush();
+	}
+	
+	private static byte[] readStreamUntilBlankOrEndOrLinefeed(InputStream inStream) throws IOException {
+		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
+		int nextByte;
+		while (true) {
+			nextByte = inStream.read();
+			if (nextByte < 0) {
+				// error
+				break;
+			} else if (nextByte == ' ' || nextByte == '\n') {
+				break;
+			} else {
+				returnData.write(nextByte);
+			}
+		}
+		return returnData.toByteArray();
 	}
 	
 	public static void closeQuietly(Channel channel) {

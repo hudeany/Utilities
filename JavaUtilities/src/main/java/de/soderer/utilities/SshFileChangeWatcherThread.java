@@ -2,8 +2,11 @@ package de.soderer.utilities;
 
 import java.util.Date;
 
+import com.jcraft.jsch.Session;
+
 public class SshFileChangeWatcherThread extends FileChangeWatcherThread {
 	private ServerAccessData serverData;
+	private Session session;
 	private String filePath;
 	private static final long sshdelay = 1000L;
 
@@ -15,9 +18,10 @@ public class SshFileChangeWatcherThread extends FileChangeWatcherThread {
 
 	public void run() {
 		try {
+			session = JschWrapper.openSession(serverData);
 			while (running) {
 				try {
-					JschFileData fileData = JschWrapper.getFileData(serverData, filePath);
+					JschFileData fileData = JschWrapper.getFileData(session, filePath);
 					long newFileLength = fileData.getSize();
 					Date newChangeDate = fileData.getChangeDate();
 					if (lastChangeDate == null || lastChangeDate.before(newChangeDate) || lastFileSize != newFileLength) {
@@ -36,6 +40,10 @@ public class SshFileChangeWatcherThread extends FileChangeWatcherThread {
 			}
 		} catch (InterruptedException ie) {
 			handleInterrupt();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			JschWrapper.closeQuietly(session);
 		}
 	}
 }
