@@ -1,42 +1,31 @@
 package de.soderer.utilities;
 
-import java.util.Date;
-
 import com.jcraft.jsch.Session;
 
-public class SshFileChangeWatcherThread extends FileChangeWatcherThread {
+public class SshFileChangeWatcherThread extends Thread {
 	private ServerAccessData serverData;
 	private Session session;
 	private String filePath;
-	private static final long sshdelay = 1000L;
+	protected LineListener listener;
+	protected boolean running = true;
 
-	public SshFileChangeWatcherThread(ServerAccessData serverData, String filePath, Listener listener) {
-		super(null, listener);
+	public SshFileChangeWatcherThread(ServerAccessData serverData, String filePath, LineListener listener) {
+		setDaemon(true);
 		this.serverData = serverData;
 		this.filePath = filePath;
+		this.listener = listener;
 	}
 
 	public void run() {
 		try {
 			session = JschWrapper.openSession(serverData);
-			while (running) {
-				try {
-					JschFileData fileData = JschWrapper.getFileData(session, filePath);
-					long newFileLength = fileData.getSize();
-					Date newChangeDate = fileData.getChangeDate();
-					if (lastChangeDate == null || lastChangeDate.before(newChangeDate) || lastFileSize != newFileLength) {
-						lastChangeDate = newChangeDate;
-						lastFileSize = newFileLength;
-						listener.noticeFileChanged();
-					}
-
-					Thread.sleep(sshdelay);
-				} catch (InterruptedException ie) {
-					throw ie;
-				} catch (Exception e) {
-					e.printStackTrace();
-					running = false;
-				}
+			try {
+				JschWrapper.tailviewFileData(session, filePath, listener);
+			} catch (InterruptedException ie) {
+				throw ie;
+			} catch (Exception e) {
+				e.printStackTrace();
+				running = false;
 			}
 		} catch (InterruptedException ie) {
 			handleInterrupt();
@@ -45,5 +34,20 @@ public class SshFileChangeWatcherThread extends FileChangeWatcherThread {
 		} finally {
 			JschWrapper.closeQuietly(session);
 		}
+	}
+
+	protected void handleInterrupt() {
+		if (running) {
+			run();
+		}
+	}
+
+	public void kill() {
+		running = false;
+		Thread.currentThread().interrupt();
+	}
+	
+	public interface LineListener {
+		public void addLineData(byte[] textLineData);
 	}
 }

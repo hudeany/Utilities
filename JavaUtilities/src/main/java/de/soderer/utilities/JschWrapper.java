@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +24,8 @@ import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+
+import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
 
 public class JschWrapper {
 	private static final transient Logger logger = LoggerFactory.getLogger(JschWrapper.class);
@@ -48,6 +51,14 @@ public class JschWrapper {
 			session.connect();
 			
 			return session;
+		} catch (JSchException jse) {
+			if (jse.getCause() != null && jse.getCause() instanceof UnknownHostException) {
+				throw new Exception(LangResources.get("noConnectionTohost", serverEntry.getHostname()));
+			} else {
+				throw jse;
+			}
+		} catch (UnknownHostException uhe) {
+			throw new Exception(LangResources.get("noConnectionTohost", serverEntry.getHostname()));
 		} catch (Exception e) {
 			closeQuietly(session);
 			throw new Exception("Error in opening ssh session: " + ExceptionUtils.toString(e), e);
@@ -614,6 +625,33 @@ public class JschWrapper {
 			}
 
 			return bos.toByteArray();
+		} catch (Exception e) {
+			throw new Exception("Error in downloadFileData", e);
+		} finally {
+			IOUtils.closeQuietly(bos);
+			closeQuietly(channel);
+		}
+	}
+	
+	public static void tailviewFileData(Session session, String filePath, LineListener lineListener) throws Exception {
+		Channel channel = null;
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try {
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand("tail -f -n 1000000 " + filePath);
+
+			OutputStream outStream = channel.getOutputStream();
+			InputStream inStream = channel.getInputStream();
+
+			channel.connect();
+
+			// send '\0' to start data transfer
+			sendZeroByte(outStream);
+
+			while (true) {
+				byte[] nextLineData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+				lineListener.addLineData(nextLineData);
+			}
 		} catch (Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {

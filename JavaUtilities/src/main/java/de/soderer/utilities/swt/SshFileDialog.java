@@ -34,6 +34,11 @@ import de.soderer.utilities.ServerEntryKeyStore;
 import de.soderer.utilities.Tuple;
 
 public class SshFileDialog extends ModalDialog<Boolean> {
+	public enum Mode {
+		Open,
+		Save
+	}
+	
 	private String title;
 	private String serverEntryName = null;
 	private String hostnameOrIp = null;
@@ -59,24 +64,24 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private File keystoreFile;
 	private ServerEntryKeyStore keyStore = null;
 	
-	private boolean isSaveDialog = false;
+	private Mode dialogMode;
 	private Text fileNameField;
 	private Button createFolderButton;
 	
-	public SshFileDialog(boolean isSaveDialog, Shell parentShell, String title) {
+	public SshFileDialog(Mode dialogMode, Shell parentShell, String title) {
 		super(parentShell);
 		this.title = title;
 		this.keystoreFile = null;
 		this.inMemoryPassword = null;
-		this.isSaveDialog = isSaveDialog;
+		this.dialogMode = dialogMode;
 	}
 	
-	public SshFileDialog(boolean isSaveDialog, Shell parentShell, String title, File keystoreFile, String inMemoryPassword) {
+	public SshFileDialog(Mode dialogMode, Shell parentShell, String title, File keystoreFile, String inMemoryPassword) {
 		super(parentShell);
 		this.title = title;
 		this.keystoreFile = keystoreFile;
 		this.inMemoryPassword = inMemoryPassword;
-		this.isSaveDialog = isSaveDialog;
+		this.dialogMode = dialogMode;
 	}
 
 	@Override
@@ -312,7 +317,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				try {
 					TreeItem selectedFilesItem = filesTree.getSelection()[0];
 					selectedFileName = selectedFilesItem.getText();
-					if (isSaveDialog) {
+					if (dialogMode == Mode.Save) {
 						fileNameField.setText(selectedFileName);
 					}
 				} catch (Exception e) {
@@ -339,7 +344,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 		
-		if (isSaveDialog) {
+		if (dialogMode == Mode.Save) {
 			Composite additionalSaveComposite = new Composite(parentShell, SWT.NONE);
 			additionalSaveComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 			additionalSaveComposite.setLayout(new GridLayout(3, false));
@@ -461,7 +466,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			usernameField.setEnabled(false);
 			passwordField.setEnabled(false);
 			useKeyFileButton.setEnabled(false);
-			if (isSaveDialog) {
+			if (dialogMode == Mode.Save) {
 				fileNameField.setEnabled(true);
 				createFolderButton.setEnabled(true);
 			}
@@ -479,7 +484,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			usernameField.setEnabled(true);
 			passwordField.setEnabled(true);
 			useKeyFileButton.setEnabled(true);
-			if (isSaveDialog) {
+			if (dialogMode == Mode.Save) {
 				fileNameField.setEnabled(false);
 				createFolderButton.setEnabled(false);
 			}

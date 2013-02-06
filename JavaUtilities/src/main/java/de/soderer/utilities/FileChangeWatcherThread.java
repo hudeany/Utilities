@@ -5,13 +5,13 @@ import java.util.Date;
 
 public class FileChangeWatcherThread extends Thread {
 	protected File file;
-	protected Listener listener;
+	protected NotificationListener listener;
 	protected Date lastChangeDate = null;
 	protected long lastFileSize = 0L;
 	private static final long delay = 1000L;
 	protected boolean running = true;
 
-	public FileChangeWatcherThread(File file, Listener listener) {
+	public FileChangeWatcherThread(File file, NotificationListener listener) {
 		this.file = file;
 		this.listener = listener;
 		setDaemon(true);
@@ -48,7 +48,7 @@ public class FileChangeWatcherThread extends Thread {
 		Thread.currentThread().interrupt();
 	}
 	
-	public interface Listener {
+	public interface NotificationListener {
 		public void noticeFileChanged();
 	}
 }
