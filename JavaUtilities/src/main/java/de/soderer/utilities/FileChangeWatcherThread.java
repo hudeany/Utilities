@@ -22,6 +22,7 @@ public class FileChangeWatcherThread extends Thread {
 			while (running) {
 				if (!file.exists()) {
 					running = false;
+					listener.noticeFileNotExists();
 				} else {
 					if (lastChangeDate == null || lastChangeDate.before(new Date(file.lastModified())) || lastFileSize != file.length()) {
 						lastChangeDate = new Date(file.lastModified());
@@ -50,5 +51,6 @@ public class FileChangeWatcherThread extends Thread {
 	
 	public interface NotificationListener {
 		public void noticeFileChanged();
+		public void noticeFileNotExists();
 	}
 }

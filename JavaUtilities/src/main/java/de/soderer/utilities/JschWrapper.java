@@ -158,7 +158,8 @@ public class JschWrapper {
 			
 			byte[] errorData = IOUtils.toByteArray(inErrorStream);
 			if (errorData != null && errorData.length > 0) {
-				throw new Exception(new String(errorData, "UTF-8"));
+				// there is no subdirectory
+				//throw new Exception(new String(errorData, "UTF-8"));
 			}
 			
 			channel.disconnect();
@@ -649,7 +650,7 @@ public class JschWrapper {
 			sendZeroByte(outStream);
 
 			while (true) {
-				byte[] nextLineData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+				byte[] nextLineData = readStreamUntilEndOrLinefeed(inStream);
 				lineListener.addLineData(nextLineData);
 			}
 		} catch (Exception e) {
@@ -805,6 +806,23 @@ public class JschWrapper {
 				// error
 				break;
 			} else if (nextByte == ' ' || nextByte == '\n') {
+				break;
+			} else {
+				returnData.write(nextByte);
+			}
+		}
+		return returnData.toByteArray();
+	}
+	
+	private static byte[] readStreamUntilEndOrLinefeed(InputStream inStream) throws IOException {
+		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
+		int nextByte;
+		while (true) {
+			nextByte = inStream.read();
+			if (nextByte < 0) {
+				// error
+				break;
+			} else if (nextByte == '\n') {
 				break;
 			} else {
 				returnData.write(nextByte);

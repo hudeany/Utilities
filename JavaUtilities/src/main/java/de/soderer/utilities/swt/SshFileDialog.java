@@ -284,9 +284,23 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 					}
 					session = JschWrapper.openSession(getServerEntry());
 					Tuple<List<String>, List<String>> directory = JschWrapper.getDirectory(session, path);
+					for (TreeItem subItem : selectedFolderItem.getItems()) {
+						if (!directory.getFirst().contains(subItem.getText())) {
+							subItem.dispose();
+						}
+					}
 					for (String folderName : directory.getFirst()) {
-						TreeItem folderTreeItem = new TreeItem(selectedFolderItem, SWT.NONE);
-						folderTreeItem.setText(folderName);
+						boolean subItemExists = false;
+						for (TreeItem subItem : selectedFolderItem.getItems()) {
+							if (subItem.getText().equals(folderName)) {
+								subItemExists = true;
+								break;
+							}
+						}
+						if (!subItemExists) {
+							TreeItem folderTreeItem = new TreeItem(selectedFolderItem, SWT.NONE);
+							folderTreeItem.setText(folderName);
+						}
 					}
 					selectedFolderItem.setExpanded(true);
 					filesTree.removeAll();
@@ -294,7 +308,9 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 						TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
 						filesTreeItem.setText(fileName);
 					}
-					filesTree.setSelection(filesTree.getItem(0));
+					if (directory.getSecond().size() > 0) {
+						filesTree.setSelection(filesTree.getItem(0));
+					}
 					selectedFilePath = path;
 				} catch (Exception e) {
 					new QuestionDialog(title, "Error while connecting to server: " + e.getMessage(), getShell(), LangResources.get("ok")).open();
