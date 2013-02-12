@@ -12,6 +12,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
+import de.soderer.utilities.LangResources;
+
 public class QuestionDialog extends ModalDialog<Integer> {
 	private String title;
 	private String text;
@@ -22,12 +24,20 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		this.title = title;
 		this.text = text;
 		this.buttonTexts = buttonTexts;
+		
+		if (buttonTexts == null || buttonTexts.length == 0) {
+			this.buttonTexts = new String[]{ LangResources.get("ok") };
+		}
 	}
 	
 	public QuestionDialog(String text, Shell shell, String... buttonTexts) {   
 		super(shell);
 		this.text = text;
 		this.buttonTexts = buttonTexts;
+		
+		if (buttonTexts == null || buttonTexts.length == 0) {
+			this.buttonTexts = new String[]{ LangResources.get("ok") };
+		}
 	}
 	
 	@Override
@@ -46,19 +56,21 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
 		label.setText(text);
 	    
-		for (int i = 0; i < buttonTexts.length; i++) {
-			String buttonText = buttonTexts[i];
-			final int buttonIndex = i; 
-			Button button = new Button(composite, SWT.PUSH);
-		    button.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		    button.setText(buttonText);
-		    button.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					setReturnValue(buttonIndex);
-					getShell().close();
-				}
-			});
+		if (buttonTexts != null && buttonTexts.length > 0) {
+			for (int i = 0; i < buttonTexts.length; i++) {
+				String buttonText = buttonTexts[i];
+				final int buttonIndex = i; 
+				Button button = new Button(composite, SWT.PUSH);
+			    button.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+			    button.setText(buttonText);
+			    button.addSelectionListener(new SelectionAdapter() {
+					@Override
+					public void widgetSelected(SelectionEvent e) {
+						setReturnValue(buttonIndex);
+						getShell().close();
+					}
+				});
+			}
 		}
 
 		shell.pack();

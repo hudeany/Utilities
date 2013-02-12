@@ -31,6 +31,7 @@ import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
@@ -163,8 +164,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		createLinkButton.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (!Utilities.isJavaWebstartApp()) {
-					if (Utilities.getOsName().toLowerCase().contains("windows")) {
+				if (!SystemUtilities.isJavaWebstartApp()) {
+					if (SystemUtilities.isWindowsSystem()) {
 						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".lnk";
 						if (new File(desktopLinkFilePath).exists()) {
 							new File(desktopLinkFilePath).delete();
@@ -215,7 +216,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 								messageBox.open();
 							}
 				        }	
-					} else if (Utilities.getOsName().toLowerCase().contains("nix") || Utilities.getOsName().toLowerCase().contains("nux")) {
+					} else if (SystemUtilities.isLinuxSystem()) {
 						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
 						if (new File(desktopLinkFilePath).exists()) {
 							new File(desktopLinkFilePath).delete();
@@ -316,7 +317,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		showRuntimePropertiesButton.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				Map<String, String> properties = Utilities.getRuntimeProperties(true);
+				Map<String, String> properties = SystemUtilities.getRuntimeProperties(true);
 				for (Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
 				}

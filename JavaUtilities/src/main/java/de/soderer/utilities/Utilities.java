@@ -1,12 +1,14 @@
 package de.soderer.utilities;
 
 import java.awt.Desktop;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -62,8 +64,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 /**
  * Allgemeine Utilities
@@ -1082,14 +1082,6 @@ public class Utilities {
 		}
 	}
 	
-	public static String getOsName() {
-		return System.getProperty("os.name");
-	}
-	
-	public static boolean isJavaWebstartApp() {
-		return System.getProperty("javawebstart.version") != null;
-	}
-	
 	public static Map<String, String> getSystemPropertiesMap() {
 		Map<String, String> propertiesMap = new HashMap<String, String>();
 		for (Object key : System.getProperties().keySet()) {
@@ -1115,24 +1107,6 @@ public class Utilities {
 			builder.append(value == null ? "" : value.toString());
 		}
 		return builder.toString();
-	}
-	
-	public static Map<String, String> getRuntimeProperties(boolean humanReadable) {
-		Runtime runtime = Runtime.getRuntime();
-		Map<String, String> resultMap = new CaseInsensitiveMap<String>();
-		if (humanReadable) {
-			resultMap.put("Memory.Total", getHumanReadableNumber(runtime.totalMemory(), "B", false));
-			resultMap.put("Memory.Free", getHumanReadableNumber(runtime.freeMemory(), "B", false));
-			resultMap.put("Memory.Used", getHumanReadableNumber(runtime.totalMemory() - runtime.freeMemory(), "B", false));
-			resultMap.put("Memory.Max", getHumanReadableNumber(runtime.maxMemory(), "B", false));
-		} else {
-			resultMap.put("Memory.Total", Long.toString(runtime.totalMemory()));
-			resultMap.put("Memory.Free", Long.toString(runtime.freeMemory()));
-			resultMap.put("Memory.Used", Long.toString(runtime.totalMemory() - runtime.freeMemory()));
-			resultMap.put("Memory.Max", Long.toString(runtime.maxMemory()));
-		}
-		resultMap.put("Processors.Available", Long.toString(runtime.availableProcessors()));
-		return resultMap;
 	}
 
 	public static String getHumanReadableNumber(Number value) {
@@ -1337,6 +1311,21 @@ public class Utilities {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
+		}
+	}
+	
+	public static void downloadFile(String url, String localeDestionationPath) throws Exception {
+		BufferedInputStream bufferedInputStream = null;
+		FileOutputStream fileOutputStream = null;
+		try {
+			bufferedInputStream = new BufferedInputStream(new URL(url).openStream());
+			fileOutputStream = new FileOutputStream(localeDestionationPath);
+			IOUtils.copy(bufferedInputStream, fileOutputStream);
+		} catch (Exception e) {
+			throw new Exception("Cannot download file", e);
+		} finally {
+			IOUtils.closeQuietly(fileOutputStream);
+			IOUtils.closeQuietly(bufferedInputStream);
 		}
 	}
 }
