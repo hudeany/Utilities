@@ -82,22 +82,33 @@ public class UpdateApplicationDialog extends ModalDialog<Boolean> {
 			if (StringUtils.isNotBlank(jarFilePath)) {
 				File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 				downloadTempFile.delete();
-				if (downloadUrl.contains("<username>")) {
-					SimpleInputDialog usernameDialog = new SimpleInputDialog(title, LangResources.get("enterDownloadUserName"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
-					String username = usernameDialog.open();
-					if (StringUtils.isNotBlank(username)) {
-						downloadUrl = downloadUrl.replaceAll("<username>", username);
+				if (downloadUrl.contains("<username>") && downloadUrl.contains("<password>")) {
+					CredentialsDialog credentialsDialog = new CredentialsDialog(title, LangResources.get("enterDownloadCredentials"), getShell());
+					Boolean success = credentialsDialog.open();
+					if (success) {
+						downloadUrl = downloadUrl.replaceAll("<username>", credentialsDialog.getUsername());
+						downloadUrl = downloadUrl.replaceAll("<password>", credentialsDialog.getPassword());
 					} else {
 						return;
 					}
-				}
-				if (downloadUrl.contains("<password>")) {
-					PasswordDialog passwordDialog = new PasswordDialog(title, LangResources.get("enterDownloadPassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
-					String password = passwordDialog.open();
-					if (StringUtils.isNotBlank(password)) {
-						downloadUrl = downloadUrl.replaceAll("<password>", password);
-					} else {
-						return;
+				} else {
+					if (downloadUrl.contains("<username>")) {
+						SimpleInputDialog usernameDialog = new SimpleInputDialog(title, LangResources.get("enterDownloadUserName"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
+						String username = usernameDialog.open();
+						if (StringUtils.isNotBlank(username)) {
+							downloadUrl = downloadUrl.replaceAll("<username>", username);
+						} else {
+							return;
+						}
+					}
+					if (downloadUrl.contains("<password>")) {
+						PasswordDialog passwordDialog = new PasswordDialog(title, LangResources.get("enterDownloadPassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
+						String password = passwordDialog.open();
+						if (StringUtils.isNotBlank(password)) {
+							downloadUrl = downloadUrl.replaceAll("<password>", password);
+						} else {
+							return;
+						}
 					}
 				}
 				if (downloadUrl.contains("<system>")) {
@@ -122,27 +133,24 @@ public class UpdateApplicationDialog extends ModalDialog<Boolean> {
 					//Create Batchfile
 					FileUtils.write(batchFile,
 						"@echo off\r\n"
-						+ "if exist \"" + new File(jarFilePath).getAbsolutePath() + "\" (\r\n"
+						+ "del \"" + jarFilePath + "\"\r\n"
+						+ "if exist \"" + jarFilePath + "\" (\r\n"
 						+ "ping -n 3 127.0.0.1 >nul\r\n"
-						+ "del \"" + new File(jarFilePath).getAbsolutePath() + "\"\r\n"
-						+ "echo test1 >> C:\\temp\\test.txt\r\n"
-						+ "if exist \"" + new File(jarFilePath).getAbsolutePath() + "\" (\r\n"
+						+ "del \"" + jarFilePath + "\"\r\n"
+						+ "if exist \"" + jarFilePath + "\" (\r\n"
 						+ "ping -n 3 127.0.0.1 >nul\r\n"
-						+ "del \"" + new File(jarFilePath).getAbsolutePath() + "\"\r\n"
-						+ "echo test2 >> C:\\temp\\test.txt\r\n"
-						+ "if exist \"" + new File(jarFilePath).getAbsolutePath() + "\" (\r\n"
+						+ "del \"" + jarFilePath + "\"\r\n"
+						+ "if exist \"" + jarFilePath + "\" (\r\n"
 						+ "ping -n 3 127.0.0.1 >nul\r\n"
-						+ "del \"" + new File(jarFilePath).getAbsolutePath() + "\"\r\n"
-						+ "echo test3 >> C:\\temp\\test.txt\r\n"
+						+ "del \"" + jarFilePath + "\"\r\n"
 						+ ")\r\n"
 						+ ")\r\n"
 						+ ")\r\n"
 						+ "ren \"" + downloadTempFile.getAbsolutePath() + "\" \"" + new File(jarFilePath).getName() + "\"\r\n"
 						+ "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n"
-						+ "echo test4 >> C:\\temp\\test.txt\r\n"
-						+ "java -jar \"" + new File(jarFilePath).getAbsolutePath() + "\"\r\n"
-						+ "del \"" + batchFile.getAbsolutePath() + "\r\n"
-						+ ")");
+						+ "java -jar \"" + jarFilePath + "\"\r\n"
+						+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n"
+						+ ")\r\n");
 					
 					Runtime.getRuntime().exec("cmd /c start /B " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
@@ -152,8 +160,24 @@ public class UpdateApplicationDialog extends ModalDialog<Boolean> {
 					//Create Batchfile
 					FileUtils.write(batchFile,
 						"#!/bin/bash\n"
-						+ "java -jar \"" + new File(jarFilePath).getAbsolutePath() + "\"\n"
-						+ "del \"" + batchFile.getAbsolutePath());
+						+ "rm \"" + jarFilePath + "\"\n"
+						+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
+						+ "sleep 3\n"
+						+ "rm \"" + jarFilePath + "\"\n"
+						+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
+						+ "sleep 3\n"
+						+ "rm \"" + jarFilePath + "\"\n"
+						+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
+						+ "sleep 3\n"
+						+ "rm \"" + jarFilePath + "\"\n"
+						+ "fi\n"
+						+ "fi\n"
+						+ "fi\n"
+						+ "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n"
+						+ "if ! [ -f \"" + downloadTempFile.getAbsolutePath() + "\" ]; then\n"
+						+ "java -jar \"" + jarFilePath + "\"\n"
+						+ "rm \"" + batchFile.getAbsolutePath() + "\"\n"
+						+ "fi\n");
 					
 					Runtime.getRuntime().exec("sh " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
