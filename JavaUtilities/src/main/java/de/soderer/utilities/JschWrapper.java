@@ -634,12 +634,12 @@ public class JschWrapper {
 		}
 	}
 	
-	public static void tailviewFileData(Session session, String filePath, LineListener lineListener) throws Exception {
+	public static void tailviewFileData(Session session, String filePath, int numberOfLastLinesToShow, LineListener lineListener) throws Exception {
 		Channel channel = null;
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("tail -f -n 1000000 " + filePath);
+			((ChannelExec)channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " " + filePath);
 
 			OutputStream outStream = channel.getOutputStream();
 			InputStream inStream = channel.getInputStream();
@@ -649,10 +649,39 @@ public class JschWrapper {
 			// send '\0' to start data transfer
 			sendZeroByte(outStream);
 
+			byte[] startData = Utilities.readAvailableDataFromStreamInArray(inStream);
+			if (startData.length > 0) {
+				lineListener.addLineData(startData);
+			}
+			
 			while (true) {
-				byte[] nextLineData = readStreamUntilEndOrLinefeed(inStream);
+				byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
 				lineListener.addLineData(nextLineData);
 			}
+		} catch (Exception e) {
+			throw new Exception("Error in downloadFileData", e);
+		} finally {
+			IOUtils.closeQuietly(bos);
+			closeQuietly(channel);
+		}
+	}
+	
+	public static byte[] readTailFileData(Session session, String filePath, int numberOfLastLinesToShow) throws Exception {
+		Channel channel = null;
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try {
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand("tail -n " + numberOfLastLinesToShow + " " + filePath);
+
+			OutputStream outStream = channel.getOutputStream();
+			InputStream inStream = channel.getInputStream();
+
+			channel.connect();
+
+			// send '\0' to start data transfer
+			sendZeroByte(outStream);
+
+			return Utilities.readAvailableDataFromStreamInArray(inStream);
 		} catch (Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
@@ -806,23 +835,6 @@ public class JschWrapper {
 				// error
 				break;
 			} else if (nextByte == ' ' || nextByte == '\n') {
-				break;
-			} else {
-				returnData.write(nextByte);
-			}
-		}
-		return returnData.toByteArray();
-	}
-	
-	private static byte[] readStreamUntilEndOrLinefeed(InputStream inStream) throws IOException {
-		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
-		int nextByte;
-		while (true) {
-			nextByte = inStream.read();
-			if (nextByte < 0) {
-				// error
-				break;
-			} else if (nextByte == '\n') {
 				break;
 			} else {
 				returnData.write(nextByte);

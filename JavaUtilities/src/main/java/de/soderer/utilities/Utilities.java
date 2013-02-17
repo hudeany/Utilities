@@ -382,6 +382,30 @@ public class Utilities {
 		else
 			return null;
 	}
+	
+	public static byte[] readAvailableDataFromStreamInArray(InputStream inputStream) throws Exception {
+		byte[] returnData = new byte[inputStream.available()];
+		@SuppressWarnings("unused")
+		int bytesRead = inputStream.read(returnData);
+		return returnData;
+	}
+	
+	public static byte[] readStreamUntilEndOrLinefeed(InputStream inStream) throws IOException {
+		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
+		int nextByte;
+		while (true) {
+			nextByte = inStream.read();
+			if (nextByte < 0) {
+				break;
+			} else if (nextByte == '\n') {
+				returnData.write(nextByte);
+				break;
+			} else {
+				returnData.write(nextByte);
+			}
+		}
+		return returnData.toByteArray();
+	}
 
 	/**
 	 * Ermitteln aller Dateien die anhand einer Zeile mit Stammnamen (durch ; getrennt) referenziert werden

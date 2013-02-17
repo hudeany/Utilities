@@ -6,13 +6,15 @@ public class SshFileChangeWatcherThread extends Thread {
 	private ServerAccessData serverData;
 	private Session session;
 	private String filePath;
+	private int numberOfLastLinesToShow;
 	protected LineListener listener;
 	protected boolean running = true;
 
-	public SshFileChangeWatcherThread(ServerAccessData serverData, String filePath, LineListener listener) {
+	public SshFileChangeWatcherThread(ServerAccessData serverData, String filePath, int numberOfLastLinesToShow, LineListener listener) {
 		setDaemon(true);
 		this.serverData = serverData;
 		this.filePath = filePath;
+		this.numberOfLastLinesToShow = numberOfLastLinesToShow;
 		this.listener = listener;
 	}
 
@@ -20,7 +22,7 @@ public class SshFileChangeWatcherThread extends Thread {
 		try {
 			session = JschWrapper.openSession(serverData);
 			try {
-				JschWrapper.tailviewFileData(session, filePath, listener);
+				JschWrapper.tailviewFileData(session, filePath, numberOfLastLinesToShow, listener);
 			} catch (InterruptedException ie) {
 				throw ie;
 			} catch (Exception e) {
@@ -44,7 +46,7 @@ public class SshFileChangeWatcherThread extends Thread {
 
 	public void kill() {
 		running = false;
-		Thread.currentThread().interrupt();
+		interrupt();
 	}
 	
 	public interface LineListener {

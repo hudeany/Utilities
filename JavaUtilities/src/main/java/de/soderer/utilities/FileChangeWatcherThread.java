@@ -46,7 +46,7 @@ public class FileChangeWatcherThread extends Thread {
 
 	public void kill() {
 		running = false;
-		Thread.currentThread().interrupt();
+		interrupt();
 	}
 	
 	public interface NotificationListener {

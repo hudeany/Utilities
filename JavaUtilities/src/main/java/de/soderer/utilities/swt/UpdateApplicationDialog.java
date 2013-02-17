@@ -183,7 +183,7 @@ public class UpdateApplicationDialog extends ModalDialog<Boolean> {
 					Runtime.getRuntime().exit(0);
 				}
 			} else {
-				new QuestionDialog(title, LangResources.get("cannotUpdate", "Jar not found"), getShell()).open();
+				new QuestionDialog(title, LangResources.get("cannotUpdate", "Jar file not found"), getShell()).open();
 			}
 		} catch (Exception e) {
 			logger.error(LangResources.get("cannotUpdate", e.getMessage()), e);

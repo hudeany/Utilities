@@ -59,7 +59,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private Button removeServerEntryButton;
 	private Button saveServerEntryButton;
 	private Button connectButton;
-	private Button openButton;
+	private Button actionButton;
 	private String inMemoryPassword;
 	private File keystoreFile;
 	private ServerEntryKeyStore keyStore = null;
@@ -401,9 +401,9 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 		mainButtonComposite.setLayout(new FillLayout());
 
-		openButton = new Button(mainButtonComposite, SWT.PUSH);
-		openButton.setText(LangResources.get("open"));
-		openButton.addSelectionListener(new SelectionAdapter() {
+		actionButton = new Button(mainButtonComposite, SWT.PUSH);
+		actionButton.setText(LangResources.get(dialogMode == Mode.Open ? "open" : "save"));
+		actionButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				setReturnValue(true);
@@ -477,7 +477,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 			connectButton.setEnabled(true);
 			connectButton.setText(LangResources.get("disconnect"));
-			openButton.setEnabled(StringUtils.isNotBlank(selectedFileName) && StringUtils.isNotBlank(selectedFilePath));
+			actionButton.setEnabled(StringUtils.isNotBlank(selectedFileName) && StringUtils.isNotBlank(selectedFilePath));
 			hostnameField.setEnabled(false);
 			usernameField.setEnabled(false);
 			passwordField.setEnabled(false);
@@ -495,7 +495,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 			connectButton.setEnabled(StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username));
 			connectButton.setText(LangResources.get("connect"));
-			openButton.setEnabled(false);
+			actionButton.setEnabled(false);
 			hostnameField.setEnabled(true);
 			usernameField.setEnabled(true);
 			passwordField.setEnabled(true);
