@@ -681,7 +681,7 @@ public class JschWrapper {
 			// send '\0' to start data transfer
 			sendZeroByte(outStream);
 
-			return Utilities.readAvailableDataFromStreamInArray(inStream);
+			return IOUtils.toByteArray(inStream);
 		} catch (Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {

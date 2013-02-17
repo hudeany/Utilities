@@ -98,4 +98,8 @@ public class ServerAccessData {
 			throw new Exception("Invalid SSH-filename");
 		}
 	}
+	
+	public boolean equals(ServerAccessData otherData) {
+		return entryname.equals(otherData.getEntryname());
+	}
 }
