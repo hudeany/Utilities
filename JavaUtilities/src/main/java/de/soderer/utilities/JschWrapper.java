@@ -649,15 +649,20 @@ public class JschWrapper {
 			// send '\0' to start data transfer
 			sendZeroByte(outStream);
 
-			byte[] startData = Utilities.readAvailableDataFromStreamInArray(inStream);
-			if (startData.length > 0) {
-				lineListener.addLineData(startData);
-			}
-			
 			while (true) {
+				// reads all now available data at once
+				byte[] nextData = Utilities.readAvailableDataFromStreamInArray(inStream);
+				while (nextData.length > 0) {
+					lineListener.addLineData(nextData);
+					nextData = Utilities.readAvailableDataFromStreamInArray(inStream);
+				}
+				
+				// waits if no more data is available right now
 				byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
 				lineListener.addLineData(nextLineData);
 			}
+		} catch (java.io.InterruptedIOException e) {
+			// do nothing
 		} catch (Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
