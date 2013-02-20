@@ -74,6 +74,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		semicolonButton = new Button(separatorComposite, SWT.RADIO);
 		semicolonButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
 		semicolonButton.setText(LangResources.get("csvSeparatorSemicolon"));
+		semicolonButton.setSelection(true);
 		
 		Composite quoteComposite = new Composite(shell, SWT.NONE);
 		quoteComposite.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
@@ -91,11 +92,11 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		singleQuoteButton = new Button(quoteComposite, SWT.RADIO);
 		singleQuoteButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, false));
 		singleQuoteButton.setText(LangResources.get("csvSingleQuote"));
-		singleQuoteButton.setSelection(true);
 		
 		doubleQuoteButton = new Button(quoteComposite, SWT.RADIO);
 		doubleQuoteButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, false));
 		doubleQuoteButton.setText(LangResources.get("csvDoubleQuote"));
+		doubleQuoteButton.setSelection(true);
 		
 		Composite underfilledComposite = new Composite(shell, SWT.NONE);
 		underfilledComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));

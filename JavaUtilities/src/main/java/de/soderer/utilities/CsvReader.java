@@ -110,6 +110,7 @@ public class CsvReader implements Closeable {
 		StringBuilder nextValue = new StringBuilder();
 		boolean insideString = false;
 		int nextCharInt = -1;
+		int previousCharInt = -1;
 		
 		while ((nextCharInt = inputReader.read()) != -1) {
 			readCharacters++;
@@ -119,7 +120,7 @@ public class CsvReader implements Closeable {
 				nextValue.append(nextChar);
 			} else if (!insideString) {
 				if (nextChar == '\r' || nextChar == '\n') {
-					if (nextValue.length() > 0) {
+					if (nextValue.length() > 0 || previousCharInt == separator) {
 						returnList.add(parseValue(nextValue.toString()));
 					}
 					if (returnList.size() > 0) {
@@ -148,6 +149,8 @@ public class CsvReader implements Closeable {
 					nextValue.append(nextChar);
 				}
 			}
+			
+			previousCharInt = nextCharInt;
 		}
 		
 		if (insideString) {
