@@ -277,6 +277,57 @@ public class JschWrapper {
 		}
 	}
 	
+
+	
+	public static InputStream getFileInputStream(Session session, String filePath) throws Exception {
+		Channel channel = null;
+		try {
+			channel = session.openChannel("exec");
+			((ChannelExec)channel).setCommand("scp -f " + filePath);
+
+			OutputStream outStream = channel.getOutputStream();
+			InputStream inStream = channel.getInputStream();
+//			InputStream inErrorStream = channel.getExtInputStream();
+
+			channel.connect();
+
+			// send '\0' to start data transfer
+			sendZeroByte(outStream);
+
+			// read rights key like '0644 ' (5 bytes)
+			byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+			@SuppressWarnings("unused")
+			String rights = null;
+			if (rightsData != null && rightsData.length > 0) {
+				rights = new String(rightsData, "UTF-8");
+			}
+
+			// read filesize (if empty filesize read until no more data)
+			byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+			@SuppressWarnings("unused")
+			long filesize = -1;
+			if (filesizeData != null && filesizeData.length > 0) {
+				filesize = Long.parseLong(new String(filesizeData));
+			}
+
+			// read filename (even if it is not used on single download)
+			byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+			@SuppressWarnings("unused")
+			String filename = null;
+			if (filenameData != null && filenameData.length > 0) {
+				filename = new String(filenameData, "UTF-8");
+			}
+
+			// send '\0' to start data transfer
+			sendZeroByte(outStream);
+
+			return inStream;
+		} catch (Exception e) {
+			throw new Exception("Error in downloadFileData", e);
+		} finally {
+		}
+	}
+	
 	/**
 	 * Löschen von Dateien via SSH
 	 * 

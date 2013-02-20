@@ -216,7 +216,7 @@ public class XmlUtilities {
 					result.append(" ");
 					result.append(attributeNode.getNodeName());
 					result.append("=\"");
-					result.append(attributeNode.getNodeValue());
+					result.append(attributeNode.getNodeValue().replaceAll("\"", "&quot;").replaceAll("<", "&lt;").replaceAll("&", "&amp;"));
 					result.append("\"");
 				}
 			} else {
@@ -229,7 +229,7 @@ public class XmlUtilities {
 					result.append(TextUtilities.repeatString("\t", indentationLevel + 1));
 					result.append(attributeNode.getNodeName());
 					result.append("=\"");
-					result.append(attributeNode.getNodeValue());
+					result.append(attributeNode.getNodeValue().replaceAll("\"", "&quot;").replaceAll("<", "&lt;").replaceAll("&", "&amp;"));
 					result.append("\"");
 				}
 			}

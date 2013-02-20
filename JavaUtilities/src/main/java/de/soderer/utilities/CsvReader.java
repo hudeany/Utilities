@@ -124,7 +124,7 @@ public class CsvReader implements Closeable {
 					}
 					if (returnList.size() > 0) {
 						if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-							if (numberOfColumns == returnList.size() + 1 || (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull)) {
+							if (numberOfColumns == returnList.size() + 1 && nextValue.length() == 0 || (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull)) {
 								while (returnList.size() < numberOfColumns) {
 									returnList.add(null);
 								}
@@ -160,7 +160,7 @@ public class CsvReader implements Closeable {
 		
 			if (returnList.size() > 0) {
 				if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-					if (numberOfColumns == returnList.size() + 1 || (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull)) {
+					if (numberOfColumns == returnList.size() + 1 && nextValue.length() == 0 || (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull)) {
 						while (returnList.size() < numberOfColumns) {
 							returnList.add(null);
 						}
