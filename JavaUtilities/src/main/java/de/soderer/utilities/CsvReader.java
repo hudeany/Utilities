@@ -131,7 +131,7 @@ public class CsvReader implements Closeable {
 									returnList.add(null);
 								}
 							} else {
-								throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")", readLines);
+								throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readLines);
 							}
 						}
 						numberOfColumns = returnList.size();
@@ -169,7 +169,7 @@ public class CsvReader implements Closeable {
 							returnList.add(null);
 						}
 					} else {
-						throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " was: " + returnList.size() + ")", readLines);
+						throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readLines);
 					}
 				}
 				numberOfColumns = returnList.size();
