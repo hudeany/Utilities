@@ -123,9 +123,10 @@ public class CsvReader implements Closeable {
 					if (nextValue.length() > 0 || previousCharInt == separator) {
 						returnList.add(parseValue(nextValue.toString()));
 					}
+					
 					if (returnList.size() > 0) {
 						if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-							if (numberOfColumns == returnList.size() + 1 && nextValue.length() == 0 || (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull)) {
+							if (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull) {
 								while (returnList.size() < numberOfColumns) {
 									returnList.add(null);
 								}
@@ -157,13 +158,13 @@ public class CsvReader implements Closeable {
 			close();
 			throw new IOException("Unexpected EOF after quoted csv-value was started");
 		} else {
-			if (nextValue.length() > 0) {
+			if (nextValue.length() > 0 || previousCharInt == separator) {
 				returnList.add(parseValue(nextValue.toString()));
 			}
 		
 			if (returnList.size() > 0) {
 				if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-					if (numberOfColumns == returnList.size() + 1 && nextValue.length() == 0 || (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull)) {
+					if (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull) {
 						while (returnList.size() < numberOfColumns) {
 							returnList.add(null);
 						}
