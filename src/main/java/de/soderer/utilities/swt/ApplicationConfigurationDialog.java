@@ -346,15 +346,11 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		Button cancelButton = new Button(buttonArea, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
 		cancelButton.setText(LangResources.get("cancel"));
-		cancelButton.addSelectionListener(new SelectionListener() {
+		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
 				getShell().close();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
 			}
 		});
 		

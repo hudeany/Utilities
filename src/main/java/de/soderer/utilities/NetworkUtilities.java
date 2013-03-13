@@ -3,14 +3,17 @@ package de.soderer.utilities;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.commons.lang3.StringUtils;
 
 public class NetworkUtilities {
 	public static boolean ping (String ipOrHostname) {
 		try {
-            return InetAddress.getByName(ipOrHostname).isReachable(5000);
+            return InetAddress.getByName(getHostnameFromRequestString(ipOrHostname)).isReachable(5000);
         } catch (Exception e) {
             return false;
         }
@@ -64,5 +67,35 @@ public class NetworkUtilities {
         		socket.close();
         	}
         }
+    }
+    
+    public static boolean checkForNetworkConnection() {
+    	try {
+			for (NetworkInterface networkInterface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+				if (networkInterface.isUp() && !networkInterface.isLoopback()) {
+					return true;
+				}
+			}
+			return false;
+		} catch (SocketException e) {
+			e.printStackTrace();
+			return false;
+		}
+    }
+    
+    public static String getHostnameFromRequestString(String requestString) {
+    	if (requestString == null || !requestString.contains("/")) {
+    		return requestString;
+    	} else {
+    		if (requestString.toLowerCase().startsWith("http")) {
+    			requestString = requestString.substring(requestString.indexOf("//") + 2);
+    			
+    			if (!requestString.contains("/")) {
+    				return requestString;
+    			}
+    		}
+    		
+    		return requestString.substring(0, requestString.indexOf("/"));
+    	}
     }
 }
