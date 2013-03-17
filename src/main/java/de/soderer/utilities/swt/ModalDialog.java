@@ -68,14 +68,19 @@ public abstract class ModalDialog<T> extends Dialog {
 	}
 	
 	protected void setPosition(Shell shell) {
+		int xPosition;
+		int yPosition;
 		if (location == null) {
 			// Sets the position centered of parent
-			shell.setLocation(
-					shell.getParent().getLocation().x + shell.getParent().getSize().x / 2 - shell.getSize().x / 2,
-					shell.getParent().getLocation().y + shell.getParent().getSize().y / 2 - shell.getSize().y / 2);
+			xPosition = shell.getParent().getLocation().x + shell.getParent().getSize().x / 2 - shell.getSize().x / 2;
+			yPosition = shell.getParent().getLocation().y + shell.getParent().getSize().y / 2 - shell.getSize().y / 2;
 		} else {
-			shell.setLocation(location);
+			xPosition = location.x;
+			yPosition = location.y;
 		}
+		xPosition = Math.max(0, xPosition);
+		yPosition = Math.max(0, yPosition);
+		shell.setLocation(xPosition, yPosition);
 	}
 	
 	protected T getDefaultReturnValue() {

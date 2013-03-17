@@ -4,11 +4,13 @@ import java.util.Locale;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -87,7 +89,9 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				} else {
 					detailButton.setText(getText("DETAILS_MORE"));
 				}
+				Point currentLocation = getShell().getLocation();
 				setupDetailPart();
+				getShell().setLocation(currentLocation);
 			}
 		});
 
@@ -127,10 +131,10 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			keyTextfield2.setLayoutData(gridData);
 			keyTextfield2.setText(text2);
 			if (StringUtils.isNotEmpty(text3)) {
-				//TODO: make scrollable
-				Text keyTextfield3 = new Text(detailPart, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
+				StyledText keyTextfield3 = new StyledText(detailPart, SWT.BORDER | SWT.MULTI | SWT.READ_ONLY | SWT.H_SCROLL | SWT.V_SCROLL);
 				GridData gridData2 = new GridData(SWT.FILL, SWT.FILL, true, false);
-				gridData.widthHint = 500;
+				gridData2.widthHint = 500;
+				gridData2.heightHint = 400;
 				keyTextfield3.setLayoutData(gridData2);
 				keyTextfield3.setText(text3);
 				FontData[] fontData = keyTextfield3.getFont().getFontData();
