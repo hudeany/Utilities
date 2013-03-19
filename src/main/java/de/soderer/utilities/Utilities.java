@@ -1322,7 +1322,7 @@ public class Utilities {
 		try {
 			if (Desktop.isDesktopSupported()) {
 				Desktop desktop = Desktop.getDesktop();
-				if ((desktop = Desktop.getDesktop()).isSupported(Desktop.Action.MAIL)) {
+				if (desktop.isSupported(Desktop.Action.MAIL)) {
 					URI mailto = new URI("mailto:" + toAdress + "?" + (StringUtils.isNotBlank(ccAdress) ? "cc=" + ccAdress + "&" : "") + "subject=" + URLEncoder.encode(subject, "UTF-8") + "&body=" + URLEncoder.encode(body, "UTF-8"));
 					// &attachment="/path/file"
 					desktop.mail(mailto);

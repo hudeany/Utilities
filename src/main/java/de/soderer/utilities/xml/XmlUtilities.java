@@ -15,6 +15,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentType;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.EntityResolver;
@@ -203,6 +204,17 @@ public class XmlUtilities {
 				result.append("-->\n");
 				return result.toString();
 			}
+		}  else if (xmlNode.getNodeType() == Node.DOCUMENT_TYPE_NODE) {
+			StringBuilder result = new StringBuilder();
+			result.append(TextUtilities.repeatString("\t", indentationLevel));
+			result.append("<!DOCTYPE ");
+			result.append(((DocumentType) xmlNode).getName());
+			result.append(" PUBLIC \"");
+			result.append(((DocumentType) xmlNode).getPublicId());
+			result.append("\" \"");
+			result.append(((DocumentType) xmlNode).getSystemId());
+			result.append("\">\n");
+			return result.toString();
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
 			if (StringUtils.isBlank(xmlNode.getChildNodes().item(0).getNodeValue())) {
 				StringBuilder result = new StringBuilder();
@@ -287,5 +299,36 @@ public class XmlUtilities {
 			}
 		}
 		return result.toString();
+	}
+	
+	public static String getNodeTypeAsString(short nodeType) {
+		switch(nodeType) {
+			case Node.ELEMENT_NODE:
+				return "ELEMENT_NODE";
+			case Node.ATTRIBUTE_NODE:
+				return "ATTRIBUTE_NODE";
+			case Node.TEXT_NODE:
+				return "TEXT_NODE";
+			case Node.CDATA_SECTION_NODE:
+				return "CDATA_SECTION_NODE";
+			case Node.ENTITY_REFERENCE_NODE:
+				return "ENTITY_REFERENCE_NODE";
+			case Node.ENTITY_NODE:
+				return "ENTITY_NODE";
+			case Node.PROCESSING_INSTRUCTION_NODE:
+				return "PROCESSING_INSTRUCTION_NODE";
+			case Node.COMMENT_NODE:
+				return "COMMENT_NODE";
+			case Node.DOCUMENT_NODE:
+				return "DOCUMENT_NODE";
+			case Node.DOCUMENT_TYPE_NODE:
+				return "DOCUMENT_TYPE_NODE";
+			case Node.DOCUMENT_FRAGMENT_NODE:
+				return "DOCUMENT_FRAGMENT_NODE";
+			case Node.NOTATION_NODE:
+				return "NOTATION_NODE";
+			default:
+				return null;
+		}
 	}
 }
