@@ -153,7 +153,7 @@ public class DbUtilities {
 			connection.setAutoCommit(false);
 			statement = connection.createStatement();
 		
-			checkTableAndColumnsExist(connection, tableName, tableColumns);
+			checkTableAndColumnsExist(connection, tableName, tableColumns, true);
 			
 			// Insert data
 			Map<Integer, Object[]> notInsertedData = new HashMap<Integer, Object[]>();
@@ -306,8 +306,6 @@ public class DbUtilities {
 			connection.setAutoCommit(false);
 			statement = connection.createStatement();
 			
-			checkTableAndColumnsExist(connection, tableName, columnMapping);
-			
 			csvReader = new CsvReader(csvFileInputStream, encoding, ';');
 			csvReader.setFillMissingTrailingColumnsWithNull(fillMissingTrailingColumnsWithNull);
 
@@ -316,7 +314,9 @@ public class DbUtilities {
 			if (columnMapping == null) {
 				columnMapping = csvLine.toArray(new String[0]);
 			}
-		
+
+			checkTableAndColumnsExist(connection, tableName, columnMapping, true);
+			
 			List<String> dbColumns = new ArrayList<String>();
 			for (String column : columnMapping) {
 				if (column != null) {
@@ -509,39 +509,62 @@ public class DbUtilities {
 		}
 	}
 	
-	public static void checkTableAndColumnsExist(Connection connection, String tableName, String[] columns) throws Exception {
-		Statement statement = null;
-		ResultSet resultSet = null;
-		
-		try {
-			statement = connection.createStatement();
-			
-			// Check if table exists
-			try {
-				resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0");
-			} catch (Exception e) {
-				throw new Exception("Table '" + tableName + "' does not exist");
-			}
-			
-			// Check if all needed columns exist
-			Set<String> dbTableColumns = new HashSet<String>();
-			ResultSetMetaData metaData = resultSet.getMetaData();
-			for (int i = 1; i <= metaData.getColumnCount(); i++) {
-				dbTableColumns.add(metaData.getColumnName(i).toUpperCase());
-			}
-			for (String column : columns) {
-				if (column != null && !dbTableColumns.contains(column.toUpperCase())) {
-					throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
-				}
-			}
-		} finally {
-			closeQuietly(resultSet);
-			resultSet = null;
-			closeQuietly(statement);
-			statement = null;
-		}
-	}
-	
+	public static boolean checkTableAndColumnsExist(Connection connection, String tableName, String[] columns) throws Exception {
+        return checkTableAndColumnsExist(connection, tableName, columns, false);
+    }
+
+    public static boolean checkTableAndColumnsExist(DataSource dataSource, String tableName, String[] columns, boolean throwExceptionOnError) throws Exception {
+        Connection connection = null;
+        try {
+            connection = dataSource.getConnection();
+            return checkTableAndColumnsExist(connection, tableName, columns, throwExceptionOnError);
+        } finally {
+            closeQuietly(connection);
+        }
+    }
+
+    public static boolean checkTableAndColumnsExist(Connection connection, String tableName, String[] columns, boolean throwExceptionOnError) throws Exception {
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            statement = connection.createStatement();
+
+            // Check if table exists
+            try {
+                resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0");
+            } catch (Exception e) {
+                if (throwExceptionOnError) {
+                    throw new Exception("Table '" + tableName + "' does not exist");
+                } else {
+                    return false;
+                }
+            }
+
+            // Check if all needed columns exist
+            Set<String> dbTableColumns = new HashSet<String>();
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            for (int i = 1; i <= metaData.getColumnCount(); i++) {
+            	dbTableColumns.add(metaData.getColumnName(i).toUpperCase());
+            }
+            for (String column : columns) {
+                if (column != null && !dbTableColumns.contains(column.toUpperCase())) {
+                    if (throwExceptionOnError) {
+                        throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
+                    } else {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        } finally {
+            closeQuietly(resultSet);
+            resultSet = null;
+            closeQuietly(statement);
+            statement = null;
+        }
+    }
+
 	public static String callStoredProcedureWithDbmsOutput(Connection connection, String procedureName, Object... parameters) throws SQLException {
 		CallableStatement callableStatement = null;
 		try {

@@ -56,7 +56,7 @@ public class UpdateApplicationDialog extends ModalDialog<Boolean> {
 	    updateButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				updateAppliaction();
+				updateApplication();
 				setReturnValue(true);
 				getShell().close();
 			}
@@ -76,7 +76,7 @@ public class UpdateApplicationDialog extends ModalDialog<Boolean> {
 		shell.pack();
 	}
 	
-	private void updateAppliaction() {
+	private void updateApplication() {
 		try {
 			String jarFilePath = System.getProperty("process.jar");
 			if (StringUtils.isNotBlank(jarFilePath)) {

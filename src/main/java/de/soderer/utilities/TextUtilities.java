@@ -649,4 +649,8 @@ public class TextUtilities {
 	public static List<String> getCommonTextParts(String[] texts) {
 		return null;
 	}
+	
+	public static String breakLinesAfterMaximumLength(String dataString, int maximumLength) {
+		return StringUtils.join(dataString.split("(?<=\\G.{" + maximumLength + "})"), "\n");
+	}
 }

@@ -280,7 +280,7 @@ public class CsvReader implements Closeable {
 	public static List<String> parseCsvLine(char separator, Character stringQuote, String csvLine) throws Exception {
 		CsvReader reader = null;
 		try {
-			reader = new CsvReader(new ByteArrayInputStream(csvLine.getBytes("UTF-8")),"UTF-8", separator, stringQuote);
+			reader = new CsvReader(new ByteArrayInputStream(csvLine.getBytes("UTF-8")), "UTF-8", separator, stringQuote);
 			List<List<String>> fullData = reader.readAll();
 			if (fullData.size() != 1) {
 				throw new Exception("Too many csv lines in data");
