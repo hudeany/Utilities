@@ -575,6 +575,14 @@ public class TextUtilities {
 		return data;
 	}
 	
+	public static String removeTrailingWhitespaces(String data) {
+		Pattern pattern = Pattern.compile("\\s*$", Pattern.MULTILINE);
+		Matcher matcher = pattern.matcher(data);
+		data = matcher.replaceAll("");
+		
+		return data;
+	}
+	
 	public static List<Long> scanLineStartIndexes(InputStream input) throws IOException {
 		List<Long> returnList = new ArrayList<Long>();
 		long position = 0;
