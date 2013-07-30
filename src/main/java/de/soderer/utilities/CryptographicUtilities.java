@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -12,15 +13,18 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.Date;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
@@ -43,6 +47,7 @@ public class CryptographicUtilities {
 	
 	public static byte[] SALT = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107};
 	public static byte[] AES_INITALIZATION_VECTOR = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107, 48, 57, 56, 107};
+	public static String AES_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
 	
 	public static AsymmetricCipherKeyPair generateRsaKeyPair(int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
@@ -54,6 +59,44 @@ public class CryptographicUtilities {
 			return keyPair;
 		} catch (Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
+	
+	@SuppressWarnings("deprecation")
+	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerAndSubjectName, Date validFrom, Date validUntil) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		try {
+			org.bouncycastle.x509.X509V3CertificateGenerator certificateGenerator = new org.bouncycastle.x509.X509V3CertificateGenerator();
+			
+		    certificateGenerator.setSerialNumber(BigInteger.valueOf(System.currentTimeMillis()));
+		    certificateGenerator.setSubjectDN(new X500Principal("CN=" + issuerAndSubjectName));
+		    certificateGenerator.setIssuerDN(new X500Principal("CN=" + issuerAndSubjectName));
+		    certificateGenerator.setNotBefore(validFrom);
+		    certificateGenerator.setNotAfter(validUntil);
+		    certificateGenerator.setPublicKey(getPublicKeyFromKeyPair(keyPair));
+		    certificateGenerator.setSignatureAlgorithm("SHA256WithRSAEncryption");
+
+		    return certificateGenerator.generate(getPrivateKeyFromKeyPair(keyPair), "BC");
+		} catch (Exception e) {
+			throw new Exception("Cannot create RSA certificate", e);
+		}
+	}
+	
+	public static String getStringFromX509Certificate(X509Certificate certificate) throws Exception {
+		PEMWriter pemWriter = null;
+		try {
+			StringWriter stringWriter = new StringWriter();
+			pemWriter = new PEMWriter(stringWriter);
+			pemWriter.writeObject(certificate);
+			pemWriter.close();
+			return stringWriter.toString();
+		} catch (Exception e) {
+			throw new Exception("Cannot create certificate string: " + e.getMessage(), e);
+		} finally {
+			if (pemWriter!= null) {
+				pemWriter.close();
+			}
 		}
 	}
 	
@@ -182,9 +225,29 @@ public class CryptographicUtilities {
 			throw new Exception("Cannot read public key", e);
 		}
 	}
+	
+	/**
+	 * Generates X509Certificate from BASE64 encoded string
+	 */
+	public static X509Certificate getCertificateFromString(String certificateString) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		try {
+			PEMReader pemReader = new PEMReader(new StringReader(certificateString));
+			Object readObject = pemReader.readObject();
+			pemReader.close();
+			if (readObject instanceof X509Certificate) {
+				return (X509Certificate) readObject;
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			throw new Exception("Cannot read certificate", e);
+		}
+	}
 
 	/**
-	 * Read a keyfile generated with 'openssl genrsa...' and format it
+	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PublicKey getPublicKeyFromFile(File publicKeyFile) throws Exception {
 		String keyString = FileUtils.readFileToString(publicKeyFile);
@@ -192,11 +255,19 @@ public class CryptographicUtilities {
 	}
 
 	/**
-	 * Read a keyfile generated with 'openssl genrsa...' and format it
+	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PrivateKey getPrivateKeyFromFile(File privateKeyFile) throws Exception {
 		String keyString = FileUtils.readFileToString(privateKeyFile);
 		return getPrivateKeyFromString(keyString);
+	}
+
+	/**
+	 * Read a certificate file
+	 */
+	public static X509Certificate getCertificateFromFile(File certificateFile) throws Exception {
+		String certificateFileString = FileUtils.readFileToString(certificateFile);
+		return getCertificateFromString(certificateFileString);
 	}
 	
 	public static byte[] encryptAes(byte[] data, String key) throws Exception {
@@ -204,7 +275,7 @@ public class CryptographicUtilities {
 
 		byte[] keyBytes = stretchPassword(key, 128, SALT);
 		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-		Cipher encryptCipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "BC");
+		Cipher encryptCipher = Cipher.getInstance(AES_ENCRYPTION_METHOD, "BC");
 		encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(AES_INITALIZATION_VECTOR));
 		return encryptCipher.doFinal(data);
 	}
@@ -218,7 +289,7 @@ public class CryptographicUtilities {
 		try {
 			byte[] keyBytes = stretchPassword(key, 128, SALT);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			Cipher encryptCipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "BC");
+			Cipher encryptCipher = Cipher.getInstance(AES_ENCRYPTION_METHOD, "BC");
 			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(AES_INITALIZATION_VECTOR));
 			fileInputStream = new FileInputStream(dataFile);
 			fileOutputStream = new FileOutputStream(destinationFile);
@@ -242,7 +313,7 @@ public class CryptographicUtilities {
 
 		byte[] keyBytes = stretchPassword(key, 128, SALT);
 		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-		Cipher decryptCipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "BC");
+		Cipher decryptCipher = Cipher.getInstance(AES_ENCRYPTION_METHOD, "BC");
 		decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(AES_INITALIZATION_VECTOR));
 
 		return decryptCipher.doFinal(enryptedData);
@@ -257,7 +328,7 @@ public class CryptographicUtilities {
 		try {
 			byte[] keyBytes = stretchPassword(key, 128, SALT);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			Cipher decryptCipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "BC");
+			Cipher decryptCipher = Cipher.getInstance(AES_ENCRYPTION_METHOD, "BC");
 			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(AES_INITALIZATION_VECTOR));
 			fileInputStream = new FileInputStream(enryptedFile);
 			fileOutputStream = new FileOutputStream(destinationFile);

@@ -13,6 +13,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -290,6 +291,10 @@ public class DbUtilities {
 	}
 	
 	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
+		return importCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
+	}
+	
+	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for dataimport");
 		}
@@ -367,7 +372,7 @@ public class DbUtilities {
 								throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
 							} else {
 								connection.rollback();
-								importCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, currentUncommitedLines, notInsertedData);
+								importCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDateFormats, currentUncommitedLines, notInsertedData);
 							}
 						} catch (Exception e) {
 							if (!commitOnFullSuccessOnly) {
@@ -396,7 +401,7 @@ public class DbUtilities {
 						throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
 					} else {
 						connection.rollback();
-						importCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, currentUncommitedLines, notInsertedData);
+						importCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDateFormats, currentUncommitedLines, notInsertedData);
 					}
 				} catch (Exception e) {
 					connection.rollback();
@@ -433,7 +438,7 @@ public class DbUtilities {
 		}
 	}
 	
-	private static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, List<List<String>> data, Map<Integer, List<String>> notInsertedData) throws Exception {
+	private static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDateFormats, List<List<String>> data, Map<Integer, List<String>> notInsertedData) throws Exception {
 		int csvLineIndex = offsetIndex;
 		for (List<String> csvLine : data) {
 			csvLineIndex++;
@@ -443,7 +448,11 @@ public class DbUtilities {
 				int parameterIndex = 1;
 				for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
 					if (columnMapping[csvValueIndex] != null) {
-						preparedStatement.setString(parameterIndex++, csvLine.get(csvValueIndex));
+						if (columnDateFormats != null && columnDateFormats[csvValueIndex] != null) {
+							preparedStatement.setObject(parameterIndex++, new SimpleDateFormat(columnDateFormats[csvValueIndex]).parse(csvLine.get(csvValueIndex)));
+						} else {
+							preparedStatement.setString(parameterIndex++, csvLine.get(csvValueIndex));
+						}
 					}
 				}
 				
@@ -458,11 +467,13 @@ public class DbUtilities {
 		}
 	}
 	
-	public static boolean checkDbVendorIsOracle(DataSource dataSource) throws SQLException {
+	public static boolean checkDbVendorIsOracle(DataSource dataSource) {
 		Connection connection = null;
 		try {
 			connection = dataSource.getConnection();
 			return checkDbVendorIsOracle(connection);
+		} catch (SQLException e) {
+			throw new RuntimeException("Cannot check db vendor: " + e.getMessage(), e);
 		} finally {
 			closeQuietly(connection);
 		}
