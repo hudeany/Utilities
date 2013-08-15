@@ -1,8 +1,8 @@
 package de.soderer.utilities;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigInteger;
@@ -13,6 +13,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.Signature;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
@@ -45,9 +46,11 @@ import org.bouncycastle.openssl.PEMWriter;
 public class CryptographicUtilities {
 	public static Logger logger = Logger.getLogger(CryptographicUtilities.class);
 	
-	public static byte[] SALT = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107};
-	public static byte[] AES_INITALIZATION_VECTOR = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107, 48, 57, 56, 107};
-	public static String AES_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
+	public static byte[] DEFAULT_SALT = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107};
+	public static byte[] DEFAULT_AES_INITALIZATION_VECTOR = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107, 48, 57, 56, 107};
+	public static String DEFAULT_AES_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
+	public static String DEFAULT_RSA_SIGNATURE_METHOD = "SHA256WithRSAEncryption";
+	public static String DEFAULT_RSA_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
 	
 	public static AsymmetricCipherKeyPair generateRsaKeyPair(int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
@@ -62,8 +65,12 @@ public class CryptographicUtilities {
 		}
 	}
 	
-	@SuppressWarnings("deprecation")
 	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerAndSubjectName, Date validFrom, Date validUntil) throws Exception {
+		return generateRsaCertificate(keyPair, issuerAndSubjectName, validFrom, validUntil, DEFAULT_RSA_SIGNATURE_METHOD);
+	}
+	
+	@SuppressWarnings("deprecation")
+	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerAndSubjectName, Date validFrom, Date validUntil, String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		try {
@@ -75,7 +82,7 @@ public class CryptographicUtilities {
 		    certificateGenerator.setNotBefore(validFrom);
 		    certificateGenerator.setNotAfter(validUntil);
 		    certificateGenerator.setPublicKey(getPublicKeyFromKeyPair(keyPair));
-		    certificateGenerator.setSignatureAlgorithm("SHA256WithRSAEncryption");
+		    certificateGenerator.setSignatureAlgorithm(signatureMethod);
 
 		    return certificateGenerator.generate(getPrivateKeyFromKeyPair(keyPair), "BC");
 		} catch (Exception e) {
@@ -99,28 +106,81 @@ public class CryptographicUtilities {
 			}
 		}
 	}
-	
-	public static byte[] encryptRsa(byte[] data, PublicKey key) throws Exception {
+
+	public static void encryptRsa(InputStream dataStream, OutputStream encryptedOutputStream, PublicKey publicKey) throws Exception {
+		encryptRsa(dataStream, encryptedOutputStream, publicKey, DEFAULT_RSA_ENCRYPTION_METHOD);	
+	}
+
+	public static void encryptRsa(InputStream dataStream, OutputStream encryptedOutputStream, PublicKey publicKey, String encryptionMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		CipherOutputStream cipherOutputStream = null;
+		try {
+			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+			cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher);
+			IOUtils.copy(dataStream, cipherOutputStream);
+		} catch (Exception e) {
+			throw new Exception("Error while encrypting: " + e.getMessage(), e);
+		} finally {
+			if (cipherOutputStream != null) {
+				cipherOutputStream.close();
+			}
+		}
+	}
+
+	public static byte[] encryptRsa(byte[] data, PublicKey publicKey) throws Exception {
+		return encryptRsa(data, publicKey, DEFAULT_RSA_ENCRYPTION_METHOD);	
+	}
+
+	public static byte[] encryptRsa(byte[] data, PublicKey publicKey, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		try {
-			Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			cipher.init(Cipher.ENCRYPT_MODE, key);
+			Cipher cipher = Cipher.getInstance(encryptionMethod, "BC");
+			cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 			return cipher.doFinal(data);
 		} catch (Exception e) {
 			throw new Exception("Error while encrypting: " + e.getMessage(), e);
 		}
 	}
 	
-	public static byte[] decryptRsa(byte[] encryptedData, PrivateKey key) throws Exception {
+	public static byte[] decryptRsa(byte[] encryptedData, PrivateKey privateKey) throws Exception {
+		return decryptRsa(encryptedData, privateKey, DEFAULT_RSA_ENCRYPTION_METHOD);
+	}
+	
+	public static byte[] decryptRsa(byte[] encryptedData, PrivateKey privateKey, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		try {
-			Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			cipher.init(Cipher.DECRYPT_MODE, key);
+			Cipher cipher = Cipher.getInstance(encryptionMethod, "BC");
+			cipher.init(Cipher.DECRYPT_MODE, privateKey);
 			return cipher.doFinal(encryptedData);
 		} catch (Exception e) {
 			throw new Exception("Error while decrypting: " + e.getMessage(), e);
+		}
+	}
+	
+	public static void decryptRsa(InputStream encryptedDataStream, OutputStream dataOutputStream, PrivateKey privateKey) throws Exception {
+		decryptRsa(encryptedDataStream, dataOutputStream, privateKey, DEFAULT_RSA_ENCRYPTION_METHOD);
+	}
+	
+	public static void decryptRsa(InputStream encryptedDataStream, OutputStream dataOutputStream, PrivateKey privateKey, String encryptionMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		InputStream cipherInputStream = null;
+		
+		try {
+			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+			cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher);
+			IOUtils.copy(cipherInputStream, dataOutputStream);
+		} catch (Exception e) {
+			throw new Exception("Error while decrypting: " + e.getMessage(), e);
+		} finally {
+			if (cipherInputStream != null) {
+				cipherInputStream.close();
+			}
 		}
 	}
 
@@ -270,79 +330,87 @@ public class CryptographicUtilities {
 		return getCertificateFromString(certificateFileString);
 	}
 	
-	public static byte[] encryptAes(byte[] data, String key) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		byte[] keyBytes = stretchPassword(key, 128, SALT);
-		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-		Cipher encryptCipher = Cipher.getInstance(AES_ENCRYPTION_METHOD, "BC");
-		encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(AES_INITALIZATION_VECTOR));
-		return encryptCipher.doFinal(data);
+	public static byte[] encryptAes(byte[] data, String password) throws Exception {
+		return encryptAes(data, password, DEFAULT_SALT, DEFAULT_AES_INITALIZATION_VECTOR, DEFAULT_AES_ENCRYPTION_METHOD);
 	}
 	
-	public static void encryptFileAes(File dataFile, File destinationFile, String key) throws Exception {
+	public static byte[] encryptAes(byte[] data, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			byte[] keyBytes = stretchPassword(password, 128, salt);
+			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
+			return encryptCipher.doFinal(data);
+		} catch (Exception e) {
+			throw new Exception("Error while encrypting: " + e.getMessage(), e);
+		}
+	}
+	
+	public static void encryptAes(InputStream dataStream, OutputStream encryptedOutputStream, String password) throws Exception {
+		encryptAes(dataStream, encryptedOutputStream, password, DEFAULT_SALT, DEFAULT_AES_INITALIZATION_VECTOR, DEFAULT_AES_ENCRYPTION_METHOD);
+	}
+	
+	public static void encryptAes(InputStream dataStream, OutputStream encryptedOutputStream, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		CipherOutputStream cipherOutputStream = null;
-		FileInputStream fileInputStream = null;
-		FileOutputStream fileOutputStream = null;
 		try {
-			byte[] keyBytes = stretchPassword(key, 128, SALT);
+			byte[] keyBytes = stretchPassword(password, 128, salt);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			Cipher encryptCipher = Cipher.getInstance(AES_ENCRYPTION_METHOD, "BC");
-			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(AES_INITALIZATION_VECTOR));
-			fileInputStream = new FileInputStream(dataFile);
-			fileOutputStream = new FileOutputStream(destinationFile);
-			cipherOutputStream = new CipherOutputStream(fileOutputStream, encryptCipher);
-			IOUtils.copy(fileInputStream, cipherOutputStream);
+			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
+			cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher);
+			IOUtils.copy(dataStream, cipherOutputStream);
+		} catch (Exception e) {
+			throw new Exception("Error while encrypting: " + e.getMessage(), e);
 		} finally {
 			if (cipherOutputStream != null) {
 				cipherOutputStream.close();
 			}
-			if (fileInputStream != null) {
-				fileInputStream.close();
-			}
-			if (fileOutputStream != null) {
-				fileOutputStream.close();
-			}
 		}
 	}
 
-	public static byte[] decryptAes(byte[] enryptedData, String key) throws Exception {
+	public static byte[] decryptAes(byte[] enryptedData, String password) throws Exception {
+		return decryptAes(enryptedData, password, DEFAULT_SALT, DEFAULT_AES_INITALIZATION_VECTOR, DEFAULT_AES_ENCRYPTION_METHOD);
+	}
+
+	public static byte[] decryptAes(byte[] enryptedData, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		byte[] keyBytes = stretchPassword(key, 128, SALT);
-		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-		Cipher decryptCipher = Cipher.getInstance(AES_ENCRYPTION_METHOD, "BC");
-		decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(AES_INITALIZATION_VECTOR));
-
-		return decryptCipher.doFinal(enryptedData);
+		try {
+			byte[] keyBytes = stretchPassword(password, 128, salt);
+			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
+		
+			return decryptCipher.doFinal(enryptedData);
+		} catch (Exception e) {
+			throw new Exception("Error while decrypting: " + e.getMessage(), e);
+		}
 	}
 	
-	public static void decryptFileAes(File enryptedFile, File destinationFile, String key) throws Exception {
+	public static void decryptAes(InputStream encryptedDataStream, OutputStream dataOutputStream, String password) throws Exception {
+		decryptAes(encryptedDataStream, dataOutputStream, password, DEFAULT_SALT, DEFAULT_AES_INITALIZATION_VECTOR, DEFAULT_AES_ENCRYPTION_METHOD);
+	}
+	
+	public static void decryptAes(InputStream encryptedDataStream, OutputStream dataOutputStream, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		CipherInputStream cipherInputStream = null;
-		FileInputStream fileInputStream = null;
-		FileOutputStream fileOutputStream = null;
 		try {
-			byte[] keyBytes = stretchPassword(key, 128, SALT);
+			byte[] keyBytes = stretchPassword(password, 128, salt);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			Cipher decryptCipher = Cipher.getInstance(AES_ENCRYPTION_METHOD, "BC");
-			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(AES_INITALIZATION_VECTOR));
-			fileInputStream = new FileInputStream(enryptedFile);
-			fileOutputStream = new FileOutputStream(destinationFile);
-			cipherInputStream = new CipherInputStream(fileInputStream, decryptCipher);
-			IOUtils.copy(cipherInputStream, fileOutputStream);
+			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
+			cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher);
+			IOUtils.copy(cipherInputStream, dataOutputStream);
+		} catch (Exception e) {
+			throw new Exception("Error while decrypting: " + e.getMessage(), e);
 		} finally {
 			if (cipherInputStream != null) {
 				cipherInputStream.close();
-			}
-			if (fileInputStream != null) {
-				fileInputStream.close();
-			}
-			if (fileOutputStream != null) {
-				fileOutputStream.close();
 			}
 		}
 	}
@@ -352,5 +420,83 @@ public class CryptographicUtilities {
 	    generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password.toCharArray()), salt, 1000);
 	    KeyParameter params = (KeyParameter) generator.generateDerivedParameters(keyLength);
 	    return params.getKey();
+	}
+	
+	public static byte[] signData(byte[] data, PrivateKey privateKey) throws Exception {
+		return signData(data, privateKey, DEFAULT_RSA_SIGNATURE_METHOD);
+	}
+	
+	public static byte[] signData(byte[] data, PrivateKey privateKey, String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+	
+		try {
+			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			signature.initSign(privateKey);
+			signature.update(data);
+			return signature.sign();
+		} catch (Exception e) {
+			throw new Exception("Cannot create signature", e);
+		}
+	}
+	
+	public static byte[] signStream(InputStream dataStream, PrivateKey privateKey) throws Exception {
+		return signStream(dataStream, privateKey, DEFAULT_RSA_SIGNATURE_METHOD);
+	}
+	
+	public static byte[] signStream(InputStream dataStream, PrivateKey privateKey, String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+	
+		try {
+			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			signature.initSign(privateKey);
+			byte[] buffer = new byte[1024];
+			int bytesRead = dataStream.read(buffer);
+			while (bytesRead >= 0) {
+				signature.update(buffer, 0, bytesRead);
+				bytesRead = dataStream.read(buffer);
+			}
+			return signature.sign();
+		} catch (Exception e) {
+			throw new Exception("Cannot create signature", e);
+		}
+	}
+	
+	public static boolean verifyData(byte[] data, PublicKey publicKey, byte[] signatureData) throws Exception {
+		return verifyData(data, publicKey, signatureData, DEFAULT_RSA_SIGNATURE_METHOD);
+	}
+	
+	public static boolean verifyData(byte[] data, PublicKey publicKey, byte[] signatureData, String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+	
+		try {
+			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			signature.initVerify(publicKey);
+			signature.update(data);
+			return signature.verify(signatureData);
+		} catch (Exception e) {
+			throw new Exception("Cannot verify signature", e);
+		}
+	}
+	
+	public static boolean verifyStream(InputStream dataStream, PublicKey publicKey, byte[] signatureData) throws Exception {
+		return verifyStream(dataStream, publicKey, signatureData, DEFAULT_RSA_SIGNATURE_METHOD);
+	}
+	
+	public static boolean verifyStream(InputStream dataStream, PublicKey publicKey, byte[] signatureData, String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+	
+		try {
+			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			signature.initVerify(publicKey);
+			byte[] buffer = new byte[1024];
+			int bytesRead = dataStream.read(buffer);
+			while (bytesRead >= 0) {
+				signature.update(buffer, 0, bytesRead);
+				bytesRead = dataStream.read(buffer);
+			}
+			return signature.verify(signatureData);
+		} catch (Exception e) {
+			throw new Exception("Cannot verify signature", e);
+		}
 	}
 }
