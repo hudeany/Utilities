@@ -661,4 +661,14 @@ public class TextUtilities {
 	public static String breakLinesAfterMaximumLength(String dataString, int maximumLength) {
 		return StringUtils.join(dataString.split("(?<=\\G.{" + maximumLength + "})"), "\n");
 	}
+
+	public static List<Character> getUsedChars(String data) {
+		List<Character> usedCharsList = new ArrayList<Character>();
+		for (char item : data.toCharArray()) {
+			if (!usedCharsList.contains(item)) {
+				usedCharsList.add(item);
+			}
+		}
+		return usedCharsList;
+	}
 }
