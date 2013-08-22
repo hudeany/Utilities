@@ -26,11 +26,11 @@ public class NumberText extends Text {
 		
 		showMessageBoxOnInvalidData = pShowMessageBoxOnInvalidData;
 		
-		if (maxLength > 0)
+		if (maxLength > 0) {
 			setTextLimit(maxLength);
+		}
 		
 		addVerifyListener(new VerifyListener() {
-			
 			@Override
 			public void verifyText(VerifyEvent e) {
 				 e.doit = e.text.trim().length() == 0 || e.text.matches("\\d*");

@@ -6,6 +6,8 @@ import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
+import de.soderer.utilities.LangResources;
+
 public abstract class ModalDialog<T> extends Dialog {
 	private Shell shell;
 	private Point location = null;
@@ -85,6 +87,10 @@ public abstract class ModalDialog<T> extends Dialog {
 	
 	protected T getDefaultReturnValue() {
 		return null;
+	}
+
+	protected void showMessage(String title, String text) {
+		new QuestionDialog(title, text, getShell(), LangResources.get("ok")).open();
 	}
 	
 	protected abstract void createComponents(Shell parentShell) throws Exception;

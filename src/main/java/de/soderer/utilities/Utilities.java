@@ -37,11 +37,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1352,5 +1354,17 @@ public class Utilities {
 			IOUtils.closeQuietly(fileOutputStream);
 			IOUtils.closeQuietly(bufferedInputStream);
 		}
+	}
+	
+	public static boolean checkForDuplicates(String[] inputArray, boolean ignoreNullValues) {
+		Set<String> tempSet = new HashSet<String>();
+        for (String stringItem : inputArray) {
+        	if (!ignoreNullValues || stringItem != null) {
+	            if (!tempSet.add(stringItem)) {
+	                return true;
+	            }
+        	}
+        }
+        return false;
 	}
 }

@@ -14,7 +14,6 @@ public class FileComparer {
 	public static final String SOURCE1_SIGN = "-";
 	public static final String SOURCE2_SIGN = "+";
 	
-	@SuppressWarnings("resource")
 	public boolean compareExactly(File file1, File file2) throws IOException {
 		if (file1.length() == file2.length()) {
 			BufferedInputStream fileInputStream1 = null;

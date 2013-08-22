@@ -29,6 +29,17 @@ import org.apache.commons.lang3.StringUtils;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class DbUtilities {
+	public static final String DB_DRIVER_NAME_ORACLE = "oracle.jdbc.OracleDriver";
+	public static final String DB_DRIVER_NAME_MYSQL = "com.mysql.jdbc.Driver";
+	
+	public static String generateUrlConnectionString(boolean isOracle, String dbServerHostname, int dbServerPort, String dbName) {
+		if (isOracle) {
+			return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? 1521 : dbServerPort) + ":" + dbName;
+		} else {
+			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? 3306 : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8";
+		}
+	}
+	
 	public static int readoutTableInFile(DataSource dataSource, String tableName, File outputFile, char separator) throws Exception {
     	return readoutInFile(dataSource, "SELECT * FROM " + tableName, outputFile, separator);
     }
@@ -295,6 +306,10 @@ public class DbUtilities {
 	}
 	
 	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
+		return importCsvFileInTable(dataSource, tableName, columnMapping, columnDateFormats, csvFileInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
+	}
+		
+	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for dataimport");
 		}
@@ -311,7 +326,7 @@ public class DbUtilities {
 			connection.setAutoCommit(false);
 			statement = connection.createStatement();
 			
-			csvReader = new CsvReader(csvFileInputStream, encoding, ';');
+			csvReader = new CsvReader(csvFileInputStream, encoding, separatorChar, stringQuoteChar);
 			csvReader.setFillMissingTrailingColumnsWithNull(fillMissingTrailingColumnsWithNull);
 
 			// First line contains headers
