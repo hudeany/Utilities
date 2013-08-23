@@ -66,6 +66,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.swt.program.Program;
 
 /**
  * Allgemeine Utilities
@@ -1322,18 +1323,44 @@ public class Utilities {
 	
 	public static boolean openMailInStandardClient(String toAdress, String ccAdress, String subject, String body) {
 		try {
-			if (Desktop.isDesktopSupported()) {
-				Desktop desktop = Desktop.getDesktop();
-				if (desktop.isSupported(Desktop.Action.MAIL)) {
-					URI mailto = new URI("mailto:" + toAdress + "?" + (StringUtils.isNotBlank(ccAdress) ? "cc=" + ccAdress + "&" : "") + "subject=" + URLEncoder.encode(subject, "UTF-8") + "&body=" + URLEncoder.encode(body, "UTF-8"));
-					// &attachment="/path/file"
-					desktop.mail(mailto);
-					return true;
+			File attachmentFile = null;
+			String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8")
+					+ "?" + (StringUtils.isNotBlank(ccAdress) ? "cc=" + URLEncoder.encode(ccAdress, "UTF-8") + "&" : "")
+					+ "subject=" + URLEncoder.encode(subject, "UTF-8").replace("+", "%20")
+					+ "&body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20")
+					+ (attachmentFile != null ? "&attachment=" + attachmentFile.getAbsolutePath() : ""); // maybe it is "&attach="
+			boolean success;
+			try {
+				success = Program.launch(mailtoString);
+			} catch (Exception e) {
+				throw new Exception("Open mail by swt.Program failed");
+			}
+
+			if (!success) {
+				if (SystemUtilities.isWindowsSystem()) {
+					if (Desktop.isDesktopSupported()) {
+						Desktop desktop = Desktop.getDesktop();
+						if (desktop.isSupported(Desktop.Action.MAIL)) {
+							desktop.mail(new URI(mailtoString));
+							return true;
+						} else {
+							return false;
+						}
+					} else {
+						return false;
+					}
 				} else {
-					return false;
+					try {
+						// For using the parameters check the following description
+						// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
+						Runtime.getRuntime().exec("thunderbird -compose");
+					} catch (Exception e) {
+						throw new Exception("Open mail by thunderbird failed");
+					}
 				}
+				return true;
 			} else {
-				return false;
+				return true;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
