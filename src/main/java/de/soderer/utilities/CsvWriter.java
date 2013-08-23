@@ -205,14 +205,14 @@ public class CsvWriter extends Writer {
 		}
 	}
 	
-	public static String getCsvLine(char separator, char stringQuote, List<? extends Object> values) {
+	public static String getCsvLine(char separator, Character stringQuote, List<? extends Object> values) {
 		return getCsvLine(separator, stringQuote, values.toArray());
 	}
 	
-	public static String getCsvLine(char separator, char stringQuote, Object... values) {
+	public static String getCsvLine(char separator, Character stringQuote, Object... values) {
 		StringBuilder returnValue = new StringBuilder();
 		String separatorString = Character.toString(separator);
-		String stringQuoteString = Character.toString(stringQuote);
+		String stringQuoteString = stringQuote == null ? "" : Character.toString(stringQuote);
 		String doubleStringQuoteString = stringQuoteString + stringQuoteString;
 		if (values != null) {
 			for (Object value : values) {

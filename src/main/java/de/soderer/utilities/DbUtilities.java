@@ -289,27 +289,27 @@ public class DbUtilities {
 		}
 	}
 	
-	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean commitOnFullSuccessOnly) throws Exception {
 		return importCsvFileInTable(dataSource, tableName, columnMapping, new FileInputStream(csvFile), encoding, false, commitOnFullSuccessOnly);
 	}
 	
-	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
 		return importCsvFileInTable(dataSource, tableName, columnMapping, new FileInputStream(csvFile), encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
 	}
 	
-	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean commitOnFullSuccessOnly) throws Exception {
 		return importCsvFileInTable(dataSource, tableName, columnMapping, csvFileInputStream, encoding, false, commitOnFullSuccessOnly);
 	}
 	
-	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
 		return importCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
 	}
 	
-	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
 		return importCsvFileInTable(dataSource, tableName, columnMapping, columnDateFormats, csvFileInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
 	}
 		
-	public static Map<Integer, List<String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for dataimport");
 		}
@@ -344,7 +344,7 @@ public class DbUtilities {
 				}
 			}
 
-			Map<Integer, List<String>> notInsertedData = new HashMap<Integer, List<String>>();
+			Map<Integer, Tuple<List<String>, String>> notInsertedData = new HashMap<Integer, Tuple<List<String>, String>>();
 			String insertStatementString = "INSERT INTO " + tableName + " (" + StringUtils.join(dbColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", dbColumns.size(), ", ") + ")";
 			preparedStatement = connection.prepareStatement(insertStatementString);
 
@@ -359,7 +359,7 @@ public class DbUtilities {
 				
 				if (csvLine.size() != columnMapping.length) {
 					if (!commitOnFullSuccessOnly) {
-						notInsertedData.put(csvLineIndex, csvLine);
+						notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, "Not enough values"));
 					} else {
 						connection.rollback();
 						throw new Exception("Error on insert of dataset at line " + csvLineIndex + ": invalid number of dataitems");
@@ -391,7 +391,7 @@ public class DbUtilities {
 							}
 						} catch (Exception e) {
 							if (!commitOnFullSuccessOnly) {
-								notInsertedData.put(csvLineIndex, csvLine);
+								notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, e.getMessage()));
 								connection.rollback();
 							} else {
 								connection.rollback();
@@ -453,12 +453,12 @@ public class DbUtilities {
 		}
 	}
 	
-	private static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDateFormats, List<List<String>> data, Map<Integer, List<String>> notInsertedData) throws Exception {
+	private static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDateFormats, List<List<String>> data, Map<Integer, Tuple<List<String>, String>> notInsertedData) throws Exception {
 		int csvLineIndex = offsetIndex;
 		for (List<String> csvLine : data) {
 			csvLineIndex++;
 			if (csvLine.size() != columnMapping.length) {
-				notInsertedData.put(csvLineIndex, csvLine);
+				notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, "Not enough values"));
 			} else {
 				int parameterIndex = 1;
 				for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
@@ -475,7 +475,7 @@ public class DbUtilities {
 					preparedStatement.execute();
 					connection.commit();
 				} catch (Exception e) {
-					notInsertedData.put(csvLineIndex, csvLine);
+					notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, e.getMessage()));
 					connection.rollback();
 				}
 			}
