@@ -40,11 +40,11 @@ public class DbUtilities {
 		}
 	}
 	
-	public static int readoutTableInFile(DataSource dataSource, String tableName, File outputFile, char separator) throws Exception {
-    	return readoutInFile(dataSource, "SELECT * FROM " + tableName, outputFile, separator);
+	public static int readoutTableInFile(DataSource dataSource, String tableName, File outputFile, String encoding, char separator, Character stringQuote) throws Exception {
+    	return readoutInFile(dataSource, "SELECT * FROM " + tableName, outputFile, encoding, separator, stringQuote);
     }
     
-    public static int readoutInFile(DataSource dataSource, String statementString, File outputFile, char separator) throws Exception {
+    public static int readoutInFile(DataSource dataSource, String statementString, File outputFile, String encoding, char separator, Character stringQuote) throws Exception {
 		if (outputFile.exists()) throw new Exception("Outputfile already exists");
 		
 		Connection connection = null;
@@ -55,7 +55,7 @@ public class DbUtilities {
 			connection = dataSource.getConnection();
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery(statementString);
-			csvWriter = new CsvWriter(new FileOutputStream(outputFile));
+			csvWriter = new CsvWriter(new FileOutputStream(outputFile), encoding, separator, stringQuote);
 			ResultSetMetaData metaData = resultSet.getMetaData();
 			// write headers
 			List<String> headers = new ArrayList<String>();

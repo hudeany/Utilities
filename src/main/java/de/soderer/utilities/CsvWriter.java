@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class CsvWriter extends Writer {
 	public static final String DEFAULT_ENCODING = "UTF-8";
@@ -66,7 +67,7 @@ public class CsvWriter extends Writer {
 	}
 
 	public CsvWriter(OutputStream outputStream, String encoding, char separator, Character stringQuote) {
-		this(outputStream, Charset.forName(encoding), separator, stringQuote, DEFAULT_LINEBREAK);
+		this(outputStream, StringUtils.isBlank(encoding) ? Charset.forName(DEFAULT_ENCODING) : Charset.forName(encoding), separator, stringQuote == null ? DEFAULT_STRING_QUOTE : stringQuote, DEFAULT_LINEBREAK);
 	}
 	
 	public CsvWriter(OutputStream outputStream, Charset encoding, char separator, Character stringQuote, String lineBreak) {
