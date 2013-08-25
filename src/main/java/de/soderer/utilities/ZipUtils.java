@@ -4,6 +4,7 @@ package de.soderer.utilities;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -335,7 +336,7 @@ public class ZipUtils {
 		}
 		finally {
 			IOUtils.closeQuietly(bufferedInputStream);
-			IOUtils.closeQuietly(sourceZipFile);
+			IOUtils.closeQuietly((Closeable) sourceZipFile);
 		}
 	}
 	
@@ -386,7 +387,7 @@ public class ZipUtils {
 		finally {
 			IOUtils.closeQuietly(bufferedInputStream);
 			IOUtils.closeQuietly(byteArrayOutputStream);
-			IOUtils.closeQuietly(sourceZipFile);
+			IOUtils.closeQuietly((Closeable) sourceZipFile);
 		}
 	}
 }

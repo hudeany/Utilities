@@ -26,8 +26,6 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import sun.misc.LRUCache;
-
 public class TextFileScanner implements Iterator<String> {
     private long dataRead = 0;
 
@@ -88,18 +86,8 @@ public class TextFileScanner implements Iterator<String> {
     // The locale used by this scanner
     private Locale locale = null;
 
-    // A cache of the last few recently used Patterns
-    private LRUCache<String,Pattern> patternCache = 
-    new LRUCache<String,Pattern>(7) {
-        @Override
-		protected Pattern create(String s) {
-            return Pattern.compile(s);
-        }
-        @Override
-		protected boolean hasName(Pattern p, String s) {
-            return p.pattern().equals(s);
-        }
-    };
+	// A cache of the last few recently used Patterns
+	private LRUCache<String, Pattern> patternCache = new LRUCache<String, Pattern>(7);
 
     // A holder of the last IOException encountered
     private IOException lastException;
@@ -170,7 +158,12 @@ public class TextFileScanner implements Iterator<String> {
     }
     private Pattern integerPattern() {
         if (integerPattern == null) {
-            integerPattern = patternCache.forName(buildIntegerPatternString());
+        	String patternString = buildIntegerPatternString();
+            integerPattern = patternCache.get(patternString);
+            if (integerPattern == null) {
+            	integerPattern = Pattern.compile(patternString);
+            	patternCache.put(patternString, integerPattern);
+            }
         }
         return integerPattern;
     }
@@ -832,8 +825,12 @@ public class TextFileScanner implements Iterator<String> {
      * @param pattern A string specifying a delimiting pattern
      * @return this scanner
      */
-    public TextFileScanner useDelimiter(String pattern) {
-        delimPattern = patternCache.forName(pattern);
+    public TextFileScanner useDelimiter(String patternString) {
+    	delimPattern = patternCache.get(patternString);
+        if (delimPattern == null) {
+        	delimPattern = Pattern.compile(patternString);
+        	patternCache.put(patternString, delimPattern);
+        }
         return this;
     }
 
@@ -1086,8 +1083,13 @@ public class TextFileScanner implements Iterator<String> {
      *         the specified pattern
      * @throws IllegalStateException if this scanner is closed
      */
-    public boolean hasNext(String pattern)  {
-        return hasNext(patternCache.forName(pattern));
+    public boolean hasNext(String patternString)  {
+    	Pattern pattern = patternCache.get(patternString);
+        if (pattern == null) {
+        	pattern = Pattern.compile(patternString);
+        	patternCache.put(patternString, pattern);
+        }
+        return hasNext(pattern);
     }
 
     /**
@@ -1104,8 +1106,13 @@ public class TextFileScanner implements Iterator<String> {
      * @throws NoSuchElementException if no such tokens are available
      * @throws IllegalStateException if this scanner is closed
      */
-    public String next(String pattern)  {
-        return next(patternCache.forName(pattern));
+    public String next(String patternString)  {
+    	Pattern pattern = patternCache.get(patternString);
+        if (pattern == null) {
+        	pattern = Pattern.compile(patternString);
+        	patternCache.put(patternString, pattern);
+        }
+        return next(pattern);
     }
 
     /**
@@ -1252,8 +1259,13 @@ public class TextFileScanner implements Iterator<String> {
      * @return the text that matched the specified pattern
      * @throws IllegalStateException if this scanner is closed
      */
-    public String findInLine(String pattern) {
-        return findInLine(patternCache.forName(pattern));
+    public String findInLine(String patternString) {
+    	Pattern pattern = patternCache.get(patternString);
+        if (pattern == null) {
+        	pattern = Pattern.compile(patternString);
+        	patternCache.put(patternString, pattern);
+        }
+        return findInLine(pattern);
     }
 
     /**
@@ -1320,8 +1332,13 @@ public class TextFileScanner implements Iterator<String> {
      * @throws IllegalStateException if this scanner is closed
      * @throws IllegalArgumentException if horizon is negative
      */
-    public String findWithinHorizon(String pattern, int horizon) {
-        return findWithinHorizon(patternCache.forName(pattern), horizon);
+    public String findWithinHorizon(String patternString, int horizon) {
+    	Pattern pattern = patternCache.get(patternString);
+        if (pattern == null) {
+        	pattern = Pattern.compile(patternString);
+        	patternCache.put(patternString, pattern);
+        }
+        return findWithinHorizon(pattern, horizon);
     }
 
     /**
@@ -1433,8 +1450,13 @@ public class TextFileScanner implements Iterator<String> {
      * @return this scanner
      * @throws IllegalStateException if this scanner is closed
      */
-    public TextFileScanner skip(String pattern) {
-        return skip(patternCache.forName(pattern));
+    public TextFileScanner skip(String patternString) {
+    	Pattern pattern = patternCache.get(patternString);
+        if (pattern == null) {
+        	pattern = Pattern.compile(patternString);
+        	patternCache.put(patternString, pattern);
+        }
+        return skip(pattern);
     }
 
     // Convenience methods for scanning primitives
