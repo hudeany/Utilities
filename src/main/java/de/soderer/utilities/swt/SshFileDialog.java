@@ -30,7 +30,7 @@ import com.jcraft.jsch.Session;
 import de.soderer.utilities.JschWrapper;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.ServerAccessData;
-import de.soderer.utilities.ServerEntryKeyStore;
+import de.soderer.utilities.SecureDataKeyStore;
 import de.soderer.utilities.Tuple;
 
 public class SshFileDialog extends ModalDialog<Boolean> {
@@ -40,7 +40,6 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	}
 	
 	private String title;
-	private String serverEntryName = null;
 	private String hostnameOrIp = null;
 	private String username = null;
 	private String keyFile = null;
@@ -62,7 +61,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private Button actionButton;
 	private String inMemoryPassword;
 	private File keystoreFile;
-	private ServerEntryKeyStore keyStore = null;
+	private SecureDataKeyStore keyStore = null;
 	
 	private Mode dialogMode;
 	private Text fileNameField;
@@ -105,7 +104,6 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			serverEntriesCombo = new Combo(serverEntriesComposite, SWT.NONE);
 			serverEntriesCombo.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		    serverEntriesCombo.setItems(new String[]{});
-		    serverEntryName = serverEntriesCombo.getText();
 		    serverEntriesCombo.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(ModifyEvent e) {
@@ -115,10 +113,8 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		    serverEntriesCombo.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
-					String selectionName = ((Combo) event.widget).getText();
-					if (StringUtils.isNotBlank(selectionName)) {
-						ServerAccessData entry = keyStore.getEntry(selectionName);
-						serverEntryName = selectionName;
+					if (StringUtils.isNotBlank(serverEntriesCombo.getText())) {
+						ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, serverEntriesCombo.getText());
 						hostnameField.setText(entry.getHostname());
 						usernameField.setText(entry.getUsername());
 						keyFile = entry.getKeyFile();
@@ -145,18 +141,18 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
 					if (keyStore != null) {
-						keyStore.remove(serverEntriesCombo.getText());
-						serverEntriesCombo.setItems(keyStore.getServerEntryNames().toArray(new String[0]));
+						keyStore.remove(ServerAccessData.class, serverEntriesCombo.getText());
+						serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 						serverEntriesCombo.clearSelection();
 						serverEntriesCombo.setText("");
 					}
 					
-					serverEntryName = null;
-					hostnameField.setText("");
-					usernameField.setText("");
-					keyFile = "";
-					useKeyFileButton.setSelection(false);
-					passwordField.setText("");
+					serverEntriesCombo.setText("");
+					
+					String password = new PasswordDialog(LangResources.get("enterKeystorePassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel")).open();
+					if (password != null) {
+						keyStore.saveKeyStore(password.toCharArray());
+					}
 					
 					checkButtonStatus();
 				}
@@ -168,15 +164,15 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
 					if (keyStore == null) {
-						keyStore = new ServerEntryKeyStore(keystoreFile);
+						keyStore = new SecureDataKeyStore(keystoreFile);
 					}
 					String newEntryName = serverEntriesCombo.getText();
-					keyStore.setEntry(serverEntriesCombo.getText(), new ServerAccessData(serverEntriesCombo.getText(), hostnameOrIp, username, keyFile, password));
+					keyStore.addEntry(new ServerAccessData(serverEntriesCombo.getText(), hostnameOrIp, username, keyFile, password));
 					String password = new PasswordDialog(LangResources.get("enterKeystorePassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel")).open();
 					if (password != null) {
 						keyStore.saveKeyStore(password.toCharArray());
 					}
-					serverEntriesCombo.setItems(keyStore.getServerEntryNames().toArray(new String[0]));
+					serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 					serverEntriesCombo.setText(newEntryName);
 				}
 			});
@@ -508,7 +504,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	}
 
 	public ServerAccessData getServerEntry() {
-		return new ServerAccessData(serverEntryName, hostnameOrIp, username, keyFile, password);
+		return new ServerAccessData(serverEntriesCombo.getText(), hostnameOrIp, username, keyFile, password);
 	}
 
 	public String getSelectedFile() {
@@ -527,7 +523,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				// try to use empty password
 				try {
 					password = "";
-					keyStore = new ServerEntryKeyStore(keystoreFile);
+					keyStore = new SecureDataKeyStore(keystoreFile);
 					keyStore.loadKeyStore(password.toCharArray());
 				} catch (Exception e1) {
 					password = null;
@@ -545,7 +541,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			
 			if (password != null && keyStore == null) {
 				try {
-					keyStore = new ServerEntryKeyStore(keystoreFile);
+					keyStore = new SecureDataKeyStore(keystoreFile);
 					keyStore.loadKeyStore(password.toCharArray());
 				} catch (Exception e) {
 					new QuestionDialog(title, LangResources.get("cannotLoadKeystore"), getShell(), LangResources.get("ok")).open();
@@ -557,12 +553,12 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		}
 		
 		if (keyStore != null) {
-			serverEntriesCombo.setItems(keyStore.getServerEntryNames().toArray(new String[0]));
+			serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 			if (serverEntriesCombo.getItemCount() > 0) {
 				serverEntriesCombo.select(0);
 				String selectionName = serverEntriesCombo.getText();
 				if (StringUtils.isNotBlank(selectionName)) {
-					ServerAccessData entry = keyStore.getEntry(selectionName);
+					ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, selectionName);
 					hostnameField.setText(entry.getHostname());
 					usernameField.setText(entry.getUsername());
 					keyFile = entry.getKeyFile();
@@ -573,6 +569,5 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		} else {
 			serverEntriesCombo.setItems(new String[] {});
 		}
-	    serverEntryName = serverEntriesCombo.getText();
 	}
 }

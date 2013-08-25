@@ -5,10 +5,9 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class ServerAccessData {
+public class ServerAccessData extends SecureDataEntry{
 	public static final String PRELUDE = "\\\\";
 	
-	private String entryname;
 	private String hostname;
 	private int port;
 	private String username;
@@ -16,13 +15,28 @@ public class ServerAccessData {
 	private String password;
 	private boolean checkHostKey;
 	
-	public ServerAccessData(String data) throws Exception {
-		List<String> dataParts = CsvReader.parseCsvLine(',', '"', data);
+	protected ServerAccessData() {
+	}
+
+	public ServerAccessData(String entryname, String hostname, String username, String keyFile, String password) {
+		this(entryname, hostname, 22, username, keyFile, password, false);
+	}
+
+	public ServerAccessData(String entryname, String hostname, int port, String username, String keyFile, String password, boolean checkHostKey) {
+		this.entryName = entryname;
+		this.hostname = hostname;
+		this.port = port;
+		this.username = username;
+		this.keyFile = keyFile;
+		this.password = password;
+	}
+	
+	public void loadData(List<String> dataParts) throws Exception {
 		if (dataParts == null || dataParts.size() != 6) {
 			throw new IOException("Invalid data in ServerEntry");
 		} else {
 			try {
-				this.entryname = dataParts.get(0);
+				this.entryName = dataParts.get(0);
 				this.hostname = dataParts.get(1);
 				this.port = Integer.parseInt(dataParts.get(2));
 				this.username = dataParts.get(3);
@@ -33,22 +47,9 @@ public class ServerAccessData {
 			}
 		}
 	}
-
-	public ServerAccessData(String entryname, String hostname, String username, String keyFile, String password) {
-		this(entryname, hostname, 22, username, keyFile, password, false);
-	}
-
-	public ServerAccessData(String entryname, String hostname, int port, String username, String keyFile, String password, boolean checkHostKey) {
-		this.entryname = entryname;
-		this.hostname = hostname;
-		this.port = port;
-		this.username = username;
-		this.keyFile = keyFile;
-		this.password = password;
-	}
-
-	public String getEntryname() {
-		return entryname;
+	
+	public String toStorageString() {
+		return CsvWriter.getCsvLine(',', '"', entryName, hostname, port, username, keyFile, password);
 	}
 
 	public String getHostname() {
@@ -71,16 +72,12 @@ public class ServerAccessData {
 		return password;
 	}
 	
-	public String toString() {
-		return CsvWriter.getCsvLine(',', '"', entryname, hostname, port, username, keyFile, password);
-	}
-	
-	public String toStorageString() {
-		return PRELUDE + entryname + ":";
-	}
-	
 	public boolean getCheckHostKey() {
 		return checkHostKey;
+	}
+	
+	public String toReferenceString() {
+		return PRELUDE + entryName + ":";
 	}
 	
 	public static String parseFilestringToServerEntryName(String fileName) throws Exception {
@@ -100,6 +97,6 @@ public class ServerAccessData {
 	}
 	
 	public boolean equals(ServerAccessData otherData) {
-		return entryname.equals(otherData.getEntryname());
+		return entryName.equals(otherData.getEntryName());
 	}
 }
