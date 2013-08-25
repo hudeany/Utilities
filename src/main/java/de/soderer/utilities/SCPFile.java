@@ -112,6 +112,7 @@ public class SCPFile {
 		return filename;
 	}
 	
+	@Override
 	public String toString() {
 		if (StringUtils.isEmpty(filename))
 			return PRELUDE + hostname + path;

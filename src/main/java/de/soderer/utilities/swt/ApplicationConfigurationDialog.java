@@ -146,22 +146,18 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		Button storeButton = new Button(buttonArea, SWT.PUSH);
 		storeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
 		storeButton.setText(LangResources.get("save"));
-		storeButton.addSelectionListener(new SelectionListener() {
+		storeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(true);
 				getShell().close();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
 			}
 		});
 		
 		Button createLinkButton = new Button(buttonArea, SWT.PUSH);
 		createLinkButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
 		createLinkButton.setText(LangResources.get("createDesktopLink"));
-		createLinkButton.addSelectionListener(new SelectionListener() {
+		createLinkButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (!SystemUtilities.isJavaWebstartApp()) {
@@ -287,16 +283,12 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 //					}
 				}
 			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-			}
 		});
 
 		Button showSystemPropertiesButton = new Button(buttonArea, SWT.PUSH);
 		showSystemPropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
 		showSystemPropertiesButton.setText(LangResources.get("showSystemProperties"));
-		showSystemPropertiesButton.addSelectionListener(new SelectionListener() {
+		showSystemPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Map<String, String> properties = Utilities.getSystemPropertiesMap();
@@ -305,16 +297,12 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				}
 				new ShowDataDialog(applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), LangResources.get("close")).open();
 			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-			}
 		});
 		
 		Button showRuntimePropertiesButton = new Button(buttonArea, SWT.PUSH);
 		showRuntimePropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
 		showRuntimePropertiesButton.setText(LangResources.get("showRuntimeProperties"));
-		showRuntimePropertiesButton.addSelectionListener(new SelectionListener() {
+		showRuntimePropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Map<String, String> properties = SystemUtilities.getRuntimeProperties(true);
@@ -323,23 +311,15 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				}
 				new ShowDataDialog(applicationName + " " + LangResources.get("runtimeProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), LangResources.get("close")).open();
 			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-			}
 		});
 		
 		Button showSwtPropertiesButton = new Button(buttonArea, SWT.PUSH);
 		showSwtPropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
 		showSwtPropertiesButton.setText(LangResources.get("showSwtProperties"));
-		showSwtPropertiesButton.addSelectionListener(new SelectionListener() {
+		showSwtPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				new ShowDataDialog(applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(null), "\n", " = ", true), getShell(), LangResources.get("close")).open();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
 			}
 		});
 

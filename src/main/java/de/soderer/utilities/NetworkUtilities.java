@@ -41,10 +41,6 @@ public class NetworkUtilities {
     }
     
     public static boolean wakeOnLanPing(String macAddress) {
-    	return wakeOnLanPing(macAddress, false);
-    }
-    
-    public static boolean wakeOnLanPing(String macAddress, boolean checkAfterWakeup) {
     	DatagramSocket socket = null;
         try {
             byte[] macBytes = getMacAddressBytes(macAddress);

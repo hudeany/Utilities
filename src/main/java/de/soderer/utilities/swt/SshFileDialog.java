@@ -8,8 +8,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
@@ -29,8 +29,8 @@ import com.jcraft.jsch.Session;
 
 import de.soderer.utilities.JschWrapper;
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.SecureDataKeyStore;
+import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
 
 public class SshFileDialog extends ModalDialog<Boolean> {
@@ -338,15 +338,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				checkButtonStatus();
 			}
 		});
-		filesTree.addMouseListener(new MouseListener() {
-			@Override
-			public void mouseUp(MouseEvent e) {
-			}
-			
-			@Override
-			public void mouseDown(MouseEvent e) {
-			}
-			
+		filesTree.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseDoubleClick(MouseEvent e) {
 				if (((Tree) e.widget).getSelection().length == 1) {

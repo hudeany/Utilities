@@ -37,7 +37,8 @@ public class JarRsrcLoader {
         String[] rsrcClassPath;
     }
     
-    public static void main(String[] args) throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException, IOException {
+    @SuppressWarnings("resource")
+	public static void main(String[] args) throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException, IOException {
     	try {
 			String currentJarUrlPath = JarRsrcLoader.class.getResource(JarRsrcLoader.class.getSimpleName() + ".class").toString();
 			if (currentJarUrlPath != null && currentJarUrlPath.length() > 0) {
@@ -48,6 +49,7 @@ public class JarRsrcLoader {
 				}
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 		}
     	
         ManifestInfo mi = getManifestInfo();
@@ -71,9 +73,10 @@ public class JarRsrcLoader {
     private static ManifestInfo getManifestInfo() throws IOException {
         Enumeration<URL> resEnum = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF"); //$NON-NLS-1$
         while (resEnum.hasMoreElements()) {
+        	InputStream is = null;
             try {
                 URL url = (URL)resEnum.nextElement();
-                InputStream is = url.openStream();
+                is = url.openStream();
                 if (is != null) {
                     ManifestInfo result = new ManifestInfo();
                     Manifest manifest = new Manifest(is);
@@ -89,6 +92,10 @@ public class JarRsrcLoader {
             }
             catch (Exception e) {
                 // Silently ignore wrong manifests on classpath?
+            } finally {
+            	if (is != null) {
+            		is.close();
+            	}
             }
         }
         System.err.println("Missing attributes for RsrcLoader in Manifest (Rsrc-Main-Class, Rsrc-Class-Path)"); //$NON-NLS-1$

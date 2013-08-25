@@ -2,7 +2,6 @@ package de.soderer.utilities;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,20 +31,23 @@ public class ConfigurationProperties {
 	
 	public ConfigurationProperties(String applicationName, boolean useSubDirectory) {
 		this.useSubDirectory = useSubDirectory;
-		FileInputStream fileInputStream = null;
-		try {
-			this.applicationName = applicationName;
-			fileInputStream = new FileInputStream(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
-			Properties propertiesLoaded = new Properties();
-		    propertiesLoaded.load(fileInputStream);
-		    for (Entry<Object, Object> entry : propertiesLoaded.entrySet()) {
-		    	properties.setProperty((String) entry.getKey(), unEscape((String) entry.getValue()));
+		File configFile = new File(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
+		if (configFile.exists()) {
+			FileInputStream fileInputStream = null;
+			try {
+				this.applicationName = applicationName;
+				fileInputStream = new FileInputStream(configFile);
+				Properties propertiesLoaded = new Properties();
+			    propertiesLoaded.load(fileInputStream);
+			    for (Entry<Object, Object> entry : propertiesLoaded.entrySet()) {
+			    	properties.setProperty((String) entry.getKey(), unEscape((String) entry.getValue()));
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new RuntimeException("Cannot load configuration", e);
+			} finally {
+				IOUtils.closeQuietly(fileInputStream);
 			}
-		} catch (FileNotFoundException e) {
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			IOUtils.closeQuietly(fileInputStream);
 		}
 	}
 	

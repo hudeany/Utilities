@@ -4,8 +4,8 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
-import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -97,17 +97,13 @@ public class PasswordDialog extends ModalDialog<String> {
 				}
 			}
 		});
-		textField.addKeyListener(new KeyListener() {
+		textField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent event) {
 				if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(textField.getText());
 					getShell().close();
 				}
-			}
-			
-			@Override
-			public void keyPressed(KeyEvent event) {
 			}
 		});
 		

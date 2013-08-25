@@ -208,7 +208,7 @@ public class ReducedSqlWhereClauseParser {
 		}
 	}
 	
-	private boolean parseLevel1Expressions(List<RulePart> parts) {
+	private static boolean parseLevel1Expressions(List<RulePart> parts) {
 		boolean changed = false;
 		for (int i = parts.size() - 1; i >= 0; i--) {
 			if (parts.get(i) instanceof Operator) {
@@ -287,7 +287,7 @@ public class ReducedSqlWhereClauseParser {
 		return changed;
 	}
 	
-	private boolean parseLevel2Expressions(List<RulePart> parts) {
+	private static boolean parseLevel2Expressions(List<RulePart> parts) {
 		boolean changed = false;
 		for (int i = parts.size() - 1; i >= 0; i--) {
 			if (parts.get(i) instanceof Operator) {
@@ -342,7 +342,7 @@ public class ReducedSqlWhereClauseParser {
 		return changed;
 	}
 	
-	private boolean removeUnusedBrackets(List<RulePart> parts) {
+	private static boolean removeUnusedBrackets(List<RulePart> parts) {
 		boolean changed = false;
 		for (int i = parts.size() - 1; i >= 0; i--) {
 			if (parts.get(i) instanceof SupplementalPart && ((SupplementalPart)parts.get(i)).type == SupplementalPart.Type.OpeningBracket) {
@@ -360,7 +360,7 @@ public class ReducedSqlWhereClauseParser {
 		return changed;
 	}
 	
-	private boolean parseConditions(List<RulePart> parts) {
+	private static boolean parseConditions(List<RulePart> parts) {
 		boolean changed = false;
 		int bracketlevel = -1;
 		int arithmeticLevel = -1;

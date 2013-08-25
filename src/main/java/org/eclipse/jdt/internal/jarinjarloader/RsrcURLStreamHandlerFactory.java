@@ -30,7 +30,8 @@ public class RsrcURLStreamHandlerFactory implements URLStreamHandlerFactory {
         this.classLoader = cl;
     }
 
-    public URLStreamHandler createURLStreamHandler(String protocol) {
+    @Override
+	public URLStreamHandler createURLStreamHandler(String protocol) {
         if ("rsrc".equals(protocol)) //$NON-NLS-1$
             return new RsrcURLStreamHandler(classLoader);
         if (chainFac != null)

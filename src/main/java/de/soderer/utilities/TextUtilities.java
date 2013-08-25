@@ -161,6 +161,7 @@ public class TextUtilities {
 		try {
 			lineNumberReader = new LineNumberReader(new StringReader(dataString));
 			while (lineNumberReader.readLine() != null) {
+				// do nothing
 			}
 
 			return lineNumberReader.getLineNumber();
@@ -494,6 +495,7 @@ public class TextUtilities {
 					}
 				}
 			} catch (Exception e) {
+				e.printStackTrace();
 			}
 			
 			String interimString = new String(data, "UTF-8").toLowerCase();
@@ -652,10 +654,6 @@ public class TextUtilities {
 			position++;
 		}
 		return returnList;
-	}
-	
-	public static List<String> getCommonTextParts(String[] texts) {
-		return null;
 	}
 	
 	public static String breakLinesAfterMaximumLength(String dataString, int maximumLength) {

@@ -47,6 +47,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		try {
 			shell.setImage(new Image(shell.getDisplay(), getClass().getResourceAsStream("exclamation.png")));
 		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		shell.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		shell.setLayout(new GridLayout(1, false));

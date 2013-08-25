@@ -35,10 +35,13 @@ public class RsrcURLConnection extends URLConnection {
         this.classLoader= classLoader;
     }
 
-    public void connect() throws IOException {
+    @Override
+	public void connect() throws IOException {
+    	// do nothing
     }
 
-    public InputStream getInputStream() throws IOException {
+    @Override
+	public InputStream getInputStream() throws IOException {
         String file= URLDecoder.decode(url.getFile(), "UTF-8"); //$NON-NLS-1$
         InputStream result= classLoader.getResourceAsStream(file);
         if (result == null) {

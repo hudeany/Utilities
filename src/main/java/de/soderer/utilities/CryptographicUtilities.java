@@ -91,9 +91,10 @@ public class CryptographicUtilities {
 	}
 	
 	public static String getStringFromX509Certificate(X509Certificate certificate) throws Exception {
+		StringWriter stringWriter = null;
 		PEMWriter pemWriter = null;
 		try {
-			StringWriter stringWriter = new StringWriter();
+			stringWriter = new StringWriter();
 			pemWriter = new PEMWriter(stringWriter);
 			pemWriter.writeObject(certificate);
 			pemWriter.close();
@@ -101,9 +102,8 @@ public class CryptographicUtilities {
 		} catch (Exception e) {
 			throw new Exception("Cannot create certificate string: " + e.getMessage(), e);
 		} finally {
-			if (pemWriter!= null) {
-				pemWriter.close();
-			}
+			IOUtils.closeQuietly(stringWriter);
+			IOUtils.closeQuietly(pemWriter);
 		}
 	}
 
@@ -199,9 +199,10 @@ public class CryptographicUtilities {
 	}
 	
 	public static String getStringFromKeyPair(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+		StringWriter stringWriter = null;
 		PEMWriter pemWriter = null;
 		try {
-			StringWriter stringWriter = new StringWriter();
+			stringWriter = new StringWriter();
 			pemWriter = new PEMWriter(stringWriter);
 			pemWriter.writeObject(privateKey);
 			pemWriter.writeObject(publicKey);
@@ -210,9 +211,8 @@ public class CryptographicUtilities {
 		} catch (Exception e) {
 			throw new Exception("Cannot create key string: " + e.getMessage(), e);
 		} finally {
-			if (pemWriter!= null) {
-				pemWriter.close();
-			}
+			IOUtils.closeQuietly(stringWriter);
+			IOUtils.closeQuietly(pemWriter);
 		}
 	}
 	

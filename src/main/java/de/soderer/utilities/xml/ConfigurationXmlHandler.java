@@ -41,8 +41,8 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 		return values;
 	}
 
-	public void startElement(String namespaceURI, String localName, String qName, Attributes attributes)
-			throws SAXException {
+	@Override
+	public void startElement(String namespaceURI, String localName, String qName, Attributes attributes) throws SAXException {
 		if (!foundRootTag) {
 			if (!qName.equals(TAGNAME_ROOT))
 				throw new SAXException("Ungültiges RootTag in XmlConfiguration: " + qName);
@@ -54,10 +54,13 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 		}
 	}
 
+	@Override
 	public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
 		if (qName.equals(TAGNAME_ROOT)) {
+			// do noting
 		}
 		else if (qName.equals(TAGNAME_ENTRY)) {
+			// do noting
 		}
 	}
 }

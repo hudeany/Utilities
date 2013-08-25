@@ -290,11 +290,23 @@ public class DbUtilities {
 	}
 	
 	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean commitOnFullSuccessOnly) throws Exception {
-		return importCsvFileInTable(dataSource, tableName, columnMapping, new FileInputStream(csvFile), encoding, false, commitOnFullSuccessOnly);
+		FileInputStream fileInputStream = null;
+		try {
+			fileInputStream = new FileInputStream(csvFile);
+			return importCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, false, commitOnFullSuccessOnly);
+		} finally {
+			IOUtils.closeQuietly(fileInputStream);
+		}
 	}
 	
 	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
-		return importCsvFileInTable(dataSource, tableName, columnMapping, new FileInputStream(csvFile), encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
+		FileInputStream fileInputStream = null;
+		try {
+			fileInputStream = new FileInputStream(csvFile);
+			return importCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
+		} finally {
+			IOUtils.closeQuietly(fileInputStream);
+		}
 	}
 	
 	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean commitOnFullSuccessOnly) throws Exception {
@@ -482,6 +494,7 @@ public class DbUtilities {
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static boolean checkDbVendorIsOracle(DataSource dataSource) {
 		Connection connection = null;
 		try {
@@ -512,6 +525,7 @@ public class DbUtilities {
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static String getDbUrl(DataSource dataSource) throws SQLException {
 		Connection connection = null;
 		try {
@@ -539,7 +553,8 @@ public class DbUtilities {
         return checkTableAndColumnsExist(connection, tableName, columns, false);
     }
 
-    public static boolean checkTableAndColumnsExist(DataSource dataSource, String tableName, String[] columns, boolean throwExceptionOnError) throws Exception {
+    @SuppressWarnings("resource")
+	public static boolean checkTableAndColumnsExist(DataSource dataSource, String tableName, String[] columns, boolean throwExceptionOnError) throws Exception {
         Connection connection = null;
         try {
             connection = dataSource.getConnection();
@@ -657,6 +672,7 @@ public class DbUtilities {
 			try {
 				connection.close();
 			} catch (SQLException e) {
+				// do nothing
 			}
 		}
 	}
@@ -666,6 +682,7 @@ public class DbUtilities {
 			try {
 				statement.close();
 			} catch (SQLException e) {
+				// do nothing
 			}
 		}
 	}
@@ -675,10 +692,12 @@ public class DbUtilities {
 			try {
 				resultSet.close();
 			} catch (SQLException e) {
+				// do nothing
 			}
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static String getResultAsTextTable(DataSource datasource, String selectString) throws Exception {
 		Connection connection = null;
 		PreparedStatement preparedStatement = null;
@@ -709,6 +728,7 @@ public class DbUtilities {
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static List<String> getColumnNames(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnNames");
@@ -729,13 +749,14 @@ public class DbUtilities {
 		        }
 		        return columnNamesList;
 			} finally {
-		        DbUtilities.closeQuietly(resultSet);
-		        DbUtilities.closeQuietly(statement);
-		        DbUtilities.closeQuietly(connection);
+		        closeQuietly(resultSet);
+		        closeQuietly(statement);
+		        closeQuietly(connection);
 			}
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static DbColumnType getColumnDataType(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnDataType");
@@ -810,13 +831,14 @@ public class DbUtilities {
 			} catch (Exception e) {
 				return null;
 			} finally {
-		        DbUtilities.closeQuietly(resultSet);
-		        DbUtilities.closeQuietly(preparedStatement);
-		        DbUtilities.closeQuietly(connection);
+		        closeQuietly(resultSet);
+		        closeQuietly(preparedStatement);
+		        closeQuietly(connection);
 			}
 		}
 	}
 
+	@SuppressWarnings("resource")
 	public static CaseInsensitiveMap<DbColumnType> getColumnDataTypes(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnDataTypes");
@@ -879,13 +901,14 @@ public class DbUtilities {
 			} catch (Exception e) {
 				throw e;
 			} finally {
-		        DbUtilities.closeQuietly(resultSet);
-		        DbUtilities.closeQuietly(preparedStatement);
-		        DbUtilities.closeQuietly(connection);
+		        closeQuietly(resultSet);
+		        closeQuietly(preparedStatement);
+		        closeQuietly(connection);
 			}
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static int getColumnCount(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnCount");
@@ -897,11 +920,12 @@ public class DbUtilities {
 				connection = dataSource.getConnection();
 		        return getColumnCount(connection, tableName);
 			} finally {
-		        DbUtilities.closeQuietly(connection);
+		        closeQuietly(connection);
 			}
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static int getColumnCount(Connection connection, String tableName) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnCount");
@@ -914,12 +938,13 @@ public class DbUtilities {
 		        resultSet = statement.executeQuery(sql);
 		        return resultSet.getMetaData().getColumnCount();
 			} finally {
-		        DbUtilities.closeQuietly(resultSet);
-		        DbUtilities.closeQuietly(statement);
+		        closeQuietly(resultSet);
+		        closeQuietly(statement);
 			}
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static int getTableEntriesCount(Connection connection, String tableName) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getTableEntriesNumber");
@@ -936,8 +961,8 @@ public class DbUtilities {
 		        	return 0;
 		        }
 			} finally {
-		        DbUtilities.closeQuietly(resultSet);
-		        DbUtilities.closeQuietly(statement);
+		        closeQuietly(resultSet);
+		        closeQuietly(statement);
 			}
 		}
 	}
@@ -966,13 +991,14 @@ public class DbUtilities {
 	            }
 	    		return false;
 	    	} finally {
-	            DbUtilities.closeQuietly(resultSet);
-	            DbUtilities.closeQuietly(statement);
-	            DbUtilities.closeQuietly(connection);
+	            closeQuietly(resultSet);
+	            closeQuietly(statement);
+	            closeQuietly(connection);
 	    	}
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static int getColumnDataTypeLength(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getDefaultValueOf");
@@ -1010,13 +1036,14 @@ public class DbUtilities {
 					throw new Exception("Cannot retrieve column datatypelength");
 				}
 			} finally {
-	            DbUtilities.closeQuietly(resultSet);
-	            DbUtilities.closeQuietly(preparedStatement);
-	            DbUtilities.closeQuietly(connection);
+	            closeQuietly(resultSet);
+	            closeQuietly(preparedStatement);
+	            closeQuietly(connection);
 			}
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static String getColumnDefaultValue(DataSource dataSource, String tableName, String columnName) throws Exception {
 		try {
 			if (dataSource == null) {
@@ -1055,9 +1082,9 @@ public class DbUtilities {
 						throw new Exception("Cannot retrieve column datatype");
 					}
 		    	} finally {
-		            DbUtilities.closeQuietly(resultSet);
-		            DbUtilities.closeQuietly(preparedStatement);
-		            DbUtilities.closeQuietly(connection);
+		            closeQuietly(resultSet);
+		            closeQuietly(preparedStatement);
+		            closeQuietly(connection);
 				}
 			}
 		} catch (Exception e) {
@@ -1081,6 +1108,7 @@ public class DbUtilities {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	public static boolean addColumnToDbTable(DataSource dataSource, String tablename, String fieldname, String fieldType, int length, String fieldDefault, boolean notNull) throws Exception {
 		if (StringUtils.isBlank(fieldname)) {
 			return false;
@@ -1092,7 +1120,7 @@ public class DbUtilities {
 			return false;
 		} else if (StringUtils.isBlank(fieldType)) {
 			return false;
-		} else if (DbUtilities.containsColumnName(dataSource, tablename, fieldname)) {
+		} else if (containsColumnName(dataSource, tablename, fieldname)) {
 			return false;
 		} else {
 			fieldType = fieldType.toUpperCase().trim();
@@ -1139,6 +1167,7 @@ public class DbUtilities {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	public static boolean alterColumnTypeInDbTable(DataSource dataSource, String tablename, String fieldname, String fieldType, int length, String fieldDefault, boolean notNull) throws Exception {
 		if (StringUtils.isBlank(fieldname)) {
 			return false;
@@ -1150,7 +1179,7 @@ public class DbUtilities {
 			return false;
 		} else if (StringUtils.isBlank(fieldType)) {
 			return false;
-		} else if (!DbUtilities.containsColumnName(dataSource, tablename, fieldname)) {
+		} else if (!containsColumnName(dataSource, tablename, fieldname)) {
 			return false;
 		} else {
 			fieldType = fieldType.toUpperCase().trim();
@@ -1180,7 +1209,7 @@ public class DbUtilities {
 			}
 
 			String changeColumnStatement;
-			if (DbUtilities.checkDbVendorIsOracle(dataSource)) {
+			if (checkDbVendorIsOracle(dataSource)) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY (" + changeColumnStatementPart + ")";
 			} else {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY " + changeColumnStatementPart;

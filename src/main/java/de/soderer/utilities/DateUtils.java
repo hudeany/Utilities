@@ -32,12 +32,8 @@ public class DateUtils {
 		String dayString = DateFormatSymbols.getInstance().getWeekdays()[tagesInt];
 		return dayString.substring(0, 2);
 	}
-
-	public static int getWeekdayIndex(String weekday) {
-		return getWeekdayIndex(weekday, true);
-	}
 	
-	public static int getWeekdayIndex(String weekday, boolean useLocaleStringsFirst) {
+	public static int getWeekdayIndex(String weekday) {
 		if (StringUtils.isBlank(weekday)) {
 			return -1;
 		} else {

@@ -48,6 +48,7 @@ public class NumberText extends Text {
 	
 	@Override
 	protected void checkSubclass() {
+		// do nothing
 	}
 	
 	public int getValue() {

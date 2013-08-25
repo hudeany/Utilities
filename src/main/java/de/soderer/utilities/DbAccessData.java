@@ -26,6 +26,7 @@ public class DbAccessData extends SecureDataEntry{
 		this.password = password;
 	}
 	
+	@Override
 	public void loadData(List<String> dataParts) throws Exception {
 		if (dataParts == null || dataParts.size() != 8) {
 			throw new IOException("Invalid data in DbEntry");
@@ -45,8 +46,9 @@ public class DbAccessData extends SecureDataEntry{
 		}
 	}
 	
-	public String toStorageString() {
-		return CsvWriter.getCsvLine(',', '"', entryName, isOracle, dbServerHostname, dbServerPort, dbName, dbTable, userName, password);
+	@Override
+	public Object[] getStorageData() {
+		return new Object[]{entryName, isOracle, dbServerHostname, dbServerPort, dbName, dbTable, userName, password};
 	}
 	
 	public boolean equals(DbAccessData otherData) {

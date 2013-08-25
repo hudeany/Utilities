@@ -19,6 +19,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.omg.CORBA.SystemException;
 
@@ -58,32 +59,18 @@ public class ZipUtils {
 			
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
 
-			closeZipOutputStream(zipOutputStream);
+			IOUtils.closeQuietly(zipOutputStream);
 			zipOutputStream = null;
 		}
 		catch (IOException e) {
 			if (destinationZipFile.exists()) {
-				if (zipOutputStream != null) {
-					try {
-						zipOutputStream.close();
-					}
-					catch (Exception ex) {
-					}
-					zipOutputStream = null;
-				}	
+				IOUtils.closeQuietly(zipOutputStream);
 				destinationZipFile.delete();
 			}
 			throw e;
 		}
 		finally {
-			if (zipOutputStream != null) {
-				try {
-					zipOutputStream.close();
-				}
-				catch (Exception e) {
-				}
-				zipOutputStream = null;
-			}
+			IOUtils.closeQuietly(zipOutputStream);
 		}
 	}
 	
@@ -149,14 +136,7 @@ public class ZipUtils {
 			throw e;
 		}
 		finally {			
-			if (bufferedFileInputStream != null) {
-				try {
-					bufferedFileInputStream.close();
-				}
-				catch (Exception e) {
-				}
-				bufferedFileInputStream = null;
-			}
+			IOUtils.closeQuietly(bufferedFileInputStream);
 		}
 	}
 	
@@ -211,55 +191,6 @@ public class ZipUtils {
 	}
 	
 	/**
-	 * Schließen eines offenen ZipOutputStreams
-	 * 
-	 * @param zipOutputStream
-	 * @throws IOException
-	 */
-	public static void closeZipOutputStream(ZipOutputStream zipOutputStream) throws IOException {
-		try {
-			zipOutputStream.finish();
-			zipOutputStream.flush();
-			zipOutputStream.close();
-			zipOutputStream = null;
-		}
-		catch (IOException e) {
-			throw e;
-		}
-		finally {
-			if (zipOutputStream != null) {
-				try {
-					zipOutputStream.close();
-				}
-				catch (Exception e) {
-				}
-				zipOutputStream = null;
-			}
-		}
-	}
-	
-	public static void closeZipOutputStreamQuietly(ZipOutputStream zipOutputStream) {
-		try {
-			zipOutputStream.finish();
-			zipOutputStream.flush();
-			zipOutputStream.close();
-			zipOutputStream = null;
-		}
-		catch (IOException e) {
-		}
-		finally {
-			if (zipOutputStream != null) {
-				try {
-					zipOutputStream.close();
-				}
-				catch (Exception e) {
-				}
-				zipOutputStream = null;
-			}
-		}
-	}
-	
-	/**
 	 * Hinzufügen von Daten zu einem offenen ZipOutputStream als virtuelle Datei
 	 * 
 	 * @param fileData
@@ -307,7 +238,7 @@ public class ZipUtils {
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
 		}
 		finally {
-			closeZipOutputStream(zipOutputStream);
+			IOUtils.closeQuietly(zipOutputStream);
 		}
 	}
 	
@@ -327,7 +258,7 @@ public class ZipUtils {
 			}
 		}
 		finally {
-			closeZipOutputStream(zipOutputStream);
+			IOUtils.closeQuietly(zipOutputStream);
 		}
 	}
 
@@ -358,12 +289,12 @@ public class ZipUtils {
 		File originalFileTemp = new File(zipFile.getParentFile().getAbsolutePath() + "/" + String.valueOf(System.currentTimeMillis()));
 		zipFile.renameTo(originalFileTemp);
 		
-		ZipFile sourceZipFile = new ZipFile(originalFileTemp);
 		ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
 		
 		BufferedInputStream bufferedInputStream = null;
-		
+		ZipFile sourceZipFile = null;
 		try {
+			sourceZipFile = new ZipFile(originalFileTemp);
 			// Umkopieren der Einträge
 			Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
 			while (srcEntries.hasMoreElements()) {
@@ -394,14 +325,7 @@ public class ZipUtils {
 		catch (IOException e) {
 			// Löschen des evtl. vorhandenen neuen ZipFiles
 			if (zipFile.exists()) {
-				if (zipOutputStream != null) {
-					try {
-						zipOutputStream.close();
-					}
-					catch (Exception ex) {
-					}
-					zipOutputStream = null;
-				}	
+				IOUtils.closeQuietly(zipOutputStream);
 				zipFile.delete();
 			}
 			
@@ -410,14 +334,8 @@ public class ZipUtils {
 			throw e;
 		}
 		finally {
-			if (bufferedInputStream != null) {
-				try {
-					bufferedInputStream.close();
-				}
-				catch (Exception e) {
-				}
-				bufferedInputStream = null;
-			}
+			IOUtils.closeQuietly(bufferedInputStream);
+			IOUtils.closeQuietly(sourceZipFile);
 		}
 	}
 	
@@ -466,32 +384,9 @@ public class ZipUtils {
 			return returnMap;
 		}
 		finally {
-			if (bufferedInputStream != null) {
-				try {
-					bufferedInputStream.close();
-				}
-				catch (Exception e) {
-				}
-				bufferedInputStream = null;
-			}
-			
-			if (byteArrayOutputStream != null) {
-				try {
-					byteArrayOutputStream.close();
-				}
-				catch (Exception e) {
-				}
-				byteArrayOutputStream = null;
-			}
-			
-			if (sourceZipFile != null) {
-				try {
-					sourceZipFile.close();
-				}
-				catch (Exception e) {
-				}
-				sourceZipFile = null;
-			}
+			IOUtils.closeQuietly(bufferedInputStream);
+			IOUtils.closeQuietly(byteArrayOutputStream);
+			IOUtils.closeQuietly(sourceZipFile);
 		}
 	}
 }

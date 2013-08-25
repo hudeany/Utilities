@@ -19,6 +19,7 @@ public class JsonUtilities {
 			int startIndex = 0;
 			for (startIndex = 0; startIndex < jsonData.length; startIndex++) {
 				if (Character.isWhitespace(jsonData[startIndex])) {
+					// do nothing
 				} else if (jsonData[startIndex] == '{') {
 					break;
 				} else {

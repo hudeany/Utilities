@@ -37,6 +37,7 @@ public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 		return super.add(item);
 	}
 	
+	@Override
 	public boolean addAll(Collection<? extends T> collection) {
 		for (T item : collection)
 			add(item);

@@ -33,11 +33,13 @@ public class RsrcURLStreamHandler extends java.net.URLStreamHandler {
         this.classLoader = classLoader;
     }
 
-    protected java.net.URLConnection openConnection(URL u) throws IOException {
+    @Override
+	protected java.net.URLConnection openConnection(URL u) throws IOException {
         return new RsrcURLConnection(u, classLoader);
     }
 
-    protected void parseURL(URL url, String spec, int start, int limit) {
+    @Override
+	protected void parseURL(URL url, String spec, int start, int limit) {
         String file;
         if (spec.startsWith("rsrc:"))  //$NON-NLS-1$
             file = spec.substring(5);

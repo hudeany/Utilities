@@ -374,17 +374,10 @@ public class Utilities {
 		} catch (Exception ex) {
 			throw new Exception("Fehler in readStreamInArray: " + ex.getMessage(), ex);
 		} finally {
-			try {
-				if (returnArrayBuffer != null)
-					returnArrayBuffer.close();
-			} catch (Exception ex) {
-			}
+			IOUtils.closeQuietly(returnArrayBuffer);
 		}
 
-		if (returnArrayBuffer != null)
-			return returnArrayBuffer.toByteArray();
-		else
-			return null;
+		return returnArrayBuffer.toByteArray();
 	}
 	
 	public static byte[] readAvailableDataFromStreamInArray(InputStream inputStream) throws Exception {
@@ -717,20 +710,10 @@ public class Utilities {
 					return true;
 				} catch (IOException ioe) {
 					throw new Exception("Verbindung zum Host '" + hostname + "' auf Port " + port + " konnte nicht aufgebaut werden: " + ioe.getClass().getSimpleName() + ": " + ioe.getMessage());
-				} finally {
-					if (socket != null) {
-						try {
-							socket.close();
-						} catch (IOException ioe) {
-						}
-						socket = null;
-					}
 				}
 			}
 		} finally {
-			if (socket != null) {
-				socket.close();
-			}
+			IOUtils.closeQuietly(socket);
 		}
 	}
 
@@ -965,6 +948,7 @@ public class Utilities {
 		try {
 			lineNumberReader = new LineNumberReader(new InputStreamReader(new FileInputStream(file)));
 			while (lineNumberReader.readLine() != null) {
+				// do nothing
 			}
 
 			return lineNumberReader.getLineNumber();
@@ -986,37 +970,43 @@ public class Utilities {
 	}
 
 	public static boolean fileSearchText(File searchFile, List<String> searchTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
-		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
-			byte[] encodingBuffer = Utilities.readFirstFileData(searchFile, 100);
-			Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
-			if (encodingData == null) {
-				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
-			}
+		FileInputStream fileInputStream = null;
+		try {
+			if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
+				byte[] encodingBuffer = Utilities.readFirstFileData(searchFile, 100);
+				Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
+				if (encodingData == null) {
+					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
+				}
 
-			String dataString = IOUtils.toString(new FileInputStream(searchFile), encodingData.getFirst());
+				fileInputStream = new FileInputStream(searchFile);
+				String dataString = IOUtils.toString(fileInputStream, encodingData.getFirst());
 
-			for (int i = 0; i < searchTexts.size(); i++) {
-				Pattern searchPattern;
-				if (searchTextIsRegularExpression) {
-					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i));
+				for (int i = 0; i < searchTexts.size(); i++) {
+					Pattern searchPattern;
+					if (searchTextIsRegularExpression) {
+						if (searchCaseSensitive) {
+							searchPattern = Pattern.compile(searchTexts.get(i));
+						} else {
+							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE);
+						}
 					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE);
+						if (searchCaseSensitive) {
+							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.LITERAL);
+						} else {
+							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+						}
 					}
-				} else {
-					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.LITERAL);
-					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+					Matcher matcher = searchPattern.matcher(dataString);
+					if (matcher.find()) {
+						return true;
 					}
 				}
-				Matcher matcher = searchPattern.matcher(dataString);
-				if (matcher.find()) {
-					return true;
-				}
 			}
+			return false;
+		} finally {
+			IOUtils.closeQuietly(fileInputStream);
 		}
-		return false;
 	}
 
 	public static boolean fileReplaceText(File searchFile, String searchText, String replacementText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding)
@@ -1028,45 +1018,50 @@ public class Utilities {
 		return fileReplaceText(searchFile, searchTexts, replacementTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
 	}
 
-	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression,
-			String defaultEncoding) throws Exception {
-		boolean foundAndReplaced = false;
-		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0 && replacementTexts != null && replacementTexts.size() > 0) {
-			byte[] encodingBuffer = Utilities.readFirstFileData(searchFile, 100);
-			Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
-			if (encodingData == null) {
-				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
-			}
-
-			String dataString = IOUtils.toString(new FileInputStream(searchFile), encodingData.getFirst());
-
-			for (int i = 0; i < searchTexts.size(); i++) {
-				Pattern searchPattern;
-				if (searchTextIsRegularExpression) {
-					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE);
+	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
+		FileInputStream fileInputStream = null;
+		try {
+			boolean foundAndReplaced = false;
+			if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0 && replacementTexts != null && replacementTexts.size() > 0) {
+				byte[] encodingBuffer = Utilities.readFirstFileData(searchFile, 100);
+				Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
+				if (encodingData == null) {
+					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
+				}
+	
+				fileInputStream = new FileInputStream(searchFile);
+				String dataString = IOUtils.toString(fileInputStream, encodingData.getFirst());
+	
+				for (int i = 0; i < searchTexts.size(); i++) {
+					Pattern searchPattern;
+					if (searchTextIsRegularExpression) {
+						if (searchCaseSensitive) {
+							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE);
+						} else {
+							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+						}
 					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+						if (searchCaseSensitive) {
+							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.LITERAL);
+						} else {
+							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+						}
 					}
-				} else {
-					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.LITERAL);
-					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+					Matcher matcher = searchPattern.matcher(dataString);
+					if (matcher.find()) {
+						dataString = matcher.replaceAll(replacementTexts.get(i));
+						foundAndReplaced = true;
 					}
 				}
-				Matcher matcher = searchPattern.matcher(dataString);
-				if (matcher.find()) {
-					dataString = matcher.replaceAll(replacementTexts.get(i));
-					foundAndReplaced = true;
+	
+				if (foundAndReplaced) {
+					FileUtils.writeStringToFile(searchFile, dataString, encodingData.getFirst());
 				}
 			}
-
-			if (foundAndReplaced) {
-				FileUtils.writeStringToFile(searchFile, dataString, encodingData.getFirst());
-			}
+			return foundAndReplaced;
+		} finally {
+			IOUtils.closeQuietly(fileInputStream);
 		}
-		return foundAndReplaced;
 	}
 
 	public static String getClassPath() {
@@ -1271,20 +1266,22 @@ public class Utilities {
 			}
 
 			switch (mailtype) {
-			case 0:
-				msg.setText(bodyText, charset);
-				break;
-
-			case 1:
-				Multipart mp = new MimeMultipart("alternative");
-				MimeBodyPart mbp = new MimeBodyPart();
-				mbp.setText(bodyText, charset);
-				mp.addBodyPart(mbp);
-				mbp = new MimeBodyPart();
-				mbp.setContent(bodyHtml, "text/html; charset=" + charset);
-				mp.addBodyPart(mbp);
-				msg.setContent(mp);
-				break;
+				case 0:
+					msg.setText(bodyText, charset);
+					break;
+				case 1:
+					Multipart mp = new MimeMultipart("alternative");
+					MimeBodyPart mbp = new MimeBodyPart();
+					mbp.setText(bodyText, charset);
+					mp.addBodyPart(mbp);
+					mbp = new MimeBodyPart();
+					mbp.setContent(bodyHtml, "text/html; charset=" + charset);
+					mp.addBodyPart(mbp);
+					msg.setContent(mp);
+					break;
+				default:
+					msg.setText(bodyText, charset);
+					break;
 			}
 
 			Transport.send(msg);

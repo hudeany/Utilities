@@ -178,6 +178,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		try {
 			readFileToString();
 		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 

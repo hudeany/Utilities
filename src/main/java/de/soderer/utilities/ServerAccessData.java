@@ -29,8 +29,10 @@ public class ServerAccessData extends SecureDataEntry{
 		this.username = username;
 		this.keyFile = keyFile;
 		this.password = password;
+		this.checkHostKey = checkHostKey;
 	}
 	
+	@Override
 	public void loadData(List<String> dataParts) throws Exception {
 		if (dataParts == null || dataParts.size() != 6) {
 			throw new IOException("Invalid data in ServerEntry");
@@ -48,8 +50,9 @@ public class ServerAccessData extends SecureDataEntry{
 		}
 	}
 	
-	public String toStorageString() {
-		return CsvWriter.getCsvLine(',', '"', entryName, hostname, port, username, keyFile, password);
+	@Override
+	public Object[] getStorageData() {
+		return new Object[]{entryName, hostname, port, username, keyFile, password};
 	}
 
 	public String getHostname() {

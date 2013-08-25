@@ -91,10 +91,12 @@ public class TextFileScanner implements Iterator<String> {
     // A cache of the last few recently used Patterns
     private LRUCache<String,Pattern> patternCache = 
     new LRUCache<String,Pattern>(7) {
-        protected Pattern create(String s) {
+        @Override
+		protected Pattern create(String s) {
             return Pattern.compile(s);
         }
-        protected boolean hasName(Pattern p, String s) {
+        @Override
+		protected boolean hasName(Pattern p, String s) {
             return p.pattern().equals(s);
         }
     };
@@ -985,7 +987,8 @@ public class TextFileScanner implements Iterator<String> {
      *
      * @return  The string representation of this scanner
      */
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder sb = new StringBuilder();
     sb.append("java.util.Scanner");
     sb.append("[delimiters=" + delimPattern + "]");
@@ -1014,7 +1017,8 @@ public class TextFileScanner implements Iterator<String> {
      * @throws IllegalStateException if this scanner is closed
      * @see java.util.Iterator
      */
-    public boolean hasNext() {
+    @Override
+	public boolean hasNext() {
         ensureOpen();
         saveState();
         while (!sourceClosed) {
@@ -1038,7 +1042,8 @@ public class TextFileScanner implements Iterator<String> {
      * @throws IllegalStateException if this scanner is closed
      * @see java.util.Iterator
      */
-    public String next() {
+    @Override
+	public String next() {
         ensureOpen();
         clearCaches();
         
@@ -1063,7 +1068,8 @@ public class TextFileScanner implements Iterator<String> {
      * @throws UnsupportedOperationException if this method is invoked.
      * @see java.util.Iterator
      */
-    public void remove() {
+    @Override
+	public void remove() {
         throw new UnsupportedOperationException();
     }
 

@@ -2,8 +2,8 @@ package de.soderer.utilities.swt;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
-import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -81,17 +81,13 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 				username = ((Text) e.widget).getText();
 			}
 		});
-		usernameTextField.addKeyListener(new KeyListener() {
+		usernameTextField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent event) {
 				if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(true);
 					getShell().close();
 				}
-			}
-			
-			@Override
-			public void keyPressed(KeyEvent event) {
 			}
 		});
 		
@@ -108,17 +104,13 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 				password = ((Text) e.widget).getText();
 			}
 		});
-		passwordTextField.addKeyListener(new KeyListener() {
+		passwordTextField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent event) {
 				if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(true);
 					getShell().close();
 				}
-			}
-			
-			@Override
-			public void keyPressed(KeyEvent event) {
 			}
 		});
 		

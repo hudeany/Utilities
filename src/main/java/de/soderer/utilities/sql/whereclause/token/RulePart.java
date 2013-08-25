@@ -13,6 +13,8 @@ public abstract class RulePart {
 		BeanShell
 	}
 	
+	@Override
 	public abstract String toString();
+	
 	public abstract String toString(StringType type);
 }

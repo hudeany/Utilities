@@ -49,6 +49,9 @@ public class SecureDataKeyStore {
 				} catch (ClassNotFoundException e) {
 					throw new Exception("Class of SecureDataEntry '" + secureDataEntryClassName + "' not found");
 				}
+				if (!SecureDataEntry.class.isAssignableFrom(Class.forName(secureDataEntryClassName))) {
+					throw new Exception("Class '" + secureDataEntryClassName + "' is not derived from SecureDataEntry");
+				}
 				SecureDataEntry newDataEntry = (SecureDataEntry) Class.forName(secureDataEntryClassName).newInstance();
 				newDataEntry.loadData(dataParts);
 				if (dataEntries.get(secureDataEntryClassName) == null) {
@@ -72,7 +75,7 @@ public class SecureDataKeyStore {
 			fos = new FileOutputStream(keystoreFile);
 			for (Entry<String, Map<String, SecureDataEntry>> entryMap : dataEntries.entrySet()) {
 				for (Entry<String, SecureDataEntry> entry : entryMap.getValue().entrySet()) {
-					keyStore.setKeyEntry(entryMap.getKey() + "/" + entry.getKey(), new SecretKeySpec(("\"" + entry.getValue().getClass().getName() + "\"," + entry.getValue().toStorageString()).getBytes("UTF-8"), "AES"), passwordArray, null);
+					keyStore.setKeyEntry(entryMap.getKey() + "/" + entry.getKey(), new SecretKeySpec(("\"" + entry.getValue().getClass().getName() + "\"," + CsvWriter.getCsvLine(',', '"', entry.getValue().getStorageData())).getBytes("UTF-8"), "AES"), passwordArray, null);
 				}
 			}
 			keyStore.store(fos, passwordArray);

@@ -13,6 +13,7 @@ public abstract class MainDialog extends Shell {
 		this.display = display;
 	}
 	
+	@Override
 	public Display getDisplay() {
 		return display;
 	}
@@ -34,5 +35,6 @@ public abstract class MainDialog extends Shell {
 	
 	@Override
 	protected void checkSubclass() {
+		// do nothing
 	}
 }

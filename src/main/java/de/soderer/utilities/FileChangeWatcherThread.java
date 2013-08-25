@@ -17,6 +17,7 @@ public class FileChangeWatcherThread extends Thread {
 		setDaemon(true);
 	}
 
+	@Override
 	public void run() {
 		try {
 			while (running) {
