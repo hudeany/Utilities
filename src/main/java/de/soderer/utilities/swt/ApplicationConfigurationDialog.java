@@ -162,7 +162,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			public void widgetSelected(SelectionEvent e) {
 				if (!SystemUtilities.isJavaWebstartApp()) {
 					if (SystemUtilities.isWindowsSystem()) {
-						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".lnk";
+						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + "_offline.lnk";
 						if (new File(desktopLinkFilePath).exists()) {
 							new File(desktopLinkFilePath).delete();
 						}
@@ -213,9 +213,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							}
 				        }	
 					} else if (SystemUtilities.isLinuxSystem()) {
-						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + applicationName + ".desktop";
 						if (new File(desktopLinkFilePath).exists()) {
 							new File(desktopLinkFilePath).delete();
+						}
+						String desktopExecuteFilePath = System.getProperty("user.home") + File.separator + applicationName + ".sh";
+						if (new File(desktopExecuteFilePath).exists()) {
+							new File(desktopExecuteFilePath).delete();
 						}
 						
 						String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
@@ -241,12 +245,14 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							}
 							
 							// %U-parameter allows drag and drop of files in unity on starter
-							data.append("Exec=java -jar " + fileName + " %U\n");
+							data.append("Exec=./" + applicationName + ".sh %U\n");
 							data.append("Terminal=false\n");
 							data.append("Type=Application\n");
 							
 							try {
 								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
+								// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window
+								FileUtils.writeStringToFile(new File(desktopExecuteFilePath), "#!/bin/bash\nUBUNTU_MENUPROXY=0 java -jar " + fileName + " $@\n", "UTF-8");
 								
 								MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
 								messageBox.setText(LangResources.get("createDesktopLink"));
@@ -261,6 +267,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				        }
 					}
 				} else {
+					//TODO:
 //					try {
 //						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
 //						if (new File(desktopLinkFilePath).exists()) {
