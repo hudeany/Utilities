@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import de.soderer.utilities.SystemUtilities;
+
 /**
  * This class will be compiled into the binary jar-in-jar-loader.zip. This ZIP is used for the
  * "Runnable JAR File Exporter"
@@ -45,7 +47,7 @@ public class JarRsrcLoader {
 				String jarFilePath = currentJarUrlPath.substring(0, currentJarUrlPath.lastIndexOf("!")).replaceFirst("jar:file:", "");
 				File jarFile = new File(jarFilePath);
 				if (jarFile.exists()) {
-					System.getProperties().put("process.jar", jarFile.getAbsolutePath());
+					System.getProperties().put(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR, jarFile.getAbsolutePath());
 				}
 			}
 		} catch (Exception e) {

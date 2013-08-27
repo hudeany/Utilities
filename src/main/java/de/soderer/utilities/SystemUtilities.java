@@ -11,6 +11,8 @@ import java.util.Map;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class SystemUtilities {
+	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
+	
 	public static String getOsName() {
 		return System.getProperty("os.name");
 	}

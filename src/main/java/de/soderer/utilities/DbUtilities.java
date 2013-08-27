@@ -299,29 +299,29 @@ public class DbUtilities {
 		}
 	}
 	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
 			fileInputStream = new FileInputStream(csvFile);
-			return importCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
+			return importCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 		} finally {
 			IOUtils.closeQuietly(fileInputStream);
 		}
 	}
 	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean commitOnFullSuccessOnly) throws Exception {
-		return importCsvFileInTable(dataSource, tableName, columnMapping, csvFileInputStream, encoding, false, commitOnFullSuccessOnly);
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+		return importCsvFileInTable(dataSource, tableName, columnMapping, csvFileInputStream, encoding, false, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
 	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
-		return importCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+		return importCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
 	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
-		return importCsvFileInTable(dataSource, tableName, columnMapping, columnDateFormats, csvFileInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly);
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+		return importCsvFileInTable(dataSource, tableName, columnMapping, columnDateFormats, csvFileInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
 		
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for dataimport");
 		}
@@ -341,11 +341,14 @@ public class DbUtilities {
 			csvReader = new CsvReader(csvFileInputStream, encoding, separatorChar, stringQuoteChar);
 			csvReader.setFillMissingTrailingColumnsWithNull(fillMissingTrailingColumnsWithNull);
 
-			// First line contains headers
-			List<String> csvLine = csvReader.readNextCsvLine();
-			if (columnMapping == null) {
-				columnMapping = csvLine.toArray(new String[0]);
-			}
+			// First line may contain headers
+            List<String> csvLine;
+            if (containsHeadersInFirstRow) {
+                csvLine = csvReader.readNextCsvLine();
+                if (columnMapping == null) {
+                    columnMapping = csvLine.toArray(new String[0]);
+                }
+            }
 
 			checkTableAndColumnsExist(connection, tableName, columnMapping, true);
 			
