@@ -1351,6 +1351,7 @@ public class Utilities {
 						// For using the parameters check the following description
 						// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
 						Runtime.getRuntime().exec("thunderbird -compose");
+						success = Program.launch(mailtoString);
 					} catch (Exception e) {
 						throw new Exception("Open mail by thunderbird failed");
 					}
