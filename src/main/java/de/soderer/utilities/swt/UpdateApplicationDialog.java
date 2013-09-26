@@ -1,6 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.io.File;
+import java.util.concurrent.RunnableFuture;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -18,9 +19,8 @@ import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
-import de.soderer.utilities.Utilities;
 
-public class UpdateApplicationDialog extends ModalDialog<Boolean> {
+public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {
 	private static final transient Logger logger = Logger.getLogger(UpdateApplicationDialog.class);
 	
 	private String title;
@@ -79,6 +79,10 @@ public class UpdateApplicationDialog extends ModalDialog<Boolean> {
 	private void updateApplication() {
 		try {
 			String jarFilePath = System.getProperty("process.jar");
+			
+			//TODO
+			jarFilePath = "C:\\Users\\Andreas\\Downloads\\test.jar";
+			
 			if (StringUtils.isNotBlank(jarFilePath)) {
 				File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 				downloadTempFile.delete();
@@ -125,7 +129,14 @@ public class UpdateApplicationDialog extends ModalDialog<Boolean> {
 						downloadUrl = downloadUrl.replaceAll("<bitmode>", "32");
 					}
 				}
-				Utilities.downloadFile(downloadUrl, downloadTempFile.getAbsolutePath());
+				
+				RunnableFuture<Boolean> worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile.getAbsolutePath());
+				progressDialog = new ProgressDialog(LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"), getShell(), LangResources.get("cancel"));
+				new Thread(worker).start();
+				if (progressDialog.open()) {
+					worker.cancel(true);
+					showMessage(LangResources.get("menu.updateFileDownload"), LangResources.get("canceledByUser"));
+				}
 				
 				if (SystemUtilities.isWindowsSystem()) {
 					File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
