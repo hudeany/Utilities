@@ -17,6 +17,8 @@ import de.soderer.utilities.LangResources;
 public class QuestionDialog extends ModalDialog<Integer> {
 	private String title;
 	private String text;
+	private String rememberAnswerText = null;
+	private boolean rememberAnswer = false;
 	private String[] buttonTexts;
 
 	public QuestionDialog(String title, String text, Shell shell, String... buttonTexts) {   
@@ -55,6 +57,19 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		Label label = new Label(composite, SWT.FILL);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
 		label.setText(text);
+		
+		if (StringUtils.isNotBlank(rememberAnswerText)) {
+			Button rememberAnswerCheckBox = new Button(composite, SWT.CHECK);
+			rememberAnswerCheckBox.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
+			rememberAnswerCheckBox.setSelection(false);
+			rememberAnswerCheckBox.setText(rememberAnswerText);
+			rememberAnswerCheckBox.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					rememberAnswer = ((Button) e.widget).getSelection();
+				}
+			});
+		}
 	    
 		if (buttonTexts != null && buttonTexts.length > 0) {
 			for (int i = 0; i < buttonTexts.length; i++) {
@@ -74,5 +89,13 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		}
 
 		shell.pack();
+	}
+	
+	public void setRememberAnswerText(String rememberAnswerText) {
+		this.rememberAnswerText = rememberAnswerText;
+	}
+	
+	public boolean getRememberAnswerStatus() {
+		return rememberAnswer;
 	}
 }
