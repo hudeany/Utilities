@@ -80,9 +80,6 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		try {
 			String jarFilePath = System.getProperty("process.jar");
 			
-			//TODO
-			jarFilePath = "C:\\Users\\Andreas\\Downloads\\test.jar";
-			
 			if (StringUtils.isNotBlank(jarFilePath)) {
 				File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 				downloadTempFile.delete();
