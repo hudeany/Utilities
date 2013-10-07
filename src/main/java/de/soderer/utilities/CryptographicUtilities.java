@@ -51,6 +51,9 @@ public class CryptographicUtilities {
 	public static String DEFAULT_AES_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
 	public static String DEFAULT_RSA_SIGNATURE_METHOD = "SHA256WithRSAEncryption";
 	public static String DEFAULT_RSA_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
+	public static final String[] KNOWN_AES_ENCRYPTION_METHODS = new String[]{DEFAULT_AES_ENCRYPTION_METHOD};
+	public static final String[] KNOWN_RSA_SIGNATURE_METHODS = new String[]{DEFAULT_RSA_SIGNATURE_METHOD};
+	public static final String[] KNOWN_RSA_ENCRYPTION_METHODS = new String[]{DEFAULT_RSA_ENCRYPTION_METHOD, "RSA/ECB/OAEPPadding"};
 	
 	public static AsymmetricCipherKeyPair generateRsaKeyPair(int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
