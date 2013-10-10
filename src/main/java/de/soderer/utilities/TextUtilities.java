@@ -157,16 +157,22 @@ public class TextUtilities {
 	}
 
 	public static int getLineCount(String dataString) throws IOException {
-		LineNumberReader lineNumberReader = null;
-		try {
-			lineNumberReader = new LineNumberReader(new StringReader(dataString));
-			while (lineNumberReader.readLine() != null) {
-				// do nothing
+		if (dataString == null) {
+			return 0;
+		} else if ("".equals(dataString)) {
+			return 1;
+		} else {
+			LineNumberReader lineNumberReader = null;
+			try {
+				lineNumberReader = new LineNumberReader(new StringReader(dataString));
+				while (lineNumberReader.readLine() != null) {
+					// do nothing
+				}
+	
+				return lineNumberReader.getLineNumber();
+			} finally {
+				IOUtils.closeQuietly(lineNumberReader);
 			}
-
-			return lineNumberReader.getLineNumber();
-		} finally {
-			IOUtils.closeQuietly(lineNumberReader);
 		}
 	}
 

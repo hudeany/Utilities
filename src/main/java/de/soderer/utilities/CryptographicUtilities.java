@@ -47,13 +47,106 @@ public class CryptographicUtilities {
 	public static Logger logger = Logger.getLogger(CryptographicUtilities.class);
 	
 	public static byte[] DEFAULT_SALT = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107};
-	public static byte[] DEFAULT_AES_INITALIZATION_VECTOR = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107, 48, 57, 56, 107};
-	public static String DEFAULT_AES_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
-	public static String DEFAULT_RSA_SIGNATURE_METHOD = "SHA256WithRSAEncryption";
-	public static String DEFAULT_RSA_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
-	public static final String[] KNOWN_AES_ENCRYPTION_METHODS = new String[]{DEFAULT_AES_ENCRYPTION_METHOD};
-	public static final String[] KNOWN_RSA_SIGNATURE_METHODS = new String[]{DEFAULT_RSA_SIGNATURE_METHOD};
-	public static final String[] KNOWN_RSA_ENCRYPTION_METHODS = new String[]{DEFAULT_RSA_ENCRYPTION_METHOD, "RSA/ECB/OAEPPadding"};
+	public static byte[] DEFAULT_SYMMETRIC_INITALIZATION_VECTOR = new byte[]{48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107, 48, 57, 56, 107};
+	public static final String[] SYMMETRIC_CIPHERS = {
+		//Block chiffre
+		"AES",
+		"AESWrap",
+		"Blowfish	",
+		"Camellia",
+		"CamelliaWrap",
+		"CAST5",
+		"CAST6",
+		"DES",
+		"DESede",
+		"DESedeWrap",
+		"GOST28147",
+		"IDEA",
+		"Noekeon",
+		"RC2",
+		"RC5",
+		"RC5-64",
+		"RC6",
+		"Rijndael",
+		"SEED",
+		"SEEDWrap",
+		"Serpent",
+		"Skipjack",
+		"TEA",
+		"Twofish",
+		"XTEA",
+
+		// Stream chiffre
+		"RC4	",
+		"HC128	",
+		"HC256	",
+		"Salsa20	",
+		"VMPC",
+		"Grainv1",
+		"Grain128"
+	};
+	public static String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
+	public static final String[] KNOWN_SYMMETRIC_ENCRYPTION_METHODS = new String[]{DEFAULT_SYMMETRIC_ENCRYPTION_METHOD,
+		"DES/CBC/PKCS5Padding",
+		"DES/CBC/X9.23Padding",
+		"DES/OFB8/NoPadding",
+		"DES/ECB/WithCTS",
+		"IDEA/CBC/ISO10126Padding",
+		"IDEA/CBC/ISO7816-4Padding",
+		"SKIPJACK/ECB/PKCS7Padding"};
+	public static String DEFAULT_SIGNATURE_METHOD = "SHA256WithRSA";
+	public static final String[] KNOWN_SIGNATURE_METHODS = new String[]{DEFAULT_SIGNATURE_METHOD,
+		"DSTU4145",
+		"GOST3411withGOST3410",
+		"GOST3411withGOST3410-94",
+		"GOST3411withECGOST3410",
+		"GOST3411withGOST3410-2001",
+		"MD2withRSA",
+		"MD5withRSA",
+		"SHA1withRSA",
+		"RIPEMD128withRSA",
+		"RIPEMD160withRSA",
+		"RIPEMD160withECDSA",
+		"RIPEMD256withRSA",
+		"SHA1withDSA",
+		"NONEwithDSA",
+		"SHA1withECDSA",
+		"NONEwithECDSA",
+		"SHA224withECDSA",
+		"SHA256withECDSA",
+		"SHA384withECDSA",
+		"SHA512withECDSA",
+		"SHA1withECNR",
+		"SHA224withECNR",
+		"SHA256withECNR",
+		"SHA384withECNR",
+		"SHA512withECNR",
+		"SHA224withRSA",
+		"SHA384withRSA",
+		"SHA512withRSA",
+		"SHA1withRSAandMGF1",
+		"SHA256withRSAandMGF1",
+		"SHA384withRSAandMGF1",
+		"SHA512withRSAandMGF1"
+	};
+	public static final String[] ASYMMETRIC_CIPHERS = new String[]{
+		"RSA",
+		"ElGamal"
+	};
+	public static String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
+	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS = new String[]{DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD,
+		"RSA/ECB/OAEPPadding",
+		"RSA/NONE/NoPadding",
+		"RSA/NONE/PKCS1Padding",
+		"RSA/NONE/OAEPWithMD5AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA1AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA224AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA256AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA384AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA512AndMGF1Padding",
+		"RSA/NONE/ISO9796-1Padding",
+		"ElGamal/NONE/NoPadding"
+	};
 	
 	public static AsymmetricCipherKeyPair generateRsaKeyPair(int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
@@ -69,7 +162,7 @@ public class CryptographicUtilities {
 	}
 	
 	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerAndSubjectName, Date validFrom, Date validUntil) throws Exception {
-		return generateRsaCertificate(keyPair, issuerAndSubjectName, validFrom, validUntil, DEFAULT_RSA_SIGNATURE_METHOD);
+		return generateRsaCertificate(keyPair, issuerAndSubjectName, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -110,11 +203,11 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static void encryptRsa(InputStream dataStream, OutputStream encryptedOutputStream, PublicKey publicKey) throws Exception {
-		encryptRsa(dataStream, encryptedOutputStream, publicKey, DEFAULT_RSA_ENCRYPTION_METHOD);	
+	public static void encryptAsymmetric(InputStream dataStream, OutputStream encryptedOutputStream, PublicKey publicKey) throws Exception {
+		encryptAsymmetric(dataStream, encryptedOutputStream, publicKey, DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD);	
 	}
 
-	public static void encryptRsa(InputStream dataStream, OutputStream encryptedOutputStream, PublicKey publicKey, String encryptionMethod) throws Exception {
+	public static void encryptAsymmetric(InputStream dataStream, OutputStream encryptedOutputStream, PublicKey publicKey, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		CipherOutputStream cipherOutputStream = null;
@@ -131,44 +224,12 @@ public class CryptographicUtilities {
 			}
 		}
 	}
-
-	public static byte[] encryptRsa(byte[] data, PublicKey publicKey) throws Exception {
-		return encryptRsa(data, publicKey, DEFAULT_RSA_ENCRYPTION_METHOD);	
-	}
-
-	public static byte[] encryptRsa(byte[] data, PublicKey publicKey, String encryptionMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-		
-		try {
-			Cipher cipher = Cipher.getInstance(encryptionMethod, "BC");
-			cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-			return cipher.doFinal(data);
-		} catch (Exception e) {
-			throw new Exception("Error while encrypting: " + e.getMessage(), e);
-		}
+	
+	public static void decryptAsymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, PrivateKey privateKey) throws Exception {
+		decryptAsymmetric(encryptedDataStream, dataOutputStream, privateKey, DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD);
 	}
 	
-	public static byte[] decryptRsa(byte[] encryptedData, PrivateKey privateKey) throws Exception {
-		return decryptRsa(encryptedData, privateKey, DEFAULT_RSA_ENCRYPTION_METHOD);
-	}
-	
-	public static byte[] decryptRsa(byte[] encryptedData, PrivateKey privateKey, String encryptionMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-		
-		try {
-			Cipher cipher = Cipher.getInstance(encryptionMethod, "BC");
-			cipher.init(Cipher.DECRYPT_MODE, privateKey);
-			return cipher.doFinal(encryptedData);
-		} catch (Exception e) {
-			throw new Exception("Error while decrypting: " + e.getMessage(), e);
-		}
-	}
-	
-	public static void decryptRsa(InputStream encryptedDataStream, OutputStream dataOutputStream, PrivateKey privateKey) throws Exception {
-		decryptRsa(encryptedDataStream, dataOutputStream, privateKey, DEFAULT_RSA_ENCRYPTION_METHOD);
-	}
-	
-	public static void decryptRsa(InputStream encryptedDataStream, OutputStream dataOutputStream, PrivateKey privateKey, String encryptionMethod) throws Exception {
+	public static void decryptAsymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, PrivateKey privateKey, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		InputStream cipherInputStream = null;
@@ -333,29 +394,11 @@ public class CryptographicUtilities {
 		return getCertificateFromString(certificateFileString);
 	}
 	
-	public static byte[] encryptAes(byte[] data, String password) throws Exception {
-		return encryptAes(data, password, DEFAULT_SALT, DEFAULT_AES_INITALIZATION_VECTOR, DEFAULT_AES_ENCRYPTION_METHOD);
+	public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedOutputStream, String password) throws Exception {
+		encryptSymmetric(dataStream, encryptedOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
 	}
 	
-	public static byte[] encryptAes(byte[] data, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			byte[] keyBytes = stretchPassword(password, 128, salt);
-			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
-			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-			return encryptCipher.doFinal(data);
-		} catch (Exception e) {
-			throw new Exception("Error while encrypting: " + e.getMessage(), e);
-		}
-	}
-	
-	public static void encryptAes(InputStream dataStream, OutputStream encryptedOutputStream, String password) throws Exception {
-		encryptAes(dataStream, encryptedOutputStream, password, DEFAULT_SALT, DEFAULT_AES_INITALIZATION_VECTOR, DEFAULT_AES_ENCRYPTION_METHOD);
-	}
-	
-	public static void encryptAes(InputStream dataStream, OutputStream encryptedOutputStream, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
+	public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedOutputStream, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		CipherOutputStream cipherOutputStream = null;
@@ -374,31 +417,12 @@ public class CryptographicUtilities {
 			}
 		}
 	}
-
-	public static byte[] decryptAes(byte[] enryptedData, String password) throws Exception {
-		return decryptAes(enryptedData, password, DEFAULT_SALT, DEFAULT_AES_INITALIZATION_VECTOR, DEFAULT_AES_ENCRYPTION_METHOD);
-	}
-
-	public static byte[] decryptAes(byte[] enryptedData, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			byte[] keyBytes = stretchPassword(password, 128, salt);
-			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, "BC");
-			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-		
-			return decryptCipher.doFinal(enryptedData);
-		} catch (Exception e) {
-			throw new Exception("Error while decrypting: " + e.getMessage(), e);
-		}
+	
+	public static void decryptSymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, String password) throws Exception {
+		decryptSymmetric(encryptedDataStream, dataOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
 	}
 	
-	public static void decryptAes(InputStream encryptedDataStream, OutputStream dataOutputStream, String password) throws Exception {
-		decryptAes(encryptedDataStream, dataOutputStream, password, DEFAULT_SALT, DEFAULT_AES_INITALIZATION_VECTOR, DEFAULT_AES_ENCRYPTION_METHOD);
-	}
-	
-	public static void decryptAes(InputStream encryptedDataStream, OutputStream dataOutputStream, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
+	public static void decryptSymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		CipherInputStream cipherInputStream = null;
@@ -426,7 +450,7 @@ public class CryptographicUtilities {
 	}
 	
 	public static byte[] signData(byte[] data, PrivateKey privateKey) throws Exception {
-		return signData(data, privateKey, DEFAULT_RSA_SIGNATURE_METHOD);
+		return signData(data, privateKey, DEFAULT_SIGNATURE_METHOD);
 	}
 	
 	public static byte[] signData(byte[] data, PrivateKey privateKey, String signatureMethod) throws Exception {
@@ -443,7 +467,7 @@ public class CryptographicUtilities {
 	}
 	
 	public static byte[] signStream(InputStream dataStream, PrivateKey privateKey) throws Exception {
-		return signStream(dataStream, privateKey, DEFAULT_RSA_SIGNATURE_METHOD);
+		return signStream(dataStream, privateKey, DEFAULT_SIGNATURE_METHOD);
 	}
 	
 	public static byte[] signStream(InputStream dataStream, PrivateKey privateKey, String signatureMethod) throws Exception {
@@ -465,7 +489,7 @@ public class CryptographicUtilities {
 	}
 	
 	public static boolean verifyData(byte[] data, PublicKey publicKey, byte[] signatureData) throws Exception {
-		return verifyData(data, publicKey, signatureData, DEFAULT_RSA_SIGNATURE_METHOD);
+		return verifyData(data, publicKey, signatureData, DEFAULT_SIGNATURE_METHOD);
 	}
 	
 	public static boolean verifyData(byte[] data, PublicKey publicKey, byte[] signatureData, String signatureMethod) throws Exception {
@@ -482,7 +506,7 @@ public class CryptographicUtilities {
 	}
 	
 	public static boolean verifyStream(InputStream dataStream, PublicKey publicKey, byte[] signatureData) throws Exception {
-		return verifyStream(dataStream, publicKey, signatureData, DEFAULT_RSA_SIGNATURE_METHOD);
+		return verifyStream(dataStream, publicKey, signatureData, DEFAULT_SIGNATURE_METHOD);
 	}
 	
 	public static boolean verifyStream(InputStream dataStream, PublicKey publicKey, byte[] signatureData, String signatureMethod) throws Exception {
