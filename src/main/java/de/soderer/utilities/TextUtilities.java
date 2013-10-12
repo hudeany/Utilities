@@ -675,4 +675,35 @@ public class TextUtilities {
 		}
 		return usedCharsList;
 	}
+	
+	public static boolean endsWithIgnoreCase(String str, String suffix) {
+	    if (str == null || suffix == null) {
+	        return (str == null && suffix == null);
+	    } else if (suffix.length() > str.length()) {
+	        return false;
+	    } else {
+		    int strOffset = str.length() - suffix.length();
+		    return str.regionMatches(true, strOffset, suffix, 0, suffix.length());
+	    }
+	}
+
+	public static boolean startsWithIgnoreCase(String str, String prefix) {
+		if (str == null || prefix == null) {
+	        return (str == null && prefix == null);
+	    } else if (prefix.length() > str.length()) {
+	        return false;
+	    } else {
+	    	return str.regionMatches(true, 0, prefix, 0, prefix.length());
+	    }
+	}
+
+	public static boolean containsIgnoreCase(String str, String substr) {
+		if (str == null || substr == null) {
+	        return (str == null && substr == null);
+	    } else if (substr.length() > str.length()) {
+	        return false;
+	    } else {
+	    	return str.regionMatches(true, 0, substr, 0, str.length());
+	    }
+	}
 }

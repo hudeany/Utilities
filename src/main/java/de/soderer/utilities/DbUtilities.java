@@ -2,7 +2,8 @@ package de.soderer.utilities;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.BatchUpdateException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -40,13 +41,11 @@ public class DbUtilities {
 		}
 	}
 	
-	public static int readoutTableInFile(DataSource dataSource, String tableName, File outputFile, String encoding, char separator, Character stringQuote) throws Exception {
-    	return readoutInFile(dataSource, "SELECT * FROM " + tableName, outputFile, encoding, separator, stringQuote);
+	public static int readoutTableData(DataSource dataSource, String tableName, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
+    	return readoutData(dataSource, "SELECT * FROM " + tableName, outputStream, encoding, separator, stringQuote);
     }
     
-    public static int readoutInFile(DataSource dataSource, String statementString, File outputFile, String encoding, char separator, Character stringQuote) throws Exception {
-		if (outputFile.exists()) throw new Exception("Outputfile already exists");
-		
+    public static int readoutData(DataSource dataSource, String statementString, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
 		Connection connection = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -55,7 +54,7 @@ public class DbUtilities {
 			connection = dataSource.getConnection();
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery(statementString);
-			csvWriter = new CsvWriter(new FileOutputStream(outputFile), encoding, separator, stringQuote);
+			csvWriter = new CsvWriter(outputStream, encoding, separator, stringQuote);
 			ResultSetMetaData metaData = resultSet.getMetaData();
 			// write headers
 			List<String> headers = new ArrayList<String>();
@@ -317,11 +316,11 @@ public class DbUtilities {
 		return importCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
 	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		return importCsvFileInTable(dataSource, tableName, columnMapping, columnDateFormats, csvFileInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, InputStream csvInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+		return importCsvDataInTable(dataSource, tableName, columnMapping, columnDateFormats, csvInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
 		
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, FileInputStream csvFileInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+	public static Map<Integer, Tuple<List<String>, String>> importCsvDataInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, InputStream csvInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for dataimport");
 		}
@@ -338,7 +337,7 @@ public class DbUtilities {
 			connection.setAutoCommit(false);
 			statement = connection.createStatement();
 			
-			csvReader = new CsvReader(csvFileInputStream, encoding, separatorChar, stringQuoteChar);
+			csvReader = new CsvReader(csvInputStream, encoding, separatorChar, stringQuoteChar);
 			csvReader.setFillMissingTrailingColumnsWithNull(fillMissingTrailingColumnsWithNull);
 
 			// First line may contain headers

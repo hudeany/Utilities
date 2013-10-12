@@ -37,20 +37,23 @@ import de.soderer.utilities.Utilities;
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private String applicationName;
 	private ConfigurationProperties applicationConfiguration;
-	private Image iconImage;
+	private byte[] iconImageDataWindows;
+	private Image iconImageLinux;
 	
 	public ApplicationConfigurationDialog(Shell shell, ConfigurationProperties applicationConfiguration, String applicationName) throws Exception {   
 		super(shell, SWT.RESIZE);
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
-		this.iconImage = null;
+		this.iconImageDataWindows = null;
+		this.iconImageLinux = null;
 	}
 
-	public ApplicationConfigurationDialog(Shell shell, ConfigurationProperties applicationConfiguration, String applicationName, Image iconImage) throws Exception {   
+	public ApplicationConfigurationDialog(Shell shell, ConfigurationProperties applicationConfiguration, String applicationName, byte[] iconImageWindows, Image iconImageLinux) throws Exception {   
 		super(shell, SWT.RESIZE);
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
-		this.iconImage = iconImage;
+		this.iconImageDataWindows = iconImageWindows;
+		this.iconImageLinux = iconImageLinux;
 	}
 	
 	@Override
@@ -160,142 +163,144 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		createLinkButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (!SystemUtilities.isJavaWebstartApp()) {
-					String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
-					if (StringUtils.isBlank(applicationJarFileName)) {
-						FileDialog dialog = new FileDialog(getShell(), SWT.OPEN);
-				        dialog.setText(LangResources.get("createDesktopLink"));
-				        applicationJarFileName = dialog.open();
-					}
-					
-			        if (StringUtils.isBlank(applicationJarFileName)) {
-			        	return;
-			        }
-			        
-			        String javaHome = System.getProperty("java.home");
-			        
-					if (SystemUtilities.isWindowsSystem()) {
-						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + "_offline.lnk";
-						if (new File(desktopLinkFilePath).exists()) {
-							new File(desktopLinkFilePath).delete();
+				try {
+					if (!SystemUtilities.isJavaWebstartApp()) {
+						String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+						if (StringUtils.isBlank(applicationJarFileName)) {
+							FileDialog dialog = new FileDialog(getShell(), SWT.OPEN);
+					        dialog.setText(LangResources.get("createDesktopLink"));
+					        applicationJarFileName = dialog.open();
 						}
 						
-						String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".ico";
-						if (new File(iconPath).exists()) {
-							new File(iconPath).delete();
-						}
-	
-			        	String tempScriptFile = System.getProperty("java.io.tmpdir") + File.separator + applicationName + "_createlink.vbs";
-			        	if (new File(tempScriptFile).exists()) {
-							new File(tempScriptFile).delete();
-						}
-						
-						if (iconImage != null) {
-							ImageLoader loader = new ImageLoader();
-						    loader.data = new ImageData[] {iconImage.getImageData()};
-						    loader.save(iconPath, SWT.IMAGE_ICO);
-						}
-						
-						StringBuilder data = new StringBuilder();
-						data.append("set shortcut = CreateObject(\"WScript.Shell\").CreateShortcut(\"" + desktopLinkFilePath + "\")\n");
-						data.append("shortcut.Description = \""+ applicationName + "\"\n");
-						if (StringUtils.isNotBlank(javaHome)) {
-							data.append("shortcut.TargetPath = \"" + javaHome + "\\bin\\javaw.exe\"\n");
-							data.append("shortcut.Arguments = \"-jar \"\"" + applicationJarFileName + "\"\"\"\n");
-						} else {
-							data.append("shortcut.TargetPath = \"" + applicationJarFileName + "\"\n");
-						}
-						data.append("shortcut.IconLocation = \"" + iconPath + "\"\n");
-						data.append("shortcut.Save\n");
-						
-						try {
-							FileUtils.writeStringToFile(new File(tempScriptFile), data.toString(), "UTF-8");
+				        if (StringUtils.isBlank(applicationJarFileName)) {
+				        	return;
+				        }
+				        
+				        String javaHome = System.getProperty("java.home");
+				        
+						if (SystemUtilities.isWindowsSystem()) {
+							String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + "_offline.lnk";
+							if (new File(desktopLinkFilePath).exists()) {
+								new File(desktopLinkFilePath).delete();
+							}
 							
-							Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
+							String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".ico";
+							if (new File(iconPath).exists()) {
+								new File(iconPath).delete();
+							}
+		
+				        	String tempScriptFile = System.getProperty("java.io.tmpdir") + File.separator + applicationName + "_createlink.vbs";
+				        	if (new File(tempScriptFile).exists()) {
+								new File(tempScriptFile).delete();
+							}
 							
-							MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
-							messageBox.setText(LangResources.get("createDesktopLink"));
-							messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
-							messageBox.open();
+							if (iconImageDataWindows != null) {
+								FileUtils.writeByteArrayToFile(new File(iconPath), iconImageDataWindows);
+							}
 							
-							new File(tempScriptFile).delete();
-						} catch (IOException e1) {
-							MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
-							messageBox.setText(LangResources.get("createDesktopLink"));
-							messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
-							messageBox.open();
-						}
-					} else if (SystemUtilities.isLinuxSystem()) {
-						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
-						if (new File(desktopLinkFilePath).exists()) {
-							new File(desktopLinkFilePath).delete();
-						}
-						String desktopExecuteFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".sh";
-						if (new File(desktopExecuteFilePath).exists()) {
-							new File(desktopExecuteFilePath).delete();
-						}
-						
-						String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
-						if (new File(iconPath).exists()) {
-							new File(iconPath).delete();
-						}
-
 							StringBuilder data = new StringBuilder();
-						data.append("[Desktop Entry]\n");
-						data.append("Encoding=UTF-8\n");
-						data.append("Name=" + applicationName + "\n");
-						
-						if (iconImage != null) {
-							ImageLoader loader = new ImageLoader();
-						    loader.data = new ImageData[] {iconImage.getImageData()};
-						    loader.save(iconPath, SWT.IMAGE_PNG);
-						    
-							data.append("Icon=" + iconPath + "\n");
-						}
-						
-						// %U-parameter allows drag and drop of files in unity on starter
-						data.append("Exec=./" + applicationName + ".sh %U\n");
-						data.append("Terminal=false\n");
-						data.append("Type=Application\n");
-						
-						try {
-							FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
-							// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window
-							FileUtils.writeStringToFile(new File(desktopExecuteFilePath), "#!/bin/bash\nUBUNTU_MENUPROXY=0 java -jar " + applicationJarFileName + " $@\n", "UTF-8");
+							data.append("set shortcut = CreateObject(\"WScript.Shell\").CreateShortcut(\"" + desktopLinkFilePath + "\")\n");
+							data.append("shortcut.Description = \""+ applicationName + "\"\n");
+							if (StringUtils.isNotBlank(javaHome)) {
+								data.append("shortcut.TargetPath = \"" + javaHome + "\\bin\\javaw.exe\"\n");
+								data.append("shortcut.Arguments = \"-jar \"\"" + applicationJarFileName + "\"\"\"\n");
+							} else {
+								data.append("shortcut.TargetPath = \"" + applicationJarFileName + "\"\n");
+							}
+							data.append("shortcut.IconLocation = \"" + iconPath + "\"\n");
+							data.append("shortcut.Save\n");
 							
-							MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
-							messageBox.setText(LangResources.get("createDesktopLink"));
-							messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
-							messageBox.open();
-						} catch (IOException e1) {
-							MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
-							messageBox.setText(LangResources.get("createDesktopLink"));
-							messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
-							messageBox.open();
+							try {
+								FileUtils.writeStringToFile(new File(tempScriptFile), data.toString(), "UTF-8");
+								
+								Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
+								
+								MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
+								messageBox.setText(LangResources.get("createDesktopLink"));
+								messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+								messageBox.open();
+								
+								new File(tempScriptFile).delete();
+							} catch (IOException e1) {
+								MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+								messageBox.setText(LangResources.get("createDesktopLink"));
+								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+								messageBox.open();
+							}
+						} else if (SystemUtilities.isLinuxSystem()) {
+							String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+							if (new File(desktopLinkFilePath).exists()) {
+								new File(desktopLinkFilePath).delete();
+							}
+							String desktopExecuteFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".sh";
+							if (new File(desktopExecuteFilePath).exists()) {
+								new File(desktopExecuteFilePath).delete();
+							}
+							
+							String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
+							if (new File(iconPath).exists()) {
+								new File(iconPath).delete();
+							}
+	
+								StringBuilder data = new StringBuilder();
+							data.append("[Desktop Entry]\n");
+							data.append("Encoding=UTF-8\n");
+							data.append("Name=" + applicationName + "\n");
+							
+							if (iconImageLinux != null) {
+								ImageLoader loader = new ImageLoader();
+							    loader.data = new ImageData[] {iconImageLinux.getImageData()};
+							    loader.save(iconPath, SWT.IMAGE_PNG);
+							    
+								data.append("Icon=" + iconPath + "\n");
+							}
+							
+							// %U-parameter allows drag and drop of files in unity on starter
+							data.append("Exec=./" + applicationName + ".sh %U\n");
+							data.append("Terminal=false\n");
+							data.append("Type=Application\n");
+							
+							try {
+								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
+								// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window
+								FileUtils.writeStringToFile(new File(desktopExecuteFilePath), "#!/bin/bash\nUBUNTU_MENUPROXY=0 java -jar " + applicationJarFileName + " $@\n", "UTF-8");
+								
+								MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
+								messageBox.setText(LangResources.get("createDesktopLink"));
+								messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+								messageBox.open();
+							} catch (IOException e1) {
+								MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+								messageBox.setText(LangResources.get("createDesktopLink"));
+								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+								messageBox.open();
+							}
 						}
+					} else {
+						//TODO: What to do if it is an webstart app
+	//					try {
+	//						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+	//						if (new File(desktopLinkFilePath).exists()) {
+	//							new File(desktopLinkFilePath).delete();
+	//						}
+	//						
+	//						Runtime.getRuntime().exec("javaws -uninstall http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
+	//						Runtime.getRuntime().exec("javaws -import http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
+	//						Runtime.getRuntime().exec("javaws -import -silent -shortcut http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
+	//						
+	//						MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
+	//						messageBox.setText(LangResources.get("createDesktopLink"));
+	//						messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+	//						messageBox.open();
+	//					} catch (IOException e1) {
+	//						MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+	//						messageBox.setText(LangResources.get("createDesktopLink"));
+	//						messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+	//						messageBox.open();
+	//					}
 					}
-				} else {
-					//TODO: What to do if it is an webstart app
-//					try {
-//						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
-//						if (new File(desktopLinkFilePath).exists()) {
-//							new File(desktopLinkFilePath).delete();
-//						}
-//						
-//						Runtime.getRuntime().exec("javaws -uninstall http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
-//						Runtime.getRuntime().exec("javaws -import http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
-//						Runtime.getRuntime().exec("javaws -import -silent -shortcut http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
-//						
-//						MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
-//						messageBox.setText(LangResources.get("createDesktopLink"));
-//						messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
-//						messageBox.open();
-//					} catch (IOException e1) {
-//						MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
-//						messageBox.setText(LangResources.get("createDesktopLink"));
-//						messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
-//						messageBox.open();
-//					}
+				} catch (Exception e1) {
+					showMessage(LangResources.get("createDesktopLink"), LangResources.get("errorMessage", e1.getMessage()));
 				}
 			}
 		});
