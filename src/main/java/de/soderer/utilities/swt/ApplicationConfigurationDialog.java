@@ -277,7 +277,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							}
 						}
 					} else {
-						//TODO: What to do if it is an webstart app
+						// TODO What to do if it is a webstart app
 	//					try {
 	//						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
 	//						if (new File(desktopLinkFilePath).exists()) {

@@ -11,6 +11,12 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class FileComparer {
+	public enum OutputMode {
+		All,
+		DifferencesOnly,
+		CommonalitiesOnly
+	}
+	
 	public static final String SOURCE1_SIGN = "-";
 	public static final String SOURCE2_SIGN = "+";
 	
@@ -38,10 +44,10 @@ public class FileComparer {
 	}
 	
 	public static String generateUnifiedDiff(File file1, File file2) throws Exception {
-		return generateUnifiedDiff(file1, file2, false, true);
+		return generateUnifiedDiff(file1, file2, false, true, OutputMode.All);
 	}
 
-	public static String generateUnifiedDiff(File file1, File file2, boolean ignoreLeadingAndTrailingWhitespaces, boolean blockSensitiveCompare) throws Exception {
+	public static String generateUnifiedDiff(File file1, File file2, boolean ignoreLeadingAndTrailingWhitespaces, boolean blockSensitiveCompare, OutputMode outputMode) throws Exception {
 		if (!file1.exists()) {
 			throw new Exception("File \"" + file1.getAbsolutePath() + "\" does not exist");
 		} else if (!file2.exists()) {
@@ -58,12 +64,12 @@ public class FileComparer {
 		result.append(generateUnifiedDiff(
 				file1.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file1.lastModified())), dataString1,
 				file2.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file2.lastModified())), dataString2,
-				ignoreLeadingAndTrailingWhitespaces, blockSensitiveCompare));
+				ignoreLeadingAndTrailingWhitespaces, blockSensitiveCompare, outputMode));
 		
 		return result.toString();
 	}
 	
-	public static String generateUnifiedDiff(String sourceName1, String dataString1, String sourceName2, String dataString2, boolean ignoreLeadingAndTrailingWhitespaces, boolean blockSensitiveCompare) throws Exception {
+	public static String generateUnifiedDiff(String sourceName1, String dataString1, String sourceName2, String dataString2, boolean ignoreLeadingAndTrailingWhitespaces, boolean blockSensitiveCompare, OutputMode outputMode) throws Exception {
 		if (dataString1 == null) {
 			throw new Exception("Datastring 1 is invalid");
 		} else if (dataString2 == null) {
@@ -86,10 +92,11 @@ public class FileComparer {
 		
 		while (position1 < lines1.size() && position2 < lines2.size()) {
 			if (lines1.get(position1).equals(lines2.get(position2))) {
-				result.append(" ");
-				result.append(lines1.get(position1));
-				result.append("\n");
-
+				if (outputMode == OutputMode.All || outputMode == OutputMode.CommonalitiesOnly) {
+					result.append(" ");
+					result.append(lines1.get(position1));
+					result.append("\n");
+				}
 				position1++;
 				position2++;
 			} else {
@@ -105,15 +112,19 @@ public class FileComparer {
 				} else {
 					// print differences up to next equation
 					while (position1 < nextEquationPosition.getFirst()) {
-						result.append(SOURCE1_SIGN);
-						result.append(lines1.get(position1));
-						result.append("\n");
+						if (outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly) {
+							result.append(SOURCE1_SIGN);
+							result.append(lines1.get(position1));
+							result.append("\n");
+						}
 						position1++;
 					}
 					while (position2 < nextEquationPosition.getSecond()) {
-						result.append(SOURCE2_SIGN);
-						result.append(lines2.get(position2));
-						result.append("\n");
+						if (outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly) {
+							result.append(SOURCE2_SIGN);
+							result.append(lines2.get(position2));
+							result.append("\n");
+						}
 						position2++;
 					}
 				}
@@ -122,15 +133,19 @@ public class FileComparer {
 		
 		// add file tails not contained in other file
 		while (position1 < lines1.size()) {
-			result.append(SOURCE1_SIGN);
-			result.append(lines1.get(position1));
-			result.append("\n");
+			if (outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly) {
+				result.append(SOURCE1_SIGN);
+				result.append(lines1.get(position1));
+				result.append("\n");
+			}
 			position1++;
 		}
 		while (position2 < lines2.size()) {
-			result.append(SOURCE2_SIGN);
-			result.append(lines2.get(position2));
-			result.append("\n");
+			if (outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly) {
+				result.append(SOURCE2_SIGN);
+				result.append(lines2.get(position2));
+				result.append("\n");
+			}
 			position2++;
 		}
 		
