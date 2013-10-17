@@ -23,16 +23,12 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 	private String title;
 	private PublicKey publicKey;
 	private PrivateKey privateKey;
-	private String buttonTextSave;
-	private String buttonTextClose;
 
-	public AsymetricKeyDialog(String title, Shell shell, PublicKey publicKey, PrivateKey privateKey, String buttonTextSave, String buttonTextClose) {   
+	public AsymetricKeyDialog(String title, Shell shell, PublicKey publicKey, PrivateKey privateKey) {   
 		super(shell, SWT.RESIZE);
 		this.title = title;
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
-		this.buttonTextSave = buttonTextSave;
-		this.buttonTextClose = buttonTextClose;
 	}
 	
 	@Override
@@ -131,22 +127,20 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		composite.setLayoutData(gridData);
 		composite.setLayout(new GridLayout(2, true));
 	    
-		if (buttonTextSave != null) {
-			Button buttonSave = new Button(composite, SWT.PUSH);
-			buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-			buttonSave.setText(buttonTextSave);
-			buttonSave.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					setReturnValue(true);
-					getShell().close();
-				}
-			});
-		}
+		Button buttonSave = new Button(composite, SWT.PUSH);
+		buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		buttonSave.setText(LangResources.get("save"));
+		buttonSave.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				setReturnValue(true);
+				getShell().close();
+			}
+		});
 
 		Button buttonClose = new Button(composite, SWT.PUSH);
-		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, (buttonTextSave == null ? 2 : 1), 1));
-		buttonClose.setText(buttonTextClose);
+		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
+		buttonClose.setText(LangResources.get("close"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
