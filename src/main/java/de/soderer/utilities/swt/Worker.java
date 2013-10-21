@@ -15,7 +15,7 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	protected long showProgressAfterMilliseconds;
 	protected T result = null;
 	
-	protected ProgressShowingModalDialog<?> parent;
+	private ProgressShowingModalDialog<?> parent;
 	
 	protected Exception error = null;
 	protected boolean cancel = false;
@@ -31,6 +31,10 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 			parent.showProgress(todo, itemsDone);
 			lastProgressShow = new Date();
 		}
+	}
+	
+	protected void showDone() {
+		parent.showDone();
 	}
 	
 	@Override

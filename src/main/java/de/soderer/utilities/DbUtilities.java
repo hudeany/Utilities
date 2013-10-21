@@ -467,7 +467,7 @@ public class DbUtilities {
 		}
 	}
 	
-	private static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDateFormats, List<List<String>> data, Map<Integer, Tuple<List<String>, String>> notInsertedData) throws Exception {
+	public static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDateFormats, List<List<String>> data, Map<Integer, Tuple<List<String>, String>> notInsertedData) throws Exception {
 		int csvLineIndex = offsetIndex;
 		for (List<String> csvLine : data) {
 			csvLineIndex++;
