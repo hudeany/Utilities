@@ -93,5 +93,17 @@ public abstract class ModalDialog<T> extends Dialog {
 		new QuestionDialog(title, text, getShell(), LangResources.get("ok")).open();
 	}
 	
+	protected boolean showQuestion(String text, String... buttonTextProperties) {
+		if (buttonTextProperties == null) {
+			return new QuestionDialog(text, getShell(), LangResources.get("ok"), LangResources.get("cancel")).open() == 0;
+		} else {
+			String[] buttonTexts = new String[buttonTextProperties.length];
+			for (int i = 0; i < buttonTextProperties.length; i++) {
+				buttonTexts[i] = LangResources.get(buttonTextProperties[i]);
+			}
+			return new QuestionDialog(text, getShell(), buttonTexts).open() == 0;
+		}
+	}
+	
 	protected abstract void createComponents(Shell parentShell) throws Exception;
 }

@@ -4,6 +4,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
+import de.soderer.utilities.LangResources;
+
 public abstract class MainDialog extends Shell {
 	private Display display;
 	
@@ -36,5 +38,17 @@ public abstract class MainDialog extends Shell {
 	@Override
 	protected void checkSubclass() {
 		// do nothing
+	}
+	
+	public boolean showQuestion(String text, String... buttonTextProperties) {
+		if (buttonTextProperties == null) {
+			return new QuestionDialog(text, getShell(), LangResources.get("ok"), LangResources.get("cancel")).open() == 0;
+		} else {
+			String[] buttonTexts = new String[buttonTextProperties.length];
+			for (int i = 0; i < buttonTextProperties.length; i++) {
+				buttonTexts[i] = LangResources.get(buttonTextProperties[i]);
+			}
+			return new QuestionDialog(text, getShell(), buttonTexts).open() == 0;
+		}
 	}
 }
