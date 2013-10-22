@@ -156,13 +156,10 @@ public class DbUtilities {
 		
 		Connection connection = null;
 		PreparedStatement preparedStatement = null;
-		Statement statement = null;
-		ResultSet resultSet = null;
 		
 		try {
 			connection = dataSource.getConnection();
 			connection.setAutoCommit(false);
-			statement = connection.createStatement();
 		
 			checkTableAndColumnsExist(connection, tableName, tableColumns, true);
 			
@@ -244,14 +241,6 @@ public class DbUtilities {
 			
 			return notInsertedData;
 		} finally {
-			if (resultSet != null) {
-				resultSet.close();
-			}
-
-			if (statement != null) {
-				statement.close();
-			}
-			
 			if (preparedStatement != null) {
 				preparedStatement.close();
 			}
