@@ -276,28 +276,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 								messageBox.open();
 							}
 						}
-					} else {
-						// TODO What to do if it is a webstart app
-	//					try {
-	//						String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
-	//						if (new File(desktopLinkFilePath).exists()) {
-	//							new File(desktopLinkFilePath).delete();
-	//						}
-	//						
-	//						Runtime.getRuntime().exec("javaws -uninstall http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
-	//						Runtime.getRuntime().exec("javaws -import http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
-	//						Runtime.getRuntime().exec("javaws -import -silent -shortcut http://www.soderer.de/index.php?download=javawebstart/jnlp/" + applicationName + ".jnlp");
-	//						
-	//						MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
-	//						messageBox.setText(LangResources.get("createDesktopLink"));
-	//						messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
-	//						messageBox.open();
-	//					} catch (IOException e1) {
-	//						MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
-	//						messageBox.setText(LangResources.get("createDesktopLink"));
-	//						messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
-	//						messageBox.open();
-	//					}
 					}
 				} catch (Exception e1) {
 					showMessage(LangResources.get("createDesktopLink"), LangResources.get("errorMessage", e1.getMessage()));

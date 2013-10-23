@@ -24,7 +24,6 @@ public class XmlParserPool extends GenericObjectPool {
 	}
 
 	public void returnObject(SAXParser parser) throws Exception {
-		// TODO Zurücksetzen des Parsers auf Initialzustand
 		super.returnObject(parser);
 	}
 
