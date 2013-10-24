@@ -34,7 +34,7 @@ public class RadioButtonGroup extends Composite {
 			throw new Exception("Less than 2 texts for RadioButtonGroup");
 		}
 		
-		setLayout(new GridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : buttonTexts.length, true));
+		setLayout(new GridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : buttonTexts.length + (labelText != null ? 1: 0), false));
 
 		if (labelText != null) {
 			Label label = new Label(this, SWT.NONE);

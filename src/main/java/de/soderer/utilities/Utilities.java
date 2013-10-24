@@ -764,6 +764,10 @@ public class Utilities {
 
 	private static final Random random = new Random();
 
+	public static int getRandomNumber(int excludedMaximum) {
+		return random.nextInt(excludedMaximum);
+	}
+	
 	public static String getRandomString(int length) {
 		StringBuilder sb = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {
