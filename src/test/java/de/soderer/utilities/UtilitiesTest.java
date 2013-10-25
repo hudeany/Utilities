@@ -7,10 +7,10 @@ public class UtilitiesTest {
 	@Test
 	public void testPunycode1() {
 		try {
-			String punycode = PunycodeCodec.encode(Utilities.GERMAN_TEST_STRING);
+			String punycode = PunycodeCodec.encode(TextUtilities.GERMAN_TEST_STRING);
 			Assert.assertEquals("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !?@$%&/\\<>(){}[]'\"`^*#.,;:=+-~_|-3dd50g5fvd9dyd97f80c3ryjzs95dssz547y", punycode);
 			String result = PunycodeCodec.decode(punycode);
-			Assert.assertEquals(Utilities.GERMAN_TEST_STRING, result);
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, result);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}

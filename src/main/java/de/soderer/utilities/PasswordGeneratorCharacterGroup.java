@@ -6,7 +6,7 @@ public class PasswordGeneratorCharacterGroup {
 	public int maximum;
 	
 	public PasswordGeneratorCharacterGroup(int minimum, int maximum, char... characters) throws Exception {
-		if (minimum <= 0 || maximum <= 0 || characters == null || characters.length <= 0) {
+		if (minimum < 0 || maximum <= 0 || characters == null || characters.length <= 0) {
 			throw new Exception("Invalid parameters");
 		}
 		
