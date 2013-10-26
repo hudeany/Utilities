@@ -8,7 +8,8 @@ public class UtilitiesTest {
 	public void testPunycode1() {
 		try {
 			String punycode = PunycodeCodec.encode(TextUtilities.GERMAN_TEST_STRING);
-			Assert.assertEquals("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 !?@$%&/\\<>(){}[]'\"`^*#.,;:=+-~_|-3dd50g5fvd9dyd97f80c3ryjzs95dssz547y", punycode);
+			String expected = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !?@$%&/\\<>(){}[]'\"`^*#.,;:=+-~_|-3dd50g5fvd9dyd97f80c3ryjzs95dssz547y";
+			Assert.assertEquals(expected, punycode);
 			String result = PunycodeCodec.decode(punycode);
 			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, result);
 		} catch (Exception e) {
