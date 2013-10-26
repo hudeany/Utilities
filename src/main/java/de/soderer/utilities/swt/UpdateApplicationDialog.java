@@ -1,6 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.io.File;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RunnableFuture;
 
 import org.apache.commons.io.FileUtils;
@@ -19,6 +20,7 @@ import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
+import de.soderer.utilities.UserError;
 
 public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {
 	private static final transient Logger logger = Logger.getLogger(UpdateApplicationDialog.class);
@@ -80,6 +82,11 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		try {
 			String jarFilePath = System.getProperty("process.jar");
 			
+			//TODO Testmode
+			if (jarFilePath == null) {
+				jarFilePath = "C:\\Users\\Andreas\\Downloads\\MultiEd\\MultiEd_Offline_Windows_x64.jar";
+			}
+			
 			if (StringUtils.isNotBlank(jarFilePath)) {
 				File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 				downloadTempFile.delete();
@@ -133,6 +140,21 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				if (progressDialog.open()) {
 					worker.cancel(true);
 					showMessage(LangResources.get("menu.updateFileDownload"), LangResources.get("canceledByUser"));
+				}
+				
+				// Check for errors
+				try {
+					if (!worker.get()) {
+						showMessage(LangResources.get("menu.updateFileDownload"), LangResources.get("errorMessage", "Downloaderror"));
+						return;
+					}
+				} catch (Exception e) {
+					if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
+						showMessage(LangResources.get("menu.updateFileDownload"), ((UserError) e.getCause()).getMessage());
+					} else {
+						showMessage(LangResources.get("menu.updateFileDownload"), e.getMessage());
+					}
+					return;
 				}
 				
 				if (SystemUtilities.isWindowsSystem()) {

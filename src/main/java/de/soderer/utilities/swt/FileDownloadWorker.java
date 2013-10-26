@@ -14,6 +14,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.IOUtils;
 
+import de.soderer.utilities.UserError;
+
 public class FileDownloadWorker implements RunnableFuture<Boolean> {
 	private static long SHOW_PROGRESS_AFTER_MILLISECONDS = 500;
 
@@ -96,7 +98,11 @@ public class FileDownloadWorker implements RunnableFuture<Boolean> {
 					}
 				}
 			} catch (Exception e) {
-				throw new Exception("Cannot download file", e);
+				if (e.getMessage().toLowerCase().contains("server returned http response code: 401")) {
+					throw new UserError("error.userNotAuthenticatedOrNotAuthorized", UserError.Reason.UnauthenticatedOrUnauthorized);
+				} else {
+					throw new Exception("Cannot download file", e);
+				}
 			} finally {
 				IOUtils.closeQuietly(fileOutputStream);
 				IOUtils.closeQuietly(bufferedInputStream);
@@ -110,6 +116,7 @@ public class FileDownloadWorker implements RunnableFuture<Boolean> {
 			}
 		} catch (Exception e) {
 			error = e;
+			result = false;
 		}
 		
 		parent.showDone();
