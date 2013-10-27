@@ -179,7 +179,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		}
 	}
 	
-	public boolean downloadUpdateFile(File downloadTempFile, String downloadUrl) throws InterruptedException, ExecutionException, UserError {
+	public boolean downloadUpdateFile(File downloadTempFile, String downloadUrl) throws Exception {
 		try {
 			downloadTempFile.delete();
 			if (downloadUrl.contains("<username>") && downloadUrl.contains("<password>")) {
