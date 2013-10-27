@@ -21,6 +21,7 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.UserError;
+import de.soderer.utilities.UserError.Reason;
 
 public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {
 	private static final transient Logger logger = Logger.getLogger(UpdateApplicationDialog.class);
@@ -81,80 +82,38 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private void updateApplication() {
 		try {
 			String jarFilePath = System.getProperty("process.jar");
-			
-			//TODO Testmode
-			if (jarFilePath == null) {
-				jarFilePath = "C:\\Users\\Andreas\\Downloads\\MultiEd\\MultiEd_Offline_Windows_x64.jar";
-			}
+			File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 			
 			if (StringUtils.isNotBlank(jarFilePath)) {
-				File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
-				downloadTempFile.delete();
-				if (downloadUrl.contains("<username>") && downloadUrl.contains("<password>")) {
-					CredentialsDialog credentialsDialog = new CredentialsDialog(title, LangResources.get("enterDownloadCredentials"), getShell());
-					Boolean success = credentialsDialog.open();
-					if (success) {
-						downloadUrl = downloadUrl.replaceAll("<username>", credentialsDialog.getUsername());
-						downloadUrl = downloadUrl.replaceAll("<password>", credentialsDialog.getPassword());
-					} else {
-						return;
-					}
-				} else {
-					if (downloadUrl.contains("<username>")) {
-						SimpleInputDialog usernameDialog = new SimpleInputDialog(title, LangResources.get("enterDownloadUserName"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
-						String username = usernameDialog.open();
-						if (StringUtils.isNotBlank(username)) {
-							downloadUrl = downloadUrl.replaceAll("<username>", username);
-						} else {
+				boolean tryDownloadAgain = true;
+				while (tryDownloadAgain) {
+					tryDownloadAgain = false;
+					try {
+						boolean success = downloadUpdateFile(downloadTempFile, downloadUrl);
+						if (!success) {
+							// download stopped by user
 							return;
 						}
-					}
-					if (downloadUrl.contains("<password>")) {
-						PasswordDialog passwordDialog = new PasswordDialog(title, LangResources.get("enterDownloadPassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
-						String password = passwordDialog.open();
-						if (StringUtils.isNotBlank(password)) {
-							downloadUrl = downloadUrl.replaceAll("<password>", password);
-						} else {
-							return;
-						}
-					}
-				}
-				if (downloadUrl.contains("<system>")) {
-					if (SystemUtilities.isWindowsSystem()) {
-						downloadUrl = downloadUrl.replaceAll("<system>", "Windows");
-					} else if (SystemUtilities.isLinuxSystem()) {
-						downloadUrl = downloadUrl.replaceAll("<system>", "Linux");
-					}
-				}
-				if (downloadUrl.contains("<bitmode>")) {
-					if (System.getProperty("os.arch") != null && System.getProperty("os.arch").contains("64")) {
-						downloadUrl = downloadUrl.replaceAll("<bitmode>", "64");
-					} else if (SystemUtilities.isLinuxSystem()) {
-						downloadUrl = downloadUrl.replaceAll("<bitmode>", "32");
-					}
-				}
-				
-				RunnableFuture<Boolean> worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile.getAbsolutePath());
-				progressDialog = new ProgressDialog(LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"), getShell(), LangResources.get("cancel"));
-				new Thread(worker).start();
-				if (progressDialog.open()) {
-					worker.cancel(true);
-					showMessage(LangResources.get("menu.updateFileDownload"), LangResources.get("canceledByUser"));
-				}
-				
-				// Check for errors
-				try {
-					if (!worker.get()) {
-						showMessage(LangResources.get("menu.updateFileDownload"), LangResources.get("errorMessage", "Downloaderror"));
-						return;
-					}
-				} catch (Exception e) {
-					if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
-						showMessage(LangResources.get("menu.updateFileDownload"), ((UserError) e.getCause()).getMessage());
-					} else {
+					} catch (UserError e) {
 						showMessage(LangResources.get("menu.updateFileDownload"), e.getMessage());
+						if (e.getReason() == Reason.UnauthenticatedOrUnauthorized) {
+							tryDownloadAgain = true;
+						} else {
+							return;
+						}
+					} catch (Exception e) {
+						if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
+							showMessage(LangResources.get("menu.updateFileDownload"), ((UserError) e.getCause()).getMessage());
+							if (((UserError) e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
+								tryDownloadAgain = true;
+							} else {
+								return;
+							}
+						} else {
+							showMessage(LangResources.get("menu.updateFileDownload"), e.getMessage());
+						}
+						return;
 					}
-					return;
 				}
 				
 				if (SystemUtilities.isWindowsSystem()) {
@@ -217,6 +176,72 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			}
 		} catch (Exception e) {
 			logger.error(LangResources.get("cannotUpdate", e.getMessage()), e);
+		}
+	}
+	
+	public boolean downloadUpdateFile(File downloadTempFile, String downloadUrl) throws InterruptedException, ExecutionException, UserError {
+		try {
+			downloadTempFile.delete();
+			if (downloadUrl.contains("<username>") && downloadUrl.contains("<password>")) {
+				CredentialsDialog credentialsDialog = new CredentialsDialog(title, LangResources.get("enterDownloadCredentials"), getShell());
+				Boolean success = credentialsDialog.open();
+				if (success) {
+					downloadUrl = downloadUrl.replaceAll("<username>", credentialsDialog.getUsername());
+					downloadUrl = downloadUrl.replaceAll("<password>", credentialsDialog.getPassword());
+				} else {
+					return false;
+				}
+			} else {
+				if (downloadUrl.contains("<username>")) {
+					SimpleInputDialog usernameDialog = new SimpleInputDialog(title, LangResources.get("enterDownloadUserName"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
+					String username = usernameDialog.open();
+					if (StringUtils.isNotBlank(username)) {
+						downloadUrl = downloadUrl.replaceAll("<username>", username);
+					} else {
+						return false;
+					}
+				}
+				if (downloadUrl.contains("<password>")) {
+					PasswordDialog passwordDialog = new PasswordDialog(title, LangResources.get("enterDownloadPassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
+					String password = passwordDialog.open();
+					if (StringUtils.isNotBlank(password)) {
+						downloadUrl = downloadUrl.replaceAll("<password>", password);
+					} else {
+						return false;
+					}
+				}
+			}
+			if (downloadUrl.contains("<system>")) {
+				if (SystemUtilities.isWindowsSystem()) {
+					downloadUrl = downloadUrl.replaceAll("<system>", "Windows");
+				} else if (SystemUtilities.isLinuxSystem()) {
+					downloadUrl = downloadUrl.replaceAll("<system>", "Linux");
+				}
+			}
+			if (downloadUrl.contains("<bitmode>")) {
+				if (System.getProperty("os.arch") != null && System.getProperty("os.arch").contains("64")) {
+					downloadUrl = downloadUrl.replaceAll("<bitmode>", "64");
+				} else if (SystemUtilities.isLinuxSystem()) {
+					downloadUrl = downloadUrl.replaceAll("<bitmode>", "32");
+				}
+			}
+			
+			RunnableFuture<Boolean> worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile.getAbsolutePath());
+			progressDialog = new ProgressDialog(LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"), getShell(), LangResources.get("cancel"));
+			new Thread(worker).start();
+			if (progressDialog.open()) {
+				worker.cancel(true);
+				showMessage(LangResources.get("menu.updateFileDownload"), LangResources.get("canceledByUser"));
+				return false;
+			}
+			
+			return worker.get();
+		} catch (Exception e) {
+			if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
+				throw (UserError) e.getCause();
+			} else {
+				throw e;
+			}
 		}
 	}
 }
