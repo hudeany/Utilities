@@ -43,6 +43,9 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 		return cancel;
 	}
 
+	/**
+	 * Check for error and return result value
+	 */
 	@Override
 	public T get() throws InterruptedException, ExecutionException {
 		if (error != null) {

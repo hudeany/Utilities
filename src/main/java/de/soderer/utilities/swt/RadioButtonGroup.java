@@ -1,6 +1,7 @@
 package de.soderer.utilities.swt;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -8,6 +9,8 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.TypedListener;
+import org.eclipse.swt.widgets.Widget;
 
 public class RadioButtonGroup extends Composite {
 	public enum ArrangementStyle {
@@ -27,6 +30,8 @@ public class RadioButtonGroup extends Composite {
 	
 	public RadioButtonGroup (String labelText, Composite parent, int style, ArrangementStyle arrangementStyle, int selectedButtonIndexParam, String... buttonTexts) throws Exception {
 		super(parent, style);
+		
+		final RadioButtonGroup radioButtonGroup = this;
 		
 		selectedButtonIndex = selectedButtonIndexParam;
 		
@@ -52,8 +57,19 @@ public class RadioButtonGroup extends Composite {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					selectedButtonIndex = radioButtonIndex;
+					((Widget) radioButtonGroup).notifyListeners(SWT.Modify, null);
 				}
 			});
+		}
+	}
+	
+	public void addModifyListener(ModifyListener listener) {
+		checkWidget();
+		if (listener == null) {
+			throw new RuntimeException("Missing listener");
+		} else {
+			TypedListener typedListener = new TypedListener(listener);
+			addListener(SWT.Modify, typedListener);
 		}
 	}
 	
