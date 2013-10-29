@@ -232,17 +232,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							if (new File(desktopLinkFilePath).exists()) {
 								new File(desktopLinkFilePath).delete();
 							}
-							String desktopExecuteFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".sh";
-							if (new File(desktopExecuteFilePath).exists()) {
-								new File(desktopExecuteFilePath).delete();
-							}
 							
 							String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
 							if (new File(iconPath).exists()) {
 								new File(iconPath).delete();
 							}
 	
-								StringBuilder data = new StringBuilder();
+							StringBuilder data = new StringBuilder();
 							data.append("[Desktop Entry]\n");
 							data.append("Encoding=UTF-8\n");
 							data.append("Name=" + applicationName + "\n");
@@ -255,15 +251,14 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 								data.append("Icon=" + iconPath + "\n");
 							}
 							
-							// %U-parameter allows drag and drop of files in unity on starter
-							data.append("Exec=./" + applicationName + ".sh %U\n");
+							// %U-parameter allows drag and drop of files on starter bar in unity
+							// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window in unity
+							data.append("Exec=env UBUNTU_MENUPROXY=0 java -jar " + applicationJarFileName + " %U\n");
 							data.append("Terminal=false\n");
 							data.append("Type=Application\n");
 							
 							try {
 								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
-								// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window
-								FileUtils.writeStringToFile(new File(desktopExecuteFilePath), "#!/bin/bash\nUBUNTU_MENUPROXY=0 java -jar " + applicationJarFileName + " $@\n", "UTF-8");
 								
 								MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
 								messageBox.setText(LangResources.get("createDesktopLink"));
