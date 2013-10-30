@@ -707,4 +707,14 @@ public class TextUtilities {
 	    	return str.regionMatches(true, 0, substr, 0, str.length());
 	    }
 	}
+	
+	public static String trimStringToMaximumLength(String inputString, int laenge, String interLeave) {
+		if (inputString == null || inputString.length() <= laenge) {
+			return inputString;
+		} else {
+			int takeFirstLength = (laenge - interLeave.length()) / 2;
+			int takeLastLength = laenge - interLeave.length() - takeFirstLength;
+			return inputString.substring(0, takeFirstLength) + interLeave + inputString.substring(inputString.length() - takeLastLength);
+		}
+	}
 }
