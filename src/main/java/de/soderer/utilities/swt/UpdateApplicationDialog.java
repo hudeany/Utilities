@@ -227,7 +227,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			}
 			
 			RunnableFuture<Boolean> worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile.getAbsolutePath());
-			progressDialog = new ProgressDialog(LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"), getShell(), LangResources.get("cancel"));
+			progressDialog = new ProgressDialog(LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"), getShell());
 			new Thread(worker).start();
 			if (progressDialog.open()) {
 				worker.cancel(true);

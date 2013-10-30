@@ -15,24 +15,19 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ProgressBar;
 
-public class ProgressDialog extends ModalDialog<Boolean> {
-	private String title;
-	private String buttonTextCancel;
-	private String commentStringFormat;
-	private Label commentLabel;
-	private ProgressBar bar;
-	private boolean isClosed = false;
+import de.soderer.utilities.LangResources;
 
-	public ProgressDialog(String title, String commentStringFormat, Shell shell, String buttonTextCancel) {   
+public class ProgressDialog extends ModalDialog<Boolean> {
+	protected String title;
+	protected String commentStringFormat;
+	protected Label commentLabel;
+	protected ProgressBar bar;
+	protected boolean isClosed = false;
+
+	public ProgressDialog(String title, String commentStringFormat, Shell shell) {   
 		super(shell);
+		
 		this.title = title;
-		this.buttonTextCancel = buttonTextCancel;
-		this.commentStringFormat = commentStringFormat;
-	}
-	
-	public ProgressDialog(String commentStringFormat, Shell shell, String buttonTextCancel) {   
-		super(shell);
-		this.buttonTextCancel = buttonTextCancel;
 		this.commentStringFormat = commentStringFormat;
 	}
 	
@@ -68,7 +63,7 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 	
 				Button buttonClose = new Button(composite, SWT.PUSH);
 				buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				buttonClose.setText(buttonTextCancel);
+				buttonClose.setText(LangResources.get("cancel"));
 				buttonClose.addSelectionListener(new SelectionAdapter() {
 					@Override
 					public void widgetSelected(SelectionEvent e) {

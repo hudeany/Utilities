@@ -6,7 +6,6 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-
 public abstract class Worker<T> implements RunnableFuture<T> {
 	private static final long DEFAULT_SHOW_PROGRESS_AFTER_MILLISECONDS = 500;
 
@@ -15,7 +14,7 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	protected long showProgressAfterMilliseconds;
 	protected T result = null;
 	
-	private ProgressShowingModalDialog<?> parent;
+	protected ProgressShowingModalDialog<?> parent;
 	
 	protected Exception error = null;
 	protected boolean cancel = false;
@@ -26,7 +25,7 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 		this.showProgressAfterMilliseconds = DEFAULT_SHOW_PROGRESS_AFTER_MILLISECONDS;
 	}
 	
-	protected void showDone(long itemsDone) {
+	protected void showItemsDone(long itemsDone) {
 		if (!cancel && new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds) {
 			parent.showProgress(todo, itemsDone);
 			lastProgressShow = new Date();

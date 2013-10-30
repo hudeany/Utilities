@@ -868,6 +868,42 @@ public class Utilities {
 		return files.toArray(new File[0]);
 	}
 
+	public static List<File> getAllSubfiles(File directory) {
+		List<File> files = new LinkedList<File>();
+		for (File file : directory.listFiles()) {
+			if (file.isDirectory()) {
+				files.addAll(getAllSubfiles(file));
+			} else {
+				files.add(file);
+			}
+		}
+		return files;
+	}
+
+	public static int getAllSubfilesNumber(File directory) {
+		int fileCount = 0;
+		for (File file : directory.listFiles()) {
+			if (file.isDirectory()) {
+				fileCount += getAllSubfilesNumber(file);
+			} else {
+				fileCount++;
+			}
+		}
+		return fileCount;
+	}
+
+	public static long getAllSubfilesSize(File directory) {
+		long fileSizeSum = 0;
+		for (File file : directory.listFiles()) {
+			if (file.isDirectory()) {
+				fileSizeSum += getAllSubfilesSize(file);
+			} else {
+				fileSizeSum += file.length();
+			}
+		}
+		return fileSizeSum;
+	}
+
 	public static void deleteSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
 		for (File file : getSubfilesByNameAndExtension(directory, nameStart, extension)) {
 			FileUtils.deleteQuietly(file);
