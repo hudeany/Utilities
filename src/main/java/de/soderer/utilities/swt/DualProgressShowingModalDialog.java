@@ -19,7 +19,7 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 	public void showSubItemProgress(long subItemsTodo, long subItemsDone) {
 		final long subItemTodoParam = subItemsTodo;
 		final long subItemDoneParam = subItemsDone;
-		getShell().getDisplay().syncExec(new Runnable() {
+		getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog instanceof DualProgressDialog) {
@@ -37,7 +37,7 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 	}
 	
 	public void setSubItemTitle(final String subItemTitle) {
-		getShell().getDisplay().syncExec(new Runnable() {
+		getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog instanceof DualProgressDialog) {

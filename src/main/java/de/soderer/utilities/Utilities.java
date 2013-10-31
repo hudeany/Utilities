@@ -882,8 +882,10 @@ public class Utilities {
 				}
 			}
 			return files;
+		} catch (DoNotWrapException e) {
+			throw e;
 		} catch (Exception e) {
-			throw new Exception("Error reading subfiles of: " + directory.getAbsolutePath(), e);
+			throw new DoNotWrapException("Error reading subfiles of: " + directory.getAbsolutePath(), e);
 		}
 	}
 
@@ -901,8 +903,10 @@ public class Utilities {
 				}
 			}
 			return fileCount;
+		} catch (DoNotWrapException e) {
+			throw e;
 		} catch (Exception e) {
-			throw new Exception("Error reading subfilenumber of: " + directory.getAbsolutePath(), e);
+			throw new DoNotWrapException("Error reading subfilenumber of: " + directory.getAbsolutePath(), e);
 		}
 	}
 
@@ -920,8 +924,10 @@ public class Utilities {
 				}
 			}
 			return fileSizeSum;
+		} catch (DoNotWrapException e) {
+			throw e;
 		} catch (Exception e) {
-			throw new Exception("Error reading subfilesize of: " + directory.getAbsolutePath(), e);
+			throw new DoNotWrapException("Error reading subfilesize of: " + directory.getAbsolutePath(), e);
 		}
 	}
 

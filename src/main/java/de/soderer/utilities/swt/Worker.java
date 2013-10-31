@@ -26,7 +26,7 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	}
 	
 	protected void showItemsDone(long itemsDone) {
-		if (!cancel && new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds) {
+		if (!cancel && (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds || itemsDone == 0)) {
 			parent.showProgress(todo, itemsDone);
 			lastProgressShow = new Date();
 		}
@@ -34,6 +34,10 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	
 	protected void showDone() {
 		parent.showDone();
+	}
+	
+	protected void showUnlimitedProgress() {
+		parent.showUnlimitedProgress();
 	}
 	
 	@Override

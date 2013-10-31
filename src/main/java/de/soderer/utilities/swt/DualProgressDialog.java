@@ -49,7 +49,7 @@ public class DualProgressDialog extends ProgressDialog {
 					commentLabel.setText(MessageFormat.format(commentStringFormat, 0, 0, 0));
 					commentLabel.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 				}
-				
+
 				bar = new ProgressBar(composite, SWT.SMOOTH);
 				bar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 				bar.setMinimum(0);

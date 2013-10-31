@@ -20,7 +20,7 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 	public void showProgress(long todo, long done) {
 		final long todoParam = todo;
 		final long doneParam = done;
-		getShell().getDisplay().syncExec(new Runnable() {
+		getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog != null && !progressDialog.isDisposed()) {
@@ -34,9 +34,20 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 		});
 	}
 	
+	public void showUnlimitedProgress() {
+		getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (progressDialog != null && !progressDialog.isDisposed()) {
+					progressDialog.showUnlimitedProgress();
+				}
+			}
+		});
+	}
+	
 	public void showDone() {
 		try {
-			getShell().getDisplay().syncExec(new Runnable() {
+			getShell().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
 					try {

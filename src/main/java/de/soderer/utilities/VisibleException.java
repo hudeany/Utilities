@@ -2,7 +2,6 @@ package de.soderer.utilities;
 
 import de.soderer.utilities.LangResources;
 
-
 public class VisibleException extends Exception {
 	private static final long serialVersionUID = -5425442516236660858L;
 

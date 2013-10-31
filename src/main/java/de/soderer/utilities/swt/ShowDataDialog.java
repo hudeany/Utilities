@@ -69,7 +69,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		composite.setLayout(new GridLayout(2, true));
 		
 		StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, (showSaveButton ? 2 : 1), 1));
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		textField.setText(dataString);
 		textField.setWordWrap(wordWrap);
 	    
@@ -90,7 +90,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		}
 
 		Button buttonClose = new Button(composite, SWT.PUSH);
-		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, (showSaveButton ? 1 : 2), 1));
 		buttonClose.setText(LangResources.get("close"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override

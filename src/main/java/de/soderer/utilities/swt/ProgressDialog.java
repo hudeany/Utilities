@@ -23,6 +23,7 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 	protected Label commentLabel;
 	protected ProgressBar bar;
 	protected boolean isClosed = false;
+	private Thread unlimitedRunner = null;
 
 	public ProgressDialog(String title, String commentStringFormat, Shell shell) {   
 		super(shell);
@@ -55,8 +56,7 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 				}
 				
 				bar = new ProgressBar(composite, SWT.SMOOTH);
-				GridData gridData = new GridData(SWT.FILL, SWT.UP, true, false);
-				bar.setLayoutData(gridData);
+				bar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 				bar.setMinimum(0);
 				bar.setMaximum(100);
 				bar.setSelection(0);
@@ -83,18 +83,73 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 	}
 	
 	public void setProgressPercentage(int value) {
+		stopUnlimitedProgress();
+		
 		if (bar != null) {
 			bar.setSelection(value);
 		}
 	}
 	
 	public void setProgress(long todo, long done) {
+		stopUnlimitedProgress();
+		
 		if (bar != null) {
 			bar.setSelection((int) (done * 100 / todo));
 		}
 		
 		if (commentLabel != null) {
 			commentLabel.setText(MessageFormat.format(commentStringFormat, done, todo, done * 100 / todo));
+		}
+	}
+	
+	public void showUnlimitedProgress() {
+		unlimitedRunner = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while (true) {
+						getShell().getDisplay().asyncExec(new Runnable() {
+							@Override
+							public void run() {
+								int nextValue;
+								if (bar.getMaximum() == 100) {
+									nextValue = bar.getSelection() + 10;
+								} else {
+									nextValue = bar.getSelection() - 10;
+								}
+								
+								if (nextValue > 100) {
+									nextValue = 100;
+									bar.setMaximum(101);
+								} else if (nextValue < 0) {
+									nextValue = 0;
+									bar.setMaximum(100);
+								}
+								
+								bar.setSelection(nextValue);
+							}
+						});
+						
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							// do nothing
+						}
+					}
+				} catch (Throwable e) {
+					// do nothing
+				}
+			}
+		});
+		unlimitedRunner.start();
+	}
+	
+	@SuppressWarnings("deprecation")
+	public void stopUnlimitedProgress() {
+		if (unlimitedRunner != null) {
+			unlimitedRunner.stop();
+			unlimitedRunner = null;
+			bar.setMaximum(100);
 		}
 	}
 	
