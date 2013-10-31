@@ -9,11 +9,11 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 	private static final transient Logger logger = Logger.getLogger(DualProgressShowingModalDialog.class);
 	
 	public DualProgressShowingModalDialog(Shell parentShell) {
-		super(new Shell(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
+		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
 	}
 	
 	public DualProgressShowingModalDialog(Shell parentShell, int style) {   
-		super(new Shell(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
+		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
 	}
 	
 	public void showSubItemProgress(long subItemsTodo, long subItemsDone) {

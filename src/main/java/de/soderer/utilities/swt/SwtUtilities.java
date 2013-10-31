@@ -12,6 +12,8 @@ import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.graphics.TextLayout;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
 
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
@@ -74,5 +76,18 @@ public class SwtUtilities {
 		result.put("Others", others);
 		
 		return result;
+	}
+	
+	public static void expandTree(Tree tree) {
+		for (TreeItem subItem : tree.getItems()) {
+			expandTree(subItem);
+		}
+	}
+	
+	public static void expandTree(TreeItem item) {
+		item.setExpanded(true);
+		for (TreeItem subItem : item.getItems()) {
+			expandTree(subItem);
+		}
 	}
 }

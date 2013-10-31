@@ -288,7 +288,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				for (Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
 				}
-				new ShowDataDialog(applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), LangResources.get("close")).open();
+				new ShowDataDialog(applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), true).open();
 			}
 		});
 		
@@ -302,7 +302,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				for (Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
 				}
-				new ShowDataDialog(applicationName + " " + LangResources.get("runtimeProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), LangResources.get("close")).open();
+				new ShowDataDialog(applicationName + " " + LangResources.get("runtimeProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), true).open();
 			}
 		});
 		
@@ -312,7 +312,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		showSwtPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				new ShowDataDialog(applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(null), "\n", " = ", true), getShell(), LangResources.get("close")).open();
+				new ShowDataDialog(applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(null), "\n", " = ", true), getShell()).open();
 			}
 		});
 

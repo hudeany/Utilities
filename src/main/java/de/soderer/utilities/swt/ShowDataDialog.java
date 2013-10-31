@@ -22,37 +22,32 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 	private String title;
 	private String dataString;
 	private boolean wordWrap = false;
-	private String buttonTextSave;
-	private String buttonTextClose;
+	private boolean showSaveButton;
 
-	public ShowDataDialog(String title, String dataString, Shell shell, String buttonTextSave, String buttonTextClose) {   
+	public ShowDataDialog(String title, String dataString, Shell shell, boolean showSaveButton) {   
 		super(shell, SWT.RESIZE);
 		this.title = title;
 		this.dataString = dataString;
-		this.buttonTextSave = buttonTextSave;
-		this.buttonTextClose = buttonTextClose;
+		this.showSaveButton = showSaveButton;
 	}
 	
-	public ShowDataDialog(String dataString, Shell shell, String buttonTextSave, String buttonTextClose) {   
+	public ShowDataDialog(String dataString, Shell shell, boolean showSaveButton) {   
 		super(shell, SWT.RESIZE);
 		this.dataString = dataString;
-		this.buttonTextSave = buttonTextSave;
-		this.buttonTextClose = buttonTextClose;
+		this.showSaveButton = showSaveButton;
 	}
 	
-	public ShowDataDialog(String title, String dataString, Shell shell, String buttonTextClose) {   
+	public ShowDataDialog(String title, String dataString, Shell shell) {   
 		super(shell, SWT.RESIZE);
 		this.title = title;
 		this.dataString = dataString;
-		buttonTextSave = null;
-		this.buttonTextClose = buttonTextClose;
+		showSaveButton = false;
 	}
 	
-	public ShowDataDialog(String dataString, Shell shell, String buttonTextClose) {   
+	public ShowDataDialog(String dataString, Shell shell) {   
 		super(shell, SWT.RESIZE);
 		this.dataString = dataString;
-		buttonTextSave = null;
-		this.buttonTextClose = buttonTextClose;
+		showSaveButton = false;
 	}
 	
 	public void setWordWrap(boolean value) {
@@ -74,14 +69,14 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		composite.setLayout(new GridLayout(2, true));
 		
 		StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, (showSaveButton ? 2 : 1), 1));
 		textField.setText(dataString);
 		textField.setWordWrap(wordWrap);
 	    
-		if (buttonTextSave != null) {
+		if (showSaveButton) {
 			Button buttonSave = new Button(composite, SWT.PUSH);
 			buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-			buttonSave.setText(buttonTextSave);
+			buttonSave.setText(LangResources.get("save"));
 			buttonSave.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
@@ -90,16 +85,13 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 					} catch (UnsupportedEncodingException e1) {
 						e1.printStackTrace();
 					}
-			        
-					setReturnValue(0);
-					getShell().close();
 				}
 			});
 		}
 
 		Button buttonClose = new Button(composite, SWT.PUSH);
-		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, (buttonTextSave == null ? 2 : 1), 1));
-		buttonClose.setText(buttonTextClose);
+		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		buttonClose.setText(LangResources.get("close"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {

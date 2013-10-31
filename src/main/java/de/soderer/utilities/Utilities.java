@@ -868,40 +868,61 @@ public class Utilities {
 		return files.toArray(new File[0]);
 	}
 
-	public static List<File> getAllSubfiles(File directory) {
-		List<File> files = new LinkedList<File>();
-		for (File file : directory.listFiles()) {
-			if (file.isDirectory()) {
-				files.addAll(getAllSubfiles(file));
-			} else {
-				files.add(file);
+	public static List<File> getAllSubfiles(File directory) throws Exception {
+		try {
+			List<File> files = new LinkedList<File>();
+			File[] subFiles = directory.listFiles();
+			if (subFiles != null) {
+				for (File file : subFiles) {
+					if (file.isDirectory()) {
+						files.addAll(getAllSubfiles(file));
+					} else {
+						files.add(file);
+					}
+				}
 			}
+			return files;
+		} catch (Exception e) {
+			throw new Exception("Error reading subfiles of: " + directory.getAbsolutePath(), e);
 		}
-		return files;
 	}
 
-	public static int getAllSubfilesNumber(File directory) {
-		int fileCount = 0;
-		for (File file : directory.listFiles()) {
-			if (file.isDirectory()) {
-				fileCount += getAllSubfilesNumber(file);
-			} else {
-				fileCount++;
+	public static int getAllSubfilesNumber(File directory) throws Exception {
+		try {
+			int fileCount = 0;
+			File[] subFiles = directory.listFiles();
+			if (subFiles != null) {
+				for (File file : subFiles) {
+					if (file.isDirectory()) {
+						fileCount += getAllSubfilesNumber(file);
+					} else {
+						fileCount++;
+					}
+				}
 			}
+			return fileCount;
+		} catch (Exception e) {
+			throw new Exception("Error reading subfilenumber of: " + directory.getAbsolutePath(), e);
 		}
-		return fileCount;
 	}
 
-	public static long getAllSubfilesSize(File directory) {
-		long fileSizeSum = 0;
-		for (File file : directory.listFiles()) {
-			if (file.isDirectory()) {
-				fileSizeSum += getAllSubfilesSize(file);
-			} else {
-				fileSizeSum += file.length();
+	public static long getAllSubfilesSize(File directory) throws Exception {
+		try {
+			long fileSizeSum = 0;
+			File[] subFiles = directory.listFiles();
+			if (subFiles != null) {
+				for (File file : subFiles) {
+					if (file.isDirectory()) {
+						fileSizeSum += getAllSubfilesSize(file);
+					} else {
+						fileSizeSum += file.length();
+					}
+				}
 			}
+			return fileSizeSum;
+		} catch (Exception e) {
+			throw new Exception("Error reading subfilesize of: " + directory.getAbsolutePath(), e);
 		}
-		return fileSizeSum;
 	}
 
 	public static void deleteSubfilesByNameAndExtension(File directory, String nameStart, String extension) {

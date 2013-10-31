@@ -10,11 +10,11 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 	protected ProgressDialog progressDialog;
 	
 	public ProgressShowingModalDialog(Shell parentShell) {
-		super(new Shell(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
+		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
 	}
 	
 	public ProgressShowingModalDialog(Shell parentShell, int style) {   
-		super(new Shell(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
+		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
 	}
 	
 	public void showProgress(long todo, long done) {
