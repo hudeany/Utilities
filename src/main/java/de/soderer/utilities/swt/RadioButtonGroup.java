@@ -21,15 +21,19 @@ public class RadioButtonGroup extends Composite {
 	private int selectedButtonIndex;
 
 	public RadioButtonGroup (Composite parent, int style, String... buttonTexts) throws Exception {
-		this(null, parent, style, ArrangementStyle.Vertical, 0, buttonTexts);
+		this(null, parent, style, null, 0, buttonTexts);
 	}
 
 	public RadioButtonGroup (String labelText, Composite parent, int style, String... buttonTexts) throws Exception {
-		this(labelText, parent, style, ArrangementStyle.Vertical, 0, buttonTexts);
+		this(labelText, parent, style, null, 0, buttonTexts);
 	}
 	
 	public RadioButtonGroup (String labelText, Composite parent, int style, ArrangementStyle arrangementStyle, int selectedButtonIndexParam, String... buttonTexts) throws Exception {
 		super(parent, style);
+		
+		if (arrangementStyle == null) {
+			arrangementStyle = ArrangementStyle.Vertical;
+		}
 		
 		final RadioButtonGroup radioButtonGroup = this;
 		

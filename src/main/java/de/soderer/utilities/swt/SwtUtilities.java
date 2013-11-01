@@ -78,16 +78,16 @@ public class SwtUtilities {
 		return result;
 	}
 	
-	public static void expandTree(Tree tree) {
+	public static void expandTree(Tree tree, boolean expandValue) {
 		for (TreeItem subItem : tree.getItems()) {
-			expandTree(subItem);
+			expandTree(subItem, expandValue);
 		}
 	}
 	
-	public static void expandTree(TreeItem item) {
-		item.setExpanded(true);
+	public static void expandTree(TreeItem item, boolean expandValue) {
+		item.setExpanded(expandValue);
 		for (TreeItem subItem : item.getItems()) {
-			expandTree(subItem);
+			expandTree(subItem, expandValue);
 		}
 	}
 }
