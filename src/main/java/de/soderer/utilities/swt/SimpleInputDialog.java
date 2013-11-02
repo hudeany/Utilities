@@ -17,27 +17,20 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import de.soderer.utilities.LangResources;
+
 public class SimpleInputDialog extends ModalDialog<String> {
-	private String title;
 	private String text;
 	private Text textField;
 	private String currentText = "";
 	private int currentPosition = 0;
-	private String[] buttonTexts;
 	private Pattern inputPattern = null;
 	private boolean isTechnicalChange = false;
 
-	public SimpleInputDialog(String title, String text, Shell shell, String buttonTextOk, String buttonTextCancel) {   
-		super(shell);
-		this.title = title;
+	public SimpleInputDialog(Shell shell, String title, String text) {   
+		super(shell, title);
+		
 		this.text = text;
-		this.buttonTexts = new String[]{buttonTextOk, buttonTextCancel};
-	}
-	
-	public SimpleInputDialog(String text, Shell shell, String buttonTextOk, String buttonTextCancel) {   
-		super(shell);
-		this.text = text;
-		this.buttonTexts = new String[]{buttonTextOk, buttonTextCancel};
 	}
 	
 	public void setInputPattern(String patternString) {
@@ -50,19 +43,14 @@ public class SimpleInputDialog extends ModalDialog<String> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
-		shell.setLayout(new GridLayout(buttonTexts.length, true));
+		shell.setLayout(new GridLayout(2, true));
 		
 		Label label = new Label(shell, SWT.NONE);
-		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
+		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
 		
 		textField = new Text(shell, SWT.BORDER);
-		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, buttonTexts.length, 1));
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 		textField.setText("");
 		textField.addModifyListener(new ModifyListener() {
 			@Override
@@ -86,29 +74,32 @@ public class SimpleInputDialog extends ModalDialog<String> {
 				// on Enter-key
 				if (e.keyCode == SWT.CR || e.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(textField.getText());
-					getShell().close();
+					getParent().close();
 				}
 			}
 		});
 	    
-		for (int i = 0; i < buttonTexts.length; i++) {
-			String buttonText = buttonTexts[i];
-			final int buttonIndex = i; 
-			Button button = new Button(shell, SWT.PUSH);
-		    button.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		    button.setText(buttonText);
-		    button.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					if (buttonIndex == 0) {
-						setReturnValue(textField.getText());
-					} else {
-						setReturnValue(null);
-					}
-					getShell().close();
-				}
-			});
-		}
+		Button okButton = new Button(shell, SWT.PUSH);
+		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		okButton.setText(LangResources.get("ok"));
+		okButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				setReturnValue(textField.getText());
+				getParent().close();
+			}
+		});
+	    
+		Button cancelButton = new Button(shell, SWT.PUSH);
+		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				setReturnValue(null);
+				getParent().close();
+			}
+		});
 
 		shell.pack();
 	}

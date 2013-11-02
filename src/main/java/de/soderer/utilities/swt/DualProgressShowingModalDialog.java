@@ -8,18 +8,18 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 	@SuppressWarnings("unused")
 	private static final transient Logger logger = Logger.getLogger(DualProgressShowingModalDialog.class);
 	
-	public DualProgressShowingModalDialog(Shell parentShell) {
-		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
+	public DualProgressShowingModalDialog(Shell parentShell, String title) {
+		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 	
-	public DualProgressShowingModalDialog(Shell parentShell, int style) {   
-		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
+	public DualProgressShowingModalDialog(Shell parentShell, int style, String title) {   
+		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 	
 	public void showSubItemProgress(long subItemsTodo, long subItemsDone) {
 		final long subItemTodoParam = subItemsTodo;
 		final long subItemDoneParam = subItemsDone;
-		getShell().getDisplay().asyncExec(new Runnable() {
+		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog instanceof DualProgressDialog) {
@@ -37,7 +37,7 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 	}
 	
 	public void setSubItemTitle(final String subItemTitle) {
-		getShell().getDisplay().asyncExec(new Runnable() {
+		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog instanceof DualProgressDialog) {

@@ -14,7 +14,7 @@ public class CryptographicUtilitiesTest {
 		ByteArrayInputStream in = null;
 		ByteArrayOutputStream out = null;
 		try {
-			String password = Utilities.getRandomString(12);
+			char[] password = Utilities.getRandomString(12).toCharArray();
 			in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
 			out = new ByteArrayOutputStream();
 			CryptographicUtilities.encryptSymmetric(in, out, password);

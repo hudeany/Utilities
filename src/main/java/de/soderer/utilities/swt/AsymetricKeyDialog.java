@@ -3,7 +3,6 @@ package de.soderer.utilities.swt;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.JCERSAPrivateCrtKey;
 import org.bouncycastle.jce.provider.JCERSAPublicKey;
 import org.eclipse.swt.SWT;
@@ -20,24 +19,17 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public class AsymetricKeyDialog extends ModalDialog<Boolean> {
-	private String title;
 	private PublicKey publicKey;
 	private PrivateKey privateKey;
 
-	public AsymetricKeyDialog(String title, Shell shell, PublicKey publicKey, PrivateKey privateKey) {   
-		super(shell, SWT.RESIZE);
-		this.title = title;
+	public AsymetricKeyDialog(Shell shell, String title, PublicKey publicKey, PrivateKey privateKey) {   
+		super(shell, SWT.RESIZE, title);
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
 	}
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new GridLayout());
 		
 		Composite composite = new Composite(shell, SWT.NONE);
@@ -134,7 +126,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(true);
-				getShell().close();
+				getParent().close();
 			}
 		});
 
@@ -145,7 +137,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
-				getShell().close();
+				getParent().close();
 			}
 		});
 

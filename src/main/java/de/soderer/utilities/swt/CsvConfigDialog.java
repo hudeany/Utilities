@@ -14,7 +14,6 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public class CsvConfigDialog extends ModalDialog<Boolean> {
-	private String title = null;
 	private String text = null;
 
 	private char separator;
@@ -30,28 +29,13 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 	private Button underfilledLinesAllowedButton;
 	private Button underfilledLinesNotAllowedButton;
 	
-	public CsvConfigDialog(String title, String text, Shell shell) {
-		super(shell);
-		this.title = title;
+	public CsvConfigDialog(Shell shell, String title, String text) {
+		super(shell, title);
 		this.text = text;
-	}
-	
-	public CsvConfigDialog(String text, Shell shell) {
-		super(shell);
-		this.text = text;
-	}
-	
-	public CsvConfigDialog(Shell shell) {
-		super(shell);
 	}
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new GridLayout(1, true));
 		
 		if (StringUtils.isNotBlank(text)) {
@@ -129,7 +113,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 				stringQuote = singleQuoteButton.getSelection() ? '\'' : '"';
 				allowUnderfilledLines = underfilledLinesAllowedButton.getSelection();
 				setReturnValue(true);
-				getShell().close();
+				getParent().close();
 			}
 		});
 	    
@@ -140,7 +124,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
-				getShell().close();
+				getParent().close();
 			}
 		});
 

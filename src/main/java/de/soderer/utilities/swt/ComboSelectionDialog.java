@@ -2,7 +2,6 @@ package de.soderer.utilities.swt;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -18,32 +17,20 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public class ComboSelectionDialog extends ModalDialog<String> {
-	private String title;
 	private String text;
 	private List<String> items;
 	private Combo comboBox;
 	private Button okButton;
 
-	public ComboSelectionDialog(Shell shell, String title, String text, List<String> items) {   
-		super(shell, SWT.RESIZE);
-		this.title = title;
-		this.text = text;
-		this.items = items;
-	}
-	
-	public ComboSelectionDialog(Shell shell, String text, List<String> items) {   
-		super(shell, SWT.RESIZE);
+	public ComboSelectionDialog(Shell shell, String title, String text, List<String> items) {
+		super(shell, SWT.RESIZE, title);
+		
 		this.text = text;
 		this.items = items;
 	}
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new FillLayout());
 		shell.setSize(475, 120);
 		shell.setMinimumSize(475, 120);
@@ -89,14 +76,14 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 			if (comboBox.getSelectionIndex() > -1) {
 				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
 			}
-			getShell().close();
+			getParent().close();
 		}
 	}
 
 	private class CancelButtonSelectionListener extends SelectionAdapter {
 		@Override
 		public void widgetSelected(SelectionEvent e) {
-			getShell().close();
+			getParent().close();
 		}
 	}
 }

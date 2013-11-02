@@ -9,18 +9,18 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 	
 	protected ProgressDialog progressDialog;
 	
-	public ProgressShowingModalDialog(Shell parentShell) {
-		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
+	public ProgressShowingModalDialog(Shell parentShell, String title) {
+		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 	
-	public ProgressShowingModalDialog(Shell parentShell, int style) {   
-		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL);
+	public ProgressShowingModalDialog(Shell parentShell, int style, String title) {   
+		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 	
 	public void showProgress(long todo, long done) {
 		final long todoParam = todo;
 		final long doneParam = done;
-		getShell().getDisplay().asyncExec(new Runnable() {
+		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog != null && !progressDialog.isDisposed()) {
@@ -35,7 +35,7 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 	}
 	
 	public void showUnlimitedProgress() {
-		getShell().getDisplay().asyncExec(new Runnable() {
+		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog != null && !progressDialog.isDisposed()) {
@@ -47,7 +47,7 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 	
 	public void showDone() {
 		try {
-			getShell().getDisplay().asyncExec(new Runnable() {
+			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
 					try {

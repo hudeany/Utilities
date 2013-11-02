@@ -17,44 +17,26 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-public class PasswordDialog extends ModalDialog<String> {
-	private String title = null;
+import de.soderer.utilities.LangResources;
+
+public class PasswordDialog extends ModalDialog<char[]> {
 	private String text;
-	private Text textField;
+	private Text passwordTextField;
 	private String currentText = "";
 	private int currentPosition = 0;
-	private String[] buttonTexts;
 	private Pattern inputPattern = null;
 	private boolean isTechnicalChange = false;
 	private String keepInMemoryText = null;
 	private boolean keepInMemory = false;
-
-	public PasswordDialog(String title, String text, Shell shell, String buttonTextOk, String buttonTextCancel, String keepInMemoryText) {   
-		super(shell);
-		this.title = title;
+	
+	public PasswordDialog(Shell shell, String title, String text) {   
+		super(shell, title);
+		
 		this.text = text;
-		this.buttonTexts = new String[]{buttonTextOk, buttonTextCancel};
-		this.keepInMemoryText = keepInMemoryText;
 	}
 
-	public PasswordDialog(String text, Shell shell, String buttonTextOk, String buttonTextCancel, String keepInMemoryText) {   
-		super(shell);
-		this.text = text;
-		this.buttonTexts = new String[]{buttonTextOk, buttonTextCancel};
+	public void setKeepInMemoryText(String keepInMemoryText) {
 		this.keepInMemoryText = keepInMemoryText;
-	}
-	
-	public PasswordDialog(String title, String text, Shell shell, String buttonTextOk, String buttonTextCancel) {   
-		super(shell);
-		this.title = title;
-		this.text = text;
-		this.buttonTexts = new String[]{buttonTextOk, buttonTextCancel};
-	}
-	
-	public PasswordDialog(String text, Shell shell, String buttonTextOk, String buttonTextCancel) {   
-		super(shell);
-		this.text = text;
-		this.buttonTexts = new String[]{buttonTextOk, buttonTextCancel};
 	}
 	
 	public void setInputPattern(String patternString) {
@@ -67,49 +49,44 @@ public class PasswordDialog extends ModalDialog<String> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
-		shell.setLayout(new GridLayout(buttonTexts.length, true));
+		shell.setLayout(new GridLayout(2, true));
 		
 		Label label = new Label(shell, SWT.NONE);
-		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
+		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
 		
-		textField = new Text(shell, SWT.BORDER | SWT.PASSWORD);
-		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, buttonTexts.length, 1));
-		textField.setText("");
-		textField.addModifyListener(new ModifyListener() {
+		passwordTextField = new Text(shell, SWT.BORDER | SWT.PASSWORD);
+		passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
+		passwordTextField.setText("");
+		passwordTextField.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent e) {
 				if (!isTechnicalChange) {
-					if (inputPattern == null || inputPattern.matcher(textField.getText()).matches()) {
-						currentText = textField.getText();
+					if (inputPattern == null || inputPattern.matcher(passwordTextField.getText()).matches()) {
+						currentText = passwordTextField.getText();
 					} else {
-						currentPosition = textField.getCaretPosition();
+						currentPosition = passwordTextField.getCaretPosition();
 						isTechnicalChange = true;
-						textField.setText(currentText);
-						textField.setSelection(Math.min(currentText.length(), Math.max(0, currentPosition - 1)));
+						passwordTextField.setText(currentText);
+						passwordTextField.setSelection(Math.min(currentText.length(), Math.max(0, currentPosition - 1)));
 						isTechnicalChange = false;
 					}
 				}
 			}
 		});
-		textField.addKeyListener(new KeyAdapter() {
+		passwordTextField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent event) {
 				if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
-					setReturnValue(textField.getText());
-					getShell().close();
+					setReturnValue(passwordTextField.getTextChars());
+					getParent().close();
 				}
 			}
 		});
 		
 		if (StringUtils.isNotBlank(keepInMemoryText)) {
 			Button keepInMemoryButton = new Button(shell, SWT.CHECK);
-			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, buttonTexts.length, 1));
+			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 			keepInMemoryButton.setText(keepInMemoryText);
 			keepInMemoryButton.addSelectionListener(new SelectionAdapter() {
 				@Override
@@ -118,25 +95,28 @@ public class PasswordDialog extends ModalDialog<String> {
 				}
 			});
 		}
+		
+		Button okButton = new Button(shell, SWT.PUSH);
+		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		okButton.setText(LangResources.get("ok"));
+		okButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				setReturnValue(passwordTextField.getTextChars());
+				getParent().close();
+			}
+		});
 	    
-		for (int i = 0; i < buttonTexts.length; i++) {
-			String buttonText = buttonTexts[i];
-			final int buttonIndex = i; 
-			Button button = new Button(shell, SWT.PUSH);
-		    button.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		    button.setText(buttonText);
-		    button.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					if (buttonIndex == 0) {
-						setReturnValue(textField.getText());
-					} else {
-						setReturnValue(null);
-					}
-					getShell().close();
-				}
-			});
-		}
+		Button cancelButton = new Button(shell, SWT.PUSH);
+		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				setReturnValue(null);
+				getParent().close();
+			}
+		});
 
 		shell.pack();
 	}

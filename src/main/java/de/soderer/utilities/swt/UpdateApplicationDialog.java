@@ -26,24 +26,18 @@ import de.soderer.utilities.UserError.Reason;
 public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {
 	private static final transient Logger logger = Logger.getLogger(UpdateApplicationDialog.class);
 	
-	private String title;
 	private String text;
 	private String downloadUrl;
 	
-	public UpdateApplicationDialog(String title, String text, Shell shell, String downloadUrl) {
-		super(shell);
-		this.title = title;
+	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl) {
+		super(shell, title);
+
 		this.text = text;
 		this.downloadUrl = downloadUrl;
 	}
 
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new FillLayout());
 		
 		Composite composite = new Composite(shell, SWT.NONE);
@@ -61,7 +55,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			public void widgetSelected(SelectionEvent e) {
 				updateApplication();
 				setReturnValue(true);
-				getShell().close();
+				getParent().close();
 			}
 		});
 	    
@@ -72,7 +66,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
-				getShell().close();
+				getParent().close();
 			}
 		});
 
@@ -172,7 +166,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					Runtime.getRuntime().exit(0);
 				}
 			} else {
-				new QuestionDialog(title, LangResources.get("cannotUpdate", "Jar file not found"), getShell()).open();
+				new QuestionDialog(getParent(), getText(), LangResources.get("cannotUpdate", "Jar file not found")).open();
 			}
 		} catch (Exception e) {
 			logger.error(LangResources.get("cannotUpdate", e.getMessage()), e);
@@ -183,17 +177,17 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		try {
 			downloadTempFile.delete();
 			if (downloadUrl.contains("<username>") && downloadUrl.contains("<password>")) {
-				CredentialsDialog credentialsDialog = new CredentialsDialog(title, LangResources.get("enterDownloadCredentials"), getShell());
+				CredentialsDialog credentialsDialog = new CredentialsDialog(getParent(), getText(), LangResources.get("enterDownloadCredentials"));
 				Boolean success = credentialsDialog.open();
 				if (success) {
 					downloadUrl = downloadUrl.replaceAll("<username>", credentialsDialog.getUsername());
-					downloadUrl = downloadUrl.replaceAll("<password>", credentialsDialog.getPassword());
+					downloadUrl = downloadUrl.replaceAll("<password>", new String(credentialsDialog.getPassword()));
 				} else {
 					return false;
 				}
 			} else {
 				if (downloadUrl.contains("<username>")) {
-					SimpleInputDialog usernameDialog = new SimpleInputDialog(title, LangResources.get("enterDownloadUserName"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
+					SimpleInputDialog usernameDialog = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterDownloadUserName"));
 					String username = usernameDialog.open();
 					if (StringUtils.isNotBlank(username)) {
 						downloadUrl = downloadUrl.replaceAll("<username>", username);
@@ -202,10 +196,10 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					}
 				}
 				if (downloadUrl.contains("<password>")) {
-					PasswordDialog passwordDialog = new PasswordDialog(title, LangResources.get("enterDownloadPassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel"));
-					String password = passwordDialog.open();
-					if (StringUtils.isNotBlank(password)) {
-						downloadUrl = downloadUrl.replaceAll("<password>", password);
+					PasswordDialog passwordDialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterDownloadPassword"));
+					char[] password = passwordDialog.open();
+					if (password != null) {
+						downloadUrl = downloadUrl.replaceAll("<password>", new String(password));
 					} else {
 						return false;
 					}
@@ -227,7 +221,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			}
 			
 			RunnableFuture<Boolean> worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile.getAbsolutePath());
-			progressDialog = new ProgressDialog(LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"), getShell());
+			progressDialog = new ProgressDialog(getParent(), LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"));
 			new Thread(worker).start();
 			if (progressDialog.open()) {
 				worker.cancel(true);

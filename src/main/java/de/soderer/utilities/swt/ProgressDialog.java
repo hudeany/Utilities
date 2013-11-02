@@ -18,17 +18,15 @@ import org.eclipse.swt.widgets.ProgressBar;
 import de.soderer.utilities.LangResources;
 
 public class ProgressDialog extends ModalDialog<Boolean> {
-	protected String title;
 	protected String commentStringFormat;
 	protected Label commentLabel;
 	protected ProgressBar bar;
 	protected boolean isClosed = false;
 	private Thread unlimitedRunner = null;
 
-	public ProgressDialog(String title, String commentStringFormat, Shell shell) {   
-		super(shell);
+	public ProgressDialog(Shell shell, String title, String commentStringFormat) {   
+		super(shell, title);
 		
-		this.title = title;
 		this.commentStringFormat = commentStringFormat;
 	}
 	
@@ -38,11 +36,6 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 			if (isClosed) {
 				shell.close();
 			} else {
-				if (StringUtils.isEmpty(title)) {
-					shell.setText(getText());
-				} else {
-					shell.setText(title);
-				}
 				shell.setLayout(new FillLayout());
 				
 				Composite composite = new Composite(shell, SWT.NONE);
@@ -68,7 +61,7 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 					@Override
 					public void widgetSelected(SelectionEvent e) {
 						setReturnValue(true);
-						getShell().close();
+						getParent().close();
 					}
 				});
 	
@@ -108,7 +101,7 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 			public void run() {
 				try {
 					while (true) {
-						getShell().getDisplay().asyncExec(new Runnable() {
+						getParent().getDisplay().asyncExec(new Runnable() {
 							@Override
 							public void run() {
 								int nextValue;
@@ -156,7 +149,7 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 	public void close() {
 		isClosed = true;
 		setReturnValue(false);
-		getShell().close();
+		getParent().close();
 	}
 	
 	@Override

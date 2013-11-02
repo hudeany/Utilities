@@ -41,7 +41,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private Image iconImageLinux;
 	
 	public ApplicationConfigurationDialog(Shell shell, ConfigurationProperties applicationConfiguration, String applicationName) throws Exception {   
-		super(shell, SWT.RESIZE);
+		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
 		this.iconImageDataWindows = null;
@@ -49,7 +49,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	}
 
 	public ApplicationConfigurationDialog(Shell shell, ConfigurationProperties applicationConfiguration, String applicationName, byte[] iconImageWindows, Image iconImageLinux) throws Exception {   
-		super(shell, SWT.RESIZE);
+		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
 		this.iconImageDataWindows = iconImageWindows;
@@ -58,7 +58,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	
 	@Override
 	protected void createComponents(Shell shell) {
-		shell.setText(applicationName + " " + LangResources.get("configuration"));
 		shell.setLayout(new FillLayout(SWT.VERTICAL));
 		shell.setMinimumSize(500, 300);
 		shell.setSize(500, 300);
@@ -129,7 +128,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				    button.addSelectionListener(new SelectionAdapter() {
 						@Override
 						public void widgetSelected(SelectionEvent arg0) {
-							new QuestionDialog(applicationName, helpText, getShell(), LangResources.get("ok")).open();
+							new QuestionDialog(getParent(), applicationName, helpText, LangResources.get("ok")).open();
 						}
 					});
 				} else {
@@ -153,7 +152,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(true);
-				getShell().close();
+				getParent().close();
 			}
 		});
 		
@@ -167,7 +166,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					if (!SystemUtilities.isJavaWebstartApp()) {
 						String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
 						if (StringUtils.isBlank(applicationJarFileName)) {
-							FileDialog dialog = new FileDialog(getShell(), SWT.OPEN);
+							FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
 					        dialog.setText(LangResources.get("createDesktopLink"));
 					        applicationJarFileName = dialog.open();
 						}
@@ -215,14 +214,14 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 								
 								Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
 								
-								MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
+								MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
 								messageBox.setText(LangResources.get("createDesktopLink"));
 								messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
 								messageBox.open();
 								
 								new File(tempScriptFile).delete();
 							} catch (IOException e1) {
-								MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+								MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_ERROR | SWT.OK);
 								messageBox.setText(LangResources.get("createDesktopLink"));
 								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
 								messageBox.open();
@@ -260,12 +259,12 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							try {
 								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
 								
-								MessageBox messageBox = new MessageBox(getShell(), SWT.OK);
+								MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
 								messageBox.setText(LangResources.get("createDesktopLink"));
 								messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
 								messageBox.open();
 							} catch (IOException e1) {
-								MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+								MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_ERROR | SWT.OK);
 								messageBox.setText(LangResources.get("createDesktopLink"));
 								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
 								messageBox.open();
@@ -288,7 +287,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				for (Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
 				}
-				new ShowDataDialog(applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), true).open();
+				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), true).open();
 			}
 		});
 		
@@ -302,7 +301,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				for (Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
 				}
-				new ShowDataDialog(applicationName + " " + LangResources.get("runtimeProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), getShell(), true).open();
+				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("runtimeProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), true).open();
 			}
 		});
 		
@@ -312,7 +311,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		showSwtPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				new ShowDataDialog(applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(null), "\n", " = ", true), getShell()).open();
+				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(null), "\n", " = ", true)).open();
 			}
 		});
 
@@ -323,7 +322,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
-				getShell().close();
+				getParent().close();
 			}
 		});
 		

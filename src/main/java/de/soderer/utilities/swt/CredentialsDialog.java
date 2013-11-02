@@ -18,48 +18,23 @@ import org.eclipse.swt.widgets.Text;
 import de.soderer.utilities.LangResources;
 
 public class CredentialsDialog extends ModalDialog<Boolean> {
-	private String title = null;
 	private String text = null;
 	private String username = "";
-	private String password = "";
+	private char[] password = "".toCharArray();
 	private String keepInMemoryText = null;
 	private boolean keepInMemory = false;
-
-	public CredentialsDialog(String title, String text, Shell shell, String keepInMemoryText) {
-		super(shell);
-		this.title = title;
+	
+	public CredentialsDialog(Shell shell, String title, String text) {
+		super(shell, title);
 		this.text = text;
-		this.keepInMemoryText = keepInMemoryText;
 	}
 
-	public CredentialsDialog(String text, Shell shell, String keepInMemoryText) {
-		super(shell);
-		this.text = text;
+	public void setKeepInMemoryText(String keepInMemoryText) {
 		this.keepInMemoryText = keepInMemoryText;
-	}
-	
-	public CredentialsDialog(String title, String text, Shell shell) {
-		super(shell);
-		this.title = title;
-		this.text = text;
-	}
-	
-	public CredentialsDialog(String text, Shell shell) {
-		super(shell);
-		this.text = text;
-	}
-	
-	public CredentialsDialog(Shell shell) {
-		super(shell);
 	}
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new GridLayout(2, true));
 		
 		if (StringUtils.isNotBlank(text)) {
@@ -86,7 +61,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 			public void keyReleased(KeyEvent event) {
 				if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(true);
-					getShell().close();
+					getParent().close();
 				}
 			}
 		});
@@ -101,7 +76,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 		passwordTextField.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent e) {
-				password = ((Text) e.widget).getText();
+				password = ((Text) e.widget).getTextChars();
 			}
 		});
 		passwordTextField.addKeyListener(new KeyAdapter() {
@@ -109,7 +84,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 			public void keyReleased(KeyEvent event) {
 				if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(true);
-					getShell().close();
+					getParent().close();
 				}
 			}
 		});
@@ -133,7 +108,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(true);
-				getShell().close();
+				getParent().close();
 			}
 		});
 	    
@@ -144,7 +119,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
-				getShell().close();
+				getParent().close();
 			}
 		});
 
@@ -155,7 +130,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 		return username;
 	}
 
-	public String getPassword() {
+	public char[] getPassword() {
 		return password;
 	}
 

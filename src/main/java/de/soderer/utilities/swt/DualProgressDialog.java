@@ -22,8 +22,8 @@ public class DualProgressDialog extends ProgressDialog {
 	private Label subCommentLabel;
 	private ProgressBar subBar;
 
-	public DualProgressDialog(String title, String commentStringFormat, String subCommentStringFormat, Shell shell) {   
-		super(title, commentStringFormat, shell);
+	public DualProgressDialog(Shell shell, String title, String commentStringFormat, String subCommentStringFormat) {   
+		super(shell, title, commentStringFormat);
 		
 		this.subCommentStringFormat = subCommentStringFormat;
 	}
@@ -34,11 +34,6 @@ public class DualProgressDialog extends ProgressDialog {
 			if (isClosed) {
 				shell.close();
 			} else {
-				if (StringUtils.isEmpty(title)) {
-					shell.setText(getText());
-				} else {
-					shell.setText(title);
-				}
 				shell.setLayout(new FillLayout());
 				
 				Composite composite = new Composite(shell, SWT.NONE);
@@ -73,7 +68,7 @@ public class DualProgressDialog extends ProgressDialog {
 					@Override
 					public void widgetSelected(SelectionEvent e) {
 						setReturnValue(true);
-						getShell().close();
+						getParent().close();
 					}
 				});
 	

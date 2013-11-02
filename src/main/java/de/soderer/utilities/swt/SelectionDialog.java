@@ -2,7 +2,6 @@ package de.soderer.utilities.swt;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
@@ -21,32 +20,20 @@ import org.eclipse.swt.widgets.TableItem;
 import de.soderer.utilities.LangResources;
 
 public class SelectionDialog extends ModalDialog<String> {
-	private String title;
 	private String text;
 	private List<String> items;
 	private Table table;
 	private Button okButton;
 
 	public SelectionDialog(Shell shell, String title, String text, List<String> items) {   
-		super(shell, SWT.RESIZE);
-		this.title = title;
-		this.text = text;
-		this.items = items;
-	}
-	
-	public SelectionDialog(Shell shell, String text, List<String> items) {   
-		super(shell, SWT.RESIZE);
+		super(shell, SWT.RESIZE, title);
+
 		this.text = text;
 		this.items = items;
 	}
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new FillLayout());
 		shell.setSize(475, 250);
 		shell.setMinimumSize(475, 250);
@@ -80,7 +67,7 @@ public class SelectionDialog extends ModalDialog<String> {
 			public void mouseDoubleClick(MouseEvent arg0) {
 				if (table.getSelectionIndex() > -1) {
 					setReturnValue(table.getSelection()[0].getText());
-					getShell().close();
+					getParent().close();
 				}
 			}
 		});
@@ -96,7 +83,7 @@ public class SelectionDialog extends ModalDialog<String> {
 				if (table.getSelectionIndex() > -1) {
 					setReturnValue(table.getSelection()[0].getText());
 				}
-				getShell().close();
+				getParent().close();
 			}
 		});
 		
@@ -106,7 +93,7 @@ public class SelectionDialog extends ModalDialog<String> {
 	    cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				getShell().close();
+				getParent().close();
 			}
 		});
 	    

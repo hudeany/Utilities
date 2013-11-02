@@ -9,35 +9,31 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public abstract class ModalDialog<T> extends Dialog {
-	private Shell shell;
 	private Point location = null;
 	private T returnValue;
 	
-	public ModalDialog(Shell parentShell) {
+	public ModalDialog(Shell parentShell, String title) {
 		super(new Shell(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
+		getParent().setText(title);
 	}
 	
-	public ModalDialog(Shell parentShell, int style) {   
+	public ModalDialog(Shell parentShell, int style, String title) {   
 		super(new Shell(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
-	}
-	
-	protected Shell getShell() {
-		return shell;
+		getParent().setText(title);
 	}
 	
 	public T open() {
-		shell = getParent();
 		try {
-			createComponents(shell);
+			createComponents(getParent());
 		} catch (Exception e) {
 			throw new RuntimeException("Cannot create dialog components", e);
 		}
 		
-		setPosition(shell);
+		setPosition(getParent());
 	    
-	    shell.open();
+	    getParent().open();
 	    Display display = getParent().getDisplay();
-	    while (!shell.isDisposed()) {
+	    while (!getParent().isDisposed()) {
 	    	if (!display.readAndDispatch())
 	    		display.sleep();
 	    }
@@ -50,11 +46,11 @@ public abstract class ModalDialog<T> extends Dialog {
 	}
 	
 	public void hide() {
-		shell.setVisible(false);
+		getParent().setVisible(false);
 	}
 	
 	public void show() {
-		shell.setVisible(true);
+		getParent().setVisible(true);
 	}
 	
 	public void setLocation(Point value) {
@@ -62,7 +58,7 @@ public abstract class ModalDialog<T> extends Dialog {
 	}
 	
 	public boolean isDisposed() {
-		return shell.isDisposed();
+		return getParent().isDisposed();
 	}
 	
 	protected void setReturnValue(T value) {
@@ -90,18 +86,18 @@ public abstract class ModalDialog<T> extends Dialog {
 	}
 
 	protected void showMessage(String title, String text) {
-		new QuestionDialog(title, text, getShell(), LangResources.get("ok")).open();
+		new QuestionDialog(getParent(), title, text, LangResources.get("ok")).open();
 	}
 	
 	protected boolean showQuestion(String text, String... buttonTextProperties) {
 		if (buttonTextProperties == null) {
-			return new QuestionDialog(text, getShell(), LangResources.get("ok"), LangResources.get("cancel")).open() == 0;
+			return new QuestionDialog(getParent(), getText(), text, LangResources.get("ok"), LangResources.get("cancel")).open() == 0;
 		} else {
 			String[] buttonTexts = new String[buttonTextProperties.length];
 			for (int i = 0; i < buttonTextProperties.length; i++) {
 				buttonTexts[i] = LangResources.get(buttonTextProperties[i]);
 			}
-			return new QuestionDialog(text, getShell(), buttonTexts).open() == 0;
+			return new QuestionDialog(getParent(), getText(), text, buttonTexts).open() == 0;
 		}
 	}
 	

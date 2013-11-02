@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -19,33 +18,18 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public class ShowDataDialog extends ModalDialog<Integer> {
-	private String title;
 	private String dataString;
 	private boolean wordWrap = false;
 	private boolean showSaveButton;
 
-	public ShowDataDialog(String title, String dataString, Shell shell, boolean showSaveButton) {   
-		super(shell, SWT.RESIZE);
-		this.title = title;
+	public ShowDataDialog(Shell shell, String title, String dataString, boolean showSaveButton) {
+		super(shell, SWT.RESIZE, title);
 		this.dataString = dataString;
 		this.showSaveButton = showSaveButton;
 	}
 	
-	public ShowDataDialog(String dataString, Shell shell, boolean showSaveButton) {   
-		super(shell, SWT.RESIZE);
-		this.dataString = dataString;
-		this.showSaveButton = showSaveButton;
-	}
-	
-	public ShowDataDialog(String title, String dataString, Shell shell) {   
-		super(shell, SWT.RESIZE);
-		this.title = title;
-		this.dataString = dataString;
-		showSaveButton = false;
-	}
-	
-	public ShowDataDialog(String dataString, Shell shell) {   
-		super(shell, SWT.RESIZE);
+	public ShowDataDialog(Shell shell, String title, String dataString) {   
+		super(shell, SWT.RESIZE, title);
 		this.dataString = dataString;
 		showSaveButton = false;
 	}
@@ -56,11 +40,6 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new GridLayout());
 		
 		Composite composite = new Composite(shell, SWT.NONE);
@@ -81,7 +60,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					try {
-						saveDataInteractive(LangResources.get("savedata"), dataString.getBytes("UTF-8"), getShell());
+						saveDataInteractive(getParent(), LangResources.get("savedata"), dataString.getBytes("UTF-8"));
 					} catch (UnsupportedEncodingException e1) {
 						e1.printStackTrace();
 					}
@@ -96,7 +75,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(0);
-				getShell().close();
+				getParent().close();
 			}
 		});
 
@@ -104,7 +83,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		shell.setSize(300, 300);
 	}
 	
-	public static String saveDataInteractive(String title, byte[] data, Shell shell) {
+	public static String saveDataInteractive(Shell shell, String title, byte[] data) {
 		try {
 			boolean retry = true;
 			while (retry) {
@@ -113,13 +92,13 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			    String fileName = dialog.open();
 			    if (fileName != null) {
 			        if (new File(fileName).exists() && new File(fileName).isDirectory()) {
-			        	QuestionDialog questionDialog = new QuestionDialog(LangResources.get("pathisdirectory"), shell, LangResources.get("ok"), LangResources.get("cancel"));
+			        	QuestionDialog questionDialog = new QuestionDialog(shell, title, LangResources.get("pathisdirectory"), LangResources.get("ok"), LangResources.get("cancel"));
 			        	if (questionDialog.open() != 0) {
 			        		retry = false;
 			        	}
 			        } else {
 				        if (new File(fileName).exists()) {
-				        	QuestionDialog questionDialog = new QuestionDialog(LangResources.get("filealreadyexists"), shell, LangResources.get("ok"), LangResources.get("cancel"));
+				        	QuestionDialog questionDialog = new QuestionDialog(shell, title, LangResources.get("filealreadyexists"), LangResources.get("ok"), LangResources.get("cancel"));
 				        	if (questionDialog.open() != 0) {
 				        		retry = false;
 				        	}
@@ -138,7 +117,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			}
 			return null;
 		} catch (Exception e) {
-			new QuestionDialog(LangResources.get("filewasnotsaved"), LangResources.get("error") + ":\n" + e.getMessage(), shell, LangResources.get("ok")).open();
+			new QuestionDialog(shell, title, LangResources.get("filewasnotsaved"), LangResources.get("error") + ":\n" + e.getMessage(), LangResources.get("ok")).open();
 			return null;
 		}
 	}

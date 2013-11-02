@@ -2,7 +2,6 @@ package de.soderer.utilities.swt;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -17,7 +16,6 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
-	private String title;
 	private String text;
 	private String browseButtonText;
 	private List<String> items;
@@ -25,15 +23,8 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 	private Button okButton;
 
 	public SelectOrBrowseFolderDialog(Shell shell, String title, String text, String browseButtonText, List<String> items) {   
-		super(shell, SWT.RESIZE);
-		this.title = title;
-		this.text = text;
-		this.browseButtonText = browseButtonText;
-		this.items = items;
-	}
-	
-	public SelectOrBrowseFolderDialog(Shell shell, String text, String browseButtonText, List<String> items) {   
-		super(shell, SWT.RESIZE);
+		super(shell, SWT.RESIZE, title);
+
 		this.text = text;
 		this.browseButtonText = browseButtonText;
 		this.items = items;
@@ -41,11 +32,6 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new GridLayout(4, true));
 		shell.setSize(475, 120);
 		shell.setMinimumSize(475, 120);
@@ -68,7 +54,7 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 	    browseButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				DirectoryDialog dialog = new DirectoryDialog(getShell(), SWT.OPEN);
+				DirectoryDialog dialog = new DirectoryDialog(getParent(), SWT.OPEN);
 				dialog.setText(getText());
 				String filePath = dialog.open();
 				if (filePath != null) {
@@ -114,14 +100,14 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 			if (comboBox.getSelectionIndex() > -1) {
 				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
 			}
-			getShell().close();
+			getParent().close();
 		}
 	}
 
 	private class CancelButtonSelectionListener extends SelectionAdapter {
 		@Override
 		public void widgetSelected(SelectionEvent e) {
-			getShell().close();
+			getParent().close();
 		}
 	}
 }

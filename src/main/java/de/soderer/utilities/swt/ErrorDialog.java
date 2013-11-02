@@ -35,7 +35,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	}
 	
 	public ErrorDialog(Shell shell, String applicationName, String emailRecipient, Throwable throwable) {
-		super(shell);
+		super(shell, applicationName + " " + getText("ERROR"));
 		this.throwable = throwable;
 		this.applicationName = applicationName;
 		this.emailRecipient = emailRecipient;
@@ -43,7 +43,6 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		shell.setText(applicationName + " " + getText("ERROR"));
 		try {
 			shell.setImage(new Image(shell.getDisplay(), getClass().getResourceAsStream("exclamation.png")));
 		} catch (Exception e) {
@@ -75,7 +74,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			public void widgetSelected(SelectionEvent e) {
 				boolean success = Utilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, Utilities.throwableToString(throwable));
 				if (!success) {
-					new QuestionDialog(getText(), getText("CANNOT_OPEN_MAIL"), getShell(), "OK").open();
+					new QuestionDialog(getParent(), getText(), getText("CANNOT_OPEN_MAIL"), "OK").open();
 				}
 			}
 		});
@@ -90,9 +89,9 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				} else {
 					detailButton.setText(getText("DETAILS_MORE"));
 				}
-				Point currentLocation = getShell().getLocation();
+				Point currentLocation = getParent().getLocation();
 				setupDetailPart();
-				getShell().setLocation(currentLocation);
+				getParent().setLocation(currentLocation);
 			}
 		});
 
@@ -109,7 +108,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
-				getShell().close();
+				getParent().close();
 			}
 		});
 		
@@ -140,14 +139,14 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				keyTextfield3.setText(text3);
 				FontData[] fontData = keyTextfield3.getFont().getFontData();
 				fontData[0].setHeight(7);
-				keyTextfield3.setFont(new Font(getShell().getDisplay(), fontData[0]));
+				keyTextfield3.setFont(new Font(getParent().getDisplay(), fontData[0]));
 			}
 		}
 		
 		detailPart.pack();
 		detailPart.layout();
-		getShell().pack();
-		setPosition(getShell());
+		getParent().pack();
+		setPosition(getParent());
 	}
 	
 	private static String getText(String key) {

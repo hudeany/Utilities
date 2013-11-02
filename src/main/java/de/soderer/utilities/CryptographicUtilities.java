@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
@@ -9,6 +10,7 @@ import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -19,6 +21,7 @@ import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Date;
+import java.util.Iterator;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -40,6 +43,14 @@ import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
+import org.bouncycastle.openpgp.PGPSecretKey;
+import org.bouncycastle.openpgp.PGPSecretKeyRing;
+import org.bouncycastle.openpgp.PGPSecretKeyRingCollection;
+import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.openssl.PEMWriter;
 
@@ -373,17 +384,69 @@ public class CryptographicUtilities {
 	/**
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
-	public static PublicKey getPublicKeyFromFile(File publicKeyFile) throws Exception {
-		String keyString = FileUtils.readFileToString(publicKeyFile);
-		return getPublicKeyFromString(keyString);
+	public static PublicKey readRSAPublicKey(InputStream inputStream) throws Exception {
+		return getPublicKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
+	}
+	
+    @SuppressWarnings("resource")
+	public static PGPPublicKey readPGPPublicKey(InputStream inputStream) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			InputStream decoderStream = PGPUtil.getDecoderStream(inputStream);
+			PGPPublicKeyRingCollection pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(decoderStream);
+			@SuppressWarnings("rawtypes")
+			Iterator keyRingIterator = pgpPublicKeyRingCollection.getKeyRings();
+			while (keyRingIterator.hasNext()) {
+				PGPPublicKeyRing keyRing = (PGPPublicKeyRing)keyRingIterator.next();
+				@SuppressWarnings("rawtypes")
+				Iterator publicKeyIterator = keyRing.getPublicKeys();
+				while (publicKeyIterator.hasNext()) {
+					PGPPublicKey nextPGPPublicKey = (PGPPublicKey)publicKeyIterator.next();
+					if (nextPGPPublicKey.isEncryptionKey()) {
+						return nextPGPPublicKey;
+					}
+				}
+			}
+
+			// key not found
+			return null;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	public static PGPSecretKey readPGPPrivateKey(InputStream inputStream) throws IOException, PGPException, NoSuchProviderException {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			PGPSecretKeyRingCollection pgpSecretKeyRingCollection = new PGPSecretKeyRingCollection(PGPUtil.getDecoderStream(inputStream));
+			@SuppressWarnings("rawtypes")
+			Iterator keyRingIterator = pgpSecretKeyRingCollection.getKeyRings();
+			while (keyRingIterator.hasNext()) {
+				PGPSecretKeyRing keyRing = (PGPSecretKeyRing)keyRingIterator.next();
+				@SuppressWarnings("rawtypes")
+				Iterator privateKeyIterator = keyRing.getSecretKeys();
+				while (privateKeyIterator.hasNext()) {
+					PGPSecretKey nextPGPPrivateKey = (PGPSecretKey)privateKeyIterator.next();
+					if (nextPGPPrivateKey.isMasterKey()) {
+						return nextPGPPrivateKey;
+					}
+				}
+			}
+	
+			// key not found
+			return null;
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	/**
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
-	public static PrivateKey getPrivateKeyFromFile(File privateKeyFile) throws Exception {
-		String keyString = FileUtils.readFileToString(privateKeyFile);
-		return getPrivateKeyFromString(keyString);
+	public static PrivateKey readRSAPrivateKey(InputStream inputStream) throws Exception {
+		return getPrivateKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
 	}
 
 	/**
@@ -394,11 +457,11 @@ public class CryptographicUtilities {
 		return getCertificateFromString(certificateFileString);
 	}
 	
-	public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedOutputStream, String password) throws Exception {
+	public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedOutputStream, char[] password) throws Exception {
 		encryptSymmetric(dataStream, encryptedOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
 	}
 	
-	public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedOutputStream, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
+	public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedOutputStream, char[] password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		CipherOutputStream cipherOutputStream = null;
@@ -418,11 +481,11 @@ public class CryptographicUtilities {
 		}
 	}
 	
-	public static void decryptSymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, String password) throws Exception {
+	public static void decryptSymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, char[] password) throws Exception {
 		decryptSymmetric(encryptedDataStream, dataOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
 	}
 	
-	public static void decryptSymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, String password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
+	public static void decryptSymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, char[] password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		CipherInputStream cipherInputStream = null;
@@ -442,9 +505,9 @@ public class CryptographicUtilities {
 		}
 	}
 	
-	public static byte[] stretchPassword(String password, int keyLength, byte[] salt) {
+	public static byte[] stretchPassword(char[] password, int keyLength, byte[] salt) {
 		PBEParametersGenerator generator = new PKCS5S2ParametersGenerator();
-	    generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password.toCharArray()), salt, 1000);
+	    generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password), salt, 1000);
 	    KeyParameter params = (KeyParameter) generator.generateDerivedParameters(keyLength);
 	    return params.getKey();
 	}

@@ -15,25 +15,14 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public class QuestionDialog extends ModalDialog<Integer> {
-	private String title;
 	private String text;
 	private String rememberAnswerText = null;
 	private boolean rememberAnswer = false;
 	private String[] buttonTexts;
 
-	public QuestionDialog(String title, String text, Shell shell, String... buttonTexts) {   
-		super(shell);
-		this.title = title;
-		this.text = text;
-		this.buttonTexts = buttonTexts;
-		
-		if (buttonTexts == null || buttonTexts.length == 0) {
-			this.buttonTexts = new String[]{ LangResources.get("ok") };
-		}
-	}
-	
-	public QuestionDialog(String text, Shell shell, String... buttonTexts) {   
-		super(shell);
+	public QuestionDialog(Shell shell, String title, String text, String... buttonTexts) {
+		super(shell, title);
+
 		this.text = text;
 		this.buttonTexts = buttonTexts;
 		
@@ -44,11 +33,6 @@ public class QuestionDialog extends ModalDialog<Integer> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new FillLayout());
 		
 		Composite composite = new Composite(shell, SWT.NONE);
@@ -82,7 +66,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 					@Override
 					public void widgetSelected(SelectionEvent e) {
 						setReturnValue(buttonIndex);
-						getShell().close();
+						getParent().close();
 					}
 				});
 			}

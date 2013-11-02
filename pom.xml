@@ -87,6 +87,11 @@
 			<version>1.46</version>
 		</dependency>
 		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpg-jdk16</artifactId>
+			<version>1.46</version>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.tomcat</groupId>
 			<artifactId>dbcp</artifactId>
 			<version>6.0.37</version>

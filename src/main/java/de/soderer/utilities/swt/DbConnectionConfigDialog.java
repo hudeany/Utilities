@@ -19,7 +19,6 @@ import de.soderer.utilities.DbUtilities;
 import de.soderer.utilities.LangResources;
 
 public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
-	private String title = null;
 	private String text = null;
 
 	private boolean isOracle = false;
@@ -39,28 +38,13 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 	
 	private Button okButton;
 	
-	public DbConnectionConfigDialog(String title, String text, Shell shell) {
-		super(shell);
-		this.title = title;
+	public DbConnectionConfigDialog(Shell shell, String title, String text) {
+		super(shell, title);
 		this.text = text;
-	}
-	
-	public DbConnectionConfigDialog(String text, Shell shell) {
-		super(shell);
-		this.text = text;
-	}
-	
-	public DbConnectionConfigDialog(Shell shell) {
-		super(shell);
 	}
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			shell.setText(getText());
-		} else {
-			shell.setText(title);
-		}
 		shell.setLayout(new GridLayout(1, true));
 		
 		if (StringUtils.isNotBlank(text)) {
@@ -162,7 +146,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 			public void widgetSelected(SelectionEvent e) {
 				isOracle = oracleButton.getSelection();
 				setReturnValue(true);
-				getShell().close();
+				getParent().close();
 			}
 		});
 	    
@@ -173,7 +157,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
-				getShell().close();
+				getParent().close();
 			}
 		});
 

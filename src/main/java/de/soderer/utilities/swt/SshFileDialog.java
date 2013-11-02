@@ -39,7 +39,6 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		Save
 	}
 	
-	private String title;
 	private String hostnameOrIp = null;
 	private String username = null;
 	private String keyFile = null;
@@ -67,17 +66,15 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private Text fileNameField;
 	private Button createFolderButton;
 	
-	public SshFileDialog(Mode dialogMode, Shell parentShell, String title) {
-		super(parentShell);
-		this.title = title;
+	public SshFileDialog(Shell parentShell, String title, Mode dialogMode) {
+		super(parentShell, title);
 		this.keystoreFile = null;
 		this.inMemoryPassword = null;
 		this.dialogMode = dialogMode;
 	}
 	
-	public SshFileDialog(Mode dialogMode, Shell parentShell, String title, File keystoreFile, String inMemoryPassword) {
-		super(parentShell);
-		this.title = title;
+	public SshFileDialog(Shell parentShell, String title, Mode dialogMode, File keystoreFile, String inMemoryPassword) {
+		super(parentShell, title);
 		this.keystoreFile = keystoreFile;
 		this.inMemoryPassword = inMemoryPassword;
 		this.dialogMode = dialogMode;
@@ -85,12 +82,6 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 
 	@Override
 	protected void createComponents(Shell parentShell) throws Exception {
-		if (StringUtils.isEmpty(title)) {
-			parentShell.setText(getText());
-		} else {
-			parentShell.setText(title);
-		}
-		
 		parentShell.setLayout(new GridLayout(1, false));
 
 		if (keystoreFile != null) {
@@ -149,9 +140,9 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 					
 					serverEntriesCombo.setText("");
 					
-					String password = new PasswordDialog(LangResources.get("enterKeystorePassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel")).open();
+					char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 					if (password != null) {
-						keyStore.saveKeyStore(password.toCharArray());
+						keyStore.saveKeyStore(password);
 					}
 					
 					checkButtonStatus();
@@ -168,9 +159,9 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 					}
 					String newEntryName = serverEntriesCombo.getText();
 					keyStore.addEntry(new ServerAccessData(serverEntriesCombo.getText(), hostnameOrIp, username, keyFile, password));
-					String password = new PasswordDialog(LangResources.get("enterKeystorePassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel")).open();
+					char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 					if (password != null) {
-						keyStore.saveKeyStore(password.toCharArray());
+						keyStore.saveKeyStore(password);
 					}
 					serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 					serverEntriesCombo.setText(newEntryName);
@@ -216,7 +207,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (((Button) e.widget).getSelection()) {
-					FileDialog dialog = new FileDialog(getShell(), SWT.OPEN);
+					FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
 			        dialog.setText(LangResources.get("openKeyFile"));
 			        dialog.setFileName(keyFile);
 			        String fileName = dialog.open();
@@ -309,7 +300,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 					}
 					selectedFilePath = path;
 				} catch (Exception e) {
-					new QuestionDialog(title, "Error while connecting to server: " + e.getMessage(), getShell(), LangResources.get("ok")).open();
+					new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 				} finally {
 					JschWrapper.closeQuietly(session);
 				}
@@ -343,7 +334,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			public void mouseDoubleClick(MouseEvent e) {
 				if (((Tree) e.widget).getSelection().length == 1) {
 					setReturnValue(true);
-					getShell().close();
+					getParent().close();
 				}
 			}
 		});
@@ -358,13 +349,13 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			createFolderButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
-					String folderName = new SimpleInputDialog(LangResources.get("enterFolderName"), getShell(), LangResources.get("ok"), LangResources.get("cancel")).open();
+					String folderName = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterFolderName")).open();
 					if (StringUtils.isNotBlank(folderName)) {
 						Session session = null;
 						try {
 							JschWrapper.createFolder(session, selectedFilePath, folderName);
 						} catch (Exception e) {
-							new QuestionDialog(title, "Error while connecting to server: " + e.getMessage(), getShell(), LangResources.get("ok")).open();
+							new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 						} finally {
 							JschWrapper.closeQuietly(session);
 						}
@@ -395,7 +386,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				setReturnValue(true);
-				getShell().close();
+				getParent().close();
 			}
 		});
 		
@@ -405,7 +396,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(false);
-				getShell().close();
+				getParent().close();
 			}
 		});
 	    
@@ -439,7 +430,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			connected = true;
 		} catch (Exception e) {
 			connected = false;
-			new QuestionDialog(title, "Error while connecting to server: " + e.getMessage(), getShell(), LangResources.get("ok")).open();
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 		} finally {
 			JschWrapper.closeQuietly(session);
 		}
@@ -509,14 +500,14 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	
 	private void loadServerEntries() {
 		if (keystoreFile.exists()) {
-			String password = inMemoryPassword;
+			char[] password = inMemoryPassword == null ? null : inMemoryPassword.toCharArray();
 			
 			if (password == null) {
 				// try to use empty password
 				try {
-					password = "";
+					password = "".toCharArray();
 					keyStore = new SecureDataKeyStore(keystoreFile);
-					keyStore.loadKeyStore(password.toCharArray());
+					keyStore.loadKeyStore(password);
 				} catch (Exception e1) {
 					password = null;
 					keyStore = null;
@@ -524,19 +515,20 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 			
 			if (password == null && keyStore == null) {
-				PasswordDialog dialog = new PasswordDialog(LangResources.get("enterKeystorePassword"), getShell(), LangResources.get("ok"), LangResources.get("cancel"), LangResources.get("keepPasswordInMemory"));
+				PasswordDialog dialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"));
+				dialog.setKeepInMemoryText(LangResources.get("keepPasswordInMemory"));
 				password = dialog.open();
 				if (dialog.keepInMemory()) {
-					inMemoryPassword = password;
+					inMemoryPassword = new String(password);
 				}
 			}
 			
 			if (password != null && keyStore == null) {
 				try {
 					keyStore = new SecureDataKeyStore(keystoreFile);
-					keyStore.loadKeyStore(password.toCharArray());
+					keyStore.loadKeyStore(password);
 				} catch (Exception e) {
-					new QuestionDialog(title, LangResources.get("cannotLoadKeystore"), getShell(), LangResources.get("ok")).open();
+					new QuestionDialog(getParent(), getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).open();
 					keyStore = null;
 				}
 			}
