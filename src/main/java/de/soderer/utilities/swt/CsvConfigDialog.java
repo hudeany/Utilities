@@ -12,6 +12,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.swt.RadioButtonGroup.ArrangementStyle;
 
 public class CsvConfigDialog extends ModalDialog<Boolean> {
 	private String text = null;
@@ -21,13 +22,10 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 	private boolean useStringQuote;
 	private boolean allowUnderfilledLines;
 	
-	private Button comaButton;
-	private Button semicolonButton;
+	private RadioButtonGroup quoteTypeRadioButtonGroup;
+	private RadioButtonGroup underfilledLinesRadioButtonGroup;
+	private RadioButtonGroup separatorRadioButtonGroup;
 	private Button useQuoteButton;
-	private Button singleQuoteButton;
-	private Button doubleQuoteButton;
-	private Button underfilledLinesAllowedButton;
-	private Button underfilledLinesNotAllowedButton;
 	
 	public CsvConfigDialog(Shell shell, String title, String text) {
 		super(shell, title);
@@ -43,22 +41,10 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
 			label.setText(text);
 		}
-
-		Composite separatorComposite = new Composite(shell, SWT.NONE);
-		separatorComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
-		separatorComposite.setLayout(new GridLayout(3, false));
 		
-		Label separatorLabel = new Label(separatorComposite, SWT.NONE);
-		separatorLabel.setText(LangResources.get("csvSeparator") + ": ");
-		
-		comaButton = new Button(separatorComposite, SWT.RADIO);
-		comaButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		comaButton.setText(LangResources.get("csvSeparatorComa"));
-		
-		semicolonButton = new Button(separatorComposite, SWT.RADIO);
-		semicolonButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		semicolonButton.setText(LangResources.get("csvSeparatorSemicolon"));
-		semicolonButton.setSelection(true);
+		separatorRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("csvSeparator"), SWT.NONE, ArrangementStyle.Horizontal, LangResources.get("csvSeparatorComa"), LangResources.get("csvSeparatorSemicolon"));
+		separatorRadioButtonGroup.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
+		separatorRadioButtonGroup.setSelectedButtonIndex(1);
 		
 		Composite quoteComposite = new Composite(shell, SWT.NONE);
 		quoteComposite.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
@@ -73,30 +59,11 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			}
 		});
 		
-		singleQuoteButton = new Button(quoteComposite, SWT.RADIO);
-		singleQuoteButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, false));
-		singleQuoteButton.setText(LangResources.get("csvSingleQuote"));
+		quoteTypeRadioButtonGroup = new RadioButtonGroup(quoteComposite, SWT.NONE, ArrangementStyle.Horizontal, LangResources.get("csvSingleQuote"), LangResources.get("csvDoubleQuote"));
+		quoteTypeRadioButtonGroup.setSelectedButtonIndex(1);
 		
-		doubleQuoteButton = new Button(quoteComposite, SWT.RADIO);
-		doubleQuoteButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, false));
-		doubleQuoteButton.setText(LangResources.get("csvDoubleQuote"));
-		doubleQuoteButton.setSelection(true);
-		
-		Composite underfilledComposite = new Composite(shell, SWT.NONE);
-		underfilledComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
-		underfilledComposite.setLayout(new GridLayout(3, false));
-		
-		Label underfilledLinesLabel = new Label(underfilledComposite, SWT.NONE);
-		underfilledLinesLabel.setText(LangResources.get("csvUnderfilledLines") + ": ");
-		
-		underfilledLinesAllowedButton = new Button(underfilledComposite, SWT.RADIO);
-		underfilledLinesAllowedButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		underfilledLinesAllowedButton.setText(LangResources.get("yes"));
-		
-		underfilledLinesNotAllowedButton = new Button(underfilledComposite, SWT.RADIO);
-		underfilledLinesNotAllowedButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		underfilledLinesNotAllowedButton.setText(LangResources.get("no"));
-		underfilledLinesNotAllowedButton.setSelection(true);
+		underfilledLinesRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("csvUnderfilledLines"), SWT.NONE, ArrangementStyle.Horizontal, LangResources.get("yes"), LangResources.get("no"));
+		underfilledLinesRadioButtonGroup.setSelectedButtonIndex(1);
 		
 		Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
@@ -108,10 +75,10 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				separator = comaButton.getSelection() ? ',' : ';';
+				separator = separatorRadioButtonGroup.getSelectedButtonIndex() == 0 ? ',' : ';';
 				useStringQuote = useQuoteButton.getSelection();
-				stringQuote = singleQuoteButton.getSelection() ? '\'' : '"';
-				allowUnderfilledLines = underfilledLinesAllowedButton.getSelection();
+				stringQuote = quoteTypeRadioButtonGroup.getSelectedButtonIndex() == 0 ? '\'' : '"';
+				allowUnderfilledLines = underfilledLinesRadioButtonGroup.getSelectedButtonIndex() == 0;
 				setReturnValue(true);
 				getParent().close();
 			}
@@ -137,8 +104,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 	}
 
 	private void checkStatus() {
-		singleQuoteButton.setEnabled(useQuoteButton.getSelection());
-		doubleQuoteButton.setEnabled(useQuoteButton.getSelection());
+		quoteTypeRadioButtonGroup.setEnabled(useQuoteButton.getSelection());
 	}
 
 	public char getSeparator() {

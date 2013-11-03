@@ -127,7 +127,6 @@ public class PGPKeyDialog extends ModalDialog<Boolean> {
 		});
 
 		shell.pack();
-		shell.setSize(300, 300);
 	}
 
 	public PGPPublicKey getPublicKey() {

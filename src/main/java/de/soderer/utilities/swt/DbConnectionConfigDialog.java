@@ -17,6 +17,7 @@ import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.DbUtilities;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.swt.RadioButtonGroup.ArrangementStyle;
 
 public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 	private String text = null;
@@ -28,8 +29,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 	private String userName = null;
 	private String password = null;
 	
-	private Button oracleButton;
-	private Button mysqlButton;
+	private RadioButtonGroup dbTypeRadioButtonGroup;
 	private Text dbServerHostnameText;
 	private NumberText dbServerPortText;
 	private Text dbNameText;
@@ -53,21 +53,8 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 			label.setText(text);
 		}
 
-		Composite dbTypeComposite = new Composite(shell, SWT.NONE);
-		dbTypeComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
-		dbTypeComposite.setLayout(new GridLayout(3, false));
-		
-		Label separatorLabel = new Label(dbTypeComposite, SWT.NONE);
-		separatorLabel.setText(LangResources.get("dbType") + ": ");
-		
-		oracleButton = new Button(dbTypeComposite, SWT.RADIO);
-		oracleButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		oracleButton.setText("Oracle");
-		
-		mysqlButton = new Button(dbTypeComposite, SWT.RADIO);
-		mysqlButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		mysqlButton.setText("MySQL");
-		mysqlButton.setSelection(true);
+		dbTypeRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("dbType"), SWT.NONE, ArrangementStyle.Horizontal, "Oracle", "MySQL");
+		dbTypeRadioButtonGroup.setSelectedButtonIndex(1);
 		
 		Composite credentialsComposite = new Composite(shell, SWT.NONE);
 		credentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
@@ -144,7 +131,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				isOracle = oracleButton.getSelection();
+				isOracle = dbTypeRadioButtonGroup.getSelectedButtonIndex() == 0;
 				setReturnValue(true);
 				getParent().close();
 			}
