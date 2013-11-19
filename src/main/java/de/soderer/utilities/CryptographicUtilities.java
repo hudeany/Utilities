@@ -236,6 +236,7 @@ public class CryptographicUtilities {
 			
 			return secretKeyRing.getSecretKey();
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new Exception("Cannot create PGP key", e);
 		}
 	}

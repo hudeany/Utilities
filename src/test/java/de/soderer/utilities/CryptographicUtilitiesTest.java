@@ -8,6 +8,15 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class CryptographicUtilitiesTest {
+	private static AsymmetricCipherKeyPair keyPairCache = null;
+	
+	private static AsymmetricCipherKeyPair getPgpSecretKey() throws Exception {
+		if (keyPairCache == null) {
+			keyPairCache = CryptographicUtilities.generateRsaKeyPair(4096);
+		}
+		
+		return keyPairCache;
+	}
 	
 	@Test
 	public void testEncryptionAES() {
@@ -32,14 +41,13 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testSignatureRSA() {
 		try {
-			AsymmetricCipherKeyPair keyPair = CryptographicUtilities.generateRsaKeyPair(4096);
-			byte[] signature = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPrivateKeyFromKeyPair(keyPair));
+			byte[] signature = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPrivateKeyFromKeyPair(getPgpSecretKey()));
 			ByteArrayInputStream stream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
-			byte[] signatureStreamed = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPrivateKeyFromKeyPair(keyPair));
+			byte[] signatureStreamed = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPrivateKeyFromKeyPair(getPgpSecretKey()));
 			Assert.assertArrayEquals(signature, signatureStreamed);
-			boolean result = CryptographicUtilities.verifyData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPublicKeyFromKeyPair(keyPair), signature);
+			boolean result = CryptographicUtilities.verifyData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPublicKeyFromKeyPair(getPgpSecretKey()), signature);
 			Assert.assertTrue(result);
-			boolean resultStreamed = CryptographicUtilities.verifyStream(stream, CryptographicUtilities.getPublicKeyFromKeyPair(keyPair), signature);
+			boolean resultStreamed = CryptographicUtilities.verifyStream(stream, CryptographicUtilities.getPublicKeyFromKeyPair(getPgpSecretKey()), signature);
 			Assert.assertTrue(resultStreamed);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -49,16 +57,14 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testEncryptionRSA() {
 		try {
-			AsymmetricCipherKeyPair keyPair = CryptographicUtilities.generateRsaKeyPair(4096);
-			
 			ByteArrayInputStream stream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
 			ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
-			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, CryptographicUtilities.getPublicKeyFromKeyPair(keyPair));
+			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, CryptographicUtilities.getPublicKeyFromKeyPair(getPgpSecretKey()));
 			byte[] encryptedDataStreamed = encryptedStream.toByteArray();
 			
 			ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
 			ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
-			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, CryptographicUtilities.getPrivateKeyFromKeyPair(keyPair));
+			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, CryptographicUtilities.getPrivateKeyFromKeyPair(getPgpSecretKey()));
 			Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), decryptedStream.toByteArray());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());

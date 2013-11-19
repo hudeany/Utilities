@@ -3,7 +3,6 @@ package de.soderer.utilities;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.util.Date;
 
 import org.apache.commons.io.IOUtils;
 import org.bouncycastle.openpgp.PGPSecretKey;
@@ -22,7 +21,7 @@ public class CryptographicWorkerTest {
 	private static PGPSecretKey getPgpSecretKey() throws Exception {
 		if (pgpSecretKey == null) {
 			password = PasswordGenerator.generatePassword(10);
-			pgpSecretKey = CryptographicUtilities.generatePGPSecretKey(4096, "for_testing_only@example.com", password, new Date());
+			pgpSecretKey = CryptographicUtilities.generatePGPSecretKey(4096, "for_testing_only@example.com", password, DateUtils.getDay(1));
 		}
 		
 		return pgpSecretKey;
