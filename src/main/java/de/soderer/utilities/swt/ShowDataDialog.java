@@ -40,12 +40,12 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		shell.setLayout(new GridLayout());
+		shell.setLayout(new GridLayout(1, true));
 		
 		Composite composite = new Composite(shell, SWT.NONE);
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		composite.setLayoutData(gridData);
-		composite.setLayout(new GridLayout(2, true));
+		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 		
 		StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));

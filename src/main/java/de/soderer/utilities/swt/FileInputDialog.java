@@ -1,0 +1,84 @@
+package de.soderer.utilities.swt;
+
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
+
+import de.soderer.utilities.LangResources;
+import de.soderer.utilities.swt.LabeledText.ArrangementStyle;
+
+public class FileInputDialog extends ModalDialog<String> {
+	private String text;
+	private LabeledFileText labeledFileText;
+	private Button okButton;
+
+	public FileInputDialog(Shell shell, String title, String text) {   
+		super(shell, SWT.RESIZE, title);
+
+		this.text = text;
+	}
+	
+	@Override
+	protected void createComponents(Shell shell) throws Exception {
+		shell.setLayout(new GridLayout(1, true));
+
+		Composite composite = new Composite(shell, SWT.NONE);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
+		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
+		
+		if (text != null) {
+			Label label = new Label(composite, SWT.NONE);
+			label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
+			label.setText(text);
+		}
+		
+		labeledFileText = new LabeledFileText(shell, composite, SWT.NONE, null, ArrangementStyle.Horizontal);
+		labeledFileText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
+		labeledFileText.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(ModifyEvent e) {
+				setReturnValue(((LabeledFileText) e.widget).getText());
+				checkStatus();
+			}
+		});
+	    
+	    okButton = new Button(composite, SWT.PUSH);
+	    okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		okButton.setText(LangResources.get("ok"));
+		okButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				getParent().close();
+			}
+		});
+		
+	    Button cancelButton = new Button(composite, SWT.PUSH);
+	    cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+	    cancelButton.setText(LangResources.get("cancel"));
+	    cancelButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				setReturnValue(null);
+				getParent().close();
+			}
+		});
+	    
+	    checkStatus();
+	    
+	    shell.pack();
+		shell.setSize(400, shell.getSize().y);
+	}
+
+	private void checkStatus() {
+		okButton.setEnabled(StringUtils.isNotBlank(labeledFileText.getText()));
+	}
+}

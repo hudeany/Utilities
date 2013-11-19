@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 
@@ -112,5 +113,17 @@ public class DateUtils {
 	public static String convert_yyyyMMdd_to_ddMMyyyy(String yyyyMMddString) {
 		return yyyyMMddString.substring(8, 10) + "." + yyyyMMddString.substring(5, 7) + "."
 				+ yyyyMMddString.substring(0, 4);
+	}
+	
+	public static Date getDay(int daysToAdd) {
+		GregorianCalendar returnValue = new GregorianCalendar();
+		returnValue.set(Calendar.HOUR_OF_DAY, 0);
+		returnValue.set(Calendar.MINUTE, 0);
+		returnValue.set(Calendar.SECOND, 0);
+		returnValue.set(Calendar.MILLISECOND, 0);
+		if (daysToAdd != 0) {
+			returnValue.add(Calendar.DAY_OF_MONTH, daysToAdd);
+		}
+		return returnValue.getTime();
 	}
 }

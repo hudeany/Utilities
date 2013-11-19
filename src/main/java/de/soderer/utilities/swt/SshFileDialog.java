@@ -82,12 +82,12 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 
 	@Override
 	protected void createComponents(Shell parentShell) throws Exception {
-		parentShell.setLayout(new GridLayout(1, false));
+		parentShell.setLayout(new GridLayout(1, true));
 
 		if (keystoreFile != null) {
 			Composite serverEntriesComposite = new Composite(parentShell, SWT.BORDER);
 			serverEntriesComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
-			serverEntriesComposite.setLayout(new GridLayout(5, false));
+			serverEntriesComposite.setLayout(SwtUtilities.createNoMarginGridLayout(5, false));
 			
 			Label serverEntriesLabel = new Label(serverEntriesComposite, SWT.NONE);
 			serverEntriesLabel.setText(LangResources.get("serverEntries"));
@@ -171,7 +171,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	    
 		Composite sshCredentialsComposite = new Composite(parentShell, SWT.BORDER);
 		sshCredentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		sshCredentialsComposite.setLayout(new GridLayout(8, false));
+		sshCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(8, false));
 
 		Label hostnameLabel = new Label(sshCredentialsComposite, SWT.NONE);
 		hostnameLabel.setText(LangResources.get("hostnameOrIp"));
@@ -252,7 +252,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		sashForm.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		
 		Composite treePartComposite = new Composite(sashForm, SWT.NONE);
-		treePartComposite.setLayout(new GridLayout(1, false));
+		treePartComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 		folderTree = new Tree(treePartComposite, SWT.BORDER);
 		GridData folderTreeGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		folderTreeGridData.heightHint = 300;
@@ -309,7 +309,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		});
 		
 		Composite detailPartComposite = new Composite(sashForm, SWT.NONE);
-		detailPartComposite.setLayout(new GridLayout(1, false));
+		detailPartComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 		filesTree = new Tree(detailPartComposite, SWT.BORDER);
 		GridData filesTreeGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		filesTreeGridData.heightHint = 300;
@@ -342,7 +342,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		if (dialogMode == Mode.Save) {
 			Composite additionalSaveComposite = new Composite(parentShell, SWT.NONE);
 			additionalSaveComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
-			additionalSaveComposite.setLayout(new GridLayout(3, false));
+			additionalSaveComposite.setLayout(SwtUtilities.createNoMarginGridLayout(3, false));
 			
 			createFolderButton = new Button(additionalSaveComposite, SWT.PUSH);
 			createFolderButton.setText(LangResources.get("createFolder"));

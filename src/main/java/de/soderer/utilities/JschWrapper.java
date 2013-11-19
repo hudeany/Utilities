@@ -446,7 +446,7 @@ public class JschWrapper {
 
 			// send a content of lfile
 			bufferedFileInputStream = new BufferedInputStream(new FileInputStream(localPathAndFileName));
-			byte[] buf = new byte[1024];
+			byte[] buf = new byte[4096];
 			while (true) {
 				int len = bufferedFileInputStream.read(buf);
 				if (len <= 0)
@@ -542,7 +542,7 @@ public class JschWrapper {
 
 			channel.connect();
 
-			// byte[] buf = new byte[1024];
+			// byte[] buf = new byte[4096];
 
 			// send '\0'
 			//sendZeroByte(out);
@@ -683,7 +683,7 @@ public class JschWrapper {
 				// read file content
 				if (filesize > 0) {
 					int nextReadLength;
-					byte[] buffer = new byte[1024];
+					byte[] buffer = new byte[4096];
 					while (true) {
 						if (buffer.length < filesize) {
 							nextReadLength = buffer.length;

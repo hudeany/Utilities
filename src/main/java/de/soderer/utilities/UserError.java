@@ -24,6 +24,12 @@ public class UserError extends Exception {
 		this.reason = reason;
 	}
 
+	public UserError(String message, Throwable cause) {
+		super(LangResources.existsKey(message) ? LangResources.get(message) : message, cause);
+		
+		reason = Reason.Unknown;
+	}
+
 	public Reason getReason() {
 		return reason;
 	}

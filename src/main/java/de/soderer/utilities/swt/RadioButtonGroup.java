@@ -14,7 +14,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.TypedListener;
-import org.eclipse.swt.widgets.Widget;
 
 public class RadioButtonGroup extends Composite {
 	public enum ArrangementStyle {
@@ -51,7 +50,7 @@ public class RadioButtonGroup extends Composite {
 			throw new Exception("Less than 2 texts for RadioButtonGroup");
 		}
 
-		GridLayout gridLayout = new GridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : buttonTexts.length + (labelText != null ? 1: 0), false);
+		GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : buttonTexts.length + (labelText != null ? 1: 0), false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		setLayout(gridLayout);
@@ -71,7 +70,7 @@ public class RadioButtonGroup extends Composite {
 				public void widgetSelected(SelectionEvent e) {
 					Event event = new Event();
 					event.widget = radioButtonGroup;
-					((Widget) radioButtonGroup).notifyListeners(SWT.Modify, event);
+					radioButtonGroup.notifyListeners(SWT.Modify, event);
 				}
 			});
 			

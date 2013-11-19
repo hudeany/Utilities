@@ -82,7 +82,7 @@ public class FileDownloadWorker implements RunnableFuture<Boolean> {
 				bufferedInputStream = new BufferedInputStream(inputStream);
 				fileOutputStream = new FileOutputStream(destinationFilePath);
 				
-				byte[] buffer = new byte[1024];
+				byte[] buffer = new byte[4096];
 				int readLength;
 				while ((readLength = bufferedInputStream.read(buffer)) != -1) {
 					if (cancel) {

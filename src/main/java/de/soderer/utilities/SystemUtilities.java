@@ -3,10 +3,13 @@ package de.soderer.utilities;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import javax.crypto.Cipher;
 
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
@@ -69,6 +72,8 @@ public class SystemUtilities {
 		resultMap.put("process.javastartuparguments", getJavaStartupArguments().toString());
 		resultMap.put("process.jar", System.getProperty("process.jar") == null ? "<unknown>" : System.getProperty("process.jar"));
 		
+		resultMap.put("cryptography.unlimitedKeyStrength", isunlimitedKeyStrengthAllowed() ? "true" : "false");
+		
 		return resultMap;
 	}
 	
@@ -97,5 +102,13 @@ public class SystemUtilities {
 	
 	public static boolean isJavaWebstartApp() {
 		return System.getProperty("javawebstart.version") != null;
+	}
+	
+	public static boolean isunlimitedKeyStrengthAllowed() {
+		try {
+			return Cipher.getMaxAllowedKeyLength("AES") == Integer.MAX_VALUE;
+		} catch (NoSuchAlgorithmException e) {
+			return false;
+		}
 	}
 }

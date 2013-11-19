@@ -30,12 +30,12 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		shell.setLayout(new GridLayout());
+		shell.setLayout(new GridLayout(1, false));
 		
 		Composite composite = new Composite(shell, SWT.NONE);
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		composite.setLayoutData(gridData);
-		composite.setLayout(new GridLayout(2, false));
+		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
 
 		// Public key
 		Label label = new Label(composite, SWT.NONE);
@@ -117,7 +117,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		composite = new Composite(shell, SWT.NONE);
 		gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		composite.setLayoutData(gridData);
-		composite.setLayout(new GridLayout(2, true));
+		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 	    
 		Button buttonSave = new Button(composite, SWT.PUSH);
 		buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));

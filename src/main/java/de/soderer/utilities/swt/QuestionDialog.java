@@ -4,24 +4,23 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
 
 public class QuestionDialog extends ModalDialog<Integer> {
 	private String text;
 	private String rememberAnswerText = null;
-	private boolean rememberAnswer = false;
+	private boolean rememberAnswerStatus = false;
 	private String[] buttonTexts;
 
 	public QuestionDialog(Shell shell, String title, String text, String... buttonTexts) {
-		super(shell, title);
+		super(shell, SWT.RESIZE, title);
 
 		this.text = text;
 		this.buttonTexts = buttonTexts;
@@ -33,28 +32,31 @@ public class QuestionDialog extends ModalDialog<Integer> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		shell.setLayout(new FillLayout());
+		shell.setLayout(new GridLayout(1, true));
 		
 		Composite composite = new Composite(shell, SWT.NONE);
-		composite.setLayout(new GridLayout(buttonTexts.length, true));
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		composite.setLayout(SwtUtilities.createNoMarginGridLayout(buttonTexts.length, true));
 		
-		Label label = new Label(composite, SWT.FILL);
-		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
-		label.setText(text);
+		Text test = new Text(composite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
+		test.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, true, true, buttonTexts.length, 1));
+		test.setText(text);
 		
 		if (StringUtils.isNotBlank(rememberAnswerText)) {
 			Button rememberAnswerCheckBox = new Button(composite, SWT.CHECK);
 			rememberAnswerCheckBox.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
-			rememberAnswerCheckBox.setSelection(false);
+			rememberAnswerCheckBox.setSelection(rememberAnswerStatus);
 			rememberAnswerCheckBox.setText(rememberAnswerText);
 			rememberAnswerCheckBox.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					rememberAnswer = ((Button) e.widget).getSelection();
+					rememberAnswerStatus = ((Button) e.widget).getSelection();
 				}
 			});
 		}
 	    
+		Button buttonToSelect = null;
+		
 		if (buttonTexts != null && buttonTexts.length > 0) {
 			for (int i = 0; i < buttonTexts.length; i++) {
 				String buttonText = buttonTexts[i];
@@ -69,17 +71,26 @@ public class QuestionDialog extends ModalDialog<Integer> {
 						getParent().close();
 					}
 				});
+				if (i == 0) {
+					buttonToSelect = button;
+				}
 			}
+		}
+		
+		if (buttonToSelect != null) {
+			buttonToSelect.setFocus();
 		}
 
 		shell.pack();
+		shell.setMinimumSize(shell.getSize());
 	}
 	
-	public void setRememberAnswerText(String rememberAnswerText) {
+	public void setRememberAnswerText(String rememberAnswerText, boolean status) {
 		this.rememberAnswerText = rememberAnswerText;
+		rememberAnswerStatus = status;
 	}
 	
 	public boolean getRememberAnswerStatus() {
-		return rememberAnswer;
+		return rememberAnswerStatus;
 	}
 }

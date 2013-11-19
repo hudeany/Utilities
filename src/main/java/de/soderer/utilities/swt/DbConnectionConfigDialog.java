@@ -5,8 +5,6 @@ import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -55,10 +53,17 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 
 		dbTypeRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("dbType"), SWT.NONE, ArrangementStyle.Horizontal, "Oracle", "MySQL");
 		dbTypeRadioButtonGroup.setSelectedButtonIndex(1);
+		dbTypeRadioButtonGroup.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(ModifyEvent e) {
+				isOracle = ((RadioButtonGroup) e.widget).getSelectedButtonIndex() == 0;
+			}
+		});
+		
 		
 		Composite credentialsComposite = new Composite(shell, SWT.NONE);
 		credentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
-		credentialsComposite.setLayout(new GridLayout(2, false));
+		credentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
 		
 		Label hostnameLabel = new Label(credentialsComposite, SWT.NONE);
 		hostnameLabel.setText(LangResources.get("hostname") + ": ");
@@ -121,32 +126,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 			}
 		});
 		
-		Composite mainButtonComposite = new Composite(shell, SWT.NONE);
-		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
-		mainButtonComposite.setLayout(new GridLayout(2, true));
-
-		okButton = new Button(mainButtonComposite, SWT.PUSH);
-		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		okButton.setText(LangResources.get("ok"));
-		okButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				isOracle = dbTypeRadioButtonGroup.getSelectedButtonIndex() == 0;
-				setReturnValue(true);
-				getParent().close();
-			}
-		});
-	    
-		Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
-		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		cancelButton.setText(LangResources.get("cancel"));
-		cancelButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				setReturnValue(false);
-				getParent().close();
-			}
-		});
+		SwtUtilities.addMainButtonComposite(shell, this);
 
 		shell.pack();
 

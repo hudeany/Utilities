@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -96,6 +98,10 @@ public class ConfigurationProperties {
 		properties.setProperty(name, Integer.toString(value));
 	}
 	
+	public void set(String name, Date value) {
+		properties.setProperty(name, DateUtils.YYYYMMDD_HHMMSS.format(value));
+	}
+	
 	public int getInteger(String name) {
 		if (properties.containsKey(name)) {
 			return Integer.parseInt(properties.getProperty(name));
@@ -109,6 +115,18 @@ public class ConfigurationProperties {
 			return Utilities.interpretAsBool(properties.getProperty(name));
 		} else {
 			return false;
+		}
+	}
+	
+	public Date getDate(String name) {
+		try {
+			if (properties.containsKey(name)) {
+				return DateUtils.YYYYMMDD_HHMMSS.parse(properties.getProperty(name));
+			} else {
+				return null;
+			}
+		} catch (ParseException e) {
+			return null;
 		}
 	}
 	

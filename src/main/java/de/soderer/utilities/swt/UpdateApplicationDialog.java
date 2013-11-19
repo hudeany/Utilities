@@ -12,7 +12,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
@@ -28,12 +27,14 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	
 	private String text;
 	private String downloadUrl;
+	private boolean dailyUpdateCheck;
 	
-	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl) {
+	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl, boolean dailyUpdateCheck) {
 		super(shell, title);
 
 		this.text = text;
 		this.downloadUrl = downloadUrl;
+		this.dailyUpdateCheck = dailyUpdateCheck;
 	}
 
 	@Override
@@ -41,11 +42,22 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		shell.setLayout(new FillLayout());
 		
 		Composite composite = new Composite(shell, SWT.NONE);
-		composite.setLayout(new GridLayout(2, true));
+		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 		
 		Label label = new Label(composite, SWT.FILL);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
+		
+		Button dailyUpdateCheckCheckBox = new Button(composite, SWT.CHECK);
+		dailyUpdateCheckCheckBox.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, true, 2, 1));
+		dailyUpdateCheckCheckBox.setSelection(dailyUpdateCheck);
+		dailyUpdateCheckCheckBox.setText(LangResources.get("dailyUpdateCheck"));
+		dailyUpdateCheckCheckBox.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				dailyUpdateCheck = ((Button) e.widget).getSelection();
+			}
+		});
 	    
 		Button updateButton = new Button(composite, SWT.PUSH);
 		updateButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
@@ -237,5 +249,9 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				throw e;
 			}
 		}
+	}
+
+	public boolean getDailyUpdateCheck() {
+		return dailyUpdateCheck;
 	}
 }

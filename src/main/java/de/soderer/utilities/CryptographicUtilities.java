@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +11,7 @@ import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -34,6 +36,9 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.bouncycastle.bcpg.ArmoredOutputStream;
+import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
+import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.PBEParametersGenerator;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
@@ -44,16 +49,27 @@ import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPKeyPair;
+import org.bouncycastle.openpgp.PGPKeyRingGenerator;
+import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.PGPSecretKey;
 import org.bouncycastle.openpgp.PGPSecretKeyRing;
 import org.bouncycastle.openpgp.PGPSecretKeyRingCollection;
+import org.bouncycastle.openpgp.PGPSignature;
+import org.bouncycastle.openpgp.PGPSignatureSubpacketGenerator;
+import org.bouncycastle.openpgp.PGPSignatureSubpacketVector;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.openssl.PEMWriter;
 
+/**
+ * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength
+ * Download:
+ *   http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
+ */
 public class CryptographicUtilities {
 	public static Logger logger = Logger.getLogger(CryptographicUtilities.class);
 	
@@ -140,6 +156,21 @@ public class CryptographicUtilities {
 		"SHA384withRSAandMGF1",
 		"SHA512withRSAandMGF1"
 	};
+
+	public static String DEFAULT_SIGNATURE_METHOD_OPENPGP = "SHA-1";
+	public static final String[] KNOWN_SIGNATURE_METHODS_OPENPGP = new String[]{DEFAULT_SIGNATURE_METHOD_OPENPGP,
+	    "MD5",
+	    "RIPEMD160",
+	    "DOUBLE-SHA",
+	    "MD2",
+	    "TIGER-192",
+	    "HAVAL-5-160",
+	    "SHA-256",
+	    "SHA-384",
+	    "SHA-512",
+	    "SHA-224"
+	};
+	
 	public static final String[] ASYMMETRIC_CIPHERS = new String[]{
 		"RSA",
 		"ElGamal"
@@ -169,6 +200,101 @@ public class CryptographicUtilities {
 			return keyPair;
 		} catch (Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
+	
+	public static PGPSecretKey generatePGPSecretKey(int keyStrength, String identity, char[] password, Date validity) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		try {
+			KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
+			keyPairGenerator.initialize(keyStrength, new SecureRandom());
+			KeyPair keyPair = keyPairGenerator.generateKeyPair();
+			
+			PGPPublicKey publicKey = new PGPPublicKey(PublicKeyAlgorithmTags.RSA_GENERAL, keyPair.getPublic(), new Date());
+			PGPPrivateKey privateKey = new PGPPrivateKey(keyPair.getPrivate(), publicKey.getKeyID());
+			PGPKeyPair masterKeyPair = new PGPKeyPair(publicKey, privateKey);
+			
+			long secondsUntilExpiration = (validity.getTime() - new Date().getTime()) / 1000L + 1;
+			
+			PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
+			PGPSignatureSubpacketVector subpacketVector = null;
+			subpacketGenerator.setKeyExpirationTime(false, secondsUntilExpiration);
+			subpacketVector = subpacketGenerator.generate();
+			PGPKeyRingGenerator keyringGenerator = new PGPKeyRingGenerator(
+				PGPSignature.POSITIVE_CERTIFICATION,
+				masterKeyPair,
+				identity,
+				SymmetricKeyAlgorithmTags.AES_256,
+				password,
+				subpacketVector,
+				null,
+				new SecureRandom(),
+				"BC");
+			
+			PGPSecretKeyRing secretKeyRing = keyringGenerator.generateSecretKeyRing();
+			
+			return secretKeyRing.getSecretKey();
+		} catch (Exception e) {
+			throw new Exception("Cannot create OpenPGP key", e);
+		}
+	}
+	
+	public static byte[] exportOpenPGPSecretKey(PGPSecretKey pgpSecretKey) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		ByteArrayOutputStream secretKeyStream = null;
+		OutputStream outputStream = null;
+		try {
+			boolean armor = true;
+			
+			secretKeyStream = new ByteArrayOutputStream();
+			
+			outputStream = secretKeyStream;
+			if (armor) {
+				outputStream = new ArmoredOutputStream(secretKeyStream);
+			}
+
+			pgpSecretKey.encode(outputStream);
+
+			outputStream.close();
+			outputStream = null;
+			
+			return secretKeyStream.toByteArray();
+		} catch (Exception e) {
+			throw new Exception("Cannot export OpenPGP key", e);
+		} finally {
+			IOUtils.closeQuietly(outputStream);
+			IOUtils.closeQuietly(secretKeyStream);
+		}
+	}
+	
+	public static byte[] exportOpenPGPPublicKey(PGPPublicKey pgpPublicKey) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		ByteArrayOutputStream secretKeyStream = null;
+		OutputStream outputStream = null;
+		try {
+			boolean armor = true;
+			
+			secretKeyStream = new ByteArrayOutputStream();
+			
+			outputStream = secretKeyStream;
+			if (armor) {
+				outputStream = new ArmoredOutputStream(secretKeyStream);
+			}
+
+			pgpPublicKey.encode(outputStream);
+
+			outputStream.close();
+			outputStream = null;
+			
+			return secretKeyStream.toByteArray();
+		} catch (Exception e) {
+			throw new Exception("Cannot export OpenPGP key", e);
+		} finally {
+			IOUtils.closeQuietly(outputStream);
+			IOUtils.closeQuietly(secretKeyStream);
 		}
 	}
 	
@@ -388,13 +514,11 @@ public class CryptographicUtilities {
 		return getPublicKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
 	}
 	
-    @SuppressWarnings("resource")
 	public static PGPPublicKey readPGPPublicKey(InputStream inputStream) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			InputStream decoderStream = PGPUtil.getDecoderStream(inputStream);
-			PGPPublicKeyRingCollection pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(decoderStream);
+			PGPPublicKeyRingCollection pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(inputStream));
 			@SuppressWarnings("rawtypes")
 			Iterator keyRingIterator = pgpPublicKeyRingCollection.getKeyRings();
 			while (keyRingIterator.hasNext()) {
@@ -416,7 +540,7 @@ public class CryptographicUtilities {
 		}
 	}
 	
-	public static PGPSecretKey readPGPPrivateKey(InputStream inputStream) throws IOException, PGPException, NoSuchProviderException {
+	public static PGPSecretKey readPGPSecretKey(InputStream inputStream) throws IOException, PGPException, NoSuchProviderException {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
@@ -439,6 +563,26 @@ public class CryptographicUtilities {
 			return null;
 		} catch (Exception e) {
 			return null;
+		}
+	}
+	
+	public static PGPPrivateKey readPGPPrivateKey(PGPSecretKey pgpSecretKey, char[] password) throws NoSuchProviderException, PGPException {
+		if (pgpSecretKey == null) {
+			return null;
+		} else {
+			Security.addProvider(new BouncyCastleProvider());
+			
+			return pgpSecretKey.extractPrivateKey(password, "BC");
+		}
+	}
+	
+	public static PGPPublicKey readPGPPublicKey(PGPSecretKey pgpSecretKey) throws NoSuchProviderException, PGPException {
+		if (pgpSecretKey == null) {
+			return null;
+		} else {
+			Security.addProvider(new BouncyCastleProvider());
+			
+			return pgpSecretKey.getPublicKey();
 		}
 	}
 
@@ -539,7 +683,7 @@ public class CryptographicUtilities {
 		try {
 			Signature signature = Signature.getInstance(signatureMethod, "BC");
 			signature.initSign(privateKey);
-			byte[] buffer = new byte[1024];
+			byte[] buffer = new byte[4096];
 			int bytesRead = dataStream.read(buffer);
 			while (bytesRead >= 0) {
 				signature.update(buffer, 0, bytesRead);
@@ -578,7 +722,7 @@ public class CryptographicUtilities {
 		try {
 			Signature signature = Signature.getInstance(signatureMethod, "BC");
 			signature.initVerify(publicKey);
-			byte[] buffer = new byte[1024];
+			byte[] buffer = new byte[4096];
 			int bytesRead = dataStream.read(buffer);
 			while (bytesRead >= 0) {
 				signature.update(buffer, 0, bytesRead);
@@ -587,6 +731,33 @@ public class CryptographicUtilities {
 			return signature.verify(signatureData);
 		} catch (Exception e) {
 			throw new Exception("Cannot verify signature", e);
+		}
+	}
+	
+	public static int getOpenpgpSignatureMethod(String methodName) {
+		methodName = methodName.replace("-", "").replace("_", "");
+		if ("MD5".equalsIgnoreCase(methodName)) {
+			return PGPUtil.MD5;
+		} else if ("RIPEMD160".equalsIgnoreCase(methodName)) {
+			return PGPUtil.RIPEMD160;
+		} else if ("DOUBLESHA".equalsIgnoreCase(methodName)) {
+			return PGPUtil.DOUBLE_SHA;
+		} else if ("MD2".equalsIgnoreCase(methodName)) {
+			return PGPUtil.MD2;
+		} else if ("TIGER192".equalsIgnoreCase(methodName)) {
+			return PGPUtil.TIGER_192;
+		} else if ("HAVAL5160".equalsIgnoreCase(methodName)) {
+			return PGPUtil.HAVAL_5_160;
+		} else if ("SHA256".equalsIgnoreCase(methodName)) {
+			return PGPUtil.SHA256;
+		} else if ("SHA384".equalsIgnoreCase(methodName)) {
+			return PGPUtil.SHA384;
+		} else if ("SHA512".equalsIgnoreCase(methodName)) {
+			return PGPUtil.SHA512;
+		} else if ("SHA224".equalsIgnoreCase(methodName)) {
+			return PGPUtil.SHA224;
+		} else {
+			return PGPUtil.SHA1;
 		}
 	}
 }

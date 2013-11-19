@@ -19,7 +19,6 @@ import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
@@ -64,15 +63,15 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		
 		Composite mainComposite = new Composite(shell, SWT.NONE);
 		mainComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
-		mainComposite.setLayout(new GridLayout(1, false));
+		mainComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 		
 		ScrolledComposite scrolledPart = new ScrolledComposite(mainComposite, SWT.H_SCROLL | SWT.V_SCROLL);
 		scrolledPart.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
-		scrolledPart.setLayout(new GridLayout(1, false));
+		scrolledPart.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 		
 		Composite dataPart = new Composite(scrolledPart, SWT.NONE);
 		dataPart.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		dataPart.setLayout(new GridLayout(4, false));
+		dataPart.setLayout(SwtUtilities.createNoMarginGridLayout(4, false));
 		
 		scrolledPart.setContent(dataPart);
 		scrolledPart.setExpandHorizontal(true);
@@ -143,7 +142,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		
 		Composite buttonArea = new Composite(mainComposite, SWT.NONE);
 		buttonArea.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
-		buttonArea.setLayout(new GridLayout(2, true));
+		buttonArea.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 
 		Button storeButton = new Button(buttonArea, SWT.PUSH);
 		storeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
@@ -258,6 +257,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							
 							try {
 								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
+								
+								new File(desktopLinkFilePath).setExecutable(true);
 								
 								MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
 								messageBox.setText(LangResources.get("createDesktopLink"));

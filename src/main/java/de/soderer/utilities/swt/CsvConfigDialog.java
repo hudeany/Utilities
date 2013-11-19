@@ -48,7 +48,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		
 		Composite quoteComposite = new Composite(shell, SWT.NONE);
 		quoteComposite.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
-		quoteComposite.setLayout(new GridLayout(3, false));
+		quoteComposite.setLayout(SwtUtilities.createNoMarginGridLayout(3, false));
 		
 		useQuoteButton = new Button(quoteComposite, SWT.CHECK);
 		useQuoteButton.setText(LangResources.get("csvUseQuote") + ": ");
@@ -67,7 +67,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		
 		Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
-		mainButtonComposite.setLayout(new GridLayout(2, true));
+		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 
 		Button okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));

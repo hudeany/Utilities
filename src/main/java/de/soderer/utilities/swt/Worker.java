@@ -26,18 +26,22 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	}
 	
 	protected void showItemsDone(long itemsDone) {
-		if (!cancel && (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds || itemsDone == 0)) {
+		if (parent != null &&!cancel && (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds || itemsDone == 0)) {
 			parent.showProgress(todo, itemsDone);
 			lastProgressShow = new Date();
 		}
 	}
 	
 	protected void showDone() {
-		parent.showDone();
+		if (parent != null) {
+			parent.showDone();
+		}
 	}
 	
 	protected void showUnlimitedProgress() {
-		parent.showUnlimitedProgress();
+		if (parent != null) {
+			parent.showUnlimitedProgress();
+		}
 	}
 	
 	@Override
@@ -51,7 +55,9 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	 */
 	@Override
 	public T get() throws InterruptedException, ExecutionException {
-		if (error != null) {
+		if (!isDone) {
+			throw new ExecutionException(new Exception("Worker is not done yet"));
+		} else if (error != null) {
 			throw new ExecutionException(error);
 		} else {
 			return result;
@@ -66,6 +72,10 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	@Override
 	public boolean isCancelled() {
 		return cancel;
+	}
+
+	public long getToDo() {
+		return todo;
 	}
 
 	@Override

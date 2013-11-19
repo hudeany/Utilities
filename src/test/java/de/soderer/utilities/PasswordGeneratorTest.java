@@ -16,7 +16,7 @@ public class PasswordGeneratorTest {
 			groups.add(new PasswordGeneratorCharacterGroup(1, 99, "0123456789".toCharArray()));
 			groups.add(new PasswordGeneratorCharacterGroup(1, 99, "!§$%&?*+-/".toCharArray()));
 			
-			String password = PasswordGenerator.generatePassword(groups, 10, 10);
+			String password = new String(PasswordGenerator.generatePassword(groups, 10, 10));
 			Assert.assertTrue(password.length() == 10);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -32,7 +32,7 @@ public class PasswordGeneratorTest {
 			groups.add(new PasswordGeneratorCharacterGroup(1, 99, "0".toCharArray()));
 			groups.add(new PasswordGeneratorCharacterGroup(1, 99, "!".toCharArray()));
 			
-			String password = PasswordGenerator.generatePassword(groups, 4, 4);
+			String password = new String(PasswordGenerator.generatePassword(groups, 4, 4));
 			Assert.assertTrue(password.length() == 4);
 			Assert.assertTrue(password.contains("a"));
 			Assert.assertTrue(password.contains("A"));

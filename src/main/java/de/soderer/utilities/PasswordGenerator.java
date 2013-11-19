@@ -5,10 +5,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import de.soderer.utilities.Utilities;
-
 public class PasswordGenerator {
-	public static String generatePassword(List<PasswordGeneratorCharacterGroup> characterGroups, int minimumLength, int maximumLength) throws Exception {
+	public static char[] generatePassword(int size) throws Exception {
+		return PasswordGenerator.generatePassword(size, "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "0123456789", "!?\"'`#$%&*+-<>=.,:;/|\\@^_(){}[]~", "§€äöüÄÖÜß°²³µ");
+	}
+	
+	public static char[] generatePassword(int size, String... characterGroups) throws Exception {
+		List<PasswordGeneratorCharacterGroup> groups = new ArrayList<PasswordGeneratorCharacterGroup>();
+		for(String characterGroup : characterGroups) {
+			groups.add(new PasswordGeneratorCharacterGroup(1, 99, characterGroup.toCharArray()));
+		}
+		return PasswordGenerator.generatePassword(groups, size, size);
+	}
+	
+	public static char[] generatePassword(List<PasswordGeneratorCharacterGroup> characterGroups, int minimumLength, int maximumLength) throws Exception {
 		minimumLength = Math.min(minimumLength, minimumLength);
 		maximumLength = Math.max(minimumLength, maximumLength);
 		
@@ -42,12 +52,12 @@ public class PasswordGenerator {
 				groupsLeftToUse.put(nextGroupToUse, timesUsed);
 			}
 		}
-		StringBuilder password = new StringBuilder();
+		char[] password = new char[passwordLength];
 		for (int i = 0; i < passwordLength; i++) {
 			Character nextCharacter = passwordLetters.get(Utilities.getRandomNumber(passwordLetters.size()));
-			password.append(nextCharacter);
+			password[i] = nextCharacter;
 			passwordLetters.remove(nextCharacter);
 		}
-		return password.toString();
+		return password;
 	}
 }

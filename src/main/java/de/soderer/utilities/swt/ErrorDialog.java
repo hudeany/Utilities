@@ -48,7 +48,6 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		shell.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		shell.setLayout(new GridLayout(1, false));
 		
 		String text1 = getText("ERROR_OCCURRED"); 
@@ -97,7 +96,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 
 		detailPart = new Composite(shell, SWT.NONE);
 		detailPart.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM | SWT.READ_ONLY, true, false, 1, 1));
-		detailPart.setLayout(new GridLayout(1, false));
+		detailPart.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 		
 		setupDetailPart();
 

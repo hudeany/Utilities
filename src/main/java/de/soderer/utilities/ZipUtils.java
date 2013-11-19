@@ -115,7 +115,7 @@ public class ZipUtils {
 				destinationZipFileSream.putNextEntry(entry);
 				
 				bufferedFileInputStream = new BufferedInputStream(new FileInputStream(sourceFile));
-				byte[] bufferArray = new byte[1024];
+				byte[] bufferArray = new byte[4096];
 				int byteBufferFillLength = bufferedFileInputStream.read(bufferArray);
 				while (byteBufferFillLength > -1) {
 					destinationZipFileSream.write(bufferArray, 0, byteBufferFillLength);
@@ -304,7 +304,7 @@ public class ZipUtils {
 			
 				bufferedInputStream = new BufferedInputStream(sourceZipFile.getInputStream(sourceZipFileEntry));
 			
-				byte[] bufferArray = new byte[1024];
+				byte[] bufferArray = new byte[4096];
 				int byteBufferFillLength = bufferedInputStream.read(bufferArray);
 				while (byteBufferFillLength > -1) {
 					zipOutputStream.write(bufferArray, 0, byteBufferFillLength);
@@ -364,7 +364,7 @@ public class ZipUtils {
 				bufferedInputStream = new BufferedInputStream(sourceZipFile.getInputStream(sourceZipFileEntry));
 				byteArrayOutputStream = new ByteArrayOutputStream();
 			
-				byte[] bufferArray = new byte[1024];
+				byte[] bufferArray = new byte[4096];
 				int byteBufferFillLength = bufferedInputStream.read(bufferArray);
 				while (byteBufferFillLength > -1) {
 					byteArrayOutputStream.write(bufferArray, 0, byteBufferFillLength);

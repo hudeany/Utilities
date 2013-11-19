@@ -35,20 +35,20 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		shell.setLayout(new GridLayout(2, true));
+		shell.setLayout(new GridLayout(1, true));
 		
 		if (StringUtils.isNotBlank(text)) {
 			Label label = new Label(shell, SWT.NONE);
-			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
+			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 			label.setText(text);
 		}
 		
 		Label usernameLabel = new Label(shell, SWT.NONE);
-		usernameLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
+		usernameLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 		usernameLabel.setText(LangResources.get("username"));
 		
 		Text usernameTextField = new Text(shell, SWT.BORDER);
-		usernameTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
+		usernameTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 		usernameTextField.setText("");
 		usernameTextField.addModifyListener(new ModifyListener() {
 			@Override
@@ -67,11 +67,11 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 		});
 		
 		Label passwordLabel = new Label(shell, SWT.NONE);
-		passwordLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
+		passwordLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 		passwordLabel.setText(LangResources.get("password"));
 		
 		Text passwordTextField = new Text(shell, SWT.BORDER | SWT.PASSWORD);
-		passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
+		passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 		passwordTextField.setText("");
 		passwordTextField.addModifyListener(new ModifyListener() {
 			@Override
@@ -91,7 +91,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 		
 		if (StringUtils.isNotBlank(keepInMemoryText)) {
 			Button keepInMemoryButton = new Button(shell, SWT.CHECK);
-			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
+			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 			keepInMemoryButton.setText(keepInMemoryText);
 			keepInMemoryButton.addSelectionListener(new SelectionAdapter() {
 				@Override
@@ -100,28 +100,8 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 				}
 			});
 		}
-
-		Button okButton = new Button(shell, SWT.PUSH);
-		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		okButton.setText(LangResources.get("ok"));
-		okButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				setReturnValue(true);
-				getParent().close();
-			}
-		});
-	    
-		Button cancelButton = new Button(shell, SWT.PUSH);
-		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		cancelButton.setText(LangResources.get("cancel"));
-		cancelButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				setReturnValue(false);
-				getParent().close();
-			}
-		});
+		
+		SwtUtilities.addMainButtonComposite(shell, this);
 
 		shell.pack();
 	}

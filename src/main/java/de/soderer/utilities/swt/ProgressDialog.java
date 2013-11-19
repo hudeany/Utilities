@@ -6,14 +6,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ProgressBar;
+import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
 
@@ -36,15 +35,16 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 			if (isClosed) {
 				shell.close();
 			} else {
-				shell.setLayout(new FillLayout());
+				shell.setLayout(new GridLayout(1, true));
 				
 				Composite composite = new Composite(shell, SWT.NONE);
-				composite.setLayout(new GridLayout(1, true));
+				composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+				composite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
 				
 				if (StringUtils.isNotBlank(commentStringFormat)) {
 					commentLabel = new Label(composite, SWT.NONE);
 					commentLabel.setText(MessageFormat.format(commentStringFormat, 0, 0, 0));
-					GridData labelGridData = new GridData(SWT.FILL, SWT.UP, true, false, 1, 1);
+					GridData labelGridData = new GridData(SWT.FILL, SWT.UP, true, false);
 					commentLabel.setLayoutData(labelGridData);
 				}
 				

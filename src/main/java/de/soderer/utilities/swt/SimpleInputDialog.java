@@ -13,6 +13,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
@@ -43,14 +44,14 @@ public class SimpleInputDialog extends ModalDialog<String> {
 	
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		shell.setLayout(new GridLayout(2, true));
+		shell.setLayout(new GridLayout(1, true));
 		
 		Label label = new Label(shell, SWT.NONE);
-		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
+		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 		label.setText(text);
 		
 		textField = new Text(shell, SWT.BORDER);
-		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 		textField.setText("");
 		textField.addModifyListener(new ModifyListener() {
 			@Override
@@ -78,8 +79,12 @@ public class SimpleInputDialog extends ModalDialog<String> {
 				}
 			}
 		});
+		
+		Composite mainButtonComposite = new Composite(shell, SWT.NONE);
+		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 	    
-		Button okButton = new Button(shell, SWT.PUSH);
+		Button okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
@@ -90,7 +95,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 			}
 		});
 	    
-		Button cancelButton = new Button(shell, SWT.PUSH);
+		Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {

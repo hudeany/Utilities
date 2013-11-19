@@ -697,16 +697,6 @@ public class TextUtilities {
 	    	return str.regionMatches(true, 0, prefix, 0, prefix.length());
 	    }
 	}
-
-	public static boolean containsIgnoreCase(String str, String substr) {
-		if (str == null || substr == null) {
-	        return (str == null && substr == null);
-	    } else if (substr.length() > str.length()) {
-	        return false;
-	    } else {
-	    	return str.regionMatches(true, 0, substr, 0, str.length());
-	    }
-	}
 	
 	public static String trimStringToMaximumLength(String inputString, int laenge, String interLeave) {
 		if (inputString == null || inputString.length() <= laenge) {
@@ -716,5 +706,19 @@ public class TextUtilities {
 			int takeLastLength = laenge - interLeave.length() - takeFirstLength;
 			return inputString.substring(0, takeFirstLength) + interLeave + inputString.substring(inputString.length() - takeLastLength);
 		}
+	}
+
+	public static boolean containsIgnoreCase(String str, String substr) {
+		if (str == substr) {
+			return true;
+		} else if (str == null) {
+			return false;
+		} else if (substr == null) {
+			return true;
+		} else if (substr.length() > str.length()) {
+	        return false;
+	    } else {
+	    	return str.regionMatches(true, 0, substr, 0, str.length());
+	    }
 	}
 }
