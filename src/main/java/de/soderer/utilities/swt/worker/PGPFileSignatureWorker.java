@@ -20,17 +20,17 @@ import de.soderer.utilities.CryptographicUtilities;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 import de.soderer.utilities.swt.Worker;
 
-public class OpenpgpFileSignatureWorker extends Worker<byte[]> {
+public class PGPFileSignatureWorker extends Worker<byte[]> {
 	private InputStream dataToSign = null;
 	private PGPSecretKey secretKey = null;
 	private char[] password = null;
 	private String signatureMethod = null;
 
-	public OpenpgpFileSignatureWorker(ProgressShowingModalDialog<?> parent, InputStream dataToSign, PGPSecretKey secretKey, char[] password) throws IOException {
+	public PGPFileSignatureWorker(ProgressShowingModalDialog<?> parent, InputStream dataToSign, PGPSecretKey secretKey, char[] password) throws IOException {
 		this(parent, dataToSign, secretKey, password, null);
 	}
 	
-	public OpenpgpFileSignatureWorker(ProgressShowingModalDialog<?> parent, InputStream dataToSign, PGPSecretKey secretKey, char[] password, String signatureMethod) throws IOException {
+	public PGPFileSignatureWorker(ProgressShowingModalDialog<?> parent, InputStream dataToSign, PGPSecretKey secretKey, char[] password, String signatureMethod) throws IOException {
 		super(parent);
 		this.dataToSign = dataToSign;
 		this.secretKey = secretKey;
@@ -38,7 +38,7 @@ public class OpenpgpFileSignatureWorker extends Worker<byte[]> {
 		this.signatureMethod = signatureMethod;
 
 		if (StringUtils.isBlank(this.signatureMethod)) {
-			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_OPENPGP;
+			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_PGP;
 		}
 		
     	todo = dataToSign.available();
@@ -71,7 +71,7 @@ public class OpenpgpFileSignatureWorker extends Worker<byte[]> {
 			
 			outputStream = new ByteArrayOutputStream();
 			outputStream2 = new ArmoredOutputStream(outputStream);
-			PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(secretKey.getPublicKey().getAlgorithm(), CryptographicUtilities.getOpenpgpSignatureMethod(signatureMethod), "BC");
+			PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(secretKey.getPublicKey().getAlgorithm(), CryptographicUtilities.getPGPSignatureMethod(signatureMethod), "BC");
 			pgpSignatureGenerator.initSign(PGPSignature.BINARY_DOCUMENT, privateKey);
 			
 			bcpgOutputStream = new BCPGOutputStream(outputStream2);

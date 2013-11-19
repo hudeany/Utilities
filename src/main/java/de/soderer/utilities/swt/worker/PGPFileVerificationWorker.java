@@ -16,17 +16,17 @@ import de.soderer.utilities.CryptographicUtilities;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 import de.soderer.utilities.swt.Worker;
 
-public class OpenpgpFileVerificationWorker extends Worker<Boolean> {
+public class PGPFileVerificationWorker extends Worker<Boolean> {
 	private InputStream dataToVerify = null;
 	private InputStream signatureData = null;
 	private PGPPublicKey publicKey = null;
 	private String signatureMethod = null;
 
-	public OpenpgpFileVerificationWorker(ProgressShowingModalDialog<?> parent, InputStream dataToVerify, PGPPublicKey publicKey, InputStream signatureData) throws IOException {
+	public PGPFileVerificationWorker(ProgressShowingModalDialog<?> parent, InputStream dataToVerify, PGPPublicKey publicKey, InputStream signatureData) throws IOException {
 		this(parent, dataToVerify, publicKey, signatureData, null);
 	}
 	
-	public OpenpgpFileVerificationWorker(ProgressShowingModalDialog<?> parent, InputStream dataToVerify, PGPPublicKey publicKey, InputStream signatureData, String signatureMethod) throws IOException {
+	public PGPFileVerificationWorker(ProgressShowingModalDialog<?> parent, InputStream dataToVerify, PGPPublicKey publicKey, InputStream signatureData, String signatureMethod) throws IOException {
 		super(parent);
 		this.dataToVerify = dataToVerify;
 		this.signatureData = signatureData;

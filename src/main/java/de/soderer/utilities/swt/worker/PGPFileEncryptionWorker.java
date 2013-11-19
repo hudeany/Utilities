@@ -23,12 +23,12 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 import de.soderer.utilities.swt.Worker;
 
-public class OpenpgpFileEncryptionWorker extends Worker<Boolean> {
+public class PGPFileEncryptionWorker extends Worker<Boolean> {
 	private InputStream dataToEncrypt = null;
 	private OutputStream encryptedData = null;
 	private PGPPublicKey publicKey = null;
 
-	public OpenpgpFileEncryptionWorker(ProgressShowingModalDialog<?> parent, InputStream dataToEncrypt, OutputStream encryptedData, PGPPublicKey publicKey) throws IOException {
+	public PGPFileEncryptionWorker(ProgressShowingModalDialog<?> parent, InputStream dataToEncrypt, OutputStream encryptedData, PGPPublicKey publicKey) throws IOException {
 		super(parent);
 		this.dataToEncrypt = dataToEncrypt;
 		this.encryptedData = encryptedData;

@@ -157,8 +157,8 @@ public class CryptographicUtilities {
 		"SHA512withRSAandMGF1"
 	};
 
-	public static String DEFAULT_SIGNATURE_METHOD_OPENPGP = "SHA-1";
-	public static final String[] KNOWN_SIGNATURE_METHODS_OPENPGP = new String[]{DEFAULT_SIGNATURE_METHOD_OPENPGP,
+	public static String DEFAULT_SIGNATURE_METHOD_PGP = "SHA-1";
+	public static final String[] KNOWN_SIGNATURE_METHODS_PGP = new String[]{DEFAULT_SIGNATURE_METHOD_PGP,
 	    "MD5",
 	    "RIPEMD160",
 	    "DOUBLE-SHA",
@@ -236,11 +236,11 @@ public class CryptographicUtilities {
 			
 			return secretKeyRing.getSecretKey();
 		} catch (Exception e) {
-			throw new Exception("Cannot create OpenPGP key", e);
+			throw new Exception("Cannot create PGP key", e);
 		}
 	}
 	
-	public static byte[] exportOpenPGPSecretKey(PGPSecretKey pgpSecretKey) throws Exception {
+	public static byte[] exportPGPSecretKey(PGPSecretKey pgpSecretKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		ByteArrayOutputStream secretKeyStream = null;
@@ -262,14 +262,14 @@ public class CryptographicUtilities {
 			
 			return secretKeyStream.toByteArray();
 		} catch (Exception e) {
-			throw new Exception("Cannot export OpenPGP key", e);
+			throw new Exception("Cannot export PGP key", e);
 		} finally {
 			IOUtils.closeQuietly(outputStream);
 			IOUtils.closeQuietly(secretKeyStream);
 		}
 	}
 	
-	public static byte[] exportOpenPGPPublicKey(PGPPublicKey pgpPublicKey) throws Exception {
+	public static byte[] exportPGPPublicKey(PGPPublicKey pgpPublicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		ByteArrayOutputStream secretKeyStream = null;
@@ -291,7 +291,7 @@ public class CryptographicUtilities {
 			
 			return secretKeyStream.toByteArray();
 		} catch (Exception e) {
-			throw new Exception("Cannot export OpenPGP key", e);
+			throw new Exception("Cannot export PGP key", e);
 		} finally {
 			IOUtils.closeQuietly(outputStream);
 			IOUtils.closeQuietly(secretKeyStream);
@@ -734,7 +734,7 @@ public class CryptographicUtilities {
 		}
 	}
 	
-	public static int getOpenpgpSignatureMethod(String methodName) {
+	public static int getPGPSignatureMethod(String methodName) {
 		methodName = methodName.replace("-", "").replace("_", "");
 		if ("MD5".equalsIgnoreCase(methodName)) {
 			return PGPUtil.MD5;

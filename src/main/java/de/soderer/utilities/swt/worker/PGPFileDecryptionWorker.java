@@ -30,13 +30,13 @@ import de.soderer.utilities.swt.Worker;
  * Download:
  *   http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
  */
-public class OpenpgpFileDecryptionWorker extends Worker<Boolean> {
+public class PGPFileDecryptionWorker extends Worker<Boolean> {
 	private InputStream encryptedData = null;
 	private OutputStream decryptedData = null;
 	private PGPSecretKey secretKey = null;
 	private char[] password = null;
 
-	public OpenpgpFileDecryptionWorker(ProgressShowingModalDialog<?> parent, InputStream encryptedData, OutputStream decryptedData, PGPSecretKey secretKey, char[] password) throws IOException {
+	public PGPFileDecryptionWorker(ProgressShowingModalDialog<?> parent, InputStream encryptedData, OutputStream decryptedData, PGPSecretKey secretKey, char[] password) throws IOException {
 		super(parent);
 		this.encryptedData = encryptedData;
 		this.decryptedData = decryptedData;

@@ -10,10 +10,10 @@ import org.bouncycastle.openpgp.PGPSecretKey;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.soderer.utilities.swt.worker.OpenpgpFileDecryptionWorker;
-import de.soderer.utilities.swt.worker.OpenpgpFileEncryptionWorker;
-import de.soderer.utilities.swt.worker.OpenpgpFileSignatureWorker;
-import de.soderer.utilities.swt.worker.OpenpgpFileVerificationWorker;
+import de.soderer.utilities.swt.worker.PGPFileDecryptionWorker;
+import de.soderer.utilities.swt.worker.PGPFileEncryptionWorker;
+import de.soderer.utilities.swt.worker.PGPFileSignatureWorker;
+import de.soderer.utilities.swt.worker.PGPFileVerificationWorker;
 
 public class CryptographicWorkerTest {
 	private static PGPSecretKey pgpSecretKey = null;
@@ -29,12 +29,12 @@ public class CryptographicWorkerTest {
 	}
 	
 	@Test
-	public void testOpenPgpEncryption() {
+	public void testPGPEncryption() {
 		try {
 			ByteArrayInputStream dataToEncrypt = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
 			ByteArrayOutputStream encryptedData = new ByteArrayOutputStream();
 			
-			OpenpgpFileEncryptionWorker encryptWorker = new OpenpgpFileEncryptionWorker(null, dataToEncrypt, encryptedData, getPgpSecretKey().getPublicKey());
+			PGPFileEncryptionWorker encryptWorker = new PGPFileEncryptionWorker(null, dataToEncrypt, encryptedData, getPgpSecretKey().getPublicKey());
 			encryptWorker.run();
 			Assert.assertTrue(encryptWorker.get());
 			String encrypted = new String(encryptedData.toByteArray(), "UTF-8");
@@ -42,7 +42,7 @@ public class CryptographicWorkerTest {
 			ByteArrayInputStream dataToDecrypt = new ByteArrayInputStream(encrypted.getBytes("UTF-8"));
 			ByteArrayOutputStream decryptedData = new ByteArrayOutputStream();
 			
-			OpenpgpFileDecryptionWorker decryptWorker = new OpenpgpFileDecryptionWorker(null, dataToDecrypt, decryptedData, getPgpSecretKey(), password);
+			PGPFileDecryptionWorker decryptWorker = new PGPFileDecryptionWorker(null, dataToDecrypt, decryptedData, getPgpSecretKey(), password);
 			decryptWorker.run();
 			Assert.assertTrue(decryptWorker.get());
 			
@@ -55,12 +55,12 @@ public class CryptographicWorkerTest {
 	}
 
 	@Test
-	public void testOpenPgpSignature() {
+	public void testPGPSignature() {
 		FileInputStream decryptionPrivateKeyFileInputStream = null;
 		try {
 			ByteArrayInputStream dataToSign = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
 			
-			OpenpgpFileSignatureWorker signatureWorker = new OpenpgpFileSignatureWorker(null, dataToSign, getPgpSecretKey(), password);
+			PGPFileSignatureWorker signatureWorker = new PGPFileSignatureWorker(null, dataToSign, getPgpSecretKey(), password);
 			signatureWorker.run();
 			byte[] signatureData = signatureWorker.get();
 			Assert.assertTrue(signatureData != null && signatureData.length > 0);
@@ -69,7 +69,7 @@ public class CryptographicWorkerTest {
 			ByteArrayInputStream dataToVerify = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
 			ByteArrayInputStream signatureDataStream = new ByteArrayInputStream(signature.getBytes("UTF-8"));
 			
-			OpenpgpFileVerificationWorker verificationWorker = new OpenpgpFileVerificationWorker(null, dataToVerify, getPgpSecretKey().getPublicKey(), signatureDataStream);
+			PGPFileVerificationWorker verificationWorker = new PGPFileVerificationWorker(null, dataToVerify, getPgpSecretKey().getPublicKey(), signatureDataStream);
 			verificationWorker.run();
 			Assert.assertTrue(verificationWorker.get());
 		} catch (Exception e) {
