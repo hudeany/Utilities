@@ -39,7 +39,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(buttonTexts.length, true));
 		
 		Text test = new Text(composite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
-		test.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, true, true, buttonTexts.length, 1));
+		test.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, buttonTexts.length, 1));
 		test.setText(text);
 		
 		if (StringUtils.isNotBlank(rememberAnswerText)) {

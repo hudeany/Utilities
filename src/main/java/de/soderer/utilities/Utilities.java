@@ -25,6 +25,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.sql.Timestamp;
 import java.text.NumberFormat;
@@ -761,7 +762,7 @@ public class Utilities {
 
 	private static final char[] randomAlphaNumericCharacters = (new String(randomCharacters) + "0123456789").toCharArray();
 
-	private static final Random random = new Random();
+	private static final Random random = new SecureRandom();
 
 	public static int getRandomNumber(int excludedMaximum) {
 		return random.nextInt(excludedMaximum);
@@ -792,9 +793,14 @@ public class Utilities {
 	}
 
 	public static byte getRandomByte() {
-		byte[] resutlt = new byte[1];
-		random.nextBytes(resutlt);
-		return resutlt[0];
+		byte[] result = new byte[1];
+		random.nextBytes(result);
+		return result[0];
+	}
+
+	public static byte[] getRandomByteArray(byte[] arrayToFill) {
+		random.nextBytes(arrayToFill);
+		return arrayToFill;
 	}
 
 	public static String getHostName() {
@@ -1457,5 +1463,27 @@ public class Utilities {
         	}
         }
         return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> selectItems(Collection<?> collection, Class<T> classToSelect) {
+		List<T> list = new ArrayList<T>();
+		for (Object item : collection) {
+			if (classToSelect.isInstance(item)) {
+				list.add((T) item);
+			}
+		}
+		return list;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> selectItems(Object[] array, Class<T> classToSelect) {
+		List<T> list = new ArrayList<T>();
+		for (Object item : array) {
+			if (classToSelect.isInstance(item)) {
+				list.add((T) item);
+			}
+		}
+		return list;
 	}
 }

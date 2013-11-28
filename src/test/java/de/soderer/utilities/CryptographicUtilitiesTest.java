@@ -7,6 +7,8 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.swt.worker.OTPCryptographyWorker;
+
 public class CryptographicUtilitiesTest {
 	private static AsymmetricCipherKeyPair keyPairCache = null;
 	
@@ -69,5 +71,16 @@ public class CryptographicUtilitiesTest {
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
+	}
+	
+	@Test
+	public void testEncryptionOTP() {
+		byte[] testClear = new byte[]{ 1, 2, 3, 4, 5, -6, 0, 7, 126, 127 };
+		byte[] test2 = new byte[testClear.length];
+		byte[] test3 = new byte[testClear.length];
+		OTPCryptographyWorker.otpWork(new byte[][]{ testClear }, new byte[][]{ test2, test3 });
+		byte[] testResult = new byte[testClear.length];
+		OTPCryptographyWorker.otpWork(new byte[][]{ test2, test3 }, new byte[][]{ testResult });
+		Assert.assertArrayEquals(testClear, testResult);
 	}
 }

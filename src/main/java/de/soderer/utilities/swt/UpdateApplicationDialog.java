@@ -12,6 +12,7 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
@@ -39,7 +40,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
-		shell.setLayout(new FillLayout());
+		shell.setLayout(new GridLayout(1, false));
 		
 		Composite composite = new Composite(shell, SWT.NONE);
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
