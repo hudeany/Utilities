@@ -32,12 +32,12 @@ public class ConfigurationProperties {
 	}
 	
 	public ConfigurationProperties(String applicationName, boolean useSubDirectory) {
+		this.applicationName = applicationName;
 		this.useSubDirectory = useSubDirectory;
 		File configFile = new File(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
 		if (configFile.exists()) {
 			FileInputStream fileInputStream = null;
 			try {
-				this.applicationName = applicationName;
 				fileInputStream = new FileInputStream(configFile);
 				Properties propertiesLoaded = new Properties();
 			    propertiesLoaded.load(fileInputStream);
