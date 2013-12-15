@@ -78,7 +78,7 @@ public class Utilities {
 	public static final String STANDARD_XML = "<?xml version=\"1.0\" encoding=\"<encoding>\" standalone=\"yes\"?>\n<root>\n</root>\n";
 	public static final String STANDARD_HTML = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=<encoding>\" />\n\t\t<title>HtmlTitle</title>\n\t\t<meta name=\"Title\" content=\"HtmlTitle\" />\n\t</head>\n\t<body>\n\t</body>\n</html>\n";
 	public static final String STANDARD_BASHSCRIPTSTART = "#!/bin/bash\n";
-	
+
 	public static final byte[] UTF_16_LE_BOM = new byte[] { (byte)0xFF, (byte)0xFE };
 	public static final byte[] UTF_16_BE_BOM = new byte[] { (byte)0xFE, (byte)0xFF };
 	public static final byte[] UTF_8_BOM = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
@@ -91,10 +91,11 @@ public class Utilities {
 		// Find File using the ClassLoader
 		try {
 			URL url = Utilities.class.getResource("/" + resourceName);
-			if (url != null)
+			if (url != null) {
 				return url.toURI();
-			else
+			} else {
 				return null;
+			}
 		} catch (Exception e) {
 			System.out.println("Looking for Resource '" + resourceName + "' on the classpath root");
 			System.out.println(e.getClass().getName() + ": " + e.getMessage());
@@ -163,19 +164,23 @@ public class Utilities {
 		int durationInMilliSeconds = (int)(endTime.getTimeInMillis() - startTime.getTimeInMillis());
 		int milliSecondsPart = durationInMilliSeconds % 1000;
 		int secondsPart = durationInMilliSeconds / 1000 % 60;
-		int minutesPart = (durationInMilliSeconds / 1000 / 60) % 60;
+		int minutesPart = durationInMilliSeconds / 1000 / 60 % 60;
 		int hoursPart = durationInMilliSeconds / 1000 / 60 / 60 % 24;
 		int days = durationInMilliSeconds / 1000 / 60 / 60 % 24;
 
 		String returnString = milliSecondsPart + "ms";
-		if (secondsPart > 0)
+		if (secondsPart > 0) {
 			returnString = secondsPart + "s " + returnString;
-		if (minutesPart > 0)
+		}
+		if (minutesPart > 0) {
 			returnString = minutesPart + "m " + returnString;
-		if (hoursPart > 0)
+		}
+		if (hoursPart > 0) {
 			returnString = hoursPart + "h " + returnString;
-		if (days > 0)
+		}
+		if (days > 0) {
 			returnString = days + "d " + returnString;
+		}
 		return returnString;
 	}
 
@@ -208,8 +213,8 @@ public class Utilities {
 				File[] partList = searchPath.listFiles();
 				for (int i = 0; i < partList.length; i++) {
 					if (partList[i].isFile()
-							&& ((stammFileName.endsWith("*") && partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1))) || (!stammFileName.endsWith("*") && partList[i]
-									.getName().equals(stammFileName)))) {
+							&& (stammFileName.endsWith("*") && partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1)) || !stammFileName.endsWith("*")
+									&& partList[i].getName().equals(stammFileName))) {
 						// Datei gefunden: partList[i].getName());
 						if (!ergebnisListe.contains(partList[i])) {
 							ergebnisListe.add(partList[i]);
@@ -272,8 +277,9 @@ public class Utilities {
 
 	public static int getIndex(int searchInt, int[] intArray) {
 		for (int i = 0; i < intArray.length; i++) {
-			if (intArray[i] == searchInt)
+			if (intArray[i] == searchInt) {
 				return i;
+			}
 		}
 		return -1;
 	}
@@ -316,7 +322,7 @@ public class Utilities {
 		nf.setMaximumIntegerDigits(len);
 		nf.setGroupingUsed(false);
 
-		return nf.format((long)value);
+		return nf.format(value);
 	}
 
 	public static byte[] readStreamInArray(InputStream inputStream) throws Exception {
@@ -379,14 +385,14 @@ public class Utilities {
 
 		return returnArrayBuffer.toByteArray();
 	}
-	
+
 	public static byte[] readAvailableDataFromStreamInArray(InputStream inputStream) throws Exception {
 		byte[] returnData = new byte[inputStream.available()];
 		@SuppressWarnings("unused")
 		int bytesRead = inputStream.read(returnData);
 		return returnData;
 	}
-	
+
 	public static byte[] readStreamUntilEndOrLinefeed(InputStream inStream) throws IOException {
 		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
 		int nextByte;
@@ -426,7 +432,7 @@ public class Utilities {
 		// Suchen der Importfilenames
 		for (int i = 0; i < alleStammnamen.size(); i++) {
 			// Zusammenführen aller FileArrays zu Einem
-			importFiles.addAll(Utilities.getArrayOfFilesByStammname((String)alleStammnamen.get(i)));
+			importFiles.addAll(Utilities.getArrayOfFilesByStammname(alleStammnamen.get(i)));
 		}
 
 		return importFiles;
@@ -446,15 +452,18 @@ public class Utilities {
 		String[] versionparts2 = version2.split("\\.");
 		for (int i = 0; i < Math.min(versionparts1.length, versionparts1.length); i++) {
 			int value1 = 0;
-			if (versionparts1.length > i)
+			if (versionparts1.length > i) {
 				value1 = Integer.parseInt(versionparts1[i]);
+			}
 			int value2 = 0;
-			if (versionparts2.length > i)
+			if (versionparts2.length > i) {
 				value2 = Integer.parseInt(versionparts2[i]);
-			if (value1 < value2)
+			}
+			if (value1 < value2) {
 				return -1;
-			else if (value1 > value2)
+			} else if (value1 > value2) {
 				return 1;
+			}
 		}
 		return 0;
 	}
@@ -462,8 +471,9 @@ public class Utilities {
 	public static String getEmailFromCertificate(X509Certificate cert) {
 		String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
 		for (String namePart : nameParts) {
-			if (namePart.matches("^[ \\t]*EMAILADDRESS=.*"))
+			if (namePart.matches("^[ \\t]*EMAILADDRESS=.*")) {
 				return namePart.substring(namePart.indexOf("=") + 1).trim();
+			}
 		}
 
 		return null;
@@ -472,8 +482,9 @@ public class Utilities {
 	public static String getCnFromCertificate(X509Certificate cert) {
 		String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
 		for (String namePart : nameParts) {
-			if (namePart.matches("^[ \\t]*CN=.*"))
+			if (namePart.matches("^[ \\t]*CN=.*")) {
 				return namePart.substring(namePart.indexOf("=") + 1).trim();
+			}
 		}
 
 		return null;
@@ -481,8 +492,9 @@ public class Utilities {
 
 	public static boolean dayListIncludes(List<GregorianCalendar> listOfDays, GregorianCalendar day) {
 		for (GregorianCalendar listDay : listOfDays) {
-			if (listDay.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR))
+			if (listDay.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR)) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -508,8 +520,9 @@ public class Utilities {
 		// Feiertage die explizit ausgeschlossen werden
 		List<GregorianCalendar> excludedDays = new ArrayList<GregorianCalendar>();
 
-		if (timingString.equalsIgnoreCase("once"))
+		if (timingString.equalsIgnoreCase("once")) {
 			return null;
+		}
 
 		String[] timingParameterList = timingString.split(";");
 		for (String timingParameter : timingParameterList) {
@@ -544,8 +557,9 @@ public class Utilities {
 					// Parameter-Bedingung erfüllt ist
 					// Bei treffender Feiertagseintragung auch um einen Tag
 					// weiterschieben
-					while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart) || dayListIncludes(excludedDays, nextStartByThisParameter))
+					while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart) || dayListIncludes(excludedDays, nextStartByThisParameter)) {
 						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+					}
 				} else {
 					// wochentägliche Verarbeitung um 00:00 Uhr
 					List<Integer> weekdayIndexes = new ArrayList<Integer>();
@@ -563,8 +577,9 @@ public class Utilities {
 					// Bei treffender Feiertagseintragung auch um einen Tag
 					// weiterschieben
 					while ((nextStartByThisParameter.before(now) || !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
-							|| dayListIncludes(excludedDays, nextStartByThisParameter))
+							|| dayListIncludes(excludedDays, nextStartByThisParameter)) {
 						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+					}
 				}
 			} else if (timingParameter.length() == 8) {
 				// Monatssteuerung "M01:1700"
@@ -577,23 +592,25 @@ public class Utilities {
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 
 				// Den nächsten passenden Monat finden
-				while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart))
+				while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)) {
 					nextStartByThisParameter.add(GregorianCalendar.MONTH, 1);
+				}
 
 				// Bei treffender Feiertagseintragung um einen Tag
 				// weiterschieben
-				while (dayListIncludes(excludedDays, nextStartByThisParameter))
+				while (dayListIncludes(excludedDays, nextStartByThisParameter)) {
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR, 1);
+				}
 			} else if (timingParameter.startsWith("Q:")) {
 				// Quartalsweise Planung (Q:1200): Start am ersten Kalendertag
 				// im Quartal
-				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL)
+				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL) {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.APRIL);
-				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY)
+				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY) {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JULY);
-				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER)
+				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER) {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.OCTOBER);
-				else {
+				} else {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JANUARY);
 					nextStartByThisParameter.add(GregorianCalendar.YEAR, 1);
 				}
@@ -607,18 +624,19 @@ public class Utilities {
 
 				// Bei treffender Feiertagseintragung um einen Tag
 				// weiterschieben
-				while (dayListIncludes(excludedDays, nextStartByThisParameter))
+				while (dayListIncludes(excludedDays, nextStartByThisParameter)) {
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR, 1);
+				}
 			} else if (timingParameter.startsWith("QW:")) {
 				// Quartalsweise Planung (QW:1200): Start am ersten Werktag im
 				// Quartal
-				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL)
+				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL) {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.APRIL);
-				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY)
+				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY) {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JULY);
-				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER)
+				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER) {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.OCTOBER);
-				else {
+				} else {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JANUARY);
 					nextStartByThisParameter.add(GregorianCalendar.YEAR, 1);
 				}
@@ -628,8 +646,9 @@ public class Utilities {
 				// Bei treffender Feiertagseintragung oder Wochentagsregelung um
 				// einen Tag weiterschieben
 				while (nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SATURDAY
-						|| nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY || dayListIncludes(excludedDays, nextStartByThisParameter))
+						|| nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY || dayListIncludes(excludedDays, nextStartByThisParameter)) {
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+				}
 
 				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
 				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
@@ -654,12 +673,14 @@ public class Utilities {
 				// Bei treffender Feiertagseintragung auch um einen Tag
 				// weiterschieben
 				while ((nextStartByThisParameter.before(now) || !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
-						|| dayListIncludes(excludedDays, nextStartByThisParameter))
+						|| dayListIncludes(excludedDays, nextStartByThisParameter)) {
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+				}
 			}
 
-			if (nextStartByThisParameter.before(returnStart))
+			if (nextStartByThisParameter.before(returnStart)) {
 				returnStart = nextStartByThisParameter;
+			}
 		}
 
 		return new Timestamp(returnStart.getTimeInMillis());
@@ -675,11 +696,13 @@ public class Utilities {
 
 			int major = new Integer(matcher.group(1));
 			int minor = 0;
-			if (matcher.groupCount() >= 2 && matcher.group(2) != null)
+			if (matcher.groupCount() >= 2 && matcher.group(2) != null) {
 				minor = new Integer(matcher.group(2));
+			}
 			int micro = 0;
-			if (matcher.groupCount() == 3 && matcher.group(3) != null)
+			if (matcher.groupCount() == 3 && matcher.group(3) != null) {
 				micro = new Integer(matcher.group(3));
+			}
 
 			return new int[] { major, minor, micro };
 		} catch (NumberFormatException e) {
@@ -739,18 +762,20 @@ public class Utilities {
 	 * @return
 	 */
 	public static <E> List<List<E>> chopListToChunks(List<E> originalList, int chunkSize) {
-		if (originalList == null || originalList.size() <= 0 || chunkSize <= 0)
+		if (originalList == null || originalList.size() <= 0 || chunkSize <= 0) {
 			return null;
+		}
 
 		List<List<E>> returnList = new ArrayList<List<E>>();
 		int endIndex = 0;
 
 		while (endIndex < originalList.size()) {
 			int startIndex = endIndex;
-			if (chunkSize < originalList.size() - endIndex)
+			if (chunkSize < originalList.size() - endIndex) {
 				endIndex += chunkSize;
-			else
+			} else {
 				endIndex = originalList.size();
+			}
 
 			returnList.add(originalList.subList(startIndex, endIndex));
 		}
@@ -767,7 +792,7 @@ public class Utilities {
 	public static int getRandomNumber(int excludedMaximum) {
 		return random.nextInt(excludedMaximum);
 	}
-	
+
 	public static String getRandomString(int length) {
 		StringBuilder sb = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {
@@ -815,12 +840,14 @@ public class Utilities {
 		StringBuilder builder = new StringBuilder();
 
 		for (Object object : collection) {
-			if (builder.length() > 0)
+			if (builder.length() > 0) {
 				builder.append(separator);
-			if (object == null)
+			}
+			if (object == null) {
 				builder.append("<null>");
-			else
+			} else {
 				builder.append(object.toString());
+			}
 		}
 
 		return builder.toString();
@@ -831,21 +858,25 @@ public class Utilities {
 			String[] blockStrings = intervals.split(";");
 			for (int i = 0; i < blockStrings.length; i++) {
 				if (blockStrings[i].endsWith("+")) {
-					if (Integer.parseInt(blockStrings[i].substring(0, blockStrings[i].length() - 1)) <= item)
+					if (Integer.parseInt(blockStrings[i].substring(0, blockStrings[i].length() - 1)) <= item) {
 						return true;
+					}
 				} else if (blockStrings[i].matches("\\d+-\\d+")) {
 					int plusIndex = blockStrings[i].indexOf("-");
 					int startVersion = Integer.parseInt(blockStrings[i].substring(0, plusIndex));
 					int endeVersion = Integer.parseInt(blockStrings[i].substring(plusIndex + 1));
-					if (startVersion <= item && endeVersion >= item)
+					if (startVersion <= item && endeVersion >= item) {
 						return true;
+					}
 				} else if (blockStrings[i].matches("-\\d+")) {
 					int endeVersion = Integer.parseInt(blockStrings[i].substring(1));
-					if (endeVersion >= item)
+					if (endeVersion >= item) {
 						return true;
+					}
 				} else {
-					if (Integer.parseInt(blockStrings[i]) == item)
+					if (Integer.parseInt(blockStrings[i]) == item) {
 						return true;
+					}
 				}
 			}
 		}
@@ -868,8 +899,9 @@ public class Utilities {
 	public static File[] getSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
 		List<File> files = new LinkedList<File>();
 		for (File file : directory.listFiles()) {
-			if (file.getName().startsWith(nameStart) && file.getName().endsWith("." + extension))
+			if (file.getName().startsWith(nameStart) && file.getName().endsWith("." + extension)) {
 				files.add(file);
+			}
 		}
 		return files.toArray(new File[0]);
 	}
@@ -1090,7 +1122,8 @@ public class Utilities {
 		return fileReplaceText(searchFile, searchTexts, replacementTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
 	}
 
-	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
+	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression,
+			String defaultEncoding) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
 			boolean foundAndReplaced = false;
@@ -1100,10 +1133,10 @@ public class Utilities {
 				if (encodingData == null) {
 					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
 				}
-	
+
 				fileInputStream = new FileInputStream(searchFile);
 				String dataString = IOUtils.toString(fileInputStream, encodingData.getFirst());
-	
+
 				for (int i = 0; i < searchTexts.size(); i++) {
 					Pattern searchPattern;
 					if (searchTextIsRegularExpression) {
@@ -1125,7 +1158,7 @@ public class Utilities {
 						foundAndReplaced = true;
 					}
 				}
-	
+
 				if (foundAndReplaced) {
 					FileUtils.writeStringToFile(searchFile, dataString, encodingData.getFirst());
 				}
@@ -1176,15 +1209,15 @@ public class Utilities {
 			IOUtils.closeQuietly(input);
 		}
 	}
-	
+
 	public static Map<String, String> getSystemPropertiesMap() {
 		Map<String, String> propertiesMap = new HashMap<String, String>();
 		for (Object key : System.getProperties().keySet()) {
-			propertiesMap.put((String) key, System.getProperties().getProperty((String) key));
+			propertiesMap.put((String)key, System.getProperties().getProperty((String)key));
 		}
 		return propertiesMap;
 	}
-	
+
 	public static String getStringFromMap(Map<String, ? extends Object> map, String entrySeparator, String keySeparator, boolean sort) {
 		List<String> keyList = new ArrayList<String>(map.keySet());
 		if (sort) {
@@ -1207,48 +1240,48 @@ public class Utilities {
 	public static String getHumanReadableNumber(Number value) {
 		return getHumanReadableNumber(value, null, true);
 	}
-	
+
 	public static String getHumanReadableNumber(Number value, String unitTypeSign) {
 		return getHumanReadableNumber(value, unitTypeSign, true);
 	}
-	
+
 	public static String getHumanReadableNumber(Number value, String unitTypeSign, boolean siUnits) {
-	    int unit = siUnits ? 1000 : 1024;
-	    double interimValue = value.doubleValue();
-	    String unitExtension = "";
-	    if (interimValue < unit) {
-	    	if (StringUtils.isNotBlank(unitTypeSign)) {
-	    		unitExtension = " " + unitTypeSign;
-	    	}
-	    	
-	    	if (value instanceof Integer || value instanceof Long) {
-	    		return value + unitExtension;
-	    	}
-	    } else {
-		    int exp = (int) (Math.log(interimValue) / Math.log(unit));
-		    unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
-	    	if (StringUtils.isNotBlank(unitTypeSign)) {
-	    		unitExtension += unitTypeSign;
-	    	}
-		    interimValue = interimValue / Math.pow(unit, exp);
-	    }
-	    
-	    String valueString;
-	    if (interimValue >= 1000) {
-	    	valueString = String.format("%.1f", interimValue);
-	    } else if (interimValue >= 100) {
-	    	valueString = String.format("%.2f", interimValue);
-	    } else if (interimValue >= 10) {
-	    	valueString = String.format("%.3f", interimValue);
-	    } else if (interimValue >= 1) {
-	    	valueString = String.format("%.4f", interimValue);
-	    } else {
-	    	valueString = String.format("%.5f", interimValue);
-	    }
-	    
-	    return valueString + unitExtension;
+		int unit = siUnits ? 1000 : 1024;
+		double interimValue = value.doubleValue();
+		String unitExtension = "";
+		if (interimValue < unit) {
+			if (StringUtils.isNotBlank(unitTypeSign)) {
+				unitExtension = " " + unitTypeSign;
+			}
+
+			if (value instanceof Integer || value instanceof Long) {
+				return value + unitExtension;
+			}
+		} else {
+			int exp = (int)(Math.log(interimValue) / Math.log(unit));
+			unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
+			if (StringUtils.isNotBlank(unitTypeSign)) {
+				unitExtension += unitTypeSign;
+			}
+			interimValue = interimValue / Math.pow(unit, exp);
+		}
+
+		String valueString;
+		if (interimValue >= 1000) {
+			valueString = String.format("%.1f", interimValue);
+		} else if (interimValue >= 100) {
+			valueString = String.format("%.2f", interimValue);
+		} else if (interimValue >= 10) {
+			valueString = String.format("%.3f", interimValue);
+		} else if (interimValue >= 1) {
+			valueString = String.format("%.4f", interimValue);
+		} else {
+			valueString = String.format("%.5f", interimValue);
+		}
+
+		return valueString + unitExtension;
 	}
-	
+
 	public static byte[] getMD5Hash(String data) throws Exception {
 		try {
 			return MessageDigest.getInstance("MD5").digest(data.getBytes("UTF-8"));
@@ -1256,7 +1289,7 @@ public class Utilities {
 			throw new Exception("Error while MD5 hashing", e);
 		}
 	}
-	
+
 	public static byte[] getSHA1Hash(String data) throws Exception {
 		try {
 			return MessageDigest.getInstance("SHA-1").digest(data.getBytes("UTF-8"));
@@ -1264,7 +1297,7 @@ public class Utilities {
 			throw new Exception("Error while SHA-1 hashing", e);
 		}
 	}
-	
+
 	public static byte[] getSHA512Hash(String data) throws Exception {
 		try {
 			return MessageDigest.getInstance("SHA-512").digest(data.getBytes("UTF-8"));
@@ -1272,7 +1305,7 @@ public class Utilities {
 			throw new Exception("Error while SHA-512 hashing", e);
 		}
 	}
-	
+
 	public static byte[] getByteArray(List<Byte> data) {
 		byte[] returnArray = new byte[data.size()];
 		for (int i = 0; i < data.size(); i++) {
@@ -1280,7 +1313,7 @@ public class Utilities {
 		}
 		return returnArray;
 	}
-	
+
 	public static String stacktraceToString(StackTraceElement[] stackTrace) {
 		StringBuilder returnBuilder = new StringBuilder();
 		if (stackTrace != null) {
@@ -1291,26 +1324,7 @@ public class Utilities {
 		}
 		return returnBuilder.toString();
 	}
-	
-	public static String throwableToString(Throwable throwable) {
-		return throwableToString(throwable, 5);
-	}
-	
-	public static String throwableToString(Throwable throwable, int maxLevel) {
-		StringBuilder returnBuilder = new StringBuilder(throwable.getMessage() + "\n" + Utilities.stacktraceToString(throwable.getStackTrace()));
-		int level = 0;
-		Throwable subException = throwable.getCause();
-		while (level < maxLevel && subException != null) {
-			returnBuilder.append("\n\n" + subException.getMessage() + "\n" + Utilities.stacktraceToString(subException.getStackTrace()));
-			level++;
-			subException = subException.getCause();
-		}
-		if (level == maxLevel) {
-			returnBuilder.append("\n\n... cut after level " + maxLevel + " ...");
-		}
-		return returnBuilder.toString();
-	}
-	
+
 	public static boolean sendEmail(String senderAdress, String toAdressList, String ccAdressList, String subject, String bodyText, String bodyHtml, int mailtype, String charset) {
 		try {
 			// create some properties and get the default Session
@@ -1363,7 +1377,7 @@ public class Utilities {
 		}
 		return true;
 	}
-	
+
 	public static InternetAddress[] getEmailAddressesFromList(String listString) {
 		if (StringUtils.isNotBlank(listString)) {
 			List<InternetAddress> emailAddresses = new ArrayList<InternetAddress>();
@@ -1389,14 +1403,12 @@ public class Utilities {
 	public static boolean openMailInStandardClient(String toAdress, String subject, String body) {
 		return openMailInStandardClient(toAdress, null, subject, body);
 	}
-	
+
 	public static boolean openMailInStandardClient(String toAdress, String ccAdress, String subject, String body) {
 		try {
 			File attachmentFile = null;
-			String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8")
-					+ "?" + (StringUtils.isNotBlank(ccAdress) ? "cc=" + URLEncoder.encode(ccAdress, "UTF-8") + "&" : "")
-					+ "subject=" + URLEncoder.encode(subject, "UTF-8").replace("+", "%20")
-					+ "&body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20")
+			String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8") + "?" + (StringUtils.isNotBlank(ccAdress) ? "cc=" + URLEncoder.encode(ccAdress, "UTF-8") + "&" : "") + "subject="
+					+ URLEncoder.encode(subject, "UTF-8").replace("+", "%20") + "&body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20")
 					+ (attachmentFile != null ? "&attachment=" + attachmentFile.getAbsolutePath() : ""); // maybe it is "&attach="
 			boolean success;
 			try {
@@ -1437,7 +1449,7 @@ public class Utilities {
 			return false;
 		}
 	}
-	
+
 	public static void downloadFile(String url, String localeDestionationPath) throws Exception {
 		BufferedInputStream bufferedInputStream = null;
 		FileOutputStream fileOutputStream = null;
@@ -1452,17 +1464,17 @@ public class Utilities {
 			IOUtils.closeQuietly(bufferedInputStream);
 		}
 	}
-	
+
 	public static boolean checkForDuplicates(String[] inputArray, boolean ignoreNullValues) {
 		Set<String> tempSet = new HashSet<String>();
-        for (String stringItem : inputArray) {
-        	if (!ignoreNullValues || stringItem != null) {
-	            if (!tempSet.add(stringItem)) {
-	                return true;
-	            }
-        	}
-        }
-        return false;
+		for (String stringItem : inputArray) {
+			if (!ignoreNullValues || stringItem != null) {
+				if (!tempSet.add(stringItem)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1470,7 +1482,7 @@ public class Utilities {
 		List<T> list = new ArrayList<T>();
 		for (Object item : collection) {
 			if (classToSelect.isInstance(item)) {
-				list.add((T) item);
+				list.add((T)item);
 			}
 		}
 		return list;
@@ -1481,7 +1493,7 @@ public class Utilities {
 		List<T> list = new ArrayList<T>();
 		for (Object item : array) {
 			if (classToSelect.isInstance(item)) {
-				list.add((T) item);
+				list.add((T)item);
 			}
 		}
 		return list;

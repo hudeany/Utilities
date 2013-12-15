@@ -57,23 +57,24 @@ public class XmlUtilities {
 			}
 		}
 	}
+
 	public static Document parseXmlDataWithoutDtdValidation(byte[] xmlData, boolean throwExceptionOnError) throws ParserConfigurationException, SAXException, IOException {
 		ByteArrayInputStream inputStream = null;
 		try {
 			inputStream = new ByteArrayInputStream(xmlData);
-	        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-	        documentBuilderFactory.setValidating(false);
-	        documentBuilderFactory.setIgnoringComments(true);
-	        documentBuilderFactory.setIgnoringElementContentWhitespace(true);
-	        documentBuilderFactory.setCoalescing(true);
-	        documentBuilderFactory.setExpandEntityReferences(true);
+			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			documentBuilderFactory.setValidating(false);
+			documentBuilderFactory.setIgnoringComments(true);
+			documentBuilderFactory.setIgnoringElementContentWhitespace(true);
+			documentBuilderFactory.setCoalescing(true);
+			documentBuilderFactory.setExpandEntityReferences(true);
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			documentBuilder.setEntityResolver(new EntityResolver() {
-                @Override
+				@Override
 				public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
-                    return new InputSource(new StringReader(""));
-                }
-            });
+					return new InputSource(new StringReader(""));
+				}
+			});
 			Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
 		} catch (ParserConfigurationException e) {
@@ -100,7 +101,7 @@ public class XmlUtilities {
 			}
 		}
 	}
-	
+
 	public static Document downloadAndParseXmlFile(String url) throws IOException {
 		BufferedInputStream inputStream = null;
 		try {
@@ -117,7 +118,7 @@ public class XmlUtilities {
 			}
 		}
 	}
-	
+
 	public static Node getSingleXPathNode(Document document, String xpathExpression) {
 		if (document == null) {
 			return null;
@@ -125,7 +126,7 @@ public class XmlUtilities {
 			return null;
 		} else {
 			try {
-				NodeList nodeList = (NodeList) XPathFactory.newInstance().newXPath().evaluate(xpathExpression, document, XPathConstants.NODESET);
+				NodeList nodeList = (NodeList)XPathFactory.newInstance().newXPath().evaluate(xpathExpression, document, XPathConstants.NODESET);
 				if (nodeList != null && nodeList.getLength() > 0) {
 					return nodeList.item(0);
 				} else {
@@ -136,7 +137,7 @@ public class XmlUtilities {
 			}
 		}
 	}
-	
+
 	public static String formatXmlDocument(Document xmlDocument, String encoding, boolean throwExceptionOnError) throws Exception {
 		try {
 			StringBuilder result = new StringBuilder();
@@ -147,7 +148,7 @@ public class XmlUtilities {
 			result.append("\" standalone=\"");
 			result.append(xmlDocument.getXmlStandalone() ? "yes" : "no");
 			result.append("\"?>\n");
-			
+
 			for (int i = 0; i < xmlDocument.getChildNodes().getLength(); i++) {
 				Node xmlNode = xmlDocument.getChildNodes().item(i);
 				result.append(formatXmlNode(xmlNode, 0));
@@ -161,7 +162,7 @@ public class XmlUtilities {
 			}
 		}
 	}
-	
+
 	public static String formatXmlDocument(Document xmlDocument, boolean throwExceptionOnError) throws Exception {
 		try {
 			StringBuilder result = new StringBuilder();
@@ -172,7 +173,7 @@ public class XmlUtilities {
 			result.append("\" standalone=\"");
 			result.append(xmlDocument.getXmlStandalone() ? "yes" : "no");
 			result.append("\"?>\n");
-			
+
 			for (int i = 0; i < xmlDocument.getChildNodes().getLength(); i++) {
 				Node xmlNode = xmlDocument.getChildNodes().item(i);
 				result.append(formatXmlNode(xmlNode, 0));
@@ -186,7 +187,7 @@ public class XmlUtilities {
 			}
 		}
 	}
-	
+
 	public static String formatXmlNode(Node xmlNode, int indentationLevel) {
 		if (xmlNode.getNodeType() == Node.TEXT_NODE) {
 			if (StringUtils.isBlank(xmlNode.getNodeValue())) {
@@ -205,15 +206,15 @@ public class XmlUtilities {
 				result.append("-->\n");
 				return result.toString();
 			}
-		}  else if (xmlNode.getNodeType() == Node.DOCUMENT_TYPE_NODE) {
+		} else if (xmlNode.getNodeType() == Node.DOCUMENT_TYPE_NODE) {
 			StringBuilder result = new StringBuilder();
 			result.append(TextUtilities.repeatString("\t", indentationLevel));
 			result.append("<!DOCTYPE ");
-			result.append(((DocumentType) xmlNode).getName());
+			result.append(((DocumentType)xmlNode).getName());
 			result.append(" PUBLIC \"");
-			result.append(((DocumentType) xmlNode).getPublicId());
+			result.append(((DocumentType)xmlNode).getPublicId());
 			result.append("\" \"");
-			result.append(((DocumentType) xmlNode).getSystemId());
+			result.append(((DocumentType)xmlNode).getSystemId());
 			result.append("\">\n");
 			return result.toString();
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
@@ -301,9 +302,9 @@ public class XmlUtilities {
 		}
 		return result.toString();
 	}
-	
+
 	public static String getNodeTypeAsString(short nodeType) {
-		switch(nodeType) {
+		switch (nodeType) {
 			case Node.ELEMENT_NODE:
 				return "ELEMENT_NODE";
 			case Node.ATTRIBUTE_NODE:
@@ -330,6 +331,20 @@ public class XmlUtilities {
 				return "NOTATION_NODE";
 			default:
 				return null;
+		}
+	}
+
+	public static String removeFrameTag(String valueWithTagFrame) {
+		if (StringUtils.isBlank(valueWithTagFrame)) {
+			return valueWithTagFrame;
+		} else {
+			int endOfStartTag = valueWithTagFrame.indexOf(">");
+			int startOfEndTag = valueWithTagFrame.lastIndexOf("<");
+			if (endOfStartTag >= 0 && startOfEndTag >= 0 && endOfStartTag < startOfEndTag) {
+				return valueWithTagFrame.substring(endOfStartTag + 1, startOfEndTag);
+			} else {
+				return valueWithTagFrame;
+			}
 		}
 	}
 }

@@ -32,7 +32,7 @@ import de.soderer.utilities.collection.CaseInsensitiveMap;
 public class DbUtilities {
 	public static final String DB_DRIVER_NAME_ORACLE = "oracle.jdbc.OracleDriver";
 	public static final String DB_DRIVER_NAME_MYSQL = "com.mysql.jdbc.Driver";
-	
+
 	public static String generateUrlConnectionString(boolean isOracle, String dbServerHostname, int dbServerPort, String dbName) {
 		if (isOracle) {
 			return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? 1521 : dbServerPort) + ":" + dbName;
@@ -40,12 +40,12 @@ public class DbUtilities {
 			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? 3306 : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8";
 		}
 	}
-	
+
 	public static int readoutTableData(DataSource dataSource, String tableName, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
-    	return readoutData(dataSource, "SELECT * FROM " + tableName, outputStream, encoding, separator, stringQuote);
-    }
-    
-    public static int readoutData(DataSource dataSource, String statementString, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
+		return readoutData(dataSource, "SELECT * FROM " + tableName, outputStream, encoding, separator, stringQuote);
+	}
+
+	public static int readoutData(DataSource dataSource, String statementString, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
 		Connection connection = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -62,18 +62,18 @@ public class DbUtilities {
 				headers.add(metaData.getColumnName(i));
 			}
 			csvWriter.writeValues(headers);
-			
+
 			// write values
 			while (resultSet.next()) {
 				List<String> values = new ArrayList<String>();
-				for (int i = 1; i <= metaData.getColumnCount(); i++) {					
+				for (int i = 1; i <= metaData.getColumnCount(); i++) {
 					values.add(resultSet.getString(i));
 				}
 				csvWriter.writeValues(values);
 			}
-			
+
 			return csvWriter.getWrittenLines();
-		} finally {	
+		} finally {
 			if (resultSet != null) {
 				resultSet.close();
 			}
@@ -85,12 +85,12 @@ public class DbUtilities {
 			if (connection != null) {
 				connection.close();
 			}
-			
+
 			IOUtils.closeQuietly(csvWriter);
 		}
 	}
-    
-    public static String readout(Connection databaseConnection, String statementString, char separator) throws Exception {
+
+	public static String readout(Connection databaseConnection, String statementString, char separator) throws Exception {
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try {
@@ -105,19 +105,19 @@ public class DbUtilities {
 			}
 			tableDataString.append(CsvWriter.getCsvLine(separator, '"', headers));
 			tableDataString.append("\n");
-			
+
 			// write values
 			while (resultSet.next()) {
 				List<String> values = new ArrayList<String>();
-				for (int i = 1; i <= metaData.getColumnCount(); i++) {					
+				for (int i = 1; i <= metaData.getColumnCount(); i++) {
 					values.add(resultSet.getString(i));
 				}
 				tableDataString.append(CsvWriter.getCsvLine(separator, '"', values));
 				tableDataString.append("\n");
 			}
-			
+
 			return tableDataString.toString();
-		} finally {	
+		} finally {
 			if (resultSet != null) {
 				resultSet.close();
 			}
@@ -127,12 +127,12 @@ public class DbUtilities {
 			}
 		}
 	}
-    
-    public static String readout(DataSource dataSource, String statementString, char separator) throws Exception {
+
+	public static String readout(DataSource dataSource, String statementString, char separator) throws Exception {
 		Connection connection = null;
 		try {
 			connection = dataSource.getConnection();
-			
+
 			return readout(connection, statementString, separator);
 		} finally {
 			if (connection != null) {
@@ -140,29 +140,29 @@ public class DbUtilities {
 			}
 		}
 	}
-    
-    public static String readoutTable(DataSource dataSource, String tableName, char separator) throws Exception {
-    	return readout(dataSource, "SELECT * FROM " + tableName, separator);
-    }
-    
-    public static String readoutTable(Connection connection, String tableName, char separator) throws Exception {
-    	return readout(connection, "SELECT * FROM " + tableName, separator);
-    }
-	
+
+	public static String readoutTable(DataSource dataSource, String tableName, char separator) throws Exception {
+		return readout(dataSource, "SELECT * FROM " + tableName, separator);
+	}
+
+	public static String readoutTable(Connection connection, String tableName, char separator) throws Exception {
+		return readout(connection, "SELECT * FROM " + tableName, separator);
+	}
+
 	public static Map<Integer, Object[]> importDataInTable(DataSource dataSource, String tableName, String[] tableColumns, List<Object[]> dataSets, boolean commitOnFullSuccessOnly) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for dataimport");
 		}
-		
+
 		Connection connection = null;
 		PreparedStatement preparedStatement = null;
-		
+
 		try {
 			connection = dataSource.getConnection();
 			connection.setAutoCommit(false);
-		
+
 			checkTableAndColumnsExist(connection, tableName, tableColumns, true);
-			
+
 			// Insert data
 			Map<Integer, Object[]> notInsertedData = new HashMap<Integer, Object[]>();
 			String insertStatementString = "INSERT INTO " + tableName + " (" + StringUtils.join(tableColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", tableColumns.length, ", ") + ")";
@@ -174,7 +174,7 @@ public class DbUtilities {
 				Object[] dataSet = dataSets.get(datasetIndex);
 				currentUncommitedLines.add(dataSet);
 				hasOpenData = true;
-				
+
 				if (dataSet.length != tableColumns.length) {
 					if (!commitOnFullSuccessOnly) {
 						notInsertedData.put(datasetIndex, dataSet);
@@ -188,7 +188,7 @@ public class DbUtilities {
 						preparedStatement.setObject(parameterIndex + 1, dataSet[parameterIndex]);
 					}
 					preparedStatement.addBatch();
-					
+
 					if ((datasetIndex + 1) % 100 == 0) {
 						hasOpenData = false;
 						try {
@@ -200,7 +200,8 @@ public class DbUtilities {
 						} catch (BatchUpdateException bue) {
 							if (commitOnFullSuccessOnly) {
 								connection.rollback();
-								throw new Exception("Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": " + bue.getMessage());
+								throw new Exception("Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": "
+										+ bue.getMessage());
 							} else {
 								connection.rollback();
 								importDataInTable(datasetIndex - currentUncommitedLines.size(), connection, preparedStatement, tableColumns, currentUncommitedLines, notInsertedData);
@@ -212,7 +213,7 @@ public class DbUtilities {
 					}
 				}
 			}
-			
+
 			if (hasOpenData) {
 				hasOpenData = false;
 				try {
@@ -234,11 +235,11 @@ public class DbUtilities {
 					throw new Exception("Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": " + e.getMessage());
 				}
 			}
-			
+
 			if (commitOnFullSuccessOnly) {
 				connection.commit();
 			}
-			
+
 			return notInsertedData;
 		} finally {
 			if (preparedStatement != null) {
@@ -251,8 +252,9 @@ public class DbUtilities {
 			}
 		}
 	}
-	
-	private static void importDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, List<Object[]> data, Map<Integer, Object[]> notInsertedData) throws Exception {
+
+	private static void importDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, List<Object[]> data,
+			Map<Integer, Object[]> notInsertedData) throws Exception {
 		int dataLineIndex = offsetIndex;
 		for (Object[] dataLine : data) {
 			dataLineIndex++;
@@ -265,7 +267,7 @@ public class DbUtilities {
 						preparedStatement.setObject(parameterIndex++, dataLine[csvValueIndex]);
 					}
 				}
-				
+
 				try {
 					preparedStatement.execute();
 					connection.commit();
@@ -276,8 +278,9 @@ public class DbUtilities {
 			}
 		}
 	}
-	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean commitOnFullSuccessOnly) throws Exception {
+
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding,
+			boolean commitOnFullSuccessOnly) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
 			fileInputStream = new FileInputStream(csvFile);
@@ -286,8 +289,9 @@ public class DbUtilities {
 			IOUtils.closeQuietly(fileInputStream);
 		}
 	}
-	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding,
+			boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
 			fileInputStream = new FileInputStream(csvFile);
@@ -296,50 +300,56 @@ public class DbUtilities {
 			IOUtils.closeQuietly(fileInputStream);
 		}
 	}
-	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding,
+			boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
 		return importCsvFileInTable(dataSource, tableName, columnMapping, csvFileInputStream, encoding, false, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
-	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding,
+			boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
 		return importCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
-	
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, InputStream csvInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		return importCsvDataInTable(dataSource, tableName, columnMapping, columnDateFormats, csvInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
+
+	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats,
+			InputStream csvInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+		return importCsvDataInTable(dataSource, tableName, columnMapping, columnDateFormats, csvInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly,
+				containsHeadersInFirstRow);
 	}
-		
-	public static Map<Integer, Tuple<List<String>, String>> importCsvDataInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats, InputStream csvInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
+
+	public static Map<Integer, Tuple<List<String>, String>> importCsvDataInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats,
+			InputStream csvInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly,
+			boolean containsHeadersInFirstRow) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for dataimport");
 		}
-		
+
 		Connection connection = null;
 		PreparedStatement preparedStatement = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		
+
 		CsvReader csvReader = null;
-		
+
 		try {
 			connection = dataSource.getConnection();
 			connection.setAutoCommit(false);
 			statement = connection.createStatement();
-			
+
 			csvReader = new CsvReader(csvInputStream, encoding, separatorChar, stringQuoteChar);
 			csvReader.setFillMissingTrailingColumnsWithNull(fillMissingTrailingColumnsWithNull);
 
 			// First line may contain headers
-            List<String> csvLine;
-            if (containsHeadersInFirstRow) {
-                csvLine = csvReader.readNextCsvLine();
-                if (columnMapping == null) {
-                    columnMapping = csvLine.toArray(new String[0]);
-                }
-            }
+			List<String> csvLine;
+			if (containsHeadersInFirstRow) {
+				csvLine = csvReader.readNextCsvLine();
+				if (columnMapping == null) {
+					columnMapping = csvLine.toArray(new String[0]);
+				}
+			}
 
 			checkTableAndColumnsExist(connection, tableName, columnMapping, true);
-			
+
 			List<String> dbColumns = new ArrayList<String>();
 			for (String column : columnMapping) {
 				if (column != null) {
@@ -359,7 +369,7 @@ public class DbUtilities {
 				csvLineIndex++;
 				currentUncommitedLines.add(csvLine);
 				hasOpenData = true;
-				
+
 				if (csvLine.size() != columnMapping.length) {
 					if (!commitOnFullSuccessOnly) {
 						notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, "Not enough values"));
@@ -375,7 +385,7 @@ public class DbUtilities {
 						}
 					}
 					preparedStatement.addBatch();
-					
+
 					if (csvLineIndex % 100 == 0) {
 						hasOpenData = false;
 						try {
@@ -390,7 +400,8 @@ public class DbUtilities {
 								throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
 							} else {
 								connection.rollback();
-								importCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDateFormats, currentUncommitedLines, notInsertedData);
+								importCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDateFormats, currentUncommitedLines,
+										notInsertedData);
 							}
 						} catch (Exception e) {
 							if (!commitOnFullSuccessOnly) {
@@ -404,7 +415,7 @@ public class DbUtilities {
 					}
 				}
 			}
-			
+
 			if (hasOpenData) {
 				hasOpenData = false;
 				try {
@@ -426,17 +437,17 @@ public class DbUtilities {
 					throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + e.getMessage());
 				}
 			}
-			
+
 			if (commitOnFullSuccessOnly) {
 				connection.commit();
 			}
-			
+
 			return notInsertedData;
 		} finally {
 			if (csvReader != null) {
 				csvReader.close();
 			}
-			
+
 			if (resultSet != null) {
 				resultSet.close();
 			}
@@ -444,7 +455,7 @@ public class DbUtilities {
 			if (statement != null) {
 				statement.close();
 			}
-			
+
 			if (preparedStatement != null) {
 				preparedStatement.close();
 			}
@@ -455,8 +466,9 @@ public class DbUtilities {
 			}
 		}
 	}
-	
-	public static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDateFormats, List<List<String>> data, Map<Integer, Tuple<List<String>, String>> notInsertedData) throws Exception {
+
+	public static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDateFormats, List<List<String>> data,
+			Map<Integer, Tuple<List<String>, String>> notInsertedData) throws Exception {
 		int csvLineIndex = offsetIndex;
 		for (List<String> csvLine : data) {
 			csvLineIndex++;
@@ -473,7 +485,7 @@ public class DbUtilities {
 						}
 					}
 				}
-				
+
 				try {
 					preparedStatement.execute();
 					connection.commit();
@@ -484,8 +496,7 @@ public class DbUtilities {
 			}
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static boolean checkDbVendorIsOracle(DataSource dataSource) {
 		Connection connection = null;
 		try {
@@ -497,7 +508,7 @@ public class DbUtilities {
 			closeQuietly(connection);
 		}
 	}
-	
+
 	public static boolean checkDbVendorIsOracle(Connection connection) {
 		try {
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
@@ -515,8 +526,7 @@ public class DbUtilities {
 			return false;
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static String getDbUrl(DataSource dataSource) throws SQLException {
 		Connection connection = null;
 		try {
@@ -526,7 +536,7 @@ public class DbUtilities {
 			closeQuietly(connection);
 		}
 	}
-	
+
 	public static String getDbUrl(Connection connection) {
 		try {
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
@@ -539,63 +549,62 @@ public class DbUtilities {
 			return null;
 		}
 	}
-	
+
 	public static boolean checkTableAndColumnsExist(Connection connection, String tableName, String[] columns) throws Exception {
-        return checkTableAndColumnsExist(connection, tableName, columns, false);
-    }
+		return checkTableAndColumnsExist(connection, tableName, columns, false);
+	}
 
-    @SuppressWarnings("resource")
 	public static boolean checkTableAndColumnsExist(DataSource dataSource, String tableName, String[] columns, boolean throwExceptionOnError) throws Exception {
-        Connection connection = null;
-        try {
-            connection = dataSource.getConnection();
-            return checkTableAndColumnsExist(connection, tableName, columns, throwExceptionOnError);
-        } finally {
-            closeQuietly(connection);
-        }
-    }
+		Connection connection = null;
+		try {
+			connection = dataSource.getConnection();
+			return checkTableAndColumnsExist(connection, tableName, columns, throwExceptionOnError);
+		} finally {
+			closeQuietly(connection);
+		}
+	}
 
-    public static boolean checkTableAndColumnsExist(Connection connection, String tableName, String[] columns, boolean throwExceptionOnError) throws Exception {
-        Statement statement = null;
-        ResultSet resultSet = null;
+	public static boolean checkTableAndColumnsExist(Connection connection, String tableName, String[] columns, boolean throwExceptionOnError) throws Exception {
+		Statement statement = null;
+		ResultSet resultSet = null;
 
-        try {
-            statement = connection.createStatement();
+		try {
+			statement = connection.createStatement();
 
-            // Check if table exists
-            try {
-                resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0");
-            } catch (Exception e) {
-                if (throwExceptionOnError) {
-                    throw new Exception("Table '" + tableName + "' does not exist");
-                } else {
-                    return false;
-                }
-            }
+			// Check if table exists
+			try {
+				resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0");
+			} catch (Exception e) {
+				if (throwExceptionOnError) {
+					throw new Exception("Table '" + tableName + "' does not exist");
+				} else {
+					return false;
+				}
+			}
 
-            // Check if all needed columns exist
-            Set<String> dbTableColumns = new HashSet<String>();
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            for (int i = 1; i <= metaData.getColumnCount(); i++) {
-            	dbTableColumns.add(metaData.getColumnName(i).toUpperCase());
-            }
-            for (String column : columns) {
-                if (column != null && !dbTableColumns.contains(column.toUpperCase())) {
-                    if (throwExceptionOnError) {
-                        throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
-                    } else {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        } finally {
-            closeQuietly(resultSet);
-            resultSet = null;
-            closeQuietly(statement);
-            statement = null;
-        }
-    }
+			// Check if all needed columns exist
+			Set<String> dbTableColumns = new HashSet<String>();
+			ResultSetMetaData metaData = resultSet.getMetaData();
+			for (int i = 1; i <= metaData.getColumnCount(); i++) {
+				dbTableColumns.add(metaData.getColumnName(i).toUpperCase());
+			}
+			for (String column : columns) {
+				if (column != null && !dbTableColumns.contains(column.toUpperCase())) {
+					if (throwExceptionOnError) {
+						throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
+					} else {
+						return false;
+					}
+				}
+			}
+			return true;
+		} finally {
+			closeQuietly(resultSet);
+			resultSet = null;
+			closeQuietly(statement);
+			statement = null;
+		}
+	}
 
 	public static String callStoredProcedureWithDbmsOutput(Connection connection, String procedureName, Object... parameters) throws SQLException {
 		CallableStatement callableStatement = null;
@@ -605,7 +614,7 @@ public class DbUtilities {
 			callableStatement.executeUpdate();
 			callableStatement.close();
 			callableStatement = null;
-			
+
 			if (parameters != null) {
 				callableStatement = connection.prepareCall("{call " + procedureName + "(" + TextUtilities.repeatString("?", parameters.length, ", ") + ")}");
 				for (int i = 0; i < parameters.length; i++) {
@@ -618,20 +627,9 @@ public class DbUtilities {
 			callableStatement.close();
 			callableStatement = null;
 
-			callableStatement = connection
-				.prepareCall(
-					"declare "
-					+ "    l_line varchar2(255); "
-					+ "    l_done number; "
-					+ "    l_buffer long; "
-					+ "begin "
-					+ "  loop "
-					+ "    exit when length(l_buffer)+255 > :maxbytes OR l_done = 1; "
-					+ "    dbms_output.get_line( l_line, l_done ); "
-					+ "    l_buffer := l_buffer || l_line || chr(10); "
-					+ "  end loop; " + " :done := l_done; "
-					+ " :buffer := l_buffer; "
-					+ "end;");
+			callableStatement = connection.prepareCall("declare " + "    l_line varchar2(255); " + "    l_done number; " + "    l_buffer long; " + "begin " + "  loop "
+					+ "    exit when length(l_buffer)+255 > :maxbytes OR l_done = 1; " + "    dbms_output.get_line( l_line, l_done ); " + "    l_buffer := l_buffer || l_line || chr(10); "
+					+ "  end loop; " + " :done := l_done; " + " :buffer := l_buffer; " + "end;");
 
 			callableStatement.registerOutParameter(2, Types.INTEGER);
 			callableStatement.registerOutParameter(3, Types.VARCHAR);
@@ -646,18 +644,18 @@ public class DbUtilities {
 			}
 			callableStatement.close();
 			callableStatement = null;
-			
+
 			callableStatement = connection.prepareCall("begin dbms_output.disable; end;");
 			callableStatement.executeUpdate();
 			callableStatement.close();
 			callableStatement = null;
-			
+
 			return dbmsOutput.toString();
 		} finally {
 			closeQuietly(callableStatement);
 		}
 	}
-	
+
 	public static void closeQuietly(Connection connection) {
 		if (connection != null) {
 			try {
@@ -667,7 +665,7 @@ public class DbUtilities {
 			}
 		}
 	}
-	
+
 	public static void closeQuietly(Statement statement) {
 		if (statement != null) {
 			try {
@@ -677,7 +675,7 @@ public class DbUtilities {
 			}
 		}
 	}
-	
+
 	public static void closeQuietly(ResultSet resultSet) {
 		if (resultSet != null) {
 			try {
@@ -687,8 +685,7 @@ public class DbUtilities {
 			}
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static String getResultAsTextTable(DataSource datasource, String selectString) throws Exception {
 		Connection connection = null;
 		PreparedStatement preparedStatement = null;
@@ -718,8 +715,7 @@ public class DbUtilities {
 			closeQuietly(connection);
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static List<String> getColumnNames(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnNames");
@@ -732,22 +728,21 @@ public class DbUtilities {
 			try {
 				connection = dataSource.getConnection();
 				statement = connection.createStatement();
-		    	String sql = "SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
-		        resultSet = statement.executeQuery(sql);
-		        List<String> columnNamesList = new ArrayList<String>();
-		        for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
-		        	columnNamesList.add(resultSet.getMetaData().getColumnName(i));
-		        }
-		        return columnNamesList;
+				String sql = "SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
+				resultSet = statement.executeQuery(sql);
+				List<String> columnNamesList = new ArrayList<String>();
+				for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
+					columnNamesList.add(resultSet.getMetaData().getColumnName(i));
+				}
+				return columnNamesList;
 			} finally {
-		        closeQuietly(resultSet);
-		        closeQuietly(statement);
-		        closeQuietly(connection);
+				closeQuietly(resultSet);
+				closeQuietly(statement);
+				closeQuietly(connection);
 			}
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static DbColumnType getColumnDataType(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnDataType");
@@ -772,7 +767,7 @@ public class DbUtilities {
 					preparedStatement.setString(1, tableName);
 					preparedStatement.setString(2, columnName);
 					resultSet = preparedStatement.executeQuery();
-					
+
 					if (resultSet.next()) {
 						characterLength = resultSet.getInt("data_length");
 						if (resultSet.wasNull()) {
@@ -787,13 +782,13 @@ public class DbUtilities {
 							numericScale = -1;
 						}
 						isNullable = resultSet.getString("nullable").equalsIgnoreCase("y");
-						
+
 						return new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable);
 					} else {
 						return null;
 					}
-	        	} else {
-	        		String sql = "SELECT data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = schema() AND lower(table_name) = lower(?) AND lower(column_name) = lower(?)";
+				} else {
+					String sql = "SELECT data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = schema() AND lower(table_name) = lower(?) AND lower(column_name) = lower(?)";
 					preparedStatement = connection.prepareStatement(sql);
 					preparedStatement.setString(1, tableName);
 					preparedStatement.setString(2, columnName);
@@ -813,23 +808,22 @@ public class DbUtilities {
 							numericScale = -1;
 						}
 						isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
-						
+
 						return new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable);
 					} else {
 						return null;
 					}
-	        	}
+				}
 			} catch (Exception e) {
 				return null;
 			} finally {
-		        closeQuietly(resultSet);
-		        closeQuietly(preparedStatement);
-		        closeQuietly(connection);
+				closeQuietly(resultSet);
+				closeQuietly(preparedStatement);
+				closeQuietly(connection);
 			}
 		}
 	}
 
-	@SuppressWarnings("resource")
 	public static CaseInsensitiveMap<DbColumnType> getColumnDataTypes(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnDataTypes");
@@ -862,11 +856,11 @@ public class DbUtilities {
 							numericScale = -1;
 						}
 						boolean isNullable = resultSet.getString("nullable").equalsIgnoreCase("y");
-						
+
 						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable));
 					}
-	        	} else {
-	        		String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = schema() AND lower(table_name) = lower(?)";
+				} else {
+					String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = schema() AND lower(table_name) = lower(?)";
 					preparedStatement = connection.prepareStatement(sql);
 					preparedStatement.setString(1, tableName);
 					resultSet = preparedStatement.executeQuery();
@@ -887,19 +881,18 @@ public class DbUtilities {
 
 						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable));
 					}
-	        	}
-		        return returnMap;
+				}
+				return returnMap;
 			} catch (Exception e) {
 				throw e;
 			} finally {
-		        closeQuietly(resultSet);
-		        closeQuietly(preparedStatement);
-		        closeQuietly(connection);
+				closeQuietly(resultSet);
+				closeQuietly(preparedStatement);
+				closeQuietly(connection);
 			}
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static int getColumnCount(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnCount");
@@ -909,14 +902,13 @@ public class DbUtilities {
 			Connection connection = null;
 			try {
 				connection = dataSource.getConnection();
-		        return getColumnCount(connection, tableName);
+				return getColumnCount(connection, tableName);
 			} finally {
-		        closeQuietly(connection);
+				closeQuietly(connection);
 			}
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static int getColumnCount(Connection connection, String tableName) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnCount");
@@ -925,17 +917,16 @@ public class DbUtilities {
 			ResultSet resultSet = null;
 			try {
 				statement = connection.createStatement();
-		    	String sql = "SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
-		        resultSet = statement.executeQuery(sql);
-		        return resultSet.getMetaData().getColumnCount();
+				String sql = "SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
+				resultSet = statement.executeQuery(sql);
+				return resultSet.getMetaData().getColumnCount();
 			} finally {
-		        closeQuietly(resultSet);
-		        closeQuietly(statement);
+				closeQuietly(resultSet);
+				closeQuietly(statement);
 			}
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static int getTableEntriesCount(Connection connection, String tableName) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getTableEntriesNumber");
@@ -944,20 +935,20 @@ public class DbUtilities {
 			ResultSet resultSet = null;
 			try {
 				statement = connection.createStatement();
-		    	String sql = "SELECT COUNT(*) FROM " + getSQLSafeString(tableName);
-		        resultSet = statement.executeQuery(sql);
-		        if (resultSet.next()) {
-		        	return resultSet.getInt(1);
-		        } else {
-		        	return 0;
-		        }
+				String sql = "SELECT COUNT(*) FROM " + getSQLSafeString(tableName);
+				resultSet = statement.executeQuery(sql);
+				if (resultSet.next()) {
+					return resultSet.getInt(1);
+				} else {
+					return 0;
+				}
 			} finally {
-		        closeQuietly(resultSet);
-		        closeQuietly(statement);
+				closeQuietly(resultSet);
+				closeQuietly(statement);
 			}
 		}
 	}
-	
+
 	@SuppressWarnings("resource")
 	public static boolean containsColumnName(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
@@ -968,28 +959,27 @@ public class DbUtilities {
 			throw new Exception("Invalid empty columnName for containsColumnName");
 		} else {
 			Connection connection = null;
-	    	Statement statement = null;
-	    	ResultSet resultSet = null;
-	    	try {
+			Statement statement = null;
+			ResultSet resultSet = null;
+			try {
 				connection = dataSource.getConnection();
-	    		statement = connection.createStatement();
-	        	String sql = "SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
-	            resultSet = statement.executeQuery(sql);
-	            for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-	            	if (resultSet.getMetaData().getColumnName(columnIndex).equalsIgnoreCase(columnName.trim())) {
-	            		return true;
-	            	}
-	            }
-	    		return false;
-	    	} finally {
-	            closeQuietly(resultSet);
-	            closeQuietly(statement);
-	            closeQuietly(connection);
-	    	}
+				statement = connection.createStatement();
+				String sql = "SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
+				resultSet = statement.executeQuery(sql);
+				for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
+					if (resultSet.getMetaData().getColumnName(columnIndex).equalsIgnoreCase(columnName.trim())) {
+						return true;
+					}
+				}
+				return false;
+			} finally {
+				closeQuietly(resultSet);
+				closeQuietly(statement);
+				closeQuietly(connection);
+			}
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static int getColumnDataTypeLength(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getDefaultValueOf");
@@ -999,8 +989,8 @@ public class DbUtilities {
 			throw new Exception("Invalid empty columnName for getDefaultValueOf");
 		} else {
 			Connection connection = null;
-	    	PreparedStatement preparedStatement = null;
-	    	ResultSet resultSet = null;
+			PreparedStatement preparedStatement = null;
+			ResultSet resultSet = null;
 			try {
 				connection = dataSource.getConnection();
 				String sql;
@@ -1027,14 +1017,13 @@ public class DbUtilities {
 					throw new Exception("Cannot retrieve column datatypelength");
 				}
 			} finally {
-	            closeQuietly(resultSet);
-	            closeQuietly(preparedStatement);
-	            closeQuietly(connection);
+				closeQuietly(resultSet);
+				closeQuietly(preparedStatement);
+				closeQuietly(connection);
 			}
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	public static String getColumnDefaultValue(DataSource dataSource, String tableName, String columnName) throws Exception {
 		try {
 			if (dataSource == null) {
@@ -1045,9 +1034,9 @@ public class DbUtilities {
 				throw new Exception("Invalid empty columnName for getDefaultValueOf");
 			} else {
 				Connection connection = null;
-		    	PreparedStatement preparedStatement = null;
-		    	ResultSet resultSet = null;
-		    	try {
+				PreparedStatement preparedStatement = null;
+				ResultSet resultSet = null;
+				try {
 					connection = dataSource.getConnection();
 					String sql;
 					if (checkDbVendorIsOracle(dataSource)) {
@@ -1055,27 +1044,47 @@ public class DbUtilities {
 						preparedStatement = connection.prepareStatement(sql);
 						preparedStatement.setString(1, tableName.toUpperCase());
 						preparedStatement.setString(2, columnName.toUpperCase());
+						resultSet = preparedStatement.executeQuery();
+						if (resultSet.next()) {
+							String defaultvalue = resultSet.getString(1);
+							String returnValue;
+							if (defaultvalue == null || "null".equalsIgnoreCase(defaultvalue)) {
+								returnValue = null;
+							} else if (defaultvalue.startsWith("'") && defaultvalue.endsWith("'")) {
+								returnValue = defaultvalue.substring(1, defaultvalue.length() - 1);
+							} else {
+								returnValue = defaultvalue;
+							}
+							if (resultSet.next()) {
+								throw new Exception("Cannot retrieve column datatype");
+							} else {
+								return returnValue;
+							}
+						} else {
+							throw new Exception("Cannot retrieve column datatype");
+						}
 					} else {
 						sql = "SELECT column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ? AND column_name = ?";
 						preparedStatement = connection.prepareStatement(sql);
 						preparedStatement.setString(1, tableName);
 						preparedStatement.setString(2, columnName);
-					}
-					resultSet = preparedStatement.executeQuery();
-					if (resultSet.next()) {
-						String returnValue = resultSet.getString(1);
+						resultSet = preparedStatement.executeQuery();
 						if (resultSet.next()) {
-							throw new Exception("Cannot retrieve column datatype");
+							String returnValue = resultSet.getString(1);
+							if (resultSet.next()) {
+								throw new Exception("Cannot retrieve column datatype");
+							} else {
+								return returnValue;
+							}
 						} else {
-							return returnValue;
+							throw new Exception("Cannot retrieve column datatype");
 						}
-					} else {
-						throw new Exception("Cannot retrieve column datatype");
 					}
-		    	} finally {
-		            closeQuietly(resultSet);
-		            closeQuietly(preparedStatement);
-		            closeQuietly(connection);
+
+				} finally {
+					closeQuietly(resultSet);
+					closeQuietly(preparedStatement);
+					closeQuietly(connection);
 				}
 			}
 		} catch (Exception e) {
@@ -1099,7 +1108,6 @@ public class DbUtilities {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	public static boolean addColumnToDbTable(DataSource dataSource, String tablename, String fieldname, String fieldType, int length, String fieldDefault, boolean notNull) throws Exception {
 		if (StringUtils.isBlank(fieldname)) {
 			return false;
@@ -1107,7 +1115,7 @@ public class DbUtilities {
 			return false;
 		} else if (StringUtils.isBlank(fieldname)) {
 			return false;
-		}  else if (!fieldname.equalsIgnoreCase(getSQLSafeString(fieldname))) {
+		} else if (!fieldname.equalsIgnoreCase(getSQLSafeString(fieldname))) {
 			return false;
 		} else if (StringUtils.isBlank(fieldType)) {
 			return false;
@@ -1158,7 +1166,6 @@ public class DbUtilities {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	public static boolean alterColumnTypeInDbTable(DataSource dataSource, String tablename, String fieldname, String fieldType, int length, String fieldDefault, boolean notNull) throws Exception {
 		if (StringUtils.isBlank(fieldname)) {
 			return false;
@@ -1166,7 +1173,7 @@ public class DbUtilities {
 			return false;
 		} else if (StringUtils.isBlank(fieldname)) {
 			return false;
-		}  else if (!fieldname.equalsIgnoreCase(getSQLSafeString(fieldname))) {
+		} else if (!fieldname.equalsIgnoreCase(getSQLSafeString(fieldname))) {
 			return false;
 		} else if (StringUtils.isBlank(fieldType)) {
 			return false;
@@ -1221,7 +1228,7 @@ public class DbUtilities {
 			}
 		}
 	}
-	
+
 	public static String getSQLSafeString(String value) {
 		if (value == null) {
 			return null;

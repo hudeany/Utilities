@@ -117,10 +117,10 @@
 						<phase>package</phase>
 						<configuration>
 							<target>
-								<copy file="target/utilities-2.0.0.jar" tofile="D:\\Entwicklung\\WebStart\\utilities-2.0.0.jar" />
-								<signjar destDir="D:\\Entwicklung\\WebStart" alias="soderer-de-java" keystore="WebStart/keystore" storepass="vSV%nr!G" preservelastmodified="true">
+								<copy file="target/utilities-2.0.0.jar" tofile="${env.SodererDevel}\\WebStart\\utilities-2.0.0.jar" />
+								<signjar destDir="${env.SodererDevel}\\WebStart" alias="soderer-de-java" keystore="WebStart/keystore" storepass="vSV%nr!G" preservelastmodified="true">
 									<path>
-										<fileset dir="D:\\Entwicklung\\WebStart" includes="utilities-2.0.0.jar" />
+										<fileset dir="${env.SodererDevel}\\WebStart" includes="utilities-2.0.0.jar" />
 									</path>
 									<flattenmapper />
 								</signjar>

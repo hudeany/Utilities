@@ -13,37 +13,38 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	protected Date lastProgressShow = new Date();
 	protected long showProgressAfterMilliseconds;
 	protected T result = null;
-	
+
 	protected ProgressShowingModalDialog<?> parent;
-	
+
 	protected Exception error = null;
 	protected boolean cancel = false;
 	protected boolean isDone = false;
-	
+
 	public Worker(ProgressShowingModalDialog<?> parent) {
 		this.parent = parent;
 		this.showProgressAfterMilliseconds = DEFAULT_SHOW_PROGRESS_AFTER_MILLISECONDS;
 	}
-	
+
 	protected void showItemsDone(long itemsDone) {
-		if (parent != null &&!cancel && (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds || itemsDone == 0)) {
+		if (parent != null && !cancel && (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds || itemsDone == 0)) {
 			parent.showProgress(todo, itemsDone);
 			lastProgressShow = new Date();
 		}
 	}
-	
+
 	protected void showDone() {
+		isDone = true;
 		if (parent != null) {
 			parent.showDone();
 		}
 	}
-	
+
 	protected void showUnlimitedProgress() {
 		if (parent != null) {
 			parent.showUnlimitedProgress();
 		}
 	}
-	
+
 	@Override
 	public boolean cancel(boolean arg0) {
 		cancel = true;
@@ -82,7 +83,7 @@ public abstract class Worker<T> implements RunnableFuture<T> {
 	public boolean isDone() {
 		return isDone;
 	}
-	
+
 	@Override
 	public abstract void run();
 }

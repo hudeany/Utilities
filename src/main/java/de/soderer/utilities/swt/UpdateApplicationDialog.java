@@ -10,7 +10,6 @@ import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -25,11 +24,11 @@ import de.soderer.utilities.UserError.Reason;
 
 public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {
 	private static final transient Logger logger = Logger.getLogger(UpdateApplicationDialog.class);
-	
+
 	private String text;
 	private String downloadUrl;
 	private boolean dailyUpdateCheck;
-	
+
 	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl, boolean dailyUpdateCheck) {
 		super(shell, title);
 
@@ -41,14 +40,15 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, false));
-		
+
 		Composite composite = new Composite(shell, SWT.NONE);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
-		
+
 		Label label = new Label(composite, SWT.FILL);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
-		
+
 		Button dailyUpdateCheckCheckBox = new Button(composite, SWT.CHECK);
 		dailyUpdateCheckCheckBox.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, true, 2, 1));
 		dailyUpdateCheckCheckBox.setSelection(dailyUpdateCheck);
@@ -56,14 +56,14 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		dailyUpdateCheckCheckBox.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				dailyUpdateCheck = ((Button) e.widget).getSelection();
+				dailyUpdateCheck = ((Button)e.widget).getSelection();
 			}
 		});
-	    
+
 		Button updateButton = new Button(composite, SWT.PUSH);
 		updateButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		updateButton.setText(LangResources.get("update"));
-	    updateButton.addSelectionListener(new SelectionAdapter() {
+		updateButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				updateApplication();
@@ -71,7 +71,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				getParent().close();
 			}
 		});
-	    
+
 		Button cancelButton = new Button(composite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));
@@ -85,12 +85,12 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 
 		shell.pack();
 	}
-	
+
 	private void updateApplication() {
 		try {
 			String jarFilePath = System.getProperty("process.jar");
 			File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
-			
+
 			if (StringUtils.isNotBlank(jarFilePath)) {
 				boolean tryDownloadAgain = true;
 				while (tryDownloadAgain) {
@@ -110,8 +110,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 						}
 					} catch (Exception e) {
 						if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
-							showMessage(LangResources.get("menu.updateFileDownload"), ((UserError) e.getCause()).getMessage());
-							if (((UserError) e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
+							showMessage(LangResources.get("menu.updateFileDownload"), ((UserError)e.getCause()).getMessage());
+							if (((UserError)e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
 								tryDownloadAgain = true;
 							} else {
 								return;
@@ -122,59 +122,29 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 						return;
 					}
 				}
-				
+
 				if (SystemUtilities.isWindowsSystem()) {
 					File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
-					
-					//Create Batchfile
-					FileUtils.write(batchFile,
-						"@echo off\r\n"
-						+ "del \"" + jarFilePath + "\"\r\n"
-						+ "if exist \"" + jarFilePath + "\" (\r\n"
-						+ "ping -n 3 127.0.0.1 >nul\r\n"
-						+ "del \"" + jarFilePath + "\"\r\n"
-						+ "if exist \"" + jarFilePath + "\" (\r\n"
-						+ "ping -n 3 127.0.0.1 >nul\r\n"
-						+ "del \"" + jarFilePath + "\"\r\n"
-						+ "if exist \"" + jarFilePath + "\" (\r\n"
-						+ "ping -n 3 127.0.0.1 >nul\r\n"
-						+ "del \"" + jarFilePath + "\"\r\n"
-						+ ")\r\n"
-						+ ")\r\n"
-						+ ")\r\n"
-						+ "ren \"" + downloadTempFile.getAbsolutePath() + "\" \"" + new File(jarFilePath).getName() + "\"\r\n"
-						+ "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n"
-						+ "java -jar \"" + jarFilePath + "\"\r\n"
-						+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n"
-						+ ")\r\n");
-					
+
+					// Create Batchfile
+					FileUtils.write(batchFile, "@echo off\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath
+							+ "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + ")\r\n" + ")\r\n" + ")\r\n" + "ren \"" + downloadTempFile.getAbsolutePath() + "\" \""
+							+ new File(jarFilePath).getName() + "\"\r\n" + "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n" + "java -jar \"" + jarFilePath + "\"\r\n" + "del \""
+							+ batchFile.getAbsolutePath() + "\"\r\n" + ")\r\n");
+
 					Runtime.getRuntime().exec("cmd /c start /B " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
 				} else if (SystemUtilities.isLinuxSystem()) {
 					File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".sh");
-					
-					//Create Batchfile
+
+					// Create Batchfile
 					FileUtils.write(batchFile,
-						"#!/bin/bash\n"
-						+ "rm \"" + jarFilePath + "\"\n"
-						+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
-						+ "sleep 3\n"
-						+ "rm \"" + jarFilePath + "\"\n"
-						+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
-						+ "sleep 3\n"
-						+ "rm \"" + jarFilePath + "\"\n"
-						+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
-						+ "sleep 3\n"
-						+ "rm \"" + jarFilePath + "\"\n"
-						+ "fi\n"
-						+ "fi\n"
-						+ "fi\n"
-						+ "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n"
-						+ "if ! [ -f \"" + downloadTempFile.getAbsolutePath() + "\" ]; then\n"
-						+ "java -jar \"" + jarFilePath + "\"\n"
-						+ "rm \"" + batchFile.getAbsolutePath() + "\"\n"
-						+ "fi\n");
-					
+							"#!/bin/bash\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath
+									+ "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n"
+									+ "fi\n" + "fi\n" + "fi\n" + "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n" + "if ! [ -f \"" + downloadTempFile.getAbsolutePath()
+									+ "\" ]; then\n" + "java -jar \"" + jarFilePath + "\"\n" + "rm \"" + batchFile.getAbsolutePath() + "\"\n" + "fi\n");
+
 					Runtime.getRuntime().exec("sh " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
 				}
@@ -185,7 +155,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			logger.error(LangResources.get("cannotUpdate", e.getMessage()), e);
 		}
 	}
-	
+
 	public boolean downloadUpdateFile(File downloadTempFile, String downloadUrl) throws Exception {
 		try {
 			downloadTempFile.delete();
@@ -232,7 +202,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					downloadUrl = downloadUrl.replaceAll("<bitmode>", "32");
 				}
 			}
-			
+
 			RunnableFuture<Boolean> worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile.getAbsolutePath());
 			progressDialog = new ProgressDialog(getParent(), LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"));
 			new Thread(worker).start();
@@ -241,11 +211,11 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				showMessage(LangResources.get("menu.updateFileDownload"), LangResources.get("canceledByUser"));
 				return false;
 			}
-			
+
 			return worker.get();
 		} catch (Exception e) {
 			if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
-				throw (UserError) e.getCause();
+				throw (UserError)e.getCause();
 			} else {
 				throw e;
 			}

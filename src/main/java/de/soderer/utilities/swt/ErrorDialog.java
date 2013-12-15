@@ -20,6 +20,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import de.soderer.utilities.ExceptionUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 
@@ -29,11 +30,11 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	private Throwable throwable;
 	private Button detailButton;
 	private Composite detailPart;
-	
+
 	public ErrorDialog(Shell shell, String applicationName, Throwable throwable) {
 		this(shell, applicationName, "", throwable);
 	}
-	
+
 	public ErrorDialog(Shell shell, String applicationName, String emailRecipient, Throwable throwable) {
 		super(shell, applicationName + " " + getText("ERROR"));
 		this.throwable = throwable;
@@ -49,15 +50,15 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			e.printStackTrace();
 		}
 		shell.setLayout(new GridLayout(1, false));
-		
-		String text1 = getText("ERROR_OCCURRED"); 
+
+		String text1 = getText("ERROR_OCCURRED");
 		if (throwable instanceof VisibleException) {
-			text1 = ((VisibleException) throwable).getVisibleMessage();
+			text1 = ((VisibleException)throwable).getVisibleMessage();
 		}
-		
+
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
 		gridData.widthHint = 500;
-		
+
 		Text keyTextfield1 = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY | SWT.V_SCROLL);
 		keyTextfield1.setLayoutData(gridData);
 		keyTextfield1.setText(text1);
@@ -65,19 +66,19 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		Composite buttonComposite = new Composite(shell, SWT.NONE);
 		buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 		buttonComposite.setLayout(new FillLayout());
-		
+
 		Button sendMailButton = new Button(buttonComposite, SWT.PUSH);
 		sendMailButton.setText(getText("OPEN_MAIL"));
 		sendMailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				boolean success = Utilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, Utilities.throwableToString(throwable));
+				boolean success = Utilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, ExceptionUtilities.throwableToString(throwable));
 				if (!success) {
 					new QuestionDialog(getParent(), getText(), getText("CANNOT_OPEN_MAIL"), "OK").open();
 				}
 			}
 		});
-		
+
 		detailButton = new Button(buttonComposite, SWT.PUSH);
 		detailButton.setText(getText("DETAILS_MORE"));
 		detailButton.addSelectionListener(new SelectionAdapter() {
@@ -97,7 +98,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		detailPart = new Composite(shell, SWT.NONE);
 		detailPart.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM | SWT.READ_ONLY, true, false, 1, 1));
 		detailPart.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
-		
+
 		setupDetailPart();
 
 		Button closeButton = new Button(shell, SWT.PUSH);
@@ -110,7 +111,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				getParent().close();
 			}
 		});
-		
+
 		shell.pack();
 	}
 
@@ -118,12 +119,12 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		for (Control item : detailPart.getChildren()) {
 			item.dispose();
 		}
-		
+
 		if (detailButton.getText().equals(getText("DETAILS_LESS"))) {
 			String text2 = throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
-			
-			String text3 = Utilities.throwableToString(throwable);
-			
+
+			String text3 = ExceptionUtilities.throwableToString(throwable);
+
 			Text keyTextfield2 = new Text(detailPart, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
 			GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
 			gridData.widthHint = 500;
@@ -141,13 +142,13 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				keyTextfield3.setFont(new Font(getParent().getDisplay(), fontData[0]));
 			}
 		}
-		
+
 		detailPart.pack();
 		detailPart.layout();
 		getParent().pack();
 		setPosition(getParent());
 	}
-	
+
 	private static String getText(String key) {
 		if ("DETAILS_MORE".equalsIgnoreCase(key)) {
 			return "Details >>>";
@@ -162,10 +163,10 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				return "Schließen";
 			} else if ("ERROR".equalsIgnoreCase(key)) {
 				return "Fehler";
-			}else if ("ERROR_OCCURRED".equalsIgnoreCase(key)) {
+			} else if ("ERROR_OCCURRED".equalsIgnoreCase(key)) {
 				return "Es ist ein Fehler aufgetreten";
 			}
-		} else  {
+		} else {
 			if ("OPEN_MAIL".equalsIgnoreCase(key)) {
 				return "Open mail with errordata to developer";
 			} else if ("CANNOT_OPEN_MAIL".equalsIgnoreCase(key)) {
@@ -180,7 +181,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		}
 		return key;
 	}
-	
+
 	@Override
 	protected Boolean getDefaultReturnValue() {
 		return false;

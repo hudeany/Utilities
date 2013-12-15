@@ -28,20 +28,19 @@ import java.util.jar.Manifest;
 import de.soderer.utilities.SystemUtilities;
 
 /**
- * This class will be compiled into the binary jar-in-jar-loader.zip. This ZIP is used for the
- * "Runnable JAR File Exporter"
+ * This class will be compiled into the binary jar-in-jar-loader.zip. This ZIP is used for the "Runnable JAR File Exporter"
  * 
  * @since 3.5
  */
 public class JarRsrcLoader {
 	private static class ManifestInfo {
-        String rsrcMainClass;
-        String[] rsrcClassPath;
-    }
-    
-    @SuppressWarnings("resource")
-	public static void main(String[] args) throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException, IOException {
-    	try {
+		String rsrcMainClass;
+		String[] rsrcClassPath;
+	}
+
+	public static void main(String[] args) throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException,
+			IOException {
+		try {
 			String currentJarUrlPath = JarRsrcLoader.class.getResource(JarRsrcLoader.class.getSimpleName() + ".class").toString();
 			if (currentJarUrlPath != null && currentJarUrlPath.length() > 0) {
 				String jarFilePath = currentJarUrlPath.substring(0, currentJarUrlPath.lastIndexOf("!")).replaceFirst("jar:file:", "");
@@ -53,78 +52,82 @@ public class JarRsrcLoader {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-    	
-        ManifestInfo mi = getManifestInfo();
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        URL.setURLStreamHandlerFactory(new RsrcURLStreamHandlerFactory(cl));
-        URL[] rsrcUrls = new URL[mi.rsrcClassPath.length];
-        for (int i = 0; i < mi.rsrcClassPath.length; i++) {
-            String rsrcPath = mi.rsrcClassPath[i];
-            if (rsrcPath.endsWith("/")) //$NON-NLS-1$
-                rsrcUrls[i] = new URL("rsrc:" + rsrcPath); //$NON-NLS-1$
-            else
-                rsrcUrls[i] = new URL("jar:rsrc:" + rsrcPath+ "!/");  //$NON-NLS-1$//$NON-NLS-2$
-        }
-        ClassLoader jceClassLoader = new URLClassLoader(rsrcUrls, null);
-        Thread.currentThread().setContextClassLoader(jceClassLoader);
-        Class<?> c = Class.forName(mi.rsrcMainClass, true, jceClassLoader);
-        Method main = c.getMethod("main", new Class[]{args.getClass()}); //$NON-NLS-1$
-        main.invoke((Object)null, new Object[]{args});
-    }
 
-    private static ManifestInfo getManifestInfo() throws IOException {
-        Enumeration<URL> resEnum = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF"); //$NON-NLS-1$
-        while (resEnum.hasMoreElements()) {
-        	InputStream is = null;
-            try {
-                URL url = (URL)resEnum.nextElement();
-                is = url.openStream();
-                if (is != null) {
-                    ManifestInfo result = new ManifestInfo();
-                    Manifest manifest = new Manifest(is);
-                    Attributes mainAttribs = manifest.getMainAttributes();
-                    result.rsrcMainClass = mainAttribs.getValue("Rsrc-Main-Class"); //$NON-NLS-1$
-                    String rsrcCP = mainAttribs.getValue("Rsrc-Class-Path"); //$NON-NLS-1$
-                    if (rsrcCP == null)
-                        rsrcCP = ""; //$NON-NLS-1$
-                    result.rsrcClassPath = splitSpaces(rsrcCP);
-                    if ((result.rsrcMainClass != null) && !result.rsrcMainClass.trim().equals(""))  //$NON-NLS-1$
-                            return result;
-                }
-            }
-            catch (Exception e) {
-                // Silently ignore wrong manifests on classpath?
-            } finally {
-            	if (is != null) {
-            		is.close();
-            	}
-            }
-        }
-        System.err.println("Missing attributes for RsrcLoader in Manifest (Rsrc-Main-Class, Rsrc-Class-Path)"); //$NON-NLS-1$
-        return null;
-    }
+		ManifestInfo mi = getManifestInfo();
+		ClassLoader cl = Thread.currentThread().getContextClassLoader();
+		URL.setURLStreamHandlerFactory(new RsrcURLStreamHandlerFactory(cl));
+		URL[] rsrcUrls = new URL[mi.rsrcClassPath.length];
+		for (int i = 0; i < mi.rsrcClassPath.length; i++) {
+			String rsrcPath = mi.rsrcClassPath[i];
+			if (rsrcPath.endsWith("/")) {
+				rsrcUrls[i] = new URL("rsrc:" + rsrcPath); //$NON-NLS-1$
+			} else {
+				rsrcUrls[i] = new URL("jar:rsrc:" + rsrcPath + "!/"); //$NON-NLS-1$//$NON-NLS-2$
+			}
+		}
+		ClassLoader jceClassLoader = new URLClassLoader(rsrcUrls, null);
+		Thread.currentThread().setContextClassLoader(jceClassLoader);
+		Class<?> c = Class.forName(mi.rsrcMainClass, true, jceClassLoader);
+		Method main = c.getMethod("main", new Class[] { args.getClass() }); //$NON-NLS-1$
+		main.invoke((Object)null, new Object[] { args });
+	}
 
-    /**
-     * JDK 1.3.1 does not support String.split(), so we have to do it manually. Skip all spaces
-     * (tabs are not handled)
-     * 
-     * @param line the line to split
-     * @return array of strings
-     */
-    private static String[] splitSpaces(String line) {
-        if (line == null) 
-            return null;
-        List<String> result = new ArrayList<String>();
-        int firstPos = 0;
-        while (firstPos < line.length()) {
-            int lastPos = line.indexOf(' ', firstPos);
-            if (lastPos == -1)
-                lastPos = line.length();
-            if (lastPos > firstPos) {
-                result.add(line.substring(firstPos, lastPos));
-            }
-            firstPos = lastPos+1; 
-        }
-        return (String[]) result.toArray(new String[result.size()]);
-    }
+	private static ManifestInfo getManifestInfo() throws IOException {
+		Enumeration<URL> resEnum = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF"); //$NON-NLS-1$
+		while (resEnum.hasMoreElements()) {
+			InputStream is = null;
+			try {
+				URL url = resEnum.nextElement();
+				is = url.openStream();
+				if (is != null) {
+					ManifestInfo result = new ManifestInfo();
+					Manifest manifest = new Manifest(is);
+					Attributes mainAttribs = manifest.getMainAttributes();
+					result.rsrcMainClass = mainAttribs.getValue("Rsrc-Main-Class"); //$NON-NLS-1$
+					String rsrcCP = mainAttribs.getValue("Rsrc-Class-Path"); //$NON-NLS-1$
+					if (rsrcCP == null) {
+						rsrcCP = ""; //$NON-NLS-1$
+					}
+					result.rsrcClassPath = splitSpaces(rsrcCP);
+					if (result.rsrcMainClass != null && !result.rsrcMainClass.trim().equals("")) {
+						return result;
+					}
+				}
+			} catch (Exception e) {
+				// Silently ignore wrong manifests on classpath?
+			} finally {
+				if (is != null) {
+					is.close();
+				}
+			}
+		}
+		System.err.println("Missing attributes for RsrcLoader in Manifest (Rsrc-Main-Class, Rsrc-Class-Path)"); //$NON-NLS-1$
+		return null;
+	}
+
+	/**
+	 * JDK 1.3.1 does not support String.split(), so we have to do it manually. Skip all spaces (tabs are not handled)
+	 * 
+	 * @param line
+	 *            the line to split
+	 * @return array of strings
+	 */
+	private static String[] splitSpaces(String line) {
+		if (line == null) {
+			return null;
+		}
+		List<String> result = new ArrayList<String>();
+		int firstPos = 0;
+		while (firstPos < line.length()) {
+			int lastPos = line.indexOf(' ', firstPos);
+			if (lastPos == -1) {
+				lastPos = line.length();
+			}
+			if (lastPos > firstPos) {
+				result.add(line.substring(firstPos, lastPos));
+			}
+			firstPos = lastPos + 1;
+		}
+		return result.toArray(new String[result.size()]);
+	}
 }

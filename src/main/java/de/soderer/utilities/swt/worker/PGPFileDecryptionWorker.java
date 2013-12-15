@@ -26,9 +26,7 @@ import de.soderer.utilities.swt.ProgressShowingModalDialog;
 import de.soderer.utilities.swt.Worker;
 
 /**
- * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength
- * Download:
- *   http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
+ * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
  */
 public class PGPFileDecryptionWorker extends Worker<Boolean> {
 	private InputStream encryptedData = null;
@@ -59,8 +57,17 @@ public class PGPFileDecryptionWorker extends Worker<Boolean> {
 
 			try {
 				privateKey = secretKey.extractPrivateKey(password, "BC");
+			} catch (PGPException e) {
+				if (e.getUnderlyingException() != null && e.getUnderlyingException().getMessage().contains("Illegal key size")) {
+					error = new UserError("keystrengthExceedsAllowedJCE", e);
+				} else {
+					error = new UserError("cannotReadPrivateKey", e);
+				}
+				showDone();
+				isDone = true;
+				return;
 			} catch (Exception e) {
-				error = new Exception("Cannot read private key", e);
+				error = new UserError("cannotReadPrivateKey", e);
 				showDone();
 				isDone = true;
 				return;
@@ -130,10 +137,8 @@ public class PGPFileDecryptionWorker extends Worker<Boolean> {
 
 			result = true;
 		} catch (PGPException pgpe) {
-			if (pgpe.getUnderlyingException() != null
-					&& pgpe.getUnderlyingException() instanceof InvalidKeyException
-					&& TextUtilities.containsIgnoreCase(((InvalidKeyException) pgpe.getUnderlyingException()).getMessage(), "Illegal key size")
-					&& !SystemUtilities.isunlimitedKeyStrengthAllowed()) {
+			if (pgpe.getUnderlyingException() != null && pgpe.getUnderlyingException() instanceof InvalidKeyException
+					&& TextUtilities.containsIgnoreCase(((InvalidKeyException)pgpe.getUnderlyingException()).getMessage(), "Illegal key size") && !SystemUtilities.isunlimitedKeyStrengthAllowed()) {
 				error = new UserError(LangResources.get("keystrengthExceedsAllowedJCE"), pgpe);
 			} else {
 				error = pgpe;
@@ -143,7 +148,7 @@ public class PGPFileDecryptionWorker extends Worker<Boolean> {
 		} finally {
 			IOUtils.closeQuietly(decodedInputStream);
 			IOUtils.closeQuietly(decryptedPacketInputStream);
-			
+
 			showDone();
 			isDone = true;
 		}

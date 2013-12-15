@@ -7,19 +7,17 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.soderer.utilities.swt.worker.OTPCryptographyWorker;
-
 public class CryptographicUtilitiesTest {
 	private static AsymmetricCipherKeyPair keyPairCache = null;
-	
+
 	private static AsymmetricCipherKeyPair getPgpSecretKey() throws Exception {
 		if (keyPairCache == null) {
 			keyPairCache = CryptographicUtilities.generateRsaKeyPair(4096);
 		}
-		
+
 		return keyPairCache;
 	}
-	
+
 	@Test
 	public void testEncryptionAES() {
 		ByteArrayInputStream in = null;
@@ -55,7 +53,7 @@ public class CryptographicUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
 	@Test
 	public void testEncryptionRSA() {
 		try {
@@ -63,7 +61,7 @@ public class CryptographicUtilitiesTest {
 			ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
 			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, CryptographicUtilities.getPublicKeyFromKeyPair(getPgpSecretKey()));
 			byte[] encryptedDataStreamed = encryptedStream.toByteArray();
-			
+
 			ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
 			ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
 			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, CryptographicUtilities.getPrivateKeyFromKeyPair(getPgpSecretKey()));
@@ -72,15 +70,15 @@ public class CryptographicUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
 	@Test
 	public void testEncryptionOTP() {
-		byte[] testClear = new byte[]{ 1, 2, 3, 4, 5, -6, 0, 7, 126, 127 };
+		byte[] testClear = new byte[] { 1, 2, 3, 4, 5, -6, 0, 7, 126, 127 };
 		byte[] test2 = new byte[testClear.length];
 		byte[] test3 = new byte[testClear.length];
-		OTPCryptographyWorker.otpWork(new byte[][]{ testClear }, new byte[][]{ test2, test3 });
+		CryptographicUtilities.otpWork(new byte[][] { testClear }, new byte[][] { test2, test3 });
 		byte[] testResult = new byte[testClear.length];
-		OTPCryptographyWorker.otpWork(new byte[][]{ test2, test3 }, new byte[][]{ testResult });
+		CryptographicUtilities.otpWork(new byte[][] { test2, test3 }, new byte[][] { testResult });
 		Assert.assertArrayEquals(testClear, testResult);
 	}
 }
