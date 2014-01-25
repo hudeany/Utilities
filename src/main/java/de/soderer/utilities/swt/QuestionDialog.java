@@ -38,9 +38,9 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(buttonTexts.length, true));
 		
-		Text test = new Text(composite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
-		test.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, buttonTexts.length, 1));
-		test.setText(text);
+		Text textField = new Text(composite, SWT.READ_ONLY | SWT.MULTI);
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, buttonTexts.length, 1));
+		textField.setText(text);
 		
 		if (StringUtils.isNotBlank(rememberAnswerText)) {
 			Button rememberAnswerCheckBox = new Button(composite, SWT.CHECK);
