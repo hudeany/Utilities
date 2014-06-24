@@ -5,6 +5,9 @@ import java.util.Map;
 
 import de.soderer.utilities.TextUtilities.LineBreakType;
 
+/**
+ * Scanner class for properties describing a text
+ */
 public class TextPropertiesReader {
 	protected String dataString = null;
 	
@@ -14,14 +17,25 @@ public class TextPropertiesReader {
 	private int lines = -1;
 	private int words = -1;
 	private LineBreakType linebreaks = LineBreakType.Unknown;
-	
-	protected TextPropertiesReader() throws Exception {
-	}
 
+	/**
+	 * Internal constructor for derived classes
+	 */
+	protected TextPropertiesReader() {
+	}
+	
+	/**
+	 * Open a new TextPropertiesReader with the text to scan lateron
+	 * 
+	 * @param dataString
+	 */
 	public TextPropertiesReader(String dataString) {
 		this.dataString = dataString;
 	}
 	
+	/**
+	 * Scan for the text properties of the given text
+	 */
 	public void readProperties() {
 		foundCharacters = new HashMap<Character, Integer>();
 		int lineCount = 0;
@@ -106,26 +120,56 @@ public class TextPropertiesReader {
 		words = wordCount;
 	}
 
+	/**
+	 * Get the number of characters of the text
+	 * 
+	 * @return
+	 */
 	public int getCharactersCount() {
 		return characters;
 	}
 
+	/**
+	 * Get the characters used in the text and their numbers of occurences
+	 * 
+	 * @return
+	 */
 	public Map<Character, Integer> getFoundCharacters() {
 		return foundCharacters;
 	}
 
+	/**
+	 * Get the number of non whitespace characters of the text
+	 * 
+	 * @return
+	 */
 	public int getNonWhitespaceCharactersCount() {
 		return nonWhitespaceCharacters;
 	}
 
+	/**
+	 * Get the number of lines of the text
+	 * 
+	 * @return
+	 */
 	public int getLinesCount() {
 		return lines;
 	}
 
+	/**
+	 * Get the number of words separated by whitespaces of the text
+	 * 
+	 * @return
+	 */
 	public int getWordsCount() {
 		return words;
 	}
 
+	/**
+	 * Get the linebreak type of the text
+	 * 
+	 * @return
+	 */
 	public LineBreakType getLinebreakType() {
 		return linebreaks;
 	}

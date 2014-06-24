@@ -1,16 +1,49 @@
 package de.soderer.utilities;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class NetworkUtilities {
+	/**
+	 * 
+	 * 
+	 * @param hostname
+	 * @param port
+	 * @return
+	 * @throws Exception
+	 */
+	public static boolean testConnection(String hostname, int port) throws Exception {
+		Socket socket = null;
+		try {
+			socket = new Socket();
+			InetSocketAddress endPoint = new InetSocketAddress(hostname, port);
+			int timeout = 2000; // 2 Sekunden
+			if (endPoint.isUnresolved()) {
+				throw new Exception("Hostname '" + hostname + "' konnte nicht aufgelöst werden");
+			} else {
+				try {
+					socket.connect(endPoint, timeout);
+					return true;
+				} catch (IOException ioe) {
+					throw new Exception("Verbindung zum Host '" + hostname + "' auf Port " + port + " konnte nicht aufgebaut werden: " + ioe.getClass().getSimpleName() + ": " + ioe.getMessage());
+				}
+			}
+		} finally {
+			IOUtils.closeQuietly(socket);
+		}
+	}
+	
 	public static boolean ping (String ipOrHostname) {
 		try {
             return InetAddress.getByName(getHostnameFromRequestString(ipOrHostname)).isReachable(5000);

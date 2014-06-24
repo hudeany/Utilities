@@ -93,8 +93,7 @@ public class TextFileScanner implements Iterator<String> {
     private IOException lastException;
 
     // A pattern for java whitespace
-    private static Pattern WHITESPACE_PATTERN = Pattern.compile(
-                                                "\\p{javaWhitespace}+");
+    private static Pattern WHITESPACE_PATTERN = Pattern.compile("\\p{javaWhitespace}+");
 
     // A pattern for any token
     private static Pattern FIND_ANY_PATTERN = Pattern.compile("(?s).*");
@@ -156,6 +155,7 @@ public class TextFileScanner implements Iterator<String> {
             positiveInteger + ")|(" + 
             negativeInteger + ")";
     }
+    
     private Pattern integerPattern() {
         if (integerPattern == null) {
         	String patternString = buildIntegerPatternString();
@@ -173,8 +173,7 @@ public class TextFileScanner implements Iterator<String> {
      */
     private static volatile Pattern separatorPattern;
     private static volatile Pattern linePattern;
-    private static final String LINE_SEPARATOR_PATTERN = 
-                                           "\r\n|[\n\r  ]";
+    private static final String LINE_SEPARATOR_PATTERN = "\r\n|[\n\r  ]";
     private static final String LINE_PATTERN = ".*("+LINE_SEPARATOR_PATTERN+")|.+$";
 
     private static Pattern separatorPattern() {

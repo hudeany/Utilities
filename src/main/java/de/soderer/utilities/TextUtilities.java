@@ -15,14 +15,24 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Allgemeine Utilities
+ * Text Utilities
  * 
- * Diese Klasse hat kein Logging via Log4J, da sie meist schon vor dessen Initialisierung genutzt wird
+ * This class does no Logging via Log4J, because it is often used before its initialisation
  */
 public class TextUtilities {
+	/**
+	 * A simple string for testing, which includes all ASCII characters
+	 */
 	public static final String ASCII_CHARACTERS_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+	
+	/**
+	 * A simple string for testing, which includes all german characters
+	 */
 	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"´`^°²³*#.,;:=+-~_|";
 	
+	/**
+	 * Enum to represent a linebreak type of an text
+	 */
 	public enum LineBreakType {
 		Unknown,
 		Mixed,
@@ -43,39 +53,81 @@ public class TextUtilities {
 		}
 	}
 	
+	/**
+	 * Mac/Apple linebreak character
+	 */
 	public static String LinebreakMac = "\r";
+	
+	
+	/**
+	 * Unix/Linux linebreak character
+	 */
 	public static String LinebreakUnix = "\n";
+	
+	/**
+	 * Windows linebreak characters
+	 */
 	public static String LinebreakWindows = "\r\n";
 
-	public static String trimStringToLengthAlignedRight(String inputString, int laenge) {
-		if (inputString.length() > laenge)
-			// nimmt die ersten Zeichen in der Anzahl "laenge"
-			return inputString.subSequence(inputString.length() - laenge, inputString.length()).toString();
-		else
-			return String.format("%" + laenge + "s", inputString);
+	/**
+	 * Trim a string to an exact length with alignment right for display purposes
+	 * If the string underruns the length, it will be filled up with blanks on the left side.
+	 * If the string exceeds the length, it will be cut from the left side.
+	 * 
+	 * @param inputString
+	 * @param length
+	 * @return
+	 */
+	public static String trimStringToLengthAlignedRight(String inputString, int length) {
+		if (inputString.length() > length) {
+			// Takes the last characters of length
+			return inputString.subSequence(inputString.length() - length, inputString.length()).toString();
+		} else {
+			return String.format("%" + length + "s", inputString);
+		}
 	}
 
-	public static String trimStringToLengthAlignedLeft(String inputString, int laenge) {
-		if (inputString.length() > laenge)
-			// nimmt die ersten Zeichen in der Anzahl "laenge"
-			return inputString.subSequence(0, laenge).toString();
-		else
-			return String.format("%-" + laenge + "s", inputString);
+	/**
+	 * Trim a string to a exact length with alignment left for display purposes.
+	 * If the string underruns the length, it will be filled up with blanks on the right side.
+	 * If the string exceeds the length, it will be cut from the right side.
+	 * 
+	 * @param inputString
+	 * @param length
+	 * @return
+	 */
+	public static String trimStringToLengthAlignedLeft(String inputString, int length) {
+		if (inputString.length() > length) {
+			// Takes the first characters of length
+			return inputString.subSequence(0, length).toString();
+		} else {
+			return String.format("%-" + length + "s", inputString);
+		}
 	}
 
+	/**
+	 * Build a string with repetitions.
+	 * 0 repetitions returns an empty string.
+	 * 
+	 * @param itemString
+	 * @param repeatTimes
+	 * @return
+	 */
 	public static String repeatString(String itemString, int repeatTimes) {
 		return repeatString(itemString, repeatTimes, null);
 	}
 
 	/***
-	 * Aufbau eines Strings mit Wiederholungen. 0 Wiederholungen liefert einen Leer-String. Ansonsten wird zwischen jede Wiederholung das Trennzeichen eingesetzt, welches auch leer sein kann.
+	 * Build a string with repetitions.
+	 * 0 repetitions returns an empty string.
+	 * In other cases there will be put a glue string between the reptitions, which can be left empty.
 	 * 
 	 * @param itemString
-	 *            zu wiederholende Zeichenfolge
+	 *            string to be repeated
 	 * @param separatorString
-	 *            Trennzeichen
+	 *            glue string
 	 * @param repeatTimes
-	 *            Anzahl der Wiederholungen
+	 *            Number of repetitions
 	 * @return
 	 */
 	public static String repeatString(String itemString, int repeatTimes, String separatorString) {
@@ -89,11 +141,10 @@ public class TextUtilities {
 		return returnStringBuilder.toString();
 	}
 
-	/***
-	 * Aufteilen der Originalliste in kleinere Listen zu je maximal chunkSize-großen Listen
+	/**
+	 * Split a string into smaller strings of a maximum size
 	 * 
-	 * @param <E>
-	 * @param originalList
+	 * @param text
 	 * @param chunkSize
 	 * @return
 	 */
@@ -107,6 +158,15 @@ public class TextUtilities {
 		return returnList;
 	}
 
+	/**
+	 * Reduce a text to a maximum number of lines.
+	 * The type of linebreaks in the result string will not be changed. 
+	 * If the text has less lines then maximum it will be returned unchanged.
+	 * 
+	 * @param value
+	 * @param maxLines
+	 * @return
+	 */
 	public static String trimToMaxNumberOfLines(String value, int maxLines) {
 		String normalizedValue = normalizeLineBreaks(value, LineBreakType.Unix);
 		int count = 0;
@@ -124,12 +184,25 @@ public class TextUtilities {
 		}
 	}
 
+	/**
+	 * Detect the type of linebreaks in a text.
+	 * 
+	 * @param value
+	 * @return
+	 */
 	public static LineBreakType detectLinebreakType(String value) {
 		TextPropertiesReader textPropertiesReader = new TextPropertiesReader(value);
 		textPropertiesReader.readProperties();
 		return textPropertiesReader.getLinebreakType();
 	}
 	
+	/**
+	 * Change all linebreaks of a text, no matter what type they are, to a given type
+	 * 
+	 * @param value
+	 * @param type
+	 * @return
+	 */
 	public static String normalizeLineBreaks(String value, LineBreakType type) {
 		String returnString = value.replace(LinebreakWindows, LinebreakUnix).replace(LinebreakMac, LinebreakUnix);
 		if (type == LineBreakType.Mac) {
@@ -141,6 +214,13 @@ public class TextUtilities {
 		}
 	}
 	
+	/**
+	 * Get the text lines of a text as a list of strings
+	 * 
+	 * @param dataString
+	 * @return
+	 * @throws IOException
+	 */
 	public static List<String> getLines(String dataString) throws IOException {
 		List<String> list = new ArrayList<String>();
 		LineNumberReader lineNumberReader = null;
@@ -157,6 +237,13 @@ public class TextUtilities {
 		}
 	}
 
+	/**
+	 * Get the number of lines in a text
+	 * 
+	 * @param dataString
+	 * @return
+	 * @throws IOException
+	 */
 	public static int getLineCount(String dataString) throws IOException {
 		if (dataString == null) {
 			return 0;
@@ -177,6 +264,12 @@ public class TextUtilities {
 		}
 	}
 
+	/**
+	 * Count the number of words by whitespaces in a text separated
+	 * 
+	 * @param dataString
+	 * @return
+	 */
 	public static int countWords(String dataString) {
 		int counter = 0;
 		boolean isWord = false;
@@ -195,6 +288,13 @@ public class TextUtilities {
 		return counter;
 	}
 
+	/**
+	 * Get the start index of a line within a text
+	 * 
+	 * @param dataString
+	 * @param lineNumber
+	 * @return
+	 */
 	public static int getStartIndexOfLine(String dataString, int lineNumber) {
 		if (dataString == null || lineNumber < 0) {
 			return -1;
@@ -234,6 +334,13 @@ public class TextUtilities {
 		}
 	}
 
+	/**
+	 * Get the startindex of the line at a given position within the text
+	 * 
+	 * @param dataString
+	 * @param index
+	 * @return
+	 */
 	public static int getStartIndexOfLineAtIndex(String dataString, int index) {
 		if (dataString == null || index < 0) {
 			return -1;
@@ -256,6 +363,13 @@ public class TextUtilities {
 		}
 	}
 
+	/**
+	 * Get the end index of a line within a text
+	 * 
+	 * @param dataString
+	 * @param index
+	 * @return
+	 */
 	public static int getEndIndexOfLineAtIndex(String dataString, int index) {
 		if (dataString == null || index < 0) {
 			return -1;
@@ -279,6 +393,10 @@ public class TextUtilities {
 	}
 
 	/**
+	 * Searching the next position of a string or searchPattern beginning at a startIndex.
+	 * Searched text can be a simple string or a regex pattern, switching this with the flag searchTextIsRegularExpression.
+	 * Search can be done caseinsensitive or caseinsensitive by the flag searchCaseSensitive.
+	 * Search can be done from end to start, backwards by the flag searchReversely.
 	 * 
 	 * 
 	 * @param text
@@ -354,6 +472,15 @@ public class TextUtilities {
 		}
 	}
 
+	/**
+	 * Count the occurences of a string or pattern within a text
+	 * 
+	 * @param text
+	 * @param searchTextOrPattern
+	 * @param searchTextIsRegularExpression
+	 * @param searchCaseSensitive
+	 * @return
+	 */
 	public static int countOccurences(String text, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive) {
 		if (text != null && searchTextOrPattern != null) {
 			String fullText = text;
@@ -384,6 +511,13 @@ public class TextUtilities {
 		}
 	}
 	
+	/**
+	 * Get line number at a given text position
+	 * 
+	 * @param dataString
+	 * @param textPosition
+	 * @return
+	 */
 	public static int getLineNumberOfTextposition(String dataString, int textPosition) {
 		if (dataString == null) {
 			return -1;
@@ -408,6 +542,16 @@ public class TextUtilities {
 		}
 	}
 	
+	/**
+	 * Get the number of the first line containing a string or pattern
+	 * 
+	 * @param dataString
+	 * @param searchTextOrPattern
+	 * @param searchCaseSensitive
+	 * @param searchTextIsRegularExpression
+	 * @return
+	 * @throws IOException
+	 */
 	public static int getNumberOfLineContainingText(String dataString, String searchTextOrPattern, boolean searchCaseSensitive, boolean searchTextIsRegularExpression) throws IOException {
 		LineNumberReader lineNumberReader = null;
 		try {
@@ -440,6 +584,15 @@ public class TextUtilities {
 		}
 	}
 	
+	/**
+	 * Insert some string before a given line into a text
+	 * 
+	 * @param dataString
+	 * @param insertText
+	 * @param lineNumber
+	 * @return
+	 * @throws IOException
+	 */
 	public static String insertTextBeforeLine(String dataString, String insertText, int lineNumber) throws IOException {
 		if (lineNumber > -1) {
 			int startIndex = TextUtilities.getStartIndexOfLine(dataString, lineNumber);
@@ -451,6 +604,15 @@ public class TextUtilities {
 		}
 	}
 	
+	/**
+	 * Insert some string at the end of a given line into a text
+	 * 
+	 * @param dataString
+	 * @param insertText
+	 * @param lineNumber
+	 * @return
+	 * @throws IOException
+	 */
 	public static String insertTextAfterLine(String dataString, String insertText, int lineNumber) throws IOException {
 		if (lineNumber > -1) {
 			int startIndex = TextUtilities.getStartIndexOfLine(dataString, lineNumber + 1);
@@ -462,6 +624,14 @@ public class TextUtilities {
 		}
 	}
 
+	/**
+	 * Try to detect the encoding of a byte array xml data.
+	 * 
+	 * 
+	 * @param data
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
 	public static Tuple<String, Boolean> detectEncoding(byte[] data) throws UnsupportedEncodingException {
 		if (data.length > 2 && data[0] == Utilities.UTF_16_BE_BOM[0] && data[1] == Utilities.UTF_16_BE_BOM[1]) {
 			return new Tuple<String, Boolean>("UTF-16BE", true);
@@ -519,6 +689,14 @@ public class TextUtilities {
 		}
 	}
 	
+	/**
+	 * Replace the leading indentation by double blanks of a text by some other character like tab
+	 * 
+	 * @param data
+	 * @param blankCount
+	 * @param replacement
+	 * @return
+	 */
 	public static String replaceIndentingBlanks(String data, int blankCount, String replacement) {
 		String result = data;
 		Pattern pattern = Pattern.compile("^(  )+", Pattern.MULTILINE);
@@ -531,22 +709,48 @@ public class TextUtilities {
 		return result;
 	}
 
+	/**
+	 * Remove the first leading whitespace of a string
+	 * 
+	 * @param data
+	 * @return
+	 */
 	public static String removeFirstLeadingWhitespace(String data) {
 		Pattern pattern = Pattern.compile("^[\\t ]", Pattern.MULTILINE);
 		Matcher matcher = pattern.matcher(data);
 		return matcher.replaceAll("");
 	}
 
+	/**
+	 * Indent the lines of a string by one tab
+	 * 
+	 * @param data
+	 * @return
+	 */
 	public static String addLeadingTab(String data) {
 		return addLeadingTabs(data, 1);
 	}
 
+	/**
+	 * Indent the lines of a string by some tabs
+	 * 
+	 * @param data
+	 * @param numberOfTabs
+	 * @return
+	 */
 	public static String addLeadingTabs(String data, int numberOfTabs) {
 		Pattern pattern = Pattern.compile("^", Pattern.MULTILINE);
 		Matcher matcher = pattern.matcher(data);
 		return matcher.replaceAll(StringUtils.repeat("\t", numberOfTabs));
 	}
 	
+	/**
+	 * Chop a string into pieces of maximum length
+	 * 
+	 * @param value
+	 * @param length
+	 * @return
+	 */
 	public static List<String> truncate(String value, int length) {
 		List<String> parts = new ArrayList<String>();
 		int valueLength = value.length();
@@ -556,6 +760,13 @@ public class TextUtilities {
 		return parts;
 	}
 	
+	/**
+	 * Trim all strings in an array of strings to a maximum length and add the cut off rest as new lines
+	 * 
+	 * @param lines
+	 * @param length
+	 * @return
+	 */
 	public static List<String> truncate(String[] lines, int length) {
 		List<String> linesTruncated = new ArrayList<String>();
 		for (String line : lines) {
@@ -564,6 +775,13 @@ public class TextUtilities {
 		return linesTruncated;
 	}
 	
+	/**
+	 * Trim all strings in a list of strings to a maximum length and add the cut off rest as new lines
+	 * 
+	 * @param lines
+	 * @param length
+	 * @return
+	 */
 	public static List<String> truncate(List<String> lines, int length) {
 		List<String> linesTruncated = new ArrayList<String>();
 		for (String line : lines) {
@@ -572,6 +790,12 @@ public class TextUtilities {
 		return linesTruncated;
 	}
 	
+	/**
+	 * Remove all leading and trailing whispaces, not only blanks like it is done by .trim()
+	 * 
+	 * @param data
+	 * @return
+	 */
 	public static String removeLeadingAndTrailingWhitespaces(String data) {
 		Pattern pattern1 = Pattern.compile("^\\s*", Pattern.MULTILINE);
 		Matcher matcher1 = pattern1.matcher(data);
@@ -584,6 +808,12 @@ public class TextUtilities {
 		return data;
 	}
 	
+	/**
+	 * Remove all trailing whispaces
+	 * 
+	 * @param data
+	 * @return
+	 */
 	public static String removeTrailingWhitespaces(String data) {
 		Pattern pattern = Pattern.compile("\\s*$", Pattern.MULTILINE);
 		Matcher matcher = pattern.matcher(data);
@@ -592,6 +822,13 @@ public class TextUtilities {
 		return data;
 	}
 	
+	/**
+	 * Scan an inputstream for start indexes of text lines
+	 * 
+	 * @param input
+	 * @return
+	 * @throws IOException
+	 */
 	public static List<Long> scanLineStartIndexes(InputStream input) throws IOException {
 		List<Long> returnList = new ArrayList<Long>();
 		long position = 0;
@@ -616,6 +853,15 @@ public class TextUtilities {
 		return returnList;
 	}
 	
+	/**
+	 * Scan an inputstream for start indexes of text lines.
+	 * Skip the first characters up to startIndex.
+	 * 
+	 * @param input
+	 * @param startIndex
+	 * @return
+	 * @throws IOException
+	 */
 	public static List<Long> scanLineStartIndexes(InputStream input, long startIndex) throws IOException {
 		List<Long> returnList = new ArrayList<Long>();
 		long position = 0;
@@ -645,6 +891,13 @@ public class TextUtilities {
 		return returnList;
 	}
 	
+	/**
+	 * Scan an inputstream for positions of linebreaks.
+	 * 
+	 * @param dataInputStream
+	 * @return
+	 * @throws IOException
+	 */
 	public static List<Long> scanLinebreakIndexes(InputStream dataInputStream) throws IOException {
 		List<Long> returnList = new ArrayList<Long>();
 		long position = 0;
@@ -663,10 +916,23 @@ public class TextUtilities {
 		return returnList;
 	}
 	
+	/**
+	 * Break all lines after a maximum number of characters.
+	 * 
+	 * @param dataString
+	 * @param maximumLength
+	 * @return
+	 */
 	public static String breakLinesAfterMaximumLength(String dataString, int maximumLength) {
 		return StringUtils.join(dataString.split("(?<=\\G.{" + maximumLength + "})"), "\n");
 	}
 
+	/**
+	 * Scan a string for the characters used in it
+	 * 
+	 * @param data
+	 * @return
+	 */
 	public static List<Character> getUsedChars(String data) {
 		List<Character> usedCharsList = new ArrayList<Character>();
 		for (char item : data.toCharArray()) {
@@ -677,27 +943,49 @@ public class TextUtilities {
 		return usedCharsList;
 	}
 	
+	/**
+	 * Check if a string ends with a stringpart caseinsensitive
+	 * 
+	 * @param str
+	 * @param suffix
+	 * @return
+	 */
 	public static boolean endsWithIgnoreCase(String str, String suffix) {
-	    if (str == null || suffix == null) {
-	        return (str == null && suffix == null);
-	    } else if (suffix.length() > str.length()) {
-	        return false;
-	    } else {
-		    int strOffset = str.length() - suffix.length();
-		    return str.regionMatches(true, strOffset, suffix, 0, suffix.length());
-	    }
+		if (str == null || suffix == null) {
+			return (str == null && suffix == null);
+		} else if (suffix.length() > str.length()) {
+			return false;
+		} else {
+			int strOffset = str.length() - suffix.length();
+			return str.regionMatches(true, strOffset, suffix, 0, suffix.length());
+		}
 	}
 
+	/**
+	 * Check if a string starts with a stringpart caseinsensitive
+	 * 
+	 * @param str
+	 * @param prefix
+	 * @return
+	 */
 	public static boolean startsWithIgnoreCase(String str, String prefix) {
 		if (str == null || prefix == null) {
-	        return (str == null && prefix == null);
-	    } else if (prefix.length() > str.length()) {
-	        return false;
-	    } else {
-	    	return str.regionMatches(true, 0, prefix, 0, prefix.length());
-	    }
+			return (str == null && prefix == null);
+		} else if (prefix.length() > str.length()) {
+			return false;
+		} else {
+			return str.regionMatches(true, 0, prefix, 0, prefix.length());
+		}
 	}
 	
+	/**
+	 * Trim a string to a maximum number of characters and add a sign if it was cut off.
+	 * 
+	 * @param inputString
+	 * @param laenge
+	 * @param interLeave
+	 * @return
+	 */
 	public static String trimStringToMaximumLength(String inputString, int laenge, String interLeave) {
 		if (inputString == null || inputString.length() <= laenge) {
 			return inputString;
@@ -708,6 +996,13 @@ public class TextUtilities {
 		}
 	}
 
+	/**
+	 * Check if a string contains a stringpart caseinsensitive
+	 * 
+	 * @param str
+	 * @param substr
+	 * @return
+	 */
 	public static boolean containsIgnoreCase(String str, String substr) {
 		if (str == substr) {
 			return true;
@@ -716,9 +1011,9 @@ public class TextUtilities {
 		} else if (substr == null) {
 			return true;
 		} else if (substr.length() > str.length()) {
-	        return false;
-	    } else {
-	    	return str.regionMatches(true, 0, substr, 0, str.length());
-	    }
+			return false;
+		} else {
+			return str.regionMatches(true, 0, substr, 0, str.length());
+		}
 	}
 }
