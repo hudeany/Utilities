@@ -58,7 +58,6 @@ public class TextUtilities {
 	 */
 	public static String LinebreakMac = "\r";
 	
-	
 	/**
 	 * Unix/Linux linebreak character
 	 */

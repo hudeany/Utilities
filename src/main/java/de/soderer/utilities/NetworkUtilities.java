@@ -44,7 +44,7 @@ public class NetworkUtilities {
 		}
 	}
 	
-	public static boolean ping (String ipOrHostname) {
+	public static boolean ping(String ipOrHostname) {
 		try {
             return InetAddress.getByName(getHostnameFromRequestString(ipOrHostname)).isReachable(5000);
         } catch (Exception e) {
