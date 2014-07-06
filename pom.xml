@@ -28,7 +28,11 @@
 	<dependencies>
 		<dependency>
 	        <groupId>org.eclipse.swt</groupId>
-	        <artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
+	        <artifactId>org.eclipse.swt.gtk.linux.x86</artifactId>
+	        <!-- Must be configured for os system:
+	        	<artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
+	        	<artifactId>org.eclipse.swt.gtk.linux.x86</artifactId>
+	        -->
 	        <version>4.2.1</version>
 	    </dependency>
 		<dependency>
@@ -117,10 +121,9 @@
 						<phase>package</phase>
 						<configuration>
 							<target>
-								<copy file="target/utilities-2.0.0.jar" tofile="${env.SodererDevel}\\WebStart\\utilities-2.0.0.jar" />
-								<signjar destDir="${env.SodererDevel}\\WebStart" alias="soderer-de-java" keystore="WebStart/keystore" storepass="vSV%nr!G" preservelastmodified="true">
+								<signjar destDir="target" alias="soderer-de-java" keystore="WebStart/keystore.jks" storepass="5DWla%EYAE" preservelastmodified="true" tsaurl="https://timestamp.geotrust.com/tsa">
 									<path>
-										<fileset dir="${env.SodererDevel}\\WebStart" includes="utilities-2.0.0.jar" />
+										<fileset dir="target" includes="utilities-2.0.0.jar" />
 									</path>
 									<flattenmapper />
 								</signjar>

@@ -8,7 +8,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -16,7 +15,7 @@ import org.apache.commons.io.IOUtils;
 
 import de.soderer.utilities.UserError;
 
-public class FileDownloadWorker implements RunnableFuture<Boolean> {
+public class FileDownloadWorker extends Worker<Boolean> {
 	private static long SHOW_PROGRESS_AFTER_MILLISECONDS = 500;
 
 	private String downloadUrl = null;
@@ -31,7 +30,7 @@ public class FileDownloadWorker implements RunnableFuture<Boolean> {
 	private boolean isDone = false;
 	
 	public FileDownloadWorker(ProgressShowingModalDialog<?> parent, String downloadUrl, String destinationFilePath) {
-		this.parent = parent;
+		super(parent);
 		this.destinationFilePath = destinationFilePath;
 		this.downloadUrl = downloadUrl;
 	}
