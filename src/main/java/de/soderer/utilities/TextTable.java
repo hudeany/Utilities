@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public class TextTable {
 	protected static final String METADATA_HEADER = "HEADER";
-	protected static final String METADATA_FARBE = "FARBE";
+	protected static final String METADATA_COLOR = "COLOR";
 	protected static final String METADATA_RIGHTALIGNMENT = "RIGHTALIGN";
 	
 	protected List<List<String>> columnNames;
@@ -233,7 +233,7 @@ public class TextTable {
 			csvText.append("\n");
 		}
 		
-		csvText.append("\"" + METADATA_FARBE + "\";");
+		csvText.append("\"" + METADATA_COLOR + "\";");
 		for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 			csvText.append("\"" + columnColors.get(columnIndex) + "\";");
 		}
@@ -413,7 +413,7 @@ public class TextTable {
 						headerLine.add(lineParts[i]);
 					}
 				}
-				else if (METADATA_FARBE.equals(lineParts[0])) {
+				else if (METADATA_COLOR.equals(lineParts[0])) {
 					for (int i = 1; i < lineParts.length; i++) {
 						if (lineParts[i].equalsIgnoreCase("null"))
 							columnColors.add(null);

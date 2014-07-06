@@ -15,8 +15,6 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
@@ -28,7 +26,6 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.sql.Timestamp;
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,9 +67,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.program.Program;
 
 /**
- * Allgemeine Utilities
+ * Global Utilities
  * 
- * Diese Klasse hat kein Logging via Log4J, da sie meist schon vor dessen Initialisierung genutzt wird
+ * This class does no Logging via Log4J, because it is often used before its initialisation
  */
 public class Utilities {
 	public static final String STANDARD_XML = "<?xml version=\"1.0\" encoding=\"<encoding>\" standalone=\"yes\"?>\n<root>\n</root>\n";
@@ -83,12 +80,37 @@ public class Utilities {
 	public static final byte[] UTF_16_BE_BOM = new byte[] { (byte)0xFE, (byte)0xFF };
 	public static final byte[] UTF_8_BOM = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
 
+	/**
+	 * Generate a unique ID
+	 * 
+	 * @return
+	 */
 	public static String generateUUID() {
 		return UUID.randomUUID().toString().toUpperCase().replaceAll("-", "");
 	}
 
+	/**
+	 * Get a UUID from a string
+	 * 
+	 * @param value
+	 * @return
+	 */
+	public static UUID getUUIDFromString(String value) {
+		StringBuilder uuidString = new StringBuilder(value);
+		uuidString.insert(20, '-');
+		uuidString.insert(16, '-');
+		uuidString.insert(12, '-');
+		uuidString.insert(8, '-');
+		return UUID.fromString(uuidString.toString());
+	}
+
+	/**
+	 * Find a file using the ClassLoader
+	 * 
+	 * @param resourceName
+	 * @return
+	 */
 	public static URI getResource(String resourceName) {
-		// Find File using the ClassLoader
 		try {
 			URL url = Utilities.class.getResource("/" + resourceName);
 			if (url != null) {
@@ -104,16 +126,21 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get the data of a file included in a jar file
+	 * 
+	 * @param resourceName
+	 * @return
+	 */
 	public static InputStream getResourceAsStream(String resourceName) {
 		return Utilities.class.getResourceAsStream("/" + resourceName);
 	}
 
 	/**
-	 * Decodieren eines URL encodierten Strings.
+	 * Decode a URL encoded string
 	 * 
 	 * @param decode
-	 *            ein URL endcodierter String
-	 * @return einen normalen String in Klartext
+	 * @return
 	 * @throws Exception
 	 */
 	public static String decodeURL(String decode) throws Exception {
@@ -124,6 +151,12 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Encode data in a zipped base64 string data
+	 * 
+	 * @param clearArrayToEncode
+	 * @return
+	 */
 	public static byte[] encodeToZippedBase64(byte[] clearArrayToEncode) {
 		try {
 			ByteArrayOutputStream encoded = new ByteArrayOutputStream();
@@ -138,12 +171,19 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Decode data from a zipped base64 string data
+	 * 
+	 * @param zipedArrayToDecode
+	 * @return
+	 * @throws Exception
+	 */
 	public static byte[] decodeFromZippedBase64(byte[] zipedArrayToDecode) throws Exception {
 		return unzipByteArray(Base64.decodeBase64(zipedArrayToDecode));
 	}
 
 	/**
-	 * Unzippen eines ByteArrays mit GZIP-Algorithmus
+	 * Unzip byteArray by GZIP-Algorithm
 	 * 
 	 * @param zippedData
 	 * @return unzippedData
@@ -160,6 +200,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get the duration between two timestamps as a string
+	 * 
+	 * @param startTime
+	 * @param endTime
+	 * @return
+	 */
 	public static String getDuration(Calendar startTime, Calendar endTime) {
 		int durationInMilliSeconds = (int)(endTime.getTimeInMillis() - startTime.getTimeInMillis());
 		int milliSecondsPart = durationInMilliSeconds % 1000;
@@ -185,15 +232,21 @@ public class Utilities {
 	}
 
 	/**
-	 * Auslesen eines DateiVerzeichnisses und Ermitteln aller Dateien die mit einem Stammnamen beginnen
+	 * Read a directory and return all files starting with a basename form a list of basenames
 	 * 
-	 * @param searchPath
-	 * @return Array of Files mit den Dateien die gefunden wurden. Im Fehlerfall null
+	 * @param basenameList
+	 * @return
 	 */
-	public static ArrayList<File> getArrayOfFilesByStammname(String stammNamenListe) {
-		return getArrayOfFilesByStammname(Arrays.asList(stammNamenListe.split(";")));
+	public static ArrayList<File> getArrayOfFilesByStammname(String basenameList) {
+		return getArrayOfFilesByStammname(Arrays.asList(basenameList.split(";")));
 	}
 
+	/**
+	 * Read a directory and return all files starting with a basename form a list of basenames
+	 * 
+	 * @param stammNamenListe
+	 * @return
+	 */
 	public static ArrayList<File> getArrayOfFilesByStammname(List<String> stammNamenListe) {
 		ArrayList<File> ergebnisListe = new ArrayList<File>();
 
@@ -227,10 +280,26 @@ public class Utilities {
 		return ergebnisListe;
 	}
 
+	/**
+	 * Read a directory and return all files fitting to a regex pattern
+	 * 
+	 * @param startDirectory
+	 * @param patternString
+	 * @param traverseCompletely
+	 * @return
+	 */
 	public static List<File> getFilesByPattern(File startDirectory, String patternString, boolean traverseCompletely) {
 		return getFilesByPattern(startDirectory, Pattern.compile(patternString), traverseCompletely);
 	}
 
+	/**
+	 * Read a directory and return all files fitting to a regex pattern
+	 * 
+	 * @param startDirectory
+	 * @param pattern
+	 * @param traverseCompletely
+	 * @return
+	 */
 	public static List<File> getFilesByPattern(File startDirectory, Pattern pattern, boolean traverseCompletely) {
 		List<File> files = new ArrayList<File>();
 		if (startDirectory.isDirectory()) {
@@ -245,6 +314,14 @@ public class Utilities {
 		return files;
 	}
 
+	/**
+	 * Read a directory and return all files fitting to a wildcard pattern
+	 * 
+	 * @param startDirectory
+	 * @param fileFilterWithWildcards
+	 * @param traverseCompletely
+	 * @return
+	 */
 	public static List<File> getFilesWithWildcards(File startDirectory, String fileFilterWithWildcards, boolean traverseCompletely) {
 		List<File> files = new ArrayList<File>();
 		if (startDirectory.isDirectory()) {
@@ -266,15 +343,34 @@ public class Utilities {
 		return files;
 	}
 
+	/**
+	 * Check a simple name string
+	 * 
+	 * @param value
+	 * @return
+	 */
 	public static boolean checkForValidUserName(String value) {
 		return value != null && value.matches("[A-Za-z0-9_-]*");
 	}
 
+	/**
+	 * Convert an ArrayList of Strings to a StringArray
+	 * 
+	 * @param pArrayListOfStrings
+	 * @return
+	 */
 	public static String[] convertArrayListOfStringsToStringArray(ArrayList<String> pArrayListOfStrings) {
 		String[] arrayofStrings = new String[0];
 		return pArrayListOfStrings.toArray(arrayofStrings);
 	}
 
+	/**
+	 * Get index of an Integer within an Array of Integers
+	 * 
+	 * @param searchInt
+	 * @param intArray
+	 * @return
+	 */
 	public static int getIndex(int searchInt, int[] intArray) {
 		for (int i = 0; i < intArray.length; i++) {
 			if (intArray[i] == searchInt) {
@@ -285,12 +381,12 @@ public class Utilities {
 	}
 
 	/**
-	 * Auslesen des Streams in einen String
+	 * Read a stream into a string
 	 */
-	public static String inputStreamToString(InputStream in) throws IOException {
+	public static String inputStreamToString(InputStream in, String encoding) throws IOException {
 		BufferedReader bufferedReader = null;
 		try {
-			bufferedReader = new BufferedReader(new InputStreamReader(in));
+			bufferedReader = new BufferedReader(new InputStreamReader(in, encoding));
 			StringBuffer stringBuilder = new StringBuffer();
 			String line = null;
 
@@ -308,7 +404,7 @@ public class Utilities {
 	}
 
 	/**
-	 * Einen String als InputStream zur Verfügung stellen
+	 * Use a string as inputStream
 	 * 
 	 * @throws UnsupportedEncodingException
 	 */
@@ -316,15 +412,13 @@ public class Utilities {
 		return new ByteArrayInputStream(valueString.getBytes("UTF-8"));
 	}
 
-	public static String formatInt(int value, int len) {
-		NumberFormat nf = NumberFormat.getInstance();
-		nf.setMinimumIntegerDigits(len);
-		nf.setMaximumIntegerDigits(len);
-		nf.setGroupingUsed(false);
-
-		return nf.format(value);
-	}
-
+	/**
+	 * Read all stream data in byteArray
+	 * 
+	 * @param inputStream
+	 * @return
+	 * @throws Exception
+	 */
 	public static byte[] readStreamInArray(InputStream inputStream) throws Exception {
 		// Wenn keine Daten aus dem Stream gelesen werden konnten
 		// Wird mehrfach diese Thread-Wartezeit eingeräumt
@@ -386,6 +480,13 @@ public class Utilities {
 		return returnArrayBuffer.toByteArray();
 	}
 
+	/**
+	 * Read available stream data in byteArray
+	 * 
+	 * @param inputStream
+	 * @return
+	 * @throws Exception
+	 */
 	public static byte[] readAvailableDataFromStreamInArray(InputStream inputStream) throws Exception {
 		byte[] returnData = new byte[inputStream.available()];
 		@SuppressWarnings("unused")
@@ -393,6 +494,13 @@ public class Utilities {
 		return returnData;
 	}
 
+	/**
+	 * Read stream data in byteArray until next linefeed or stream end
+	 * 
+	 * @param inStream
+	 * @return
+	 * @throws IOException
+	 */
 	public static byte[] readStreamUntilEndOrLinefeed(InputStream inStream) throws IOException {
 		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
 		int nextByte;
@@ -411,41 +519,13 @@ public class Utilities {
 	}
 
 	/**
-	 * Ermitteln aller Dateien die anhand einer Zeile mit Stammnamen (durch ; getrennt) referenziert werden
-	 * 
-	 * @param pStammnamenListe
-	 * @return
-	 */
-	protected List<File> evaluateStammnamenFileList(String pStammnamenListe) {
-		// Ermitteln aller stammnamen aus der StammnamenListe
-		ArrayList<String> alleStammnamen = new ArrayList<String>();
-		String parameterZeile = pStammnamenListe; // ;-getrennter String mit den
-		// Stammnamen
-		while (parameterZeile.indexOf(";") > -1) {
-			alleStammnamen.add(parameterZeile.substring(0, parameterZeile.indexOf(";")).trim());
-			parameterZeile = parameterZeile.substring(parameterZeile.indexOf(";") + 1);
-		}
-		alleStammnamen.add(parameterZeile.trim());
-
-		ArrayList<File> importFiles = new ArrayList<File>();
-
-		// Suchen der Importfilenames
-		for (int i = 0; i < alleStammnamen.size(); i++) {
-			// Zusammenführen aller FileArrays zu Einem
-			importFiles.addAll(Utilities.getArrayOfFilesByStammname(alleStammnamen.get(i)));
-		}
-
-		return importFiles;
-	}
-
-	/**
-	 * Vergleich von 2 VersionsStrings (z.B.: 4.1.3)
+	 * Compare 2 VersionStrings (e.g.: 4.1.03 > 4.1.2)
 	 * 
 	 * @param version1
 	 * @param version2
-	 * @return -1 wenn Version1 < Version2<br>
-	 *         0 wenn Version1 = Version2<br>
-	 *         +1 wenn Version1 > Version2<br>
+	 * @return -1 if Version1 < Version2<br>
+	 *         0 if Version1 = Version2<br>
+	 *         +1 if Version1 > Version2<br>
 	 */
 	public static int compareVersion(String version1, String version2) {
 		String[] versionparts1 = version1.split("\\.");
@@ -468,6 +548,12 @@ public class Utilities {
 		return 0;
 	}
 
+	/**
+	 * Get email from X509Certificate
+	 * 
+	 * @param cert
+	 * @return
+	 */
 	public static String getEmailFromCertificate(X509Certificate cert) {
 		String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
 		for (String namePart : nameParts) {
@@ -479,6 +565,12 @@ public class Utilities {
 		return null;
 	}
 
+	/**
+	 * Get cn from X509Certificate
+	 * 
+	 * @param cert
+	 * @return
+	 */
 	public static String getCnFromCertificate(X509Certificate cert) {
 		String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
 		for (String namePart : nameParts) {
@@ -490,6 +582,13 @@ public class Utilities {
 		return null;
 	}
 
+	/**
+	 * Check if a day is included in a list of days
+	 * 
+	 * @param listOfDays
+	 * @param day
+	 * @return
+	 */
 	public static boolean dayListIncludes(List<GregorianCalendar> listOfDays, GregorianCalendar day) {
 		for (GregorianCalendar listDay : listOfDays) {
 			if (listDay.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR)) {
@@ -686,6 +785,12 @@ public class Utilities {
 		return new Timestamp(returnStart.getTimeInMillis());
 	}
 
+	/**
+	 * Parse a version string like 4.3.2
+	 * 
+	 * @param versionString
+	 * @return
+	 */
 	public static int[] parseVersionNumber(String versionString) {
 		try {
 			Pattern versionPattern = Pattern.compile("^(\\d+)(?:\\.(\\d+)){0,1}(?:\\.(\\d+)){0,1}$");
@@ -710,6 +815,12 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Check for a number
+	 * 
+	 * @param value
+	 * @return
+	 */
 	public static boolean isNumber(String value) {
 		try {
 			Integer.parseInt(value);
@@ -719,44 +830,19 @@ public class Utilities {
 		}
 	}
 
-	public static boolean testConnection(String hostname, int port) throws Exception {
-		Socket socket = null;
-		try {
-			socket = new Socket();
-			InetSocketAddress endPoint = new InetSocketAddress(hostname, port);
-			int timeout = 2000; // 2 Sekunden
-			if (endPoint.isUnresolved()) {
-				throw new Exception("Hostname '" + hostname + "' konnte nicht aufgelöst werden");
-			} else {
-				try {
-					socket.connect(endPoint, timeout);
-					return true;
-				} catch (IOException ioe) {
-					throw new Exception("Verbindung zum Host '" + hostname + "' auf Port " + port + " konnte nicht aufgebaut werden: " + ioe.getClass().getSimpleName() + ": " + ioe.getMessage());
-				}
-			}
-		} finally {
-			IOUtils.closeQuietly(socket);
-		}
-	}
-
+	/**
+	 * Remove the time part of a GregorianCalendar
+	 * 
+	 * @param value
+	 * @return
+	 */
 	public static GregorianCalendar getDayWithoutTime(GregorianCalendar value) {
 		return new GregorianCalendar(value.get(GregorianCalendar.YEAR), value.get(GregorianCalendar.MONTH), value.get(GregorianCalendar.DAY_OF_MONTH));
 	}
 
-	public static UUID getUUIDFromString(String value) {
-		StringBuilder uuidString = new StringBuilder(value);
-		uuidString.insert(20, '-');
-		uuidString.insert(16, '-');
-		uuidString.insert(12, '-');
-		uuidString.insert(8, '-');
-		return UUID.fromString(uuidString.toString());
-	}
-
 	/***
-	 * Aufteilen der Originalliste in kleinere Listen zu je maximal chunkSize-großen Listen
+	 * Split a list into smaller lists to a maximum chunkSize
 	 * 
-	 * @param <E>
 	 * @param originalList
 	 * @param chunkSize
 	 * @return
@@ -783,16 +869,37 @@ public class Utilities {
 		return returnList;
 	}
 
+	/**
+	 * List of characters for randomization
+	 */
 	private static final char[] randomCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜabcdefghijklmnopqrstuvwxyzäöüß".toCharArray();
 
+	/**
+	 * List of numbers and strings for randomization
+	 */
 	private static final char[] randomAlphaNumericCharacters = (new String(randomCharacters) + "0123456789").toCharArray();
 
+	/**
+	 * Random generator
+	 */
 	private static final Random random = new SecureRandom();
 
+	/**
+	 * Generate a random number up to maximum value
+	 * 
+	 * @param excludedMaximum
+	 * @return
+	 */
 	public static int getRandomNumber(int excludedMaximum) {
 		return random.nextInt(excludedMaximum);
 	}
 
+	/**
+	 * Generate a random string of given size
+	 * 
+	 * @param length
+	 * @return
+	 */
 	public static String getRandomString(int length) {
 		StringBuilder sb = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {
@@ -801,6 +908,12 @@ public class Utilities {
 		return sb.toString();
 	}
 
+	/**
+	 * Generate a random string of numbers and characters of given size
+	 * 
+	 * @param length
+	 * @return
+	 */
 	public static String getRandomAlphanumericString(int length) {
 		StringBuilder sb = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {
@@ -809,6 +922,12 @@ public class Utilities {
 		return sb.toString();
 	}
 
+	/**
+	 * Generate a random number of given size
+	 * 
+	 * @param length
+	 * @return
+	 */
 	public static String getRandomNumberString(int length) {
 		StringBuilder sb = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {
@@ -817,17 +936,33 @@ public class Utilities {
 		return sb.toString();
 	}
 
+	/**
+	 * Generate a random byte
+	 * 
+	 * @return
+	 */
 	public static byte getRandomByte() {
 		byte[] result = new byte[1];
 		random.nextBytes(result);
 		return result[0];
 	}
 
+	/**
+	 * Generate a random byteArray
+	 * 
+	 * @param arrayToFill
+	 * @return
+	 */
 	public static byte[] getRandomByteArray(byte[] arrayToFill) {
 		random.nextBytes(arrayToFill);
 		return arrayToFill;
 	}
 
+	/**
+	 * Get hostname of this machine
+	 * 
+	 * @return
+	 */
 	public static String getHostName() {
 		try {
 			return InetAddress.getLocalHost().getHostName();
@@ -836,6 +971,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Convert a collection to a string like Stringutils.join, but keep null values as "<null>" string
+	 * 
+	 * @param collection
+	 * @param separator
+	 * @return
+	 */
 	public static String convertCollectionToString(Collection<?> collection, String separator) {
 		StringBuilder builder = new StringBuilder();
 
@@ -853,6 +995,14 @@ public class Utilities {
 		return builder.toString();
 	}
 
+	/**
+	 * Check if a Integer is contained by an interval definition
+	 * Interval definitions like -1;2-5;8+
+	 * 
+	 * @param intervals
+	 * @param item
+	 * @return
+	 */
 	public static boolean checkForIntervalContainment(String intervals, int item) {
 		if (intervals != null && intervals.length() > 0) {
 			String[] blockStrings = intervals.split(";");
@@ -884,18 +1034,14 @@ public class Utilities {
 		return false;
 	}
 
-	public static String getSameFilenameInParentDirectory(String file) {
-		return getSameFilenameInParentDirectory(new File(file)).getAbsolutePath();
-	}
-
-	public static File getSameFilenameInParentDirectory(File file) {
-		return new File(file.getParentFile().getParent() + File.separator + file.getName());
-	}
-
-	public static SCPFile getSameFilenameInParentDirectory(SCPFile file) throws Exception {
-		return new SCPFile(file.getHostname(), file.getDirectory().getParent().getPath(), file.getFilename());
-	}
-
+	/**
+	 * Read a directory and return all files fitting namestart and extension
+	 * 
+	 * @param directory
+	 * @param nameStart
+	 * @param extension
+	 * @return
+	 */
 	public static File[] getSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
 		List<File> files = new LinkedList<File>();
 		for (File file : directory.listFiles()) {
@@ -906,6 +1052,13 @@ public class Utilities {
 		return files.toArray(new File[0]);
 	}
 
+	/**
+	 * Get all recursive subfiles of a directory
+	 * 
+	 * @param directory
+	 * @return
+	 * @throws Exception
+	 */
 	public static List<File> getAllSubfiles(File directory) throws Exception {
 		try {
 			List<File> files = new LinkedList<File>();
@@ -927,6 +1080,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get number of all recursive subfiles of a directory
+	 * 
+	 * @param directory
+	 * @return
+	 * @throws Exception
+	 */
 	public static int getAllSubfilesNumber(File directory) throws Exception {
 		try {
 			int fileCount = 0;
@@ -948,6 +1108,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get size in bytes of all recursive subfiles of a directory
+	 * 
+	 * @param directory
+	 * @return
+	 * @throws Exception
+	 */
 	public static long getAllSubfilesSize(File directory) throws Exception {
 		try {
 			long fileSizeSum = 0;
@@ -969,12 +1136,26 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Delete all subfiles fitting namestart and extension
+	 * 
+	 * @param directory
+	 * @param nameStart
+	 * @param extension
+	 */
 	public static void deleteSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
 		for (File file : getSubfilesByNameAndExtension(directory, nameStart, extension)) {
 			FileUtils.deleteQuietly(file);
 		}
 	}
 
+	/**
+	 * Get the minimum of a value list down to a valid minimum
+	 * 
+	 * @param allowedValueMinimum
+	 * @param values
+	 * @return
+	 */
 	public static int getMinimumOfAllowedValues(int allowedValueMinimum, int... values) {
 		int returnValue = Integer.MAX_VALUE;
 		if (values != null) {
@@ -987,15 +1168,27 @@ public class Utilities {
 		return returnValue;
 	}
 
+	/**
+	 * Convert a string to boolean
+	 * 
+	 * @param value
+	 * @return
+	 */
 	public static boolean interpretAsBool(String value) {
 		if (StringUtils.isNotEmpty(value)) {
 			value = value.trim();
-			return value.equalsIgnoreCase("true") || value.equalsIgnoreCase("+") || value.equalsIgnoreCase("yes") || value.equalsIgnoreCase("ja") || value.equalsIgnoreCase("ok");
+			return value.equalsIgnoreCase("true") || value.equalsIgnoreCase("+") || value.equalsIgnoreCase("yes") || value.equalsIgnoreCase("ja") || value.equalsIgnoreCase("ok") || value.equalsIgnoreCase("on") || value.equalsIgnoreCase("an");
 		} else {
 			return false;
 		}
 	}
 
+	/**
+	 * Check if any characters in a list are equal
+	 * 
+	 * @param values
+	 * @return
+	 */
 	public static boolean anyCharsAreEqual(char... values) {
 		for (int i = 0; i < values.length; i++) {
 			for (int j = i + 1; j < values.length; j++) {
@@ -1007,36 +1200,23 @@ public class Utilities {
 		return false;
 	}
 
-	public static byte[] xor(byte[]... byteArrays) {
-		return xor(Arrays.asList(byteArrays));
-	}
-
-	public static byte[] xor(List<byte[]> byteArrays) {
-		byte[] returnArray = new byte[byteArrays.get(0).length];
-
-		for (int i = 0; i < byteArrays.size(); i++) {
-			for (int j = 0; j < returnArray.length; j++) {
-				returnArray[j] = xor(returnArray[j], byteArrays.get(i)[j]);
-			}
-		}
-
-		return returnArray;
-	}
-
-	public static byte xor(byte... keyData) {
-		byte resultItem = 0;
-
-		for (byte key : keyData) {
-			resultItem = (byte)(resultItem ^ key);
-		}
-
-		return resultItem;
-	}
-
+	/**
+	 * Math.square
+	 * 
+	 * @param value
+	 * @return
+	 */
 	public static int square(int value) {
 		return value * value;
 	}
 
+	/**
+	 * Math power
+	 * 
+	 * @param base
+	 * @param exp
+	 * @return
+	 */
 	public static int pow(int base, int exp) {
 		if (exp < 0) {
 			throw new IllegalArgumentException("Invalid negative exponent");
@@ -1046,7 +1226,14 @@ public class Utilities {
 			return square(pow(base, exp / 2)) * (exp % 2 == 1 ? base : 1);
 		}
 	}
-
+	
+	/**
+	 * Get number of lines of a textfile
+	 * 
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 */
 	public static int getLineCount(File file) throws IOException {
 		LineNumberReader lineNumberReader = null;
 		try {
@@ -1061,18 +1248,45 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get a collection like a set as a ordered list
+	 * @param c
+	 * @return
+	 */
 	public static <T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
 		List<T> list = new ArrayList<T>(c);
 		java.util.Collections.sort(list);
 		return list;
 	}
 
+	/**
+	 * Search textfile for string
+	 * 
+	 * @param searchFile
+	 * @param searchText
+	 * @param searchCaseSensitive
+	 * @param searchTextIsRegularExpression
+	 * @param defaultEncoding
+	 * @return
+	 * @throws Exception
+	 */
 	public static boolean fileSearchText(File searchFile, String searchText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
 		List<String> searchTexts = new ArrayList<String>();
 		searchTexts.add(searchText);
 		return fileSearchText(searchFile, searchTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
 	}
 
+	/**
+	 * Search textfile for string
+	 * 
+	 * @param searchFile
+	 * @param searchTexts
+	 * @param searchCaseSensitive
+	 * @param searchTextIsRegularExpression
+	 * @param defaultEncoding
+	 * @return
+	 * @throws Exception
+	 */
 	public static boolean fileSearchText(File searchFile, List<String> searchTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
@@ -1113,8 +1327,19 @@ public class Utilities {
 		}
 	}
 
-	public static boolean fileReplaceText(File searchFile, String searchText, String replacementText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding)
-			throws Exception {
+	/**
+	 * Replace string in textfile
+	 * 
+	 * @param searchFile
+	 * @param searchText
+	 * @param replacementText
+	 * @param searchCaseSensitive
+	 * @param searchTextIsRegularExpression
+	 * @param defaultEncoding
+	 * @return
+	 * @throws Exception
+	 */
+	public static boolean fileReplaceText(File searchFile, String searchText, String replacementText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
 		List<String> searchTexts = new ArrayList<String>();
 		searchTexts.add(searchText);
 		List<String> replacementTexts = new ArrayList<String>();
@@ -1122,8 +1347,19 @@ public class Utilities {
 		return fileReplaceText(searchFile, searchTexts, replacementTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
 	}
 
-	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression,
-			String defaultEncoding) throws Exception {
+	/**
+	 * Replace strings in textfile
+	 * 
+	 * @param searchFile
+	 * @param searchTexts
+	 * @param replacementTexts
+	 * @param searchCaseSensitive
+	 * @param searchTextIsRegularExpression
+	 * @param defaultEncoding
+	 * @return
+	 * @throws Exception
+	 */
+	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
 			boolean foundAndReplaced = false;
@@ -1169,6 +1405,11 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get files of classpath
+	 * 
+	 * @return
+	 */
 	public static String getClassPath() {
 		ClassLoader sysClassLoader = ClassLoader.getSystemClassLoader();
 		URL[] urls = ((URLClassLoader)sysClassLoader).getURLs();
@@ -1180,6 +1421,13 @@ public class Utilities {
 		return classpath.toString();
 	}
 
+	/**
+	 * Check bytearrays equality
+	 * 
+	 * @param byteArray1
+	 * @param byteArray2
+	 * @return
+	 */
 	public static boolean compare(byte[] byteArray1, byte[] byteArray2) {
 		if (byteArray1 == byteArray2) {
 			return true;
@@ -1195,6 +1443,14 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Read first n bytes of binary file
+	 * 
+	 * @param dataFile
+	 * @param maxAmountToRead
+	 * @return
+	 * @throws Exception
+	 */
 	public static byte[] readFirstFileData(File dataFile, int maxAmountToRead) throws Exception {
 		FileInputStream input = null;
 		try {
@@ -1210,6 +1466,11 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get all system properties
+	 * 
+	 * @return
+	 */
 	public static Map<String, String> getSystemPropertiesMap() {
 		Map<String, String> propertiesMap = new HashMap<String, String>();
 		for (Object key : System.getProperties().keySet()) {
@@ -1218,6 +1479,15 @@ public class Utilities {
 		return propertiesMap;
 	}
 
+	/**
+	 * Convert Map to String
+	 * 
+	 * @param map
+	 * @param entrySeparator
+	 * @param keySeparator
+	 * @param sort
+	 * @return
+	 */
 	public static String getStringFromMap(Map<String, ? extends Object> map, String entrySeparator, String keySeparator, boolean sort) {
 		List<String> keyList = new ArrayList<String>(map.keySet());
 		if (sort) {
@@ -1237,14 +1507,35 @@ public class Utilities {
 		return builder.toString();
 	}
 
+	/**
+	 * Make a number human readable
+	 * 
+	 * @param value
+	 * @return
+	 */
 	public static String getHumanReadableNumber(Number value) {
 		return getHumanReadableNumber(value, null, true);
 	}
 
+	/**
+	 * Make a number with unitsign human readable
+	 * 
+	 * @param value
+	 * @param unitTypeSign
+	 * @return
+	 */
 	public static String getHumanReadableNumber(Number value, String unitTypeSign) {
 		return getHumanReadableNumber(value, unitTypeSign, true);
 	}
 
+	/**
+	 * Make a number with unitsign human readable
+	 * 
+	 * @param value
+	 * @param unitTypeSign
+	 * @param siUnits
+	 * @return
+	 */
 	public static String getHumanReadableNumber(Number value, String unitTypeSign, boolean siUnits) {
 		int unit = siUnits ? 1000 : 1024;
 		double interimValue = value.doubleValue();
@@ -1282,6 +1573,13 @@ public class Utilities {
 		return valueString + unitExtension;
 	}
 
+	/**
+	 * Generate MD5 from string data
+	 * 
+	 * @param data
+	 * @return
+	 * @throws Exception
+	 */
 	public static byte[] getMD5Hash(String data) throws Exception {
 		try {
 			return MessageDigest.getInstance("MD5").digest(data.getBytes("UTF-8"));
@@ -1290,6 +1588,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Generate SHA-1 from string data
+	 * 
+	 * @param data
+	 * @return
+	 * @throws Exception
+	 */
 	public static byte[] getSHA1Hash(String data) throws Exception {
 		try {
 			return MessageDigest.getInstance("SHA-1").digest(data.getBytes("UTF-8"));
@@ -1298,6 +1603,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Generate SHA-512 from string data
+	 * 
+	 * @param data
+	 * @return
+	 * @throws Exception
+	 */
 	public static byte[] getSHA512Hash(String data) throws Exception {
 		try {
 			return MessageDigest.getInstance("SHA-512").digest(data.getBytes("UTF-8"));
@@ -1306,6 +1618,12 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get bytearray for list of bytes
+	 * 
+	 * @param data
+	 * @return
+	 */
 	public static byte[] getByteArray(List<Byte> data) {
 		byte[] returnArray = new byte[data.size()];
 		for (int i = 0; i < data.size(); i++) {
@@ -1314,6 +1632,12 @@ public class Utilities {
 		return returnArray;
 	}
 
+	/**
+	 * Get stacktrace as string
+	 * 
+	 * @param stackTrace
+	 * @return
+	 */
 	public static String stacktraceToString(StackTraceElement[] stackTrace) {
 		StringBuilder returnBuilder = new StringBuilder();
 		if (stackTrace != null) {
@@ -1325,6 +1649,19 @@ public class Utilities {
 		return returnBuilder.toString();
 	}
 
+	/**
+	 * Send an email
+	 * 
+	 * @param senderAdress
+	 * @param toAdressList
+	 * @param ccAdressList
+	 * @param subject
+	 * @param bodyText
+	 * @param bodyHtml
+	 * @param mailtype
+	 * @param charset
+	 * @return
+	 */
 	public static boolean sendEmail(String senderAdress, String toAdressList, String ccAdressList, String subject, String bodyText, String bodyHtml, int mailtype, String charset) {
 		try {
 			// create some properties and get the default Session
@@ -1378,6 +1715,12 @@ public class Utilities {
 		return true;
 	}
 
+	/**
+	 * Get emails from string list
+	 * 
+	 * @param listString
+	 * @return
+	 */
 	public static InternetAddress[] getEmailAddressesFromList(String listString) {
 		if (StringUtils.isNotBlank(listString)) {
 			List<InternetAddress> emailAddresses = new ArrayList<InternetAddress>();
@@ -1400,10 +1743,27 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Try to open en email in the standard email client
+	 * 
+	 * @param toAdress
+	 * @param subject
+	 * @param body
+	 * @return
+	 */
 	public static boolean openMailInStandardClient(String toAdress, String subject, String body) {
 		return openMailInStandardClient(toAdress, null, subject, body);
 	}
 
+	/**
+	 * Try to open en email in the standard email client
+	 * 
+	 * @param toAdress
+	 * @param ccAdress
+	 * @param subject
+	 * @param body
+	 * @return
+	 */
 	public static boolean openMailInStandardClient(String toAdress, String ccAdress, String subject, String body) {
 		try {
 			File attachmentFile = null;
@@ -1450,6 +1810,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Download a file from url
+	 * 
+	 * @param url
+	 * @param localeDestionationPath
+	 * @throws Exception
+	 */
 	public static void downloadFile(String url, String localeDestionationPath) throws Exception {
 		BufferedInputStream bufferedInputStream = null;
 		FileOutputStream fileOutputStream = null;
@@ -1465,6 +1832,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Check array for duplicate strings
+	 * 
+	 * @param inputArray
+	 * @param ignoreNullValues
+	 * @return
+	 */
 	public static boolean checkForDuplicates(String[] inputArray, boolean ignoreNullValues) {
 		Set<String> tempSet = new HashSet<String>();
 		for (String stringItem : inputArray) {
@@ -1477,6 +1851,13 @@ public class Utilities {
 		return false;
 	}
 
+	/**
+	 * Filter all Objects of given class
+	 * 
+	 * @param collection
+	 * @param classToSelect
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public static <T> List<T> selectItems(Collection<?> collection, Class<T> classToSelect) {
 		List<T> list = new ArrayList<T>();
@@ -1488,6 +1869,13 @@ public class Utilities {
 		return list;
 	}
 
+	/**
+	 * Filter all Objects of given class
+	 * 
+	 * @param array
+	 * @param classToSelect
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public static <T> List<T> selectItems(Object[] array, Class<T> classToSelect) {
 		List<T> list = new ArrayList<T>();

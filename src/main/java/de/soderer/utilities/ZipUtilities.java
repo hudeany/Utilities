@@ -1,6 +1,5 @@
 package de.soderer.utilities;
 
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,9 +21,8 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.omg.CORBA.SystemException;
 
-public class ZipUtils {
+public class ZipUtilities {
 	/**
 	 * Zippen einer Datei oder rekursiv aller Dateien und Unterdateien eines Ordners
 	 * Dabei wird das Zipfile im gleichen Verzeichnis wie die zu zippende Datei abgelegt
@@ -267,7 +265,7 @@ public class ZipUtils {
 	 * Öffnen einer existierenden Zip-Datei um neue Dateien anzuhängen oder wenn diese Datei noch nicht existiert eine neue Zip-Datei erstellen
 	 * @param file
 	 * @return
-	 * @throws SystemException
+	 * @throws IOException
 	 */
 	public static ZipOutputStream openExistingZipFileForExtensionOrCreateNewZipFile(File zipFile) throws IOException {
 		if (zipFile.exists())
