@@ -206,20 +206,20 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerAndSubjectName, Date validFrom, Date validUntil) throws Exception {
-		return generateRsaCertificate(keyPair, issuerAndSubjectName, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
+	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerName, String subjectName, Date validFrom, Date validUntil) throws Exception {
+		return generateRsaCertificate(keyPair, issuerName, subjectName, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
 	}
 
 	@SuppressWarnings("deprecation")
-	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerAndSubjectName, Date validFrom, Date validUntil, String signatureMethod) throws Exception {
+	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerName, String subjectName, Date validFrom, Date validUntil, String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
 			org.bouncycastle.x509.X509V3CertificateGenerator certificateGenerator = new org.bouncycastle.x509.X509V3CertificateGenerator();
 
 			certificateGenerator.setSerialNumber(BigInteger.valueOf(System.currentTimeMillis()));
-			certificateGenerator.setSubjectDN(new X500Principal("CN=" + issuerAndSubjectName));
-			certificateGenerator.setIssuerDN(new X500Principal("CN=" + issuerAndSubjectName));
+			certificateGenerator.setSubjectDN(new X500Principal("CN=" + subjectName));
+			certificateGenerator.setIssuerDN(new X500Principal("CN=" + issuerName));
 			certificateGenerator.setNotBefore(validFrom);
 			certificateGenerator.setNotAfter(validUntil);
 			certificateGenerator.setPublicKey(getPublicKeyFromKeyPair(keyPair));

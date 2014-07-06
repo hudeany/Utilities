@@ -171,6 +171,25 @@ public class UtilitiesTest {
 		}
 	}
 	
+	@Test
+	public void testVersion() {
+		try {
+			Version testVersion = new Version("03.02.01");
+			Assert.assertEquals(2, testVersion.getMinorVersionNumber());
+			Version testVersion2 = new Version("3.2.1");
+			Assert.assertEquals(1, testVersion2.getMicroVersionNumber());
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		
+		try {
+			new Version("03.x02.01");
+			Assert.fail("Missing error on invalid version string");
+		} catch (Exception e) {
+			// Expected exception
+		}
+	}
+	
 //	@Test
 //	public void testEncodingUTF_8() {
 //		try {

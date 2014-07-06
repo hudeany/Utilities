@@ -884,4 +884,42 @@ public class XmlUtilities {
 		
 		return returnList;
 	}
+
+	public static String removeFrameTag(String data) throws Exception {
+		if (StringUtils.isEmpty(data)) {
+			return data;
+		} else {
+			String changedData = data.trim();
+			if (changedData.startsWith("<") && changedData.endsWith(">")) {
+				Document xmlDocument = parseXmlString(changedData);
+				Node rootNode = getRootNodeFromDocument(xmlDocument);
+				List<Node> childNodes = getChildNodes(rootNode);
+				if (childNodes.size() > 0) {
+					return getNodeAsString(childNodes.get(0), "UTF-8", true);
+				} else {
+					return getNodeValue(rootNode);
+				}
+			} else {
+				return data;
+			}
+		}
+	}
+	
+	public static Node getRootNodeFromDocument(Document document) {
+		return document.getDocumentElement();
+	}
+	
+	public static List<Node> getChildNodes(Node dataNode) {
+		List<Node> returnList = new ArrayList<Node>();
+		
+		NodeList list = dataNode.getChildNodes();
+		for (int i = 0; i < list.getLength(); i++) {
+			Node node = list.item(i);
+			if (node.getNodeType() != Node.TEXT_NODE) {
+				returnList.add(node);
+			}
+		}
+		
+		return returnList;
+	}
 }
