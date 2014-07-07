@@ -17,7 +17,7 @@ import org.bouncycastle.openpgp.PGPSecretKey;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureGenerator;
 
-import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.PgpUtilities;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 import de.soderer.utilities.swt.Worker;
@@ -40,7 +40,7 @@ public class PGPFileSignatureWorker extends Worker<byte[]> {
 		this.signatureMethod = signatureMethod;
 
 		if (StringUtils.isBlank(this.signatureMethod)) {
-			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_PGP;
+			this.signatureMethod = PgpUtilities.DEFAULT_SIGNATURE_METHOD_PGP;
 		}
 
 		todo = dataToSign.available();
@@ -82,7 +82,7 @@ public class PGPFileSignatureWorker extends Worker<byte[]> {
 
 			outputStream = new ByteArrayOutputStream();
 			outputStream2 = new ArmoredOutputStream(outputStream);
-			PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(secretKey.getPublicKey().getAlgorithm(), CryptographicUtilities.getPGPSignatureMethod(signatureMethod), "BC");
+			PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(secretKey.getPublicKey().getAlgorithm(), PgpUtilities.getPGPSignatureMethod(signatureMethod), "BC");
 			pgpSignatureGenerator.initSign(PGPSignature.BINARY_DOCUMENT, privateKey);
 
 			bcpgOutputStream = new BCPGOutputStream(outputStream2);
