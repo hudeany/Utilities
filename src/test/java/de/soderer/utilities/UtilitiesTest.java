@@ -188,6 +188,16 @@ public class UtilitiesTest {
 		} catch (Exception e) {
 			// Expected exception
 		}
+
+		try {
+			Version testVersion3 = Version.getFirstFullVersionNumberFromText("Testtext 3.2.1 Texttest");
+			Assert.assertEquals(3, testVersion3.getMajorVersionNumber());
+			Assert.assertEquals(2, testVersion3.getMinorVersionNumber());
+			Assert.assertEquals(1, testVersion3.getMicroVersionNumber());
+			Assert.assertEquals("3.2.1", testVersion3.toString());
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
 	}
 	
 //	@Test

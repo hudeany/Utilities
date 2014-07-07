@@ -85,7 +85,7 @@ public class Version {
 	 */
 	@Override
 	public String toString() {
-		return new StringBuilder(majorVersionNumber).append(".").append(minorVersionNumber).append(".").append(microVersionNumber).toString();
+		return new StringBuilder().append(majorVersionNumber).append(".").append(minorVersionNumber).append(".").append(microVersionNumber).toString();
 	}
 	
 	/**
