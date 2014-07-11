@@ -1,12 +1,10 @@
 package de.soderer.utilities;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Date;
@@ -156,7 +154,7 @@ public class PgpUtilities {
 		}
 	}
 
-	public static PGPSecretKey readPGPSecretKey(InputStream inputStream) throws IOException, PGPException, NoSuchProviderException {
+	public static PGPSecretKey readPGPSecretKey(InputStream inputStream) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 	
 		try {
@@ -182,7 +180,7 @@ public class PgpUtilities {
 		}
 	}
 
-	public static PGPPrivateKey readPGPPrivateKey(PGPSecretKey pgpSecretKey, char[] password) throws NoSuchProviderException, PGPException, UserError {
+	public static PGPPrivateKey readPGPPrivateKey(PGPSecretKey pgpSecretKey, char[] password) throws Exception {
 		try {
 			if (pgpSecretKey == null) {
 				return null;
@@ -202,7 +200,7 @@ public class PgpUtilities {
 		}
 	}
 
-	public static PGPPublicKey readPGPPublicKey(PGPSecretKey pgpSecretKey) throws NoSuchProviderException, PGPException {
+	public static PGPPublicKey readPGPPublicKey(PGPSecretKey pgpSecretKey) throws Exception {
 		if (pgpSecretKey == null) {
 			return null;
 		} else {

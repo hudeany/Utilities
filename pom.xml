@@ -121,7 +121,7 @@
 						<phase>package</phase>
 						<configuration>
 							<target>
-								<signjar destDir="target" alias="soderer-de-java" keystore="WebStart/keystore.jks" storepass="5DWla%EYAE" preservelastmodified="true" tsaurl="https://timestamp.geotrust.com/tsa">
+								<signjar destDir="target" alias="soderer-de-java-2014" keystore="WebStart/keystore.jks" storepass="5DWla%EYAE" preservelastmodified="true" tsaurl="https://timestamp.geotrust.com/tsa">
 									<path>
 										<fileset dir="target" includes="utilities-2.0.0.jar" />
 									</path>
