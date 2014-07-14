@@ -3,7 +3,7 @@ package de.soderer.utilities.sql.whereclause.test;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import junit.framework.TestCase;
 import de.soderer.utilities.sql.whereclause.ReducedSqlWhereClauseParser;
 import de.soderer.utilities.sql.whereclause.token.RulePart;

@@ -6,7 +6,7 @@ import javax.xml.parsers.SAXParserFactory;
 import org.apache.commons.pool.BasePoolableObjectFactory;
 import org.apache.commons.pool.impl.GenericObjectPool;
 
-public class XmlParserPool extends GenericObjectPool {
+public class XmlParserPool extends GenericObjectPool<SAXParser> {
 
 	private static final XmlParserPool SINGLETON_INSTANCE = new XmlParserPool();
 
@@ -23,13 +23,9 @@ public class XmlParserPool extends GenericObjectPool {
 		return (SAXParser) super.borrowObject();
 	}
 
+	@Override
 	public void returnObject(SAXParser parser) throws Exception {
 		super.returnObject(parser);
-	}
-
-	@Override
-	public void returnObject(Object obj) throws Exception {
-		throw new UnsupportedOperationException(XmlParserPool.class.getSimpleName() + " unterstützt nur Objekte vom Typ SAXParser!");
 	}
 
 	private static final class Config extends GenericObjectPool.Config {
@@ -39,11 +35,11 @@ public class XmlParserPool extends GenericObjectPool {
 		}
 	}
 
-	private static final class PoolableSAXParserFactory extends BasePoolableObjectFactory {
+	private static final class PoolableSAXParserFactory extends BasePoolableObjectFactory<SAXParser> {
 		private SAXParserFactory parserFactory = SAXParserFactory.newInstance();
 		
 		@Override
-		public Object makeObject() throws Exception {
+		public SAXParser makeObject() throws Exception {
 			return parserFactory.newSAXParser();
 		}
 	}
