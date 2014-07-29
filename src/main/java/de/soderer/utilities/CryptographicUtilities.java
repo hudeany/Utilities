@@ -14,11 +14,19 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Vector;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -460,4 +468,113 @@ public class CryptographicUtilities {
 			}
 		}
 	}
+	
+	public static boolean verifyJarSignature(File jarFile, X509Certificate[] trustedCerts) throws Exception {
+		if (trustedCerts != null && trustedCerts.length == 0) {
+			return false;
+		}
+		
+		JarFile jar = null;
+		try {
+			jar = new JarFile(jarFile);
+			Manifest manifest = jar.getManifest();
+			if (manifest == null) {
+				throw new SecurityException("The jar file has no manifest, which would contain the file signatures");
+			}
+			
+	        byte[] buffer = new byte[4096];
+	        Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
+	        List<JarEntry> jarEntries = new ArrayList<JarEntry>();
+
+			while (jarEntriesEnumerator.hasMoreElements()) {
+				JarEntry jarEntry = (JarEntry) jarEntriesEnumerator.nextElement();
+				jarEntries.add(jarEntry);
+				
+				InputStream jarEntryInputStream = null;
+				try {
+					jarEntryInputStream = jar.getInputStream(jarEntry);
+					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
+					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+					}
+				} finally {
+					IOUtils.closeQuietly(jarEntryInputStream);
+				}
+			}
+			
+			if (trustedCerts == null) {
+				return true;
+			} else {
+			    for (JarEntry jarEntry : jarEntries) {
+			        if (!jarEntry.isDirectory()) {
+				        // Every file must be signed - except files in META-INF
+				        Certificate[] certs = jarEntry.getCertificates();
+				        if ((certs == null) || (certs.length == 0)) {
+				            if (!jarEntry.getName().startsWith("META-INF")) {
+				                throw new SecurityException("The jar file contains unsigned files.");
+				            }
+				        } else {
+				            X509Certificate[] chainRootCertificates = getChainRootCertificates(certs);
+				            boolean isSignedByTrustedCert = false;
+				
+				            for (X509Certificate chainRootCertificate : chainRootCertificates) {
+				                if (verifyChainOfTrust(chainRootCertificate, trustedCerts)) {
+				                    isSignedByTrustedCert = true;
+				                    break;
+				                }
+				            }
+				
+				            if (!isSignedByTrustedCert) {
+				                throw new SecurityException("The jar file contains untrusted signed files");
+				            }
+				        }
+			        }
+			    }
+			
+			    return true;
+			}
+		} catch (Exception e) {
+			return false;
+		} finally {
+			IOUtils.closeQuietly(jar);
+		}
+	}
+
+    public static boolean verifyChainOfTrust(X509Certificate cert, X509Certificate[] trustedCerts) {
+    	// Check for member of trusted certs
+        for (X509Certificate trustedCert : trustedCerts) {
+            if (cert.getSubjectDN().equals(trustedCert.getSubjectDN())) {
+                if (cert.equals(trustedCert)) {
+                    return true;
+                }
+            }
+        }
+
+        // Check for chained trust by given trustedCerts
+        for (X509Certificate trustedCert : trustedCerts) {
+            if (cert.getIssuerDN().equals(trustedCert.getSubjectDN())) {
+                try {
+                    cert.verify(trustedCert.getPublicKey());
+                    return true;
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public static X509Certificate[] getChainRootCertificates(Certificate[] certs) {
+        Vector<X509Certificate> result = new Vector<X509Certificate>();
+        for (int i = 0; i < certs.length - 1; i++) {
+            if (!((X509Certificate) certs[i + 1]).getSubjectDN().equals(((X509Certificate) certs[i]).getIssuerDN())) {
+                result.addElement((X509Certificate) certs[i]);
+            }
+        }
+        // The final entry in the certs array is always a root certificate
+        result.addElement((X509Certificate) certs[certs.length - 1]);
+        X509Certificate[] returnValue = new X509Certificate[result.size()];
+        result.copyInto(returnValue);
+        return returnValue;
+    }
 }
