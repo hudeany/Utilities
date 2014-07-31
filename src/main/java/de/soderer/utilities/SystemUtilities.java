@@ -30,7 +30,7 @@ public class SystemUtilities {
 	
 	public static int getProcessId() {
 		String data = ManagementFactory.getRuntimeMXBean().getName();
-		if (isWindowsSystem()) {
+		if (data.contains("@")) {
 			return Integer.parseInt(data.substring(0, data.indexOf("@")));
 		} else if (isLinuxSystem()) {
 			return Integer.parseInt(data);
@@ -70,7 +70,7 @@ public class SystemUtilities {
 		resultMap.put("process.uptime", Long.toString(getUptimeInMillis()));
 		resultMap.put("process.starttime", getStarttime().toString());
 		resultMap.put("process.javastartuparguments", getJavaStartupArguments().toString());
-		resultMap.put("process.jar", System.getProperty("process.jar") == null ? "<unknown>" : System.getProperty("process.jar"));
+		resultMap.put("process.jar", System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR) == null ? "<unknown>" : System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR));
 		
 		resultMap.put("cryptography.unlimitedKeyStrength", isunlimitedKeyStrengthAllowed() ? "true" : "false");
 		

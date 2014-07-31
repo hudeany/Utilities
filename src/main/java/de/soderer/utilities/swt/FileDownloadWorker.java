@@ -23,8 +23,6 @@ public class FileDownloadWorker extends Worker<Boolean> {
 	private String destinationFilePath = null;
 	private Boolean result = false;
 	
-	private ProgressShowingModalDialog<?> parent;
-	
 	private Exception error = null;
 	private boolean cancel = false;
 	private boolean isDone = false;
