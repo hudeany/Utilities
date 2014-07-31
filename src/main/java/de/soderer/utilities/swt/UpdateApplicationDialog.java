@@ -1,6 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.io.File;
+import java.net.URLEncoder;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RunnableFuture;
@@ -167,7 +168,6 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		}
 	}
 
-	//TODO: Use URL Encoding
 	public boolean downloadUpdateFile(File downloadTempFile, String downloadUrl) throws Exception {
 		try {
 			downloadTempFile.delete();
@@ -175,8 +175,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				CredentialsDialog credentialsDialog = new CredentialsDialog(getParent(), getText(), LangResources.get("enterDownloadCredentials"));
 				Boolean success = credentialsDialog.open();
 				if (success) {
-					downloadUrl = downloadUrl.replaceAll("<username>", credentialsDialog.getUsername());
-					downloadUrl = downloadUrl.replaceAll("<password>", new String(credentialsDialog.getPassword()));
+					downloadUrl = downloadUrl.replaceAll("<username>", URLEncoder.encode(credentialsDialog.getUsername(), "UTF-8"));
+					downloadUrl = downloadUrl.replaceAll("<password>", URLEncoder.encode(new String(credentialsDialog.getPassword()), "UTF-8"));
 				} else {
 					return false;
 				}
@@ -185,7 +185,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					SimpleInputDialog usernameDialog = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterDownloadUserName"));
 					String username = usernameDialog.open();
 					if (StringUtils.isNotBlank(username)) {
-						downloadUrl = downloadUrl.replaceAll("<username>", username);
+						downloadUrl = downloadUrl.replaceAll("<username>", URLEncoder.encode(username, "UTF-8"));
 					} else {
 						return false;
 					}
@@ -194,7 +194,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					PasswordDialog passwordDialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterDownloadPassword"));
 					char[] password = passwordDialog.open();
 					if (password != null) {
-						downloadUrl = downloadUrl.replaceAll("<password>", new String(password));
+						downloadUrl = downloadUrl.replaceAll("<password>", URLEncoder.encode(new String(password), "UTF-8"));
 					} else {
 						return false;
 					}
