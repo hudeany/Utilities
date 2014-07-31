@@ -1,7 +1,9 @@
 package de.soderer.utilities;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -14,7 +16,12 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
+import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.PKIXCertPathBuilderResult;
+import java.security.cert.TrustAnchor;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
@@ -22,7 +29,9 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -470,7 +479,7 @@ public class CryptographicUtilities {
 	}
 	
 	public static boolean verifyJarSignature(File jarFile, X509Certificate[] trustedCerts) throws Exception {
-		if (trustedCerts != null && trustedCerts.length == 0) {
+		if (trustedCerts == null || trustedCerts.length == 0) {
 			return false;
 		}
 		
@@ -479,7 +488,7 @@ public class CryptographicUtilities {
 			jar = new JarFile(jarFile);
 			Manifest manifest = jar.getManifest();
 			if (manifest == null) {
-				throw new SecurityException("The jar file has no manifest, which would contain the file signatures");
+				throw new SecurityException("The jar file has no manifest, which contains the file signatures");
 			}
 			
 	        byte[] buffer = new byte[4096];
@@ -501,37 +510,32 @@ public class CryptographicUtilities {
 				}
 			}
 			
-			if (trustedCerts == null) {
-				return true;
-			} else {
-			    for (JarEntry jarEntry : jarEntries) {
-			        if (!jarEntry.isDirectory()) {
-				        // Every file must be signed - except files in META-INF
-				        Certificate[] certs = jarEntry.getCertificates();
-				        if ((certs == null) || (certs.length == 0)) {
-				            if (!jarEntry.getName().startsWith("META-INF")) {
-				                throw new SecurityException("The jar file contains unsigned files.");
-				            }
-				        } else {
-				            X509Certificate[] chainRootCertificates = getChainRootCertificates(certs);
-				            boolean isSignedByTrustedCert = false;
-				
-				            for (X509Certificate chainRootCertificate : chainRootCertificates) {
-				                if (verifyChainOfTrust(chainRootCertificate, trustedCerts)) {
-				                    isSignedByTrustedCert = true;
-				                    break;
-				                }
-				            }
-				
-				            if (!isSignedByTrustedCert) {
-				                throw new SecurityException("The jar file contains untrusted signed files");
-				            }
-				        }
-			        }
-			    }
+		    for (JarEntry jarEntry : jarEntries) {
+		        if (!jarEntry.isDirectory()) {
+			        // Every file must be signed, except for files in META-INF
+			        Certificate[] certs = jarEntry.getCertificates();
+			        if ((certs == null) || (certs.length == 0)) {
+			            if (!jarEntry.getName().startsWith("META-INF")) {
+			                throw new SecurityException("The jar file contains unsigned files.");
+			            }
+			        } else {
+			            boolean isSignedByTrustedCert = false;
 			
-			    return true;
-			}
+			            for (Certificate chainRootCertificate : certs) {
+			                if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCerts)) {
+			                    isSignedByTrustedCert = true;
+			                    break;
+			                }
+			            }
+			
+			            if (!isSignedByTrustedCert) {
+			                throw new SecurityException("The jar file contains untrusted signed files");
+			            }
+			        }
+		        }
+		    }
+		
+		    return true;
 		} catch (Exception e) {
 			return false;
 		} finally {
@@ -539,29 +543,24 @@ public class CryptographicUtilities {
 		}
 	}
 
-    public static boolean verifyChainOfTrust(X509Certificate cert, X509Certificate[] trustedCerts) {
-    	// Check for member of trusted certs
-        for (X509Certificate trustedCert : trustedCerts) {
-            if (cert.getSubjectDN().equals(trustedCert.getSubjectDN())) {
-                if (cert.equals(trustedCert)) {
-                    return true;
-                }
-            }
-        }
+    public static boolean verifyChainOfTrust(X509Certificate cert, X509Certificate[] trustedCerts) throws Exception {
+		CertPathBuilder certifier = CertPathBuilder.getInstance("PKIX");
+		X509CertSelector targetConstraints = new X509CertSelector();
+		targetConstraints.setCertificate(cert);
 
-        // Check for chained trust by given trustedCerts
-        for (X509Certificate trustedCert : trustedCerts) {
-            if (cert.getIssuerDN().equals(trustedCert.getSubjectDN())) {
-                try {
-                    cert.verify(trustedCert.getPublicKey());
-                    return true;
-                } catch (Exception e) {
-                    // ignore
-                }
-            }
-        }
+		Set<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
+		for (X509Certificate trustedRootCert : trustedCerts) {
+			trustAnchors.add(new TrustAnchor(trustedRootCert, null));
+		}
 
-        return false;
+		PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
+		params.setRevocationEnabled(false);
+		try {
+			PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) certifier.build(params);
+			return result != null;
+		} catch (Exception cpbe) {
+	        return false;
+		}
     }
 
     public static X509Certificate[] getChainRootCertificates(Certificate[] certs) {
@@ -576,5 +575,43 @@ public class CryptographicUtilities {
         X509Certificate[] returnValue = new X509Certificate[result.size()];
         result.copyInto(returnValue);
         return returnValue;
+    }
+
+    public static X509Certificate[] loadCertificatesFromPemFile(File pemFile) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		PEMReader pemReader = null;
+		try {
+			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
+			pemReader = new PEMReader(new FileReader(pemFile));
+			Object nextCertificate;
+			while ((nextCertificate = pemReader.readObject()) != null) {
+				if (nextCertificate instanceof X509Certificate) {
+					certificateList.add((X509Certificate) nextCertificate);
+				}
+			}
+			return certificateList.toArray(new X509Certificate[0]);
+		} finally {
+			IOUtils.closeQuietly(pemReader);
+		}
+    }
+
+    public static X509Certificate[] loadCertificatesFromPemStream(InputStream pemInputStream) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		PEMReader pemReader = null;
+		try {
+			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
+			pemReader = new PEMReader(new InputStreamReader(pemInputStream));
+			Object nextCertificate;
+			while ((nextCertificate = pemReader.readObject()) != null) {
+				if (nextCertificate instanceof X509Certificate) {
+					certificateList.add((X509Certificate) nextCertificate);
+				}
+			}
+			return certificateList.toArray(new X509Certificate[0]);
+		} finally {
+			IOUtils.closeQuietly(pemReader);
+		}
     }
 }

@@ -1,6 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.io.File;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RunnableFuture;
 
@@ -17,6 +18,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
+import de.soderer.utilities.CryptographicUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.UserError;
@@ -28,13 +30,15 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private String text;
 	private String downloadUrl;
 	private boolean dailyUpdateCheck;
+	private X509Certificate[] trustedCertificates;
 
-	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl, boolean dailyUpdateCheck) {
+	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl, boolean dailyUpdateCheck, X509Certificate[] trustedCertificates) {
 		super(shell, title);
 
 		this.text = text;
 		this.downloadUrl = downloadUrl;
 		this.dailyUpdateCheck = dailyUpdateCheck;
+		this.trustedCertificates = trustedCertificates;
 	}
 
 	@Override
@@ -88,7 +92,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 
 	private void updateApplication() {
 		try {
-			String jarFilePath = System.getProperty("process.jar");
+			String jarFilePath = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
 			File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 
 			if (StringUtils.isNotBlank(jarFilePath)) {
@@ -100,6 +104,13 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 						if (!success) {
 							// download stopped by user
 							return;
+						} else if (trustedCertificates != null){
+							boolean isVerifiedJar = CryptographicUtilities.verifyJarSignature(downloadTempFile, trustedCertificates);
+							if (!isVerifiedJar) {
+								if (!showQuestion(LangResources.get("error.invalidOrNotTrustedFileSignature"), "yes", "no")) {
+									return;
+								}
+							}
 						}
 					} catch (UserError e) {
 						showMessage(LangResources.get("menu.updateFileDownload"), e.getMessage());
@@ -156,6 +167,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		}
 	}
 
+	//TODO: Use URL Encoding
 	public boolean downloadUpdateFile(File downloadTempFile, String downloadUrl) throws Exception {
 		try {
 			downloadTempFile.delete();
