@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -42,6 +43,9 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.codec.binary.Base64;
@@ -478,6 +482,69 @@ public class CryptographicUtilities {
 		}
 	}
 	
+	public static Set<String> getJarSignatureNames(File jarFile) throws Exception {
+		Set<String> returnData = new HashSet<String>();
+		JarFile jar = null;
+		try {
+			jar = new JarFile(jarFile);
+			Manifest manifest = jar.getManifest();
+			if (manifest == null) {
+        		returnData.add("Has no MANIFEST.MF file");
+				return returnData;
+			}
+			
+	        byte[] buffer = new byte[4096];
+	        Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
+	        List<JarEntry> jarEntries = new ArrayList<JarEntry>();
+
+			while (jarEntriesEnumerator.hasMoreElements()) {
+				JarEntry jarEntry = (JarEntry) jarEntriesEnumerator.nextElement();
+				jarEntries.add(jarEntry);
+				
+				InputStream jarEntryInputStream = null;
+				try {
+					jarEntryInputStream = jar.getInputStream(jarEntry);
+					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
+					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+					}
+				} finally {
+					IOUtils.closeQuietly(jarEntryInputStream);
+				}
+			}
+			
+		    for (JarEntry jarEntry : jarEntries) {
+		        if (!jarEntry.isDirectory()) {
+		        	// Every file must be signed, except for files in META-INF
+			        Certificate[] certs = jarEntry.getCertificates();
+			        if ((certs == null) || (certs.length == 0)) {
+			            if (!jarEntry.getName().startsWith("META-INF")) {
+			        		returnData.add("Contains unsigned files");
+			            }
+			        } else {
+				        for (Certificate cert : certs) {
+				        	if (cert instanceof X509Certificate) {
+				        		X509Certificate certificate = (X509Certificate) cert;
+				        		if (certificate.getBasicConstraints() == -1) {
+				        			// Certificate is not a CA certificate
+				        			returnData.add(getCnFromCertificate(certificate));
+				        		} else {
+				        			// Certificate is a CA certificate
+				        			returnData.add("CA: " + getCnFromCertificate(certificate));
+				        		}
+				        	} else {
+				        		returnData.add("Unknown type of certificate");
+				        	}
+				        }
+			        }
+		        }
+		    }
+		
+		    return returnData;
+		} finally {
+			IOUtils.closeQuietly(jar);
+		}
+	}
+	
 	public static boolean verifyJarSignature(File jarFile, X509Certificate[] trustedCerts) throws Exception {
 		if (trustedCerts == null || trustedCerts.length == 0) {
 			return false;
@@ -613,5 +680,19 @@ public class CryptographicUtilities {
 		} finally {
 			IOUtils.closeQuietly(pemReader);
 		}
+    }
+    
+    public static String getCnFromCertificate(X509Certificate certificate) throws InvalidNameException {
+        Principal principal = certificate.getSubjectDN();
+        String dn = principal.getName();
+        LdapName ln = new LdapName(dn);
+
+        for (Rdn rdn : ln.getRdns()) {
+            if (rdn.getType().equalsIgnoreCase("CN")) {
+                return (String) rdn.getValue();
+            }
+        }
+        
+        return null;
     }
 }
