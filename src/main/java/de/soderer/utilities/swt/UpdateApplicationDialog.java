@@ -41,6 +41,11 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		this.dailyUpdateCheck = dailyUpdateCheck;
 		this.trustedCertificates = trustedCertificates;
 	}
+	
+	@Override
+	protected Boolean getDefaultReturnValue() {
+		return false;
+	}
 
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
