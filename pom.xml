@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>de.soderer</groupId>
-	<artifactId>utilities</artifactId>
+	<artifactId>soderer-utilities</artifactId>
 	<version>2.0.0</version>
 	<packaging>jar</packaging>
 
-	<name>utilities</name>
+	<name>soderer-utilities</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>
@@ -121,7 +121,7 @@
 							<target>
 								<signjar destDir="target" alias="soderer-de-java-2014" keystore="../Certificates/soderer-de-java-2014/soderer-de-java-2014_keystore.jks" storepass="6x_dXZSBwA" preservelastmodified="true" tsaurl="https://timestamp.geotrust.com/tsa">
 									<path>
-										<fileset dir="target" includes="utilities-2.0.0.jar" />
+										<fileset dir="target" includes="soderer-utilities-2.0.0.jar" />
 									</path>
 									<flattenmapper />
 								</signjar>
