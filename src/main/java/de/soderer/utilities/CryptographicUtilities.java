@@ -19,11 +19,13 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAKey;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
@@ -49,6 +51,7 @@ import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
@@ -694,5 +697,22 @@ public class CryptographicUtilities {
         }
         
         return null;
+    }
+    
+    public static boolean checkForCaCertificate(X509Certificate certificate) {
+        return certificate.getBasicConstraints() != 1;
+    }
+    
+    public static String getMd5FingerPrint(X509Certificate certificate) throws InvalidNameException, CertificateEncodingException {
+        return DigestUtils.md5Hex(certificate.getEncoded()).toUpperCase();
+    }
+    
+    public static String getSha1FingerPrint(X509Certificate certificate) throws InvalidNameException, CertificateEncodingException {
+        return DigestUtils.sha1Hex(certificate.getEncoded()).toUpperCase();
+    }
+    
+    public static int getKeySize(X509Certificate certificate) {
+    	RSAKey rsaKey = (RSAKey) certificate.getPublicKey();
+    	return rsaKey.getModulus().bitLength(); 
     }
 }
