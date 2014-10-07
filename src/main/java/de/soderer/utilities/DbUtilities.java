@@ -478,10 +478,11 @@ public class DbUtilities {
 				int parameterIndex = 1;
 				for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
 					if (columnMapping[csvValueIndex] != null) {
-						if (columnDateFormats != null && columnDateFormats[csvValueIndex] != null) {
-							preparedStatement.setObject(parameterIndex++, new SimpleDateFormat(columnDateFormats[csvValueIndex]).parse(csvLine.get(csvValueIndex)));
+						String valueString = csvLine.get(csvValueIndex);
+						if (StringUtils.isNotBlank(valueString) && columnDateFormats != null && columnDateFormats[csvValueIndex] != null) {
+							preparedStatement.setObject(parameterIndex++, new SimpleDateFormat(columnDateFormats[csvValueIndex]).parse(valueString));
 						} else {
-							preparedStatement.setString(parameterIndex++, csvLine.get(csvValueIndex));
+							preparedStatement.setString(parameterIndex++, valueString);
 						}
 					}
 				}
