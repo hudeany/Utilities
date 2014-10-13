@@ -1018,7 +1018,6 @@ public class TextUtilities {
 		}
 	}
 	
-
 	public static String mapToString(Map<? extends Object, ? extends Object> map) {
 		StringBuilder returnValue = new StringBuilder();
 		for (Entry<? extends Object, ? extends Object> entry : map.entrySet()) {
@@ -1037,5 +1036,33 @@ public class TextUtilities {
 			returnValue.append(key.toString() + ": " + value.toString());
 		}
 		return returnValue.toString();
+	}
+	
+	public static String mapToStringWithSortedKeys(Map<? extends String, ? extends Object> map) {
+		StringBuilder returnValue = new StringBuilder();
+		for (String key : Utilities.asSortedList(map.keySet())) {
+			Object value = map.get(key);
+			if (returnValue.length() > 0) {
+				returnValue.append("\n");
+			}
+			if (key == null) {
+				key = "";
+			}
+			if (value == null) {
+				value = "";
+			}
+			
+			returnValue.append(key.toString() + ": " + value.toString());
+		}
+		return returnValue.toString();
+	}
+	
+	public static int getColumnNumberFromColumnChars(String columnChars) {
+		int value = 0;
+		for (char columnChar : columnChars.toLowerCase().toCharArray()) {
+			int columnIndex = (byte) columnChar - (byte) 'a' + 1;
+			value = value * 10 + columnIndex;
+		}
+		return value;
 	}
 }
