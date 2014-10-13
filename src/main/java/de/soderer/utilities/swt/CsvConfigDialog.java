@@ -15,17 +15,17 @@ import de.soderer.utilities.LangResources;
 import de.soderer.utilities.swt.RadioButtonGroup.ArrangementStyle;
 
 public class CsvConfigDialog extends ModalDialog<Boolean> {
-	private String text = null;
+	protected String text = null;
 
-	private char separator;
-	private char stringQuote;
-	private boolean useStringQuote;
-	private boolean allowUnderfilledLines;
+	protected char separator;
+	protected char stringQuote;
+	protected boolean useStringQuote;
+	protected boolean allowUnderfilledLines;
 	
-	private RadioButtonGroup quoteTypeRadioButtonGroup;
-	private RadioButtonGroup underfilledLinesRadioButtonGroup;
-	private RadioButtonGroup separatorRadioButtonGroup;
-	private Button useQuoteButton;
+	protected RadioButtonGroup quoteTypeRadioButtonGroup;
+	protected RadioButtonGroup underfilledLinesRadioButtonGroup;
+	protected RadioButtonGroup separatorRadioButtonGroup;
+	protected Button useQuoteButton;
 	
 	public CsvConfigDialog(Shell shell, String title, String text) {
 		super(shell, title);

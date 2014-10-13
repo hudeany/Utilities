@@ -8,6 +8,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1014,5 +1016,26 @@ public class TextUtilities {
 		} else {
 			return str.regionMatches(true, 0, substr, 0, str.length());
 		}
+	}
+	
+
+	public static String mapToString(Map<? extends Object, ? extends Object> map) {
+		StringBuilder returnValue = new StringBuilder();
+		for (Entry<? extends Object, ? extends Object> entry : map.entrySet()) {
+			if (returnValue.length() > 0) {
+				returnValue.append("\n");
+			}
+			Object key = entry.getKey();
+			if (key == null) {
+				key = "";
+			}
+			Object value = entry.getValue();
+			if (value == null) {
+				value = "";
+			}
+			
+			returnValue.append(key.toString() + ": " + value.toString());
+		}
+		return returnValue.toString();
 	}
 }
