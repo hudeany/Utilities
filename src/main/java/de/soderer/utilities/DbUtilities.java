@@ -480,7 +480,7 @@ public class DbUtilities {
 					if (columnMapping[csvValueIndex] != null) {
 						String valueString = csvLine.get(csvValueIndex);
 						if (StringUtils.isNotBlank(valueString) && columnDateFormats != null && StringUtils.isNotBlank(columnDateFormats[csvValueIndex])) {
-							preparedStatement.setObject(parameterIndex++, new SimpleDateFormat(columnDateFormats[csvValueIndex]).parse(valueString));
+							preparedStatement.setDate(parameterIndex++, new java.sql.Date(new SimpleDateFormat(columnDateFormats[csvValueIndex]).parse(valueString).getTime()));
 						} else {
 							preparedStatement.setString(parameterIndex++, valueString);
 						}

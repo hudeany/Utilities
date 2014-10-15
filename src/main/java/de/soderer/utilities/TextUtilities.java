@@ -1061,7 +1061,7 @@ public class TextUtilities {
 		int value = 0;
 		for (char columnChar : columnChars.toLowerCase().toCharArray()) {
 			int columnIndex = (byte) columnChar - (byte) 'a' + 1;
-			value = value * 10 + columnIndex;
+			value = value * 26 + columnIndex;
 		}
 		return value;
 	}
