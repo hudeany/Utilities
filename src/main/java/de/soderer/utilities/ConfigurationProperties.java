@@ -98,6 +98,10 @@ public class ConfigurationProperties {
 		properties.setProperty(name, Integer.toString(value));
 	}
 	
+	public void set(String name, char value) {
+		properties.setProperty(name, Character.toString(value));
+	}
+	
 	public void set(String name, Date value) {
 		properties.setProperty(name, DateUtils.YYYYMMDD_HHMMSS.format(value));
 	}
@@ -107,6 +111,14 @@ public class ConfigurationProperties {
 			return Integer.parseInt(properties.getProperty(name));
 		} else {
 			return 0;
+		}
+	}
+	
+	public Character getCharacter(String name) {
+		if (properties.containsKey(name) && StringUtils.isNotEmpty(properties.getProperty(name))) {
+			return properties.getProperty(name).toCharArray()[0];
+		} else {
+			return null;
 		}
 	}
 	

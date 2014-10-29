@@ -1886,4 +1886,12 @@ public class Utilities {
 		}
 		return list;
 	}
+	
+	public static int[] revertArray(int[] array) {
+		int[] returnValue = new int[array.length];
+		for (int i = 0; i < array.length; i++) {
+			returnValue[i] = array[array.length - 1 - i];
+		}
+		return returnValue;
+	}
 }

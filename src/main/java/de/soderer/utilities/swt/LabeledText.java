@@ -92,6 +92,10 @@ public class LabeledText extends Composite {
 	}
 	
 	public void setText(String text) {
+		if (text == null) {
+			text = "";
+		}
+		
 		if (passwordTextField == null) {
 			textField.setText(text);
 		} else {
