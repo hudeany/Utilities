@@ -1,6 +1,12 @@
 package de.soderer.utilities;
 
 public class DbColumnType {
+	public enum SimpleDataType {
+		String,
+		Date,
+		Number
+	}
+	
 	private String typeName;
 	private int characterLength; // only for VARCHAR and VARCHAR2 types
 	private int numericPrecision; // only for numeric types
@@ -33,5 +39,17 @@ public class DbColumnType {
 	
 	public boolean isNullable() {
 		return nullable;
+	}
+	
+	public SimpleDataType getSimpleDataType() {
+		if (typeName.toLowerCase().startsWith("date")
+				|| typeName.toLowerCase().startsWith("time")) {
+			return SimpleDataType.Date;
+		} else if (typeName.toLowerCase().startsWith("varchar")
+				|| typeName.equalsIgnoreCase("clob")) {
+			return SimpleDataType.String;
+		} else {
+			return SimpleDataType.Number;
+		}
 	}
 }

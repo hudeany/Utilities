@@ -149,16 +149,18 @@ public class DbUtilities {
 		return readout(connection, "SELECT * FROM " + tableName, separator);
 	}
 
-	public static Map<Integer, Object[]> importDataInTable(DataSource dataSource, String tableName, String[] tableColumns, List<Object[]> dataSets, boolean commitOnFullSuccessOnly) throws Exception {
+	public static Map<Integer, Object[]> insertDataInTable(DataSource dataSource, String tableName, String[] tableColumns, List<Object[]> dataSets, boolean commitOnFullSuccessOnly) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
-			throw new Exception("Missing parameter tableName for dataimport");
+			throw new Exception("Missing parameter tableName for datainsert");
 		}
 
 		Connection connection = null;
 		PreparedStatement preparedStatement = null;
+        boolean previousAutoCommit = true;
 
 		try {
 			connection = dataSource.getConnection();
+        	previousAutoCommit = connection.getAutoCommit();
 			connection.setAutoCommit(false);
 
 			checkTableAndColumnsExist(connection, tableName, tableColumns, true);
@@ -204,7 +206,7 @@ public class DbUtilities {
 										+ bue.getMessage());
 							} else {
 								connection.rollback();
-								importDataInTable(datasetIndex - currentUncommitedLines.size(), connection, preparedStatement, tableColumns, currentUncommitedLines, notInsertedData);
+								insertDataInTable(datasetIndex - currentUncommitedLines.size(), connection, preparedStatement, tableColumns, currentUncommitedLines, notInsertedData);
 							}
 						} catch (Exception e) {
 							connection.rollback();
@@ -228,7 +230,7 @@ public class DbUtilities {
 						throw new Exception("Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": " + bue.getMessage());
 					} else {
 						connection.rollback();
-						importDataInTable(datasetIndex - currentUncommitedLines.size(), connection, preparedStatement, tableColumns, currentUncommitedLines, notInsertedData);
+						insertDataInTable(datasetIndex - currentUncommitedLines.size(), connection, preparedStatement, tableColumns, currentUncommitedLines, notInsertedData);
 					}
 				} catch (Exception e) {
 					connection.rollback();
@@ -245,15 +247,21 @@ public class DbUtilities {
 			if (preparedStatement != null) {
 				preparedStatement.close();
 			}
-
+            
 			if (connection != null) {
+	            try {
+					connection.setAutoCommit(previousAutoCommit);
+				} catch (SQLException e) {
+					// fo nothing
+				}
+	            
 				connection.rollback();
 				connection.close();
 			}
 		}
 	}
 
-	private static void importDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, List<Object[]> data,
+	private static void insertDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, List<Object[]> data,
 			Map<Integer, Object[]> notInsertedData) throws Exception {
 		int dataLineIndex = offsetIndex;
 		for (Object[] dataLine : data) {
@@ -279,52 +287,53 @@ public class DbUtilities {
 		}
 	}
 
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding,
+	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding,
 			boolean commitOnFullSuccessOnly) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
 			fileInputStream = new FileInputStream(csvFile);
-			return importCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, false, commitOnFullSuccessOnly);
+			return insertCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, false, commitOnFullSuccessOnly);
 		} finally {
 			IOUtils.closeQuietly(fileInputStream);
 		}
 	}
 
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding,
+	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding,
 			boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
 			fileInputStream = new FileInputStream(csvFile);
-			return importCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
+			return insertCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 		} finally {
 			IOUtils.closeQuietly(fileInputStream);
 		}
 	}
 
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding,
+	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding,
 			boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		return importCsvFileInTable(dataSource, tableName, columnMapping, csvFileInputStream, encoding, false, commitOnFullSuccessOnly, containsHeadersInFirstRow);
+		return insertCsvFileInTable(dataSource, tableName, columnMapping, csvFileInputStream, encoding, false, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
 
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding,
+	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding,
 			boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		return importCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
+		return insertCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 	}
 
-	public static Map<Integer, Tuple<List<String>, String>> importCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats,
+	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDataFormats,
 			InputStream csvInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		return importCsvDataInTable(dataSource, tableName, columnMapping, columnDateFormats, csvInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly,
+		return insertCsvDataInTable(dataSource, tableName, columnMapping, columnDataFormats, csvInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly,
 				containsHeadersInFirstRow);
 	}
 
-	public static Map<Integer, Tuple<List<String>, String>> importCsvDataInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDateFormats,
+	public static Map<Integer, Tuple<List<String>, String>> insertCsvDataInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDataFormats,
 			InputStream csvInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly,
 			boolean containsHeadersInFirstRow) throws Exception {
 		if (StringUtils.isBlank(tableName)) {
-			throw new Exception("Missing parameter tableName for dataimport");
+			throw new Exception("Missing parameter tableName for datainsert");
 		}
 
 		Connection connection = null;
+        boolean previousAutoCommit = true;
 		PreparedStatement preparedStatement = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -333,6 +342,7 @@ public class DbUtilities {
 
 		try {
 			connection = dataSource.getConnection();
+			previousAutoCommit = connection.getAutoCommit();
 			connection.setAutoCommit(false);
 			statement = connection.createStatement();
 
@@ -381,7 +391,21 @@ public class DbUtilities {
 					int parameterIndex = 1;
 					for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
 						if (columnMapping[csvValueIndex] != null) {
-							preparedStatement.setString(parameterIndex++, csvLine.get(csvValueIndex));
+							String value = csvLine.get(csvValueIndex);
+							if (columnDataFormats != null && StringUtils.isNotBlank(columnDataFormats[csvValueIndex])) {
+								if (".".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
+									value = value.replace(",", "");
+									preparedStatement.setObject(parameterIndex++, value);
+								} else if (",".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
+									value = value.replace(".", "");
+									value = value.replace(",", ".");
+									preparedStatement.setObject(parameterIndex++, value);
+								} else {
+									preparedStatement.setObject(parameterIndex++, new SimpleDateFormat(columnDataFormats[csvValueIndex]).parse(value));
+								}
+							} else {
+								preparedStatement.setString(parameterIndex++, value);
+							}
 						}
 					}
 					preparedStatement.addBatch();
@@ -400,7 +424,7 @@ public class DbUtilities {
 								throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
 							} else {
 								connection.rollback();
-								importCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDateFormats, currentUncommitedLines,
+								insertCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDataFormats, currentUncommitedLines,
 										notInsertedData);
 							}
 						} catch (Exception e) {
@@ -430,7 +454,7 @@ public class DbUtilities {
 						throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
 					} else {
 						connection.rollback();
-						importCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDateFormats, currentUncommitedLines, notInsertedData);
+						insertCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDataFormats, currentUncommitedLines, notInsertedData);
 					}
 				} catch (Exception e) {
 					connection.rollback();
@@ -461,13 +485,19 @@ public class DbUtilities {
 			}
 
 			if (connection != null) {
+	            try {
+					connection.setAutoCommit(previousAutoCommit);
+				} catch (SQLException e) {
+					// fo nothing
+				}
+	            
 				connection.rollback();
 				connection.close();
 			}
 		}
 	}
 
-	public static void importCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDateFormats, List<List<String>> data,
+	public static void insertCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDataFormats, List<List<String>> data,
 			Map<Integer, Tuple<List<String>, String>> notInsertedData) throws Exception {
 		int csvLineIndex = offsetIndex;
 		for (List<String> csvLine : data) {
@@ -477,13 +507,20 @@ public class DbUtilities {
 			} else {
 				int parameterIndex = 1;
 				for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
-					if (columnMapping[csvValueIndex] != null) {
-						String valueString = csvLine.get(csvValueIndex);
-						if (StringUtils.isNotBlank(valueString) && columnDateFormats != null && StringUtils.isNotBlank(columnDateFormats[csvValueIndex])) {
-							preparedStatement.setDate(parameterIndex++, new java.sql.Date(new SimpleDateFormat(columnDateFormats[csvValueIndex]).parse(valueString).getTime()));
+					String value = csvLine.get(csvValueIndex);
+					if (columnDataFormats != null && StringUtils.isNotBlank(columnDataFormats[csvValueIndex])) {
+						if (".".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
+							value = value.replace(",", "");
+							preparedStatement.setObject(parameterIndex++, value);
+						} else if (",".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
+							value = value.replace(".", "");
+							value = value.replace(",", ".");
+							preparedStatement.setObject(parameterIndex++, value);
 						} else {
-							preparedStatement.setString(parameterIndex++, valueString);
+							preparedStatement.setObject(parameterIndex++, new SimpleDateFormat(columnDataFormats[csvValueIndex]).parse(value));
 						}
+					} else {
+						preparedStatement.setString(parameterIndex++, value);
 					}
 				}
 
@@ -589,12 +626,14 @@ public class DbUtilities {
 			for (int i = 1; i <= metaData.getColumnCount(); i++) {
 				dbTableColumns.add(metaData.getColumnName(i).toUpperCase());
 			}
-			for (String column : columns) {
-				if (column != null && !dbTableColumns.contains(column.toUpperCase())) {
-					if (throwExceptionOnError) {
-						throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
-					} else {
-						return false;
+			if (columns != null) {
+				for (String column : columns) {
+					if (column != null && !dbTableColumns.contains(column.toUpperCase())) {
+						if (throwExceptionOnError) {
+							throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
+						} else {
+							return false;
+						}
 					}
 				}
 			}
@@ -744,24 +783,22 @@ public class DbUtilities {
 		}
 	}
 
-	public static DbColumnType getColumnDataType(DataSource dataSource, String tableName, String columnName) throws Exception {
-		if (dataSource == null) {
-			throw new Exception("Invalid empty dataSource for getColumnDataType");
+	public static DbColumnType getColumnDataType(Connection connection, String tableName, String columnName) throws Exception {
+		if (connection == null) {
+			throw new Exception("Invalid empty connection for getColumnDataType");
 		} else if (StringUtils.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnDataType");
 		} else if (StringUtils.isBlank(columnName)) {
 			throw new Exception("Invalid empty columnName for getColumnDataType");
 		} else {
-			Connection connection = null;
 			PreparedStatement preparedStatement = null;
 			ResultSet resultSet = null;
 			try {
-				connection = dataSource.getConnection();
 				int characterLength;
 				int numericPrecision;
 				int numericScale;
 				boolean isNullable;
-				if (checkDbVendorIsOracle(dataSource)) {
+				if (checkDbVendorIsOracle(connection)) {
 					// Watchout: Oracle's timestamp datatype is "TIMESTAMP(6)", so remove the bracket value
 					String sql = "SELECT NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) as data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE lower(table_name) = lower(?) AND lower(column_name) = lower(?)";
 					preparedStatement = connection.prepareStatement(sql);
@@ -820,6 +857,25 @@ public class DbUtilities {
 			} finally {
 				closeQuietly(resultSet);
 				closeQuietly(preparedStatement);
+			}
+		}
+	}
+
+	public static DbColumnType getColumnDataType(DataSource dataSource, String tableName, String columnName) throws Exception {
+		if (dataSource == null) {
+			throw new Exception("Invalid empty dataSource for getColumnDataType");
+		} else if (StringUtils.isBlank(tableName)) {
+			throw new Exception("Invalid empty tableName for getColumnDataType");
+		} else if (StringUtils.isBlank(columnName)) {
+			throw new Exception("Invalid empty columnName for getColumnDataType");
+		} else {
+			Connection connection = null;
+			try {
+				connection = dataSource.getConnection();
+				return getColumnDataType(connection, tableName, columnName);
+			} catch (Exception e) {
+				return null;
+			} finally {
 				closeQuietly(connection);
 			}
 		}
