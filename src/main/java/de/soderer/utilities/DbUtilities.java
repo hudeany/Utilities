@@ -16,6 +16,7 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -187,7 +188,11 @@ public class DbUtilities {
 				} else {
 					preparedStatement.clearParameters();
 					for (int parameterIndex = 0; parameterIndex < dataSet.length; parameterIndex++) {
-						preparedStatement.setObject(parameterIndex + 1, dataSet[parameterIndex]);
+						if (dataSet[parameterIndex].getClass() == Date.class) {
+							preparedStatement.setObject(parameterIndex + 1, new java.sql.Date(((Date)dataSet[parameterIndex]).getTime()));
+						} else {
+							preparedStatement.setObject(parameterIndex + 1, dataSet[parameterIndex]);
+						}
 					}
 					preparedStatement.addBatch();
 
@@ -238,8 +243,10 @@ public class DbUtilities {
 				}
 			}
 
-			if (commitOnFullSuccessOnly) {
+			if (commitOnFullSuccessOnly && notInsertedData.size() == 0) {
 				connection.commit();
+			} else {
+				connection.rollback();
 			}
 
 			return notInsertedData;
@@ -272,7 +279,11 @@ public class DbUtilities {
 				int parameterIndex = 1;
 				for (int csvValueIndex = 0; csvValueIndex < dataLine.length; csvValueIndex++) {
 					if (columnMapping[csvValueIndex] != null) {
-						preparedStatement.setObject(parameterIndex++, dataLine[csvValueIndex]);
+						if (dataLine[csvValueIndex].getClass() == Date.class) {
+							preparedStatement.setObject(parameterIndex++, new java.sql.Date(((Date) dataLine[csvValueIndex]).getTime()));
+						} else {
+							preparedStatement.setObject(parameterIndex++, dataLine[csvValueIndex]);
+						}
 					}
 				}
 
@@ -401,7 +412,7 @@ public class DbUtilities {
 									value = value.replace(",", ".");
 									preparedStatement.setObject(parameterIndex++, value);
 								} else {
-									preparedStatement.setObject(parameterIndex++, new SimpleDateFormat(columnDataFormats[csvValueIndex]).parse(value));
+									preparedStatement.setObject(parameterIndex++, new java.sql.Date(new SimpleDateFormat(columnDataFormats[csvValueIndex]).parse(value).getTime()));
 								}
 							} else {
 								preparedStatement.setString(parameterIndex++, value);
@@ -462,8 +473,10 @@ public class DbUtilities {
 				}
 			}
 
-			if (commitOnFullSuccessOnly) {
+			if (commitOnFullSuccessOnly && notInsertedData.size() == 0) {
 				connection.commit();
+			} else {
+				connection.rollback();
 			}
 
 			return notInsertedData;
@@ -517,7 +530,7 @@ public class DbUtilities {
 							value = value.replace(",", ".");
 							preparedStatement.setObject(parameterIndex++, value);
 						} else {
-							preparedStatement.setObject(parameterIndex++, new SimpleDateFormat(columnDataFormats[csvValueIndex]).parse(value));
+							preparedStatement.setObject(parameterIndex++, new java.sql.Date(new SimpleDateFormat(columnDataFormats[csvValueIndex]).parse(value).getTime()));
 						}
 					} else {
 						preparedStatement.setString(parameterIndex++, value);
@@ -657,6 +670,11 @@ public class DbUtilities {
 
 			if (parameters != null) {
 				callableStatement = connection.prepareCall("{call " + procedureName + "(" + TextUtilities.repeatString("?", parameters.length, ", ") + ")}");
+				for (int i = 0; i < parameters.length; i++) {
+					if (parameters[i].getClass() == Date.class) {
+						parameters[i] = new java.sql.Date(((Date)parameters[i]).getTime());
+					}
+				}
 				for (int i = 0; i < parameters.length; i++) {
 					callableStatement.setObject(i + 1, parameters[i]);
 				}
