@@ -1311,4 +1311,48 @@ public class DbUtilities {
 			return value.replace("'", "''");
 		}
 	}
+	
+	public static boolean checkOracleTablespaceExists(DataSource dataSource, String tablespaceName) {
+		Connection connection = null;
+		try {
+			connection = dataSource.getConnection();
+			return checkOracleTablespaceExists(connection, tablespaceName);
+		} catch (SQLException e) {
+			throw new RuntimeException("Cannot check db tablespace: " + e.getMessage(), e);
+		} finally {
+			closeQuietly(connection);
+		}
+    }
+	
+	/**
+	 * Check if oracle tablespace exists
+	 * 
+	 * @param connection
+	 * @param tablespaceName
+	 * @return
+	 */
+	public static boolean checkOracleTablespaceExists(Connection connection, String tablespaceName) {
+		if (DbUtilities.checkDbVendorIsOracle(connection) && tablespaceName != null) {
+	        PreparedStatement statement = null;
+			ResultSet resultSet = null;
+	
+			try {
+				statement = connection.prepareStatement("SELECT COUNT(*) FROM dba_tablespaces WHERE LOWER(tablespace_name) = ?");
+				statement.setString(1, tablespaceName.toLowerCase());
+	
+				resultSet = statement.executeQuery();
+				
+				return resultSet.getInt(1) > 0;
+			} catch (Exception e) {
+				throw new RuntimeException("Cannot check db tablespace: " + e.getMessage(), e);
+			} finally {
+				closeQuietly(resultSet);
+				resultSet = null;
+				closeQuietly(statement);
+				statement = null;
+			}
+		} else {
+			return false;
+		}
+    }
 }
