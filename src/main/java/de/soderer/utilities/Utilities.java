@@ -1894,4 +1894,10 @@ public class Utilities {
 		}
 		return returnValue;
 	}
+
+	public static String getDomainFromUrl(String url) throws Exception {
+		URI uri = new URI(url);
+	    String domain = uri.getHost();
+	    return domain.startsWith("www.") ? domain.substring(4) : domain;
+	}
 }

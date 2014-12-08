@@ -58,7 +58,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private Button saveServerEntryButton;
 	private Button connectButton;
 	private Button actionButton;
-	private String inMemoryPassword;
+	private char[] inMemoryPassword;
 	private File keystoreFile;
 	private SecureDataKeyStore keyStore = null;
 	
@@ -73,7 +73,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		this.dialogMode = dialogMode;
 	}
 	
-	public SshFileDialog(Shell parentShell, String title, Mode dialogMode, File keystoreFile, String inMemoryPassword) {
+	public SshFileDialog(Shell parentShell, String title, Mode dialogMode, File keystoreFile, char[] inMemoryPassword) {
 		super(parentShell, title);
 		this.keystoreFile = keystoreFile;
 		this.inMemoryPassword = inMemoryPassword;
@@ -494,13 +494,13 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		return selectedFilePath + (selectedFilePath.endsWith("/") ? "" : "/") + selectedFileName;
 	}
 
-	public String getInMemoryPassword() {
+	public char[] getInMemoryPassword() {
 		return inMemoryPassword;
 	}
 	
 	private void loadServerEntries() {
 		if (keystoreFile.exists()) {
-			char[] password = inMemoryPassword == null ? null : inMemoryPassword.toCharArray();
+			char[] password = inMemoryPassword == null ? null : inMemoryPassword;
 			
 			if (password == null) {
 				// try to use empty password
@@ -519,7 +519,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				dialog.setKeepInMemoryText(LangResources.get("keepPasswordInMemory"));
 				password = dialog.open();
 				if (dialog.keepInMemory()) {
-					inMemoryPassword = new String(password);
+					inMemoryPassword = password;
 				}
 			}
 			

@@ -431,7 +431,13 @@ public class CsvWriter extends Writer {
 					returnValue.append(separator);
 				}
 				if (value != null) {
-					String valueString = value.toString();
+					String valueString;
+					if (value instanceof char[]) {
+						valueString = new String((char[]) value);
+					} else {
+						valueString = value.toString();
+					}
+					
 					if (valueString.contains(separatorString) || valueString.contains("\r") || valueString.contains("\n") || valueString.contains(stringQuoteString)) {
 						returnValue.append(stringQuoteString);
 						returnValue.append(valueString.replace(stringQuoteString, doubleStringQuoteString));

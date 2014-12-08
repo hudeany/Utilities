@@ -11,4 +11,8 @@ public abstract class SecureDataEntry {
 	public String getEntryName() {
 		return entryName;
 	}
+	
+	public void setEntryName(String entryName) {
+		this.entryName = entryName;
+	}
 }

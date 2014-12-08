@@ -41,7 +41,7 @@ public class DbAccessData extends SecureDataEntry{
 				this.userName = dataParts.get(6);
 				this.password = dataParts.get(7);
 			} catch (NumberFormatException e) {
-				throw new IOException("Invalid data in ServerEntry");
+				throw new IOException("Invalid data in DbEntry");
 			}
 		}
 	}
