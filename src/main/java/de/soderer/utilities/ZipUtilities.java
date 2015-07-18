@@ -195,17 +195,17 @@ public class ZipUtilities {
 	 * @param fileData
 	 * @param relativeDirPath
 	 * @param filename
-	 * @param destinationZipFileSream
+	 * @param destinationZipFileStream
 	 * @throws IOException
 	 */
-	public static void addFileDataToOpenZipFileStream(byte[] fileData, String relativeDirPath, String filename, ZipOutputStream destinationZipFileSream) throws IOException {
+	public static void addFileDataToOpenZipFileStream(byte[] fileData, String relativeDirPath, String filename, ZipOutputStream destinationZipFileStream) throws IOException {
 		if (fileData == null)
 			throw new IOException("FileData is missing");
 		
 		if (StringUtils.isEmpty(filename) || filename.trim().length() == 0)
 			throw new IOException("Filename is missing");
 			
-		if (destinationZipFileSream == null)
+		if (destinationZipFileStream == null)
 			throw new IOException("DestinationStream is not ready");
 		
 		if (relativeDirPath == null
@@ -215,12 +215,12 @@ public class ZipUtilities {
 		
 		ZipEntry entry = new ZipEntry(relativeDirPath + filename);
 		entry.setTime(new Date().getTime());
-		destinationZipFileSream.putNextEntry(entry);
+		destinationZipFileStream.putNextEntry(entry);
 		
-		destinationZipFileSream.write(fileData);
+		destinationZipFileStream.write(fileData);
 		
-		destinationZipFileSream.flush();
-		destinationZipFileSream.closeEntry();
+		destinationZipFileStream.flush();
+		destinationZipFileStream.closeEntry();
 	}
 	
 	/**

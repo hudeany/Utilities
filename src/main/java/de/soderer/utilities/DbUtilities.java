@@ -1024,7 +1024,6 @@ public class DbUtilities {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	public static boolean containsColumnName(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for containsColumnName");
