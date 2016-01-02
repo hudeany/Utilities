@@ -16,8 +16,8 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 	
-	public void showSubItemProgress(long subItemsTodo, long subItemsDone) {
-		final long subItemTodoParam = subItemsTodo;
+	public void showSubItemProgress(long subItemsToDo, long subItemsDone) {
+		final long subItemToDoParam = subItemsToDo;
 		final long subItemDoneParam = subItemsDone;
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
@@ -25,8 +25,8 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 				if (progressDialog instanceof DualProgressDialog) {
 					DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
-						if (subItemTodoParam > 0) {
-							dualProgressDialog.setSubProgress(subItemTodoParam, subItemDoneParam);
+						if (subItemToDoParam > 0) {
+							dualProgressDialog.setSubProgress(subItemToDoParam, subItemDoneParam);
 						} else {
 							dualProgressDialog.setSubProgressPercentage(0);
 						}

@@ -25,7 +25,7 @@ public class SystemUtilities {
 	}
 	
 	public static boolean isLinuxSystem() {
-		return getOsName().toLowerCase().contains("nix") || getOsName().toLowerCase().contains("nux");
+		return getOsName().toLowerCase().contains("unix") || getOsName().toLowerCase().contains("linux");
 	}
 	
 	public static int getProcessId() {

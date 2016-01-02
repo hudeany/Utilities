@@ -8,7 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * The Class Version.
  */
-public class Version {
+public class Version implements Comparable<Version> {
 	
 	/** The versionpattern. */
 	private static Pattern VERSIONPATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)$");
@@ -108,6 +108,35 @@ public class Version {
 			} else {
 				return null;
 			}
+		}
+	}
+
+	/**
+	 * @returns
+	 * 	+1: thisVersion > otherVersion<br />
+	 * 	 0: thisVersion = otherVersion<br />
+	 * 	-1: thisVersion < otherVersion
+	 */
+	@Override
+	public int compareTo(Version otherVersion) {
+		if (otherVersion == null || majorVersionNumber > otherVersion.getMajorVersionNumber()) {
+			return 1;
+		} else if (majorVersionNumber == otherVersion.getMajorVersionNumber()) {
+			if (minorVersionNumber > otherVersion.getMinorVersionNumber()) {
+				return 1;
+			} else if (minorVersionNumber == otherVersion.getMinorVersionNumber()) {
+				if (microVersionNumber > otherVersion.getMicroVersionNumber()) {
+					return 1;
+				} else if (microVersionNumber == otherVersion.getMicroVersionNumber()) {
+					return 0;
+				} else {
+					return -1;
+				}
+			} else {
+				return -1;
+			}
+		} else {
+			return -1;
 		}
 	}
 }

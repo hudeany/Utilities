@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -9,204 +10,181 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-
+/**
+ * The Class CsvWriter.
+ */
 public class CsvWriter extends Writer {
-	/**
-	 * Default output encoding
-	 */
+	
+	/** Default output encoding. */
 	public static final String DEFAULT_ENCODING = "UTF-8";
 	
-	/**
-	 * Default output separator
-	 */
+	/** Default output separator. */
 	public static final char DEFAULT_SEPARATOR = ',';
 	
-	/**
-	 * Default output stringquote
-	 */
+	/** Default output stringquote. */
 	public static final char DEFAULT_STRING_QUOTE = '"';
 	
-	/**
-	 * Default output linebreak
-	 */
+	/** Default output linebreak. */
 	public static final String DEFAULT_LINEBREAK = "\n";
 	
-	/**
-	 * Current output separator
-	 */
+	/** Current output separator. */
 	private char separator;
 	
-	/**
-	 * Current output separator as string
-	 */
+	/** Current output separator as string. */
 	private String separatorString;
 	
-	/**
-	 * Current output string quote
-	 */
+	/** Current output string quote. */
 	private char stringQuote;
 	
 	/**
-	 * Current output string quote as string for internal use
+	 * Character to escape the stringquote character within quoted strings.
+	 * By default this is the stringquote character itself, so it is doubled in quoted string, but may also be a backslash '\'.
 	 */
+	private char stringQuoteEscapeCharacter;
+	
+	/** Current output string quote as string for internal use. */
 	private String stringQuoteString;
 	
-	/**
-	 * Current output string quote two times for internal use
-	 */
-	private String doubleStringQuoteString;
+	/** Current output string quote two times for internal use. */
+	private String escapedStringQuoteString;
 	
-	/**
-	 * Currently use the string quote
-	 */
+	/** Currently use the string quote. */
 	private boolean useStringQuote;
 	
-	/**
-	 * Current output linebreak
-	 */
+	/** Current output linebreak. */
 	private String lineBreak;
 	
-	/**
-	 * Output stream
-	 */
+	/** Output stream. */
 	private OutputStream outputStream;
 	
-	/**
-	 * Output encoding
-	 */
+	/** Output encoding. */
 	private Charset encoding;
 	
-	/**
-	 * Always quote all data entries
-	 */
+	/** Always quote all data entries. */
 	private boolean alwaysQuote = false;
 	
-	/**
-	 * Always quote texts or only quote them when they contain linebreaks or the separator character
-	 */
+	/** Always quote texts or only quote them when they contain linebreaks or the separator character. */
 	private boolean quoteAllStrings = false;
 	
-	/**
-	 * Lines written until now
-	 */
+	/** Lines written until now. */
 	private int writtenLines = 0;
 	
-	/**
-	 * Number of columns to write, set by first line written
-	 */
+	/** Number of columns to write, set by first line written. */
 	private int numberOfColumns = -1;
 	
-	/**
-	 * Output writer
-	 */
+	/** Output writer. */
 	private BufferedWriter outputWriter = null;
+	
+	/** Minimum sizes of columns for beautification */
+	private int[] minimumColumnSizes = null;
+	
+	/** Padding locations of columns for beautification (true = right padding = left aligned)*/
+	private boolean[] columnPaddings = null;
 
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
 	 */
 	public CsvWriter(OutputStream outputStream) {
 		this(outputStream, Charset.forName(DEFAULT_ENCODING), DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE, DEFAULT_LINEBREAK);
 	}
 
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
-	 * @param encoding
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param encoding the encoding
 	 */
 	public CsvWriter(OutputStream outputStream, String encoding) {
 		this(outputStream, Charset.forName(encoding), DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE, DEFAULT_LINEBREAK);
 	}
 	
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
-	 * @param encoding
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param encoding the encoding
 	 */
 	public CsvWriter(OutputStream outputStream, Charset encoding) {
 		this(outputStream, encoding, DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE, DEFAULT_LINEBREAK);
 	}
 	
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
-	 * @param separator
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param separator the separator
 	 */
 	public CsvWriter(OutputStream outputStream, char separator) {
 		this(outputStream, Charset.forName(DEFAULT_ENCODING), separator, DEFAULT_STRING_QUOTE, DEFAULT_LINEBREAK);
 	}
 	
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
-	 * @param encoding
-	 * @param separator
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param encoding the encoding
+	 * @param separator the separator
 	 */
 	public CsvWriter(OutputStream outputStream, String encoding, char separator) {
 		this(outputStream, Charset.forName(encoding), separator, DEFAULT_STRING_QUOTE, DEFAULT_LINEBREAK);
 	}
 	
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
-	 * @param encoding
-	 * @param separator
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param encoding the encoding
+	 * @param separator the separator
 	 */
 	public CsvWriter(OutputStream outputStream, Charset encoding, char separator) {
 		this(outputStream, encoding, separator, DEFAULT_STRING_QUOTE, DEFAULT_LINEBREAK);
 	}
 	
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
-	 * @param separator
-	 * @param stringQuote
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param separator the separator
+	 * @param stringQuote the string quote
 	 */
 	public CsvWriter(OutputStream outputStream, char separator, Character stringQuote) {
 		this(outputStream, Charset.forName(DEFAULT_ENCODING), separator, stringQuote, DEFAULT_LINEBREAK);
 	}
 	
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
-	 * @param separator
-	 * @param stringQuote
-	 * @param lineBreak
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param separator the separator
+	 * @param stringQuote the string quote
+	 * @param lineBreak the line break
 	 */
 	public CsvWriter(OutputStream outputStream, char separator, Character stringQuote, String lineBreak) {
 		this(outputStream, Charset.forName(DEFAULT_ENCODING), separator, stringQuote, lineBreak);
 	}
 
 	/**
-	 * CSV Writer derived constructor
-	 * 
-	 * @param outputStream
-	 * @param encoding
-	 * @param separator
-	 * @param stringQuote
+	 * CSV Writer derived constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param encoding the encoding
+	 * @param separator the separator
+	 * @param stringQuote the string quote
 	 */
 	public CsvWriter(OutputStream outputStream, String encoding, char separator, Character stringQuote) {
-		this(outputStream, StringUtils.isBlank(encoding) ? Charset.forName(DEFAULT_ENCODING) : Charset.forName(encoding), separator, stringQuote == null ? DEFAULT_STRING_QUOTE : stringQuote, DEFAULT_LINEBREAK);
+		this(outputStream, isBlank(encoding) ? Charset.forName(DEFAULT_ENCODING) : Charset.forName(encoding), separator, stringQuote == null ? DEFAULT_STRING_QUOTE : stringQuote, DEFAULT_LINEBREAK);
 	}
-	
+
 	/**
-	 * CSV Writer main constructor
-	 * 
-	 * @param outputStream
-	 * @param encoding
-	 * @param separator
-	 * @param stringQuote
-	 * @param lineBreak
+	 * CSV Writer main constructor.
+	 *
+	 * @param outputStream the output stream
+	 * @param encoding the encoding
+	 * @param separator the separator
+	 * @param stringQuote the string quote
+	 * @param lineBreak the line break
 	 */
 	public CsvWriter(OutputStream outputStream, Charset encoding, char separator, Character stringQuote, String lineBreak) {
 		this.outputStream = outputStream;
@@ -216,8 +194,9 @@ public class CsvWriter extends Writer {
 		this.lineBreak = lineBreak;
 		if (stringQuote != null) {
 			this.stringQuote = stringQuote;
+			stringQuoteEscapeCharacter = stringQuote;
 			stringQuoteString = Character.toString(stringQuote);
-			doubleStringQuoteString = stringQuoteString + stringQuoteString;
+			escapedStringQuoteString = stringQuoteEscapeCharacter + stringQuoteString;
 			this.useStringQuote = true;
 		} else {
 			this.useStringQuote = false;
@@ -227,9 +206,9 @@ public class CsvWriter extends Writer {
 			throw new IllegalArgumentException("Encoding is null");
 		} else if (this.outputStream == null) {
 			throw new IllegalArgumentException("OutputStream is null");
-		} else if (Utilities.anyCharsAreEqual(this.separator, '\r', '\n')) {
+		} else if (anyCharsAreEqual(this.separator, '\r', '\n')) {
 			throw new IllegalArgumentException("Separator '" + this.separator + "' is invalid");
-		} else if (useStringQuote && Utilities.anyCharsAreEqual(this.separator, this.stringQuote, '\r', '\n')) {
+		} else if (useStringQuote && anyCharsAreEqual(this.separator, this.stringQuote, '\r', '\n')) {
 			throw new IllegalArgumentException("Stringquote '" + this.stringQuote + "' is invalid");
 		} else if (!this.lineBreak.equals("\r") && !this.lineBreak.equals("\n") && !this.lineBreak.equals("\r\n")) {
 			throw new IllegalArgumentException("Given linebreak is invalid");
@@ -237,18 +216,18 @@ public class CsvWriter extends Writer {
 	}
 	
 	/**
-	 * Getter for property alwaysQuote
-	 * 
-	 * @return
+	 * Getter for property alwaysQuote.
+	 *
+	 * @return true, if is always quote
 	 */
 	public boolean isAlwaysQuote() {
 		return alwaysQuote;
 	}
 
 	/**
-	 * Setter for property alwaysQuote
-	 * 
-	 * @param alwaysQuote
+	 * Setter for property alwaysQuote.
+	 *
+	 * @param alwaysQuote the new always quote
 	 */
 	public void setAlwaysQuote(boolean alwaysQuote) {
 		this.alwaysQuote = alwaysQuote;
@@ -258,18 +237,18 @@ public class CsvWriter extends Writer {
 	}
 	
 	/**
-	 * Getter for property quoteAllStrings
-	 * 
-	 * @return
+	 * Getter for property quoteAllStrings.
+	 *
+	 * @return true, if is quote all strings
 	 */
 	public boolean isQuoteAllStrings() {
 		return quoteAllStrings;
 	}
 
 	/**
-	 * Setter for property quoteAllStrings
-	 * 
-	 * @param quoteAllStrings
+	 * Setter for property quoteAllStrings.
+	 *
+	 * @param quoteAllStrings the new quote all strings
 	 */
 	public void setQuoteAllStrings(boolean quoteAllStrings) {
 		this.quoteAllStrings = quoteAllStrings;
@@ -277,23 +256,38 @@ public class CsvWriter extends Writer {
 			alwaysQuote = false;
 		}
 	}
+
+	/**
+	 * Setter for property stringQuoteEscapeCharacter.
+	 * Character to escape the stringquote character within quoted strings.
+	 * By default this is the stringquote character itself, so it is doubled in quoted string, but may also be a backslash '\'.
+	 *
+	 * @param stringQuoteEscapeCharacter the new fill missing trailing columns with null
+	 */
+	public void setStringQuoteEscapeCharacter(char stringQuoteEscapeCharacter) {
+		this.stringQuoteEscapeCharacter = stringQuoteEscapeCharacter;
+		if (useStringQuote && anyCharsAreEqual(this.separator, this.stringQuote, '\r', '\n', stringQuoteEscapeCharacter)) {
+			throw new IllegalArgumentException("Stringquote escape character '" + this.stringQuoteEscapeCharacter + "' is invalid");
+		}
+		escapedStringQuoteString = stringQuoteEscapeCharacter + stringQuoteString;
+	}
 	
 	/**
-	 * Write a single line of data entries
-	 * 
-	 * @param values
-	 * @throws Exception
+	 * Write a single line of data entries.
+	 *
+	 * @param values the values
+	 * @throws Exception the exception
 	 */
 	public void writeValues(Object... values) throws Exception {
 		writeValues(Arrays.asList(values));
 	}
 	
 	/**
-	 * Write a single line of data entries
-	 * 
-	 * @param values
-	 * @throws CsvDataException
-	 * @throws IOException
+	 * Write a single line of data entries.
+	 *
+	 * @param values the values
+	 * @throws CsvDataException the csv data exception
+	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public void writeValues(List<? extends Object> values) throws CsvDataException, IOException {
 		if (numberOfColumns != -1 && (values == null || numberOfColumns != values.size())) {
@@ -307,26 +301,34 @@ public class CsvWriter extends Writer {
 			outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, encoding));
 		}
 		
-		boolean isFirst = true;
-		for (Object value : values) {
-			if (!isFirst) {
+		for (int i = 0; i < values.size(); i++) {
+			if (i > 0) {
 				outputWriter.write(separator);
 			}
-			isFirst = false;
 			
-			outputWriter.write(escapeValue(value));
+			String escapedValue = escapeValue(values.get(i));
+			
+			if (minimumColumnSizes != null && minimumColumnSizes.length > i) {
+				if (columnPaddings != null && columnPaddings.length > i && columnPaddings[i]) {
+					escapedValue = rightPad(escapedValue, minimumColumnSizes[i]);
+				} else {
+					escapedValue = leftPad(escapedValue, minimumColumnSizes[i]);
+				}
+			}
+			
+			outputWriter.write(escapedValue);
 		}
 		outputWriter.write(lineBreak);
 
 		writtenLines++;
 		numberOfColumns = values.size();
 	}
-	
+
 	/**
-	 * Write a full set of lines of data entries
-	 * 
-	 * @param valueLines
-	 * @throws Exception
+	 * Write a full set of lines of data entries.
+	 *
+	 * @param valueLines the value lines
+	 * @throws Exception the exception
 	 */
 	public void writeAll(List<List<? extends Object>> valueLines) throws Exception {
 		for (List<? extends Object> valuesOfLine : valueLines) {
@@ -335,11 +337,11 @@ public class CsvWriter extends Writer {
 	}
 	
 	/**
-	 * Escape a single data entry using stringquotes as configured
-	 * 
-	 * @param value
-	 * @return
-	 * @throws CsvDataException
+	 * Escape a single data entry using stringquotes as configured.
+	 *
+	 * @param value the value
+	 * @return the string
+	 * @throws CsvDataException the csv data exception
 	 */
 	private String escapeValue(Object value) throws CsvDataException {
 		String valueString = "";
@@ -353,7 +355,7 @@ public class CsvWriter extends Writer {
 			} else {
 				StringBuilder escapedValue = new StringBuilder(); 
 				escapedValue.append(stringQuote);
-				escapedValue.append(valueString.replace(stringQuoteString, doubleStringQuoteString));
+				escapedValue.append(valueString.replace(stringQuoteString, escapedStringQuoteString));
 				escapedValue.append(stringQuote);
 				return escapedValue.toString();
 			}
@@ -361,29 +363,48 @@ public class CsvWriter extends Writer {
 			return valueString;
 		}
 	}
+	
+	/**
+	 * Calculate column value output sizes for beautification of csv output.
+	 *
+	 * @param values the values
+	 * @throws CsvDataException the csv data exception
+	 */
+	public int[] calculateOutputSizesOfValues(List<? extends Object> values) throws CsvDataException {
+		int[] returnArray = new int[values.size()];
+		for (int i = 0; i < values.size(); i++) {
+			returnArray[i] = escapeValue(values.get(i)).length();
+		}
+		return returnArray;
+	}
 
 	/**
-	 * Close this writer and its underlying stream
+	 * Close this writer and its underlying stream.
 	 */
 	@Override
 	public void close() {
-		IOUtils.closeQuietly(outputWriter);
+		closeQuietly(outputWriter);
 		outputWriter = null;
-		IOUtils.closeQuietly(outputStream);
+		closeQuietly(outputStream);
 		outputStream = null;
 	}
 	
 	/**
-	 * Get number of lines written until now
-	 * 
-	 * @return
+	 * Get number of lines written until now.
+	 *
+	 * @return the written lines
 	 */
 	public int getWrittenLines() {
 		return writtenLines;
 	}
 
 	/**
-	 * Not supported method to write data (must implement for writer interface)
+	 * Not supported method to write data (must implement for writer interface).
+	 *
+	 * @param cbuf the cbuf
+	 * @param off the off
+	 * @param len the len
+	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	@Override
 	public void write(char[] cbuf, int off, int len) throws IOException {
@@ -391,7 +412,9 @@ public class CsvWriter extends Writer {
 	}
 
 	/**
-	 * Flush buffered data
+	 * Flush buffered data.
+	 *
+	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	@Override
 	public void flush() throws IOException {
@@ -401,24 +424,24 @@ public class CsvWriter extends Writer {
 	}
 	
 	/**
-	 * Create a single csv line
-	 * 
-	 * @param separator
-	 * @param stringQuote
-	 * @param values
-	 * @return
+	 * Create a single csv line.
+	 *
+	 * @param separator the separator
+	 * @param stringQuote the string quote
+	 * @param values the values
+	 * @return the csv line
 	 */
 	public static String getCsvLine(char separator, Character stringQuote, List<? extends Object> values) {
 		return getCsvLine(separator, stringQuote, values.toArray());
 	}
 	
 	/**
-	 * Create a single csv line
-	 * 
-	 * @param separator
-	 * @param stringQuote
-	 * @param values
-	 * @return
+	 * Create a single csv line.
+	 *
+	 * @param separator the separator
+	 * @param stringQuote the string quote
+	 * @param values the values
+	 * @return the csv line
 	 */
 	public static String getCsvLine(char separator, Character stringQuote, Object... values) {
 		StringBuilder returnValue = new StringBuilder();
@@ -431,13 +454,7 @@ public class CsvWriter extends Writer {
 					returnValue.append(separator);
 				}
 				if (value != null) {
-					String valueString;
-					if (value instanceof char[]) {
-						valueString = new String((char[]) value);
-					} else {
-						valueString = value.toString();
-					}
-					
+					String valueString = value.toString();
 					if (valueString.contains(separatorString) || valueString.contains("\r") || valueString.contains("\n") || valueString.contains(stringQuoteString)) {
 						returnValue.append(stringQuoteString);
 						returnValue.append(valueString.replace(stringQuoteString, doubleStringQuoteString));
@@ -449,5 +466,95 @@ public class CsvWriter extends Writer {
 			}
 		}
 		return returnValue.toString();
+	}
+
+	/**
+	 * Check if any characters in a list are equal.
+	 *
+	 * @param values the values
+	 * @return true, if successful
+	 */
+	private static boolean anyCharsAreEqual(char... values) {
+		for (int i = 0; i < values.length; i++) {
+			for (int j = i + 1; j < values.length; j++) {
+				if (values[i] == values[j]) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check if String value is null or contains only whitespace characters.
+	 *
+	 * @param value the value
+	 * @return true, if is blank
+	 */
+	private static boolean isBlank(String value) {
+		return value == null || value.trim().length() == 0;
+	}
+
+	/**
+	 * Close a Closable item and ignore any Exception thrown by its close method.
+	 *
+	 * @param closeableItem the closeable item
+	 */
+	private static void closeQuietly(Closeable closeableItem) {
+		if (closeableItem != null) {
+			try {
+				closeableItem.close();
+			} catch (IOException e) {
+				// Do nothing
+			}
+		}
+	}
+	
+	/**
+	 * Set minimumColumnSizes for beautification
+	 * 
+	 * @param minimumColumnSizes
+	 */
+	public void setMinimumColumnSizes(int[] minimumColumnSizes) {
+		this.minimumColumnSizes = minimumColumnSizes;
+	}
+	
+	/**
+	 * Set columnPaddings for beautification (true = right padding = left aligned)
+	 * 
+	 * @param columnPaddings
+	 */
+	public void setColumnPaddings(boolean[] columnPaddings) {
+		this.columnPaddings = columnPaddings;
+	}
+	
+	/**
+	 * Append blanks at the left of a string to make if fit the given minimum
+	 * 
+	 * @param escapedValue
+	 * @param i
+	 * @return
+	 */
+	private String leftPad(String value, int minimumLength) {
+		try {
+			return String.format("%1$" + minimumLength + "s", value);
+		} catch (Exception e) {
+			return value;
+		}  
+	}
+	
+	/**
+	 * Append blanks at the right of a string to make if fit the given minimum
+	 * 
+	 * @param escapedValue
+	 * @param i
+	 * @return
+	 */
+	private String rightPad(String value, int minimumLength) {
+		try {
+			return String.format("%1$-" + minimumLength + "s", value);
+		} catch (Exception e) {
+			return value;
+		}
 	}
 }

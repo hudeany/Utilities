@@ -185,7 +185,7 @@ public class BitUtilities {
 			return returnString.toString();
 		}
 	}
-	
+
 	public static byte[] getByteArrayFromHexString(String value) {
 		try {
 			return Hex.decodeHex(value.toCharArray());

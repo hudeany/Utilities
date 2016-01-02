@@ -14,14 +14,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -519,36 +517,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Compare 2 VersionStrings (e.g.: 4.1.03 > 4.1.2)
-	 * 
-	 * @param version1
-	 * @param version2
-	 * @return -1 if Version1 < Version2<br>
-	 *         0 if Version1 = Version2<br>
-	 *         +1 if Version1 > Version2<br>
-	 */
-	public static int compareVersion(String version1, String version2) {
-		String[] versionparts1 = version1.split("\\.");
-		String[] versionparts2 = version2.split("\\.");
-		for (int i = 0; i < Math.min(versionparts1.length, versionparts1.length); i++) {
-			int value1 = 0;
-			if (versionparts1.length > i) {
-				value1 = Integer.parseInt(versionparts1[i]);
-			}
-			int value2 = 0;
-			if (versionparts2.length > i) {
-				value2 = Integer.parseInt(versionparts2[i]);
-			}
-			if (value1 < value2) {
-				return -1;
-			} else if (value1 > value2) {
-				return 1;
-			}
-		}
-		return 0;
-	}
-
-	/**
 	 * Get email from X509Certificate
 	 * 
 	 * @param cert
@@ -956,19 +924,6 @@ public class Utilities {
 	public static byte[] getRandomByteArray(byte[] arrayToFill) {
 		random.nextBytes(arrayToFill);
 		return arrayToFill;
-	}
-
-	/**
-	 * Get hostname of this machine
-	 * 
-	 * @return
-	 */
-	public static String getHostName() {
-		try {
-			return InetAddress.getLocalHost().getHostName();
-		} catch (UnknownHostException e) {
-			return "unbekannter Rechnername";
-		}
 	}
 
 	/**

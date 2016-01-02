@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,7 +34,6 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentType;
@@ -53,9 +53,6 @@ import de.soderer.utilities.TextUtilities;
  * Utilities class to work with XML documents.
  */
 public class XmlUtilities {
-	/** Logger. */
-	private static final transient Logger logger = Logger.getLogger(XmlUtilities.class);
-
 	/**
 	 * Gets the empty document.
 	 *
@@ -80,6 +77,30 @@ public class XmlUtilities {
 		BufferedInputStream inputStream = null;
 		try {
 			inputStream = new BufferedInputStream(new URL(url).openStream());
+			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			Document document = documentBuilder.parse(new InputSource(inputStream));
+			return document;
+		} catch (Exception e) {
+			return null;
+		} finally {
+			if (inputStream != null) {
+				inputStream.close();
+			}
+		}
+	}
+	
+	/**
+	 * Parse xml file.
+	 *
+	 * @param file the file
+	 * @return the document
+	 * @throws IOException the IO exception
+	 */
+	public static Document parseXmlFile(File file) throws IOException {
+		BufferedInputStream inputStream = null;
+		try {
+			inputStream = new BufferedInputStream(new FileInputStream(file));
 			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			Document document = documentBuilder.parse(new InputSource(inputStream));
@@ -151,8 +172,7 @@ public class XmlUtilities {
 			return doc;
 
 		} catch (Exception e) {
-			logger.error("Error while parsing xml", e);
-			throw e;
+			throw new Exception("Error while parsing xml", e);
 		}
 	}
 
@@ -200,8 +220,7 @@ public class XmlUtilities {
 			doc = db.parse(new InputSource(new StringReader(xmlInput)));
 			return doc;
 		} catch (Exception e) {
-			logger.error("Error while parsing xHtml", e);
-			throw e;
+			throw new Exception("Error while parsing xml", e);
 		}
 	}
 
@@ -406,13 +425,10 @@ public class XmlUtilities {
 				return xmlDocument;
 			}
 		} catch (ParserConfigurationException e) {
-			logger.error(e.getClass().getSimpleName(), e);
 			throw new Exception("ErrorConstException.XML_PROCESSING " + e.getClass().getSimpleName() + " " + e.getMessage(), e);
 		} catch (SAXException e) {
-			logger.error(e.getClass().getSimpleName(), e);
 			throw new Exception("ErrorConstException.XML_PROCESSING " + e.getClass().getSimpleName() + " " + e.getMessage(), e);
 		} catch (IOException e) {
-			logger.error(e.getClass().getSimpleName() + " wÃ¤hrend der XML-Verarbeitung", e);
 			throw new Exception("ErrorConstException.XML_PROCESSING " + e.getClass().getSimpleName() + " " + e.getMessage(), e);
 		}
 	}

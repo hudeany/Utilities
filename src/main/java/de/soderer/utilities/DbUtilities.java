@@ -38,7 +38,7 @@ public class DbUtilities {
 		if (isOracle) {
 			return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? 1521 : dbServerPort) + ":" + dbName;
 		} else {
-			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? 3306 : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8";
+			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? 3306 : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
 		}
 	}
 
@@ -1317,7 +1317,7 @@ public class DbUtilities {
 			connection = dataSource.getConnection();
 			return checkOracleTablespaceExists(connection, tablespaceName);
 		} catch (SQLException e) {
-			throw new RuntimeException("Cannot check db tablespace: " + e.getMessage(), e);
+			throw new RuntimeException("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
 		} finally {
 			closeQuietly(connection);
 		}
@@ -1343,7 +1343,7 @@ public class DbUtilities {
 				
 				return resultSet.getInt(1) > 0;
 			} catch (Exception e) {
-				throw new RuntimeException("Cannot check db tablespace: " + e.getMessage(), e);
+				throw new RuntimeException("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
 			} finally {
 				closeQuietly(resultSet);
 				resultSet = null;
@@ -1354,4 +1354,39 @@ public class DbUtilities {
 			return false;
 		}
     }
+
+	public static String getPrimaryKeyColumn(DataSource dataSource, String tableName) {
+		Connection connection = null;
+		try {
+			connection = dataSource.getConnection();
+			return getPrimaryKeyColumn(connection, tableName);
+		} catch (SQLException e) {
+			throw new RuntimeException("Cannot read primarykey column for table " + tableName + ": " + e.getMessage(), e);
+		} finally {
+			closeQuietly(connection);
+		}
+    }
+
+	public static String getPrimaryKeyColumn(Connection connection, String tableName) {
+		if (StringUtils.isBlank(tableName)) {
+			return null;
+		} else {
+			ResultSet resultSet = null;
+			try {
+				DatabaseMetaData metaData = connection.getMetaData();
+				resultSet = metaData.getPrimaryKeys(null, null, tableName);
+
+				if (resultSet.next()) {
+					return resultSet.getString("COLUMN_NAME");
+				} else {
+					return null;
+				}
+			} catch (Exception e) {
+				throw new RuntimeException("Cannot read primarykey column for table " + tableName + ": " + e.getMessage(), e);
+			} finally {
+				closeQuietly(resultSet);
+				resultSet = null;
+			}
+		}
+	}
 }

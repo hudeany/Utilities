@@ -125,8 +125,6 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private void updateApplication() {
 		try {
 			String jarFilePath = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
-			//TODO remove
-			jarFilePath = "/home/andreas/git/MultiEd/build/MultiEd_Offline_Linux_x32.jar";
 			File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 
 			if (StringUtils.isNotBlank(jarFilePath)) {

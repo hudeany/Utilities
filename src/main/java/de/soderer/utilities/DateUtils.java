@@ -126,4 +126,188 @@ public class DateUtils {
 		}
 		return returnValue.getTime();
 	}
+	
+	public static String replaceDatePatternInString(String stringWithPatter, Date date) {
+		String returnString = stringWithPatter;
+		returnString = returnString.replace("yyyy", new SimpleDateFormat("yyyy").format(date));
+		returnString = returnString.replace("YYYY", new SimpleDateFormat("yyyy").format(date));
+		returnString = returnString.replace("MM", new SimpleDateFormat("MM").format(date));
+		returnString = returnString.replace("dd", new SimpleDateFormat("dd").format(date));
+		returnString = returnString.replace("DD", new SimpleDateFormat("dd").format(date));
+		returnString = returnString.replace("HH", new SimpleDateFormat("HH").format(date));
+		returnString = returnString.replace("hh", new SimpleDateFormat("HH").format(date));
+		returnString = returnString.replace("mm", new SimpleDateFormat("mm").format(date));
+		returnString = returnString.replace("SS", new SimpleDateFormat("ss").format(date));
+		returnString = returnString.replace("ss", new SimpleDateFormat("ss").format(date));
+		return returnString;
+	}
+
+	public static Date calculateETA(Date start, long itemsToDo, long itemsDone) {
+		if (start == null || itemsToDo <= 0 || itemsDone <= 0) {
+			return null;
+		} else {
+			Date now = new Date();
+			long millisStartToNow = now.getTime() - start.getTime();
+			long millisStartToEnd = itemsToDo * millisStartToNow / itemsDone;
+			return new Date(start.getTime() + millisStartToEnd);
+		}
+	}
+	
+	public static String getShortHumanReadableTimespan(long valueInMillis, boolean showMillis) {
+		String returnValue = "";
+		long rest = valueInMillis;
+		
+		long millis = rest % 1000;
+		rest = rest / 1000;
+		
+		long seconds = rest % 60;
+		rest = rest / 60;
+		
+		long minutes = rest % 60;
+		rest = rest / 60;
+		
+		long hours = rest % 24;
+		rest = rest / 24;
+		
+		long days = rest % 7;
+		rest = rest / 7;
+		
+		long weeks = rest % 52;
+		rest = rest / 52;
+		
+		long years = rest;
+		
+		if (millis != 0 && showMillis) {
+			returnValue = millis + "ms";
+		}
+		
+		if (seconds != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = seconds + "s" + returnValue;
+		}
+		
+		if (minutes != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = minutes + "m" + returnValue;
+		}
+		
+		if (hours != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = hours + "h" + returnValue;
+		}
+		
+		if (days != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = days + "d" + returnValue;
+		}
+		
+		if (weeks != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = weeks + "w" + returnValue;
+		}
+		
+		if (years != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = years + "y" + returnValue;
+		}
+		
+		if (returnValue.length() > 0) {
+			return returnValue;
+		} else if (!showMillis) {
+			return "0s";
+		} else {
+			return "0ms";
+		}
+	}
+	
+	public static String getHumanReadableTimespan(long valueInMillis, boolean showMillis) {
+		String returnValue = "";
+		long rest = valueInMillis;
+		
+		long millis = rest % 1000;
+		rest = rest / 1000;
+		
+		long seconds = rest % 60;
+		rest = rest / 60;
+		
+		long minutes = rest % 60;
+		rest = rest / 60;
+		
+		long hours = rest % 24;
+		rest = rest / 24;
+		
+		long days = rest % 7;
+		rest = rest / 7;
+		
+		long weeks = rest % 52;
+		rest = rest / 52;
+		
+		long years = rest;
+		
+		if (millis != 0 && showMillis) {
+			returnValue = millis + " millis";
+		}
+		
+		if (seconds != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = seconds + " seconds" + returnValue;
+		}
+		
+		if (minutes != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = minutes + " minutes" + returnValue;
+		}
+		
+		if (hours != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = hours + " hours" + returnValue;
+		}
+		
+		if (days != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = days + " days" + returnValue;
+		}
+		
+		if (weeks != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = weeks + " weeks" + returnValue;
+		}
+		
+		if (years != 0) {
+			if (returnValue.length() > 0) {
+				returnValue = " " + returnValue;
+			}
+			returnValue = years + " years" + returnValue;
+		}
+		
+		if (returnValue.length() > 0) {
+			return returnValue;
+		} else if (!showMillis) {
+			return "0s";
+		} else {
+			return "0ms";
+		}
+	}
 }

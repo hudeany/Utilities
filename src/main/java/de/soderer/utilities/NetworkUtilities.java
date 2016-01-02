@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -127,4 +128,17 @@ public class NetworkUtilities {
     		return requestString.substring(0, requestString.indexOf("/"));
     	}
     }
+
+	/**
+	 * Get hostname of this machine
+	 * 
+	 * @return
+	 */
+	public static String getHostName() {
+		try {
+			return InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e) {
+			return "unbekannter Rechnername";
+		}
+	}
 }

@@ -2,7 +2,6 @@ package de.soderer.utilities.collection;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 public abstract class AbstractHashMap<K, V> extends HashMap<K, V> {
 	private static final long serialVersionUID = 868647429993685054L;
