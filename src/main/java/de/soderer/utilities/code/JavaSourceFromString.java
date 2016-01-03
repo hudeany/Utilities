@@ -47,7 +47,7 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
 
 			Iterable<? extends JavaFileObject> fileObjects = Arrays.asList(javaSourceFromString);
 
-			String compilationPath = "/home/aso/tmp/jitClasses";
+			String compilationPath = System.getProperty("user.home") + "/tmp/jitClasses";
 			File compilationPathFile = new File(compilationPath);
 			compilationPathFile.mkdirs();
 
