@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -1551,11 +1552,21 @@ public class Utilities {
 		}
 	}
 
-	private static void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
+	public static void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
 		byte[] buffer = new byte[4096];
 		int lengthRead = -1;
 		while ((lengthRead = inputStream.read(buffer)) > -1) {
 			outputStream.write(buffer, 0, lengthRead);
+		}
+		outputStream.flush();
+	}
+
+	public static void copy(Reader inputReader, OutputStream outputStream, String encoding) throws UnsupportedEncodingException, IOException {
+		char[] buffer = new char[4096];
+		int lengthRead = -1;
+		while ((lengthRead = inputReader.read(buffer)) > -1) {
+			String data = new String(buffer, 0, lengthRead);
+			outputStream.write(data.getBytes(encoding));
 		}
 		outputStream.flush();
 	}
