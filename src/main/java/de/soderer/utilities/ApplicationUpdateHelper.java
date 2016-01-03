@@ -34,7 +34,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	 * @throws Exception 
 	 */
 	public ApplicationUpdateHelper(String applicationName, String applicationVersion, String versionIndexFileLocation, UpdateParent updateParent) throws Exception {
-		if (versionIndexFileLocation == null || versionIndexFileLocation.trim().length() == 0) {
+		if (Utilities.isEmpty(versionIndexFileLocation)) {
 			throw new Exception("Invalid version index location");
 		}
 		
@@ -152,7 +152,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 					if (downloadUrlWithCredentials.contains("<username>")) {
 						if (updateParent != null) {
 							String username = updateParent.aquireUserName();
-							if (username == null || username.trim().length() == 0) {
+							if (Utilities.isEmpty(username)) {
 								updateParent.showUpdateError("Update error:\nusername required");
 								return;
 							} else {
@@ -171,7 +171,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 					if (downloadUrlWithCredentials.contains("<password>")) {
 						if (updateParent != null) {
 							String password = new String(updateParent.aquirePassword());
-							if (password == null || password.trim().length() == 0) {
+							if (Utilities.isEmpty(password)) {
 								updateParent.showUpdateError("Update error:\npassword required");
 								return;
 							} else {
