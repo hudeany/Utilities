@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.Signature;
+import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -13,10 +14,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
-import de.soderer.utilities.swt.Worker;
 
-public class FileSignatureWorker extends Worker<Boolean> {
+public class FileSignatureWorker extends WorkerSimple<Boolean> {
 	private File fileToSign = null;
 	private File signatureDestinationFile = null;
 	private PrivateKey privateKey = null;
@@ -37,50 +38,45 @@ public class FileSignatureWorker extends Worker<Boolean> {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
 		
-    	todo = fileToSign.length();
+    	itemsToDo = fileToSign.length();
 	}
 
 	@Override
 	public void run() {
-		long position = 0L;
+		startTime = new Date();
+		itemsToDo = 0L;
+		itemsDone = 0L;
 		result = null;
+		showProgress();
+		
+		BufferedInputStream dataStream = null;
 		try {
-			byte[] signatureData;
-			BufferedInputStream dataStream = null;
-			try {
-				showItemsDone(0L);
-				
-				Security.addProvider(new BouncyCastleProvider());
-				
-				dataStream = new BufferedInputStream(new FileInputStream(fileToSign));
-				Signature signature = Signature.getInstance(signatureMethod, "BC");
-				signature.initSign(privateKey);
-				byte[] buffer = new byte[4096];
-				int bytesRead;
-				while ((bytesRead = dataStream.read(buffer)) >= 0) {
-					if (cancel) {
-						break;
-					} else {
-						signature.update(buffer, 0, bytesRead);
-						position += bytesRead;
-						
-						showItemsDone(position);
-					}
+			Security.addProvider(new BouncyCastleProvider());
+			
+			dataStream = new BufferedInputStream(new FileInputStream(fileToSign));
+			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			signature.initSign(privateKey);
+			byte[] buffer = new byte[4096];
+			int bytesRead;
+			while ((bytesRead = dataStream.read(buffer)) >= 0) {
+				if (cancel) {
+					break;
+				} else {
+					signature.update(buffer, 0, bytesRead);
+					itemsDone += bytesRead;
+					showProgress();
 				}
-				signatureData = signature.sign();
-				FileUtils.writeByteArrayToFile(signatureDestinationFile, signatureData);
-			} catch (Exception e) {
-				throw new Exception("Cannot create signature", e);
-			} finally {
-				IOUtils.closeQuietly(dataStream);
 			}
+			byte[] signatureData = signature.sign();
+			FileUtils.writeByteArrayToFile(signatureDestinationFile, signatureData);
 			
 			result = true;
 		} catch (Exception e) {
-			error = e;
+			error = new Exception("Cannot create signature", e);
 		} finally {
+			IOUtils.closeQuietly(dataStream);
+			
 			showDone();
-			isDone = true;
 		}
 	}
 }

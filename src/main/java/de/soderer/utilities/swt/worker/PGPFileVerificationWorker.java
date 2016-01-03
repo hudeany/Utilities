@@ -3,6 +3,7 @@ package de.soderer.utilities.swt.worker;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.openpgp.PGPCompressedData;
@@ -13,10 +14,10 @@ import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
 
 import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
-import de.soderer.utilities.swt.Worker;
 
-public class PGPFileVerificationWorker extends Worker<Boolean> {
+public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 	private InputStream dataToVerify = null;
 	private InputStream signatureData = null;
 	private PGPPublicKey publicKey = null;
@@ -37,13 +38,16 @@ public class PGPFileVerificationWorker extends Worker<Boolean> {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
 		
-    	todo = dataToVerify.available();
+    	itemsToDo = dataToVerify.available();
 	}
 	
 	@Override
 	public void run() {
-		long position = 0L;
+		startTime = new Date();
+		itemsToDo = 0L;
+		itemsDone = 0L;
 		result = null;
+		showProgress();
 		
 		try {
 			PGPObjectFactory pgpFact = new PGPObjectFactory(PGPUtil.getDecoderStream(signatureData));
@@ -70,9 +74,8 @@ public class PGPFileVerificationWorker extends Worker<Boolean> {
 					break;
 				} else {
 					signature.update(buffer, 0, bytesRead);
-					position += bytesRead;
-
-					showItemsDone(position);
+					itemsDone += bytesRead;
+					showProgress();
 				}
 			}
 
@@ -81,7 +84,6 @@ public class PGPFileVerificationWorker extends Worker<Boolean> {
 			error = new Exception("Cannot verify signature", e);
 		} finally {
 			showDone();
-			isDone = true;
 		}
 	}
 }

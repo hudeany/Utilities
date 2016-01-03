@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
+import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -13,10 +14,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
-import de.soderer.utilities.swt.Worker;
 
-public class FileVerificationWorker extends Worker<Boolean> {
+public class FileVerificationWorker extends WorkerSimple<Boolean> {
 	private File fileToVerify = null;
 	private File signatureFile = null;
 	private PublicKey publicKey = null;
@@ -37,50 +38,47 @@ public class FileVerificationWorker extends Worker<Boolean> {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
 		
-    	todo = fileToVerify.length();
+    	itemsToDo = fileToVerify.length();
 	}
 
 	@Override
 	public void run() {
-		long position = 0L;
+		startTime = new Date();
+		itemsToDo = 0L;
+		itemsDone = 0L;
 		result = null;
+		showProgress();
+		
+		BufferedInputStream dataStream = null;
 		try {
+			Security.addProvider(new BouncyCastleProvider());
+			
+			dataStream = new BufferedInputStream(new FileInputStream(fileToVerify));
+			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			signature.initVerify(publicKey);
+			byte[] buffer = new byte[4096];
+			int bytesRead;
+			while ((bytesRead = dataStream.read(buffer)) >= 0) {
+				if (cancel) {
+					break;
+				} else {
+					signature.update(buffer, 0, bytesRead);
+					itemsDone += bytesRead;
+					showProgress();
+				}
+			}
+
 			byte[] signatureData = FileUtils.readFileToByteArray(signatureFile);
 			
-			BufferedInputStream dataStream = null;
-			try {
-				showItemsDone(0L);
-				
-				Security.addProvider(new BouncyCastleProvider());
-				
-				dataStream = new BufferedInputStream(new FileInputStream(fileToVerify));
-				Signature signature = Signature.getInstance(signatureMethod, "BC");
-				signature.initVerify(publicKey);
-				byte[] buffer = new byte[4096];
-				int bytesRead;
-				while ((bytesRead = dataStream.read(buffer)) >= 0) {
-					if (cancel) {
-						break;
-					} else {
-						signature.update(buffer, 0, bytesRead);
-						position += bytesRead;
-
-						showItemsDone(position);
-					}
-				}
-				result = signature.verify(signatureData);
-			} catch (Exception e) {
-				throw new Exception("Cannot verify signature", e);
-			} finally {
-				IOUtils.closeQuietly(dataStream);
-			}
+			result = signature.verify(signatureData);
 			
 			result = true;
 		} catch (Exception e) {
-			error = e;
+			error = new Exception("Cannot verify signature", e);
 		} finally {
+			IOUtils.closeQuietly(dataStream);
+			
 			showDone();
-			isDone = true;
 		}
 	}
 }

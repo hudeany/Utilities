@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
+import java.util.Date;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -19,10 +20,10 @@ import org.bouncycastle.openpgp.PGPSignatureGenerator;
 
 import de.soderer.utilities.PgpUtilities;
 import de.soderer.utilities.UserError;
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
-import de.soderer.utilities.swt.Worker;
 
-public class PGPFileSignatureWorker extends Worker<byte[]> {
+public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 	private InputStream dataToSign = null;
 	private PGPSecretKey secretKey = null;
 	private char[] password = null;
@@ -43,13 +44,16 @@ public class PGPFileSignatureWorker extends Worker<byte[]> {
 			this.signatureMethod = PgpUtilities.DEFAULT_SIGNATURE_METHOD_PGP;
 		}
 
-		todo = dataToSign.available();
+		itemsToDo = dataToSign.available();
 	}
 
 	@Override
 	public void run() {
-		long position = 0L;
+		startTime = new Date();
+		itemsToDo = 0L;
+		itemsDone = 0L;
 		result = null;
+		showProgress();
 
 		PGPPrivateKey privateKey = null;
 		ByteArrayOutputStream outputStream = null;
@@ -66,17 +70,16 @@ public class PGPFileSignatureWorker extends Worker<byte[]> {
 				error = new UserError("cannotReadPrivateKey", e);
 			}
 			showDone();
-			isDone = true;
 			return;
 		} catch (Exception e) {
 			error = new UserError("cannotReadPrivateKey", e);
 			showDone();
-			isDone = true;
 			return;
 		}
 
 		try {
-			showItemsDone(0L);
+			itemsDone = 0L;
+			showProgress();
 
 			Security.addProvider(new BouncyCastleProvider());
 
@@ -96,9 +99,8 @@ public class PGPFileSignatureWorker extends Worker<byte[]> {
 				} else {
 					pgpSignatureGenerator.update(buffer, 0, bytesRead);
 
-					position += bytesRead;
-
-					showItemsDone(position);
+					itemsDone += bytesRead;
+					showProgress();
 				}
 			}
 
@@ -116,7 +118,6 @@ public class PGPFileSignatureWorker extends Worker<byte[]> {
 			IOUtils.closeQuietly(outputStream);
 
 			showDone();
-			isDone = true;
 		}
 	}
 }

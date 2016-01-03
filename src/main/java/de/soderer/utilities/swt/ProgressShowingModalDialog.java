@@ -1,10 +1,14 @@
 package de.soderer.utilities.swt;
 
+import java.util.Date;
+
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 
-public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
+import de.soderer.utilities.WorkerParentSimple;
+
+public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> implements WorkerParentSimple {
 	private static final transient Logger logger = Logger.getLogger(ProgressShowingModalDialog.class);
 	
 	protected ProgressDialog progressDialog;
@@ -16,16 +20,31 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 	public ProgressShowingModalDialog(Shell parentShell, int style, String title) {   
 		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
-	
-	public void showProgress(long todo, long done) {
-		final long todoParam = todo;
-		final long doneParam = done;
+
+	@Override
+	public void showUnlimitedProgress() {
+		try {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (progressDialog != null && !progressDialog.isDisposed()) {
+						progressDialog.showUnlimitedProgress();
+					}
+				}
+			});
+		} catch (Exception e) {
+			logger.error("Error in showUnlimitedProgress", e);
+		}
+	}
+
+	@Override
+	public void showProgress(Date start, final long itemsToDo, final long itemsDone) {
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog != null && !progressDialog.isDisposed()) {
-					if (todoParam > 0) {
-						progressDialog.setProgress(todoParam, doneParam);
+					if (itemsToDo > 0) {
+						progressDialog.setProgress(itemsToDo, itemsDone);
 					} else {
 						progressDialog.setProgressPercentage(0);
 					}
@@ -33,19 +52,9 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 			}
 		});
 	}
-	
-	public void showUnlimitedProgress() {
-		getParent().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (progressDialog != null && !progressDialog.isDisposed()) {
-					progressDialog.showUnlimitedProgress();
-				}
-			}
-		});
-	}
-	
-	public void showDone() {
+
+	@Override
+	public void showDone(Date start, Date end, long itemsDone) {
 		try {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -62,5 +71,10 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> {
 		} catch (Exception e) {
 			logger.error("Error in showDone", e);
 		}
+	}
+	
+	@Override
+	public void cancel() {
+		// Do nothing
 	}
 }

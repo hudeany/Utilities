@@ -24,8 +24,10 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	@Override
 	public void run() {
 		startTime = new Date();
-		itemsToDo = 0;
-		itemsDone = 0;
+		itemsToDo = 0L;
+		itemsDone = 0L;
+		result = null;
+		showProgress();
 		
 		try {
 			if (destinationFile.exists()) {

@@ -4,7 +4,6 @@ import java.io.File;
 import java.net.URLEncoder;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RunnableFuture;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -20,6 +19,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.FileDownloadWorker;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataKeyStore;
 import de.soderer.utilities.SimpleCredentialsData;
@@ -269,7 +269,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				}
 			}
 
-			RunnableFuture<Boolean> worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile.getAbsolutePath());
+			FileDownloadWorker worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile);
 			progressDialog = new ProgressDialog(getParent(), LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"));
 			new Thread(worker).start();
 			if (progressDialog.open()) {

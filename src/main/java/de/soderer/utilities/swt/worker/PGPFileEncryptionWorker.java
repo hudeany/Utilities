@@ -20,10 +20,10 @@ import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.openpgp.PGPLiteralDataGenerator;
 import org.bouncycastle.openpgp.PGPPublicKey;
 
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
-import de.soderer.utilities.swt.Worker;
 
-public class PGPFileEncryptionWorker extends Worker<Boolean> {
+public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 	private InputStream dataToEncrypt = null;
 	private OutputStream encryptedData = null;
 	private PGPPublicKey publicKey = null;
@@ -34,14 +34,17 @@ public class PGPFileEncryptionWorker extends Worker<Boolean> {
 		this.encryptedData = encryptedData;
 		this.publicKey = publicKey;
 		
-    	todo = dataToEncrypt.available();
+    	itemsToDo = dataToEncrypt.available();
 	}
 	
 	//TODO: Encrypt big file
 	@Override
 	public void run() {
-		long position = 0L;
+		startTime = new Date();
+		itemsToDo = 0L;
+		itemsDone = 0L;
 		result = null;
+		showProgress();
 		
 		boolean armor = true;
 		
@@ -49,8 +52,6 @@ public class PGPFileEncryptionWorker extends Worker<Boolean> {
 		OutputStream outputStream3 = null;
 		OutputStream outputStream4 = null;
 		try {
-			showItemsDone(0L);
-			
 			Security.addProvider(new BouncyCastleProvider());
 			
 			dataToEncrypt = new BufferedInputStream(dataToEncrypt);
@@ -77,9 +78,8 @@ public class PGPFileEncryptionWorker extends Worker<Boolean> {
 				} else {
 					outputStream2.write(buffer, 0, bytesRead);
 					
-					position += bytesRead;
-					
-					showItemsDone(position);
+					itemsDone += bytesRead;
+					showProgress();
 				}
 			}
 
@@ -106,7 +106,6 @@ public class PGPFileEncryptionWorker extends Worker<Boolean> {
 				IOUtils.closeQuietly(encryptedData);
 			}
 			showDone();
-			isDone = true;
 		}
 	}
 }

@@ -1,10 +1,14 @@
 package de.soderer.utilities.swt;
 
+import java.util.Date;
+
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 
-public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingModalDialog<T> {
+import de.soderer.utilities.WorkerParentDual;
+
+public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingModalDialog<T> implements WorkerParentDual {
 	@SuppressWarnings("unused")
 	private static final transient Logger logger = Logger.getLogger(DualProgressShowingModalDialog.class);
 	
@@ -48,5 +52,29 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 				}
 			}
 		});
+	}
+
+	@Override
+	public void showUnlimitedSubProgress() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void showItemStart(String itemName) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void showItemProgress(Date itemStart, long subItemToDo, long subItemDone) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void showItemDone(Date itemStart, Date itemEnd, long subItemsDone) {
+		// TODO Auto-generated method stub
+		
 	}
 }

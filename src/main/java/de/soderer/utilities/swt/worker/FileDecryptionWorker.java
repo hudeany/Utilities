@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.Security;
+import java.util.Date;
 import java.util.zip.ZipInputStream;
 
 import javax.crypto.Cipher;
@@ -21,10 +22,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.WorkerParentSimple;
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
-import de.soderer.utilities.swt.Worker;
 
-public class FileDecryptionWorker extends Worker<Boolean> {
+public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 	private File fileToDecrypt = null;
 	private File decryptedFile = null;
 	private PrivateKey privateKey = null;
@@ -42,7 +44,7 @@ public class FileDecryptionWorker extends Worker<Boolean> {
 	 * @param decryptedFile
 	 * @param privateKey
 	 */
-	public FileDecryptionWorker(ProgressShowingModalDialog<?> parent, File fileToDecrypt, File decryptedFile, PrivateKey privateKey) {
+	public FileDecryptionWorker(WorkerParentSimple parent, File fileToDecrypt, File decryptedFile, PrivateKey privateKey) {
 		this(parent, fileToDecrypt, decryptedFile, privateKey, null, true);
 	}
 	
@@ -56,7 +58,7 @@ public class FileDecryptionWorker extends Worker<Boolean> {
 	 * @param decryptionMethod
 	 * @param unzipAfterDecryption
 	 */
-	public FileDecryptionWorker(ProgressShowingModalDialog<?> parent, File fileToDecrypt, File decryptedFile, PrivateKey privateKey, String decryptionMethod, boolean unzipAfterDecryption) {
+	public FileDecryptionWorker(WorkerParentSimple parent, File fileToDecrypt, File decryptedFile, PrivateKey privateKey, String decryptionMethod, boolean unzipAfterDecryption) {
 		super(parent);
 		this.fileToDecrypt = fileToDecrypt;
 		this.decryptedFile = decryptedFile;
@@ -68,7 +70,7 @@ public class FileDecryptionWorker extends Worker<Boolean> {
 			this.decryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD;
 		}
 		
-    	todo = fileToDecrypt.length();
+    	itemsToDo = fileToDecrypt.length();
 	}
 
 	/**
@@ -117,19 +119,21 @@ public class FileDecryptionWorker extends Worker<Boolean> {
 			this.initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
 		}
 		
-    	todo = fileToDecrypt.length();
+		itemsToDo = fileToDecrypt.length();
 	}
 
 	@Override
 	public void run() {
-		long position = 0L;
+		startTime = new Date();
+		itemsToDo = 0L;
+		itemsDone = 0L;
 		result = null;
+		showProgress();
+		
 		try {
 			OutputStream outputStream = null;
 			InputStream inputStream = null;
 			try {
-				showItemsDone(0L);
-				
 				Security.addProvider(new BouncyCastleProvider());
 				
 				outputStream = new BufferedOutputStream(new FileOutputStream(decryptedFile));
@@ -156,9 +160,8 @@ public class FileDecryptionWorker extends Worker<Boolean> {
 						break;
 					} else {
 						outputStream.write(buffer, 0, bytesRead);
-						position += bytesRead;
-
-						showItemsDone(position);
+						itemsDone += bytesRead;
+						showProgress();
 					}
 				}
 			} catch (Exception e) {
@@ -173,7 +176,6 @@ public class FileDecryptionWorker extends Worker<Boolean> {
 			error = e;
 		} finally {
 			showDone();
-			isDone = true;
 		}
 	}
 }

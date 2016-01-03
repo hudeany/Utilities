@@ -23,9 +23,18 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	}
 
 	protected void showItemProgress() {
+		showItemProgress(false);
+	}
+
+	protected void showItemProgress(boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
 			if (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds) {
 				// Normal progress update
+				((WorkerParentDual) parent).showItemProgress(startTimeSub, subItemsToDo, subItemsDone);
+				lastProgressShow = new Date();
+			} else if (overrideRefreshTime) {
+				// Important progress update, which may not be left out
+				letGuiRefresh();
 				((WorkerParentDual) parent).showItemProgress(startTimeSub, subItemsToDo, subItemsDone);
 				lastProgressShow = new Date();
 			}

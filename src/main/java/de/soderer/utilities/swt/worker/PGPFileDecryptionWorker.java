@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
+import java.util.Date;
 import java.util.Iterator;
 
 import org.apache.commons.io.IOUtils;
@@ -22,13 +23,13 @@ import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.UserError;
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
-import de.soderer.utilities.swt.Worker;
 
 /**
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
  */
-public class PGPFileDecryptionWorker extends Worker<Boolean> {
+public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 	private InputStream encryptedData = null;
 	private OutputStream decryptedData = null;
 	private PGPSecretKey secretKey = null;
@@ -41,17 +42,20 @@ public class PGPFileDecryptionWorker extends Worker<Boolean> {
 		this.secretKey = secretKey;
 		this.password = password;
 
-		todo = encryptedData.available();
+		itemsToDo = encryptedData.available();
 	}
 
 	@Override
 	public void run() {
+		startTime = new Date();
+		itemsToDo = 0L;
+		itemsDone = 0L;
+		result = null;
+		showProgress();
+		
 		InputStream decryptedPacketInputStream = null;
 		InputStream decodedInputStream = null;
 		try {
-			long position = 0L;
-			result = null;
-
 			PGPPrivateKey privateKey = null;
 			encryptedData = PGPUtil.getDecoderStream(encryptedData);
 
@@ -64,12 +68,10 @@ public class PGPFileDecryptionWorker extends Worker<Boolean> {
 					error = new UserError("cannotReadPrivateKey", e);
 				}
 				showDone();
-				isDone = true;
 				return;
 			} catch (Exception e) {
 				error = new UserError("cannotReadPrivateKey", e);
 				showDone();
-				isDone = true;
 				return;
 			}
 
@@ -116,9 +118,8 @@ public class PGPFileDecryptionWorker extends Worker<Boolean> {
 						break;
 					} else {
 						decryptedData.write(buffer, 0, bytesRead);
-						position += bytesRead;
-
-						showItemsDone(position);
+						itemsDone += bytesRead;
+						showProgress();
 					}
 				}
 			} else if (message instanceof PGPOnePassSignatureList) {
@@ -150,7 +151,6 @@ public class PGPFileDecryptionWorker extends Worker<Boolean> {
 			IOUtils.closeQuietly(decryptedPacketInputStream);
 
 			showDone();
-			isDone = true;
 		}
 	}
 }

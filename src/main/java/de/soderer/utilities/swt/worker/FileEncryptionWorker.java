@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PublicKey;
 import java.security.Security;
+import java.util.Date;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -22,10 +23,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.CryptographicUtilities;
-import de.soderer.utilities.swt.ProgressShowingModalDialog;
-import de.soderer.utilities.swt.Worker;
+import de.soderer.utilities.WorkerParentSimple;
+import de.soderer.utilities.WorkerSimple;
 
-public class FileEncryptionWorker extends Worker<Boolean> {
+public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	private File fileToEncrypt = null;
 	private File encryptedFile = null;
 	private PublicKey publicKey = null;
@@ -43,7 +44,7 @@ public class FileEncryptionWorker extends Worker<Boolean> {
 	 * @param encryptedFile
 	 * @param publicKey
 	 */
-	public FileEncryptionWorker(ProgressShowingModalDialog<?> parent, File fileToEncrypt, File encryptedFile, PublicKey publicKey) {
+	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, PublicKey publicKey) {
 		this(parent, fileToEncrypt, encryptedFile, publicKey, null, true);
 	}
 	
@@ -57,7 +58,7 @@ public class FileEncryptionWorker extends Worker<Boolean> {
 	 * @param encryptionMethod
 	 * @param zipBeforeEncryption
 	 */
-	public FileEncryptionWorker(ProgressShowingModalDialog<?> parent, File fileToEncrypt, File encryptedFile, PublicKey publicKey, String encryptionMethod, boolean zipBeforeEncryption) {
+	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, PublicKey publicKey, String encryptionMethod, boolean zipBeforeEncryption) {
 		super(parent);
 		this.fileToEncrypt = fileToEncrypt;
 		this.encryptedFile = encryptedFile;
@@ -69,7 +70,7 @@ public class FileEncryptionWorker extends Worker<Boolean> {
 			this.encryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD;
 		}
 		
-    	todo = fileToEncrypt.length();
+    	itemsToDo = fileToEncrypt.length();
 	}
 
 	/**
@@ -80,7 +81,7 @@ public class FileEncryptionWorker extends Worker<Boolean> {
 	 * @param password
 	 * @param publicKey
 	 */
-	public FileEncryptionWorker(ProgressShowingModalDialog<?> parent, File fileToEncrypt, File encryptedFile, char[] password) {
+	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, char[] password) {
 		this(parent, fileToEncrypt, encryptedFile, password, null, null, null, true);
 	}
 	
@@ -94,7 +95,7 @@ public class FileEncryptionWorker extends Worker<Boolean> {
 	 * @param encryptionMethod
 	 * @param zipBeforeEncryption
 	 */
-	public FileEncryptionWorker(ProgressShowingModalDialog<?> parent, File fileToEncrypt, File encryptedFile, char[] password, String encryptionMethod, byte[] salt, byte[] initalizationVector, boolean zipBeforeEncryption) {
+	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, char[] password, String encryptionMethod, byte[] salt, byte[] initalizationVector, boolean zipBeforeEncryption) {
 		super(parent);
 		this.fileToEncrypt = fileToEncrypt;
 		this.encryptedFile = encryptedFile;
@@ -116,19 +117,21 @@ public class FileEncryptionWorker extends Worker<Boolean> {
 			this.initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
 		}
 		
-    	todo = fileToEncrypt.length();
+		itemsToDo = fileToEncrypt.length();
 	}
 
 	@Override
 	public void run() {
-		long position = 0L;
+		startTime = new Date();
+		itemsToDo = 0L;
+		itemsDone = 0L;
 		result = null;
+		showProgress();
+		
 		try {
 			InputStream inputStream = null;
 			OutputStream outputStream = null;
 			try {
-				showItemsDone(0L);
-				
 				Security.addProvider(new BouncyCastleProvider());
 				
 				inputStream = new BufferedInputStream(new FileInputStream(fileToEncrypt));
@@ -157,9 +160,8 @@ public class FileEncryptionWorker extends Worker<Boolean> {
 						break;
 					} else {
 						outputStream.write(buffer, 0, bytesRead);
-						position += bytesRead;
-						
-						showItemsDone(position);
+						itemsDone += bytesRead;
+						showProgress();
 					}
 				}
 			} catch (Exception e) {
@@ -174,7 +176,6 @@ public class FileEncryptionWorker extends Worker<Boolean> {
 			error = e;
 		} finally {
 			showDone();
-			isDone = true;
 		}
 	}
 }
