@@ -24,6 +24,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,11 +32,13 @@ import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -1562,5 +1565,75 @@ public class Utilities {
 		copy(inputStream, byteArrayOutputStream);
 		byteArrayOutputStream.close();
 		return byteArrayOutputStream.toByteArray();
+	}
+	
+	/**
+	 * Create a progress string for terminal output
+	 * e.g.: "65% [=================================>                   ] 103.234 200/s eta 5m"
+	 * 
+	 * @param start
+	 * @param itemsToDo
+	 * @param itemsDone
+	 * @return
+	 */
+	public static String getConsoleProgressString(int lineLength, Date start, long itemsToDo, long itemsDone) {
+		Date now = new Date();
+		String itemsToDoString = "??";
+		String percentageString = " 0%";
+		String speedString = "???/s";
+		String etaString = "eta ???";
+		int percentageDone = 0;
+		if (itemsToDo > 0 && itemsDone > 0) {
+			itemsToDoString = DecimalFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
+			percentageDone = (int) (itemsDone * 100 / itemsToDo);
+			percentageString = leftPad(percentageDone + "%", 3);
+			int speed = (int) (itemsDone / ((now.getTime() - start.getTime()) / 1000));
+			speedString = getHumanReadableNumber(speed, "", true) + "/s";
+			Date estimatedEnd = DateUtils.calculateETA(start, itemsToDo, itemsDone);
+			etaString = "eta " + DateUtils.getShortHumanReadableTimespan(estimatedEnd.getTime() - now.getTime(), false);
+		} else if (itemsToDo > 0) {
+			itemsToDoString = DecimalFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
+		}
+		
+		String leftPart = percentageString + " [";
+		String rightPart = "] " + itemsToDoString + " " + speedString + " " + etaString;
+		int barWith = lineLength - (leftPart.length() + rightPart.length());
+		int barDone = barWith * percentageDone / 100;
+		if (barDone < 1) {
+			barDone = 1;
+		} else if (barDone >= barWith) {
+			barDone = barWith;
+		}
+		return leftPart + repeat("=", barDone - 1) + ">" + repeat(" ", barWith - barDone) + rightPart;
+	}
+	
+	/**
+	 * Append blanks at the left of a string to make if fit the given minimum
+	 * 
+	 * @param escapedValue
+	 * @param i
+	 * @return
+	 */
+	public static String leftPad(String value, int minimumLength) {
+		try {
+			return String.format("%1$" + minimumLength + "s", value);
+		} catch (Exception e) {
+			return value;
+		}  
+	}
+	
+	/**
+	 * Append blanks at the right of a string to make if fit the given minimum
+	 * 
+	 * @param escapedValue
+	 * @param i
+	 * @return
+	 */
+	public static String rightPad(String value, int minimumLength) {
+		try {
+			return String.format("%1$-" + minimumLength + "s", value);
+		} catch (Exception e) {
+			return value;
+		}
 	}
 }
