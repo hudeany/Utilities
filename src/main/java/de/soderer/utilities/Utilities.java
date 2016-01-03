@@ -124,7 +124,7 @@ public class Utilities {
 	 */
 	public static String decodeURL(String decode) throws Exception {
 		try {
-			return URLDecoder.decode(decode, "ISO-8859-1");
+			return URLDecoder.decode(decode, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			throw new Exception("Fehler in der URL-Decodierung", e);
 		}
