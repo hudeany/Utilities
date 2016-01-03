@@ -7,10 +7,11 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+
+import de.soderer.utilities.Utilities;
 
 public class JsonUtilities {
 	public static JsonObject parseJsonData(String jsonDataString, boolean throwExceptionOnError) throws Exception {
@@ -105,7 +106,7 @@ public class JsonUtilities {
 			for (int i = 0; i < xmlNode.getChildNodes().getLength(); i++) {
 				Node childNode = xmlNode.getChildNodes().item(i);
 				if (childNode.getNodeType() == Node.TEXT_NODE) {
-					if (StringUtils.isNotBlank(childNode.getNodeValue())) {
+					if (Utilities.isNotBlank(childNode.getNodeValue())) {
 						jsonObject.add("text", childNode.getNodeValue());
 					}
 				} else if (childNode.getNodeType() == Node.COMMENT_NODE) {

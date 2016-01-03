@@ -8,8 +8,6 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class DateUtils {
 	public static SimpleDateFormat DD_MM_YYYY_HH_MM_SS = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 	public static SimpleDateFormat DD_MM_YYYY_HH_MM_SS_Z = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss z");
@@ -35,7 +33,7 @@ public class DateUtils {
 	}
 	
 	public static int getWeekdayIndex(String weekday) {
-		if (StringUtils.isBlank(weekday)) {
+		if (Utilities.isBlank(weekday)) {
 			return -1;
 		} else {
 			weekday = weekday.toLowerCase().trim();

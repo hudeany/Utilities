@@ -20,8 +20,8 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import de.soderer.utilities.EmailUtilities;
 import de.soderer.utilities.ExceptionUtilities;
-import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 
 public class ErrorDialog extends ModalDialog<Boolean> {
@@ -72,7 +72,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		sendMailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				boolean success = Utilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, ExceptionUtilities.throwableToString(throwable));
+				boolean success = EmailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, ExceptionUtilities.throwableToString(throwable));
 				if (!success) {
 					new QuestionDialog(getParent(), getText(), getText("CANNOT_OPEN_MAIL"), "OK").open();
 				}

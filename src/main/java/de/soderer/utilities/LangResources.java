@@ -4,8 +4,6 @@ import java.text.MessageFormat;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class LangResources {
 	private static PropertyResourceBundle propertyResourceBundle;
 	
@@ -15,7 +13,7 @@ public class LangResources {
 				propertyResourceBundle = (PropertyResourceBundle) ResourceBundle.getBundle("LanguageProperties");
 			} catch (Exception e) {
 				e.printStackTrace();
-				return "Missing resourceBundle: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + StringUtils.join(arguments, ", ") : "");
+				return "Missing resourceBundle: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
 			}
 		}
 	
@@ -23,7 +21,7 @@ public class LangResources {
 			String pattern = propertyResourceBundle.getString(resourceKey);
 			return MessageFormat.format(pattern, arguments);
 		} else {
-			return "Missing resourceKey: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + StringUtils.join(arguments, ", ") : "");
+			return "Missing resourceKey: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
 		}
 	}
 	

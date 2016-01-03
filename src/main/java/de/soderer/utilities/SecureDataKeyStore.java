@@ -16,8 +16,6 @@ import java.util.Set;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.commons.io.IOUtils;
-
 public class SecureDataKeyStore {
 	private File keystoreFile;
 	private Map<String, Map<String, SecureDataEntry>> dataEntries = new HashMap<String, Map<String, SecureDataEntry>>();
@@ -61,7 +59,7 @@ public class SecureDataKeyStore {
 			}
 		} finally {
 			Arrays.fill(passwordArray, '\u0000');
-			IOUtils.closeQuietly(fis);
+			Utilities.closeQuietly(fis);
 		}
 	}
 	
@@ -83,7 +81,7 @@ public class SecureDataKeyStore {
 			e.printStackTrace();
 		} finally {
 			Arrays.fill(passwordArray, '\u0000');
-			IOUtils.closeQuietly(fos);
+			Utilities.closeQuietly(fos);
 		}
 	}
 	

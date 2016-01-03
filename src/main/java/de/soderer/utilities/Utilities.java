@@ -1,25 +1,25 @@
 package de.soderer.utilities;
 
-import java.awt.Desktop;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -27,17 +27,16 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -45,24 +44,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
-import javax.mail.Message;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.swt.program.Program;
 
 /**
  * Global Utilities
@@ -163,7 +144,7 @@ public class Utilities {
 			gzipCompresser.write(clearArrayToEncode);
 			gzipCompresser.close();
 
-			return Base64.encodeBase64(encoded.toByteArray());
+			return Base64.getEncoder().encode(encoded.toByteArray());
 		} catch (IOException e) {
 			return null;
 		}
@@ -177,7 +158,7 @@ public class Utilities {
 	 * @throws Exception
 	 */
 	public static byte[] decodeFromZippedBase64(byte[] zipedArrayToDecode) throws Exception {
-		return unzipByteArray(Base64.decodeBase64(zipedArrayToDecode));
+		return unzipByteArray(Base64.getDecoder().decode(zipedArrayToDecode));
 	}
 
 	/**
@@ -191,7 +172,7 @@ public class Utilities {
 		try {
 			ByteArrayOutputStream decoded = new ByteArrayOutputStream();
 			ByteArrayInputStream encoded = new ByteArrayInputStream(zippedData);
-			IOUtils.copy(new GZIPInputStream(encoded), decoded);
+			copy(new GZIPInputStream(encoded), decoded);
 			return decoded.toByteArray();
 		} catch (IOException e) {
 			throw new Exception("Komprimierte Daten konnten nicht entpackt werden", e);
@@ -306,35 +287,6 @@ public class Utilities {
 					files.addAll(getFilesByPattern(file, pattern, traverseCompletely));
 				} else if (file.isFile() && pattern.matcher(file.getName()).matches()) {
 					files.add(file);
-				}
-			}
-		}
-		return files;
-	}
-
-	/**
-	 * Read a directory and return all files fitting to a wildcard pattern
-	 * 
-	 * @param startDirectory
-	 * @param fileFilterWithWildcards
-	 * @param traverseCompletely
-	 * @return
-	 */
-	public static List<File> getFilesWithWildcards(File startDirectory, String fileFilterWithWildcards, boolean traverseCompletely) {
-		List<File> files = new ArrayList<File>();
-		if (startDirectory.isDirectory()) {
-			FileFilter fileFilter = new WildcardFileFilter(fileFilterWithWildcards);
-			for (File file : startDirectory.listFiles(fileFilter)) {
-				if (file.isFile()) {
-					files.add(file);
-				}
-			}
-
-			if (traverseCompletely) {
-				for (File file : startDirectory.listFiles()) {
-					if (file.isDirectory()) {
-						files.addAll(getFilesWithWildcards(file, fileFilterWithWildcards, traverseCompletely));
-					}
 				}
 			}
 		}
@@ -472,7 +424,7 @@ public class Utilities {
 		} catch (Exception ex) {
 			throw new Exception("Fehler in readStreamInArray: " + ex.getMessage(), ex);
 		} finally {
-			IOUtils.closeQuietly(returnArrayBuffer);
+			closeQuietly(returnArrayBuffer);
 		}
 
 		return returnArrayBuffer.toByteArray();
@@ -927,7 +879,7 @@ public class Utilities {
 	}
 
 	/**
-	 * Convert a collection to a string like Stringutils.join, but keep null values as "<null>" string
+	 * Convert a collection to a string like Utilities.join, but keep null values as "<null>" string
 	 * 
 	 * @param collection
 	 * @param separator
@@ -987,24 +939,6 @@ public class Utilities {
 		}
 
 		return false;
-	}
-
-	/**
-	 * Read a directory and return all files fitting namestart and extension
-	 * 
-	 * @param directory
-	 * @param nameStart
-	 * @param extension
-	 * @return
-	 */
-	public static File[] getSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
-		List<File> files = new LinkedList<File>();
-		for (File file : directory.listFiles()) {
-			if (file.getName().startsWith(nameStart) && file.getName().endsWith("." + extension)) {
-				files.add(file);
-			}
-		}
-		return files.toArray(new File[0]);
 	}
 
 	/**
@@ -1092,19 +1026,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Delete all subfiles fitting namestart and extension
-	 * 
-	 * @param directory
-	 * @param nameStart
-	 * @param extension
-	 */
-	public static void deleteSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
-		for (File file : getSubfilesByNameAndExtension(directory, nameStart, extension)) {
-			FileUtils.deleteQuietly(file);
-		}
-	}
-
-	/**
 	 * Get the minimum of a value list down to a valid minimum
 	 * 
 	 * @param allowedValueMinimum
@@ -1130,7 +1051,7 @@ public class Utilities {
 	 * @return
 	 */
 	public static boolean interpretAsBool(String value) {
-		if (StringUtils.isNotEmpty(value)) {
+		if (isNotEmpty(value)) {
 			value = value.trim();
 			return value.equalsIgnoreCase("true") || value.equalsIgnoreCase("+") || value.equalsIgnoreCase("yes") || value.equalsIgnoreCase("ja") || value.equalsIgnoreCase("ok") || value.equalsIgnoreCase("on") || value.equalsIgnoreCase("an");
 		} else {
@@ -1199,7 +1120,7 @@ public class Utilities {
 
 			return lineNumberReader.getLineNumber();
 		} finally {
-			IOUtils.closeQuietly(lineNumberReader);
+			closeQuietly(lineNumberReader);
 		}
 	}
 
@@ -1212,152 +1133,6 @@ public class Utilities {
 		List<T> list = new ArrayList<T>(c);
 		java.util.Collections.sort(list);
 		return list;
-	}
-
-	/**
-	 * Search textfile for string
-	 * 
-	 * @param searchFile
-	 * @param searchText
-	 * @param searchCaseSensitive
-	 * @param searchTextIsRegularExpression
-	 * @param defaultEncoding
-	 * @return
-	 * @throws Exception
-	 */
-	public static boolean fileSearchText(File searchFile, String searchText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
-		List<String> searchTexts = new ArrayList<String>();
-		searchTexts.add(searchText);
-		return fileSearchText(searchFile, searchTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
-	}
-
-	/**
-	 * Search textfile for string
-	 * 
-	 * @param searchFile
-	 * @param searchTexts
-	 * @param searchCaseSensitive
-	 * @param searchTextIsRegularExpression
-	 * @param defaultEncoding
-	 * @return
-	 * @throws Exception
-	 */
-	public static boolean fileSearchText(File searchFile, List<String> searchTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
-		FileInputStream fileInputStream = null;
-		try {
-			if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
-				byte[] encodingBuffer = Utilities.readFirstFileData(searchFile, 100);
-				Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
-				if (encodingData == null) {
-					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
-				}
-
-				fileInputStream = new FileInputStream(searchFile);
-				String dataString = IOUtils.toString(fileInputStream, encodingData.getFirst());
-
-				for (int i = 0; i < searchTexts.size(); i++) {
-					Pattern searchPattern;
-					if (searchTextIsRegularExpression) {
-						if (searchCaseSensitive) {
-							searchPattern = Pattern.compile(searchTexts.get(i));
-						} else {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE);
-						}
-					} else {
-						if (searchCaseSensitive) {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.LITERAL);
-						} else {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-						}
-					}
-					Matcher matcher = searchPattern.matcher(dataString);
-					if (matcher.find()) {
-						return true;
-					}
-				}
-			}
-			return false;
-		} finally {
-			IOUtils.closeQuietly(fileInputStream);
-		}
-	}
-
-	/**
-	 * Replace string in textfile
-	 * 
-	 * @param searchFile
-	 * @param searchText
-	 * @param replacementText
-	 * @param searchCaseSensitive
-	 * @param searchTextIsRegularExpression
-	 * @param defaultEncoding
-	 * @return
-	 * @throws Exception
-	 */
-	public static boolean fileReplaceText(File searchFile, String searchText, String replacementText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
-		List<String> searchTexts = new ArrayList<String>();
-		searchTexts.add(searchText);
-		List<String> replacementTexts = new ArrayList<String>();
-		replacementTexts.add(replacementText);
-		return fileReplaceText(searchFile, searchTexts, replacementTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
-	}
-
-	/**
-	 * Replace strings in textfile
-	 * 
-	 * @param searchFile
-	 * @param searchTexts
-	 * @param replacementTexts
-	 * @param searchCaseSensitive
-	 * @param searchTextIsRegularExpression
-	 * @param defaultEncoding
-	 * @return
-	 * @throws Exception
-	 */
-	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
-		FileInputStream fileInputStream = null;
-		try {
-			boolean foundAndReplaced = false;
-			if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0 && replacementTexts != null && replacementTexts.size() > 0) {
-				byte[] encodingBuffer = Utilities.readFirstFileData(searchFile, 100);
-				Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
-				if (encodingData == null) {
-					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
-				}
-
-				fileInputStream = new FileInputStream(searchFile);
-				String dataString = IOUtils.toString(fileInputStream, encodingData.getFirst());
-
-				for (int i = 0; i < searchTexts.size(); i++) {
-					Pattern searchPattern;
-					if (searchTextIsRegularExpression) {
-						if (searchCaseSensitive) {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE);
-						} else {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
-						}
-					} else {
-						if (searchCaseSensitive) {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.LITERAL);
-						} else {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-						}
-					}
-					Matcher matcher = searchPattern.matcher(dataString);
-					if (matcher.find()) {
-						dataString = matcher.replaceAll(replacementTexts.get(i));
-						foundAndReplaced = true;
-					}
-				}
-
-				if (foundAndReplaced) {
-					FileUtils.writeStringToFile(searchFile, dataString, encodingData.getFirst());
-				}
-			}
-			return foundAndReplaced;
-		} finally {
-			IOUtils.closeQuietly(fileInputStream);
-		}
 	}
 
 	/**
@@ -1395,29 +1170,6 @@ public class Utilities {
 				}
 			}
 			return true;
-		}
-	}
-
-	/**
-	 * Read first n bytes of binary file
-	 * 
-	 * @param dataFile
-	 * @param maxAmountToRead
-	 * @return
-	 * @throws Exception
-	 */
-	public static byte[] readFirstFileData(File dataFile, int maxAmountToRead) throws Exception {
-		FileInputStream input = null;
-		try {
-			input = new FileInputStream(dataFile);
-			byte[] encodingBufferInterim = new byte[maxAmountToRead];
-			int bytesRead = input.read(encodingBufferInterim);
-			byte[] encodingBuffer = ArrayUtils.subarray(encodingBufferInterim, 0, bytesRead);
-			return encodingBuffer;
-		} catch (Exception e) {
-			throw e;
-		} finally {
-			IOUtils.closeQuietly(input);
 		}
 	}
 
@@ -1496,7 +1248,7 @@ public class Utilities {
 		double interimValue = value.doubleValue();
 		String unitExtension = "";
 		if (interimValue < unit) {
-			if (StringUtils.isNotBlank(unitTypeSign)) {
+			if (isNotBlank(unitTypeSign)) {
 				unitExtension = " " + unitTypeSign;
 			}
 
@@ -1506,7 +1258,7 @@ public class Utilities {
 		} else {
 			int exp = (int)(Math.log(interimValue) / Math.log(unit));
 			unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
-			if (StringUtils.isNotBlank(unitTypeSign)) {
+			if (isNotBlank(unitTypeSign)) {
 				unitExtension += unitTypeSign;
 			}
 			interimValue = interimValue / Math.pow(unit, exp);
@@ -1605,167 +1357,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Send an email
-	 * 
-	 * @param senderAdress
-	 * @param toAdressList
-	 * @param ccAdressList
-	 * @param subject
-	 * @param bodyText
-	 * @param bodyHtml
-	 * @param mailtype
-	 * @param charset
-	 * @return
-	 */
-	public static boolean sendEmail(String senderAdress, String toAdressList, String ccAdressList, String subject, String bodyText, String bodyHtml, int mailtype, String charset) {
-		try {
-			// create some properties and get the default Session
-			Properties props = new Properties();
-			props.put("system.mail.host", "localhost");
-			Session session = Session.getDefaultInstance(props, null);
-			// session.setDebug(debug);
-
-			// create a message
-			MimeMessage msg = new MimeMessage(session);
-			msg.setFrom(new InternetAddress(senderAdress));
-			msg.setSubject(subject, charset);
-			msg.setSentDate(new Date());
-
-			// Set to-recipient email addresses
-			InternetAddress[] toAddresses = getEmailAddressesFromList(toAdressList);
-			if (toAddresses != null && toAddresses.length > 0) {
-				msg.setRecipients(Message.RecipientType.TO, toAddresses);
-			}
-
-			// Set cc-recipient email addresses
-			InternetAddress[] ccAddresses = getEmailAddressesFromList(ccAdressList);
-			if (ccAddresses != null && ccAddresses.length > 0) {
-				msg.setRecipients(Message.RecipientType.CC, ccAddresses);
-			}
-
-			switch (mailtype) {
-				case 0:
-					msg.setText(bodyText, charset);
-					break;
-				case 1:
-					Multipart mp = new MimeMultipart("alternative");
-					MimeBodyPart mbp = new MimeBodyPart();
-					mbp.setText(bodyText, charset);
-					mp.addBodyPart(mbp);
-					mbp = new MimeBodyPart();
-					mbp.setContent(bodyHtml, "text/html; charset=" + charset);
-					mp.addBodyPart(mbp);
-					msg.setContent(mp);
-					break;
-				default:
-					msg.setText(bodyText, charset);
-					break;
-			}
-
-			Transport.send(msg);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Get emails from string list
-	 * 
-	 * @param listString
-	 * @return
-	 */
-	public static InternetAddress[] getEmailAddressesFromList(String listString) {
-		if (StringUtils.isNotBlank(listString)) {
-			List<InternetAddress> emailAddresses = new ArrayList<InternetAddress>();
-			for (String singleAdr : listString.split(";|,| ")) {
-				singleAdr = singleAdr.trim();
-				if (StringUtils.isNotBlank(singleAdr)) {
-					try {
-						InternetAddress nextAddress = new InternetAddress(singleAdr.trim());
-						nextAddress.validate();
-						emailAddresses.add(nextAddress);
-					} catch (AddressException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-
-			return emailAddresses.toArray(new InternetAddress[emailAddresses.size()]);
-		} else {
-			return new InternetAddress[0];
-		}
-	}
-
-	/**
-	 * Try to open en email in the standard email client
-	 * 
-	 * @param toAdress
-	 * @param subject
-	 * @param body
-	 * @return
-	 */
-	public static boolean openMailInStandardClient(String toAdress, String subject, String body) {
-		return openMailInStandardClient(toAdress, null, subject, body);
-	}
-
-	/**
-	 * Try to open en email in the standard email client
-	 * 
-	 * @param toAdress
-	 * @param ccAdress
-	 * @param subject
-	 * @param body
-	 * @return
-	 */
-	public static boolean openMailInStandardClient(String toAdress, String ccAdress, String subject, String body) {
-		try {
-			File attachmentFile = null;
-			String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8") + "?" + (StringUtils.isNotBlank(ccAdress) ? "cc=" + URLEncoder.encode(ccAdress, "UTF-8") + "&" : "") + "subject="
-					+ URLEncoder.encode(subject, "UTF-8").replace("+", "%20") + "&body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20")
-					+ (attachmentFile != null ? "&attachment=" + attachmentFile.getAbsolutePath() : ""); // maybe it is "&attach="
-			boolean success;
-			try {
-				success = Program.launch(mailtoString);
-			} catch (Exception e) {
-				throw new Exception("Open mail by swt.Program failed");
-			}
-
-			if (!success) {
-				if (SystemUtilities.isWindowsSystem()) {
-					if (Desktop.isDesktopSupported()) {
-						Desktop desktop = Desktop.getDesktop();
-						if (desktop.isSupported(Desktop.Action.MAIL)) {
-							desktop.mail(new URI(mailtoString));
-							return true;
-						} else {
-							return false;
-						}
-					} else {
-						return false;
-					}
-				} else {
-					try {
-						// For using the parameters check the following description
-						// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
-						Runtime.getRuntime().exec("thunderbird -compose");
-						success = Program.launch(mailtoString);
-					} catch (Exception e) {
-						throw new Exception("Open mail by thunderbird failed");
-					}
-				}
-				return true;
-			} else {
-				return true;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-	}
-
-	/**
 	 * Download a file from url
 	 * 
 	 * @param url
@@ -1778,12 +1369,12 @@ public class Utilities {
 		try {
 			bufferedInputStream = new BufferedInputStream(new URL(url).openStream());
 			fileOutputStream = new FileOutputStream(localeDestionationPath);
-			IOUtils.copy(bufferedInputStream, fileOutputStream);
+			Utilities.copy(bufferedInputStream, fileOutputStream);
 		} catch (Exception e) {
 			throw new Exception("Cannot download file", e);
 		} finally {
-			IOUtils.closeQuietly(fileOutputStream);
-			IOUtils.closeQuietly(bufferedInputStream);
+			closeQuietly(fileOutputStream);
+			closeQuietly(bufferedInputStream);
 		}
 	}
 
@@ -1854,5 +1445,122 @@ public class Utilities {
 		URI uri = new URI(url);
 	    String domain = uri.getHost();
 	    return domain.startsWith("www.") ? domain.substring(4) : domain;
+	}
+	
+	public static boolean isEmpty(String value) {
+		return value == null || value.length() == 0;
+	}
+	
+	public static boolean isNotEmpty(String value) {
+		return !isEmpty(value);
+	}
+	
+	public static boolean isBlank(String value) {
+		return value == null || value.length() == 0 || value.trim().length() == 0;
+	}
+	
+	public static boolean isNotBlank(String value) {
+		return !isBlank(value);
+	}
+	
+	public static void closeQuietly(Closeable closeable) {
+		if (closeable != null) {
+			try {
+				closeable.close();
+			} catch (IOException e) {
+				// Do nothing
+			}
+		}
+	}
+
+	public static String repeat(String value, int count) {
+		if (value == null) {
+			return null;
+		} else if (value.length() == 0 || count == 0) {
+			return "";
+		} else {
+			StringBuilder returnValue = new StringBuilder();
+			for (int i = 0; i < count; i++) {
+				returnValue.append(value);
+			}
+			return returnValue.toString();
+		}
+	}
+
+	public static String join(Object[] array, String glue) {
+		if (array == null) {
+			return null;
+		} else if (array.length == 0) {
+			return "";
+		} else {
+			if (glue == null) {
+				glue = "";
+			}
+			
+			StringBuilder returnValue = new StringBuilder();
+			boolean isFirst = true;
+			for (Object object : array) {
+				if (isFirst) {
+					returnValue.append(glue);
+				}
+				if (object == null) {
+					object = "";
+				}
+				returnValue.append(object.toString());
+				isFirst = false;
+			}
+			return returnValue.toString();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T[] remove(T[] items, T item) {
+		int foundAtIndex = -1;
+		for (int i = 0; i < items.length && foundAtIndex == -1; i++) {
+			if (items[i] == item) {
+				foundAtIndex = i;
+			}
+		}
+		
+		if (foundAtIndex > -1) {
+			Object[] returnArray = new Object[items.length - 1];
+			for (int i = 0; i < foundAtIndex; i++) {
+				if (items[i] == item) {
+					foundAtIndex = i;
+				}
+			}
+			for (int i = foundAtIndex + 1; i < items.length; i++) {
+				if (items[i] == item) {
+					foundAtIndex = i;
+				}
+			}
+			return (T[]) returnArray;
+		} else {
+			return items;
+		}
+	}
+
+	public static byte[] readFileToByteArray(File file) throws FileNotFoundException, IOException {
+		try (FileInputStream in = new FileInputStream(file)) {
+			byte[] returnArray = new byte[(int) file.length()];
+			in.read(returnArray);
+			return returnArray;
+		}
+	}
+
+	private static void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
+		byte[] buffer = new byte[4096];
+		int lengthRead = -1;
+		while ((lengthRead = inputStream.read(buffer)) > -1) {
+			outputStream.write(buffer, 0, lengthRead);
+		}
+		outputStream.flush();
+	}
+
+	public static byte[] toByteArray(InputStream inputStream) throws IOException {
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		copy(inputStream, byteArrayOutputStream);
+		byteArrayOutputStream.close();
+		return byteArrayOutputStream.toByteArray();
 	}
 }

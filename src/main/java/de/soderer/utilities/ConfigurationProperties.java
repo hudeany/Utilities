@@ -13,11 +13,6 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.translate.AggregateTranslator;
-import org.apache.commons.lang3.text.translate.LookupTranslator;
-
 import de.soderer.utilities.collection.UniqueFifoQueuedList;
 
 public class ConfigurationProperties {
@@ -48,7 +43,7 @@ public class ConfigurationProperties {
 				e.printStackTrace();
 				throw new RuntimeException("Cannot load configuration", e);
 			} finally {
-				IOUtils.closeQuietly(fileInputStream);
+				Utilities.closeQuietly(fileInputStream);
 			}
 		}
 	}
@@ -115,7 +110,7 @@ public class ConfigurationProperties {
 	}
 	
 	public Character getCharacter(String name) {
-		if (properties.containsKey(name) && StringUtils.isNotEmpty(properties.getProperty(name))) {
+		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			return properties.getProperty(name).toCharArray()[0];
 		} else {
 			return null;
@@ -147,7 +142,7 @@ public class ConfigurationProperties {
 	}
 	
 	public List<String> getList(String name) {
-		if (properties.containsKey(name) && StringUtils.isNotEmpty(properties.getProperty(name)) ) {
+		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name)) ) {
 			try {
 				return CsvReader.parseCsvLine(';', '"', properties.getProperty(name));
 			} catch (Exception e) {
@@ -159,7 +154,7 @@ public class ConfigurationProperties {
 	}
 	
 	public boolean removeFromList(String name, String value) {
-		if (properties.containsKey(name) && StringUtils.isNotEmpty(properties.getProperty(name)) ) {
+		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name)) ) {
 			try {
 				List<String> currentList = CsvReader.parseCsvLine(';', '"', properties.getProperty(name));
 				boolean removedValue = currentList.remove(value);
@@ -214,7 +209,7 @@ public class ConfigurationProperties {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			IOUtils.closeQuietly(fileOutputStream);
+			Utilities.closeQuietly(fileOutputStream);
 		}
 	}
 	
@@ -231,18 +226,10 @@ public class ConfigurationProperties {
 	}
 	
 	public static String escape(String value) {
-		AggregateTranslator escapeScript = new AggregateTranslator(
-			new LookupTranslator(new String[][] { { "\\", "\\\\" }, { "\r", "\\r" }, { "\n", "\\n" }, { "\t", "\\t" } })
-		);
-		
-		return escapeScript.translate(value);
+		return value.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t").replace("\\", "\\\\");
 	}
 	
 	public static String unEscape(String value) {
-		AggregateTranslator unescapeScript = new AggregateTranslator(
-			new LookupTranslator(new String[][] { { "\\\\", "\\" }, { "\\r", "\r" }, { "\\n", "\n" }, { "\\t", "\t" } })
-		);
-		
-		return unescapeScript.translate(value);
+		return value.replace("\\\\", "\\").replace("\\t", "\t").replace("\\n", "\n").replace("\\r", "\r");
 	}
 }

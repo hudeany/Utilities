@@ -8,8 +8,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Date;
 
-import org.apache.commons.io.IOUtils;
-
 public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	private String downloadUrl;
 	private File destinationFile;
@@ -63,8 +61,8 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 					throw new Exception("Cannot download file", e);
 				}
 			} finally {
-				IOUtils.closeQuietly(fileOutputStream);
-				IOUtils.closeQuietly(bufferedInputStream);
+				Utilities.closeQuietly(fileOutputStream);
+				Utilities.closeQuietly(bufferedInputStream);
 			}
 			
 			if (cancel) {

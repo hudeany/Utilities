@@ -32,8 +32,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentType;
@@ -48,6 +46,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import de.soderer.utilities.TextUtilities;
+import de.soderer.utilities.Utilities;
 
 /**
  * Utilities class to work with XML documents.
@@ -124,7 +123,7 @@ public class XmlUtilities {
 	public static Node getSingleXPathNode(Document document, String xpathExpression) {
 		if (document == null) {
 			return null;
-		} else if (StringUtils.isBlank(xpathExpression)) {
+		} else if (Utilities.isBlank(xpathExpression)) {
 			return null;
 		} else {
 			try {
@@ -186,7 +185,7 @@ public class XmlUtilities {
 	public static Document parseXmlStringIngoringDtd(String xmlInput) throws Exception {
 		if (xmlInput == null) {
 			throw new Exception("XML-Data is null");
-		} else if (StringUtils.isBlank(xmlInput)) {
+		} else if (Utilities.isBlank(xmlInput)) {
 			throw new Exception("XML-Data is empty");
 		}
 
@@ -324,7 +323,7 @@ public class XmlUtilities {
 			StreamResult result = new StreamResult(outputStream);
 			transformNode(document, encoding, false, result);
 		} finally {
-			IOUtils.closeQuietly(outputStream);
+			Utilities.closeQuietly(outputStream);
 		}
 	}
 
@@ -905,7 +904,7 @@ public class XmlUtilities {
 	}
 
 	public static String removeFrameTag(String data) throws Exception {
-		if (StringUtils.isEmpty(data)) {
+		if (Utilities.isEmpty(data)) {
 			return data;
 		} else {
 			String changedData = data.trim();
@@ -994,13 +993,13 @@ public class XmlUtilities {
 
 	public static String formatXmlNode(Node xmlNode, int indentationLevel) {
 		if (xmlNode.getNodeType() == Node.TEXT_NODE) {
-			if (StringUtils.isBlank(xmlNode.getNodeValue())) {
+			if (Utilities.isBlank(xmlNode.getNodeValue())) {
 				return "";
 			} else {
 				return xmlNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;");
 			}
 		} else if (xmlNode.getNodeType() == Node.COMMENT_NODE) {
-			if (StringUtils.isBlank(xmlNode.getNodeValue())) {
+			if (Utilities.isBlank(xmlNode.getNodeValue())) {
 				return "";
 			} else {
 				StringBuilder result = new StringBuilder();
@@ -1022,7 +1021,7 @@ public class XmlUtilities {
 			result.append("\">\n");
 			return result.toString();
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
-			if (StringUtils.isBlank(xmlNode.getChildNodes().item(0).getNodeValue())) {
+			if (Utilities.isBlank(xmlNode.getChildNodes().item(0).getNodeValue())) {
 				StringBuilder result = new StringBuilder();
 				result.append(TextUtilities.repeatString("\t", indentationLevel));
 				result.append("<");
@@ -1049,7 +1048,7 @@ public class XmlUtilities {
 				for (int nodeIndex = 0; nodeIndex < xmlNode.getChildNodes().getLength(); nodeIndex++) {
 					Node xmlSubNode = xmlNode.getChildNodes().item(nodeIndex);
 					if (xmlSubNode.getNodeType() == Node.TEXT_NODE) {
-						if (StringUtils.isNotBlank(xmlSubNode.getNodeValue())) {
+						if (Utilities.isNotBlank(xmlSubNode.getNodeValue())) {
 							innerXml.append(xmlSubNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
 						}
 					} else {

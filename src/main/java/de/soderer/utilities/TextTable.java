@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class TextTable {
 	protected static final String METADATA_HEADER = "HEADER";
 	protected static final String METADATA_COLOR = "COLOR";
@@ -135,7 +133,7 @@ public class TextTable {
 		for (int columnIndex = 0; columnIndex < columnRightAligned.size(); columnIndex++) {
 			boolean isNumeric = true;
 			for (List<String> line : content) {
-				if (StringUtils.isNotBlank(line.get(columnIndex)) && !Utilities.isNumber(line.get(columnIndex))) {
+				if (Utilities.isNotBlank(line.get(columnIndex)) && !Utilities.isNumber(line.get(columnIndex))) {
 					isNumeric = false;
 					break;
 				}
@@ -276,7 +274,7 @@ public class TextTable {
 		return "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n"
 			+ "<html>\n"
 			+ "<head>\n<title>" + title + "</title>\n"
-			+ (StringUtils.isEmpty(inlineCssStyleSheet) ? "" : inlineCssStyleSheet)
+			+ (Utilities.isEmpty(inlineCssStyleSheet) ? "" : inlineCssStyleSheet)
 			+ "</head>\n"
 			+ "<body>\n"
 			+ "<h2>" + title + "</h2>\n"

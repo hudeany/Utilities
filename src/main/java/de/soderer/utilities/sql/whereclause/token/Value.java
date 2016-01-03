@@ -2,7 +2,7 @@ package de.soderer.utilities.sql.whereclause.token;
 
 import java.text.DecimalFormat;
 
-import org.apache.commons.lang3.StringUtils;
+import de.soderer.utilities.Utilities;
 
 public class Value extends RulePart {
 	public enum Type {
@@ -39,7 +39,7 @@ public class Value extends RulePart {
 
 	@Override
 	public String toString() {
-		if (StringUtils.isNotEmpty(fieldName)) {
+		if (Utilities.isNotEmpty(fieldName)) {
 			return fieldName;
 		} else {
 			switch(type) {
@@ -59,7 +59,7 @@ public class Value extends RulePart {
 
 	@Override
 	public String toString(RulePart.StringType stringType) {
-		if (StringUtils.isNotEmpty(fieldName) && Expression.SYSDATE_VALUES.contains(fieldName)) {
+		if (Utilities.isNotEmpty(fieldName) && Expression.SYSDATE_VALUES.contains(fieldName)) {
 			if (stringType == StringType.Oracle)
 				return "SYSDATE";
 			else if (stringType == StringType.MySQL)

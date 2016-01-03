@@ -1,8 +1,5 @@
 package de.soderer.utilities;
 
-
-import org.apache.commons.lang3.StringUtils;
-
 public class SCPFile {
 	public static final String PRELUDE = "\\\\";
 	private static final String UNIX_SEPARATOR = "/";
@@ -30,7 +27,7 @@ public class SCPFile {
 	 */
 	public SCPFile(String hostnamePathAndFileName) throws Exception {
 		//Validierung
-		if (StringUtils.isEmpty(hostnamePathAndFileName))
+		if (Utilities.isEmpty(hostnamePathAndFileName))
 			throw new Exception("SCPFile: Empty filespecifier");
 		if (!hostnamePathAndFileName.startsWith(PRELUDE))
 			throw new Exception("SCPFile: Invalid prelude in filespecifier: " + hostnamePathAndFileName);
@@ -59,15 +56,15 @@ public class SCPFile {
 		else
 			throw new Exception("SCPFile: Missing path- or filedescription in filespecifier: " + hostnamePathAndFileName);
 		
-		if (StringUtils.isEmpty(hostname))
+		if (Utilities.isEmpty(hostname))
 			throw new Exception("SCPFile: Empty hostname: " + hostnamePathAndFileName);
 	}
 	
 	public SCPFile(String hostname, String path, String filename) throws Exception {
 		//Validierung
-		if (StringUtils.isEmpty(hostname))
+		if (Utilities.isEmpty(hostname))
 			throw new Exception("SCPFile: Empty hostname");
-		if (StringUtils.isEmpty(path))
+		if (Utilities.isEmpty(path))
 			throw new Exception("SCPFile: Empty path");
 		if (filename != null && (filename.contains(UNIX_SEPARATOR) || filename.contains(DOS_SEPARATOR)))
 			throw new Exception("SCPFile: Invalid filename: " + filename);
@@ -114,14 +111,14 @@ public class SCPFile {
 	
 	@Override
 	public String toString() {
-		if (StringUtils.isEmpty(filename))
+		if (Utilities.isEmpty(filename))
 			return PRELUDE + hostname + path;
 		else
 			return PRELUDE + hostname + path + filename;
 	}
 	
 	public String getPathAndFilename() {
-		if (StringUtils.isEmpty(filename))
+		if (Utilities.isEmpty(filename))
 			return path;
 		else
 			return path + filename;
@@ -147,7 +144,7 @@ public class SCPFile {
 	}
 	
 	public boolean isDirectory() {
-		return StringUtils.isEmpty(filename);
+		return Utilities.isEmpty(filename);
 	}
 	
 	public boolean isFile() {

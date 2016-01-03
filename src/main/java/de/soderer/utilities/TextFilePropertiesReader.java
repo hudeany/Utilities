@@ -7,9 +7,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-
 public class TextFilePropertiesReader extends TextPropertiesReader {
 	private File file;
 	private byte[] data;
@@ -54,7 +51,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	public String readFileToString() throws Exception {
 		if (data == null) {
 			filesize = file.length();
-			data = FileUtils.readFileToByteArray(file);
+			data = Utilities.readFileToByteArray(file);
 		}
 		
 		if (encodingData == null) {
@@ -103,7 +100,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 				inputStream.skip(startPosition);
 				inputStream.read(subdata);
 			} finally {
-				IOUtils.closeQuietly(inputStream);
+				Utilities.closeQuietly(inputStream);
 			}
 			
 			if (encodingData == null) {
@@ -282,7 +279,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			} catch (Exception e) {
 				return null;
 			} finally {
-				IOUtils.closeQuietly(input);
+				Utilities.closeQuietly(input);
 			}
 		} else {
 			throw new RuntimeException("Not implemented");
@@ -298,7 +295,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			} catch (Exception e) {
 				return null;
 			} finally {
-				IOUtils.closeQuietly(input);
+				Utilities.closeQuietly(input);
 			}
 		} else {
 			throw new RuntimeException("Not implemented");

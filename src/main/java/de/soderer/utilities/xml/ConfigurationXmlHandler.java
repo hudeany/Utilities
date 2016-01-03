@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.util.Hashtable;
 import java.util.Map;
 
-import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -28,10 +28,7 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 	public ConfigurationXmlHandler(InputStream inputStream) throws Exception {
 		super();
 		try {
-			XmlParserPool parserPool = XmlParserPool.getInstance();
-			SAXParser parser = parserPool.borrowObject();
-			parser.parse(new InputSource(inputStream), this);
-			parserPool.returnObject(parser);
+			SAXParserFactory.newInstance().newSAXParser().parse(new InputSource(inputStream), this);
 		} catch (Exception ex) {
 			throw new Exception("Fehler beim Parsen der XmlConfiguration", ex);
 		}

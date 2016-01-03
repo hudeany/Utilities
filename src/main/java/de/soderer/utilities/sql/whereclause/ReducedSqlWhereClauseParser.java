@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.sql.whereclause.token.Expression;
 import de.soderer.utilities.sql.whereclause.token.ListExpression;
 import de.soderer.utilities.sql.whereclause.token.Operator;
@@ -435,7 +434,7 @@ public class ReducedSqlWhereClauseParser {
 				builder.append(" ");
 			}
 			builder.append(token);
-			countBuilder.append((tokens.indexOf(token) % 10) + StringUtils.repeat(" ", token.toString().length() - 1));
+			countBuilder.append((tokens.indexOf(token) % 10) + Utilities.repeat(" ", token.toString().length() - 1));
 		}
 		System.out.println(countBuilder);
 		System.out.println(builder);

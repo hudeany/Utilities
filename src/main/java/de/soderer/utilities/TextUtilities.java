@@ -13,9 +13,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-
 /**
  * Text Utilities
  * 
@@ -234,7 +231,7 @@ public class TextUtilities {
 
 			return list;
 		} finally {
-			IOUtils.closeQuietly(lineNumberReader);
+			Utilities.closeQuietly(lineNumberReader);
 		}
 	}
 
@@ -260,7 +257,7 @@ public class TextUtilities {
 	
 				return lineNumberReader.getLineNumber();
 			} finally {
-				IOUtils.closeQuietly(lineNumberReader);
+				Utilities.closeQuietly(lineNumberReader);
 			}
 		}
 	}
@@ -409,7 +406,7 @@ public class TextUtilities {
 	 * @return Tuple First = Startindex, Second = Length of found substring
 	 */
 	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
-		if (StringUtils.isBlank(text) || startPosition < 0 || text.length() < startPosition || StringUtils.isEmpty(searchTextOrPattern)) {
+		if (Utilities.isBlank(text) || startPosition < 0 || text.length() < startPosition || Utilities.isEmpty(searchTextOrPattern)) {
 			return null;
 		} else {
 			String fullText = text;
@@ -581,7 +578,7 @@ public class TextUtilities {
 			}
 			return -1;
 		} finally {
-			IOUtils.closeQuietly(lineNumberReader);
+			Utilities.closeQuietly(lineNumberReader);
 		}
 	}
 	
@@ -704,7 +701,7 @@ public class TextUtilities {
 		Matcher matcher = pattern.matcher(result);
 		while (matcher.find()) {
 			int replacementCount = (matcher.end() - matcher.start()) / blankCount;
-			result = matcher.replaceFirst(StringUtils.repeat(replacement, replacementCount));
+			result = matcher.replaceFirst(Utilities.repeat(replacement, replacementCount));
 			matcher = pattern.matcher(result);
 		}
 		return result;
@@ -742,7 +739,7 @@ public class TextUtilities {
 	public static String addLeadingTabs(String data, int numberOfTabs) {
 		Pattern pattern = Pattern.compile("^", Pattern.MULTILINE);
 		Matcher matcher = pattern.matcher(data);
-		return matcher.replaceAll(StringUtils.repeat("\t", numberOfTabs));
+		return matcher.replaceAll(Utilities.repeat("\t", numberOfTabs));
 	}
 	
 	/**
@@ -925,7 +922,7 @@ public class TextUtilities {
 	 * @return
 	 */
 	public static String breakLinesAfterMaximumLength(String dataString, int maximumLength) {
-		return StringUtils.join(dataString.split("(?<=\\G.{" + maximumLength + "})"), "\n");
+		return Utilities.join(dataString.split("(?<=\\G.{" + maximumLength + "})"), "\n");
 	}
 
 	/**

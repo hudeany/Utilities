@@ -3,8 +3,6 @@ package de.soderer.utilities;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
-import org.apache.commons.lang3.StringUtils;
-
 /**
  * real value = value * 10 ^ dimension
  * 
@@ -24,7 +22,7 @@ public class ExactNumber {
 	}
 	
 	public ExactNumber(String valueString) throws Exception {
-		if (StringUtils.isBlank(valueString)) {
+		if (Utilities.isBlank(valueString)) {
 			value = 0;
 		} else {
 			Tuple<Long, Integer> data = parseNumber(valueString);
@@ -91,7 +89,7 @@ public class ExactNumber {
 	}
 	
 	public ExactNumber add(String valueToAdd) throws Exception {
-		if (!StringUtils.isBlank(valueToAdd)) {
+		if (!Utilities.isBlank(valueToAdd)) {
 			Tuple<Long, Integer> valueData = parseNumber(valueToAdd);
 			long valueToAddValue = valueData.getFirst();
 			int valueToAddDimension = valueData.getSecond();

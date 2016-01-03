@@ -2,8 +2,6 @@ package de.soderer.utilities;
 
 import java.io.InputStream;
 
-import org.apache.commons.io.IOUtils;
-
 public class VersionInfo {
 	private static String APPLICATION_VERSION = null;
 
@@ -18,11 +16,11 @@ public class VersionInfo {
 		InputStream inputStream = null;
 		try {
 			inputStream = VersionInfo.class.getClassLoader().getResourceAsStream("VersionInfo.txt");
-			return new String(IOUtils.toByteArray(inputStream), "UTF-8");
+			return new String(Utilities.toByteArray(inputStream), "UTF-8");
 		} catch (Exception e) {
 			return "VersionInfo not found";
 		} finally {
-			IOUtils.closeQuietly(inputStream);
+			Utilities.closeQuietly(inputStream);
 		}
 	}
 }

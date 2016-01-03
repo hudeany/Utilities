@@ -3,8 +3,6 @@ package de.soderer.utilities;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
-
 /**
  * The Class Version.
  */
@@ -94,7 +92,7 @@ public class Version implements Comparable<Version> {
 	 * @return the first full version from a text
 	 */
 	public static Version getFirstFullVersionNumberFromText(String data) {
-		if (StringUtils.isBlank(data)) {
+		if (Utilities.isBlank(data)) {
 			return null;
 		} else {
 			Pattern versionPattern = Pattern.compile("\\d+\\.\\d+\\.\\d+");

@@ -3,8 +3,6 @@ package de.soderer.utilities;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class ServerAccessData extends SecureDataEntry{
 	public static final String PRELUDE = "\\\\";
 	
@@ -84,7 +82,7 @@ public class ServerAccessData extends SecureDataEntry{
 	}
 	
 	public static String parseFilestringToServerEntryName(String fileName) throws Exception {
-		if (StringUtils.isNotBlank(fileName) && fileName.startsWith(PRELUDE) && fileName.contains(":")) {
+		if (Utilities.isNotBlank(fileName) && fileName.startsWith(PRELUDE) && fileName.contains(":")) {
 			return fileName.substring(PRELUDE.length(), fileName.lastIndexOf(":"));
 		} else {
 			throw new Exception("Invalid SSH-filename");
@@ -92,7 +90,7 @@ public class ServerAccessData extends SecureDataEntry{
 	}
 	
 	public static String parseFilestringToFilePath(String fileName) throws Exception {
-		if (StringUtils.isNotBlank(fileName) && fileName.startsWith(PRELUDE) && fileName.contains(":")) {
+		if (Utilities.isNotBlank(fileName) && fileName.startsWith(PRELUDE) && fileName.contains(":")) {
 			return fileName.substring(fileName.lastIndexOf(":") + 1);
 		} else {
 			throw new Exception("Invalid SSH-filename");

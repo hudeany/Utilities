@@ -8,7 +8,6 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 
 public class FileComparer {
 	public enum OutputMode {
@@ -87,8 +86,8 @@ public class FileComparer {
 		int position2 = 0;
 		
 		StringBuilder result = new StringBuilder();
-		result.append(StringUtils.repeat(SOURCE1_SIGN, 3) + " " + sourceName1 + "\n");
-		result.append(StringUtils.repeat(SOURCE2_SIGN, 3) + " " + sourceName2 + "\n");
+		result.append(Utilities.repeat(SOURCE1_SIGN, 3) + " " + sourceName1 + "\n");
+		result.append(Utilities.repeat(SOURCE2_SIGN, 3) + " " + sourceName2 + "\n");
 		
 		while (position1 < lines1.size() && position2 < lines2.size()) {
 			if (lines1.get(position1).equals(lines2.get(position2))) {

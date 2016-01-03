@@ -16,8 +16,6 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.commons.io.IOUtils;
-
 public class HttpUtils {
 	public static void pingUrlWithoutSslCheckNoWaitForAnswer(String pingUrl) throws IOException, NoSuchAlgorithmException, KeyManagementException {
 		InputStream downloadStream = null;
@@ -70,7 +68,7 @@ public class HttpUtils {
 		}
 		finally {
 			if (downloadStream != null)
-				IOUtils.closeQuietly(downloadStream);
+				Utilities.closeQuietly(downloadStream);
 		}
 	}
 }

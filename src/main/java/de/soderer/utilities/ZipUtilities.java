@@ -19,9 +19,6 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-
 public class ZipUtilities {
 	/**
 	 * Zippen einer Datei oder rekursiv aller Dateien und Unterdateien eines Ordners
@@ -58,18 +55,18 @@ public class ZipUtilities {
 			
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
 
-			IOUtils.closeQuietly(zipOutputStream);
+			Utilities.closeQuietly(zipOutputStream);
 			zipOutputStream = null;
 		}
 		catch (IOException e) {
 			if (destinationZipFile.exists()) {
-				IOUtils.closeQuietly(zipOutputStream);
+				Utilities.closeQuietly(zipOutputStream);
 				destinationZipFile.delete();
 			}
 			throw e;
 		}
 		finally {
-			IOUtils.closeQuietly(zipOutputStream);
+			Utilities.closeQuietly(zipOutputStream);
 		}
 	}
 	
@@ -135,7 +132,7 @@ public class ZipUtilities {
 			throw e;
 		}
 		finally {			
-			IOUtils.closeQuietly(bufferedFileInputStream);
+			Utilities.closeQuietly(bufferedFileInputStream);
 		}
 	}
 	
@@ -202,7 +199,7 @@ public class ZipUtilities {
 		if (fileData == null)
 			throw new IOException("FileData is missing");
 		
-		if (StringUtils.isEmpty(filename) || filename.trim().length() == 0)
+		if (Utilities.isEmpty(filename) || filename.trim().length() == 0)
 			throw new IOException("Filename is missing");
 			
 		if (destinationZipFileStream == null)
@@ -237,7 +234,7 @@ public class ZipUtilities {
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
 		}
 		finally {
-			IOUtils.closeQuietly(zipOutputStream);
+			Utilities.closeQuietly(zipOutputStream);
 		}
 	}
 	
@@ -257,7 +254,7 @@ public class ZipUtilities {
 			}
 		}
 		finally {
-			IOUtils.closeQuietly(zipOutputStream);
+			Utilities.closeQuietly(zipOutputStream);
 		}
 	}
 
@@ -324,7 +321,7 @@ public class ZipUtilities {
 		catch (IOException e) {
 			// Löschen des evtl. vorhandenen neuen ZipFiles
 			if (zipFile.exists()) {
-				IOUtils.closeQuietly(zipOutputStream);
+				Utilities.closeQuietly(zipOutputStream);
 				zipFile.delete();
 			}
 			
@@ -333,8 +330,8 @@ public class ZipUtilities {
 			throw e;
 		}
 		finally {
-			IOUtils.closeQuietly(bufferedInputStream);
-			IOUtils.closeQuietly((Closeable) sourceZipFile);
+			Utilities.closeQuietly(bufferedInputStream);
+			Utilities.closeQuietly((Closeable) sourceZipFile);
 		}
 	}
 	
@@ -383,9 +380,9 @@ public class ZipUtilities {
 			return returnMap;
 		}
 		finally {
-			IOUtils.closeQuietly(bufferedInputStream);
-			IOUtils.closeQuietly(byteArrayOutputStream);
-			IOUtils.closeQuietly((Closeable) sourceZipFile);
+			Utilities.closeQuietly(bufferedInputStream);
+			Utilities.closeQuietly(byteArrayOutputStream);
+			Utilities.closeQuietly((Closeable) sourceZipFile);
 		}
 	}
 }
