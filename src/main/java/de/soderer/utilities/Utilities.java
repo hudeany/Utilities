@@ -12,40 +12,29 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.sql.Timestamp;
 import java.text.DecimalFormat;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -88,28 +77,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Find a file using the ClassLoader
-	 * 
-	 * @param resourceName
-	 * @return
-	 */
-	public static URI getResource(String resourceName) {
-		try {
-			URL url = Utilities.class.getResource("/" + resourceName);
-			if (url != null) {
-				return url.toURI();
-			} else {
-				return null;
-			}
-		} catch (Exception e) {
-			System.out.println("Looking for Resource '" + resourceName + "' on the classpath root");
-			System.out.println(e.getClass().getName() + ": " + e.getMessage());
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
-			return null;
-		}
-	}
-
-	/**
 	 * Get the data of a file included in a jar file
 	 * 
 	 * @param resourceName
@@ -120,181 +87,63 @@ public class Utilities {
 	}
 
 	/**
-	 * Decode a URL encoded string
+	 * Zip a byteArray by GZIP-Algorithm
 	 * 
-	 * @param decode
-	 * @return
-	 * @throws Exception
-	 */
-	public static String decodeURL(String decode) throws Exception {
-		try {
-			return URLDecoder.decode(decode, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new Exception("Fehler in der URL-Decodierung", e);
-		}
-	}
-
-	/**
-	 * Encode data in a zipped base64 string data
-	 * 
-	 * @param clearArrayToEncode
+	 * @param clearData
 	 * @return
 	 */
-	public static byte[] encodeToZippedBase64(byte[] clearArrayToEncode) {
+	public static byte[] gzipByteArray(byte[] clearData) {
 		try {
 			ByteArrayOutputStream encoded = new ByteArrayOutputStream();
-
 			GZIPOutputStream gzipCompresser = new GZIPOutputStream(encoded);
-			gzipCompresser.write(clearArrayToEncode);
+			gzipCompresser.write(clearData);
 			gzipCompresser.close();
-
-			return Base64.getEncoder().encode(encoded.toByteArray());
+			return encoded.toByteArray();
 		} catch (IOException e) {
 			return null;
 		}
 	}
 
 	/**
-	 * Decode data from a zipped base64 string data
+	 * Unzip a byteArray by GZIP-Algorithm
 	 * 
-	 * @param zipedArrayToDecode
+	 * @param zippedData
 	 * @return
 	 * @throws Exception
 	 */
-	public static byte[] decodeFromZippedBase64(byte[] zipedArrayToDecode) throws Exception {
-		return unzipByteArray(Base64.getDecoder().decode(zipedArrayToDecode));
-	}
-
-	/**
-	 * Unzip byteArray by GZIP-Algorithm
-	 * 
-	 * @param zippedData
-	 * @return unzippedData
-	 * @throws Exception
-	 */
-	public static byte[] unzipByteArray(byte[] zippedData) throws Exception {
+	public static byte[] gunzipByteArray(byte[] zippedData) throws Exception {
 		try {
 			ByteArrayOutputStream decoded = new ByteArrayOutputStream();
 			ByteArrayInputStream encoded = new ByteArrayInputStream(zippedData);
 			copy(new GZIPInputStream(encoded), decoded);
 			return decoded.toByteArray();
 		} catch (IOException e) {
-			throw new Exception("Komprimierte Daten konnten nicht entpackt werden", e);
+			return null;
 		}
 	}
-
+	
 	/**
-	 * Get the duration between two timestamps as a string
+	 * Encode a Base64 String
 	 * 
-	 * @param startTime
-	 * @param endTime
+	 * @param clearData
 	 * @return
 	 */
-	public static String getDuration(Calendar startTime, Calendar endTime) {
-		int durationInMilliSeconds = (int)(endTime.getTimeInMillis() - startTime.getTimeInMillis());
-		int milliSecondsPart = durationInMilliSeconds % 1000;
-		int secondsPart = durationInMilliSeconds / 1000 % 60;
-		int minutesPart = durationInMilliSeconds / 1000 / 60 % 60;
-		int hoursPart = durationInMilliSeconds / 1000 / 60 / 60 % 24;
-		int days = durationInMilliSeconds / 1000 / 60 / 60 % 24;
-
-		String returnString = milliSecondsPart + "ms";
-		if (secondsPart > 0) {
-			returnString = secondsPart + "s " + returnString;
-		}
-		if (minutesPart > 0) {
-			returnString = minutesPart + "m " + returnString;
-		}
-		if (hoursPart > 0) {
-			returnString = hoursPart + "h " + returnString;
-		}
-		if (days > 0) {
-			returnString = days + "d " + returnString;
-		}
-		return returnString;
+	public static String encodeBase64(byte[] clearData) {
+		return Base64.getEncoder().encodeToString(clearData);
 	}
-
+	
 	/**
-	 * Read a directory and return all files starting with a basename form a list of basenames
+	 * Decode a Base64 String
 	 * 
-	 * @param basenameList
+	 * @param base64String
 	 * @return
 	 */
-	public static ArrayList<File> getArrayOfFilesByStammname(String basenameList) {
-		return getArrayOfFilesByStammname(Arrays.asList(basenameList.split(";")));
-	}
-
-	/**
-	 * Read a directory and return all files starting with a basename form a list of basenames
-	 * 
-	 * @param stammNamenListe
-	 * @return
-	 */
-	public static ArrayList<File> getArrayOfFilesByStammname(List<String> stammNamenListe) {
-		ArrayList<File> ergebnisListe = new ArrayList<File>();
-
-		for (String stammName : stammNamenListe) {
-			// Suchverzeichnis und Dateistammname ermitteln
-			// Achtung: stammName kann auch wildcards wie '*' enthalten daher
-			// NICHT mit File-Class arbeiten
-			int unixLastIndexOfSeparator = stammName.lastIndexOf("/");
-			int dosLastIndexOfSeparator = stammName.lastIndexOf("\\");
-			int lastIndexOfSeparator = Math.max(unixLastIndexOfSeparator, dosLastIndexOfSeparator);
-			String suchVerzeichnis = stammName.substring(0, lastIndexOfSeparator + 1);
-			String stammFileName = stammName.substring(lastIndexOfSeparator + 1);
-
-			// Dateiliste erstellen
-			File searchPath = new File(suchVerzeichnis);
-			if (searchPath.isDirectory()) {
-				File[] partList = searchPath.listFiles();
-				for (int i = 0; i < partList.length; i++) {
-					if (partList[i].isFile()
-							&& (stammFileName.endsWith("*") && partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1)) || !stammFileName.endsWith("*")
-									&& partList[i].getName().equals(stammFileName))) {
-						// Datei gefunden: partList[i].getName());
-						if (!ergebnisListe.contains(partList[i])) {
-							ergebnisListe.add(partList[i]);
-						}
-					}
-				}
-			}
+	public static byte[] decodeBase64(String base64String) {
+		try {
+			return Base64.getDecoder().decode(base64String.getBytes("UTF-8"));
+		} catch (UnsupportedEncodingException e) {
+			return null;
 		}
-
-		return ergebnisListe;
-	}
-
-	/**
-	 * Read a directory and return all files fitting to a regex pattern
-	 * 
-	 * @param startDirectory
-	 * @param patternString
-	 * @param traverseCompletely
-	 * @return
-	 */
-	public static List<File> getFilesByPattern(File startDirectory, String patternString, boolean traverseCompletely) {
-		return getFilesByPattern(startDirectory, Pattern.compile(patternString), traverseCompletely);
-	}
-
-	/**
-	 * Read a directory and return all files fitting to a regex pattern
-	 * 
-	 * @param startDirectory
-	 * @param pattern
-	 * @param traverseCompletely
-	 * @return
-	 */
-	public static List<File> getFilesByPattern(File startDirectory, Pattern pattern, boolean traverseCompletely) {
-		List<File> files = new ArrayList<File>();
-		if (startDirectory.isDirectory()) {
-			for (File file : startDirectory.listFiles()) {
-				if (file.isDirectory() && traverseCompletely) {
-					files.addAll(getFilesByPattern(file, pattern, traverseCompletely));
-				} else if (file.isFile() && pattern.matcher(file.getName()).matches()) {
-					files.add(file);
-				}
-			}
-		}
-		return files;
 	}
 
 	/**
@@ -332,120 +181,6 @@ public class Utilities {
 			}
 		}
 		return -1;
-	}
-
-	/**
-	 * Read a stream into a string
-	 */
-	public static String inputStreamToString(InputStream in, String encoding) throws IOException {
-		BufferedReader bufferedReader = null;
-		try {
-			bufferedReader = new BufferedReader(new InputStreamReader(in, encoding));
-			StringBuffer stringBuilder = new StringBuffer();
-			String line = null;
-
-			while ((line = bufferedReader.readLine()) != null) {
-				stringBuilder.append(line + "\n");
-			}
-
-			return stringBuilder.toString();
-		} finally {
-			if (bufferedReader != null) {
-				bufferedReader.close();
-				bufferedReader = null;
-			}
-		}
-	}
-
-	/**
-	 * Use a string as inputStream
-	 * 
-	 * @throws UnsupportedEncodingException
-	 */
-	public static InputStream stringToInputStream(String valueString) throws UnsupportedEncodingException {
-		return new ByteArrayInputStream(valueString.getBytes("UTF-8"));
-	}
-
-	/**
-	 * Read all stream data in byteArray
-	 * 
-	 * @param inputStream
-	 * @return
-	 * @throws Exception
-	 */
-	public static byte[] readStreamInArray(InputStream inputStream) throws Exception {
-		// Wenn keine Daten aus dem Stream gelesen werden konnten
-		// Wird mehrfach diese Thread-Wartezeit eingeräumt
-		final int WAIT_TIME = 50;
-
-		// Maximale Anzahl von Wartezyklen mit WAIT_TIME
-		// Danach wird eine Exception geworfen
-		final int MAX_WAIT_COUNT = 2000;
-
-		ByteArrayOutputStream returnArrayBuffer = null;
-		byte[] Buff = new byte[4096];
-		int readBlockCount = 0;
-		int waitCycleCount = 0;
-
-		try {
-			// Anlegen des Writers mit der Groesse des Streams
-			returnArrayBuffer = new ByteArrayOutputStream();
-
-			// In pContentLen sollte eigentlich immer die max. Laenge des
-			// Streams stehen
-			// Ende des Lesens ist, wenn genau diese Anzahl Bytes aus dem Stream
-			// ausgelesen werden konnte
-			// Das Lesen erfolgt in Bloecken zu max. 4096 Byte Laenge
-			while (readBlockCount > -1) {
-				try {
-					readBlockCount = inputStream.read(Buff);
-
-					if (readBlockCount > -1) {
-						// Übergabe der Daten an den Writer
-						for (int i = 0; i < readBlockCount; i++) {
-							returnArrayBuffer.write((char)Buff[i]);
-						}
-						waitCycleCount = 0;
-					} else if (readBlockCount < 0) {
-						// Es wurden alle Daten gelesen
-						continue;
-					}
-				} catch (SocketTimeoutException ex) {
-					Thread.sleep(WAIT_TIME);
-					waitCycleCount++;
-				}
-
-				// Prüfen ob max. Wartzeit ueberschritten?
-				if (waitCycleCount > MAX_WAIT_COUNT) {
-					throw new Exception("Fehler in readStreamInArray WaitExceed");
-				}
-			}
-		} catch (InterruptedException ex) {
-			// Wird von der Methode "Sleep" geworfen
-			throw new Exception("Interrupted-Fehler in readStreamInArray: " + ex.getMessage(), ex);
-		} catch (IOException ex) {
-			throw new Exception("IO-Fehler in readStreamInArray: " + ex.getMessage(), ex);
-		} catch (Exception ex) {
-			throw new Exception("Fehler in readStreamInArray: " + ex.getMessage(), ex);
-		} finally {
-			closeQuietly(returnArrayBuffer);
-		}
-
-		return returnArrayBuffer.toByteArray();
-	}
-
-	/**
-	 * Read available stream data in byteArray
-	 * 
-	 * @param inputStream
-	 * @return
-	 * @throws Exception
-	 */
-	public static byte[] readAvailableDataFromStreamInArray(InputStream inputStream) throws Exception {
-		byte[] returnData = new byte[inputStream.available()];
-		@SuppressWarnings("unused")
-		int bytesRead = inputStream.read(returnData);
-		return returnData;
 	}
 
 	/**
@@ -507,239 +242,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Check if a day is included in a list of days
-	 * 
-	 * @param listOfDays
-	 * @param day
-	 * @return
-	 */
-	public static boolean dayListIncludes(List<GregorianCalendar> listOfDays, GregorianCalendar day) {
-		for (GregorianCalendar listDay : listOfDays) {
-			if (listDay.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Ermitteln des nächsten geplanten Startzeitpunktes Der Timingparameter kann Wochentage, Zeiten, Monats-, Quartalsplanungen und Feiertage enthalten
-	 * 
-	 * Mögliche Ausprägungen: "ONCE" => nur einmalig (returns null) "0600;0800" => täglich um 06:00 und um 08:00 "MoMi:1700" => Montags und Mittwochs um 17:00 "M05:1600" => jeden 05.ten im Monat um
-	 * 16:00 "Q:1600" => Jeden ersten Tag im Quartal um 16:00 "QW:1600" => Jeden ersten Werktag im Quartal um 16:00 "MoDiMiDoFr:1700;!23012011" => Mo bis Fr um 17:00 aber nicht am 23.01.2011
-	 * (Feiertagsregelung durch '!'-Zeichen)
-	 * 
-	 * Alle Ausprägungen können beliebig kombiniert werden, werden dann durch Semikolons getrennt aufgelistet
-	 * 
-	 * @param timingString
-	 * @return
-	 * @throws Exception
-	 */
-	public static Timestamp calculateNextJobStart(String timingString) {
-		GregorianCalendar now = new GregorianCalendar();
-		GregorianCalendar returnStart = new GregorianCalendar();
-		returnStart.add(GregorianCalendar.YEAR, 1);
-
-		// Feiertage die explizit ausgeschlossen werden
-		List<GregorianCalendar> excludedDays = new ArrayList<GregorianCalendar>();
-
-		if (timingString.equalsIgnoreCase("once")) {
-			return null;
-		}
-
-		String[] timingParameterList = timingString.split(";");
-		for (String timingParameter : timingParameterList) {
-			if (timingParameter.startsWith("!")) {
-				try {
-					GregorianCalendar exclusionDate = new GregorianCalendar();
-					exclusionDate.setTime(DateUtils.DDMMYYYY.parse(timingParameter.substring(1)));
-					excludedDays.add(exclusionDate);
-				} catch (ParseException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		for (String timingParameter : timingParameterList) {
-			GregorianCalendar nextStartByThisParameter = new GregorianCalendar();
-			nextStartByThisParameter.setTime(now.getTime());
-
-			if (timingParameter.startsWith("!")) {
-				// Exclusionen wurden bereits verarbeitet
-				continue;
-			} else if (!timingParameter.contains(":")) {
-				if (isNumber(timingParameter)) {
-					// tägliche Verarbeitung zur gegebenen Uhrzeit
-					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(timingParameter.substring(0, 2)));
-					nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(timingParameter.substring(2)));
-					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-
-					// nächsten Start solange in die Zukunft verschieben (+1Tag)
-					// bis
-					// Parameter-Bedingung erfüllt ist
-					// Bei treffender Feiertagseintragung auch um einen Tag
-					// weiterschieben
-					while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart) || dayListIncludes(excludedDays, nextStartByThisParameter)) {
-						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
-					}
-				} else {
-					// wochentägliche Verarbeitung um 00:00 Uhr
-					List<Integer> weekdayIndexes = new ArrayList<Integer>();
-					for (String weekDay : TextUtilities.chopToChunks(timingParameter, 2)) {
-						weekdayIndexes.add(DateUtils.getWeekdayIndex(weekDay));
-					}
-					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, 0);
-					nextStartByThisParameter.set(GregorianCalendar.MINUTE, 0);
-					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-
-					// nächsten Start solange in die Zukunft verschieben (+1Tag)
-					// bis
-					// Parameter-Bedingung erfüllt ist
-					// Bei treffender Feiertagseintragung auch um einen Tag
-					// weiterschieben
-					while ((nextStartByThisParameter.before(now) || !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
-							|| dayListIncludes(excludedDays, nextStartByThisParameter)) {
-						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
-					}
-				}
-			} else if (timingParameter.length() == 8) {
-				// Monatssteuerung "M01:1700"
-				String tag = timingParameter.substring(1, timingParameter.indexOf(":"));
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, Integer.parseInt(tag));
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
-				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-
-				// Den nächsten passenden Monat finden
-				while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)) {
-					nextStartByThisParameter.add(GregorianCalendar.MONTH, 1);
-				}
-
-				// Bei treffender Feiertagseintragung um einen Tag
-				// weiterschieben
-				while (dayListIncludes(excludedDays, nextStartByThisParameter)) {
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR, 1);
-				}
-			} else if (timingParameter.startsWith("Q:")) {
-				// Quartalsweise Planung (Q:1200): Start am ersten Kalendertag
-				// im Quartal
-				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL) {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.APRIL);
-				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY) {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JULY);
-				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER) {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.OCTOBER);
-				} else {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JANUARY);
-					nextStartByThisParameter.add(GregorianCalendar.YEAR, 1);
-				}
-
-				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, 1);
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
-				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-
-				// Bei treffender Feiertagseintragung um einen Tag
-				// weiterschieben
-				while (dayListIncludes(excludedDays, nextStartByThisParameter)) {
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR, 1);
-				}
-			} else if (timingParameter.startsWith("QW:")) {
-				// Quartalsweise Planung (QW:1200): Start am ersten Werktag im
-				// Quartal
-				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL) {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.APRIL);
-				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY) {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JULY);
-				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER) {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.OCTOBER);
-				} else {
-					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JANUARY);
-					nextStartByThisParameter.add(GregorianCalendar.YEAR, 1);
-				}
-
-				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, 1);
-
-				// Bei treffender Feiertagseintragung oder Wochentagsregelung um
-				// einen Tag weiterschieben
-				while (nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SATURDAY
-						|| nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY || dayListIncludes(excludedDays, nextStartByThisParameter)) {
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
-				}
-
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
-				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-			} else {
-				// WochenTagessteuerung (ermöglicht auch Werktagssteuerung)
-				String wochenTage = timingParameter.substring(0, timingParameter.indexOf(":"));
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				List<Integer> weekdayIndexes = new ArrayList<Integer>();
-				for (String weekDay : TextUtilities.chopToChunks(wochenTage, 2)) {
-					weekdayIndexes.add(DateUtils.getWeekdayIndex(weekDay));
-				}
-				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
-				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
-				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
-				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-
-				// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
-				// Parameter-Bedingung erfüllt ist
-				// Bei treffender Feiertagseintragung auch um einen Tag
-				// weiterschieben
-				while ((nextStartByThisParameter.before(now) || !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
-						|| dayListIncludes(excludedDays, nextStartByThisParameter)) {
-					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
-				}
-			}
-
-			if (nextStartByThisParameter.before(returnStart)) {
-				returnStart = nextStartByThisParameter;
-			}
-		}
-
-		return new Timestamp(returnStart.getTimeInMillis());
-	}
-
-	/**
-	 * Parse a version string like 4.3.2
-	 * 
-	 * @param versionString
-	 * @return
-	 */
-	public static int[] parseVersionNumber(String versionString) {
-		try {
-			Pattern versionPattern = Pattern.compile("^(\\d+)(?:\\.(\\d+)){0,1}(?:\\.(\\d+)){0,1}$");
-			Matcher matcher = versionPattern.matcher(versionString);
-			if (!matcher.find() || matcher.groupCount() < 1 || matcher.groupCount() > 3) {
-				throw new IllegalArgumentException("Version must be in form <major>[.<minor>[.<micro>]]");
-			}
-
-			int major = new Integer(matcher.group(1));
-			int minor = 0;
-			if (matcher.groupCount() >= 2 && matcher.group(2) != null) {
-				minor = new Integer(matcher.group(2));
-			}
-			int micro = 0;
-			if (matcher.groupCount() == 3 && matcher.group(3) != null) {
-				micro = new Integer(matcher.group(3));
-			}
-
-			return new int[] { major, minor, micro };
-		} catch (NumberFormatException e) {
-			throw new IllegalArgumentException("Version must contain integervalues only");
-		}
-	}
-
-	/**
 	 * Check for a number
 	 * 
 	 * @param value
@@ -752,16 +254,6 @@ public class Utilities {
 		} catch (NumberFormatException e) {
 			return false;
 		}
-	}
-
-	/**
-	 * Remove the time part of a GregorianCalendar
-	 * 
-	 * @param value
-	 * @return
-	 */
-	public static GregorianCalendar getDayWithoutTime(GregorianCalendar value) {
-		return new GregorianCalendar(value.get(GregorianCalendar.YEAR), value.get(GregorianCalendar.MONTH), value.get(GregorianCalendar.DAY_OF_MONTH));
 	}
 
 	/***
@@ -883,30 +375,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Convert a collection to a string like Utilities.join, but keep null values as "<null>" string
-	 * 
-	 * @param collection
-	 * @param separator
-	 * @return
-	 */
-	public static String convertCollectionToString(Collection<?> collection, String separator) {
-		StringBuilder builder = new StringBuilder();
-
-		for (Object object : collection) {
-			if (builder.length() > 0) {
-				builder.append(separator);
-			}
-			if (object == null) {
-				builder.append("<null>");
-			} else {
-				builder.append(object.toString());
-			}
-		}
-
-		return builder.toString();
-	}
-
-	/**
 	 * Check if a Integer is contained by an interval definition
 	 * Interval definitions like -1;2-5;8+
 	 * 
@@ -943,90 +411,6 @@ public class Utilities {
 		}
 
 		return false;
-	}
-
-	/**
-	 * Get all recursive subfiles of a directory
-	 * 
-	 * @param directory
-	 * @return
-	 * @throws Exception
-	 */
-	public static List<File> getAllSubfiles(File directory) throws Exception {
-		try {
-			List<File> files = new LinkedList<File>();
-			File[] subFiles = directory.listFiles();
-			if (subFiles != null) {
-				for (File file : subFiles) {
-					if (file.isDirectory()) {
-						files.addAll(getAllSubfiles(file));
-					} else {
-						files.add(file);
-					}
-				}
-			}
-			return files;
-		} catch (DoNotWrapException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new DoNotWrapException("Error reading subfiles of: " + directory.getAbsolutePath(), e);
-		}
-	}
-
-	/**
-	 * Get number of all recursive subfiles of a directory
-	 * 
-	 * @param directory
-	 * @return
-	 * @throws Exception
-	 */
-	public static int getAllSubfilesNumber(File directory) throws Exception {
-		try {
-			int fileCount = 0;
-			File[] subFiles = directory.listFiles();
-			if (subFiles != null) {
-				for (File file : subFiles) {
-					if (file.isDirectory()) {
-						fileCount += getAllSubfilesNumber(file);
-					} else {
-						fileCount++;
-					}
-				}
-			}
-			return fileCount;
-		} catch (DoNotWrapException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new DoNotWrapException("Error reading subfilenumber of: " + directory.getAbsolutePath(), e);
-		}
-	}
-
-	/**
-	 * Get size in bytes of all recursive subfiles of a directory
-	 * 
-	 * @param directory
-	 * @return
-	 * @throws Exception
-	 */
-	public static long getAllSubfilesSize(File directory) throws Exception {
-		try {
-			long fileSizeSum = 0;
-			File[] subFiles = directory.listFiles();
-			if (subFiles != null) {
-				for (File file : subFiles) {
-					if (file.isDirectory()) {
-						fileSizeSum += getAllSubfilesSize(file);
-					} else {
-						fileSizeSum += file.length();
-					}
-				}
-			}
-			return fileSizeSum;
-		} catch (DoNotWrapException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new DoNotWrapException("Error reading subfilesize of: " + directory.getAbsolutePath(), e);
-		}
 	}
 
 	/**
@@ -1106,27 +490,6 @@ public class Utilities {
 			return square(pow(base, exp / 2)) * (exp % 2 == 1 ? base : 1);
 		}
 	}
-	
-	/**
-	 * Get number of lines of a textfile
-	 * 
-	 * @param file
-	 * @return
-	 * @throws IOException
-	 */
-	public static int getLineCount(File file) throws IOException {
-		LineNumberReader lineNumberReader = null;
-		try {
-			lineNumberReader = new LineNumberReader(new InputStreamReader(new FileInputStream(file)));
-			while (lineNumberReader.readLine() != null) {
-				// do nothing
-			}
-
-			return lineNumberReader.getLineNumber();
-		} finally {
-			closeQuietly(lineNumberReader);
-		}
-	}
 
 	/**
 	 * Get a collection like a set as a ordered list
@@ -1156,20 +519,20 @@ public class Utilities {
 	}
 
 	/**
-	 * Check bytearrays equality
+	 * Check array equality
 	 * 
-	 * @param byteArray1
-	 * @param byteArray2
+	 * @param array1
+	 * @param array2
 	 * @return
 	 */
-	public static boolean compare(byte[] byteArray1, byte[] byteArray2) {
-		if (byteArray1 == byteArray2) {
+	public static <T> boolean compare(T[] array1, T[] array2) {
+		if (array1 == array2) {
 			return true;
-		} else if (byteArray1 == null || byteArray2 == null || byteArray1.length != byteArray2.length) {
+		} else if (array1 == null || array2 == null || array1.length != array2.length) {
 			return false;
 		} else {
-			for (int i = 0; i < byteArray1.length; i++) {
-				if (byteArray1[i] != byteArray2[i]) {
+			for (int i = 0; i < array1.length; i++) {
+				if (array1[i] != array2[i]) {
 					return false;
 				}
 			}
@@ -1373,7 +736,7 @@ public class Utilities {
 		try {
 			bufferedInputStream = new BufferedInputStream(new URL(url).openStream());
 			fileOutputStream = new FileOutputStream(localeDestionationPath);
-			Utilities.copy(bufferedInputStream, fileOutputStream);
+			copy(bufferedInputStream, fileOutputStream);
 		} catch (Exception e) {
 			throw new Exception("Cannot download file", e);
 		} finally {
@@ -1437,8 +800,9 @@ public class Utilities {
 		return list;
 	}
 	
-	public static int[] revertArray(int[] array) {
-		int[] returnValue = new int[array.length];
+	public static <T> T[] revertArray(T[] array) {
+		@SuppressWarnings("unchecked")
+		T[] returnValue = (T[]) new Object[array.length];
 		for (int i = 0; i < array.length; i++) {
 			returnValue[i] = array[array.length - 1 - i];
 		}
@@ -1504,7 +868,7 @@ public class Utilities {
 			StringBuilder returnValue = new StringBuilder();
 			boolean isFirst = true;
 			for (Object object : array) {
-				if (isFirst) {
+				if (!isFirst) {
 					returnValue.append(glue);
 				}
 				if (object == null) {
@@ -1530,7 +894,7 @@ public class Utilities {
 			StringBuilder returnValue = new StringBuilder();
 			boolean isFirst = true;
 			for (Object object : list) {
-				if (isFirst) {
+				if (!isFirst) {
 					returnValue.append(glue);
 				}
 				if (object == null) {
@@ -1543,28 +907,47 @@ public class Utilities {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <T> T[] remove(T[] items, T item) {
+	public static int[] remove(int[] items, int item) {
 		int foundAtIndex = -1;
-		for (int i = 0; i < items.length && foundAtIndex == -1; i++) {
+		for (int i = 0; i < items.length; i++) {
 			if (items[i] == item) {
 				foundAtIndex = i;
+				break;
 			}
 		}
 		
 		if (foundAtIndex > -1) {
-			Object[] returnArray = new Object[items.length - 1];
+			int[] returnArray = new int[items.length - 1];
 			for (int i = 0; i < foundAtIndex; i++) {
-				if (items[i] == item) {
-					foundAtIndex = i;
-				}
+				returnArray[i] = items[i];
 			}
 			for (int i = foundAtIndex + 1; i < items.length; i++) {
-				if (items[i] == item) {
-					foundAtIndex = i;
-				}
+				returnArray[i - 1] = items[i];
 			}
-			return (T[]) returnArray;
+			return returnArray;
+		} else {
+			return items;
+		}
+	}
+
+	public static String[] remove(String[] items, String item) {
+		int foundAtIndex = -1;
+		for (int i = 0; i < items.length; i++) {
+			if (items[i] == item) {
+				foundAtIndex = i;
+				break;
+			}
+		}
+		
+		if (foundAtIndex > -1) {
+			String[] returnArray = new String[items.length - 1];
+			for (int i = 0; i < foundAtIndex; i++) {
+				returnArray[i] = items[i];
+			}
+			for (int i = foundAtIndex + 1; i < items.length; i++) {
+				returnArray[i - 1] = items[i];
+			}
+			return returnArray;
 		} else {
 			return items;
 		}
@@ -1578,23 +961,29 @@ public class Utilities {
 		}
 	}
 
-	public static void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
+	public static long copy(InputStream inputStream, OutputStream outputStream) throws IOException {
 		byte[] buffer = new byte[4096];
 		int lengthRead = -1;
+		long bytesCopied = 0;
 		while ((lengthRead = inputStream.read(buffer)) > -1) {
 			outputStream.write(buffer, 0, lengthRead);
+			bytesCopied += lengthRead;
 		}
 		outputStream.flush();
+		return bytesCopied;
 	}
 
-	public static void copy(Reader inputReader, OutputStream outputStream, String encoding) throws UnsupportedEncodingException, IOException {
+	public static long copy(Reader inputReader, OutputStream outputStream, String encoding) throws UnsupportedEncodingException, IOException {
 		char[] buffer = new char[4096];
 		int lengthRead = -1;
+		long bytesCopied = 0;
 		while ((lengthRead = inputReader.read(buffer)) > -1) {
 			String data = new String(buffer, 0, lengthRead);
 			outputStream.write(data.getBytes(encoding));
+			bytesCopied += lengthRead;
 		}
 		outputStream.flush();
+		return bytesCopied;
 	}
 
 	public static byte[] toByteArray(InputStream inputStream) throws IOException {

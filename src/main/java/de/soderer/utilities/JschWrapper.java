@@ -742,10 +742,10 @@ public class JschWrapper {
 
 			while (true) {
 				// reads all now available data at once
-				byte[] nextData = Utilities.readAvailableDataFromStreamInArray(inStream);
+				byte[] nextData = Utilities.toByteArray(inStream);
 				while (nextData.length > 0) {
 					lineListener.addLineData(nextData);
-					nextData = Utilities.readAvailableDataFromStreamInArray(inStream);
+					nextData = Utilities.toByteArray(inStream);
 				}
 
 				// waits if no more data is available right now

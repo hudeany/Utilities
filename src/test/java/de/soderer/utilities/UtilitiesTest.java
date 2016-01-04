@@ -1,9 +1,162 @@
 package de.soderer.utilities;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 public class UtilitiesTest {
+	@Test
+	public void test_UUID() {
+		try {
+			String uuidString = Utilities.generateUUID();
+			Assert.assertNotNull(uuidString);
+			UUID uuid = Utilities.getUUIDFromString(uuidString);
+			Assert.assertNotNull(uuid);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_Gzipping() {
+		try {
+			byte[] zippedData = Utilities.gzipByteArray(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
+			byte[] unzippedData = Utilities.gunzipByteArray(zippedData);
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(unzippedData, "UTF-8"));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_Base64() {
+		try {
+			String encodedData = Utilities.encodeBase64(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
+			byte[] decodedData = Utilities.decodeBase64(encodedData);
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(decodedData, "UTF-8"));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_Empty() {
+		try {
+			Assert.assertTrue(Utilities.isEmpty(null));
+			Assert.assertTrue(Utilities.isEmpty(""));
+			Assert.assertFalse(Utilities.isEmpty("."));
+			Assert.assertFalse(Utilities.isEmpty("a"));
+			Assert.assertFalse(Utilities.isEmpty(" "));
+			Assert.assertFalse(Utilities.isEmpty("\t"));
+			Assert.assertFalse(Utilities.isEmpty("\n"));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_Blank() {
+		try {
+			Assert.assertTrue(Utilities.isBlank(null));
+			Assert.assertTrue(Utilities.isBlank(""));
+			Assert.assertFalse(Utilities.isBlank("."));
+			Assert.assertFalse(Utilities.isBlank("a"));
+			Assert.assertTrue(Utilities.isBlank(" "));
+			Assert.assertTrue(Utilities.isBlank("\t"));
+			Assert.assertTrue(Utilities.isBlank("\n"));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_repeat() {
+		try {
+			Assert.assertEquals(null, Utilities.repeat(null, 1));
+			Assert.assertEquals("", Utilities.repeat("a", 0));
+			Assert.assertEquals("a", Utilities.repeat("a", 1));
+			Assert.assertEquals("aaa", Utilities.repeat("a", 3));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_join() {
+		try {
+			Assert.assertEquals(null, Utilities.join((String[]) null, ","));
+			Assert.assertEquals("", Utilities.join(new String[0], ","));
+			Assert.assertEquals("abc", Utilities.join(new String[]{"a", "b", "c"}, ""));
+			Assert.assertEquals("a,b,c", Utilities.join(new String[]{"a", "b", "c"}, ","));
+			Assert.assertEquals("a,b, c", Utilities.join(new String[]{"a", "b", " c"}, ","));
+			Assert.assertEquals("a,,c", Utilities.join(new String[]{"a", null, "c"}, ","));
+			List<Object> list = new ArrayList<Object>();
+			list.add("a");
+			list.add("b");
+			list.add("c");
+			Assert.assertEquals("a,b,c", Utilities.join(list, ","));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_remove() {
+		try {
+			String[] result = Utilities.remove(new String[]{"a", "b", "c"}, "b");
+			Assert.assertTrue(Utilities.compare(new String[]{"a", "c"}, result));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_copy() {
+		try {
+			InputStream in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
+			OutputStream out = new ByteArrayOutputStream();
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8").length, Utilities.copy(in, out));
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(((ByteArrayOutputStream) out).toByteArray(), "UTF-8"));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_rightPad() {
+		try {
+			Assert.assertEquals("  ", Utilities.rightPad("", 2));
+			Assert.assertEquals("a ", Utilities.rightPad("a", 2));
+			Assert.assertEquals("ab", Utilities.rightPad("ab", 2));
+			Assert.assertEquals("abc", Utilities.rightPad("abc", 2));
+			Assert.assertEquals("abc", Utilities.rightPad("abc", 0));
+			Assert.assertEquals("", Utilities.rightPad("", 0));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void test_leftPad() {
+		try {
+			Assert.assertEquals("  ", Utilities.leftPad("", 2));
+			Assert.assertEquals(" a", Utilities.leftPad("a", 2));
+			Assert.assertEquals("ab", Utilities.leftPad("ab", 2));
+			Assert.assertEquals("abc", Utilities.leftPad("abc", 2));
+			Assert.assertEquals("abc", Utilities.leftPad("abc", 0));
+			Assert.assertEquals("", Utilities.leftPad("", 0));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
 	@Test
 	public void testPunycode1() {
 		try {
@@ -210,7 +363,7 @@ public class UtilitiesTest {
 //			encodingsToCheck.add(Charset.forName("ISO-8859-15"));
 //			encodingsToCheck.add(Charset.forName("ASCII"));
 //			
-//			byte[] data = Utilities.GERMAN_TEST_STRING.getBytes("UTF-8");
+//			byte[] data = TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8");
 //			List<Charset> encodings = TextFilePropertiesReader.detectTextEncoding(data, encodingsToCheck);
 //			Assert.assertTrue(encodings.size() == 1 && encodings.contains(Charset.forName("UTF-8")));
 //		} catch (Exception e) {
