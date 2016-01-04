@@ -10,7 +10,6 @@ import java.security.Security;
 import java.util.Date;
 import java.util.Iterator;
 
-import org.apache.commons.io.IOUtils;
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
@@ -94,8 +93,8 @@ public class PgpUtilities {
 		} catch (Exception e) {
 			throw new Exception("Cannot export PGP key", e);
 		} finally {
-			IOUtils.closeQuietly(outputStream);
-			IOUtils.closeQuietly(secretKeyStream);
+			Utilities.closeQuietly(outputStream);
+			Utilities.closeQuietly(secretKeyStream);
 		}
 	}
 
@@ -123,8 +122,8 @@ public class PgpUtilities {
 		} catch (Exception e) {
 			throw new Exception("Cannot export PGP key", e);
 		} finally {
-			IOUtils.closeQuietly(outputStream);
-			IOUtils.closeQuietly(secretKeyStream);
+			Utilities.closeQuietly(outputStream);
+			Utilities.closeQuietly(secretKeyStream);
 		}
 	}
 

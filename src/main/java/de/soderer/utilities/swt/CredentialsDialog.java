@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -16,6 +15,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 
 public class CredentialsDialog extends ModalDialog<Boolean> {
 	private String text = null;
@@ -37,7 +37,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
 		
-		if (StringUtils.isNotBlank(text)) {
+		if (Utilities.isNotBlank(text)) {
 			Label label = new Label(shell, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 			label.setText(text);
@@ -89,7 +89,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 			}
 		});
 		
-		if (StringUtils.isNotBlank(keepInMemoryText)) {
+		if (Utilities.isNotBlank(keepInMemoryText)) {
 			Button keepInMemoryButton = new Button(shell, SWT.CHECK);
 			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 			keepInMemoryButton.setText(keepInMemoryText);

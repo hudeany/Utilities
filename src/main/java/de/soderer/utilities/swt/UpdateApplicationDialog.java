@@ -6,7 +6,6 @@ import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -127,7 +126,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			String jarFilePath = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
 			File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 
-			if (StringUtils.isNotBlank(jarFilePath)) {
+			if (Utilities.isNotBlank(jarFilePath)) {
 				boolean tryDownloadAgain = true;
 				while (tryDownloadAgain) {
 					tryDownloadAgain = false;
@@ -233,7 +232,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					} else {
 						SimpleInputDialog usernameDialog = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterDownloadUserName"));
 						String username = usernameDialog.open();
-						if (StringUtils.isNotBlank(username)) {
+						if (Utilities.isNotBlank(username)) {
 							downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(username, "UTF-8"));
 						} else {
 							return false;

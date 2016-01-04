@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -15,6 +14,7 @@ import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.DbUtilities;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.swt.RadioButtonGroup.ArrangementStyle;
 
 public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
@@ -45,7 +45,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
 		
-		if (StringUtils.isNotBlank(text)) {
+		if (Utilities.isNotBlank(text)) {
 			Label label = new Label(shell, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
 			label.setText(text);
@@ -137,7 +137,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 	}
 
 	private void checkStatus() {
-		okButton.setEnabled(StringUtils.isNotBlank(dbServerHostnameText.getText()) && StringUtils.isNotBlank(dbNameText.getText()) && StringUtils.isNotBlank(userNameText.getText()) && StringUtils.isNotBlank(passwordText.getText()));
+		okButton.setEnabled(Utilities.isNotBlank(dbServerHostnameText.getText()) && Utilities.isNotBlank(dbNameText.getText()) && Utilities.isNotBlank(userNameText.getText()) && Utilities.isNotBlank(passwordText.getText()));
 	}
 
 	public BasicDataSource getDbDatasource() {

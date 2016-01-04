@@ -2,7 +2,6 @@ package de.soderer.utilities.swt;
 
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -19,6 +18,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 
 public class SimpleInputDialog extends ModalDialog<String> {
 	private String text;
@@ -35,7 +35,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 	}
 	
 	public void setInputPattern(String patternString) {
-		if (StringUtils.isBlank(patternString)) {
+		if (Utilities.isBlank(patternString)) {
 			inputPattern = null;
 		} else {
 			inputPattern = Pattern.compile(patternString);

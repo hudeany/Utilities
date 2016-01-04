@@ -9,11 +9,10 @@ import java.security.Signature;
 import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
@@ -34,7 +33,7 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 		this.publicKey = publicKey;
 		this.signatureMethod = signatureMethod;
 
-		if (StringUtils.isBlank(this.signatureMethod)) {
+		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
 		
@@ -76,7 +75,7 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 		} catch (Exception e) {
 			error = new Exception("Cannot verify signature", e);
 		} finally {
-			IOUtils.closeQuietly(dataStream);
+			Utilities.closeQuietly(dataStream);
 			
 			showDone();
 		}

@@ -9,7 +9,6 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Date;
 
-import org.apache.commons.io.IOUtils;
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPCompressedData;
@@ -20,6 +19,7 @@ import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.openpgp.PGPLiteralDataGenerator;
 import org.bouncycastle.openpgp.PGPPublicKey;
 
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
@@ -99,11 +99,11 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		} catch (Exception e) {
 			error = new Exception("Error while encrypting", e);
 		} finally {
-			IOUtils.closeQuietly(outputStream4);
-			IOUtils.closeQuietly(outputStream3);
-			IOUtils.closeQuietly(outputStream2);
+			Utilities.closeQuietly(outputStream4);
+			Utilities.closeQuietly(outputStream3);
+			Utilities.closeQuietly(outputStream2);
 			if (armor) {
-				IOUtils.closeQuietly(encryptedData);
+				Utilities.closeQuietly(encryptedData);
 			}
 			showDone();
 		}

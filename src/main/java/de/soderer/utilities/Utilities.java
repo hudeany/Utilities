@@ -1517,6 +1517,32 @@ public class Utilities {
 		}
 	}
 
+	public static String join(Collection<?> list, String glue) {
+		if (list == null) {
+			return null;
+		} else if (list.size() == 0) {
+			return "";
+		} else {
+			if (glue == null) {
+				glue = "";
+			}
+			
+			StringBuilder returnValue = new StringBuilder();
+			boolean isFirst = true;
+			for (Object object : list) {
+				if (isFirst) {
+					returnValue.append(glue);
+				}
+				if (object == null) {
+					object = "";
+				}
+				returnValue.append(object.toString());
+				isFirst = false;
+			}
+			return returnValue.toString();
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	public static <T> T[] remove(T[] items, T item) {
 		int foundAtIndex = -1;
@@ -1645,6 +1671,33 @@ public class Utilities {
 			return String.format("%1$-" + minimumLength + "s", value);
 		} catch (Exception e) {
 			return value;
+		}
+	}
+
+	public static String trim(String value) {
+		if (value == null) {
+			return null;
+		} else {
+			return value.trim();
+		}
+	}
+
+	public static String toString(InputStream inputStream, String encoding) throws UnsupportedEncodingException, IOException {
+		return new String(toByteArray(inputStream), encoding);
+	}
+
+	public static List<String> readLines(InputStream inStream, String encoding) throws IOException {
+		BufferedReader reader = null;
+		try {
+			List<String> lines = new ArrayList<String>();
+			reader = new BufferedReader(new InputStreamReader(inStream, encoding));
+			String nextLine;
+			while ((nextLine = reader.readLine()) != null) {
+				lines.add(nextLine);
+			}
+			return lines;
+		} finally {
+			closeQuietly(reader);
 		}
 	}
 }

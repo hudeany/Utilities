@@ -12,9 +12,6 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-
 public class NetworkUtilities {
 	/**
 	 * 
@@ -41,7 +38,7 @@ public class NetworkUtilities {
 				}
 			}
 		} finally {
-			IOUtils.closeQuietly(socket);
+			Utilities.closeQuietly(socket);
 		}
 	}
 	
@@ -54,7 +51,7 @@ public class NetworkUtilities {
 	}
 	
     public static byte[] getMacAddressBytes(String macAddress) throws IllegalArgumentException {
-    	if (StringUtils.isEmpty(macAddress)) {
+    	if (Utilities.isEmpty(macAddress)) {
     		throw new IllegalArgumentException("Invalid MAC address.");
     	}
 

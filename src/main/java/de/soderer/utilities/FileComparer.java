@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
-
 public class FileComparer {
 	public enum OutputMode {
 		All,
@@ -34,8 +32,8 @@ public class FileComparer {
 				}
 				return true;
 			} finally {
-				IOUtils.closeQuietly(fileInputStream1);
-				IOUtils.closeQuietly(fileInputStream2);
+				Utilities.closeQuietly(fileInputStream1);
+				Utilities.closeQuietly(fileInputStream2);
 			}
 		} else {
 			return false;

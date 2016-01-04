@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.ModifyEvent;
@@ -80,7 +79,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		for (String key : Utilities.asSortedList(applicationConfiguration.getKeyList())) {
 			if (!key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION)) {
 				String description = key;
-				if (LangResources.existsKey("conf." + key) && StringUtils.isNotBlank(LangResources.get("conf." + key))) {
+				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(LangResources.get("conf." + key))) {
 					description = LangResources.get("conf." + key);
 				}
 				
@@ -119,7 +118,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				}
 				
 				// add Help Icon
-				if (LangResources.existsKey("conf." + key + ".help") && StringUtils.isNotBlank(LangResources.get("conf." + key + ".help"))) {
+				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(LangResources.get("conf." + key + ".help"))) {
 					final String helpText = LangResources.get("conf." + key + ".help");
 					Button button = new Button(dataPart, SWT.PUSH);
 				    button.setImage(new Image(shell.getDisplay(), getClass().getResourceAsStream("question.png")));
@@ -164,13 +163,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				try {
 					if (!SystemUtilities.isJavaWebstartApp()) {
 						String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
-						if (StringUtils.isBlank(applicationJarFileName)) {
+						if (Utilities.isBlank(applicationJarFileName)) {
 							FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
 					        dialog.setText(LangResources.get("createDesktopLink"));
 					        applicationJarFileName = dialog.open();
 						}
 						
-				        if (StringUtils.isBlank(applicationJarFileName)) {
+				        if (Utilities.isBlank(applicationJarFileName)) {
 				        	return;
 				        }
 				        
@@ -199,7 +198,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							StringBuilder data = new StringBuilder();
 							data.append("set shortcut = CreateObject(\"WScript.Shell\").CreateShortcut(\"" + desktopLinkFilePath + "\")\n");
 							data.append("shortcut.Description = \""+ applicationName + "\"\n");
-							if (StringUtils.isNotBlank(javaHome)) {
+							if (Utilities.isNotBlank(javaHome)) {
 								data.append("shortcut.TargetPath = \"" + javaHome + "\\bin\\javaw.exe\"\n");
 								data.append("shortcut.Arguments = \"-jar \"\"" + applicationJarFileName + "\"\"\"\n");
 							} else {

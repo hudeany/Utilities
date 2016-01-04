@@ -3,7 +3,6 @@ package de.soderer.utilities.swt;
 import java.io.File;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.ModifyEvent;
@@ -32,6 +31,7 @@ import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataKeyStore;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
+import de.soderer.utilities.Utilities;
 
 public class SshFileDialog extends ModalDialog<Boolean> {
 	public enum Mode {
@@ -104,12 +104,12 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		    serverEntriesCombo.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
-					if (StringUtils.isNotBlank(serverEntriesCombo.getText())) {
+					if (Utilities.isNotBlank(serverEntriesCombo.getText())) {
 						ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, serverEntriesCombo.getText());
 						hostnameField.setText(entry.getHostname());
 						usernameField.setText(entry.getUsername());
 						keyFile = entry.getKeyFile();
-						useKeyFileButton.setSelection(StringUtils.isNotBlank(keyFile));
+						useKeyFileButton.setSelection(Utilities.isNotBlank(keyFile));
 						passwordField.setText(entry.getPassword());
 					}
 				}
@@ -350,7 +350,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
 					String folderName = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterFolderName")).open();
-					if (StringUtils.isNotBlank(folderName)) {
+					if (Utilities.isNotBlank(folderName)) {
 						Session session = null;
 						try {
 							JschWrapper.createFolder(session, selectedFilePath, folderName);
@@ -456,7 +456,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 			connectButton.setEnabled(true);
 			connectButton.setText(LangResources.get("disconnect"));
-			actionButton.setEnabled(StringUtils.isNotBlank(selectedFileName) && StringUtils.isNotBlank(selectedFilePath));
+			actionButton.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
 			hostnameField.setEnabled(false);
 			usernameField.setEnabled(false);
 			passwordField.setEnabled(false);
@@ -467,12 +467,12 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		} else {
 			if (keystoreFile != null) {
-				serverEntriesCombo.setEnabled(serverEntriesCombo.getItemCount() > 0 || (StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username)));
+				serverEntriesCombo.setEnabled(serverEntriesCombo.getItemCount() > 0 || (Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username)));
 				loadServerEntriesButton.setEnabled(keystoreFile.exists());
-				removeServerEntryButton.setEnabled(StringUtils.isNotBlank(serverEntriesCombo.getText()));
-				saveServerEntryButton.setEnabled(StringUtils.isNotBlank(serverEntriesCombo.getText()) && StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username));
+				removeServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()));
+				saveServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()) && Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username));
 			}
-			connectButton.setEnabled(StringUtils.isNotBlank(hostnameOrIp) && StringUtils.isNotBlank(username));
+			connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username));
 			connectButton.setText(LangResources.get("connect"));
 			actionButton.setEnabled(false);
 			hostnameField.setEnabled(true);
@@ -541,12 +541,12 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			if (serverEntriesCombo.getItemCount() > 0) {
 				serverEntriesCombo.select(0);
 				String selectionName = serverEntriesCombo.getText();
-				if (StringUtils.isNotBlank(selectionName)) {
+				if (Utilities.isNotBlank(selectionName)) {
 					ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, selectionName);
 					hostnameField.setText(entry.getHostname());
 					usernameField.setText(entry.getUsername());
 					keyFile = entry.getKeyFile();
-					useKeyFileButton.setSelection(StringUtils.isNotBlank(keyFile));
+					useKeyFileButton.setSelection(Utilities.isNotBlank(keyFile));
 					passwordField.setText(entry.getPassword());
 				}
 			}

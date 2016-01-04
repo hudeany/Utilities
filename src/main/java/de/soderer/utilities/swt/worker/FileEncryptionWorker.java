@@ -18,11 +18,10 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerParentSimple;
 import de.soderer.utilities.WorkerSimple;
 
@@ -66,7 +65,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 		this.encryptionMethod = encryptionMethod;
 		this.zipBeforeEncryption = zipBeforeEncryption;
 		
-		if (StringUtils.isBlank(this.encryptionMethod)) {
+		if (Utilities.isBlank(this.encryptionMethod)) {
 			this.encryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD;
 		}
 		
@@ -105,7 +104,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 		this.initializationVector = initalizationVector;
 		this.zipBeforeEncryption = zipBeforeEncryption;
 		
-		if (StringUtils.isBlank(this.encryptionMethod)) {
+		if (Utilities.isBlank(this.encryptionMethod)) {
 			this.encryptionMethod = CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD;
 		}
 		
@@ -167,8 +166,8 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 			} catch (Exception e) {
 				throw new Exception("Error while encrypting: " + e.getMessage(), e);
 			} finally {
-				IOUtils.closeQuietly(outputStream);
-				IOUtils.closeQuietly(inputStream);
+				Utilities.closeQuietly(outputStream);
+				Utilities.closeQuietly(inputStream);
 			}
 			
 			result = true;

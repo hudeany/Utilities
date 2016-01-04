@@ -2,7 +2,6 @@ package de.soderer.utilities.swt;
 
 import java.util.Locale;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -22,6 +21,7 @@ import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.EmailUtilities;
 import de.soderer.utilities.ExceptionUtilities;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 
 public class ErrorDialog extends ModalDialog<Boolean> {
@@ -130,7 +130,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			gridData.widthHint = 500;
 			keyTextfield2.setLayoutData(gridData);
 			keyTextfield2.setText(text2);
-			if (StringUtils.isNotEmpty(text3)) {
+			if (Utilities.isNotEmpty(text3)) {
 				StyledText keyTextfield3 = new StyledText(detailPart, SWT.BORDER | SWT.MULTI | SWT.READ_ONLY | SWT.H_SCROLL | SWT.V_SCROLL);
 				GridData gridData2 = new GridData(SWT.FILL, SWT.FILL, true, false);
 				gridData2.widthHint = 500;

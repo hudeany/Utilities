@@ -53,7 +53,6 @@ import javax.security.auth.x500.X500Principal;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.PBEParametersGenerator;
@@ -147,8 +146,8 @@ public class CryptographicUtilities {
 		} catch (Exception e) {
 			throw new Exception("Cannot create certificate string: " + e.getMessage(), e);
 		} finally {
-			IOUtils.closeQuietly(stringWriter);
-			IOUtils.closeQuietly(pemWriter);
+			Utilities.closeQuietly(stringWriter);
+			Utilities.closeQuietly(pemWriter);
 		}
 	}
 
@@ -164,7 +163,7 @@ public class CryptographicUtilities {
 			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
 			encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
 			cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher);
-			IOUtils.copy(dataStream, cipherOutputStream);
+			Utilities.copy(dataStream, cipherOutputStream);
 		} catch (Exception e) {
 			throw new Exception("Error while encrypting: " + e.getMessage(), e);
 		} finally {
@@ -187,7 +186,7 @@ public class CryptographicUtilities {
 			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, "BC");
 			decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
 			cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher);
-			IOUtils.copy(cipherInputStream, dataOutputStream);
+			Utilities.copy(cipherInputStream, dataOutputStream);
 		} catch (Exception e) {
 			throw new Exception("Error while decrypting: " + e.getMessage(), e);
 		} finally {
@@ -224,8 +223,8 @@ public class CryptographicUtilities {
 		} catch (Exception e) {
 			throw new Exception("Cannot create key string: " + e.getMessage(), e);
 		} finally {
-			IOUtils.closeQuietly(stringWriter);
-			IOUtils.closeQuietly(pemWriter);
+			Utilities.closeQuietly(stringWriter);
+			Utilities.closeQuietly(pemWriter);
 		}
 	}
 
@@ -316,14 +315,14 @@ public class CryptographicUtilities {
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PublicKey readRSAPublicKey(InputStream inputStream) throws Exception {
-		return getPublicKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
+		return getPublicKeyFromString(Utilities.toString(inputStream, "UTF-8"));
 	}
 
 	/**
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PrivateKey readRSAPrivateKey(InputStream inputStream) throws Exception {
-		return getPrivateKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
+		return getPrivateKeyFromString(Utilities.toString(inputStream, "UTF-8"));
 	}
 
 	/**
@@ -349,7 +348,7 @@ public class CryptographicUtilities {
 			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
 			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher);
-			IOUtils.copy(dataStream, cipherOutputStream);
+			Utilities.copy(dataStream, cipherOutputStream);
 		} catch (Exception e) {
 			throw new Exception("Error while encrypting: " + e.getMessage(), e);
 		} finally {
@@ -374,7 +373,7 @@ public class CryptographicUtilities {
 			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, "BC");
 			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher);
-			IOUtils.copy(cipherInputStream, dataOutputStream);
+			Utilities.copy(cipherInputStream, dataOutputStream);
 		} catch (Exception e) {
 			throw new Exception("Error while decrypting: " + e.getMessage(), e);
 		} finally {
@@ -511,7 +510,7 @@ public class CryptographicUtilities {
 					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
 					}
 				} finally {
-					IOUtils.closeQuietly(jarEntryInputStream);
+					Utilities.closeQuietly(jarEntryInputStream);
 				}
 			}
 			
@@ -544,10 +543,11 @@ public class CryptographicUtilities {
 		
 		    return returnData;
 		} finally {
-			IOUtils.closeQuietly(jar);
+			Utilities.closeQuietly(jar);
 		}
 	}
 	
+	@SuppressWarnings("resource")
 	public static boolean verifyJarSignature(File jarFile, X509Certificate[] trustedCerts) throws Exception {
 		if (trustedCerts == null || trustedCerts.length == 0) {
 			return false;
@@ -576,7 +576,7 @@ public class CryptographicUtilities {
 					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
 					}
 				} finally {
-					IOUtils.closeQuietly(jarEntryInputStream);
+					Utilities.closeQuietly(jarEntryInputStream);
 				}
 			}
 			
@@ -609,7 +609,7 @@ public class CryptographicUtilities {
 		} catch (Exception e) {
 			return false;
 		} finally {
-			IOUtils.closeQuietly(jar);
+			Utilities.closeQuietly(jar);
 		}
 	}
 
@@ -662,7 +662,7 @@ public class CryptographicUtilities {
 			}
 			return certificateList.toArray(new X509Certificate[0]);
 		} finally {
-			IOUtils.closeQuietly(pemReader);
+			Utilities.closeQuietly(pemReader);
 		}
     }
 
@@ -681,7 +681,7 @@ public class CryptographicUtilities {
 			}
 			return certificateList.toArray(new X509Certificate[0]);
 		} finally {
-			IOUtils.closeQuietly(pemReader);
+			Utilities.closeQuietly(pemReader);
 		}
     }
     

@@ -7,7 +7,6 @@ import java.security.InvalidKeyException;
 import java.util.Date;
 import java.util.Iterator;
 
-import org.apache.commons.io.IOUtils;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPEncryptedDataList;
 import org.bouncycastle.openpgp.PGPException;
@@ -23,6 +22,7 @@ import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.UserError;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
@@ -147,8 +147,8 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		} catch (Exception e) {
 			error = new Exception("Error while decrypting", e);
 		} finally {
-			IOUtils.closeQuietly(decodedInputStream);
-			IOUtils.closeQuietly(decryptedPacketInputStream);
+			Utilities.closeQuietly(decodedInputStream);
+			Utilities.closeQuietly(decryptedPacketInputStream);
 
 			showDone();
 		}

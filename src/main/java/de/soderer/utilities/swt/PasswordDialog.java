@@ -2,7 +2,6 @@ package de.soderer.utilities.swt;
 
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -18,6 +17,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 
 public class PasswordDialog extends ModalDialog<char[]> {
 	private String text;
@@ -40,7 +40,7 @@ public class PasswordDialog extends ModalDialog<char[]> {
 	}
 	
 	public void setInputPattern(String patternString) {
-		if (StringUtils.isBlank(patternString)) {
+		if (Utilities.isBlank(patternString)) {
 			inputPattern = null;
 		} else {
 			inputPattern = Pattern.compile(patternString);
@@ -84,7 +84,7 @@ public class PasswordDialog extends ModalDialog<char[]> {
 			}
 		});
 		
-		if (StringUtils.isNotBlank(keepInMemoryText)) {
+		if (Utilities.isNotBlank(keepInMemoryText)) {
 			Button keepInMemoryButton = new Button(shell, SWT.CHECK);
 			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 			keepInMemoryButton.setText(keepInMemoryText);

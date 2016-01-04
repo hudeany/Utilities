@@ -25,9 +25,6 @@ import java.util.Set;
 
 import javax.sql.DataSource;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class DbUtilities {
@@ -87,7 +84,7 @@ public class DbUtilities {
 				connection.close();
 			}
 
-			IOUtils.closeQuietly(csvWriter);
+			Utilities.closeQuietly(csvWriter);
 		}
 	}
 
@@ -151,7 +148,7 @@ public class DbUtilities {
 	}
 
 	public static Map<Integer, Object[]> insertDataInTable(DataSource dataSource, String tableName, String[] tableColumns, List<Object[]> dataSets, boolean commitOnFullSuccessOnly) throws Exception {
-		if (StringUtils.isBlank(tableName)) {
+		if (Utilities.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for datainsert");
 		}
 
@@ -168,7 +165,7 @@ public class DbUtilities {
 
 			// Insert data
 			Map<Integer, Object[]> notInsertedData = new HashMap<Integer, Object[]>();
-			String insertStatementString = "INSERT INTO " + tableName + " (" + StringUtils.join(tableColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", tableColumns.length, ", ") + ")";
+			String insertStatementString = "INSERT INTO " + tableName + " (" + Utilities.join(tableColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", tableColumns.length, ", ") + ")";
 			preparedStatement = connection.prepareStatement(insertStatementString);
 			boolean hasOpenData = false;
 			List<Object[]> currentUncommitedLines = new ArrayList<Object[]>();
@@ -305,7 +302,7 @@ public class DbUtilities {
 			fileInputStream = new FileInputStream(csvFile);
 			return insertCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, false, commitOnFullSuccessOnly);
 		} finally {
-			IOUtils.closeQuietly(fileInputStream);
+			Utilities.closeQuietly(fileInputStream);
 		}
 	}
 
@@ -316,7 +313,7 @@ public class DbUtilities {
 			fileInputStream = new FileInputStream(csvFile);
 			return insertCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
 		} finally {
-			IOUtils.closeQuietly(fileInputStream);
+			Utilities.closeQuietly(fileInputStream);
 		}
 	}
 
@@ -339,7 +336,7 @@ public class DbUtilities {
 	public static Map<Integer, Tuple<List<String>, String>> insertCsvDataInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDataFormats,
 			InputStream csvInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly,
 			boolean containsHeadersInFirstRow) throws Exception {
-		if (StringUtils.isBlank(tableName)) {
+		if (Utilities.isBlank(tableName)) {
 			throw new Exception("Missing parameter tableName for datainsert");
 		}
 
@@ -379,7 +376,7 @@ public class DbUtilities {
 			}
 
 			Map<Integer, Tuple<List<String>, String>> notInsertedData = new HashMap<Integer, Tuple<List<String>, String>>();
-			String insertStatementString = "INSERT INTO " + tableName + " (" + StringUtils.join(dbColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", dbColumns.size(), ", ") + ")";
+			String insertStatementString = "INSERT INTO " + tableName + " (" + Utilities.join(dbColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", dbColumns.size(), ", ") + ")";
 			preparedStatement = connection.prepareStatement(insertStatementString);
 
 			// Read and insert data
@@ -403,7 +400,7 @@ public class DbUtilities {
 					for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
 						if (columnMapping[csvValueIndex] != null) {
 							String value = csvLine.get(csvValueIndex);
-							if (columnDataFormats != null && StringUtils.isNotBlank(columnDataFormats[csvValueIndex])) {
+							if (columnDataFormats != null && Utilities.isNotBlank(columnDataFormats[csvValueIndex])) {
 								if (".".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
 									value = value.replace(",", "");
 									preparedStatement.setObject(parameterIndex++, value);
@@ -521,7 +518,7 @@ public class DbUtilities {
 				int parameterIndex = 1;
 				for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
 					String value = csvLine.get(csvValueIndex);
-					if (columnDataFormats != null && StringUtils.isNotBlank(columnDataFormats[csvValueIndex])) {
+					if (columnDataFormats != null && Utilities.isNotBlank(columnDataFormats[csvValueIndex])) {
 						if (".".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
 							value = value.replace(",", "");
 							preparedStatement.setObject(parameterIndex++, value);
@@ -777,7 +774,7 @@ public class DbUtilities {
 	public static List<String> getColumnNames(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnNames");
-		} else if (StringUtils.isBlank(tableName)) {
+		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnNames");
 		} else {
 			Connection connection = null;
@@ -804,9 +801,9 @@ public class DbUtilities {
 	public static DbColumnType getColumnDataType(Connection connection, String tableName, String columnName) throws Exception {
 		if (connection == null) {
 			throw new Exception("Invalid empty connection for getColumnDataType");
-		} else if (StringUtils.isBlank(tableName)) {
+		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnDataType");
-		} else if (StringUtils.isBlank(columnName)) {
+		} else if (Utilities.isBlank(columnName)) {
 			throw new Exception("Invalid empty columnName for getColumnDataType");
 		} else {
 			PreparedStatement preparedStatement = null;
@@ -882,9 +879,9 @@ public class DbUtilities {
 	public static DbColumnType getColumnDataType(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnDataType");
-		} else if (StringUtils.isBlank(tableName)) {
+		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnDataType");
-		} else if (StringUtils.isBlank(columnName)) {
+		} else if (Utilities.isBlank(columnName)) {
 			throw new Exception("Invalid empty columnName for getColumnDataType");
 		} else {
 			Connection connection = null;
@@ -902,7 +899,7 @@ public class DbUtilities {
 	public static CaseInsensitiveMap<DbColumnType> getColumnDataTypes(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnDataTypes");
-		} else if (StringUtils.isBlank(tableName)) {
+		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnDataTypes");
 		} else {
 			Connection connection = null;
@@ -971,7 +968,7 @@ public class DbUtilities {
 	public static int getColumnCount(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnCount");
-		} else if (StringUtils.isBlank(tableName)) {
+		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnCount");
 		} else {
 			Connection connection = null;
@@ -985,7 +982,7 @@ public class DbUtilities {
 	}
 
 	public static int getColumnCount(Connection connection, String tableName) throws Exception {
-		if (StringUtils.isBlank(tableName)) {
+		if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnCount");
 		} else {
 			Statement statement = null;
@@ -1003,7 +1000,7 @@ public class DbUtilities {
 	}
 
 	public static int getTableEntriesCount(Connection connection, String tableName) throws Exception {
-		if (StringUtils.isBlank(tableName)) {
+		if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getTableEntriesNumber");
 		} else {
 			Statement statement = null;
@@ -1027,9 +1024,9 @@ public class DbUtilities {
 	public static boolean containsColumnName(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for containsColumnName");
-		} else if (StringUtils.isBlank(tableName)) {
+		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for containsColumnName");
-		} else if (StringUtils.isBlank(columnName)) {
+		} else if (Utilities.isBlank(columnName)) {
 			throw new Exception("Invalid empty columnName for containsColumnName");
 		} else {
 			Connection connection = null;
@@ -1057,9 +1054,9 @@ public class DbUtilities {
 	public static int getColumnDataTypeLength(DataSource dataSource, String tableName, String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getDefaultValueOf");
-		} else if (StringUtils.isBlank(tableName)) {
+		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getDefaultValueOf");
-		} else if (StringUtils.isBlank(columnName)) {
+		} else if (Utilities.isBlank(columnName)) {
 			throw new Exception("Invalid empty columnName for getDefaultValueOf");
 		} else {
 			Connection connection = null;
@@ -1102,9 +1099,9 @@ public class DbUtilities {
 		try {
 			if (dataSource == null) {
 				throw new Exception("Invalid empty dataSource for getDefaultValueOf");
-			} else if (StringUtils.isBlank(tableName)) {
+			} else if (Utilities.isBlank(tableName)) {
 				throw new Exception("Invalid empty tableName for getDefaultValueOf");
-			} else if (StringUtils.isBlank(columnName)) {
+			} else if (Utilities.isBlank(columnName)) {
 				throw new Exception("Invalid empty columnName for getDefaultValueOf");
 			} else {
 				Connection connection = null;
@@ -1183,15 +1180,15 @@ public class DbUtilities {
 	}
 
 	public static boolean addColumnToDbTable(DataSource dataSource, String tablename, String fieldname, String fieldType, int length, String fieldDefault, boolean notNull) throws Exception {
-		if (StringUtils.isBlank(fieldname)) {
+		if (Utilities.isBlank(fieldname)) {
 			return false;
 		} else if (!tablename.equalsIgnoreCase(getSQLSafeString(tablename))) {
 			return false;
-		} else if (StringUtils.isBlank(fieldname)) {
+		} else if (Utilities.isBlank(fieldname)) {
 			return false;
 		} else if (!fieldname.equalsIgnoreCase(getSQLSafeString(fieldname))) {
 			return false;
-		} else if (StringUtils.isBlank(fieldType)) {
+		} else if (Utilities.isBlank(fieldType)) {
 			return false;
 		} else if (containsColumnName(dataSource, tablename, fieldname)) {
 			return false;
@@ -1207,7 +1204,7 @@ public class DbUtilities {
 			}
 
 			// Default Value
-			if (StringUtils.isNotEmpty(fieldDefault)) {
+			if (Utilities.isNotEmpty(fieldDefault)) {
 				if (fieldType.startsWith("VARCHAR")) {
 					addColumnStatement += " DEFAULT '" + fieldDefault + "'";
 				} else if (fieldType.equalsIgnoreCase("DATE")) {
@@ -1241,15 +1238,15 @@ public class DbUtilities {
 	}
 
 	public static boolean alterColumnTypeInDbTable(DataSource dataSource, String tablename, String fieldname, String fieldType, int length, String fieldDefault, boolean notNull) throws Exception {
-		if (StringUtils.isBlank(fieldname)) {
+		if (Utilities.isBlank(fieldname)) {
 			return false;
 		} else if (!tablename.equalsIgnoreCase(getSQLSafeString(tablename))) {
 			return false;
-		} else if (StringUtils.isBlank(fieldname)) {
+		} else if (Utilities.isBlank(fieldname)) {
 			return false;
 		} else if (!fieldname.equalsIgnoreCase(getSQLSafeString(fieldname))) {
 			return false;
-		} else if (StringUtils.isBlank(fieldType)) {
+		} else if (Utilities.isBlank(fieldType)) {
 			return false;
 		} else if (!containsColumnName(dataSource, tablename, fieldname)) {
 			return false;
@@ -1265,7 +1262,7 @@ public class DbUtilities {
 			}
 
 			// Default Value
-			if (StringUtils.isNotEmpty(fieldDefault)) {
+			if (Utilities.isNotEmpty(fieldDefault)) {
 				if (fieldType.equalsIgnoreCase("VARCHAR")) {
 					changeColumnStatementPart += " DEFAULT '" + fieldDefault + "'";
 				} else if (fieldType.equalsIgnoreCase("DATE")) {
@@ -1368,7 +1365,7 @@ public class DbUtilities {
     }
 
 	public static String getPrimaryKeyColumn(Connection connection, String tableName) {
-		if (StringUtils.isBlank(tableName)) {
+		if (Utilities.isBlank(tableName)) {
 			return null;
 		} else {
 			ResultSet resultSet = null;

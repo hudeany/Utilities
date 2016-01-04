@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +34,7 @@ public class JschWrapper {
 			JSch jsch = new JSch();
 			session = jsch.getSession(serverEntry.getUsername(), serverEntry.getHostname(), serverEntry.getPort());
 
-			if (StringUtils.isNotBlank(serverEntry.getKeyFile())) {
+			if (Utilities.isNotBlank(serverEntry.getKeyFile())) {
 				jsch.addIdentity(serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), null, serverEntry.getPassword() == null ? new byte[0] : serverEntry
 						.getPassword().getBytes("UTF-8"));
 			} else {
@@ -80,15 +78,15 @@ public class JschWrapper {
 
 			channel.connect();
 
-			IOUtils.toByteArray(inStream);
+			Utilities.toByteArray(inStream);
 
-			byte[] errorData = IOUtils.toByteArray(inErrorStream);
+			byte[] errorData = Utilities.toByteArray(inErrorStream);
 
 			return errorData == null || errorData.length == 0;
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(inStream);
-			IOUtils.closeQuietly(inErrorStream);
+			Utilities.closeQuietly(inStream);
+			Utilities.closeQuietly(inErrorStream);
 		}
 	}
 
@@ -106,10 +104,10 @@ public class JschWrapper {
 
 			channel.connect();
 
-			byte[] successData = IOUtils.toByteArray(inStream);
+			byte[] successData = Utilities.toByteArray(inStream);
 			String successString = new String(successData, "UTF-8");
 
-			byte[] errorData = IOUtils.toByteArray(inErrorStream);
+			byte[] errorData = Utilities.toByteArray(inErrorStream);
 
 			if (errorData != null && errorData.length > 0) {
 				return false;
@@ -118,8 +116,8 @@ public class JschWrapper {
 			}
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(inStream);
-			IOUtils.closeQuietly(inErrorStream);
+			Utilities.closeQuietly(inStream);
+			Utilities.closeQuietly(inErrorStream);
 		}
 	}
 
@@ -137,10 +135,10 @@ public class JschWrapper {
 
 			channel.connect();
 
-			byte[] successData = IOUtils.toByteArray(inStream);
+			byte[] successData = Utilities.toByteArray(inStream);
 			String successString = new String(successData, "UTF-8");
 
-			byte[] errorData = IOUtils.toByteArray(inErrorStream);
+			byte[] errorData = Utilities.toByteArray(inErrorStream);
 
 			if (errorData != null && errorData.length > 0) {
 				return false;
@@ -149,8 +147,8 @@ public class JschWrapper {
 			}
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(inStream);
-			IOUtils.closeQuietly(inErrorStream);
+			Utilities.closeQuietly(inStream);
+			Utilities.closeQuietly(inErrorStream);
 		}
 	}
 
@@ -169,9 +167,9 @@ public class JschWrapper {
 
 			channel.connect();
 
-			List<String> folderListRaw = IOUtils.readLines(inStream);
+			List<String> folderListRaw = Utilities.readLines(inStream, "UTF-8");
 
-			byte[] errorData = IOUtils.toByteArray(inErrorStream);
+			byte[] errorData = Utilities.toByteArray(inErrorStream);
 			if (errorData != null && errorData.length > 0) {
 				// there is no subdirectory
 				// throw new Exception(new String(errorData, "UTF-8"));
@@ -190,9 +188,9 @@ public class JschWrapper {
 
 			channel.connect();
 
-			List<String> fileList = IOUtils.readLines(inStream);
+			List<String> fileList = Utilities.readLines(inStream, "UTF-8");
 
-			errorData = IOUtils.toByteArray(inErrorStream);
+			errorData = Utilities.toByteArray(inErrorStream);
 			if (errorData != null && errorData.length > 0) {
 				throw new Exception(new String(errorData, "UTF-8"));
 			}
@@ -218,8 +216,8 @@ public class JschWrapper {
 			throw new Exception("Error in getDirectory", e);
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(inStream);
-			IOUtils.closeQuietly(inErrorStream);
+			Utilities.closeQuietly(inStream);
+			Utilities.closeQuietly(inErrorStream);
 		}
 	}
 
@@ -261,8 +259,8 @@ public class JschWrapper {
 		} catch (Exception e) {
 			throw new Exception("Error in uploadFileData", e);
 		} finally {
-			IOUtils.closeQuietly(outStream);
-			IOUtils.closeQuietly(inStream);
+			Utilities.closeQuietly(outStream);
+			Utilities.closeQuietly(inStream);
 			closeQuietly(channel);
 		}
 	}
@@ -281,10 +279,10 @@ public class JschWrapper {
 
 			channel.connect();
 
-			byte[] successData = IOUtils.toByteArray(inStream);
+			byte[] successData = Utilities.toByteArray(inStream);
 			String successString = new String(successData, "UTF-8");
 
-			byte[] errorData = IOUtils.toByteArray(inErrorStream);
+			byte[] errorData = Utilities.toByteArray(inErrorStream);
 
 			if (errorData != null && errorData.length > 0) {
 				return null;
@@ -293,8 +291,8 @@ public class JschWrapper {
 			}
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(inStream);
-			IOUtils.closeQuietly(inErrorStream);
+			Utilities.closeQuietly(inStream);
+			Utilities.closeQuietly(inErrorStream);
 		}
 	}
 
@@ -380,7 +378,7 @@ public class JschWrapper {
 			throw new Exception("Fehler bei SCP-Delete: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(inStream);
+			Utilities.closeQuietly(inStream);
 		}
 	}
 
@@ -410,7 +408,7 @@ public class JschWrapper {
 
 		String remoteHostPath = getPathOfPathAndFileName(remoteHostPathAndFileName);
 		String remoteHostFileName = getFileNameOfPathAndFileName(remoteHostPathAndFileName);
-		if (StringUtils.isEmpty(remoteHostFileName)) {
+		if (Utilities.isEmpty(remoteHostFileName)) {
 			remoteHostFileName = getFileNameOfPathAndFileName(localPathAndFileName);
 		}
 
@@ -471,10 +469,10 @@ public class JschWrapper {
 		} catch (Exception e) {
 			throw new Exception("Fehler bei SCP-Upload: " + e.getMessage());
 		} finally {
-			IOUtils.closeQuietly(bufferedFileInputStream);
+			Utilities.closeQuietly(bufferedFileInputStream);
 			closeQuietly(channel);
-			IOUtils.closeQuietly(in);
-			IOUtils.closeQuietly(out);
+			Utilities.closeQuietly(in);
+			Utilities.closeQuietly(out);
 		}
 	}
 
@@ -526,8 +524,8 @@ public class JschWrapper {
 			throw new Exception("Fehler bei SCP-Upload: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(in);
-			IOUtils.closeQuietly(out);
+			Utilities.closeQuietly(in);
+			Utilities.closeQuietly(out);
 		}
 	}
 
@@ -573,7 +571,7 @@ public class JschWrapper {
 			throw new Exception("Fehler bei SCP-Download\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(in);
+			Utilities.closeQuietly(in);
 		}
 	}
 
@@ -720,10 +718,10 @@ public class JschWrapper {
 		} catch (Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
-			IOUtils.closeQuietly(bos);
+			Utilities.closeQuietly(bos);
 			closeQuietly(channel);
-			IOUtils.closeQuietly(inStream);
-			IOUtils.closeQuietly(outStream);
+			Utilities.closeQuietly(inStream);
+			Utilities.closeQuietly(outStream);
 		}
 	}
 
@@ -759,7 +757,7 @@ public class JschWrapper {
 		} catch (Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
-			IOUtils.closeQuietly(bos);
+			Utilities.closeQuietly(bos);
 			closeQuietly(channel);
 		}
 	}
@@ -781,14 +779,14 @@ public class JschWrapper {
 			// send '\0' to start data transfer
 			sendZeroByte(outStream);
 
-			return IOUtils.toByteArray(inStream);
+			return Utilities.toByteArray(inStream);
 		} catch (Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
-			IOUtils.closeQuietly(bos);
+			Utilities.closeQuietly(bos);
 			closeQuietly(channel);
-			IOUtils.closeQuietly(inStream);
-			IOUtils.closeQuietly(outStream);
+			Utilities.closeQuietly(inStream);
+			Utilities.closeQuietly(outStream);
 		}
 	}
 
@@ -851,9 +849,9 @@ public class JschWrapper {
 			throw new Exception("Fehler bei SSH-Command\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
-			IOUtils.closeQuietly(in);
-			IOUtils.closeQuietly(out);
-			IOUtils.closeQuietly(inError);
+			Utilities.closeQuietly(in);
+			Utilities.closeQuietly(out);
+			Utilities.closeQuietly(inError);
 		}
 	}
 
@@ -874,7 +872,7 @@ public class JschWrapper {
 		} catch (JSchException e) {
 			e.printStackTrace();
 		} finally {
-			IOUtils.closeQuietly(knownHostsKeysInputStream);
+			Utilities.closeQuietly(knownHostsKeysInputStream);
 		}
 	}
 
@@ -916,7 +914,7 @@ public class JschWrapper {
 	}
 
 	private static String getFileNameOfPathAndFileName(String pathAndFileName) {
-		if (StringUtils.isEmpty(pathAndFileName)) {
+		if (Utilities.isEmpty(pathAndFileName)) {
 			return null;
 		} else {
 			int lastIndexOfPathSeparator = Math.max(pathAndFileName.lastIndexOf("/"), pathAndFileName.lastIndexOf("\\"));
@@ -925,7 +923,7 @@ public class JschWrapper {
 	}
 
 	private static String getPathOfPathAndFileName(String pathAndFileName) {
-		if (StringUtils.isEmpty(pathAndFileName)) {
+		if (Utilities.isEmpty(pathAndFileName)) {
 			return null;
 		} else {
 			int lastIndexOfPathSeparator = Math.max(pathAndFileName.lastIndexOf("/"), pathAndFileName.lastIndexOf("\\"));

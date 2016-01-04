@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -12,6 +11,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 
 public class QuestionDialog extends ModalDialog<Integer> {
 	private String text;
@@ -42,7 +42,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, buttonTexts.length, 1));
 		textField.setText(text);
 		
-		if (StringUtils.isNotBlank(rememberAnswerText)) {
+		if (Utilities.isNotBlank(rememberAnswerText)) {
 			Button rememberAnswerCheckBox = new Button(composite, SWT.CHECK);
 			rememberAnswerCheckBox.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
 			rememberAnswerCheckBox.setSelection(rememberAnswerStatus);

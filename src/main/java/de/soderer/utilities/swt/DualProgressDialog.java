@@ -2,7 +2,6 @@ package de.soderer.utilities.swt;
 
 import java.text.MessageFormat;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -15,6 +14,7 @@ import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 
 public class DualProgressDialog extends ProgressDialog {
 	private String subCommentStringFormat;
@@ -39,7 +39,7 @@ public class DualProgressDialog extends ProgressDialog {
 				composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 				composite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
 				
-				if (StringUtils.isNotBlank(commentStringFormat)) {
+				if (Utilities.isNotBlank(commentStringFormat)) {
 					commentLabel = new Label(composite, SWT.NONE);
 					commentLabel.setText(MessageFormat.format(commentStringFormat, 0, 0, 0));
 					commentLabel.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));

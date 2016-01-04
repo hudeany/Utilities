@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
 
-import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -14,6 +13,7 @@ import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
 
 import de.soderer.utilities.CryptographicUtilities;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
@@ -34,7 +34,7 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 		this.publicKey = publicKey;
 		this.signatureMethod = signatureMethod;
 
-		if (StringUtils.isBlank(this.signatureMethod)) {
+		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
 		

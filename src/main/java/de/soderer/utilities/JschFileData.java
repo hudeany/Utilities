@@ -2,8 +2,6 @@ package de.soderer.utilities;
 
 import java.util.Date;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class JschFileData {
 	private boolean isFile;
 	private String filePath;
@@ -12,7 +10,7 @@ public class JschFileData {
 	private Date changeDate;
 	
 	public JschFileData(String dataString) throws Exception {
-		if (StringUtils.isBlank(dataString)) {
+		if (Utilities.isBlank(dataString)) {
 			throw new Exception("Invalid file data string: " + dataString);
 		}
 		// -rw-r--r--    1 root     root           23 Feb  2 23:37 test.txt

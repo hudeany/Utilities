@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
@@ -18,6 +17,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 
 public class LabeledFileText extends LabeledText {
 	private boolean selectDirectory = false;
@@ -69,7 +69,7 @@ public class LabeledFileText extends LabeledText {
 					DirectoryDialog dialog = new DirectoryDialog(shellForFileDialog, SWT.OPEN);
 			        dialog.setText(LangResources.get("openDataDirectory"));
 			        String fileName = dialog.open();
-		        	if (StringUtils.isNotBlank(fileName)) {
+		        	if (Utilities.isNotBlank(fileName)) {
 		        		textField.setText(fileName);
 		        	}
 				}
@@ -81,7 +81,7 @@ public class LabeledFileText extends LabeledText {
 					FileDialog dialog = new FileDialog(shellForFileDialog, SWT.OPEN);
 			        dialog.setText(LangResources.get("openFileDirectory"));
 			        String fileName = dialog.open();
-		        	if (StringUtils.isNotBlank(fileName)) {
+		        	if (Utilities.isNotBlank(fileName)) {
 		        		textField.setText(fileName);
 		        	}
 				}

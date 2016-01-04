@@ -10,7 +10,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -114,7 +113,7 @@ public class FileUtilities {
 				}
 
 				fileInputStream = new FileInputStream(searchFile);
-				String dataString = IOUtils.toString(fileInputStream, encodingData.getFirst());
+				String dataString = Utilities.toString(fileInputStream, encodingData.getFirst());
 
 				for (int i = 0; i < searchTexts.size(); i++) {
 					Pattern searchPattern;
@@ -187,7 +186,7 @@ public class FileUtilities {
 				}
 
 				fileInputStream = new FileInputStream(searchFile);
-				String dataString = IOUtils.toString(fileInputStream, encodingData.getFirst());
+				String dataString = Utilities.toString(fileInputStream, encodingData.getFirst());
 
 				for (int i = 0; i < searchTexts.size(); i++) {
 					Pattern searchPattern;

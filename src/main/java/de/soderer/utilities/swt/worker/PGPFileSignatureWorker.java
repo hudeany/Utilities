@@ -7,8 +7,6 @@ import java.io.InputStream;
 import java.security.Security;
 import java.util.Date;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.BCPGOutputStream;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -20,6 +18,7 @@ import org.bouncycastle.openpgp.PGPSignatureGenerator;
 
 import de.soderer.utilities.PgpUtilities;
 import de.soderer.utilities.UserError;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
@@ -40,7 +39,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 		this.password = password;
 		this.signatureMethod = signatureMethod;
 
-		if (StringUtils.isBlank(this.signatureMethod)) {
+		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = PgpUtilities.DEFAULT_SIGNATURE_METHOD_PGP;
 		}
 
@@ -112,10 +111,10 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 		} catch (Exception e) {
 			error = new Exception("Cannot create signature", e);
 		} finally {
-			IOUtils.closeQuietly(dataStream);
-			IOUtils.closeQuietly(bcpgOutputStream);
-			IOUtils.closeQuietly(outputStream2);
-			IOUtils.closeQuietly(outputStream);
+			Utilities.closeQuietly(dataStream);
+			Utilities.closeQuietly(bcpgOutputStream);
+			Utilities.closeQuietly(outputStream2);
+			Utilities.closeQuietly(outputStream);
 
 			showDone();
 		}

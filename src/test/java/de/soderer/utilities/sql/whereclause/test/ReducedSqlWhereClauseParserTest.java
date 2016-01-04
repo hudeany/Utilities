@@ -4,10 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Assert;
-import junit.framework.TestCase;
+
 import de.soderer.utilities.sql.whereclause.ReducedSqlWhereClauseParser;
 import de.soderer.utilities.sql.whereclause.token.RulePart;
 import de.soderer.utilities.sql.whereclause.token.Value;
+import junit.framework.TestCase;
 
 public class ReducedSqlWhereClauseParserTest extends TestCase {
 	public void testQuotes1Formula() {

@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -14,6 +13,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.swt.LabeledText.ArrangementStyle;
 
 public class FileInputDialog extends ModalDialog<String> {
@@ -79,6 +79,6 @@ public class FileInputDialog extends ModalDialog<String> {
 	}
 
 	private void checkStatus() {
-		okButton.setEnabled(StringUtils.isNotBlank(labeledFileText.getText()));
+		okButton.setEnabled(Utilities.isNotBlank(labeledFileText.getText()));
 	}
 }

@@ -2,8 +2,6 @@ package de.soderer.utilities;
 
 import java.util.Date;
 
-import de.soderer.utilities.CredentialsParent;
-
 public interface UpdateParent extends CredentialsParent {
 	public void showUpdateError(String errorText);
 	
