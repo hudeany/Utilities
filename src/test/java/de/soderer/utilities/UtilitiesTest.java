@@ -110,8 +110,17 @@ public class UtilitiesTest {
 	@Test
 	public void test_remove() {
 		try {
-			String[] result = Utilities.remove(new String[]{"a", "b", "c"}, "b");
-			Assert.assertTrue(Utilities.compare(new String[]{"a", "c"}, result));
+			String[] result1 = Utilities.remove(new String[]{"a", "b", "c"}, "b");
+			Assert.assertTrue(Utilities.compare(new String[]{"a", "c"}, result1));
+
+			String[] result2 = Utilities.remove(new String[]{"a", "b", "c"}, "d");
+			Assert.assertTrue(Utilities.compare(new String[]{"a", "b", "c"}, result2));
+
+			String[] result3 = Utilities.remove(new String[]{"a", "b", null, "c"}, null);
+			Assert.assertTrue(Utilities.compare(new String[]{"a", "b", "c"}, result3));
+			
+			String[] result4 = Utilities.remove(new String[]{"a", "b", "c", "b"}, "b");
+			Assert.assertTrue(Utilities.compare(new String[]{"a", "c", "b"}, result4));
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}

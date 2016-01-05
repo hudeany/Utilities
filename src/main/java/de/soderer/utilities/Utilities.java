@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -29,7 +30,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -909,16 +909,40 @@ public class Utilities {
 		}
 	}
 
-	public static <T> T[] remove(T[] items, T itemToRemove) {
-		List<T> result = new LinkedList<T>();
-
-		for (T item : items) {
-			if (!itemToRemove.equals(item)) {
-				result.add(item);
-			}
+	public static <T> T[] remove(T[] array, T itemToRemove) {
+		int indexToRemove = -1;
+		if (array == null) {
+			return null;
+		} else if (itemToRemove == null) {
+		    for (int i = 0; i < array.length; i++) {
+		        if (array[i] == null) {
+		        	indexToRemove = i;
+		        	break;
+		        }
+		    }
+		} else {
+		    for (int i = 0; i < array.length; i++) {
+		        if (itemToRemove.equals(array[i])) {
+		        	indexToRemove = i;
+		        	break;
+		        }
+		    }
 		}
-
-		return result.toArray(items);
+		
+		if (indexToRemove >= 0) {
+			@SuppressWarnings("unchecked")
+			T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length - 1);
+			System.arraycopy(array, 0, result, 0, indexToRemove);
+			if (indexToRemove < array.length - 1) {
+			    System.arraycopy(array, indexToRemove + 1, result, indexToRemove, array.length - indexToRemove - 1);
+			}
+			return result;
+		} else {
+			@SuppressWarnings("unchecked")
+			T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length);
+			System.arraycopy(array, 0, result, 0, array.length);
+			return result;
+		}
 	}
 
 	public static byte[] readFileToByteArray(File file) throws FileNotFoundException, IOException {
