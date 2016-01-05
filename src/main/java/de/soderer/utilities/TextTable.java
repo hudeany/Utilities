@@ -97,7 +97,7 @@ public class TextTable {
 	
 	public void setAlignmentForColumn(int columnIndex, boolean alignRight) throws Exception {
 		if (columnIndex < 0 || columnIndex >= columnNames.get(0).size()) {
-			throw new Exception("Ungültige Spalten-Indexangabe: " + columnIndex);
+			throw new Exception("Invalid column index: " + columnIndex);
 		}
 		
 		columnRightAligned.set(columnIndex, alignRight);
@@ -125,9 +125,9 @@ public class TextTable {
 	
 	public void addValueToCurrentLine(String value) throws Exception {
 		if (currentLineIndex == -1) {
-			throw new Exception("Keine Zeile zum Erweitern angelegt");
+			throw new Exception("No line created for extension");
 		} else if (content.get(currentLineIndex).size() <= currentColumnIndex) {
-			throw new Exception("Versuch in eine Spalte zu Schreiben die noch nicht angelegt wurde");
+			throw new Exception("Tried to write to a non existent line");
 		}
 		
 		if (value == null) {
@@ -487,7 +487,7 @@ public class TextTable {
 	
 	public String getHeader(int headerLineIndex, int columnIndex) throws Exception {
 		if (columnNames.size() <= headerLineIndex || columnNames.get(headerLineIndex).size() <= columnIndex)
-			throw new Exception("Ungültige Datenabfrage an Spaltenüberschriften Zeilenindex " + headerLineIndex + " Spaltenindex " + columnIndex);
+			throw new Exception("Invalid data request at columnheaders line index " + headerLineIndex + " column index " + columnIndex);
 		return columnNames.get(headerLineIndex).get(columnIndex);
 	}
 	
@@ -501,7 +501,7 @@ public class TextTable {
 	
 	public String getData(int lineIndex, int columnIndex) throws Exception {
 		if (content.size() <= lineIndex || content.get(lineIndex).size() <= columnIndex)
-			throw new Exception("Ungültige Datenabfrage an Zeilenindex " + lineIndex + " Spaltenindex " + columnIndex);
+			throw new Exception("Invalid data request at line index " + lineIndex + " column index " + columnIndex);
 		return content.get(lineIndex).get(columnIndex);
 	}
 }

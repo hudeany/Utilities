@@ -49,7 +49,6 @@ public class ReducedSqlWhereClauseParser {
 			fieldDescriptors.put(value, Value.Type.Date);
 		}
 		
-		// Index des Chars, der zurzeit betrachtet wird.
 		int charIndex = 0;
 		int length = formula.length();
 		String lowerFormula = formula.toLowerCase();
@@ -57,7 +56,6 @@ public class ReducedSqlWhereClauseParser {
 		boolean readingString = false;
 		StringBuilder currentString = new StringBuilder();
 		
-		// Alle Operatoren
 		Set<String> operators = new HashSet<String>();
 		operators.addAll(Expression.BOOL_UNARY_POSTFIX_OPERATOR_SIGNS);
 		operators.addAll(Expression.COMPARE_OPERATOR_SIGNS);
@@ -71,7 +69,6 @@ public class ReducedSqlWhereClauseParser {
 		operators.addAll(Expression.SINGLE_PARAMETER_STRING_FUNCTION_SIGNS);
 		operators.addAll(ListExpression.SIGNS);
 		
-		// Alle Strings die eine Bedeutung haben
         Set<String> texts = new HashSet<String>();
         texts.addAll(operators);
         texts.addAll(fieldDescriptors.keySet());
@@ -84,24 +81,19 @@ public class ReducedSqlWhereClauseParser {
 			if (current == '\'') {
 				if (charIndex + 1 < length && formula.charAt(charIndex + 1) == '\'') {
 					if (readingString) {
-						// Doppeltes Quote in einem String ist die Escapesequenz für ein Quote im String
 						currentString.append(current);
 						charIndex += 2;
 					} else if (charIndex + 2 < length && formula.charAt(charIndex + 2) == '\'')  {
-						// Tripple Quote außerhalb eines Strings bedeutet ein String der mit einem escapten Quote beginnt
 						currentString.append(current);
 						readingString = true;
 						charIndex += 3;
 					} else {
-						// Doppeltes Quote außerhalb eines Strings bedeutet ein Empty String
 						parts.add(new Value(""));
 						charIndex += 2;
 					}
 				} else {
-					// Einfaches Quote startet oder beendet einen String
 					readingString = !readingString;
 					if (!readingString) {
-						// Stringende
 						parts.add(new Value(currentString.toString()));
 						currentString = new StringBuilder();
 					}
@@ -126,7 +118,6 @@ public class ReducedSqlWhereClauseParser {
 					}
 					charIndex++;
 				} else if (Character.isDigit(current) || current == '.') {
-					// Beginn einer Zahl, die komplett ausgelesen wird
 					int end = charIndex + 1;
 					boolean pointSeen = current == '.';
 
@@ -144,13 +135,11 @@ public class ReducedSqlWhereClauseParser {
 					parts.add(new Value(Double.parseDouble(formula.substring(charIndex, end))));
 					charIndex = end;
 				} else {
-					// Ein Platzhalter für eine Operation, Funktion oder Konstante wird gelesen.
 					int bestLength = 0;
 
 					for (String check : texts) {
 						if (lowerFormula.startsWith(check, charIndex)) {
 							if (check.length() > bestLength) {
-								// der längste mögliche String wird erkannt
 								bestLength = check.length();
 							}
 						}
@@ -165,11 +154,9 @@ public class ReducedSqlWhereClauseParser {
 								parts.add(subSelect);
 								charIndex += subSelect.value.length();
 							} else {
-								// String gefunden der keinem bekannten Operator oder Field entspricht
 								throw new IllegalArgumentException("Invalid data found at position " + charIndex + " starting with " + current);
 							}
 						} else {
-							// String gefunden der keinem bekannten Operator oder Field entspricht
 							throw new IllegalArgumentException("Invalid data found at position " + charIndex + " starting with " + current);
 						}
 					} else {
@@ -310,7 +297,6 @@ public class ReducedSqlWhereClauseParser {
 						|| !(parts.get(i + 1) instanceof SupplementalPart) || ((SupplementalPart)parts.get(i + 1)).type != SupplementalPart.Type.OpeningBracket) {
 						throw new IllegalArgumentException("Invalid definition for list operator: " + operator.sign);
 					} else {
-						// search next closing bracket
 						int closingPosition = -1;
 						List<Value> values = new ArrayList<Value>();
 						for (int j = i + 2; j < parts.size(); j++) {
@@ -408,7 +394,6 @@ public class ReducedSqlWhereClauseParser {
 			} else if (currentChar == ')') {
 				openBrackets--;
 				if (openBrackets == -1) {
-					// Schließende Klammer des Subselects gefunden
 					return new SubSelect(subSelectString.toString());
 				}
 			}
