@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -907,50 +908,16 @@ public class Utilities {
 		}
 	}
 
-	public static int[] remove(int[] items, int item) {
-		int foundAtIndex = -1;
-		for (int i = 0; i < items.length; i++) {
-			if (items[i] == item) {
-				foundAtIndex = i;
-				break;
-			}
-		}
-		
-		if (foundAtIndex > -1) {
-			int[] returnArray = new int[items.length - 1];
-			for (int i = 0; i < foundAtIndex; i++) {
-				returnArray[i] = items[i];
-			}
-			for (int i = foundAtIndex + 1; i < items.length; i++) {
-				returnArray[i - 1] = items[i];
-			}
-			return returnArray;
-		} else {
-			return items;
-		}
-	}
+	public static <T> T[] remove(T[] items, T itemToRemove) {
+		List<T> result = new LinkedList<T>();
 
-	public static String[] remove(String[] items, String item) {
-		int foundAtIndex = -1;
-		for (int i = 0; i < items.length; i++) {
-			if (items[i] == item) {
-				foundAtIndex = i;
-				break;
-			}
-		}
-		
-		if (foundAtIndex > -1) {
-			String[] returnArray = new String[items.length - 1];
-			for (int i = 0; i < foundAtIndex; i++) {
-				returnArray[i] = items[i];
-			}
-			for (int i = foundAtIndex + 1; i < items.length; i++) {
-				returnArray[i - 1] = items[i];
-			}
-			return returnArray;
-		} else {
-			return items;
-		}
+	    for (T item : items) {
+	        if (!itemToRemove.equals(item)) {
+	            result.add(item);
+	        }
+	    }
+
+	    return result.toArray(items);
 	}
 
 	public static byte[] readFileToByteArray(File file) throws FileNotFoundException, IOException {

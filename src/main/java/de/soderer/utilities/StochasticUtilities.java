@@ -5,8 +5,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 public class StochasticUtilities {
 	public static <T> Collection<List<T>> createPermutations(@SuppressWarnings("unchecked") T... items) {
 		if (items == null || items.length == 0) {
@@ -22,7 +20,7 @@ public class StochasticUtilities {
 
 			for (T item : items) {
 				// Recursive call
-				for (List<T> subItem : createPermutations(ArrayUtils.removeElement(items, item))) {
+				for (List<T> subItem : createPermutations(Utilities.remove(items, item))) {
 					List<T> newItem = new LinkedList<T>();
 					newItem.add(item);
 					for (T part : subItem) {
