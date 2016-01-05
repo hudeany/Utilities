@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -383,6 +384,18 @@ public class ZipUtilities {
 			Utilities.closeQuietly(bufferedInputStream);
 			Utilities.closeQuietly(byteArrayOutputStream);
 			Utilities.closeQuietly((Closeable) sourceZipFile);
+		}
+	}
+	
+	public static String[] getZipFileEntries(File file) throws ZipException, IOException {
+		try (ZipFile zipFile = new ZipFile(file)) {
+			Enumeration<? extends ZipEntry> entries = zipFile.entries();
+			List <String> entryList = new ArrayList<String>();
+		    while (entries.hasMoreElements()){
+		        ZipEntry entry = entries.nextElement();
+		        entryList.add(entry.getName());
+		    }
+		    return entryList.toArray(new String[0]);
 		}
 	}
 }
