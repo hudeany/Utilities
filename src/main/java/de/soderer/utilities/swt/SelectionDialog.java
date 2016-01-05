@@ -24,13 +24,13 @@ public class SelectionDialog extends ModalDialog<String> {
 	private Table table;
 	private Button okButton;
 
-	public SelectionDialog(Shell shell, String title, String text, List<String> items) {   
+	public SelectionDialog(Shell shell, String title, String text, List<String> items) {
 		super(shell, SWT.RESIZE, title);
 
 		this.text = text;
 		this.items = items;
 	}
-	
+
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new FillLayout());
@@ -39,28 +39,28 @@ public class SelectionDialog extends ModalDialog<String> {
 		Composite composite = new Composite(shell, SWT.NONE);
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
-		
+
 		Label label = new Label(composite, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 		label.setText(text);
-	    
-	    table = new Table(composite, SWT.FILL);
-	    table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
-	    table.setHeaderVisible(false);
-	    table.setLinesVisible(true);
-	    table.addSelectionListener(new SelectionAdapter() {
+
+		table = new Table(composite, SWT.FILL);
+		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		table.setHeaderVisible(false);
+		table.setLinesVisible(true);
+		table.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				checkStatus();
 			}
 		});
-	    if (items != null && items.size() > 0) {
-	    	for (String itemText : items) {
-	    		TableItem tableItem = new TableItem(table, SWT.FILL);
-	    		tableItem.setText(itemText);
-	    	}
-	    	table.select(items.size() - 1);
-	    }
+		if (items != null && items.size() > 0) {
+			for (String itemText : items) {
+				TableItem tableItem = new TableItem(table, SWT.FILL);
+				tableItem.setText(itemText);
+			}
+			table.select(items.size() - 1);
+		}
 		table.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseDoubleClick(MouseEvent arg0) {
@@ -70,11 +70,11 @@ public class SelectionDialog extends ModalDialog<String> {
 				}
 			}
 		});
-	    table.pack();
-	    table.setRedraw(true);
-	    
-	    okButton = new Button(composite, SWT.PUSH);
-	    okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		table.pack();
+		table.setRedraw(true);
+
+		okButton = new Button(composite, SWT.PUSH);
+		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -85,18 +85,18 @@ public class SelectionDialog extends ModalDialog<String> {
 				getParent().close();
 			}
 		});
-		
-	    Button cancelButton = new Button(composite, SWT.PUSH);
-	    cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-	    cancelButton.setText(LangResources.get("cancel"));
-	    cancelButton.addSelectionListener(new SelectionAdapter() {
+
+		Button cancelButton = new Button(composite, SWT.PUSH);
+		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				getParent().close();
 			}
 		});
-	    
-	    checkStatus();
+
+		checkStatus();
 	}
 
 	private void checkStatus() {

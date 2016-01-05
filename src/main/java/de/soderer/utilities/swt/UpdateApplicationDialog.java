@@ -49,7 +49,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		this.trustedCertificates = trustedCertificates;
 	}
 
-	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl, boolean dailyUpdateCheck, X509Certificate[] trustedCertificates, File keystoreFile, char[] keystorePassword) throws Exception {
+	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl, boolean dailyUpdateCheck, X509Certificate[] trustedCertificates, File keystoreFile,
+			char[] keystorePassword) throws Exception {
 		super(shell, title);
 
 		this.text = text;
@@ -57,16 +58,17 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		this.dailyUpdateCheck = dailyUpdateCheck;
 		this.trustedCertificates = trustedCertificates;
 		this.keystoreFile = keystoreFile;
-		
+
 		if (keystoreFile != null) {
 			secureDataKeyStore = openKeyStore(shell, keystoreFile, keystorePassword);
 		}
 
 		if (secureDataKeyStore != null) {
-			storedDownloadCredentials = secureDataKeyStore.getEntry(SimpleCredentialsData.class, Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
+			storedDownloadCredentials = secureDataKeyStore.getEntry(SimpleCredentialsData.class,
+					Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
 		}
 	}
-	
+
 	@Override
 	protected Boolean getDefaultReturnValue() {
 		return false;
@@ -91,7 +93,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		dailyUpdateCheckCheckBox.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				dailyUpdateCheck = ((Button)e.widget).getSelection();
+				dailyUpdateCheck = ((Button) e.widget).getSelection();
 			}
 		});
 
@@ -135,7 +137,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 						if (!success) {
 							// download stopped by user
 							return;
-						} else if (trustedCertificates != null){
+						} else if (trustedCertificates != null) {
 							boolean isVerifiedJar = CryptographicUtilities.verifyJarSignature(downloadTempFile, trustedCertificates);
 							if (!isVerifiedJar) {
 								if (!showQuestion(LangResources.get("error.invalidOrNotTrustedFileSignature"), "yes", "no")) {
@@ -153,8 +155,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 						}
 					} catch (Exception e) {
 						if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
-							showMessage(LangResources.get("menu.updateFileDownload"), ((UserError)e.getCause()).getMessage());
-							if (((UserError)e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
+							showMessage(LangResources.get("menu.updateFileDownload"), ((UserError) e.getCause()).getMessage());
+							if (((UserError) e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
 								tryDownloadAgain = true;
 								storedDownloadCredentials = null;
 							} else {
@@ -171,11 +173,12 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
 
 					// Create Batchfile
-					FileUtils.write(batchFile, "@echo off\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath
-							+ "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n"
-							+ "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + ")\r\n" + ")\r\n" + ")\r\n" + "ren \"" + downloadTempFile.getAbsolutePath() + "\" \""
-							+ new File(jarFilePath).getName() + "\"\r\n" + "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n" + "java -jar \"" + jarFilePath + "\"\r\n" + "del \""
-							+ batchFile.getAbsolutePath() + "\"\r\n" + ")\r\n");
+					FileUtils.write(batchFile,
+							"@echo off\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n"
+									+ "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n"
+									+ "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + ")\r\n" + ")\r\n" + ")\r\n" + "ren \"" + downloadTempFile.getAbsolutePath() + "\" \""
+									+ new File(jarFilePath).getName() + "\"\r\n" + "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n" + "java -jar \"" + jarFilePath + "\"\r\n"
+									+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n" + ")\r\n");
 
 					Runtime.getRuntime().exec("cmd /c start /B " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
@@ -281,20 +284,23 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				if (storedCredentialsChanged) {
 					if (secureDataKeyStore != null) {
 						if (storedDownloadCredentials != null) {
-							storedDownloadCredentials.setEntryName(Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
+							storedDownloadCredentials.setEntryName(
+									Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
 							secureDataKeyStore.addEntry(storedDownloadCredentials);
 						} else {
-							secureDataKeyStore.remove(SimpleCredentialsData.class, Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
+							secureDataKeyStore.remove(SimpleCredentialsData.class,
+									Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
 						}
 						keyStorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 						secureDataKeyStore.saveKeyStore(keyStorePassword);
 					} else {
 						if (storedDownloadCredentials != null) {
 							secureDataKeyStore = new SecureDataKeyStore(keystoreFile);
-							
-							storedDownloadCredentials.setEntryName(Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
+
+							storedDownloadCredentials.setEntryName(
+									Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
 							secureDataKeyStore.addEntry(storedDownloadCredentials);
-	
+
 							keyStorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 							secureDataKeyStore.saveKeyStore(keyStorePassword);
 						}
@@ -306,7 +312,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			}
 		} catch (Exception e) {
 			if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
-				throw (UserError)e.getCause();
+				throw (UserError) e.getCause();
 			} else {
 				throw e;
 			}

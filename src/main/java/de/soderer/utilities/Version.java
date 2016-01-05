@@ -7,37 +7,42 @@ import java.util.regex.Pattern;
  * The Class Version.
  */
 public class Version implements Comparable<Version> {
-	
+
 	/** The versionpattern. */
 	private static Pattern VERSIONPATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)$");
-	
+
 	/** The major version number. */
 	private int majorVersionNumber;
-	
+
 	/** The minor version number. */
 	private int minorVersionNumber;
-	
+
 	/** The micro version number. */
 	private int microVersionNumber;
-	
+
 	/**
 	 * The Constructor.
 	 *
-	 * @param majorVersionNumber the major version number
-	 * @param minorVersionNumber the minor version number
-	 * @param microVersionNumber the micro version number
+	 * @param majorVersionNumber
+	 *            the major version number
+	 * @param minorVersionNumber
+	 *            the minor version number
+	 * @param microVersionNumber
+	 *            the micro version number
 	 */
 	public Version(int majorVersionNumber, int minorVersionNumber, int microVersionNumber) {
 		this.majorVersionNumber = majorVersionNumber;
 		this.minorVersionNumber = minorVersionNumber;
 		this.microVersionNumber = microVersionNumber;
 	}
-	
+
 	/**
 	 * The Constructor.
 	 *
-	 * @param versionString the version string
-	 * @throws Exception the exception
+	 * @param versionString
+	 *            the version string
+	 * @throws Exception
+	 *             the exception
 	 */
 	public Version(String versionString) throws Exception {
 		Matcher matcher = VERSIONPATTERN.matcher(versionString);
@@ -76,19 +81,22 @@ public class Version implements Comparable<Version> {
 	public int getMicroVersionNumber() {
 		return microVersionNumber;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
 		return new StringBuilder().append(majorVersionNumber).append(".").append(minorVersionNumber).append(".").append(microVersionNumber).toString();
 	}
-	
+
 	/**
 	 * Gets the first full version from a text.
 	 *
-	 * @param data the data
+	 * @param data
+	 *            the data
 	 * @return the first full version from a text
 	 */
 	public static Version getFirstFullVersionNumberFromText(String data) {
@@ -110,10 +118,9 @@ public class Version implements Comparable<Version> {
 	}
 
 	/**
-	 * @returns
-	 * 	+1: thisVersion > otherVersion<br />
-	 * 	 0: thisVersion = otherVersion<br />
-	 * 	-1: thisVersion < otherVersion
+	 * @returns +1: thisVersion > otherVersion<br />
+	 *          0: thisVersion = otherVersion<br />
+	 *          -1: thisVersion < otherVersion
 	 */
 	@Override
 	public int compareTo(Version otherVersion) {

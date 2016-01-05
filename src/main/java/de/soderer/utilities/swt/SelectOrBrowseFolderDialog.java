@@ -22,36 +22,36 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 	private Combo comboBox;
 	private Button okButton;
 
-	public SelectOrBrowseFolderDialog(Shell shell, String title, String text, String browseButtonText, List<String> items) {   
+	public SelectOrBrowseFolderDialog(Shell shell, String title, String text, String browseButtonText, List<String> items) {
 		super(shell, SWT.RESIZE, title);
 
 		this.text = text;
 		this.browseButtonText = browseButtonText;
 		this.items = items;
 	}
-	
+
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(4, true));
 		shell.setSize(475, 120);
 		shell.setMinimumSize(475, 120);
-		
+
 		Label label = new Label(shell, SWT.FILL);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 4, 1));
 		label.setText(text);
-		
+
 		comboBox = new Combo(shell, SWT.FILL | SWT.READ_ONLY);
 		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1));
 		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
-	    if (items != null && items.size() > 0) {
-		    comboBox.setItems(items.toArray(new String[items.size()]));
-	    	comboBox.select(comboBox.getItemCount() - 1);
-	    }
-	    
-	    Button browseButton = new Button(shell, SWT.PUSH);
-	    browseButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, false, false, 1, 1));
-	    browseButton.setText(browseButtonText);
-	    browseButton.addSelectionListener(new SelectionAdapter() {
+		if (items != null && items.size() > 0) {
+			comboBox.setItems(items.toArray(new String[items.size()]));
+			comboBox.select(comboBox.getItemCount() - 1);
+		}
+
+		Button browseButton = new Button(shell, SWT.PUSH);
+		browseButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, false, false, 1, 1));
+		browseButton.setText(browseButtonText);
+		browseButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				DirectoryDialog dialog = new DirectoryDialog(getParent(), SWT.OPEN);
@@ -61,30 +61,30 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 					String[] newItems;
 					if (items != null && items.size() > 0) {
 						newItems = new String[items.size() + 1];
-						for (int i= 0; i < items.size(); i++) {
+						for (int i = 0; i < items.size(); i++) {
 							newItems[i] = items.get(i).toString();
 						}
 						newItems[items.size()] = filePath;
-				    } else {
-				    	newItems = new String[]{filePath};
-				    }
-				    comboBox.setItems(newItems);
-			    	comboBox.select(comboBox.getItemCount() - 1);
-			    	okButton.setEnabled(true);
+					} else {
+						newItems = new String[] { filePath };
+					}
+					comboBox.setItems(newItems);
+					comboBox.select(comboBox.getItemCount() - 1);
+					okButton.setEnabled(true);
 				}
 			}
 		});
-	    
-	    okButton = new Button(shell, SWT.PUSH);
-	    okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
+
+		okButton = new Button(shell, SWT.PUSH);
+		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
 		okButton.setText(LangResources.get("ok"));
 		okButton.setEnabled(comboBox.getItemCount() > 0);
 		okButton.addSelectionListener(new OkButtonSelectionListener());
-		
-	    Button cancelButton = new Button(shell, SWT.PUSH);
-	    cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
-	    cancelButton.setText(LangResources.get("cancel"));
-	    cancelButton.addSelectionListener(new CancelButtonSelectionListener());
+
+		Button cancelButton = new Button(shell, SWT.PUSH);
+		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
+		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.addSelectionListener(new CancelButtonSelectionListener());
 	}
 
 	private class ComboBoxButtonSelectionListener extends SelectionAdapter {

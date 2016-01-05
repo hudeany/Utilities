@@ -114,7 +114,8 @@ public class CryptographicUtilities {
 	}
 
 	@SuppressWarnings("deprecation")
-	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerName, String subjectName, Date validFrom, Date validUntil, String signatureMethod) throws Exception {
+	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerName, String subjectName, Date validFrom, Date validUntil, String signatureMethod)
+			throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
@@ -231,18 +232,17 @@ public class CryptographicUtilities {
 	public static PublicKey getPublicKeyFromKeyPair(AsymmetricCipherKeyPair keyPair) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		RSAKeyParameters publicKey = (RSAKeyParameters)keyPair.getPublic();
+		RSAKeyParameters publicKey = (RSAKeyParameters) keyPair.getPublic();
 		return KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(publicKey.getModulus(), publicKey.getExponent()));
 	}
 
 	public static PrivateKey getPrivateKeyFromKeyPair(AsymmetricCipherKeyPair keyPair) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		RSAPrivateCrtKeyParameters privateKey = (RSAPrivateCrtKeyParameters)keyPair.getPrivate();
-		RSAKeyParameters publicKey = (RSAKeyParameters)keyPair.getPublic();
-		return KeyFactory.getInstance("RSA").generatePrivate(
-				new RSAPrivateCrtKeySpec(privateKey.getModulus(), publicKey.getExponent(), privateKey.getExponent(), privateKey.getP(), privateKey.getQ(), privateKey.getDP(), privateKey.getDQ(),
-						privateKey.getQInv()));
+		RSAPrivateCrtKeyParameters privateKey = (RSAPrivateCrtKeyParameters) keyPair.getPrivate();
+		RSAKeyParameters publicKey = (RSAKeyParameters) keyPair.getPublic();
+		return KeyFactory.getInstance("RSA").generatePrivate(new RSAPrivateCrtKeySpec(privateKey.getModulus(), publicKey.getExponent(), privateKey.getExponent(), privateKey.getP(), privateKey.getQ(),
+				privateKey.getDP(), privateKey.getDQ(), privateKey.getQInv()));
 	}
 
 	/**
@@ -256,10 +256,10 @@ public class CryptographicUtilities {
 			Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof KeyPair) {
-				KeyPair keyPair = (KeyPair)readObject;
+				KeyPair keyPair = (KeyPair) readObject;
 				return keyPair.getPrivate();
 			} else if (readObject instanceof PrivateKey) {
-				return (PrivateKey)readObject;
+				return (PrivateKey) readObject;
 			} else {
 				return null;
 			}
@@ -279,10 +279,10 @@ public class CryptographicUtilities {
 			Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof KeyPair) {
-				KeyPair keyPair = (KeyPair)readObject;
+				KeyPair keyPair = (KeyPair) readObject;
 				return keyPair.getPublic();
 			} else if (readObject instanceof PublicKey) {
-				return (PublicKey)readObject;
+				return (PublicKey) readObject;
 			} else {
 				return null;
 			}
@@ -302,7 +302,7 @@ public class CryptographicUtilities {
 			Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof X509Certificate) {
-				return (X509Certificate)readObject;
+				return (X509Certificate) readObject;
 			} else {
 				return null;
 			}
@@ -386,7 +386,7 @@ public class CryptographicUtilities {
 	public static byte[] stretchPassword(char[] password, int keyLength, byte[] salt) {
 		PBEParametersGenerator generator = new PKCS5S2ParametersGenerator();
 		generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password), salt, 1000);
-		KeyParameter params = (KeyParameter)generator.generateDerivedParameters(keyLength);
+		KeyParameter params = (KeyParameter) generator.generateDerivedParameters(keyLength);
 		return params.getKey();
 	}
 
@@ -475,15 +475,15 @@ public class CryptographicUtilities {
 		byte[] lastArray = mutableData[mutableData.length - 1];
 		for (int i = 0; i < immutableData[0].length; i++) {
 			lastArray[i] = 0;
-			for (int j = 0; j < immutableData.length; j++) {
-				lastArray[i] = (byte)(lastArray[i] ^ immutableData[j][i]);
+			for (byte[] element : immutableData) {
+				lastArray[i] = (byte) (lastArray[i] ^ element[i]);
 			}
 			for (int j = 0; j < mutableData.length - 1; j++) {
-				lastArray[i] = (byte)(lastArray[i] ^ mutableData[j][i]);
+				lastArray[i] = (byte) (lastArray[i] ^ mutableData[j][i]);
 			}
 		}
 	}
-	
+
 	public static Set<String> getJarSignatureNames(File jarFile) throws Exception {
 		Set<String> returnData = new HashSet<String>();
 		JarFile jar = null;
@@ -491,18 +491,18 @@ public class CryptographicUtilities {
 			jar = new JarFile(jarFile);
 			Manifest manifest = jar.getManifest();
 			if (manifest == null) {
-        		returnData.add("Has no MANIFEST.MF file");
+				returnData.add("Has no MANIFEST.MF file");
 				return returnData;
 			}
-			
-	        byte[] buffer = new byte[4096];
-	        Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
-	        List<JarEntry> jarEntries = new ArrayList<JarEntry>();
+
+			byte[] buffer = new byte[4096];
+			Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
+			List<JarEntry> jarEntries = new ArrayList<JarEntry>();
 
 			while (jarEntriesEnumerator.hasMoreElements()) {
-				JarEntry jarEntry = (JarEntry) jarEntriesEnumerator.nextElement();
+				JarEntry jarEntry = jarEntriesEnumerator.nextElement();
 				jarEntries.add(jarEntry);
-				
+
 				InputStream jarEntryInputStream = null;
 				try {
 					jarEntryInputStream = jar.getInputStream(jarEntry);
@@ -513,46 +513,46 @@ public class CryptographicUtilities {
 					Utilities.closeQuietly(jarEntryInputStream);
 				}
 			}
-			
-		    for (JarEntry jarEntry : jarEntries) {
-		        if (!jarEntry.isDirectory()) {
-		        	// Every file must be signed, except for files in META-INF
-			        Certificate[] certs = jarEntry.getCertificates();
-			        if ((certs == null) || (certs.length == 0)) {
-			            if (!jarEntry.getName().startsWith("META-INF")) {
-			        		returnData.add("Contains unsigned files");
-			            }
-			        } else {
-				        for (Certificate cert : certs) {
-				        	if (cert instanceof X509Certificate) {
-				        		X509Certificate certificate = (X509Certificate) cert;
-				        		if (certificate.getBasicConstraints() == -1) {
-				        			// Certificate is not a CA certificate
-				        			returnData.add(getCnFromCertificate(certificate));
-				        		} else {
-				        			// Certificate is a CA certificate
-				        			returnData.add("CA: " + getCnFromCertificate(certificate));
-				        		}
-				        	} else {
-				        		returnData.add("Unknown type of certificate");
-				        	}
-				        }
-			        }
-		        }
-		    }
-		
-		    return returnData;
+
+			for (JarEntry jarEntry : jarEntries) {
+				if (!jarEntry.isDirectory()) {
+					// Every file must be signed, except for files in META-INF
+					Certificate[] certs = jarEntry.getCertificates();
+					if ((certs == null) || (certs.length == 0)) {
+						if (!jarEntry.getName().startsWith("META-INF")) {
+							returnData.add("Contains unsigned files");
+						}
+					} else {
+						for (Certificate cert : certs) {
+							if (cert instanceof X509Certificate) {
+								X509Certificate certificate = (X509Certificate) cert;
+								if (certificate.getBasicConstraints() == -1) {
+									// Certificate is not a CA certificate
+									returnData.add(getCnFromCertificate(certificate));
+								} else {
+									// Certificate is a CA certificate
+									returnData.add("CA: " + getCnFromCertificate(certificate));
+								}
+							} else {
+								returnData.add("Unknown type of certificate");
+							}
+						}
+					}
+				}
+			}
+
+			return returnData;
 		} finally {
 			Utilities.closeQuietly(jar);
 		}
 	}
-	
+
 	@SuppressWarnings("resource")
 	public static boolean verifyJarSignature(File jarFile, X509Certificate[] trustedCerts) throws Exception {
 		if (trustedCerts == null || trustedCerts.length == 0) {
 			return false;
 		}
-		
+
 		JarFile jar = null;
 		try {
 			jar = new JarFile(jarFile);
@@ -560,15 +560,15 @@ public class CryptographicUtilities {
 			if (manifest == null) {
 				throw new SecurityException("The jar file has no manifest, which contains the file signatures");
 			}
-			
-	        byte[] buffer = new byte[4096];
-	        Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
-	        List<JarEntry> jarEntries = new ArrayList<JarEntry>();
+
+			byte[] buffer = new byte[4096];
+			Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
+			List<JarEntry> jarEntries = new ArrayList<JarEntry>();
 
 			while (jarEntriesEnumerator.hasMoreElements()) {
-				JarEntry jarEntry = (JarEntry) jarEntriesEnumerator.nextElement();
+				JarEntry jarEntry = jarEntriesEnumerator.nextElement();
 				jarEntries.add(jarEntry);
-				
+
 				InputStream jarEntryInputStream = null;
 				try {
 					jarEntryInputStream = jar.getInputStream(jarEntry);
@@ -579,33 +579,33 @@ public class CryptographicUtilities {
 					Utilities.closeQuietly(jarEntryInputStream);
 				}
 			}
-			
-		    for (JarEntry jarEntry : jarEntries) {
-		        if (!jarEntry.isDirectory()) {
-			        // Every file must be signed, except for files in META-INF
-			        Certificate[] certs = jarEntry.getCertificates();
-			        if ((certs == null) || (certs.length == 0)) {
-			            if (!jarEntry.getName().startsWith("META-INF")) {
-			                throw new SecurityException("The jar file contains unsigned files.");
-			            }
-			        } else {
-			            boolean isSignedByTrustedCert = false;
-			
-			            for (Certificate chainRootCertificate : certs) {
-			                if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCerts)) {
-			                    isSignedByTrustedCert = true;
-			                    break;
-			                }
-			            }
-			
-			            if (!isSignedByTrustedCert) {
-			                throw new SecurityException("The jar file contains untrusted signed files");
-			            }
-			        }
-		        }
-		    }
-		
-		    return true;
+
+			for (JarEntry jarEntry : jarEntries) {
+				if (!jarEntry.isDirectory()) {
+					// Every file must be signed, except for files in META-INF
+					Certificate[] certs = jarEntry.getCertificates();
+					if ((certs == null) || (certs.length == 0)) {
+						if (!jarEntry.getName().startsWith("META-INF")) {
+							throw new SecurityException("The jar file contains unsigned files.");
+						}
+					} else {
+						boolean isSignedByTrustedCert = false;
+
+						for (Certificate chainRootCertificate : certs) {
+							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCerts)) {
+								isSignedByTrustedCert = true;
+								break;
+							}
+						}
+
+						if (!isSignedByTrustedCert) {
+							throw new SecurityException("The jar file contains untrusted signed files");
+						}
+					}
+				}
+			}
+
+			return true;
 		} catch (Exception e) {
 			return false;
 		} finally {
@@ -613,7 +613,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-    public static boolean verifyChainOfTrust(X509Certificate cert, X509Certificate[] trustedCerts) throws Exception {
+	public static boolean verifyChainOfTrust(X509Certificate cert, X509Certificate[] trustedCerts) throws Exception {
 		CertPathBuilder certifier = CertPathBuilder.getInstance("PKIX");
 		X509CertSelector targetConstraints = new X509CertSelector();
 		targetConstraints.setCertificate(cert);
@@ -629,27 +629,27 @@ public class CryptographicUtilities {
 			PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) certifier.build(params);
 			return result != null;
 		} catch (Exception cpbe) {
-	        return false;
+			return false;
 		}
-    }
+	}
 
-    public static X509Certificate[] getChainRootCertificates(Certificate[] certs) {
-        Vector<X509Certificate> result = new Vector<X509Certificate>();
-        for (int i = 0; i < certs.length - 1; i++) {
-            if (!((X509Certificate) certs[i + 1]).getSubjectDN().equals(((X509Certificate) certs[i]).getIssuerDN())) {
-                result.addElement((X509Certificate) certs[i]);
-            }
-        }
-        // The final entry in the certs array is always a root certificate
-        result.addElement((X509Certificate) certs[certs.length - 1]);
-        X509Certificate[] returnValue = new X509Certificate[result.size()];
-        result.copyInto(returnValue);
-        return returnValue;
-    }
+	public static X509Certificate[] getChainRootCertificates(Certificate[] certs) {
+		Vector<X509Certificate> result = new Vector<X509Certificate>();
+		for (int i = 0; i < certs.length - 1; i++) {
+			if (!((X509Certificate) certs[i + 1]).getSubjectDN().equals(((X509Certificate) certs[i]).getIssuerDN())) {
+				result.addElement((X509Certificate) certs[i]);
+			}
+		}
+		// The final entry in the certs array is always a root certificate
+		result.addElement((X509Certificate) certs[certs.length - 1]);
+		X509Certificate[] returnValue = new X509Certificate[result.size()];
+		result.copyInto(returnValue);
+		return returnValue;
+	}
 
-    public static X509Certificate[] loadCertificatesFromPemFile(File pemFile) throws Exception {
+	public static X509Certificate[] loadCertificatesFromPemFile(File pemFile) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-		
+
 		PEMReader pemReader = null;
 		try {
 			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
@@ -664,11 +664,11 @@ public class CryptographicUtilities {
 		} finally {
 			Utilities.closeQuietly(pemReader);
 		}
-    }
+	}
 
-    public static X509Certificate[] loadCertificatesFromPemStream(InputStream pemInputStream) throws Exception {
+	public static X509Certificate[] loadCertificatesFromPemStream(InputStream pemInputStream) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-		
+
 		PEMReader pemReader = null;
 		try {
 			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
@@ -683,36 +683,36 @@ public class CryptographicUtilities {
 		} finally {
 			Utilities.closeQuietly(pemReader);
 		}
-    }
-    
-    public static String getCnFromCertificate(X509Certificate certificate) throws InvalidNameException {
-        Principal principal = certificate.getSubjectDN();
-        String dn = principal.getName();
-        LdapName ln = new LdapName(dn);
+	}
 
-        for (Rdn rdn : ln.getRdns()) {
-            if (rdn.getType().equalsIgnoreCase("CN")) {
-                return (String) rdn.getValue();
-            }
-        }
-        
-        return null;
-    }
-    
-    public static boolean checkForCaCertificate(X509Certificate certificate) {
-        return certificate.getBasicConstraints() != 1;
-    }
-    
-    public static String getMd5FingerPrint(X509Certificate certificate) throws InvalidNameException, CertificateEncodingException {
-        return DigestUtils.md5Hex(certificate.getEncoded()).toUpperCase();
-    }
-    
-    public static String getSha1FingerPrint(X509Certificate certificate) throws InvalidNameException, CertificateEncodingException {
-        return DigestUtils.sha1Hex(certificate.getEncoded()).toUpperCase();
-    }
-    
-    public static int getKeySize(X509Certificate certificate) {
-    	RSAKey rsaKey = (RSAKey) certificate.getPublicKey();
-    	return rsaKey.getModulus().bitLength(); 
-    }
+	public static String getCnFromCertificate(X509Certificate certificate) throws InvalidNameException {
+		Principal principal = certificate.getSubjectDN();
+		String dn = principal.getName();
+		LdapName ln = new LdapName(dn);
+
+		for (Rdn rdn : ln.getRdns()) {
+			if (rdn.getType().equalsIgnoreCase("CN")) {
+				return (String) rdn.getValue();
+			}
+		}
+
+		return null;
+	}
+
+	public static boolean checkForCaCertificate(X509Certificate certificate) {
+		return certificate.getBasicConstraints() != 1;
+	}
+
+	public static String getMd5FingerPrint(X509Certificate certificate) throws InvalidNameException, CertificateEncodingException {
+		return DigestUtils.md5Hex(certificate.getEncoded()).toUpperCase();
+	}
+
+	public static String getSha1FingerPrint(X509Certificate certificate) throws InvalidNameException, CertificateEncodingException {
+		return DigestUtils.sha1Hex(certificate.getEncoded()).toUpperCase();
+	}
+
+	public static int getKeySize(X509Certificate certificate) {
+		RSAKey rsaKey = (RSAKey) certificate.getPublicKey();
+		return rsaKey.getModulus().bitLength();
+	}
 }

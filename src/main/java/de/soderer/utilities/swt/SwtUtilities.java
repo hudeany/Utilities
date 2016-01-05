@@ -28,10 +28,10 @@ import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class SwtUtilities {
 	public static final int BOTTOM_RIGHT_ENTER_KEY = 16777296;
-	
+
 	public static CaseInsensitiveMap<Integer> getSwtHandlesStatus(Display display) {
 		DeviceData swtDeviceData = display.getDeviceData();
-		
+
 		int colors = 0;
 		int cursors = 0;
 		int fonts = 0;
@@ -69,9 +69,9 @@ public class SwtUtilities {
 				others++;
 			}
 		}
-		
+
 		CaseInsensitiveMap<Integer> result = new CaseInsensitiveMap<Integer>();
-		
+
 		result.put("Colors", colors);
 		result.put("Cursors", cursors);
 		result.put("Fonts", fonts);
@@ -83,23 +83,23 @@ public class SwtUtilities {
 		result.put("TextLayouts", textLayouts);
 		result.put("Transforms", transforms);
 		result.put("Others", others);
-		
+
 		return result;
 	}
-	
+
 	public static void expandTree(Tree tree, boolean expandValue) {
 		for (TreeItem subItem : tree.getItems()) {
 			expandTree(subItem, expandValue);
 		}
 	}
-	
+
 	public static void expandTree(TreeItem item, boolean expandValue) {
 		item.setExpanded(expandValue);
 		for (TreeItem subItem : item.getItems()) {
 			expandTree(subItem, expandValue);
 		}
 	}
-	
+
 	public static GridLayout createNoMarginGridLayout(int columns, boolean equalWidth) {
 		GridLayout gridLayout = new GridLayout(columns, equalWidth);
 		gridLayout.marginWidth = 0;
@@ -109,11 +109,11 @@ public class SwtUtilities {
 
 	public static void addMainButtonComposite(Shell shell, ModalDialog<Boolean> parentDialog) {
 		final ModalDialog<Boolean> finalParentDialog = parentDialog;
-		
+
 		Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
-		
+
 		Button okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
@@ -124,7 +124,7 @@ public class SwtUtilities {
 				finalParentDialog.getParent().close();
 			}
 		});
-	    
+
 		Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));

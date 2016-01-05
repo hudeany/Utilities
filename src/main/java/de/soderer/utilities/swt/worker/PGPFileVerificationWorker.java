@@ -26,7 +26,7 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 	public PGPFileVerificationWorker(ProgressShowingModalDialog<?> parent, InputStream dataToVerify, PGPPublicKey publicKey, InputStream signatureData) throws IOException {
 		this(parent, dataToVerify, publicKey, signatureData, null);
 	}
-	
+
 	public PGPFileVerificationWorker(ProgressShowingModalDialog<?> parent, InputStream dataToVerify, PGPPublicKey publicKey, InputStream signatureData, String signatureMethod) throws IOException {
 		super(parent);
 		this.dataToVerify = dataToVerify;
@@ -37,10 +37,10 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
-		
-    	itemsToDo = dataToVerify.available();
+
+		itemsToDo = dataToVerify.available();
 	}
-	
+
 	@Override
 	public void run() {
 		startTime = new Date();
@@ -48,25 +48,25 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 		itemsDone = 0L;
 		result = null;
 		showProgress();
-		
+
 		try {
 			PGPObjectFactory pgpFact = new PGPObjectFactory(PGPUtil.getDecoderStream(signatureData));
 			PGPSignatureList p3;
 
 			Object o = pgpFact.nextObject();
 			if (o instanceof PGPCompressedData) {
-				PGPCompressedData c1 = (PGPCompressedData)o;
+				PGPCompressedData c1 = (PGPCompressedData) o;
 				pgpFact = new PGPObjectFactory(c1.getDataStream());
-				p3 = (PGPSignatureList)pgpFact.nextObject();
+				p3 = (PGPSignatureList) pgpFact.nextObject();
 			} else {
-				p3 = (PGPSignatureList)o;
+				p3 = (PGPSignatureList) o;
 			}
 
 			PGPSignature signature = p3.get(0);
 			signature.initVerify(publicKey, "BC");
 
 			dataToVerify = new BufferedInputStream(dataToVerify);
-			
+
 			byte[] buffer = new byte[4096];
 			int bytesRead;
 			while ((bytesRead = dataToVerify.read(buffer)) >= 0) {

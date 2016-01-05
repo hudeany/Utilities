@@ -154,11 +154,11 @@ public class DbUtilities {
 
 		Connection connection = null;
 		PreparedStatement preparedStatement = null;
-        boolean previousAutoCommit = true;
+		boolean previousAutoCommit = true;
 
 		try {
 			connection = dataSource.getConnection();
-        	previousAutoCommit = connection.getAutoCommit();
+			previousAutoCommit = connection.getAutoCommit();
 			connection.setAutoCommit(false);
 
 			checkTableAndColumnsExist(connection, tableName, tableColumns, true);
@@ -186,7 +186,7 @@ public class DbUtilities {
 					preparedStatement.clearParameters();
 					for (int parameterIndex = 0; parameterIndex < dataSet.length; parameterIndex++) {
 						if (dataSet[parameterIndex].getClass() == Date.class) {
-							preparedStatement.setObject(parameterIndex + 1, new java.sql.Date(((Date)dataSet[parameterIndex]).getTime()));
+							preparedStatement.setObject(parameterIndex + 1, new java.sql.Date(((Date) dataSet[parameterIndex]).getTime()));
 						} else {
 							preparedStatement.setObject(parameterIndex + 1, dataSet[parameterIndex]);
 						}
@@ -204,8 +204,8 @@ public class DbUtilities {
 						} catch (BatchUpdateException bue) {
 							if (commitOnFullSuccessOnly) {
 								connection.rollback();
-								throw new Exception("Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": "
-										+ bue.getMessage());
+								throw new Exception(
+										"Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": " + bue.getMessage());
 							} else {
 								connection.rollback();
 								insertDataInTable(datasetIndex - currentUncommitedLines.size(), connection, preparedStatement, tableColumns, currentUncommitedLines, notInsertedData);
@@ -251,14 +251,14 @@ public class DbUtilities {
 			if (preparedStatement != null) {
 				preparedStatement.close();
 			}
-            
+
 			if (connection != null) {
-	            try {
+				try {
 					connection.setAutoCommit(previousAutoCommit);
 				} catch (SQLException e) {
 					// fo nothing
 				}
-	            
+
 				connection.rollback();
 				connection.close();
 			}
@@ -341,7 +341,7 @@ public class DbUtilities {
 		}
 
 		Connection connection = null;
-        boolean previousAutoCommit = true;
+		boolean previousAutoCommit = true;
 		PreparedStatement preparedStatement = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -429,7 +429,8 @@ public class DbUtilities {
 						} catch (BatchUpdateException bue) {
 							if (commitOnFullSuccessOnly) {
 								connection.rollback();
-								throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
+								throw new Exception(
+										"Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
 							} else {
 								connection.rollback();
 								insertCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDataFormats, currentUncommitedLines,
@@ -495,12 +496,12 @@ public class DbUtilities {
 			}
 
 			if (connection != null) {
-	            try {
+				try {
 					connection.setAutoCommit(previousAutoCommit);
 				} catch (SQLException e) {
 					// fo nothing
 				}
-	            
+
 				connection.rollback();
 				connection.close();
 			}
@@ -669,7 +670,7 @@ public class DbUtilities {
 				callableStatement = connection.prepareCall("{call " + procedureName + "(" + TextUtilities.repeatString("?", parameters.length, ", ") + ")}");
 				for (int i = 0; i < parameters.length; i++) {
 					if (parameters[i].getClass() == Date.class) {
-						parameters[i] = new java.sql.Date(((Date)parameters[i]).getTime());
+						parameters[i] = new java.sql.Date(((Date) parameters[i]).getTime());
 					}
 				}
 				for (int i = 0; i < parameters.length; i++) {
@@ -1307,7 +1308,7 @@ public class DbUtilities {
 			return value.replace("'", "''");
 		}
 	}
-	
+
 	public static boolean checkOracleTablespaceExists(DataSource dataSource, String tablespaceName) {
 		Connection connection = null;
 		try {
@@ -1318,26 +1319,26 @@ public class DbUtilities {
 		} finally {
 			closeQuietly(connection);
 		}
-    }
-	
+	}
+
 	/**
 	 * Check if oracle tablespace exists
-	 * 
+	 *
 	 * @param connection
 	 * @param tablespaceName
 	 * @return
 	 */
 	public static boolean checkOracleTablespaceExists(Connection connection, String tablespaceName) {
 		if (DbUtilities.checkDbVendorIsOracle(connection) && tablespaceName != null) {
-	        PreparedStatement statement = null;
+			PreparedStatement statement = null;
 			ResultSet resultSet = null;
-	
+
 			try {
 				statement = connection.prepareStatement("SELECT COUNT(*) FROM dba_tablespaces WHERE LOWER(tablespace_name) = ?");
 				statement.setString(1, tablespaceName.toLowerCase());
-	
+
 				resultSet = statement.executeQuery();
-				
+
 				return resultSet.getInt(1) > 0;
 			} catch (Exception e) {
 				throw new RuntimeException("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
@@ -1350,7 +1351,7 @@ public class DbUtilities {
 		} else {
 			return false;
 		}
-    }
+	}
 
 	public static String getPrimaryKeyColumn(DataSource dataSource, String tableName) {
 		Connection connection = null;
@@ -1362,7 +1363,7 @@ public class DbUtilities {
 		} finally {
 			closeQuietly(connection);
 		}
-    }
+	}
 
 	public static String getPrimaryKeyColumn(Connection connection, String tableName) {
 		if (Utilities.isBlank(tableName)) {

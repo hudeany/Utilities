@@ -37,7 +37,7 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 
 	/**
 	 * Decrypt file using RSA
-	 * 
+	 *
 	 * @param parent
 	 * @param fileToDecrypt
 	 * @param decryptedFile
@@ -46,10 +46,10 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 	public FileDecryptionWorker(WorkerParentSimple parent, File fileToDecrypt, File decryptedFile, PrivateKey privateKey) {
 		this(parent, fileToDecrypt, decryptedFile, privateKey, null, true);
 	}
-	
+
 	/**
 	 * Decrypt file using RSA
-	 * 
+	 *
 	 * @param parent
 	 * @param fileToDecrypt
 	 * @param decryptedFile
@@ -64,17 +64,17 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 		this.privateKey = privateKey;
 		this.decryptionMethod = decryptionMethod;
 		this.unzipAfterDecryption = unzipAfterDecryption;
-		
+
 		if (Utilities.isBlank(this.decryptionMethod)) {
 			this.decryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD;
 		}
-		
-    	itemsToDo = fileToDecrypt.length();
+
+		itemsToDo = fileToDecrypt.length();
 	}
 
 	/**
 	 * Decrypt file using AES
-	 * 
+	 *
 	 * @param parent
 	 * @param fileToDecrypt
 	 * @param decryptedFile
@@ -83,10 +83,10 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 	public FileDecryptionWorker(ProgressShowingModalDialog<?> parent, File fileToDecrypt, File decryptedFile, char[] password) {
 		this(parent, fileToDecrypt, decryptedFile, password, null, null, null, true);
 	}
-	
+
 	/**
 	 * Decrypt file using AES
-	 * 
+	 *
 	 * @param parent
 	 * @param fileToDecrypt
 	 * @param decryptedFile
@@ -96,28 +96,29 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 	 * @param initalizationVector
 	 * @param unzipAfterDecryption
 	 */
-	public FileDecryptionWorker(ProgressShowingModalDialog<?> parent, File fileToDecrypt, File decryptedFile, char[] password, String decryptionMethod, byte[] salt, byte[] initalizationVector, boolean unzipAfterDecryption) {
+	public FileDecryptionWorker(ProgressShowingModalDialog<?> parent, File fileToDecrypt, File decryptedFile, char[] password, String decryptionMethod, byte[] salt, byte[] initalizationVector,
+			boolean unzipAfterDecryption) {
 		super(parent);
 		this.fileToDecrypt = fileToDecrypt;
 		this.decryptedFile = decryptedFile;
 		this.password = password;
 		this.decryptionMethod = decryptionMethod;
 		this.salt = salt;
-		this.initializationVector = initalizationVector;
+		initializationVector = initalizationVector;
 		this.unzipAfterDecryption = unzipAfterDecryption;
-		
+
 		if (Utilities.isBlank(this.decryptionMethod)) {
 			this.decryptionMethod = CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD;
 		}
-		
+
 		if (this.salt == null) {
 			this.salt = CryptographicUtilities.DEFAULT_SALT;
 		}
-		
-		if (this.initializationVector == null) {
-			this.initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
+
+		if (initializationVector == null) {
+			initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
 		}
-		
+
 		itemsToDo = fileToDecrypt.length();
 	}
 
@@ -128,15 +129,15 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 		itemsDone = 0L;
 		result = null;
 		showProgress();
-		
+
 		try {
 			OutputStream outputStream = null;
 			InputStream inputStream = null;
 			try {
 				Security.addProvider(new BouncyCastleProvider());
-				
+
 				outputStream = new BufferedOutputStream(new FileOutputStream(decryptedFile));
-				
+
 				Cipher decryptCipher = Cipher.getInstance(decryptionMethod, "BC");
 				if (privateKey != null) {
 					decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
@@ -146,12 +147,12 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 					decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 				}
 				inputStream = new CipherInputStream(new BufferedInputStream(new FileInputStream(fileToDecrypt)), decryptCipher);
-				
+
 				if (unzipAfterDecryption) {
 					inputStream = new ZipInputStream(inputStream);
 					((ZipInputStream) inputStream).getNextEntry();
 				}
-				
+
 				byte[] buffer = new byte[4096];
 				int bytesRead;
 				while ((bytesRead = inputStream.read(buffer)) >= 0) {
@@ -169,7 +170,7 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 				Utilities.closeQuietly(outputStream);
 				Utilities.closeQuietly(inputStream);
 			}
-			
+
 			result = true;
 		} catch (Exception e) {
 			error = e;

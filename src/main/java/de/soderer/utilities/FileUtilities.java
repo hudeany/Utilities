@@ -20,7 +20,7 @@ import org.apache.commons.lang3.ArrayUtils;
 public class FileUtilities {
 	/**
 	 * Delete all subfiles fitting namestart and extension
-	 * 
+	 *
 	 * @param directory
 	 * @param nameStart
 	 * @param extension
@@ -33,7 +33,7 @@ public class FileUtilities {
 
 	/**
 	 * Read a directory and return all files fitting namestart and extension
-	 * 
+	 *
 	 * @param directory
 	 * @param nameStart
 	 * @param extension
@@ -51,7 +51,7 @@ public class FileUtilities {
 
 	/**
 	 * Read a directory and return all files fitting to a wildcard pattern
-	 * 
+	 *
 	 * @param startDirectory
 	 * @param fileFilterWithWildcards
 	 * @param traverseCompletely
@@ -77,10 +77,10 @@ public class FileUtilities {
 		}
 		return files;
 	}
-	
+
 	/**
 	 * Search textfile for string
-	 * 
+	 *
 	 * @param searchFile
 	 * @param searchText
 	 * @param searchCaseSensitive
@@ -97,7 +97,7 @@ public class FileUtilities {
 
 	/**
 	 * Search textfile for string
-	 * 
+	 *
 	 * @param searchFile
 	 * @param searchTexts
 	 * @param searchCaseSensitive
@@ -148,7 +148,7 @@ public class FileUtilities {
 
 	/**
 	 * Replace string in textfile
-	 * 
+	 *
 	 * @param searchFile
 	 * @param searchText
 	 * @param replacementText
@@ -158,7 +158,8 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileReplaceText(File searchFile, String searchText, String replacementText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
+	public static boolean fileReplaceText(File searchFile, String searchText, String replacementText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding)
+			throws Exception {
 		List<String> searchTexts = new ArrayList<String>();
 		searchTexts.add(searchText);
 		List<String> replacementTexts = new ArrayList<String>();
@@ -168,7 +169,7 @@ public class FileUtilities {
 
 	/**
 	 * Replace strings in textfile
-	 * 
+	 *
 	 * @param searchFile
 	 * @param searchTexts
 	 * @param replacementTexts
@@ -178,7 +179,8 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
+	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression,
+			String defaultEncoding) throws Exception {
 		FileInputStream fileInputStream = null;
 		try {
 			boolean foundAndReplaced = false;
@@ -226,7 +228,7 @@ public class FileUtilities {
 
 	/**
 	 * Read first n bytes of binary file
-	 * 
+	 *
 	 * @param dataFile
 	 * @param maxAmountToRead
 	 * @return
@@ -249,7 +251,7 @@ public class FileUtilities {
 
 	/**
 	 * Read a directory and return all files starting with a basename form a list of basenames
-	 * 
+	 *
 	 * @param basenameList
 	 * @return
 	 */
@@ -259,7 +261,7 @@ public class FileUtilities {
 
 	/**
 	 * Read a directory and return all files starting with a basename form a list of basenames
-	 * 
+	 *
 	 * @param stammNamenListe
 	 * @return
 	 */
@@ -281,9 +283,8 @@ public class FileUtilities {
 			if (searchPath.isDirectory()) {
 				File[] partList = searchPath.listFiles();
 				for (int i = 0; i < partList.length; i++) {
-					if (partList[i].isFile()
-							&& (stammFileName.endsWith("*") && partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1)) || !stammFileName.endsWith("*")
-									&& partList[i].getName().equals(stammFileName))) {
+					if (partList[i].isFile() && (stammFileName.endsWith("*") && partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1))
+							|| !stammFileName.endsWith("*") && partList[i].getName().equals(stammFileName))) {
 						// Datei gefunden: partList[i].getName());
 						if (!ergebnisListe.contains(partList[i])) {
 							ergebnisListe.add(partList[i]);
@@ -298,7 +299,7 @@ public class FileUtilities {
 
 	/**
 	 * Read a directory and return all files fitting to a regex pattern
-	 * 
+	 *
 	 * @param startDirectory
 	 * @param patternString
 	 * @param traverseCompletely
@@ -310,7 +311,7 @@ public class FileUtilities {
 
 	/**
 	 * Read a directory and return all files fitting to a regex pattern
-	 * 
+	 *
 	 * @param startDirectory
 	 * @param pattern
 	 * @param traverseCompletely
@@ -332,7 +333,7 @@ public class FileUtilities {
 
 	/**
 	 * Get all recursive subfiles of a directory
-	 * 
+	 *
 	 * @param directory
 	 * @return
 	 * @throws Exception
@@ -358,7 +359,7 @@ public class FileUtilities {
 
 	/**
 	 * Get number of all recursive subfiles of a directory
-	 * 
+	 *
 	 * @param directory
 	 * @return
 	 * @throws Exception
@@ -384,7 +385,7 @@ public class FileUtilities {
 
 	/**
 	 * Get size in bytes of all recursive subfiles of a directory
-	 * 
+	 *
 	 * @param directory
 	 * @return
 	 * @throws Exception
@@ -407,10 +408,10 @@ public class FileUtilities {
 			throw new Exception("Error reading subfilesize of: " + directory.getAbsolutePath(), e);
 		}
 	}
-	
+
 	/**
 	 * Get number of lines of a textfile
-	 * 
+	 *
 	 * @param file
 	 * @return
 	 * @throws IOException

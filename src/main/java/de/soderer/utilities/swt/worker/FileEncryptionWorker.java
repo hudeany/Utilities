@@ -37,7 +37,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 
 	/**
 	 * Encrypt file using RSA
-	 * 
+	 *
 	 * @param parent
 	 * @param fileToEncrypt
 	 * @param encryptedFile
@@ -46,10 +46,10 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, PublicKey publicKey) {
 		this(parent, fileToEncrypt, encryptedFile, publicKey, null, true);
 	}
-	
+
 	/**
 	 * Encrypt file using RSA
-	 * 
+	 *
 	 * @param parent
 	 * @param fileToEncrypt
 	 * @param encryptedFile
@@ -64,17 +64,17 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 		this.publicKey = publicKey;
 		this.encryptionMethod = encryptionMethod;
 		this.zipBeforeEncryption = zipBeforeEncryption;
-		
+
 		if (Utilities.isBlank(this.encryptionMethod)) {
 			this.encryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD;
 		}
-		
-    	itemsToDo = fileToEncrypt.length();
+
+		itemsToDo = fileToEncrypt.length();
 	}
 
 	/**
 	 * Encrypt file using AES
-	 * 
+	 *
 	 * @param parent
 	 * @param fileToEncrypt
 	 * @param password
@@ -83,10 +83,10 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, char[] password) {
 		this(parent, fileToEncrypt, encryptedFile, password, null, null, null, true);
 	}
-	
+
 	/**
 	 * Encrypt file using AES
-	 * 
+	 *
 	 * @param parent
 	 * @param fileToEncrypt
 	 * @param encryptedFile
@@ -94,28 +94,29 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	 * @param encryptionMethod
 	 * @param zipBeforeEncryption
 	 */
-	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, char[] password, String encryptionMethod, byte[] salt, byte[] initalizationVector, boolean zipBeforeEncryption) {
+	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, char[] password, String encryptionMethod, byte[] salt, byte[] initalizationVector,
+			boolean zipBeforeEncryption) {
 		super(parent);
 		this.fileToEncrypt = fileToEncrypt;
 		this.encryptedFile = encryptedFile;
 		this.password = password;
 		this.encryptionMethod = encryptionMethod;
 		this.salt = salt;
-		this.initializationVector = initalizationVector;
+		initializationVector = initalizationVector;
 		this.zipBeforeEncryption = zipBeforeEncryption;
-		
+
 		if (Utilities.isBlank(this.encryptionMethod)) {
 			this.encryptionMethod = CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD;
 		}
-		
+
 		if (this.salt == null) {
 			this.salt = CryptographicUtilities.DEFAULT_SALT;
 		}
-		
-		if (this.initializationVector == null) {
-			this.initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
+
+		if (initializationVector == null) {
+			initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
 		}
-		
+
 		itemsToDo = fileToEncrypt.length();
 	}
 
@@ -126,15 +127,15 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 		itemsDone = 0L;
 		result = null;
 		showProgress();
-		
+
 		try {
 			InputStream inputStream = null;
 			OutputStream outputStream = null;
 			try {
 				Security.addProvider(new BouncyCastleProvider());
-				
+
 				inputStream = new BufferedInputStream(new FileInputStream(fileToEncrypt));
-				
+
 				Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
 				if (publicKey != null) {
 					encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
@@ -144,14 +145,14 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 					encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 				}
 				outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(encryptedFile)), encryptCipher);
-				
+
 				if (zipBeforeEncryption) {
 					outputStream = new ZipOutputStream(outputStream);
 					ZipEntry entry = new ZipEntry(fileToEncrypt.getName());
 					entry.setTime(fileToEncrypt.lastModified());
 					((ZipOutputStream) outputStream).putNextEntry(entry);
 				}
-				
+
 				byte[] buffer = new byte[4096];
 				int bytesRead;
 				while ((bytesRead = inputStream.read(buffer)) >= 0) {
@@ -169,7 +170,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 				Utilities.closeQuietly(outputStream);
 				Utilities.closeQuietly(inputStream);
 			}
-			
+
 			result = true;
 		} catch (Exception e) {
 			error = e;

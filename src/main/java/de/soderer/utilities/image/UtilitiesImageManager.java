@@ -10,20 +10,20 @@ import de.soderer.utilities.VisibleException;
 
 public class UtilitiesImageManager {
 	private static UtilitiesImageManager instance = null;
-	
+
 	private Shell shell;
 	private Map<String, Image> store = new HashMap<String, Image>();
-	
+
 	public UtilitiesImageManager(Shell shell) {
 		this.shell = shell;
 		instance = this;
 	}
-	
+
 	private Image getImageFromString(String name) {
 		if (!store.containsKey(name)) {
 			store.put(name, new Image(shell.getDisplay(), getClass().getResourceAsStream(name)));
 		}
-			
+
 		return store.get(name);
 	}
 
@@ -31,7 +31,7 @@ public class UtilitiesImageManager {
 		if (instance == null) {
 			throw new VisibleException("ImageManager needs to be initialized before usage");
 		}
-			
+
 		return instance.getImageFromString(name);
 	}
 }

@@ -3,16 +3,16 @@ package de.soderer.utilities;
 import java.io.IOException;
 import java.util.List;
 
-public class ServerAccessData extends SecureDataEntry{
+public class ServerAccessData extends SecureDataEntry {
 	public static final String PRELUDE = "\\\\";
-	
+
 	private String hostname;
 	private int port;
 	private String username;
 	private String keyFile;
 	private String password;
 	private boolean checkHostKey;
-	
+
 	protected ServerAccessData() {
 	}
 
@@ -21,7 +21,7 @@ public class ServerAccessData extends SecureDataEntry{
 	}
 
 	public ServerAccessData(String entryname, String hostname, int port, String username, String keyFile, String password, boolean checkHostKey) {
-		this.entryName = entryname;
+		entryName = entryname;
 		this.hostname = hostname;
 		this.port = port;
 		this.username = username;
@@ -29,28 +29,28 @@ public class ServerAccessData extends SecureDataEntry{
 		this.password = password;
 		this.checkHostKey = checkHostKey;
 	}
-	
+
 	@Override
 	public void loadData(List<String> dataParts) throws Exception {
 		if (dataParts == null || dataParts.size() != 6) {
 			throw new IOException("Invalid data in ServerEntry");
 		} else {
 			try {
-				this.entryName = dataParts.get(0);
-				this.hostname = dataParts.get(1);
-				this.port = Integer.parseInt(dataParts.get(2));
-				this.username = dataParts.get(3);
-				this.keyFile = dataParts.get(4);
-				this.password = dataParts.get(5);
+				entryName = dataParts.get(0);
+				hostname = dataParts.get(1);
+				port = Integer.parseInt(dataParts.get(2));
+				username = dataParts.get(3);
+				keyFile = dataParts.get(4);
+				password = dataParts.get(5);
 			} catch (NumberFormatException e) {
 				throw new IOException("Invalid data in ServerEntry");
 			}
 		}
 	}
-	
+
 	@Override
 	public Object[] getStorageData() {
-		return new Object[]{entryName, hostname, port, username, keyFile, password};
+		return new Object[] { entryName, hostname, port, username, keyFile, password };
 	}
 
 	public String getHostname() {
@@ -60,27 +60,27 @@ public class ServerAccessData extends SecureDataEntry{
 	public int getPort() {
 		return port;
 	}
-	
+
 	public String getUsername() {
 		return username;
 	}
-	
+
 	public String getKeyFile() {
 		return keyFile;
 	}
-	
+
 	public String getPassword() {
 		return password;
 	}
-	
+
 	public boolean getCheckHostKey() {
 		return checkHostKey;
 	}
-	
+
 	public String toReferenceString() {
 		return PRELUDE + entryName + ":";
 	}
-	
+
 	public static String parseFilestringToServerEntryName(String fileName) throws Exception {
 		if (Utilities.isNotBlank(fileName) && fileName.startsWith(PRELUDE) && fileName.contains(":")) {
 			return fileName.substring(PRELUDE.length(), fileName.lastIndexOf(":"));
@@ -88,7 +88,7 @@ public class ServerAccessData extends SecureDataEntry{
 			throw new Exception("Invalid SSH-filename");
 		}
 	}
-	
+
 	public static String parseFilestringToFilePath(String fileName) throws Exception {
 		if (Utilities.isNotBlank(fileName) && fileName.startsWith(PRELUDE) && fileName.contains(":")) {
 			return fileName.substring(fileName.lastIndexOf(":") + 1);
@@ -96,7 +96,7 @@ public class ServerAccessData extends SecureDataEntry{
 			throw new Exception("Invalid SSH-filename");
 		}
 	}
-	
+
 	public boolean equals(ServerAccessData otherData) {
 		return entryName.equals(otherData.getEntryName());
 	}

@@ -7,17 +7,14 @@ import java.util.List;
 import java.util.Set;
 
 public class ListExpression extends Value {
-	public static final Set<String> SIGNS = new HashSet<String>(Arrays.asList(new String[]{
-		"in",
-		"not in"
-	}));
-	
+	public static final Set<String> SIGNS = new HashSet<String>(Arrays.asList(new String[] { "in", "not in" }));
+
 	public Value value;
 	public Operator operator;
 	public List<Value> valueList = new ArrayList<Value>();
-	
+
 	public ListExpression(Value value, Operator operator, List<Value> values) {
-		this.type = Type.Bool;
+		type = Type.Bool;
 		this.value = value;
 		this.operator = operator;
 		for (Value valueItem : values) {
@@ -28,7 +25,7 @@ public class ListExpression extends Value {
 			}
 		}
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder returnValue = new StringBuilder();
@@ -47,7 +44,7 @@ public class ListExpression extends Value {
 		returnValue.append(")");
 		return returnValue.toString();
 	}
-	
+
 	@Override
 	public String toString(RulePart.StringType stringType) {
 		StringBuilder returnValue = new StringBuilder();

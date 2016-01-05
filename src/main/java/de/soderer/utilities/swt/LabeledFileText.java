@@ -26,18 +26,18 @@ public class LabeledFileText extends LabeledText {
 	public LabeledFileText(Shell shell, Composite parent, int style, String labelText) throws Exception {
 		this(shell, parent, style, labelText, null);
 	}
-	
+
 	public LabeledFileText(Shell shell, Composite parent, int style, String labelText, ArrangementStyle arrangementStyle) throws Exception {
 		super(parent, style);
-		
+
 		final LabeledFileText labeledFileText = this;
-		
+
 		final Shell shellForFileDialog = shell;
-		
+
 		if (arrangementStyle == null) {
 			arrangementStyle = ArrangementStyle.Vertical;
 		}
-		
+
 		GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : (labelText == null ? 2 : 3), false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
@@ -47,7 +47,7 @@ public class LabeledFileText extends LabeledText {
 			Label label = new Label(this, SWT.NONE);
 			label.setText(labelText);
 		}
-		
+
 		textField = new StyledText(this, SWT.BORDER | style);
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		textField.setText("");
@@ -59,7 +59,7 @@ public class LabeledFileText extends LabeledText {
 				labeledFileText.notifyListeners(SWT.Modify, event);
 			}
 		});
-		
+
 		dataBrowseButton = new Button(this, SWT.PUSH);
 		dataBrowseButton.setText(LangResources.get("browse"));
 		if (selectDirectory) {
@@ -67,11 +67,11 @@ public class LabeledFileText extends LabeledText {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					DirectoryDialog dialog = new DirectoryDialog(shellForFileDialog, SWT.OPEN);
-			        dialog.setText(LangResources.get("openDataDirectory"));
-			        String fileName = dialog.open();
-		        	if (Utilities.isNotBlank(fileName)) {
-		        		textField.setText(fileName);
-		        	}
+					dialog.setText(LangResources.get("openDataDirectory"));
+					String fileName = dialog.open();
+					if (Utilities.isNotBlank(fileName)) {
+						textField.setText(fileName);
+					}
 				}
 			});
 		} else {
@@ -79,20 +79,20 @@ public class LabeledFileText extends LabeledText {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					FileDialog dialog = new FileDialog(shellForFileDialog, SWT.OPEN);
-			        dialog.setText(LangResources.get("openFileDirectory"));
-			        String fileName = dialog.open();
-		        	if (Utilities.isNotBlank(fileName)) {
-		        		textField.setText(fileName);
-		        	}
+					dialog.setText(LangResources.get("openFileDirectory"));
+					String fileName = dialog.open();
+					if (Utilities.isNotBlank(fileName)) {
+						textField.setText(fileName);
+					}
 				}
 			});
 		}
 	}
-	
+
 	public void setSelectDirectory(boolean selectDirectory) {
 		this.selectDirectory = selectDirectory;
 	}
-	
+
 	@Override
 	public void setEnabled(boolean enabled) {
 		textField.setEnabled(enabled);

@@ -1,6 +1,5 @@
 package de.soderer.utilities;
 
-
 public class VisibleException extends Exception {
 	private static final long serialVersionUID = -5425442516236660858L;
 
@@ -36,7 +35,7 @@ public class VisibleException extends Exception {
 		super(throwable);
 		this.visibleMessage = visibleMessage;
 	}
-	
+
 	public String getVisibleMessage() {
 		return visibleMessage;
 	}

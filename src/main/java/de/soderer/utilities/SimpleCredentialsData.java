@@ -3,35 +3,35 @@ package de.soderer.utilities;
 import java.io.IOException;
 import java.util.List;
 
-public class SimpleCredentialsData extends SecureDataEntry{
+public class SimpleCredentialsData extends SecureDataEntry {
 	private String userName;
 	private char[] password;
-	
+
 	protected SimpleCredentialsData() {
 	}
 
 	public SimpleCredentialsData(String entryname, String userName, char[] password) {
-		this.entryName = entryname;
+		entryName = entryname;
 		this.userName = userName;
 		this.password = password;
 	}
-	
+
 	@Override
 	public void loadData(List<String> dataParts) throws Exception {
 		if (dataParts == null || dataParts.size() != 3) {
 			throw new IOException("Invalid data in SimpleCredentialsEntry");
 		} else {
-			this.entryName = dataParts.get(0);
-			this.userName = dataParts.get(1);
-			this.password = dataParts.get(2).toCharArray();
+			entryName = dataParts.get(0);
+			userName = dataParts.get(1);
+			password = dataParts.get(2).toCharArray();
 		}
 	}
-	
+
 	@Override
 	public Object[] getStorageData() {
-		return new Object[]{entryName, userName, password};
+		return new Object[] { entryName, userName, password };
 	}
-	
+
 	public boolean equals(SimpleCredentialsData otherData) {
 		return entryName.equals(otherData.getEntryName());
 	}

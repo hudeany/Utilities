@@ -28,17 +28,17 @@ public class PasswordDialog extends ModalDialog<char[]> {
 	private boolean isTechnicalChange = false;
 	private String keepInMemoryText = null;
 	private boolean keepInMemory = false;
-	
-	public PasswordDialog(Shell shell, String title, String text) {   
+
+	public PasswordDialog(Shell shell, String title, String text) {
 		super(shell, title);
-		
+
 		this.text = text;
 	}
 
 	public void setKeepInMemoryText(String keepInMemoryText) {
 		this.keepInMemoryText = keepInMemoryText;
 	}
-	
+
 	public void setInputPattern(String patternString) {
 		if (Utilities.isBlank(patternString)) {
 			inputPattern = null;
@@ -46,15 +46,15 @@ public class PasswordDialog extends ModalDialog<char[]> {
 			inputPattern = Pattern.compile(patternString);
 		}
 	}
-	
+
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(2, true));
-		
+
 		Label label = new Label(shell, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
-		
+
 		passwordTextField = new Text(shell, SWT.BORDER | SWT.PASSWORD);
 		passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
 		passwordTextField.setText("");
@@ -83,7 +83,7 @@ public class PasswordDialog extends ModalDialog<char[]> {
 				}
 			}
 		});
-		
+
 		if (Utilities.isNotBlank(keepInMemoryText)) {
 			Button keepInMemoryButton = new Button(shell, SWT.CHECK);
 			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 2, 1));
@@ -95,7 +95,7 @@ public class PasswordDialog extends ModalDialog<char[]> {
 				}
 			});
 		}
-		
+
 		Button okButton = new Button(shell, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
@@ -106,7 +106,7 @@ public class PasswordDialog extends ModalDialog<char[]> {
 				getParent().close();
 			}
 		});
-	    
+
 		Button cancelButton = new Button(shell, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));
@@ -120,7 +120,7 @@ public class PasswordDialog extends ModalDialog<char[]> {
 
 		shell.pack();
 	}
-	
+
 	public boolean keepInMemory() {
 		return keepInMemory;
 	}

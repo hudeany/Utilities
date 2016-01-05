@@ -23,12 +23,12 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 	protected boolean isClosed = false;
 	private Thread unlimitedRunner = null;
 
-	public ProgressDialog(Shell shell, String title, String commentStringFormat) {   
+	public ProgressDialog(Shell shell, String title, String commentStringFormat) {
 		super(shell, title);
-		
+
 		this.commentStringFormat = commentStringFormat;
 	}
-	
+
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		try {
@@ -36,24 +36,24 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 				shell.close();
 			} else {
 				shell.setLayout(new GridLayout(1, true));
-				
+
 				Composite composite = new Composite(shell, SWT.NONE);
 				composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 				composite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
-				
+
 				if (Utilities.isNotBlank(commentStringFormat)) {
 					commentLabel = new Label(composite, SWT.NONE);
 					commentLabel.setText(MessageFormat.format(commentStringFormat, 0, 0, 0));
 					GridData labelGridData = new GridData(SWT.FILL, SWT.UP, true, false);
 					commentLabel.setLayoutData(labelGridData);
 				}
-				
+
 				bar = new ProgressBar(composite, SWT.SMOOTH);
 				bar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 				bar.setMinimum(0);
 				bar.setMaximum(100);
 				bar.setSelection(0);
-	
+
 				Button buttonClose = new Button(composite, SWT.PUSH);
 				buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 				buttonClose.setText(LangResources.get("cancel"));
@@ -64,9 +64,9 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 						getParent().close();
 					}
 				});
-	
+
 				shell.pack();
-	
+
 				shell.setMinimumSize(400, shell.getSize().y);
 				shell.setSize(400, shell.getSize().y);
 			}
@@ -74,27 +74,27 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 			throw e;
 		}
 	}
-	
+
 	public void setProgressPercentage(int value) {
 		stopUnlimitedProgress();
-		
+
 		if (bar != null) {
 			bar.setSelection(value);
 		}
 	}
-	
+
 	public void setProgress(long todo, long done) {
 		stopUnlimitedProgress();
-		
+
 		if (bar != null) {
 			bar.setSelection((int) (done * 100 / todo));
 		}
-		
+
 		if (commentLabel != null) {
 			commentLabel.setText(MessageFormat.format(commentStringFormat, done, todo, done * 100 / todo));
 		}
 	}
-	
+
 	public void showUnlimitedProgress() {
 		unlimitedRunner = new Thread(new Runnable() {
 			@Override
@@ -110,7 +110,7 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 								} else {
 									nextValue = bar.getSelection() - 10;
 								}
-								
+
 								if (nextValue > 100) {
 									nextValue = 100;
 									bar.setMaximum(101);
@@ -118,11 +118,11 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 									nextValue = 0;
 									bar.setMaximum(100);
 								}
-								
+
 								bar.setSelection(nextValue);
 							}
 						});
-						
+
 						try {
 							Thread.sleep(100);
 						} catch (InterruptedException e) {
@@ -136,7 +136,7 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 		});
 		unlimitedRunner.start();
 	}
-	
+
 	@SuppressWarnings("deprecation")
 	public void stopUnlimitedProgress() {
 		if (unlimitedRunner != null) {
@@ -145,13 +145,13 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 			bar.setMaximum(100);
 		}
 	}
-	
+
 	public void close() {
 		isClosed = true;
 		setReturnValue(false);
 		getParent().close();
 	}
-	
+
 	@Override
 	protected Boolean getDefaultReturnValue() {
 		return false;

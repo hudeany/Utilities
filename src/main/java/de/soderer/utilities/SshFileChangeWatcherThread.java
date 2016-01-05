@@ -49,7 +49,7 @@ public class SshFileChangeWatcherThread extends Thread {
 		running = false;
 		interrupt();
 	}
-	
+
 	public interface LineListener {
 		public void addLineData(byte[] textLineData);
 	}

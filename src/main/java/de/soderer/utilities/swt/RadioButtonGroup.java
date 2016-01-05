@@ -17,10 +17,9 @@ import org.eclipse.swt.widgets.TypedListener;
 
 public class RadioButtonGroup extends Composite {
 	public enum ArrangementStyle {
-		Vertical,
-		Horizontal
+		Vertical, Horizontal
 	}
-	
+
 	private List<Button> radioButtons;
 
 	public RadioButtonGroup(Composite parent, int style, String... buttonTexts) throws Exception {
@@ -34,23 +33,23 @@ public class RadioButtonGroup extends Composite {
 	public RadioButtonGroup(Composite parent, String labelText, int style, String... buttonTexts) throws Exception {
 		this(parent, labelText, style, null, buttonTexts);
 	}
-	
+
 	public RadioButtonGroup(Composite parent, String labelText, int style, ArrangementStyle arrangementStyle, String... buttonTexts) throws Exception {
 		super(parent, style);
-		
+
 		if (arrangementStyle == null) {
 			arrangementStyle = ArrangementStyle.Vertical;
 		}
-		
+
 		final RadioButtonGroup radioButtonGroup = this;
-		
+
 		radioButtons = new ArrayList<Button>();
-		
+
 		if (buttonTexts == null || buttonTexts.length < 2) {
 			throw new Exception("Less than 2 texts for RadioButtonGroup");
 		}
 
-		GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : buttonTexts.length + (labelText != null ? 1: 0), false);
+		GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : buttonTexts.length + (labelText != null ? 1 : 0), false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		setLayout(gridLayout);
@@ -59,7 +58,7 @@ public class RadioButtonGroup extends Composite {
 			Label label = new Label(this, SWT.NONE);
 			label.setText(labelText + ":");
 		}
-		
+
 		for (int i = 0; i < buttonTexts.length; i++) {
 			Button radioButton = new Button(this, SWT.RADIO);
 			radioButton.setSelection(i == 0);
@@ -73,11 +72,11 @@ public class RadioButtonGroup extends Composite {
 					radioButtonGroup.notifyListeners(SWT.Modify, event);
 				}
 			});
-			
+
 			radioButtons.add(radioButton);
 		}
 	}
-	
+
 	public void addModifyListener(ModifyListener listener) {
 		checkWidget();
 		if (listener == null) {
@@ -87,25 +86,25 @@ public class RadioButtonGroup extends Composite {
 			addListener(SWT.Modify, typedListener);
 		}
 	}
-	
+
 	public void setSelectedButtonIndex(int index) {
-		for(int i = 0; i < radioButtons.size(); i++) {
+		for (int i = 0; i < radioButtons.size(); i++) {
 			radioButtons.get(i).setSelection(i == index);
 		}
 	}
-	
+
 	public int getSelectedButtonIndex() {
-		for(int i = 0; i < radioButtons.size(); i++) {
+		for (int i = 0; i < radioButtons.size(); i++) {
 			if (radioButtons.get(i).getSelection()) {
 				return i;
 			}
 		}
 		throw new RuntimeException("Invalid state of RadioButtonGroup");
 	}
-	
+
 	@Override
 	public void setEnabled(boolean enabled) {
-		for(int i = 0; i < radioButtons.size(); i++) {
+		for (int i = 0; i < radioButtons.size(); i++) {
 			radioButtons.get(i).setEnabled(enabled);
 		}
 	}

@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * A thread-safe LRU cache implementation based on internal LinkedHashMap.
- * 
+ *
  * @param <K>
  *            Entry Key Type
  * @param <V>
@@ -22,7 +22,7 @@ public class LRUCache<K, V> {
 	}
 
 	public LRUCache(final int maxSize) {
-		internalMap = (Map<K, V>) Collections.synchronizedMap(new LinkedHashMap<K, V>(maxSize + 1, .75F, true) {
+		internalMap = Collections.synchronizedMap(new LinkedHashMap<K, V>(maxSize + 1, .75F, true) {
 			private static final long serialVersionUID = 6658309225064456992L;
 
 			@Override

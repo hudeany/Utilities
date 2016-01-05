@@ -8,23 +8,23 @@ import de.soderer.utilities.TextUtilities;
 
 public class JsonArray implements Iterable<Object> {
 	private List<Object> items = new ArrayList<Object>();
-	
+
 	public void add(JsonObject object) {
 		add((Object) object);
 	}
-	
+
 	public void add(JsonArray array) {
 		add((Object) array);
 	}
-	
+
 	public void add(String value) {
 		add((Object) value);
 	}
-	
+
 	public void add(Number value) {
 		add((Object) value);
 	}
-	
+
 	public void add(Boolean value) {
 		add((Object) value);
 	}
@@ -32,19 +32,19 @@ public class JsonArray implements Iterable<Object> {
 	public void addNullValue() {
 		add((Object) null);
 	}
-	
+
 	private void add(Object value) {
 		items.add(value);
 	}
-	
+
 	public Object remove(Object value) {
 		return items.remove(value);
 	}
-	
+
 	public Object get(int index) {
 		return items.get(index);
 	}
-	
+
 	public int size() {
 		return items.size();
 	}
@@ -53,7 +53,7 @@ public class JsonArray implements Iterable<Object> {
 	public Iterator<Object> iterator() {
 		return items.iterator();
 	}
-	
+
 	@Override
 	public String toString() {
 		return toString("\t", " ", "\n");
@@ -64,13 +64,13 @@ public class JsonArray implements Iterable<Object> {
 			boolean isFirstItem = true;
 			StringBuilder result = new StringBuilder("[");
 			result.append(separator);
-			
+
 			for (Object subItem : items) {
 				if (!isFirstItem) {
 					result.append(",");
 					result.append(separator);
 				}
-				
+
 				if (subItem == null) {
 					result.append("null");
 				} else if (subItem instanceof JsonObject) {
@@ -84,31 +84,31 @@ public class JsonArray implements Iterable<Object> {
 				} else {
 					result.append(subItem.toString());
 				}
-				
+
 				isFirstItem = false;
 			}
 
 			result.append(separator);
 			result.append("]");
-			
+
 			return result.toString();
 		} else {
 			return "[]";
 		}
 	}
-	
+
 	protected int parse(char[] jsonData, int startIndex) throws Exception {
 		try {
 			items.clear();
-			
+
 			char previousChar = ' ';
 			StringBuilder quotedValue = null;
 			StringBuilder unquotedValue = null;
 			Object valueObject = null;
-			
+
 			for (int index = startIndex; index < jsonData.length; index++) {
 				char charItem = jsonData[index];
-				
+
 				if (charItem == '\\') {
 					// keep for following char check
 					if (quotedValue == null) {
@@ -136,7 +136,7 @@ public class JsonArray implements Iterable<Object> {
 							valueObject = JsonUtilities.getJsonValue(unquotedValue.toString());
 							unquotedValue = null;
 						}
-						
+
 						if (valueObject == null) {
 							addNullValue();
 						} else if (valueObject instanceof JsonObject) {
@@ -150,12 +150,12 @@ public class JsonArray implements Iterable<Object> {
 						} else if (valueObject instanceof Boolean) {
 							add((Boolean) valueObject);
 						}
-						
+
 						valueObject = null;
 					} else if (charItem == ',') {
 						throw new Exception("Unexpected '" + charItem + "'-sign at index " + index);
 					}
-					
+
 					if (charItem == ']') {
 						return index;
 					}
@@ -163,7 +163,7 @@ public class JsonArray implements Iterable<Object> {
 					JsonArray newJsonArray = new JsonArray();
 					index = newJsonArray.parse(jsonData, index + 1);
 					valueObject = newJsonArray;
-				}  else if (charItem == '{') {
+				} else if (charItem == '{') {
 					JsonObject newJsonObject = new JsonObject();
 					index = newJsonObject.parse(jsonData, index + 1);
 					valueObject = newJsonObject;
@@ -172,18 +172,18 @@ public class JsonArray implements Iterable<Object> {
 				} else if (charItem == '"') {
 					quotedValue = new StringBuilder();
 				} else {
-					if (unquotedValue == null){
+					if (unquotedValue == null) {
 						unquotedValue = new StringBuilder();
 					}
 					unquotedValue.append(charItem);
-					if (!JsonUtilities.isValidUnfinishedJsonValue(unquotedValue.toString())){
+					if (!JsonUtilities.isValidUnfinishedJsonValue(unquotedValue.toString())) {
 						throw new Exception("Unexpected '" + charItem + "'-sign at index " + index);
 					}
 				}
-				
+
 				previousChar = charItem;
 			}
-			
+
 			throw new Exception("Unclosed object value");
 		} catch (Exception e) {
 			throw new Exception("Invalid JSON data starting at index " + startIndex, e);

@@ -19,11 +19,11 @@ import javax.crypto.spec.SecretKeySpec;
 public class SecureDataKeyStore {
 	private File keystoreFile;
 	private Map<String, Map<String, SecureDataEntry>> dataEntries = new HashMap<String, Map<String, SecureDataEntry>>();
-	
+
 	public SecureDataKeyStore(File keystoreFile) {
 		this.keystoreFile = keystoreFile;
 	}
-	
+
 	public void loadKeyStore(char[] passwordArray) throws Exception {
 		FileInputStream fis = null;
 		try {
@@ -33,9 +33,9 @@ public class SecureDataKeyStore {
 				fis = new FileInputStream(keystoreFile);
 			}
 			keyStore.load(fis, passwordArray);
-			
+
 			dataEntries = new HashMap<String, Map<String, SecureDataEntry>>();
-			
+
 			for (String keyAlias : Collections.list(keyStore.aliases())) {
 				SecretKey secretKey = (SecretKey) keyStore.getKey(keyAlias, passwordArray);
 				String data = new String(secretKey.getEncoded(), "UTF-8");
@@ -62,18 +62,20 @@ public class SecureDataKeyStore {
 			Utilities.closeQuietly(fis);
 		}
 	}
-	
+
 	public void saveKeyStore(char[] passwordArray) {
 		FileOutputStream fos = null;
 		try {
 			KeyStore keyStore = KeyStore.getInstance("JCEKS");
-			
+
 			keyStore.load(null, passwordArray);
-			
+
 			fos = new FileOutputStream(keystoreFile);
 			for (Entry<String, Map<String, SecureDataEntry>> entryMap : dataEntries.entrySet()) {
 				for (Entry<String, SecureDataEntry> entry : entryMap.getValue().entrySet()) {
-					keyStore.setKeyEntry(entryMap.getKey() + "/" + entry.getKey(), new SecretKeySpec(("\"" + entry.getValue().getClass().getName() + "\"," + CsvWriter.getCsvLine(',', '"', entry.getValue().getStorageData())).getBytes("UTF-8"), "AES"), passwordArray, null);
+					keyStore.setKeyEntry(entryMap.getKey() + "/" + entry.getKey(),
+							new SecretKeySpec(("\"" + entry.getValue().getClass().getName() + "\"," + CsvWriter.getCsvLine(',', '"', entry.getValue().getStorageData())).getBytes("UTF-8"), "AES"),
+							passwordArray, null);
 				}
 			}
 			keyStore.store(fos, passwordArray);
@@ -84,7 +86,7 @@ public class SecureDataKeyStore {
 			Utilities.closeQuietly(fos);
 		}
 	}
-	
+
 	public Set<String> getEntryNames(Class<?> classType) {
 		if (dataEntries.get(classType.getName()) == null) {
 			return new HashSet<String>();
@@ -92,7 +94,7 @@ public class SecureDataKeyStore {
 			return dataEntries.get(classType.getName()).keySet();
 		}
 	}
-	
+
 	public <T> T getEntry(Class<T> classType, String entryName) {
 		if (dataEntries.get(classType.getName()) == null) {
 			return null;
@@ -101,18 +103,18 @@ public class SecureDataKeyStore {
 		T returnValue = (T) dataEntries.get(classType.getName()).get(entryName);
 		return returnValue;
 	}
-	
+
 	public void addEntry(SecureDataEntry entry) {
 		if (dataEntries.get(entry.getClass().getName()) == null) {
 			dataEntries.put(entry.getClass().getName(), new HashMap<String, SecureDataEntry>());
 		}
 		dataEntries.get(entry.getClass().getName()).put(entry.getEntryName(), entry);
 	}
-	
+
 	public void remove(Class<?> classType, String entryName) {
 		dataEntries.get(classType.getName()).remove(entryName);
 	}
-	
+
 	public void remove(SecureDataEntry entry) {
 		if (dataEntries.get(entry.getClass().getName()) != null) {
 			dataEntries.get(entry.getClass().getName()).remove(entry.getEntryName());

@@ -24,7 +24,7 @@ import org.eclipse.swt.program.Program;
 public class EmailUtilities {
 	/**
 	 * Send an email
-	 * 
+	 *
 	 * @param senderAdress
 	 * @param toAdressList
 	 * @param ccAdressList
@@ -90,7 +90,7 @@ public class EmailUtilities {
 
 	/**
 	 * Get emails from string list
-	 * 
+	 *
 	 * @param listString
 	 * @return
 	 */
@@ -118,7 +118,7 @@ public class EmailUtilities {
 
 	/**
 	 * Try to open en email in the standard email client
-	 * 
+	 *
 	 * @param toAdress
 	 * @param subject
 	 * @param body
@@ -130,7 +130,7 @@ public class EmailUtilities {
 
 	/**
 	 * Try to open en email in the standard email client
-	 * 
+	 *
 	 * @param toAdress
 	 * @param ccAdress
 	 * @param subject

@@ -52,7 +52,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		itemsDone = 0L;
 		result = null;
 		showProgress();
-		
+
 		InputStream decryptedPacketInputStream = null;
 		InputStream decodedInputStream = null;
 		try {
@@ -79,9 +79,9 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			PGPEncryptedDataList encodedDataList;
 			Object encodedDataObject = pgpObjectFactory.nextObject();
 			if (encodedDataObject instanceof PGPEncryptedDataList) {
-				encodedDataList = (PGPEncryptedDataList)encodedDataObject;
+				encodedDataList = (PGPEncryptedDataList) encodedDataObject;
 			} else {
-				encodedDataList = (PGPEncryptedDataList)pgpObjectFactory.nextObject();
+				encodedDataList = (PGPEncryptedDataList) pgpObjectFactory.nextObject();
 			}
 
 			@SuppressWarnings("unchecked")
@@ -102,11 +102,11 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			Object message = new PGPObjectFactory(decryptedPacketInputStream).nextObject();
 
 			if (message instanceof PGPCompressedData) {
-				message = new PGPObjectFactory(((PGPCompressedData)message).getDataStream()).nextObject();
+				message = new PGPObjectFactory(((PGPCompressedData) message).getDataStream()).nextObject();
 			}
 
 			if (message instanceof PGPLiteralData) {
-				PGPLiteralData literalData = (PGPLiteralData)message;
+				PGPLiteralData literalData = (PGPLiteralData) message;
 				@SuppressWarnings("unused")
 				String outFileName = literalData.getFileName();
 				decodedInputStream = literalData.getInputStream();
@@ -139,7 +139,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			result = true;
 		} catch (PGPException pgpe) {
 			if (pgpe.getUnderlyingException() != null && pgpe.getUnderlyingException() instanceof InvalidKeyException
-					&& TextUtilities.containsIgnoreCase(((InvalidKeyException)pgpe.getUnderlyingException()).getMessage(), "Illegal key size") && !SystemUtilities.isunlimitedKeyStrengthAllowed()) {
+					&& TextUtilities.containsIgnoreCase(((InvalidKeyException) pgpe.getUnderlyingException()).getMessage(), "Illegal key size") && !SystemUtilities.isunlimitedKeyStrengthAllowed()) {
 				error = new UserError(LangResources.get("keystrengthExceedsAllowedJCE"), pgpe);
 			} else {
 				error = pgpe;

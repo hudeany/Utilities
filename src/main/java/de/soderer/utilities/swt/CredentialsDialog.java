@@ -23,7 +23,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 	private char[] password = "".toCharArray();
 	private String keepInMemoryText = null;
 	private boolean keepInMemory = false;
-	
+
 	public CredentialsDialog(Shell shell, String title, String text) {
 		super(shell, title);
 		this.text = text;
@@ -32,21 +32,21 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 	public void setKeepInMemoryText(String keepInMemoryText) {
 		this.keepInMemoryText = keepInMemoryText;
 	}
-	
+
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
-		
+
 		if (Utilities.isNotBlank(text)) {
 			Label label = new Label(shell, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 			label.setText(text);
 		}
-		
+
 		Label usernameLabel = new Label(shell, SWT.NONE);
 		usernameLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 		usernameLabel.setText(LangResources.get("username"));
-		
+
 		Text usernameTextField = new Text(shell, SWT.BORDER);
 		usernameTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 		usernameTextField.setText("");
@@ -65,11 +65,11 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 				}
 			}
 		});
-		
+
 		Label passwordLabel = new Label(shell, SWT.NONE);
 		passwordLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 		passwordLabel.setText(LangResources.get("password"));
-		
+
 		Text passwordTextField = new Text(shell, SWT.BORDER | SWT.PASSWORD);
 		passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 		passwordTextField.setText("");
@@ -88,7 +88,7 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 				}
 			}
 		});
-		
+
 		if (Utilities.isNotBlank(keepInMemoryText)) {
 			Button keepInMemoryButton = new Button(shell, SWT.CHECK);
 			keepInMemoryButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
@@ -100,12 +100,12 @@ public class CredentialsDialog extends ModalDialog<Boolean> {
 				}
 			});
 		}
-		
+
 		SwtUtilities.addMainButtonComposite(shell, this);
 
 		shell.pack();
 	}
-	
+
 	public String getUsername() {
 		return username;
 	}

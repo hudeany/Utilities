@@ -1,40 +1,37 @@
 package de.soderer.utilities.sql.whereclause.token;
 
-import java.text.DecimalFormat;
+import java.text.NumberFormat;
 
 import de.soderer.utilities.Utilities;
 
 public class Value extends RulePart {
 	public enum Type {
-		Bool,
-		String,
-		Number,
-		Date
+		Bool, String, Number, Date
 	}
-	
+
 	public Type type;
-	
+
 	public String stringValue;
 	public double numberValue;
-	
+
 	public String fieldName;
-	
+
 	protected Value() {
 	}
-	
+
 	public Value(String stringValue) {
-		this.type = Type.String;
+		type = Type.String;
 		this.stringValue = stringValue;
 	}
-	
+
 	public Value(double numberValue) {
-		this.type = Type.Number;
+		type = Type.Number;
 		this.numberValue = numberValue;
 	}
-	
+
 	public Value(String fieldName, Type fieldType) {
 		this.fieldName = fieldName.toLowerCase();
-		this.type = fieldType;
+		type = fieldType;
 	}
 
 	@Override
@@ -42,7 +39,7 @@ public class Value extends RulePart {
 		if (Utilities.isNotEmpty(fieldName)) {
 			return fieldName;
 		} else {
-			switch(type) {
+			switch (type) {
 				case String:
 					StringBuilder returnValue = new StringBuilder();
 					returnValue.append("'");
@@ -50,7 +47,7 @@ public class Value extends RulePart {
 					returnValue.append("'");
 					return returnValue.toString();
 				case Number:
-					return DecimalFormat.getNumberInstance().format(numberValue);
+					return NumberFormat.getNumberInstance().format(numberValue);
 				default:
 					throw new RuntimeException("Invalid value type for output: " + type);
 			}
@@ -60,11 +57,13 @@ public class Value extends RulePart {
 	@Override
 	public String toString(RulePart.StringType stringType) {
 		if (Utilities.isNotEmpty(fieldName) && Expression.SYSDATE_VALUES.contains(fieldName)) {
-			if (stringType == StringType.Oracle)
+			if (stringType == StringType.Oracle) {
 				return "SYSDATE";
-			else if (stringType == StringType.MySQL)
+			} else if (stringType == StringType.MySQL) {
 				return "SYSDATE()";
-			else return "sysdate";
+			} else {
+				return "sysdate";
+			}
 		} else {
 			return toString();
 		}

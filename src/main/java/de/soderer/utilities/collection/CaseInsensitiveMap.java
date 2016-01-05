@@ -4,7 +4,7 @@ import java.util.Map;
 
 /**
  * Generic String keyed Map that ignores the String case
- * 
+ *
  * @author Andreas
  *
  * @param <V>
@@ -15,7 +15,7 @@ public class CaseInsensitiveMap<V> extends AbstractHashMap<String, V> {
 	public static <V> CaseInsensitiveMap<V> create() {
 		return new CaseInsensitiveMap<V>();
 	}
-	
+
 	public CaseInsensitiveMap() {
 		super();
 	}

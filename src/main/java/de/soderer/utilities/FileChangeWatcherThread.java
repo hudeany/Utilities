@@ -49,9 +49,10 @@ public class FileChangeWatcherThread extends Thread {
 		running = false;
 		interrupt();
 	}
-	
+
 	public interface NotificationListener {
 		public void noticeFileChanged();
+
 		public void noticeFileNotExists();
 	}
 }

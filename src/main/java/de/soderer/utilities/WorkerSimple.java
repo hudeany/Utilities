@@ -28,21 +28,19 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	public WorkerSimple(WorkerParentSimple parent) {
 		this.parent = parent;
 	}
-	
+
 	/**
-	 * Minimum time between two parent.showProgress calls.
-	 * (default 500 millis)
-	 * 
+	 * Minimum time between two parent.showProgress calls. (default 500 millis)
+	 *
 	 * @param value
 	 */
 	public void setShowProgressAfterMilliseconds(long value) {
 		showProgressAfterMilliseconds = value;
 	}
-	
+
 	/**
-	 * May be set to 0 to speed up actions, when there is no GUI that must handle the progress show requests.
-	 * (default 150 millis)
-	 * 
+	 * May be set to 0 to speed up actions, when there is no GUI that must handle the progress show requests. (default 150 millis)
+	 *
 	 * @param value
 	 */
 	public void setShowProgressOverrideRefreshMilliseconds(long value) {
@@ -88,7 +86,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	public boolean cancel(boolean arg0) {
 		return cancel();
 	}
-	
+
 	public boolean cancel() {
 		cancel = true;
 		return cancel;

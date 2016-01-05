@@ -14,7 +14,7 @@ import de.soderer.utilities.swt.LabeledText.ArrangementStyle;
 
 public class LabeledNumberText extends Composite {
 	protected NumberText textField;
-	
+
 	protected LabeledNumberText(Composite parent, int style) throws Exception {
 		super(parent, style);
 	}
@@ -22,16 +22,16 @@ public class LabeledNumberText extends Composite {
 	public LabeledNumberText(Composite parent, int style, String labelText) throws Exception {
 		this(parent, style, labelText, null);
 	}
-	
+
 	public LabeledNumberText(Composite parent, int style, String labelText, ArrangementStyle arrangementStyle) throws Exception {
 		super(parent, style);
-		
+
 		final LabeledNumberText labeledText = this;
-		
+
 		if (arrangementStyle == null) {
 			arrangementStyle = ArrangementStyle.Vertical;
 		}
-		
+
 		GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : 2, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
@@ -39,7 +39,7 @@ public class LabeledNumberText extends Composite {
 
 		Label label = new Label(this, SWT.NONE);
 		label.setText(labelText);
-		
+
 		textField = new NumberText(this, SWT.BORDER | style);
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		textField.setText("");
@@ -52,7 +52,7 @@ public class LabeledNumberText extends Composite {
 			}
 		});
 	}
-	
+
 	public void addModifyListener(ModifyListener listener) {
 		checkWidget();
 		if (listener == null) {
@@ -62,15 +62,15 @@ public class LabeledNumberText extends Composite {
 			addListener(SWT.Modify, typedListener);
 		}
 	}
-	
+
 	public int getValue() {
 		return textField.getValue();
 	}
-	
+
 	public void setValue(int value) {
 		textField.setValue(value);
 	}
-	
+
 	@Override
 	public void setEnabled(boolean enabled) {
 		textField.setEnabled(enabled);

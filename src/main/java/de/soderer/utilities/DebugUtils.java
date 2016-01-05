@@ -14,9 +14,9 @@ public class DebugUtils {
 
 	public static final void printProperties(Properties properties) {
 		Enumeration<?> elementsEnum = properties.keys();
-		while(elementsEnum.hasMoreElements()) {
+		while (elementsEnum.hasMoreElements()) {
 			String key = (String) elementsEnum.nextElement();
-			String value = (String) properties.getProperty(key);
+			String value = properties.getProperty(key);
 			logger.debug(key + " = '" + value + "'");
 		}
 	}
@@ -30,13 +30,13 @@ public class DebugUtils {
 				clClass = clClass.getSuperclass();
 			}
 			Class<?>[] interfaces = classLoader.getClass().getInterfaces();
-			for (int i = 0; i < interfaces.length; i++) {
-				logger.debug("Classloader (Interface): " + interfaces[i]);
+			for (Class<?> interface1 : interfaces) {
+				logger.debug("Classloader (Interface): " + interface1);
 			}
 			if (classLoader instanceof URLClassLoader) {
 				URL[] urls = ((URLClassLoader) classLoader).getURLs();
-				for (int i = 0; i < urls.length; i++) {
-					logger.debug("Library: " + urls[i].toString());
+				for (URL url : urls) {
+					logger.debug("Library: " + url.toString());
 				}
 			}
 			classLoader = classLoader.getParent();

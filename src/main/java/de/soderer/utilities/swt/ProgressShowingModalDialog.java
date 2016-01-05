@@ -10,14 +10,14 @@ import de.soderer.utilities.WorkerParentSimple;
 
 public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> implements WorkerParentSimple {
 	private static final transient Logger logger = Logger.getLogger(ProgressShowingModalDialog.class);
-	
+
 	protected ProgressDialog progressDialog;
-	
+
 	public ProgressShowingModalDialog(Shell parentShell, String title) {
 		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
-	
-	public ProgressShowingModalDialog(Shell parentShell, int style, String title) {   
+
+	public ProgressShowingModalDialog(Shell parentShell, int style, String title) {
 		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 
@@ -72,7 +72,7 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> imple
 			logger.error("Error in showDone", e);
 		}
 	}
-	
+
 	@Override
 	public void cancel() {
 		// Do nothing

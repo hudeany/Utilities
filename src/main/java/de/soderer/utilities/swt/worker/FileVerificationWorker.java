@@ -25,7 +25,7 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 	public FileVerificationWorker(ProgressShowingModalDialog<?> parent, File fileToVerify, File signatureFile, PublicKey publicKey) {
 		this(parent, fileToVerify, signatureFile, publicKey, null);
 	}
-	
+
 	public FileVerificationWorker(ProgressShowingModalDialog<?> parent, File fileToVerify, File signatureFile, PublicKey publicKey, String signatureMethod) {
 		super(parent);
 		this.fileToVerify = fileToVerify;
@@ -36,8 +36,8 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
-		
-    	itemsToDo = fileToVerify.length();
+
+		itemsToDo = fileToVerify.length();
 	}
 
 	@Override
@@ -47,11 +47,11 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 		itemsDone = 0L;
 		result = null;
 		showProgress();
-		
+
 		BufferedInputStream dataStream = null;
 		try {
 			Security.addProvider(new BouncyCastleProvider());
-			
+
 			dataStream = new BufferedInputStream(new FileInputStream(fileToVerify));
 			Signature signature = Signature.getInstance(signatureMethod, "BC");
 			signature.initVerify(publicKey);
@@ -68,15 +68,15 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 			}
 
 			byte[] signatureData = FileUtils.readFileToByteArray(signatureFile);
-			
+
 			result = signature.verify(signatureData);
-			
+
 			result = true;
 		} catch (Exception e) {
 			error = new Exception("Cannot verify signature", e);
 		} finally {
 			Utilities.closeQuietly(dataStream);
-			
+
 			showDone();
 		}
 	}

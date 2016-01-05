@@ -25,7 +25,7 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 	public FileSignatureWorker(ProgressShowingModalDialog<?> parent, File fileToSign, File signatureDestinationFile, PrivateKey privateKey) {
 		this(parent, fileToSign, signatureDestinationFile, privateKey, null);
 	}
-	
+
 	public FileSignatureWorker(ProgressShowingModalDialog<?> parent, File fileToSign, File signatureDestinationFile, PrivateKey privateKey, String signatureMethod) {
 		super(parent);
 		this.fileToSign = fileToSign;
@@ -36,8 +36,8 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
-		
-    	itemsToDo = fileToSign.length();
+
+		itemsToDo = fileToSign.length();
 	}
 
 	@Override
@@ -47,11 +47,11 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 		itemsDone = 0L;
 		result = null;
 		showProgress();
-		
+
 		BufferedInputStream dataStream = null;
 		try {
 			Security.addProvider(new BouncyCastleProvider());
-			
+
 			dataStream = new BufferedInputStream(new FileInputStream(fileToSign));
 			Signature signature = Signature.getInstance(signatureMethod, "BC");
 			signature.initSign(privateKey);
@@ -68,13 +68,13 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 			}
 			byte[] signatureData = signature.sign();
 			FileUtils.writeByteArrayToFile(signatureDestinationFile, signatureData);
-			
+
 			result = true;
 		} catch (Exception e) {
 			error = new Exception("Cannot create signature", e);
 		} finally {
 			Utilities.closeQuietly(dataStream);
-			
+
 			showDone();
 		}
 	}

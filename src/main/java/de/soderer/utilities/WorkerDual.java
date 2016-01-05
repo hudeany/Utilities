@@ -12,7 +12,7 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	public WorkerDual(WorkerParentDual parent) {
 		super(parent);
 	}
-	
+
 	protected void showItemStart(String itemName) {
 		currentItemName = itemName;
 		startTimeSub = new Date();

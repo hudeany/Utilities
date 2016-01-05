@@ -1,6 +1,5 @@
 package de.soderer.utilities;
 
-
 public class PunycodeCodec {
 	private final static int TMIN = 1;
 	private final static int TMAX = 26;
@@ -19,11 +18,11 @@ public class PunycodeCodec {
 		if (stringToEncode == null) {
 			return null;
 		}
-			
+
 		int n = INITIAL_N;
 		int delta = 0;
 		int bias = INITIAL_BIAS;
-		
+
 		StringBuffer output = new StringBuffer();
 		for (char character : stringToEncode.toCharArray()) {
 			if (isSimpleCharacter(character)) {
@@ -74,8 +73,7 @@ public class PunycodeCodec {
 						if (q < t) {
 							break;
 						}
-						output.append((char) punycodeDigitToCodePoint(t
-								+ (q - t) % (BASE - t)));
+						output.append((char) punycodeDigitToCodePoint(t + (q - t) % (BASE - t)));
 						q = (q - t) / (BASE - t);
 					}
 
@@ -100,7 +98,7 @@ public class PunycodeCodec {
 		if (punycodeString == null) {
 			return null;
 		}
-		
+
 		int n = INITIAL_N;
 		int i = 0;
 		int bias = INITIAL_BIAS;
@@ -206,19 +204,19 @@ public class PunycodeCodec {
 			throw new Exception("Invalid input for decoding punycode");
 		}
 	}
-	
+
 	public static String encodeDomainName(String domainName) throws Exception {
 		if (domainName == null) {
 			return null;
 		}
-		
+
 		String[] domainNameParts = domainName.toLowerCase().trim().split("\\.");
 		StringBuilder punycodedDomainName = new StringBuilder(domainName.length());
 		for (String domainNamePart : domainNameParts) {
 			if (punycodedDomainName.length() > 0) {
 				punycodedDomainName.append('.');
 			}
-			
+
 			String punycodedDomainNamePart = encode(domainNamePart);
 			if (!punycodedDomainNamePart.equals(domainNamePart)) {
 				punycodedDomainName.append(ENCODED_DOMAINNAME_PREFIX);
@@ -229,19 +227,19 @@ public class PunycodeCodec {
 		}
 		return punycodedDomainName.toString();
 	}
-	
+
 	public static String decodeDomainName(String domainNameToDecode) throws Exception {
 		if (domainNameToDecode == null) {
 			return null;
 		}
-		
+
 		String[] domainNameParts = domainNameToDecode.toLowerCase().trim().split("\\.");
 		StringBuilder decodedDomainName = new StringBuilder();
 		for (String domainNamePart : domainNameParts) {
 			if (decodedDomainName.length() > 0) {
 				decodedDomainName.append('.');
 			}
-			
+
 			if (domainNamePart.startsWith(ENCODED_DOMAINNAME_PREFIX)) {
 				domainNamePart = domainNamePart.substring(ENCODED_DOMAINNAME_PREFIX.length());
 				String punycodedDomainNamePart = decode(domainNamePart);
@@ -256,44 +254,44 @@ public class PunycodeCodec {
 		}
 		return decodedDomainName.toString();
 	}
-	
+
 	public static String encodeEmailAdress(String email) throws Exception {
 		if (email == null) {
 			return null;
 		}
-		
+
 		int mailDelimiterIndex = email.trim().indexOf('@');
 		if (mailDelimiterIndex < 0) {
 			throw new Exception("Invalid email address");
 		}
-		
+
 		String localPart = email.substring(0, mailDelimiterIndex);
 		String domainName = email.substring(mailDelimiterIndex + 1);
 		StringBuilder encodedEmail = new StringBuilder();
 		encodedEmail.append(localPart);
 		encodedEmail.append('@');
 		encodedEmail.append(encodeDomainName(domainName));
-		
+
 		return encodedEmail.toString();
 	}
-	
+
 	public static String decodeEmailAdress(String emailToDecode) throws Exception {
 		if (emailToDecode == null) {
 			return null;
 		}
-		
+
 		int mailDelimiterIndex = emailToDecode.trim().indexOf('@');
 		if (mailDelimiterIndex < 0) {
 			throw new Exception("Invalid email address");
 		}
-		
+
 		String localPart = emailToDecode.substring(0, mailDelimiterIndex);
 		String domainName = emailToDecode.substring(mailDelimiterIndex + 1);
 		StringBuilder decodedEmail = new StringBuilder();
 		decodedEmail.append(localPart);
 		decodedEmail.append('@');
 		decodedEmail.append(decodeDomainName(domainName));
-		
+
 		return decodedEmail.toString();
 	}
 }

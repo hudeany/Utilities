@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
 public class SendMail {
 
 	private static final Logger log = LoggerFactory.getLogger(SendMail.class);
-	
+
 	private static String SENDER_ADRESSE = "absender@sender.de";
-	
+
 	// adressenListe ist ein ";"-getrennter String mit den EmailAdressen
 	public static boolean sendWarningMail(String adressenListe, String pBetreff, String pMailtext) throws Exception {
 		List<String> zielEmailAdressen = new ArrayList<String>();
@@ -49,18 +49,16 @@ public class SendMail {
 		mailtext.append(pMailtext);
 		String lineFeed = "\n";
 		mailtext.append(lineFeed + lineFeed);
-		mailtext.append(
-			"HINWEIS: Diese E-Mail wurde automatisch von D7-IT-KuV3-B6 erstellt." + lineFeed);
-				//+ "Bitte schicken Sie keine Antwort an die absendende interne Mailadresse, da dort eine weitere Bearbeitung nicht möglich ist." + lineFeed);
+		mailtext.append("HINWEIS: Diese E-Mail wurde automatisch von D7-IT-KuV3-B6 erstellt." + lineFeed);
+		// + "Bitte schicken Sie keine Antwort an die absendende interne Mailadresse, da dort eine weitere Bearbeitung nicht möglich ist." + lineFeed);
 
 		try {
 			return sendStraightMail(zielEmailAdressen, null, null, subject.toString(), mailtext.toString(), null, null, null, true);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			return false;
 		}
 	}
-	
+
 	public static boolean sendMail(String[] toEmailAdressen, String pBetreff, String pMailtext, File... filesToAttach) throws Exception {
 		List<String> to = new ArrayList<String>();
 		for (String adresse : toEmailAdressen) {
@@ -68,23 +66,25 @@ public class SendMail {
 		}
 		return sendMailWithSignature(to, null, null, pBetreff, pMailtext, filesToAttach);
 	}
-	
+
 	public static boolean sendMail(String toEmailAdresse, String pBetreff, String pMailtext, File... filesToAttach) throws Exception {
 		List<String> to = new ArrayList<String>();
 		to.add(toEmailAdresse);
 		return sendMailWithSignature(to, null, null, pBetreff, pMailtext, filesToAttach);
 	}
-	
+
 	public static boolean sendMailWithSignature(List<String> pTO, List<String> pCC, List<String> pBCC, String pBetreff, String pMailtext, File... filesToAttach) throws Exception {
 		return sendMailWithSignature(pTO, pCC, pBCC, pBetreff, pMailtext, false, filesToAttach);
 	}
-	
+
 	/**
 	 * Versenden einer Email mit Standardtextanhängen ohne die Rückgabe einer Exception => Optimistisch
-	 * @return 
-	 * @throws Exception 
+	 * 
+	 * @return
+	 * @throws Exception
 	 */
-	public static boolean sendMailWithSignature(List<String> pTO, List<String> pCC, List<String> pBCC, String pBetreff, String pMailtext, boolean sendAsHtmlMail, File... filesToAttach) throws Exception {
+	public static boolean sendMailWithSignature(List<String> pTO, List<String> pCC, List<String> pBCC, String pBetreff, String pMailtext, boolean sendAsHtmlMail, File... filesToAttach)
+			throws Exception {
 		StringBuffer subject = new StringBuffer();
 		StringBuffer mailtext = new StringBuffer();
 
@@ -94,22 +94,23 @@ public class SendMail {
 		// Mailtext erstellen
 		mailtext.append(pMailtext);
 		String lineFeed = "\n";
-		if (sendAsHtmlMail) lineFeed = "<br>";
+		if (sendAsHtmlMail) {
+			lineFeed = "<br>";
+		}
 		mailtext.append(lineFeed + lineFeed);
-		mailtext.append(
-			"HINWEIS: Diese E-Mail wurde automatisch von D7-IT-KuV3-B6 erstellt." + lineFeed);
-				//+ "Bitte schicken Sie keine Antwort an die absendende interne Mailadresse, da dort eine weitere Bearbeitung nicht möglich ist." + lineFeed);
-		
+		mailtext.append("HINWEIS: Diese E-Mail wurde automatisch von D7-IT-KuV3-B6 erstellt." + lineFeed);
+		// + "Bitte schicken Sie keine Antwort an die absendende interne Mailadresse, da dort eine weitere Bearbeitung nicht möglich ist." + lineFeed);
+
 		try {
 			return sendStraightMail(pTO, pCC, pBCC, subject.toString(), mailtext.toString(), null, null, null, sendAsHtmlMail, filesToAttach);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// geloggt wurde bereits
 			return false;
 		}
 	}
 
-	public static boolean sendStraightMail(List<String> pTO, List<String> pCC, List<String> pBCC, String pBetreff, String pMailtext, byte[] pFileData, String fileName, String mimeType, boolean sendAsHtmlMail, File... filesToAttach) throws Exception {
+	public static boolean sendStraightMail(List<String> pTO, List<String> pCC, List<String> pBCC, String pBetreff, String pMailtext, byte[] pFileData, String fileName, String mimeType,
+			boolean sendAsHtmlMail, File... filesToAttach) throws Exception {
 		MimeMessage mimeMessage = null;
 		// Email verschicken
 		try {
@@ -139,11 +140,11 @@ public class SendMail {
 						attachFile(attachmentBodyPart, attachFile);
 						// Nur mit JavaMail 1.4 (das offenbar nicht installiert ist) attachmentBodyPart.attachFile(attachFile);
 						multiPart.addBodyPart(attachmentBodyPart);
-						
-						/*FileDataSource fileDataSource = new FileDataSource(attachFile);
-						MimeBodyPart attachmentBodyPart = new MimeBodyPart();
-						attachmentBodyPart.setDataHandler(new DataHandler(fileDataSource));
-						multiPart.addBodyPart(attachmentBodyPart);*/
+
+						/*
+						 * FileDataSource fileDataSource = new FileDataSource(attachFile); MimeBodyPart attachmentBodyPart = new MimeBodyPart(); attachmentBodyPart.setDataHandler(new
+						 * DataHandler(fileDataSource)); multiPart.addBodyPart(attachmentBodyPart);
+						 */
 					}
 				}
 				// Add Attachment from Byte-Array
@@ -174,8 +175,9 @@ public class SendMail {
 				toAdresses.add(new InternetAddress(recipient));
 			}
 			InternetAddress[] toAddress = toAdresses.toArray(new InternetAddress[pTO.size()]);
-			if ((toAddress != null) && (toAddress.length > 0))
+			if ((toAddress != null) && (toAddress.length > 0)) {
 				mimeMessage.setRecipients(Message.RecipientType.TO, toAddress);
+			}
 			// CC Emails
 			if (pCC != null) {
 				List<InternetAddress> ccAdresses = new ArrayList<InternetAddress>();
@@ -183,8 +185,9 @@ public class SendMail {
 					ccAdresses.add(new InternetAddress(ccRecipient));
 				}
 				InternetAddress[] ccAddress = ccAdresses.toArray(new InternetAddress[pCC.size()]);
-				if ((ccAddress != null) && (ccAddress.length > 0))
+				if ((ccAddress != null) && (ccAddress.length > 0)) {
 					mimeMessage.setRecipients(Message.RecipientType.CC, ccAddress);
+				}
 			}
 			// BCC Emails
 			if (pBCC != null) {
@@ -193,8 +196,9 @@ public class SendMail {
 					bccAdresses.add(new InternetAddress(bccRecipient));
 				}
 				InternetAddress[] bccAddress = bccAdresses.toArray(new InternetAddress[pBCC.size()]);
-				if ((bccAddress != null) && (bccAddress.length > 0))
+				if ((bccAddress != null) && (bccAddress.length > 0)) {
 					mimeMessage.setRecipients(Message.RecipientType.BCC, bccAddress);
+				}
 			}
 			// Tatsächlich senden
 			Transport transport = session.getTransport("smtp");
@@ -202,24 +206,21 @@ public class SendMail {
 			Transport.send(mimeMessage);
 			transport.close();
 			return true;
-		}
-		catch (AddressException e) {
+		} catch (AddressException e) {
 			log.error(e.getMessage(), e);
 			throw new Exception("AddressException beim Emailversand", e);
-		}
-		catch (MessagingException e) {
+		} catch (MessagingException e) {
 			log.error(e.getMessage(), e);
 			throw new Exception("MessagingException beim Emailversand", e);
-		}
-		catch (UnsupportedEncodingException e) {
+		} catch (UnsupportedEncodingException e) {
 			log.error(e.getMessage(), e);
 			throw new Exception("UnsupportedEncodingException beim Emailversand", e);
 		}
 	}
 
 	private static void attachFile(MimeBodyPart attachmentBodyPart, File attachFile) throws MessagingException {
-    	FileDataSource fds = new FileDataSource(attachFile);   	
-    	attachmentBodyPart.setDataHandler(new DataHandler(fds));
-    	attachmentBodyPart.setFileName(fds.getName());
+		FileDataSource fds = new FileDataSource(attachFile);
+		attachmentBodyPart.setDataHandler(new DataHandler(fds));
+		attachmentBodyPart.setFileName(fds.getName());
 	}
 }

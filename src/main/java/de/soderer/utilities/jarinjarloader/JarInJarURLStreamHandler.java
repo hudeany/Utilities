@@ -19,14 +19,15 @@ public class JarInJarURLStreamHandler extends java.net.URLStreamHandler {
 	@Override
 	protected void parseURL(URL url, String spec, int start, int limit) {
 		String file;
-		if (spec.startsWith("rsrc:"))
+		if (spec.startsWith("rsrc:")) {
 			file = spec.substring(5);
-		else if (url.getFile().equals("./"))
+		} else if (url.getFile().equals("./")) {
 			file = spec;
-		else if (url.getFile().endsWith("/"))
+		} else if (url.getFile().endsWith("/")) {
 			file = url.getFile() + spec;
-		else
+		} else {
 			file = spec;
+		}
 		setURL(url, "rsrc", "", -1, null, null, file, null, null);
 	}
 }

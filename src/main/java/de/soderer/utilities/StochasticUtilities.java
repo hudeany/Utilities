@@ -61,7 +61,7 @@ public class StochasticUtilities {
 			return returnList;
 		}
 	}
-	
+
 	public static BigInteger factorial(int n) {
 		BigInteger fact = BigInteger.ONE;
 		for (int i = n; i > 1; i--) {

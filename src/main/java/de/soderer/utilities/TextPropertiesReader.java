@@ -10,7 +10,7 @@ import de.soderer.utilities.TextUtilities.LineBreakType;
  */
 public class TextPropertiesReader {
 	protected String dataString = null;
-	
+
 	private int characters = -1;
 	private Map<Character, Integer> foundCharacters = null;
 	private int nonWhitespaceCharacters = -1;
@@ -23,16 +23,16 @@ public class TextPropertiesReader {
 	 */
 	protected TextPropertiesReader() {
 	}
-	
+
 	/**
 	 * Open a new TextPropertiesReader with the text to scan lateron
-	 * 
+	 *
 	 * @param dataString
 	 */
 	public TextPropertiesReader(String dataString) {
 		this.dataString = dataString;
 	}
-	
+
 	/**
 	 * Scan for the text properties of the given text
 	 */
@@ -45,16 +45,16 @@ public class TextPropertiesReader {
 		boolean foundLineBreakMac = false;
 		boolean foundLineBreakWindows = false;
 		boolean isWithinWord = false;
-		
+
 		for (int i = 0; i < dataString.length(); i++) {
 			char character = dataString.charAt(i);
-			
+
 			if (foundCharacters.containsKey(character)) {
 				foundCharacters.put(character, foundCharacters.get(character) + 1);
 			} else {
 				foundCharacters.put(character, 1);
 			}
-				
+
 			if (character == '\r') {
 				if (dataString.charAt(i + 1) == '\n') {
 					i++;
@@ -67,7 +67,7 @@ public class TextPropertiesReader {
 					wordCount++;
 				}
 				isWithinWord = false;
-				
+
 				lineCount++;
 			} else if (character == '\n') {
 				foundLineBreakUnix = true;
@@ -76,13 +76,13 @@ public class TextPropertiesReader {
 					wordCount++;
 				}
 				isWithinWord = false;
-				
+
 				lineCount++;
 			} else if (!Character.isWhitespace(character)) {
 				nonWhitespaceCharactersCount++;
-				
+
 				isWithinWord = true;
-				
+
 				if (i == dataString.length() - 1) {
 					lineCount++;
 				}
@@ -91,7 +91,7 @@ public class TextPropertiesReader {
 					wordCount++;
 				}
 				isWithinWord = false;
-				
+
 				if (i == dataString.length() - 1) {
 					lineCount++;
 				}
@@ -101,7 +101,7 @@ public class TextPropertiesReader {
 		if (isWithinWord) {
 			wordCount++;
 		}
-		
+
 		if ((foundLineBreakUnix && foundLineBreakMac) || (foundLineBreakWindows && foundLineBreakMac) || (foundLineBreakUnix && foundLineBreakWindows)) {
 			linebreaks = LineBreakType.Mixed;
 		} else if (foundLineBreakUnix) {
@@ -113,7 +113,7 @@ public class TextPropertiesReader {
 		} else {
 			linebreaks = LineBreakType.Unknown;
 		}
-		
+
 		lines = lineCount;
 		characters = dataString.length();
 		nonWhitespaceCharacters = nonWhitespaceCharactersCount;
@@ -122,7 +122,7 @@ public class TextPropertiesReader {
 
 	/**
 	 * Get the number of characters of the text
-	 * 
+	 *
 	 * @return
 	 */
 	public int getCharactersCount() {
@@ -131,7 +131,7 @@ public class TextPropertiesReader {
 
 	/**
 	 * Get the characters used in the text and their numbers of occurences
-	 * 
+	 *
 	 * @return
 	 */
 	public Map<Character, Integer> getFoundCharacters() {
@@ -140,7 +140,7 @@ public class TextPropertiesReader {
 
 	/**
 	 * Get the number of non whitespace characters of the text
-	 * 
+	 *
 	 * @return
 	 */
 	public int getNonWhitespaceCharactersCount() {
@@ -149,7 +149,7 @@ public class TextPropertiesReader {
 
 	/**
 	 * Get the number of lines of the text
-	 * 
+	 *
 	 * @return
 	 */
 	public int getLinesCount() {
@@ -158,7 +158,7 @@ public class TextPropertiesReader {
 
 	/**
 	 * Get the number of words separated by whitespaces of the text
-	 * 
+	 *
 	 * @return
 	 */
 	public int getWordsCount() {
@@ -167,7 +167,7 @@ public class TextPropertiesReader {
 
 	/**
 	 * Get the linebreak type of the text
-	 * 
+	 *
 	 * @return
 	 */
 	public LineBreakType getLinebreakType() {

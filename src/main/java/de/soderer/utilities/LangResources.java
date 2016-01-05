@@ -6,7 +6,7 @@ import java.util.ResourceBundle;
 
 public class LangResources {
 	private static PropertyResourceBundle propertyResourceBundle;
-	
+
 	public static String get(String resourceKey, Object... arguments) {
 		if (propertyResourceBundle == null) {
 			try {
@@ -16,7 +16,7 @@ public class LangResources {
 				return "Missing resourceBundle: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
 			}
 		}
-	
+
 		if (propertyResourceBundle.containsKey(resourceKey)) {
 			String pattern = propertyResourceBundle.getString(resourceKey);
 			return MessageFormat.format(pattern, arguments);
@@ -24,7 +24,7 @@ public class LangResources {
 			return "Missing resourceKey: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
 		}
 	}
-	
+
 	public static boolean existsKey(String resourceKey) {
 		return propertyResourceBundle.containsKey(resourceKey);
 	}

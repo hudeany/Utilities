@@ -20,7 +20,7 @@ public class XmlParserPool extends GenericObjectPool<SAXParser> {
 
 	@Override
 	public SAXParser borrowObject() throws Exception {
-		return (SAXParser) super.borrowObject();
+		return super.borrowObject();
 	}
 
 	@Override
@@ -30,14 +30,14 @@ public class XmlParserPool extends GenericObjectPool<SAXParser> {
 
 	private static final class Config extends GenericObjectPool.Config {
 		public Config() {
-			this.whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_GROW;
-			this.minIdle = 2;
+			whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_GROW;
+			minIdle = 2;
 		}
 	}
 
 	private static final class PoolableSAXParserFactory extends BasePoolableObjectFactory<SAXParser> {
 		private SAXParserFactory parserFactory = SAXParserFactory.newInstance();
-		
+
 		@Override
 		public SAXParser makeObject() throws Exception {
 			return parserFactory.newSAXParser();

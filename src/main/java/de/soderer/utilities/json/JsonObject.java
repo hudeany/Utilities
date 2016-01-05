@@ -8,23 +8,23 @@ import de.soderer.utilities.TextUtilities;
 
 public class JsonObject {
 	private Map<String, Object> properties = new LinkedHashMap<String, Object>();
-	
+
 	public void add(String key, JsonObject object) {
 		add(key, (Object) object);
 	}
-	
+
 	public void add(String key, JsonArray array) {
 		add(key, (Object) array);
 	}
-	
+
 	public void add(String key, String value) {
 		add(key, (Object) value);
 	}
-	
+
 	public void add(String key, Number value) {
 		add(key, (Object) value);
 	}
-	
+
 	public void add(String key, Boolean value) {
 		add(key, (Object) value);
 	}
@@ -32,7 +32,7 @@ public class JsonObject {
 	public void addNullValue(String key) {
 		add(key, (Object) null);
 	}
-	
+
 	private void add(String key, Object object) {
 		if (properties.containsKey(key)) {
 			Object oldObject = properties.get(key);
@@ -84,19 +84,19 @@ public class JsonObject {
 			properties.put(key, object);
 		}
 	}
-	
+
 	public Object remove(String key) {
 		return properties.remove(key);
 	}
-	
+
 	public Object get(String key) {
 		return properties.get(key);
 	}
-	
+
 	public Set<String> keySet() {
 		return properties.keySet();
 	}
-	
+
 	public int size() {
 		return properties.size();
 	}
@@ -110,12 +110,12 @@ public class JsonObject {
 		if (properties.size() > 0) {
 			boolean isFirstKey = true;
 			StringBuilder result = new StringBuilder("{");
-			
+
 			for (Object keyObject : properties.keySet()) {
 				if (!isFirstKey) {
 					result.append(",");
 				}
-				
+
 				result.append(linebreak);
 				String key = (String) keyObject;
 				result.append(indention);
@@ -137,34 +137,34 @@ public class JsonObject {
 				} else {
 					result.append(subItem.toString());
 				}
-				
+
 				isFirstKey = false;
 			}
-			
+
 			result.append(linebreak);
 			result.append("}");
 			result.append(linebreak);
-			
+
 			return result.toString();
 		} else {
 			return "{}";
 		}
 	}
-	
+
 	protected int parse(char[] jsonData, int startIndex) throws Exception {
 		try {
 			properties.clear();
-			
+
 			char previousChar = ' ';
 			StringBuilder key = null;
 			StringBuilder quotedValue = null;
 			StringBuilder unquotedValue = null;
 			String keyString = null;
 			Object valueObject = null;
-			
+
 			for (int index = startIndex; index < jsonData.length; index++) {
 				char charItem = jsonData[index];
-				
+
 				if (charItem == '\\') {
 					// keep for following char check
 					if (key == null && quotedValue == null) {
@@ -204,7 +204,7 @@ public class JsonObject {
 							valueObject = JsonUtilities.getJsonValue(unquotedValue.toString());
 							unquotedValue = null;
 						}
-						
+
 						if (valueObject == null) {
 							addNullValue(keyString);
 						} else if (valueObject instanceof JsonObject) {
@@ -218,13 +218,13 @@ public class JsonObject {
 						} else if (valueObject instanceof Boolean) {
 							add(keyString, (Boolean) valueObject);
 						}
-						
+
 						keyString = null;
 						valueObject = null;
 					} else if (charItem == ',') {
 						throw new Exception("Unexpected '" + charItem + "'-sign at index " + index);
 					}
-					
+
 					if (charItem == '}') {
 						return index;
 					}
@@ -245,18 +245,18 @@ public class JsonObject {
 						quotedValue = new StringBuilder();
 					}
 				} else {
-					if (unquotedValue == null){
+					if (unquotedValue == null) {
 						unquotedValue = new StringBuilder();
 					}
 					unquotedValue.append(charItem);
-					if (!JsonUtilities.isValidUnfinishedJsonValue(unquotedValue.toString())){
+					if (!JsonUtilities.isValidUnfinishedJsonValue(unquotedValue.toString())) {
 						throw new Exception("Unexpected '" + charItem + "'-sign at index " + index);
 					}
 				}
-				
+
 				previousChar = charItem;
 			}
-			
+
 			throw new Exception("Unclosed object value");
 		} catch (Exception e) {
 			throw new Exception("Invalid JSON data starting at index " + startIndex, e);

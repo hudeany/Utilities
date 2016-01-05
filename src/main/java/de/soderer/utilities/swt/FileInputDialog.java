@@ -21,12 +21,12 @@ public class FileInputDialog extends ModalDialog<String> {
 	private LabeledFileText labeledFileText;
 	private Button okButton;
 
-	public FileInputDialog(Shell shell, String title, String text) {   
+	public FileInputDialog(Shell shell, String title, String text) {
 		super(shell, SWT.RESIZE, title);
 
 		this.text = text;
 	}
-	
+
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
@@ -34,13 +34,13 @@ public class FileInputDialog extends ModalDialog<String> {
 		Composite composite = new Composite(shell, SWT.NONE);
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
-		
+
 		if (text != null) {
 			Label label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 			label.setText(text);
 		}
-		
+
 		labeledFileText = new LabeledFileText(shell, composite, SWT.NONE, null, ArrangementStyle.Horizontal);
 		labeledFileText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		labeledFileText.addModifyListener(new ModifyListener() {
@@ -50,9 +50,9 @@ public class FileInputDialog extends ModalDialog<String> {
 				checkStatus();
 			}
 		});
-	    
-	    okButton = new Button(composite, SWT.PUSH);
-	    okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+
+		okButton = new Button(composite, SWT.PUSH);
+		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -60,21 +60,21 @@ public class FileInputDialog extends ModalDialog<String> {
 				getParent().close();
 			}
 		});
-		
-	    Button cancelButton = new Button(composite, SWT.PUSH);
-	    cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-	    cancelButton.setText(LangResources.get("cancel"));
-	    cancelButton.addSelectionListener(new SelectionAdapter() {
+
+		Button cancelButton = new Button(composite, SWT.PUSH);
+		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				setReturnValue(null);
 				getParent().close();
 			}
 		});
-	    
-	    checkStatus();
-	    
-	    shell.pack();
+
+		checkStatus();
+
+		shell.pack();
 		shell.setSize(400, shell.getSize().y);
 	}
 

@@ -28,12 +28,12 @@ public class SimpleInputDialog extends ModalDialog<String> {
 	private Pattern inputPattern = null;
 	private boolean isTechnicalChange = false;
 
-	public SimpleInputDialog(Shell shell, String title, String text) {   
+	public SimpleInputDialog(Shell shell, String title, String text) {
 		super(shell, title);
-		
+
 		this.text = text;
 	}
-	
+
 	public void setInputPattern(String patternString) {
 		if (Utilities.isBlank(patternString)) {
 			inputPattern = null;
@@ -41,15 +41,15 @@ public class SimpleInputDialog extends ModalDialog<String> {
 			inputPattern = Pattern.compile(patternString);
 		}
 	}
-	
+
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
-		
+
 		Label label = new Label(shell, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 		label.setText(text);
-		
+
 		textField = new Text(shell, SWT.BORDER);
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 		textField.setText("");
@@ -79,11 +79,11 @@ public class SimpleInputDialog extends ModalDialog<String> {
 				}
 			}
 		});
-		
+
 		Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
-	    
+
 		Button okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
@@ -94,7 +94,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 				getParent().close();
 			}
 		});
-	    
+
 		Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));

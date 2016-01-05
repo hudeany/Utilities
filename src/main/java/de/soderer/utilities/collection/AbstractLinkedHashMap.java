@@ -54,6 +54,6 @@ public abstract class AbstractLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	public V remove(Object key) {
 		return super.remove(convertKey(key));
 	}
-	
+
 	protected abstract K convertKey(Object key);
 }

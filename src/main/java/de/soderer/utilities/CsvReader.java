@@ -14,77 +14,77 @@ import java.util.List;
  * The Class CsvReader.
  */
 public class CsvReader implements Closeable {
-	
-	/**  UTF-8 BOM (Byte Order Mark) character for readers. */
+
+	/** UTF-8 BOM (Byte Order Mark) character for readers. */
 	public static final char BOM_UTF_8_CHAR = (char) 65279;
-	
-	/**  UTF-8 BOM (Byte Order Mark) at data start (EF BB BF, "ï»¿"). */
-	public static final byte[] BOM_UTF_8 = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
-	
-	/**  UTF-16 BOM (Byte Order Mark) big endian at data start (FE FF, "þÿ"). */
-	public static final byte[] BOM_UTF_16_BIG_ENDIAN = new byte[]{(byte) 0xFE, (byte) 0xFF};
-	
-	/**  UTF-16 BOM (Byte Order Mark) low  endian at data start (FF FE, "ÿþ"). */
-	public static final byte[] BOM_UTF_16_LOW_ENDIAN = new byte[]{(byte) 0xFF, (byte) 0xFE};
-	
+
+	/** UTF-8 BOM (Byte Order Mark) at data start (EF BB BF, "ï»¿"). */
+	public static final byte[] BOM_UTF_8 = new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
+
+	/** UTF-16 BOM (Byte Order Mark) big endian at data start (FE FF, "þÿ"). */
+	public static final byte[] BOM_UTF_16_BIG_ENDIAN = new byte[] { (byte) 0xFE, (byte) 0xFF };
+
+	/** UTF-16 BOM (Byte Order Mark) low endian at data start (FF FE, "ÿþ"). */
+	public static final byte[] BOM_UTF_16_LOW_ENDIAN = new byte[] { (byte) 0xFF, (byte) 0xFE };
+
 	/** The Constant DEFAULT_ENCODING. */
 	public static final String DEFAULT_ENCODING = "UTF-8";
-	
+
 	/** The Constant DEFAULT_SEPARATOR. */
 	public static final char DEFAULT_SEPARATOR = ',';
-	
+
 	/** The Constant DEFAULT_STRING_QUOTE. */
 	public static final char DEFAULT_STRING_QUOTE = '"';
-	
+
 	/** Mandatory separating charactor. */
 	private char separator;
-	
+
 	/** Character for stringquotes: if set to null, no quoting will be done. */
 	private char stringQuote;
-	
+
 	/**
-	 * Character to escape the stringquote character within quoted strings.
-	 * By default this is the stringquote character itself, so it is doubled in quoted string, but may also be a backslash '\'.
+	 * Character to escape the stringquote character within quoted strings. By default this is the stringquote character itself, so it is doubled in quoted string, but may also be a backslash '\'.
 	 */
 	private char stringQuoteEscapeCharacter;
-	
+
 	/** Since stringQuote is a simple char this activates or deactivates the quoting. */
 	private boolean useStringQuote;
-	
+
 	/** Inputstream for data. */
 	private InputStream inputStream;
-	
+
 	/** Encoding of data. */
 	private Charset encoding;
-	
+
 	/** Allow linebreaks in data texts without the effect of a new data set line. */
 	private boolean lineBreakInDataAllowed = true;
-	
+
 	/** Allow double stringquotes to use it as a character in data text. */
 	private boolean escapedStringQuoteInDataAllowed = true;
-	
+
 	/** If a single read was done, it is impossible to make a full read at once with readAll(). */
 	private boolean singleReadStarted = false;
-	
+
 	/** Number of columns expected (set by first read line). */
 	private int numberOfColumns = -1;
-	
+
 	/** Data reader. */
 	private BufferedReader inputReader = null;
-	
+
 	/** Number of lines read until now. */
 	private int readLines = 0;
-	
+
 	/** Number of chracters read until now. */
 	private int readCharacters = 0;
-	
+
 	/** Allow lines with less than the expected number of data entries per line. */
 	private boolean fillMissingTrailingColumnsWithNull = false;
 
 	/**
 	 * CSV Reader derived constructor.
 	 *
-	 * @param inputStream the input stream
+	 * @param inputStream
+	 *            the input stream
 	 */
 	public CsvReader(InputStream inputStream) {
 		this(inputStream, Charset.forName(DEFAULT_ENCODING), DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE);
@@ -93,50 +93,62 @@ public class CsvReader implements Closeable {
 	/**
 	 * CSV Reader derived constructor.
 	 *
-	 * @param inputStream the input stream
-	 * @param encoding the encoding
+	 * @param inputStream
+	 *            the input stream
+	 * @param encoding
+	 *            the encoding
 	 */
 	public CsvReader(InputStream inputStream, String encoding) {
 		this(inputStream, Charset.forName(encoding), DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE);
 	}
-	
+
 	/**
 	 * CSV Reader derived constructor.
 	 *
-	 * @param inputStream the input stream
-	 * @param encoding the encoding
+	 * @param inputStream
+	 *            the input stream
+	 * @param encoding
+	 *            the encoding
 	 */
 	public CsvReader(InputStream inputStream, Charset encoding) {
 		this(inputStream, encoding, DEFAULT_SEPARATOR, DEFAULT_STRING_QUOTE);
 	}
-	
+
 	/**
 	 * CSV Reader derived constructor.
 	 *
-	 * @param inputStream the input stream
-	 * @param separator the separator
+	 * @param inputStream
+	 *            the input stream
+	 * @param separator
+	 *            the separator
 	 */
 	public CsvReader(InputStream inputStream, char separator) {
 		this(inputStream, Charset.forName(DEFAULT_ENCODING), separator, DEFAULT_STRING_QUOTE);
 	}
-	
+
 	/**
 	 * CSV Reader derived constructor.
 	 *
-	 * @param inputStream the input stream
-	 * @param encoding the encoding
-	 * @param separator the separator
+	 * @param inputStream
+	 *            the input stream
+	 * @param encoding
+	 *            the encoding
+	 * @param separator
+	 *            the separator
 	 */
 	public CsvReader(InputStream inputStream, String encoding, char separator) {
 		this(inputStream, Charset.forName(encoding), separator, DEFAULT_STRING_QUOTE);
 	}
-	
+
 	/**
 	 * CSV Reader derived constructor.
 	 *
-	 * @param inputStream the input stream
-	 * @param encoding the encoding
-	 * @param separator the separator
+	 * @param inputStream
+	 *            the input stream
+	 * @param encoding
+	 *            the encoding
+	 * @param separator
+	 *            the separator
 	 */
 	public CsvReader(InputStream inputStream, Charset encoding, char separator) {
 		this(inputStream, encoding, separator, DEFAULT_STRING_QUOTE);
@@ -145,9 +157,12 @@ public class CsvReader implements Closeable {
 	/**
 	 * CSV Reader derived constructor.
 	 *
-	 * @param inputStream the input stream
-	 * @param separator the separator
-	 * @param stringQuote the string quote
+	 * @param inputStream
+	 *            the input stream
+	 * @param separator
+	 *            the separator
+	 * @param stringQuote
+	 *            the string quote
 	 */
 	public CsvReader(InputStream inputStream, char separator, Character stringQuote) {
 		this(inputStream, Charset.forName(DEFAULT_ENCODING), separator, stringQuote);
@@ -156,22 +171,30 @@ public class CsvReader implements Closeable {
 	/**
 	 * CSV Reader derived constructor.
 	 *
-	 * @param inputStream the input stream
-	 * @param encoding the encoding
-	 * @param separator the separator
-	 * @param stringQuote the string quote
+	 * @param inputStream
+	 *            the input stream
+	 * @param encoding
+	 *            the encoding
+	 * @param separator
+	 *            the separator
+	 * @param stringQuote
+	 *            the string quote
 	 */
 	public CsvReader(InputStream inputStream, String encoding, char separator, Character stringQuote) {
 		this(inputStream, Charset.forName(encoding), separator, stringQuote);
 	}
-	
+
 	/**
 	 * CSV Reader main constructor.
 	 *
-	 * @param inputStream the input stream
-	 * @param encoding the encoding
-	 * @param separator the separator
-	 * @param stringQuote the string quote
+	 * @param inputStream
+	 *            the input stream
+	 * @param encoding
+	 *            the encoding
+	 * @param separator
+	 *            the separator
+	 * @param stringQuote
+	 *            the string quote
 	 */
 	public CsvReader(InputStream inputStream, Charset encoding, char separator, Character stringQuote) {
 		this.inputStream = inputStream;
@@ -180,11 +203,11 @@ public class CsvReader implements Closeable {
 		if (stringQuote != null) {
 			this.stringQuote = stringQuote;
 			stringQuoteEscapeCharacter = stringQuote;
-			this.useStringQuote = true;
+			useStringQuote = true;
 		} else {
-			this.useStringQuote = false;
+			useStringQuote = false;
 		}
-		
+
 		if (this.encoding == null) {
 			throw new IllegalArgumentException("Encoding is null");
 		} else if (this.inputStream == null) {
@@ -195,7 +218,7 @@ public class CsvReader implements Closeable {
 			throw new IllegalArgumentException("Stringquote '" + this.stringQuote + "' is invalid");
 		}
 	}
-	
+
 	/**
 	 * Getter for property fillMissingTrailingColumnsWithNull.
 	 *
@@ -208,32 +231,35 @@ public class CsvReader implements Closeable {
 	/**
 	 * Setter for property fillMissingTrailingColumnsWithNull.
 	 *
-	 * @param fillMissingTrailingColumnsWithNull the new fill missing trailing columns with null
+	 * @param fillMissingTrailingColumnsWithNull
+	 *            the new fill missing trailing columns with null
 	 */
 	public void setFillMissingTrailingColumnsWithNull(boolean fillMissingTrailingColumnsWithNull) {
 		this.fillMissingTrailingColumnsWithNull = fillMissingTrailingColumnsWithNull;
 	}
 
 	/**
-	 * Setter for property stringQuoteEscapeCharacter.
-	 * Character to escape the stringquote character within quoted strings.
-	 * By default this is the stringquote character itself, so it is doubled in quoted string, but may also be a backslash '\'.
+	 * Setter for property stringQuoteEscapeCharacter. Character to escape the stringquote character within quoted strings. By default this is the stringquote character itself, so it is doubled in
+	 * quoted string, but may also be a backslash '\'.
 	 *
-	 * @param stringQuoteEscapeCharacter the new fill missing trailing columns with null
+	 * @param stringQuoteEscapeCharacter
+	 *            the new fill missing trailing columns with null
 	 */
 	public void setStringQuoteEscapeCharacter(char stringQuoteEscapeCharacter) {
 		this.stringQuoteEscapeCharacter = stringQuoteEscapeCharacter;
-		if (useStringQuote && anyCharsAreEqual(this.separator, this.stringQuote, '\r', '\n', stringQuoteEscapeCharacter)) {
+		if (useStringQuote && anyCharsAreEqual(separator, stringQuote, '\r', '\n', stringQuoteEscapeCharacter)) {
 			throw new IllegalArgumentException("Stringquote escape character '" + this.stringQuoteEscapeCharacter + "' is invalid");
 		}
 	}
-	
+
 	/**
 	 * Read the next line of csv data.
 	 *
 	 * @return the list
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 * @throws CsvDataException the csv data exception
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
+	 * @throws CsvDataException
+	 *             the csv data exception
 	 */
 	public List<String> readNextCsvLine() throws IOException, CsvDataException {
 		if (inputReader == null) {
@@ -242,7 +268,7 @@ public class CsvReader implements Closeable {
 			}
 			inputReader = new BufferedReader(new InputStreamReader(inputStream, encoding));
 		}
-		
+
 		readLines++;
 		singleReadStarted = true;
 		List<String> returnList = new ArrayList<String>();
@@ -250,13 +276,13 @@ public class CsvReader implements Closeable {
 		boolean insideString = false;
 		int nextCharInt = -1;
 		int previousCharInt = -1;
-		
+
 		while ((nextCharInt = inputReader.read()) != -1) {
 			// Check for UTF-8 BOM at data start
 			if (readCharacters == 0 && encoding == Charset.forName("UTF-8") && nextCharInt == BOM_UTF_8_CHAR) {
 				continue;
 			}
-			
+
 			readCharacters++;
 			char nextChar = (char) nextCharInt;
 			if (useStringQuote && nextChar == stringQuote) {
@@ -273,7 +299,7 @@ public class CsvReader implements Closeable {
 					if (nextValue.length() > 0 || previousCharInt == separator) {
 						returnList.add(parseValue(nextValue.toString()));
 					}
-					
+
 					if (returnList.size() > 0) {
 						if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
 							if (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull) {
@@ -281,7 +307,8 @@ public class CsvReader implements Closeable {
 									returnList.add(null);
 								}
 							} else {
-								throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readLines);
+								throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")",
+										readLines);
 							}
 						}
 						numberOfColumns = returnList.size();
@@ -300,10 +327,10 @@ public class CsvReader implements Closeable {
 					nextValue.append(nextChar);
 				}
 			}
-			
+
 			previousCharInt = nextCharInt;
 		}
-		
+
 		if (insideString) {
 			close();
 			throw new IOException("Unexpected end of data after quoted csv-value was started");
@@ -311,7 +338,7 @@ public class CsvReader implements Closeable {
 			if (nextValue.length() > 0 || previousCharInt == separator) {
 				returnList.add(parseValue(nextValue.toString()));
 			}
-		
+
 			if (returnList.size() > 0) {
 				if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
 					if (numberOfColumns > returnList.size() && fillMissingTrailingColumnsWithNull) {
@@ -330,19 +357,21 @@ public class CsvReader implements Closeable {
 			}
 		}
 	}
-	
+
 	/**
 	 * Read all csv data at once. This can only be done before readNextCsvLine() was called for the first time
 	 *
 	 * @return the list
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 * @throws CsvDataException the csv data exception
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
+	 * @throws CsvDataException
+	 *             the csv data exception
 	 */
 	public List<List<String>> readAll() throws IOException, CsvDataException {
 		if (singleReadStarted) {
 			throw new IllegalStateException("Single readNextCsvLine was called before readAll");
 		}
-		
+
 		try {
 			List<List<String>> csvValues = new ArrayList<List<String>>();
 			List<String> lineValues;
@@ -354,35 +383,36 @@ public class CsvReader implements Closeable {
 			close();
 		}
 	}
-	
+
 	/**
 	 * Parse a single value to applicate allowed double stringquotes.
 	 *
-	 * @param rawValue the raw value
+	 * @param rawValue
+	 *            the raw value
 	 * @return the string
-	 * @throws CsvDataException the csv data exception
+	 * @throws CsvDataException
+	 *             the csv data exception
 	 */
 	private String parseValue(String rawValue) throws CsvDataException {
 		String returnValue = rawValue;
 		String stringQuoteString = Character.toString(stringQuote);
-		
+
 		if (isNotEmpty(returnValue)) {
 			if (useStringQuote) {
 				if (returnValue.contains(stringQuoteString)) {
 					returnValue = returnValue.trim();
 				}
-				if (returnValue.charAt(0) == stringQuote
-					&& returnValue.charAt(returnValue.length() - 1) == stringQuote) {
+				if (returnValue.charAt(0) == stringQuote && returnValue.charAt(returnValue.length() - 1) == stringQuote) {
 					returnValue = returnValue.substring(1, returnValue.length() - 1);
 					returnValue = returnValue.replace(stringQuoteEscapeCharacter + stringQuoteString, stringQuoteString);
 				}
 			}
 			returnValue = returnValue.replace("\r\n", "\n").replace('\r', '\n');
 		}
-		
+
 		if (!escapedStringQuoteInDataAllowed && returnValue.indexOf(stringQuote) >= 0) {
 			throw new CsvDataException("Not allowed stringquote in data in line " + readLines, readLines);
-		} 
+		}
 
 		return returnValue;
 	}
@@ -406,7 +436,7 @@ public class CsvReader implements Closeable {
 	public int getReadLines() {
 		return readLines;
 	}
-	
+
 	/**
 	 * Get characters read until now.
 	 *
@@ -428,7 +458,8 @@ public class CsvReader implements Closeable {
 	/**
 	 * Setter for property lineBreakInDataAllowed.
 	 *
-	 * @param lineBreakInDataAllowed the new line break in data allowed
+	 * @param lineBreakInDataAllowed
+	 *            the new line break in data allowed
 	 */
 	public void setLineBreakInDataAllowed(boolean lineBreakInDataAllowed) {
 		this.lineBreakInDataAllowed = lineBreakInDataAllowed;
@@ -446,26 +477,28 @@ public class CsvReader implements Closeable {
 	/**
 	 * Setter for property escapedStringQuoteInDataAllowed.
 	 *
-	 * @param escapedStringQuoteInDataAllowed the new escaped string quote in data allowed
+	 * @param escapedStringQuoteInDataAllowed
+	 *            the new escaped string quote in data allowed
 	 */
 	public void setEscapedStringQuoteInDataAllowed(boolean escapedStringQuoteInDataAllowed) {
 		this.escapedStringQuoteInDataAllowed = escapedStringQuoteInDataAllowed;
 	}
-	
+
 	/**
-	 * This method reads the stream to the end and counts all csv value lines,
-	 * which can be less than the absolute linebreak count of the stream for the reason of quoted linebreaks.
-	 * The result also contains the first line, which may consist of columnheaders.
+	 * This method reads the stream to the end and counts all csv value lines, which can be less than the absolute linebreak count of the stream for the reason of quoted linebreaks. The result also
+	 * contains the first line, which may consist of columnheaders.
 	 *
 	 * @return the csv line count
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 * @throws CsvDataException the csv data exception
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
+	 * @throws CsvDataException
+	 *             the csv data exception
 	 */
 	public int getCsvLineCount() throws IOException, CsvDataException {
 		if (singleReadStarted) {
 			throw new IllegalStateException("Single readNextCsvLine was called before getCsvLineCount");
 		}
-		
+
 		try {
 			int csvLineCount = 0;
 			while (readNextCsvLine() != null) {
@@ -476,15 +509,19 @@ public class CsvReader implements Closeable {
 			close();
 		}
 	}
-	
+
 	/**
 	 * Parse a single csv data line for data entries.
 	 *
-	 * @param separator the separator
-	 * @param stringQuote the string quote
-	 * @param csvLine the csv line
+	 * @param separator
+	 *            the separator
+	 * @param stringQuote
+	 *            the string quote
+	 * @param csvLine
+	 *            the csv line
 	 * @return the list
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static List<String> parseCsvLine(char separator, Character stringQuote, String csvLine) throws Exception {
 		CsvReader reader = null;
@@ -508,7 +545,8 @@ public class CsvReader implements Closeable {
 	/**
 	 * Check if any characters in a list are equal.
 	 *
-	 * @param values the values
+	 * @param values
+	 *            the values
 	 * @return true, if successful
 	 */
 	private static boolean anyCharsAreEqual(char... values) {
@@ -525,7 +563,8 @@ public class CsvReader implements Closeable {
 	/**
 	 * Check if String value is not null and has a length greater than 0.
 	 *
-	 * @param value the value
+	 * @param value
+	 *            the value
 	 * @return true, if is not empty
 	 */
 	private static boolean isNotEmpty(String value) {
@@ -535,7 +574,8 @@ public class CsvReader implements Closeable {
 	/**
 	 * Close a Closable item and ignore any Exception thrown by its close method.
 	 *
-	 * @param closeableItem the closeable item
+	 * @param closeableItem
+	 *            the closeable item
 	 */
 	private static void closeQuietly(Closeable closeableItem) {
 		if (closeableItem != null) {

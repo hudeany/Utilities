@@ -10,10 +10,10 @@ import java.security.Security;
 import java.util.Date;
 
 import org.bouncycastle.bcpg.ArmoredOutputStream;
+import org.bouncycastle.bcpg.CompressionAlgorithmTags;
+import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPCompressedDataGenerator;
-import org.bouncycastle.openpgp.PGPEncryptedData;
 import org.bouncycastle.openpgp.PGPEncryptedDataGenerator;
 import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.openpgp.PGPLiteralDataGenerator;
@@ -33,11 +33,11 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		this.dataToEncrypt = dataToEncrypt;
 		this.encryptedData = encryptedData;
 		this.publicKey = publicKey;
-		
-    	itemsToDo = dataToEncrypt.available();
+
+		itemsToDo = dataToEncrypt.available();
 	}
-	
-	//TODO: Encrypt big file
+
+	// TODO: Encrypt big file
 	@Override
 	public void run() {
 		startTime = new Date();
@@ -45,15 +45,15 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		itemsDone = 0L;
 		result = null;
 		showProgress();
-		
+
 		boolean armor = true;
-		
+
 		OutputStream outputStream2 = null;
 		OutputStream outputStream3 = null;
 		OutputStream outputStream4 = null;
 		try {
 			Security.addProvider(new BouncyCastleProvider());
-			
+
 			dataToEncrypt = new BufferedInputStream(dataToEncrypt);
 
 			String fileName = PGPLiteralData.CONSOLE;
@@ -64,9 +64,9 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 
 			ByteArrayOutputStream bOut = new ByteArrayOutputStream();
 
-			PGPCompressedDataGenerator comData = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
+			PGPCompressedDataGenerator comData = new PGPCompressedDataGenerator(CompressionAlgorithmTags.ZIP);
 			outputStream4 = comData.open(bOut);
-			
+
 			PGPLiteralDataGenerator ldata = new PGPLiteralDataGenerator();
 			outputStream2 = ldata.open(outputStream4, PGPLiteralData.BINARY, fileName, dataToEncrypt.available(), new Date());
 
@@ -77,7 +77,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 					break;
 				} else {
 					outputStream2.write(buffer, 0, bytesRead);
-					
+
 					itemsDone += bytesRead;
 					showProgress();
 				}
@@ -85,7 +85,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 
 			comData.close();
 
-			PGPEncryptedDataGenerator cPk = new PGPEncryptedDataGenerator(PGPEncryptedData.CAST5, true, new SecureRandom(), "BC");
+			PGPEncryptedDataGenerator cPk = new PGPEncryptedDataGenerator(SymmetricKeyAlgorithmTags.CAST5, true, new SecureRandom(), "BC");
 
 			cPk.addMethod(publicKey);
 
@@ -94,7 +94,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 			outputStream3 = cPk.open(encryptedData, bytes.length);
 
 			outputStream3.write(bytes);
-			
+
 			result = true;
 		} catch (Exception e) {
 			error = new Exception("Error while encrypting", e);

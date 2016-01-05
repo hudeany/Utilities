@@ -15,19 +15,19 @@ import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class SystemUtilities {
 	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
-	
+
 	public static String getOsName() {
 		return System.getProperty("os.name");
 	}
-	
+
 	public static boolean isWindowsSystem() {
 		return getOsName().toLowerCase().contains("windows");
 	}
-	
+
 	public static boolean isLinuxSystem() {
 		return getOsName().toLowerCase().contains("unix") || getOsName().toLowerCase().contains("linux");
 	}
-	
+
 	public static int getProcessId() {
 		String data = ManagementFactory.getRuntimeMXBean().getName();
 		if (data.contains("@")) {
@@ -38,19 +38,19 @@ public class SystemUtilities {
 			return -1;
 		}
 	}
-	
+
 	public static long getUptimeInMillis() {
 		return ManagementFactory.getRuntimeMXBean().getUptime();
 	}
-	
+
 	public static Date getStarttime() {
 		return new Date(ManagementFactory.getRuntimeMXBean().getStartTime());
 	}
-	
+
 	public static List<String> getJavaStartupArguments() {
 		return ManagementFactory.getRuntimeMXBean().getInputArguments();
 	}
-	
+
 	public static Map<String, String> getRuntimeProperties(boolean humanReadable) {
 		Runtime runtime = Runtime.getRuntime();
 		Map<String, String> resultMap = new CaseInsensitiveMap<String>();
@@ -71,12 +71,12 @@ public class SystemUtilities {
 		resultMap.put("process.starttime", getStarttime().toString());
 		resultMap.put("process.javastartuparguments", getJavaStartupArguments().toString());
 		resultMap.put("process.jar", System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR) == null ? "<unknown>" : System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR));
-		
+
 		resultMap.put("cryptography.unlimitedKeyStrength", isunlimitedKeyStrengthAllowed() ? "true" : "false");
-		
+
 		return resultMap;
 	}
-	
+
 	public static List<String> getProcessListRaw() {
 		try {
 			List<String> data = new ArrayList<String>();
@@ -99,11 +99,11 @@ public class SystemUtilities {
 			return null;
 		}
 	}
-	
+
 	public static boolean isJavaWebstartApp() {
 		return System.getProperty("javawebstart.version") != null;
 	}
-	
+
 	public static boolean isunlimitedKeyStrengthAllowed() {
 		try {
 			return Cipher.getMaxAllowedKeyLength("AES") == Integer.MAX_VALUE;

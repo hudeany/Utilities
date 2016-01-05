@@ -56,7 +56,8 @@ public class XmlUtilities {
 	 * Gets the empty document.
 	 *
 	 * @return the empty document
-	 * @throws ParserConfigurationException the parser configuration exception
+	 * @throws ParserConfigurationException
+	 *             the parser configuration exception
 	 */
 	public static Document getEmptyDocument() throws ParserConfigurationException {
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -64,13 +65,15 @@ public class XmlUtilities {
 		Document document = documentBuilder.newDocument();
 		return document;
 	}
-	
+
 	/**
 	 * Download and parse xml file.
 	 *
-	 * @param url the url
+	 * @param url
+	 *            the url
 	 * @return the document
-	 * @throws IOException the IO exception
+	 * @throws IOException
+	 *             the IO exception
 	 */
 	public static Document downloadAndParseXmlFile(String url) throws IOException {
 		BufferedInputStream inputStream = null;
@@ -88,13 +91,15 @@ public class XmlUtilities {
 			}
 		}
 	}
-	
+
 	/**
 	 * Parse xml file.
 	 *
-	 * @param file the file
+	 * @param file
+	 *            the file
 	 * @return the document
-	 * @throws IOException the IO exception
+	 * @throws IOException
+	 *             the IO exception
 	 */
 	public static Document parseXmlFile(File file) throws IOException {
 		BufferedInputStream inputStream = null;
@@ -116,8 +121,10 @@ public class XmlUtilities {
 	/**
 	 * Gets a single x path node.
 	 *
-	 * @param document the document
-	 * @param xpathExpression the xpath expression
+	 * @param document
+	 *            the document
+	 * @param xpathExpression
+	 *            the xpath expression
 	 * @return the single x path node
 	 */
 	public static Node getSingleXPathNode(Document document, String xpathExpression) {
@@ -127,7 +134,7 @@ public class XmlUtilities {
 			return null;
 		} else {
 			try {
-				NodeList nodeList = (NodeList)XPathFactory.newInstance().newXPath().evaluate(xpathExpression, document, XPathConstants.NODESET);
+				NodeList nodeList = (NodeList) XPathFactory.newInstance().newXPath().evaluate(xpathExpression, document, XPathConstants.NODESET);
 				if (nodeList != null && nodeList.getLength() > 0) {
 					return nodeList.item(0);
 				} else {
@@ -138,13 +145,15 @@ public class XmlUtilities {
 			}
 		}
 	}
-	
+
 	/**
 	 * Parses a xml string.
 	 *
-	 * @param xmlInput the xml input
+	 * @param xmlInput
+	 *            the xml input
 	 * @return the document
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static Document parseXmlString(String xmlInput) throws Exception {
 		boolean validation = false;
@@ -178,9 +187,11 @@ public class XmlUtilities {
 	/**
 	 * Ignores DTD for better performance. This works faster for XHTML, because it doesn't download the dtd from any website like "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
 	 *
-	 * @param xmlInput the xml input
+	 * @param xmlInput
+	 *            the xml input
 	 * @return the document
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static Document parseXmlStringIngoringDtd(String xmlInput) throws Exception {
 		if (xmlInput == null) {
@@ -211,6 +222,7 @@ public class XmlUtilities {
 			db = dbf.newDocumentBuilder();
 
 			db.setEntityResolver(new EntityResolver() {
+				@Override
 				public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
 					return new InputSource(new StringReader(""));
 				}
@@ -226,7 +238,8 @@ public class XmlUtilities {
 	/**
 	 * Returns the content of a simple text tag If there are more than one text node or other nodetypes it will return null.
 	 *
-	 * @param node the node
+	 * @param node
+	 *            the node
 	 * @return the simple text value from node
 	 */
 	public static String getSimpleTextValueFromNode(Node node) {
@@ -240,8 +253,10 @@ public class XmlUtilities {
 	/**
 	 * Gets a attribute value.
 	 *
-	 * @param pNode the p node
-	 * @param pAttributeName the p attribute name
+	 * @param pNode
+	 *            the p node
+	 * @param pAttributeName
+	 *            the p attribute name
 	 * @return the attribute value
 	 */
 	public static String getAttributeValue(Node pNode, String pAttributeName) {
@@ -263,7 +278,8 @@ public class XmlUtilities {
 	/**
 	 * Gets a node value.
 	 *
-	 * @param pNode the p node
+	 * @param pNode
+	 *            the p node
 	 * @return the node value
 	 */
 	public static String getNodeValue(Node pNode) {
@@ -279,11 +295,15 @@ public class XmlUtilities {
 	/**
 	 * Gets the node as string.
 	 *
-	 * @param pNode the p node
-	 * @param encoding the encoding
-	 * @param pRemoveXmlLine the p remove xml line
+	 * @param pNode
+	 *            the p node
+	 * @param encoding
+	 *            the encoding
+	 * @param pRemoveXmlLine
+	 *            the p remove xml line
 	 * @return the node as string
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static String getNodeAsString(Node pNode, String encoding, boolean pRemoveXmlLine) throws Exception {
 		StringWriter writer = new StringWriter();
@@ -295,11 +315,15 @@ public class XmlUtilities {
 	/**
 	 * Gets the node as raw.
 	 *
-	 * @param pNode the p node
-	 * @param encoding the encoding
-	 * @param pRemoveXmlLine the p remove xml line
+	 * @param pNode
+	 *            the p node
+	 * @param encoding
+	 *            the encoding
+	 * @param pRemoveXmlLine
+	 *            the p remove xml line
 	 * @return the node as raw
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static byte[] getNodeAsRaw(Node pNode, String encoding, boolean pRemoveXmlLine) throws Exception {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -311,10 +335,14 @@ public class XmlUtilities {
 	/**
 	 * Write document to file.
 	 *
-	 * @param document the document
-	 * @param encoding the encoding
-	 * @param file the file
-	 * @throws Exception the exception
+	 * @param document
+	 *            the document
+	 * @param encoding
+	 *            the encoding
+	 * @param file
+	 *            the file
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static void writeDocumentToFile(Document document, String encoding, File file) throws Exception {
 		OutputStream outputStream = null;
@@ -330,11 +358,16 @@ public class XmlUtilities {
 	/**
 	 * Transform node.
 	 *
-	 * @param node the node
-	 * @param encoding the encoding
-	 * @param removeXmlHeader the remove xml header
-	 * @param result the result
-	 * @throws Exception the exception
+	 * @param node
+	 *            the node
+	 * @param encoding
+	 *            the encoding
+	 * @param removeXmlHeader
+	 *            the remove xml header
+	 * @param result
+	 *            the result
+	 * @throws Exception
+	 *             the exception
 	 */
 	private static void transformNode(Node node, String encoding, boolean removeXmlHeader, StreamResult result) throws Exception {
 		TransformerFactory transformerFactory = null;
@@ -374,12 +407,17 @@ public class XmlUtilities {
 	/**
 	 * Parses the xml data and xsd verify by dom.
 	 *
-	 * @param pData the p data
-	 * @param byteEncoding the byte encoding
-	 * @param xsdFileName the xsd file name
+	 * @param pData
+	 *            the p data
+	 * @param byteEncoding
+	 *            the byte encoding
+	 * @param xsdFileName
+	 *            the xsd file name
 	 * @return the document
-	 * @throws Exception the exception
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static Document parseXMLDataAndXSDVerifyByDOM(byte[] pData, String byteEncoding, String xsdFileName) throws Exception, Exception {
 		try {
@@ -436,13 +474,13 @@ public class XmlUtilities {
 	 * The Class ParseErrorHandler.
 	 */
 	private static class ParseErrorHandler implements ErrorHandler {
-		
+
 		/** The warnings. */
 		ArrayList<SAXParseException> warnings = null;
-		
+
 		/** The errors. */
 		ArrayList<SAXParseException> errors = null;
-		
+
 		/** The fatal errors. */
 		ArrayList<SAXParseException> fatalErrors = null;
 
@@ -458,9 +496,12 @@ public class XmlUtilities {
 			return problems;
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
 		 */
+		@Override
 		public void warning(SAXParseException exception) throws SAXException {
 			problems = true;
 			if (warnings == null) {
@@ -469,9 +510,12 @@ public class XmlUtilities {
 			warnings.add(exception);
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
 		 */
+		@Override
 		public void error(SAXParseException exception) throws SAXException {
 			problems = true;
 			if (errors == null) {
@@ -480,9 +524,12 @@ public class XmlUtilities {
 			errors.add(exception);
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
 		 */
+		@Override
 		public void fatalError(SAXParseException exception) throws SAXException {
 			problems = true;
 			if (fatalErrors == null) {
@@ -512,10 +559,13 @@ public class XmlUtilities {
 	/**
 	 * Convert xml to string.
 	 *
-	 * @param pDocument the p document
-	 * @param encoding the encoding
+	 * @param pDocument
+	 *            the p document
+	 * @param encoding
+	 *            the encoding
 	 * @return the string
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static String convertXML2String(Document pDocument, String encoding) throws Exception {
 		TransformerFactory transformerFactory = null;
@@ -567,10 +617,13 @@ public class XmlUtilities {
 	/**
 	 * Convert xml to byte array.
 	 *
-	 * @param pDocument the p document
-	 * @param encoding the encoding
+	 * @param pDocument
+	 *            the p document
+	 * @param encoding
+	 *            the encoding
 	 * @return the byte[]
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static byte[] convertXML2ByteArray(Node pDocument, String encoding) throws Exception {
 		TransformerFactory transformerFactory = null;
@@ -678,8 +731,10 @@ public class XmlUtilities {
 	/**
 	 * Creates the root tag node.
 	 *
-	 * @param baseDocument the base document
-	 * @param rootTagName the root tag name
+	 * @param baseDocument
+	 *            the base document
+	 * @param rootTagName
+	 *            the root tag name
 	 * @return the element
 	 */
 	public static Element createRootTagNode(Document baseDocument, String rootTagName) {
@@ -691,8 +746,10 @@ public class XmlUtilities {
 	/**
 	 * Append node.
 	 *
-	 * @param baseNode the base node
-	 * @param tagName the tag name
+	 * @param baseNode
+	 *            the base node
+	 * @param tagName
+	 *            the tag name
 	 * @return the element
 	 */
 	public static Element appendNode(Node baseNode, String tagName) {
@@ -704,9 +761,12 @@ public class XmlUtilities {
 	/**
 	 * Append text value node.
 	 *
-	 * @param baseNode the base node
-	 * @param tagName the tag name
-	 * @param tagValue the tag value
+	 * @param baseNode
+	 *            the base node
+	 * @param tagName
+	 *            the tag name
+	 * @param tagValue
+	 *            the tag value
 	 * @return the element
 	 */
 	public static Element appendTextValueNode(Node baseNode, String tagName, int tagValue) {
@@ -716,9 +776,12 @@ public class XmlUtilities {
 	/**
 	 * Append text value node.
 	 *
-	 * @param baseNode the base node
-	 * @param tagName the tag name
-	 * @param tagValue the tag value
+	 * @param baseNode
+	 *            the base node
+	 * @param tagName
+	 *            the tag name
+	 * @param tagValue
+	 *            the tag value
 	 * @return the element
 	 */
 	public static Element appendTextValueNode(Node baseNode, String tagName, String tagValue) {
@@ -734,9 +797,12 @@ public class XmlUtilities {
 	/**
 	 * Append attribute.
 	 *
-	 * @param baseNode the base node
-	 * @param attributeName the attribute name
-	 * @param attributeValue the attribute value
+	 * @param baseNode
+	 *            the base node
+	 * @param attributeName
+	 *            the attribute name
+	 * @param attributeValue
+	 *            the attribute value
 	 */
 	public static void appendAttribute(Element baseNode, String attributeName, boolean attributeValue) {
 		appendAttribute(baseNode, attributeName, attributeValue ? "true" : "false");
@@ -745,9 +811,12 @@ public class XmlUtilities {
 	/**
 	 * Append attribute.
 	 *
-	 * @param baseNode the base node
-	 * @param attributeName the attribute name
-	 * @param attributeValue the attribute value
+	 * @param baseNode
+	 *            the base node
+	 * @param attributeName
+	 *            the attribute name
+	 * @param attributeValue
+	 *            the attribute value
 	 */
 	public static void appendAttribute(Element baseNode, String attributeName, int attributeValue) {
 		appendAttribute(baseNode, attributeName, Integer.toString(attributeValue));
@@ -756,9 +825,12 @@ public class XmlUtilities {
 	/**
 	 * Append attribute.
 	 *
-	 * @param baseNode the base node
-	 * @param attributeName the attribute name
-	 * @param attributeValue the attribute value
+	 * @param baseNode
+	 *            the base node
+	 * @param attributeName
+	 *            the attribute name
+	 * @param attributeValue
+	 *            the attribute value
 	 */
 	public static void appendAttribute(Element baseNode, String attributeName, String attributeValue) {
 		Attr typeAttribute = baseNode.getOwnerDocument().createAttribute(attributeName);
@@ -773,8 +845,10 @@ public class XmlUtilities {
 	/**
 	 * Removes the attribute.
 	 *
-	 * @param baseNode the base node
-	 * @param attributeName the attribute name
+	 * @param baseNode
+	 *            the base node
+	 * @param attributeName
+	 *            the attribute name
 	 */
 	public static void removeAttribute(Element baseNode, String attributeName) {
 		baseNode.getAttributes().removeNamedItem(attributeName);
@@ -783,8 +857,10 @@ public class XmlUtilities {
 	/**
 	 * Adds the comment to document.
 	 *
-	 * @param pDocument the p document
-	 * @param pComment the p comment
+	 * @param pDocument
+	 *            the p document
+	 * @param pComment
+	 *            the p comment
 	 * @return the document
 	 */
 	public static Document addCommentToDocument(Document pDocument, String pComment) {
@@ -795,9 +871,11 @@ public class XmlUtilities {
 	/**
 	 * Gets the encoding of xml byte array.
 	 *
-	 * @param xmlData the xml data
+	 * @param xmlData
+	 *            the xml data
 	 * @return the encoding of xml byte array
-	 * @throws Exception the exception
+	 * @throws Exception
+	 *             the exception
 	 */
 	public static String getEncodingOfXmlByteArray(byte[] xmlData) throws Exception {
 		String encodingAttributeName = "ENCODING";
@@ -836,24 +914,19 @@ public class XmlUtilities {
 			throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 		}
 	}
-	
+
 	/**
 	 * Returns all direct simple text value subnodes and their values for a dataNode
-	 * 
-	 * Example XML:
-	 * 	<dataNode>
-	 * 		<a>1</a>
-	 *      <b>2</b>
-	 *      <c>3</c>
-	 * 	</dataNode>
-	 * Returns: a=1, b=2, c=3.
 	 *
-	 * @param dataNode the data node
+	 * Example XML: <dataNode> <a>1</a> <b>2</b> <c>3</c> </dataNode> Returns: a=1, b=2, c=3.
+	 *
+	 * @param dataNode
+	 *            the data node
 	 * @return the simple values of node
 	 */
 	public static Map<String, String> getSimpleValuesOfNode(Node dataNode) {
 		Map<String, String> returnMap = new HashMap<String, String>();
-		
+
 		NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			Node node = list.item(i);
@@ -861,37 +934,39 @@ public class XmlUtilities {
 				returnMap.put(node.getNodeName(), node.getFirstChild().getNodeValue());
 			}
 		}
-		
+
 		return returnMap;
 	}
-	
+
 	/**
 	 * Gets the sub nodes.
 	 *
-	 * @param dataNode the data node
+	 * @param dataNode
+	 *            the data node
 	 * @return the sub nodes
 	 */
 	public static List<Node> getSubNodes(Node dataNode) {
 		List<Node> returnList = new ArrayList<Node>();
-		
+
 		NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			Node node = list.item(i);
 			returnList.add(node);
 		}
-		
+
 		return returnList;
 	}
-	
+
 	/**
 	 * Gets the nodenames of childs.
 	 *
-	 * @param dataNode the data node
+	 * @param dataNode
+	 *            the data node
 	 * @return the nodenames of childs
 	 */
 	public static List<String> getNodenamesOfChilds(Node dataNode) {
 		List<String> returnList = new ArrayList<String>();
-		
+
 		NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			Node node = list.item(i);
@@ -899,7 +974,7 @@ public class XmlUtilities {
 				returnList.add(node.getNodeName());
 			}
 		}
-		
+
 		return returnList;
 	}
 
@@ -922,14 +997,14 @@ public class XmlUtilities {
 			}
 		}
 	}
-	
+
 	public static Node getRootNodeFromDocument(Document document) {
 		return document.getDocumentElement();
 	}
-	
+
 	public static List<Node> getChildNodes(Node dataNode) {
 		List<Node> returnList = new ArrayList<Node>();
-		
+
 		NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			Node node = list.item(i);
@@ -937,7 +1012,7 @@ public class XmlUtilities {
 				returnList.add(node);
 			}
 		}
-		
+
 		return returnList;
 	}
 
@@ -1013,11 +1088,11 @@ public class XmlUtilities {
 			StringBuilder result = new StringBuilder();
 			result.append(TextUtilities.repeatString("\t", indentationLevel));
 			result.append("<!DOCTYPE ");
-			result.append(((DocumentType)xmlNode).getName());
+			result.append(((DocumentType) xmlNode).getName());
 			result.append(" PUBLIC \"");
-			result.append(((DocumentType)xmlNode).getPublicId());
+			result.append(((DocumentType) xmlNode).getPublicId());
 			result.append("\" \"");
-			result.append(((DocumentType)xmlNode).getSystemId());
+			result.append(((DocumentType) xmlNode).getSystemId());
 			result.append("\">\n");
 			return result.toString();
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {

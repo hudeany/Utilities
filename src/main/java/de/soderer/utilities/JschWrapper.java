@@ -35,8 +35,8 @@ public class JschWrapper {
 			session = jsch.getSession(serverEntry.getUsername(), serverEntry.getHostname(), serverEntry.getPort());
 
 			if (Utilities.isNotBlank(serverEntry.getKeyFile())) {
-				jsch.addIdentity(serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), null, serverEntry.getPassword() == null ? new byte[0] : serverEntry
-						.getPassword().getBytes("UTF-8"));
+				jsch.addIdentity(serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), null,
+						serverEntry.getPassword() == null ? new byte[0] : serverEntry.getPassword().getBytes("UTF-8"));
 			} else {
 				session.setPassword(serverEntry.getPassword());
 			}
@@ -70,7 +70,7 @@ public class JschWrapper {
 		InputStream inErrorStream = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("ls " + filePath);
+			((ChannelExec) channel).setCommand("ls " + filePath);
 
 			// Streams must be fetched before channel connect
 			inStream = channel.getInputStream();
@@ -96,7 +96,7 @@ public class JschWrapper {
 		InputStream inErrorStream = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("test -f " + filePath + " && echo true || echo false");
+			((ChannelExec) channel).setCommand("test -f " + filePath + " && echo true || echo false");
 
 			// Streams must be fetched before channel connect
 			inStream = channel.getInputStream();
@@ -127,7 +127,7 @@ public class JschWrapper {
 		InputStream inErrorStream = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("test -d " + filePath + " && echo true || echo false");
+			((ChannelExec) channel).setCommand("test -d " + filePath + " && echo true || echo false");
 
 			// Streams must be fetched before channel connect
 			inStream = channel.getInputStream();
@@ -159,7 +159,7 @@ public class JschWrapper {
 		try {
 			// Read folders
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("ls -1ad " + filePath + (filePath.endsWith("/") ? "" : "/") + "*/");
+			((ChannelExec) channel).setCommand("ls -1ad " + filePath + (filePath.endsWith("/") ? "" : "/") + "*/");
 
 			// Streams must be fetched before channel connect
 			inStream = channel.getInputStream();
@@ -180,7 +180,7 @@ public class JschWrapper {
 
 			// Read file entries
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("ls -1a " + filePath);
+			((ChannelExec) channel).setCommand("ls -1a " + filePath);
 
 			// Streams must be fetched before channel connect
 			inStream = channel.getInputStream();
@@ -232,7 +232,7 @@ public class JschWrapper {
 		try {
 			String command = "scp -p -t " + filePath;
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
+			((ChannelExec) channel).setCommand(command);
 
 			outStream = channel.getOutputStream();
 			inStream = channel.getInputStream();
@@ -271,7 +271,7 @@ public class JschWrapper {
 		InputStream inErrorStream = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("ls -l " + filePath);
+			((ChannelExec) channel).setCommand("ls -l " + filePath);
 
 			// Streams must be fetched before channel connect
 			inStream = channel.getInputStream();
@@ -300,7 +300,7 @@ public class JschWrapper {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("scp -f " + filePath);
+			((ChannelExec) channel).setCommand("scp -f " + filePath);
 
 			OutputStream outStream = channel.getOutputStream();
 			InputStream inStream = channel.getInputStream();
@@ -346,7 +346,7 @@ public class JschWrapper {
 
 	/**
 	 * Löschen von Dateien via SSH
-	 * 
+	 *
 	 * @param remoteHostname
 	 * @param checkHostKey
 	 * @param remoteHostPathAndFileName
@@ -364,7 +364,7 @@ public class JschWrapper {
 			// exec 'rm /full/path/to/file' remotely
 			String command = "rm -f " + remoteHostPathAndFileName;
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
+			((ChannelExec) channel).setCommand(command);
 
 			// get I/O stream for remote scp
 			inStream = channel.getInputStream();
@@ -384,7 +384,7 @@ public class JschWrapper {
 
 	/**
 	 * Upload von Dateien via SCP
-	 * 
+	 *
 	 * @param remoteHostname
 	 * @param checkHostKey
 	 * @param remoteHostPathAndFileName
@@ -428,7 +428,7 @@ public class JschWrapper {
 			// exec 'scp -t rfile' remotely
 			String command = "scp -p -t " + remoteHostPathAndFileName;
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
+			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
 			out = channel.getOutputStream();
@@ -493,7 +493,7 @@ public class JschWrapper {
 			// exec 'scp -t rfile' remotely
 			String command = "scp -p -t " + remoteHostPath + "/" + remoteHostFileName;
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
+			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
 			out = channel.getOutputStream();
@@ -538,7 +538,7 @@ public class JschWrapper {
 			// exec 'ls -1 pathn' remotely
 			String command = "ls -1a " + remoteHostPath;
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
+			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
 			// OutputStream out = channel.getOutputStream();
@@ -559,7 +559,7 @@ public class JschWrapper {
 					returnList.add(inputString.toString());
 					inputString = new StringBuilder();
 				} else {
-					inputString.append((char)charValue);
+					inputString.append((char) charValue);
 				}
 				charValue = checkAcknowledge(in);
 			}
@@ -577,7 +577,7 @@ public class JschWrapper {
 
 	/**
 	 * Hinzufügen von public Hostkeys zu der KnownHosts-Datei
-	 * 
+	 *
 	 * @param hostname
 	 * @param username
 	 * @param password
@@ -642,7 +642,7 @@ public class JschWrapper {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("scp -f " + filePath);
+			((ChannelExec) channel).setCommand("scp -f " + filePath);
 
 			outStream = channel.getOutputStream();
 			inStream = channel.getInputStream();
@@ -692,7 +692,7 @@ public class JschWrapper {
 						if (buffer.length < filesize) {
 							nextReadLength = buffer.length;
 						} else {
-							nextReadLength = (int)filesize;
+							nextReadLength = (int) filesize;
 						}
 						nextReadLength = inStream.read(buffer, 0, nextReadLength);
 						if (nextReadLength < 0) {
@@ -730,7 +730,7 @@ public class JschWrapper {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " " + filePath);
+			((ChannelExec) channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " " + filePath);
 
 			OutputStream outStream = channel.getOutputStream();
 			InputStream inStream = channel.getInputStream();
@@ -769,7 +769,7 @@ public class JschWrapper {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand("tail -n " + numberOfLastLinesToShow + " " + filePath);
+			((ChannelExec) channel).setCommand("tail -n " + numberOfLastLinesToShow + " " + filePath);
 
 			outStream = channel.getOutputStream();
 			inStream = channel.getInputStream();
@@ -799,7 +799,7 @@ public class JschWrapper {
 			String returnText = "";
 
 			channel = session.openChannel("exec");
-			((ChannelExec)channel).setCommand(command);
+			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
 			out = channel.getOutputStream();
@@ -819,7 +819,7 @@ public class JschWrapper {
 					returnText += inputString + "\n";
 					inputString = new StringBuilder();
 				} else {
-					inputString.append((char)charValue);
+					inputString.append((char) charValue);
 				}
 				charValue = checkAcknowledge(in);
 			}
@@ -833,7 +833,7 @@ public class JschWrapper {
 					returnError += inputStringErrorStream + "\n";
 					inputStringErrorStream = new StringBuilder();
 				} else {
-					inputStringErrorStream.append((char)charValueErrorStream);
+					inputStringErrorStream.append((char) charValueErrorStream);
 				}
 				charValueErrorStream = checkAcknowledge(inError);
 			}
@@ -881,8 +881,7 @@ public class JschWrapper {
 		HostKey[] hks = hkr.getHostKey();
 		if (hks != null) {
 			System.out.println("Host keys in " + hkr.getKnownHostsRepositoryID());
-			for (int i = 0; i < hks.length; i++) {
-				HostKey hk = hks[i];
+			for (HostKey hk : hks) {
 				System.out.println(hk.getHost() + " " + hk.getType() + " " + hk.getFingerPrint(jsch));
 			}
 			System.out.println("");
@@ -900,7 +899,7 @@ public class JschWrapper {
 			int charReadBuffer;
 			do {
 				charReadBuffer = in.read();
-				returnTextBuffer.append((char)charReadBuffer);
+				returnTextBuffer.append((char) charReadBuffer);
 			} while (charReadBuffer != '\n');
 
 			if (returnCode == 1) { // error

@@ -27,7 +27,7 @@ public class JsonUtilities {
 					throw new Exception("Unexpected '" + jsonData[startIndex] + "'-sign at index " + startIndex);
 				}
 			}
-			
+
 			JsonObject jsonObject = new JsonObject();
 			int endIndexOfObject = jsonObject.parse(jsonData, startIndex + 1) + 1;
 			if (endIndexOfObject < jsonData.length) {
@@ -37,7 +37,7 @@ public class JsonUtilities {
 					}
 				}
 			}
-				
+
 			return jsonObject;
 		} catch (Exception e) {
 			if (throwExceptionOnError) {
@@ -47,7 +47,7 @@ public class JsonUtilities {
 			}
 		}
 	}
-	
+
 	public static boolean isValidUnfinishedJsonValue(String value) {
 		if ("t".equalsIgnoreCase(value) || "tr".equalsIgnoreCase(value) || "tru".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value)) {
 			return true;
@@ -61,7 +61,7 @@ public class JsonUtilities {
 			return false;
 		}
 	}
-	
+
 	public static Object getJsonValue(String value) throws Exception {
 		if ("true".equalsIgnoreCase(value)) {
 			return true;
@@ -79,7 +79,7 @@ public class JsonUtilities {
 			throw new Exception("Invalid value");
 		}
 	}
-	
+
 	public static JsonObject convertXmlDocument(Document xmlDocument, boolean throwExceptionOnError) throws Exception {
 		try {
 			JsonObject jsonObject = new JsonObject();
@@ -93,7 +93,7 @@ public class JsonUtilities {
 			}
 		}
 	}
-	
+
 	public static JsonObject convertXmlNode(Node xmlNode) {
 		JsonObject jsonObject = new JsonObject();
 		if (xmlNode.getAttributes() != null && xmlNode.getAttributes().getLength() > 0) {
@@ -125,7 +125,7 @@ public class JsonUtilities {
 		}
 		return jsonObject;
 	}
-	
+
 	public static Document convertToXmlDocument(JsonObject jsonObject, boolean useAttributes) throws Exception {
 		try {
 			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -153,10 +153,10 @@ public class JsonUtilities {
 			throw new Exception("Invalid data", e);
 		}
 	}
-	
+
 	public static List<Node> convertToXmlNodes(JsonObject jsonObject, Document xmlDocument, boolean useAttributes) {
 		List<Node> list = new ArrayList<Node>();
-		
+
 		for (String key : jsonObject.keySet()) {
 			Object subItem = jsonObject.get(key);
 			if (subItem instanceof JsonObject) {
@@ -183,13 +183,13 @@ public class JsonUtilities {
 				newNode.setTextContent(subItem.toString());
 			}
 		}
-		
+
 		return list;
 	}
-	
+
 	public static List<Node> convertToXmlNodes(JsonArray jsonArray, String nodeName, Document xmlDocument, boolean useAttributes) {
 		List<Node> list = new ArrayList<Node>();
-		
+
 		if (jsonArray.size() > 0) {
 			for (Object subItem : jsonArray) {
 				if (subItem instanceof JsonObject) {
@@ -218,7 +218,7 @@ public class JsonUtilities {
 			Node newNode = xmlDocument.createElement(nodeName);
 			list.add(newNode);
 		}
-		
+
 		return list;
 	}
 }

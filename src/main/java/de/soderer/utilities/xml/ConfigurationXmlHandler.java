@@ -30,7 +30,7 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 			throw new Exception("Error while parsing XmlConfiguration", ex);
 		}
 	}
-	
+
 	public Map<String, String> getConfigurationValueMap() {
 		return values;
 	}
@@ -43,8 +43,7 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 			} else {
 				foundRootTag = true;
 			}
-		}
-		else if (qName.equals(TAGNAME_ENTRY)) {
+		} else if (qName.equals(TAGNAME_ENTRY)) {
 			values.put(attributes.getValue(ATTRIBUTENAME_ENTRY_NAME), attributes.getValue(ATTRIBUTENAME_ENTRY_value));
 		}
 	}

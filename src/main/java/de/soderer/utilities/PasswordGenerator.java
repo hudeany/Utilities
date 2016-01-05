@@ -9,19 +9,19 @@ public class PasswordGenerator {
 	public static char[] generatePassword(int size) throws Exception {
 		return PasswordGenerator.generatePassword(size, "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "0123456789", "!?\"'`#$%&*+-<>=.,:;/|\\@^_(){}[]~", "§€äöüÄÖÜß°²³µ");
 	}
-	
+
 	public static char[] generatePassword(int size, String... characterGroups) throws Exception {
 		List<PasswordGeneratorCharacterGroup> groups = new ArrayList<PasswordGeneratorCharacterGroup>();
-		for(String characterGroup : characterGroups) {
+		for (String characterGroup : characterGroups) {
 			groups.add(new PasswordGeneratorCharacterGroup(1, 99, characterGroup.toCharArray()));
 		}
 		return PasswordGenerator.generatePassword(groups, size, size);
 	}
-	
+
 	public static char[] generatePassword(List<PasswordGeneratorCharacterGroup> characterGroups, int minimumLength, int maximumLength) throws Exception {
 		minimumLength = Math.min(minimumLength, minimumLength);
 		maximumLength = Math.max(minimumLength, maximumLength);
-		
+
 		List<Character> passwordLetters = new ArrayList<Character>();
 		Map<PasswordGeneratorCharacterGroup, Integer> groupsLeftToUse = new HashMap<PasswordGeneratorCharacterGroup, Integer>();
 		for (PasswordGeneratorCharacterGroup group : characterGroups) {

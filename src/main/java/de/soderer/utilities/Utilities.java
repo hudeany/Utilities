@@ -21,7 +21,7 @@ import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -41,7 +41,7 @@ import java.util.zip.GZIPOutputStream;
 
 /**
  * Global Utilities
- * 
+ *
  * This class does no Logging via Log4J, because it is often used before its initialisation
  */
 public class Utilities {
@@ -49,13 +49,13 @@ public class Utilities {
 	public static final String STANDARD_HTML = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=<encoding>\" />\n\t\t<title>HtmlTitle</title>\n\t\t<meta name=\"Title\" content=\"HtmlTitle\" />\n\t</head>\n\t<body>\n\t</body>\n</html>\n";
 	public static final String STANDARD_BASHSCRIPTSTART = "#!/bin/bash\n";
 
-	public static final byte[] UTF_16_LE_BOM = new byte[] { (byte)0xFF, (byte)0xFE };
-	public static final byte[] UTF_16_BE_BOM = new byte[] { (byte)0xFE, (byte)0xFF };
-	public static final byte[] UTF_8_BOM = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
+	public static final byte[] UTF_16_LE_BOM = new byte[] { (byte) 0xFF, (byte) 0xFE };
+	public static final byte[] UTF_16_BE_BOM = new byte[] { (byte) 0xFE, (byte) 0xFF };
+	public static final byte[] UTF_8_BOM = new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
 
 	/**
 	 * Generate a unique ID
-	 * 
+	 *
 	 * @return
 	 */
 	public static String generateUUID() {
@@ -64,7 +64,7 @@ public class Utilities {
 
 	/**
 	 * Get a UUID from a string
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */
@@ -79,7 +79,7 @@ public class Utilities {
 
 	/**
 	 * Get the data of a file included in a jar file
-	 * 
+	 *
 	 * @param resourceName
 	 * @return
 	 */
@@ -89,7 +89,7 @@ public class Utilities {
 
 	/**
 	 * Zip a byteArray by GZIP-Algorithm
-	 * 
+	 *
 	 * @param clearData
 	 * @return
 	 */
@@ -107,7 +107,7 @@ public class Utilities {
 
 	/**
 	 * Unzip a byteArray by GZIP-Algorithm
-	 * 
+	 *
 	 * @param zippedData
 	 * @return
 	 * @throws Exception
@@ -122,20 +122,20 @@ public class Utilities {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Encode a Base64 String
-	 * 
+	 *
 	 * @param clearData
 	 * @return
 	 */
 	public static String encodeBase64(byte[] clearData) {
 		return Base64.getEncoder().encodeToString(clearData);
 	}
-	
+
 	/**
 	 * Decode a Base64 String
-	 * 
+	 *
 	 * @param base64String
 	 * @return
 	 */
@@ -149,7 +149,7 @@ public class Utilities {
 
 	/**
 	 * Check a simple name string
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */
@@ -159,7 +159,7 @@ public class Utilities {
 
 	/**
 	 * Convert an ArrayList of Strings to a StringArray
-	 * 
+	 *
 	 * @param pArrayListOfStrings
 	 * @return
 	 */
@@ -170,7 +170,7 @@ public class Utilities {
 
 	/**
 	 * Get index of an Integer within an Array of Integers
-	 * 
+	 *
 	 * @param searchInt
 	 * @param intArray
 	 * @return
@@ -186,7 +186,7 @@ public class Utilities {
 
 	/**
 	 * Read stream data in byteArray until next linefeed or stream end
-	 * 
+	 *
 	 * @param inStream
 	 * @return
 	 * @throws IOException
@@ -210,7 +210,7 @@ public class Utilities {
 
 	/**
 	 * Get email from X509Certificate
-	 * 
+	 *
 	 * @param cert
 	 * @return
 	 */
@@ -227,7 +227,7 @@ public class Utilities {
 
 	/**
 	 * Get cn from X509Certificate
-	 * 
+	 *
 	 * @param cert
 	 * @return
 	 */
@@ -244,7 +244,7 @@ public class Utilities {
 
 	/**
 	 * Check for a number
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */
@@ -259,7 +259,7 @@ public class Utilities {
 
 	/***
 	 * Split a list into smaller lists to a maximum chunkSize
-	 * 
+	 *
 	 * @param originalList
 	 * @param chunkSize
 	 * @return
@@ -303,7 +303,7 @@ public class Utilities {
 
 	/**
 	 * Generate a random number up to maximum value
-	 * 
+	 *
 	 * @param excludedMaximum
 	 * @return
 	 */
@@ -313,7 +313,7 @@ public class Utilities {
 
 	/**
 	 * Generate a random string of given size
-	 * 
+	 *
 	 * @param length
 	 * @return
 	 */
@@ -327,7 +327,7 @@ public class Utilities {
 
 	/**
 	 * Generate a random string of numbers and characters of given size
-	 * 
+	 *
 	 * @param length
 	 * @return
 	 */
@@ -341,7 +341,7 @@ public class Utilities {
 
 	/**
 	 * Generate a random number of given size
-	 * 
+	 *
 	 * @param length
 	 * @return
 	 */
@@ -355,7 +355,7 @@ public class Utilities {
 
 	/**
 	 * Generate a random byte
-	 * 
+	 *
 	 * @return
 	 */
 	public static byte getRandomByte() {
@@ -366,7 +366,7 @@ public class Utilities {
 
 	/**
 	 * Generate a random byteArray
-	 * 
+	 *
 	 * @param arrayToFill
 	 * @return
 	 */
@@ -376,9 +376,8 @@ public class Utilities {
 	}
 
 	/**
-	 * Check if a Integer is contained by an interval definition
-	 * Interval definitions like -1;2-5;8+
-	 * 
+	 * Check if a Integer is contained by an interval definition Interval definitions like -1;2-5;8+
+	 *
 	 * @param intervals
 	 * @param item
 	 * @return
@@ -386,25 +385,25 @@ public class Utilities {
 	public static boolean checkForIntervalContainment(String intervals, int item) {
 		if (intervals != null && intervals.length() > 0) {
 			String[] blockStrings = intervals.split(";");
-			for (int i = 0; i < blockStrings.length; i++) {
-				if (blockStrings[i].endsWith("+")) {
-					if (Integer.parseInt(blockStrings[i].substring(0, blockStrings[i].length() - 1)) <= item) {
+			for (String blockString : blockStrings) {
+				if (blockString.endsWith("+")) {
+					if (Integer.parseInt(blockString.substring(0, blockString.length() - 1)) <= item) {
 						return true;
 					}
-				} else if (blockStrings[i].matches("\\d+-\\d+")) {
-					int plusIndex = blockStrings[i].indexOf("-");
-					int startVersion = Integer.parseInt(blockStrings[i].substring(0, plusIndex));
-					int endeVersion = Integer.parseInt(blockStrings[i].substring(plusIndex + 1));
+				} else if (blockString.matches("\\d+-\\d+")) {
+					int plusIndex = blockString.indexOf("-");
+					int startVersion = Integer.parseInt(blockString.substring(0, plusIndex));
+					int endeVersion = Integer.parseInt(blockString.substring(plusIndex + 1));
 					if (startVersion <= item && endeVersion >= item) {
 						return true;
 					}
-				} else if (blockStrings[i].matches("-\\d+")) {
-					int endeVersion = Integer.parseInt(blockStrings[i].substring(1));
+				} else if (blockString.matches("-\\d+")) {
+					int endeVersion = Integer.parseInt(blockString.substring(1));
 					if (endeVersion >= item) {
 						return true;
 					}
 				} else {
-					if (Integer.parseInt(blockStrings[i]) == item) {
+					if (Integer.parseInt(blockString) == item) {
 						return true;
 					}
 				}
@@ -416,7 +415,7 @@ public class Utilities {
 
 	/**
 	 * Get the minimum of a value list down to a valid minimum
-	 * 
+	 *
 	 * @param allowedValueMinimum
 	 * @param values
 	 * @return
@@ -435,14 +434,15 @@ public class Utilities {
 
 	/**
 	 * Convert a string to boolean
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */
 	public static boolean interpretAsBool(String value) {
 		if (isNotEmpty(value)) {
 			value = value.trim();
-			return value.equalsIgnoreCase("true") || value.equalsIgnoreCase("+") || value.equalsIgnoreCase("yes") || value.equalsIgnoreCase("ja") || value.equalsIgnoreCase("ok") || value.equalsIgnoreCase("on") || value.equalsIgnoreCase("an");
+			return value.equalsIgnoreCase("true") || value.equalsIgnoreCase("+") || value.equalsIgnoreCase("yes") || value.equalsIgnoreCase("ja") || value.equalsIgnoreCase("ok")
+					|| value.equalsIgnoreCase("on") || value.equalsIgnoreCase("an");
 		} else {
 			return false;
 		}
@@ -450,7 +450,7 @@ public class Utilities {
 
 	/**
 	 * Check if any characters in a list are equal
-	 * 
+	 *
 	 * @param values
 	 * @return
 	 */
@@ -467,7 +467,7 @@ public class Utilities {
 
 	/**
 	 * Math.square
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */
@@ -477,7 +477,7 @@ public class Utilities {
 
 	/**
 	 * Math power
-	 * 
+	 *
 	 * @param base
 	 * @param exp
 	 * @return
@@ -494,6 +494,7 @@ public class Utilities {
 
 	/**
 	 * Get a collection like a set as a ordered list
+	 * 
 	 * @param c
 	 * @return
 	 */
@@ -505,23 +506,23 @@ public class Utilities {
 
 	/**
 	 * Get files of classpath
-	 * 
+	 *
 	 * @return
 	 */
 	public static String getClassPath() {
 		ClassLoader sysClassLoader = ClassLoader.getSystemClassLoader();
-		URL[] urls = ((URLClassLoader)sysClassLoader).getURLs();
+		URL[] urls = ((URLClassLoader) sysClassLoader).getURLs();
 
 		StringBuilder classpath = new StringBuilder();
-		for (int i = 0; i < urls.length; i++) {
-			classpath.append(urls[i].getFile() + "\n");
+		for (URL url : urls) {
+			classpath.append(url.getFile() + "\n");
 		}
 		return classpath.toString();
 	}
 
 	/**
 	 * Check array equality
-	 * 
+	 *
 	 * @param array1
 	 * @param array2
 	 * @return
@@ -543,20 +544,20 @@ public class Utilities {
 
 	/**
 	 * Get all system properties
-	 * 
+	 *
 	 * @return
 	 */
 	public static Map<String, String> getSystemPropertiesMap() {
 		Map<String, String> propertiesMap = new HashMap<String, String>();
 		for (Object key : System.getProperties().keySet()) {
-			propertiesMap.put((String)key, System.getProperties().getProperty((String)key));
+			propertiesMap.put((String) key, System.getProperties().getProperty((String) key));
 		}
 		return propertiesMap;
 	}
 
 	/**
 	 * Convert Map to String
-	 * 
+	 *
 	 * @param map
 	 * @param entrySeparator
 	 * @param keySeparator
@@ -584,7 +585,7 @@ public class Utilities {
 
 	/**
 	 * Make a number human readable
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */
@@ -594,7 +595,7 @@ public class Utilities {
 
 	/**
 	 * Make a number with unitsign human readable
-	 * 
+	 *
 	 * @param value
 	 * @param unitTypeSign
 	 * @return
@@ -605,7 +606,7 @@ public class Utilities {
 
 	/**
 	 * Make a number with unitsign human readable
-	 * 
+	 *
 	 * @param value
 	 * @param unitTypeSign
 	 * @param siUnits
@@ -624,7 +625,7 @@ public class Utilities {
 				return value + unitExtension;
 			}
 		} else {
-			int exp = (int)(Math.log(interimValue) / Math.log(unit));
+			int exp = (int) (Math.log(interimValue) / Math.log(unit));
 			unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
 			if (isNotBlank(unitTypeSign)) {
 				unitExtension += unitTypeSign;
@@ -650,7 +651,7 @@ public class Utilities {
 
 	/**
 	 * Generate MD5 from string data
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 * @throws Exception
@@ -665,7 +666,7 @@ public class Utilities {
 
 	/**
 	 * Generate SHA-1 from string data
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 * @throws Exception
@@ -680,7 +681,7 @@ public class Utilities {
 
 	/**
 	 * Generate SHA-512 from string data
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 * @throws Exception
@@ -695,7 +696,7 @@ public class Utilities {
 
 	/**
 	 * Get bytearray for list of bytes
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 */
@@ -709,7 +710,7 @@ public class Utilities {
 
 	/**
 	 * Get stacktrace as string
-	 * 
+	 *
 	 * @param stackTrace
 	 * @return
 	 */
@@ -726,7 +727,7 @@ public class Utilities {
 
 	/**
 	 * Download a file from url
-	 * 
+	 *
 	 * @param url
 	 * @param localeDestionationPath
 	 * @throws Exception
@@ -748,7 +749,7 @@ public class Utilities {
 
 	/**
 	 * Check array for duplicate strings
-	 * 
+	 *
 	 * @param inputArray
 	 * @param ignoreNullValues
 	 * @return
@@ -767,7 +768,7 @@ public class Utilities {
 
 	/**
 	 * Filter all Objects of given class
-	 * 
+	 *
 	 * @param collection
 	 * @param classToSelect
 	 * @return
@@ -777,7 +778,7 @@ public class Utilities {
 		List<T> list = new ArrayList<T>();
 		for (Object item : collection) {
 			if (classToSelect.isInstance(item)) {
-				list.add((T)item);
+				list.add((T) item);
 			}
 		}
 		return list;
@@ -785,7 +786,7 @@ public class Utilities {
 
 	/**
 	 * Filter all Objects of given class
-	 * 
+	 *
 	 * @param array
 	 * @param classToSelect
 	 * @return
@@ -795,12 +796,12 @@ public class Utilities {
 		List<T> list = new ArrayList<T>();
 		for (Object item : array) {
 			if (classToSelect.isInstance(item)) {
-				list.add((T)item);
+				list.add((T) item);
 			}
 		}
 		return list;
 	}
-	
+
 	public static <T> T[] revertArray(T[] array) {
 		@SuppressWarnings("unchecked")
 		T[] returnValue = (T[]) new Object[array.length];
@@ -812,26 +813,26 @@ public class Utilities {
 
 	public static String getDomainFromUrl(String url) throws Exception {
 		URI uri = new URI(url);
-	    String domain = uri.getHost();
-	    return domain.startsWith("www.") ? domain.substring(4) : domain;
+		String domain = uri.getHost();
+		return domain.startsWith("www.") ? domain.substring(4) : domain;
 	}
-	
+
 	public static boolean isEmpty(String value) {
 		return value == null || value.length() == 0;
 	}
-	
+
 	public static boolean isNotEmpty(String value) {
 		return !isEmpty(value);
 	}
-	
+
 	public static boolean isBlank(String value) {
 		return value == null || value.length() == 0 || value.trim().length() == 0;
 	}
-	
+
 	public static boolean isNotBlank(String value) {
 		return !isBlank(value);
 	}
-	
+
 	public static void closeQuietly(Closeable closeable) {
 		if (closeable != null) {
 			try {
@@ -865,7 +866,7 @@ public class Utilities {
 			if (glue == null) {
 				glue = "";
 			}
-			
+
 			StringBuilder returnValue = new StringBuilder();
 			boolean isFirst = true;
 			for (Object object : array) {
@@ -891,7 +892,7 @@ public class Utilities {
 			if (glue == null) {
 				glue = "";
 			}
-			
+
 			StringBuilder returnValue = new StringBuilder();
 			boolean isFirst = true;
 			for (Object object : list) {
@@ -911,13 +912,13 @@ public class Utilities {
 	public static <T> T[] remove(T[] items, T itemToRemove) {
 		List<T> result = new LinkedList<T>();
 
-	    for (T item : items) {
-	        if (!itemToRemove.equals(item)) {
-	            result.add(item);
-	        }
-	    }
+		for (T item : items) {
+			if (!itemToRemove.equals(item)) {
+				result.add(item);
+			}
+		}
 
-	    return result.toArray(items);
+		return result.toArray(items);
 	}
 
 	public static byte[] readFileToByteArray(File file) throws FileNotFoundException, IOException {
@@ -959,11 +960,10 @@ public class Utilities {
 		byteArrayOutputStream.close();
 		return byteArrayOutputStream.toByteArray();
 	}
-	
+
 	/**
-	 * Create a progress string for terminal output
-	 * e.g.: "65% [=================================>                   ] 103.234 200/s eta 5m"
-	 * 
+	 * Create a progress string for terminal output e.g.: "65% [=================================>                   ] 103.234 200/s eta 5m"
+	 *
 	 * @param start
 	 * @param itemsToDo
 	 * @param itemsDone
@@ -977,7 +977,7 @@ public class Utilities {
 		String etaString = "eta ???";
 		int percentageDone = 0;
 		if (itemsToDo > 0 && itemsDone > 0) {
-			itemsToDoString = DecimalFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
+			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
 			percentageDone = (int) (itemsDone * 100 / itemsToDo);
 			percentageString = leftPad(percentageDone + "%", 3);
 			int speed = (int) (itemsDone / ((now.getTime() - start.getTime()) / 1000));
@@ -985,9 +985,9 @@ public class Utilities {
 			Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(estimatedEnd.getTime() - now.getTime(), false);
 		} else if (itemsToDo > 0) {
-			itemsToDoString = DecimalFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
+			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
 		}
-		
+
 		String leftPart = percentageString + " [";
 		String rightPart = "] " + itemsToDoString + " " + speedString + " " + etaString;
 		int barWith = lineLength - (leftPart.length() + rightPart.length());
@@ -999,10 +999,10 @@ public class Utilities {
 		}
 		return leftPart + repeat("=", barDone - 1) + ">" + repeat(" ", barWith - barDone) + rightPart;
 	}
-	
+
 	/**
 	 * Append blanks at the left of a string to make if fit the given minimum
-	 * 
+	 *
 	 * @param escapedValue
 	 * @param i
 	 * @return
@@ -1012,12 +1012,12 @@ public class Utilities {
 			return String.format("%1$" + minimumLength + "s", value);
 		} catch (Exception e) {
 			return value;
-		}  
+		}
 	}
-	
+
 	/**
 	 * Append blanks at the right of a string to make if fit the given minimum
-	 * 
+	 *
 	 * @param escapedValue
 	 * @param i
 	 * @return

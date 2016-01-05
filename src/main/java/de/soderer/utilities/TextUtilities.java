@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 
 /**
  * Text Utilities
- * 
+ *
  * This class does no Logging via Log4J, because it is often used before its initialisation
  */
 public class TextUtilities {
@@ -23,22 +23,18 @@ public class TextUtilities {
 	 * A simple string for testing, which includes all ASCII characters
 	 */
 	public static final String ASCII_CHARACTERS_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
-	
+
 	/**
 	 * A simple string for testing, which includes all german characters
 	 */
 	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"´`^°¹²³*#.,;:=+-~_|½¼¬";
-	
+
 	/**
 	 * Enum to represent a linebreak type of an text
 	 */
 	public enum LineBreakType {
-		Unknown,
-		Mixed,
-		Unix,
-		Mac,
-		Windows;
-		
+		Unknown, Mixed, Unix, Mac, Windows;
+
 		public static LineBreakType getLineBreakTypeByName(String lineBreakTypeName) {
 			if ("WINDOWS".equalsIgnoreCase(lineBreakTypeName)) {
 				return LineBreakType.Windows;
@@ -51,27 +47,26 @@ public class TextUtilities {
 			}
 		}
 	}
-	
+
 	/**
 	 * Mac/Apple linebreak character
 	 */
 	public static String LinebreakMac = "\r";
-	
+
 	/**
 	 * Unix/Linux linebreak character
 	 */
 	public static String LinebreakUnix = "\n";
-	
+
 	/**
 	 * Windows linebreak characters
 	 */
 	public static String LinebreakWindows = "\r\n";
 
 	/**
-	 * Trim a string to an exact length with alignment right for display purposes
-	 * If the string underruns the length, it will be filled up with blanks on the left side.
-	 * If the string exceeds the length, it will be cut from the left side.
-	 * 
+	 * Trim a string to an exact length with alignment right for display purposes If the string underruns the length, it will be filled up with blanks on the left side. If the string exceeds the
+	 * length, it will be cut from the left side.
+	 *
 	 * @param inputString
 	 * @param length
 	 * @return
@@ -86,10 +81,9 @@ public class TextUtilities {
 	}
 
 	/**
-	 * Trim a string to a exact length with alignment left for display purposes.
-	 * If the string underruns the length, it will be filled up with blanks on the right side.
-	 * If the string exceeds the length, it will be cut from the right side.
-	 * 
+	 * Trim a string to a exact length with alignment left for display purposes. If the string underruns the length, it will be filled up with blanks on the right side. If the string exceeds the
+	 * length, it will be cut from the right side.
+	 *
 	 * @param inputString
 	 * @param length
 	 * @return
@@ -104,9 +98,8 @@ public class TextUtilities {
 	}
 
 	/**
-	 * Build a string with repetitions.
-	 * 0 repetitions returns an empty string.
-	 * 
+	 * Build a string with repetitions. 0 repetitions returns an empty string.
+	 *
 	 * @param itemString
 	 * @param repeatTimes
 	 * @return
@@ -116,10 +109,8 @@ public class TextUtilities {
 	}
 
 	/***
-	 * Build a string with repetitions.
-	 * 0 repetitions returns an empty string.
-	 * In other cases there will be put a glue string between the reptitions, which can be left empty.
-	 * 
+	 * Build a string with repetitions. 0 repetitions returns an empty string. In other cases there will be put a glue string between the reptitions, which can be left empty.
+	 *
 	 * @param itemString
 	 *            string to be repeated
 	 * @param separatorString
@@ -141,7 +132,7 @@ public class TextUtilities {
 
 	/**
 	 * Split a string into smaller strings of a maximum size
-	 * 
+	 *
 	 * @param text
 	 * @param chunkSize
 	 * @return
@@ -157,10 +148,8 @@ public class TextUtilities {
 	}
 
 	/**
-	 * Reduce a text to a maximum number of lines.
-	 * The type of linebreaks in the result string will not be changed. 
-	 * If the text has less lines then maximum it will be returned unchanged.
-	 * 
+	 * Reduce a text to a maximum number of lines. The type of linebreaks in the result string will not be changed. If the text has less lines then maximum it will be returned unchanged.
+	 *
 	 * @param value
 	 * @param maxLines
 	 * @return
@@ -184,7 +173,7 @@ public class TextUtilities {
 
 	/**
 	 * Detect the type of linebreaks in a text.
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */
@@ -193,10 +182,10 @@ public class TextUtilities {
 		textPropertiesReader.readProperties();
 		return textPropertiesReader.getLinebreakType();
 	}
-	
+
 	/**
 	 * Change all linebreaks of a text, no matter what type they are, to a given type
-	 * 
+	 *
 	 * @param value
 	 * @param type
 	 * @return
@@ -211,10 +200,10 @@ public class TextUtilities {
 			return returnString;
 		}
 	}
-	
+
 	/**
 	 * Get the text lines of a text as a list of strings
-	 * 
+	 *
 	 * @param dataString
 	 * @return
 	 * @throws IOException
@@ -237,7 +226,7 @@ public class TextUtilities {
 
 	/**
 	 * Get the number of lines in a text
-	 * 
+	 *
 	 * @param dataString
 	 * @return
 	 * @throws IOException
@@ -254,7 +243,7 @@ public class TextUtilities {
 				while (lineNumberReader.readLine() != null) {
 					// do nothing
 				}
-	
+
 				return lineNumberReader.getLineNumber();
 			} finally {
 				Utilities.closeQuietly(lineNumberReader);
@@ -264,7 +253,7 @@ public class TextUtilities {
 
 	/**
 	 * Count the number of words by whitespaces in a text separated
-	 * 
+	 *
 	 * @param dataString
 	 * @return
 	 */
@@ -288,7 +277,7 @@ public class TextUtilities {
 
 	/**
 	 * Get the start index of a line within a text
-	 * 
+	 *
 	 * @param dataString
 	 * @param lineNumber
 	 * @return
@@ -334,7 +323,7 @@ public class TextUtilities {
 
 	/**
 	 * Get the startindex of the line at a given position within the text
-	 * 
+	 *
 	 * @param dataString
 	 * @param index
 	 * @return
@@ -348,7 +337,7 @@ public class TextUtilities {
 			int nextLineBreakMac = dataString.lastIndexOf(LinebreakMac, index);
 			int nextLineBreakUnix = dataString.lastIndexOf(LinebreakUnix, index);
 			int nextLineBreakWindows = dataString.lastIndexOf(LinebreakWindows, index);
-			
+
 			if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac < nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac < nextLineBreakWindows)) {
 				return nextLineBreakMac + LinebreakMac.length();
 			} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix < nextLineBreakWindows)) {
@@ -363,7 +352,7 @@ public class TextUtilities {
 
 	/**
 	 * Get the end index of a line within a text
-	 * 
+	 *
 	 * @param dataString
 	 * @param index
 	 * @return
@@ -377,7 +366,7 @@ public class TextUtilities {
 			int nextLineBreakMac = dataString.indexOf(LinebreakMac, index);
 			int nextLineBreakUnix = dataString.indexOf(LinebreakUnix, index);
 			int nextLineBreakWindows = dataString.indexOf(LinebreakWindows, index);
-			
+
 			if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac > nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac > nextLineBreakWindows)) {
 				return nextLineBreakMac;
 			} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix - 1 > nextLineBreakWindows)) {
@@ -391,12 +380,11 @@ public class TextUtilities {
 	}
 
 	/**
-	 * Searching the next position of a string or searchPattern beginning at a startIndex.
-	 * Searched text can be a simple string or a regex pattern, switching this with the flag searchTextIsRegularExpression.
-	 * Search can be done caseinsensitive or caseinsensitive by the flag searchCaseSensitive.
-	 * Search can be done from end to start, backwards by the flag searchReversely.
-	 * 
-	 * 
+	 * Searching the next position of a string or searchPattern beginning at a startIndex. Searched text can be a simple string or a regex pattern, switching this with the flag
+	 * searchTextIsRegularExpression. Search can be done caseinsensitive or caseinsensitive by the flag searchCaseSensitive. Search can be done from end to start, backwards by the flag
+	 * searchReversely.
+	 *
+	 *
 	 * @param text
 	 * @param startPosition
 	 * @param searchTextOrPattern
@@ -405,14 +393,15 @@ public class TextUtilities {
 	 * @param searchReversely
 	 * @return Tuple First = Startindex, Second = Length of found substring
 	 */
-	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive, boolean searchReversely) {
+	public static Tuple<Integer, Integer> searchNextPosition(String text, int startPosition, String searchTextOrPattern, boolean searchTextIsRegularExpression, boolean searchCaseSensitive,
+			boolean searchReversely) {
 		if (Utilities.isBlank(text) || startPosition < 0 || text.length() < startPosition || Utilities.isEmpty(searchTextOrPattern)) {
 			return null;
 		} else {
 			String fullText = text;
 			int nextPosition = -1;
 			int length = -1;
-			
+
 			Pattern searchPattern;
 			if (searchTextIsRegularExpression) {
 				if (searchCaseSensitive) {
@@ -429,7 +418,7 @@ public class TextUtilities {
 			}
 
 			Matcher matcher = searchPattern.matcher(fullText);
-			
+
 			if (searchReversely) {
 				while (matcher.find()) {
 					if (matcher.start() < startPosition) {
@@ -472,7 +461,7 @@ public class TextUtilities {
 
 	/**
 	 * Count the occurences of a string or pattern within a text
-	 * 
+	 *
 	 * @param text
 	 * @param searchTextOrPattern
 	 * @param searchTextIsRegularExpression
@@ -483,7 +472,7 @@ public class TextUtilities {
 		if (text != null && searchTextOrPattern != null) {
 			String fullText = text;
 			int occurences = 0;
-			
+
 			Pattern searchPattern;
 			if (searchTextIsRegularExpression) {
 				if (searchCaseSensitive) {
@@ -508,10 +497,10 @@ public class TextUtilities {
 			return -1;
 		}
 	}
-	
+
 	/**
 	 * Get line number at a given text position
-	 * 
+	 *
 	 * @param dataString
 	 * @param textPosition
 	 * @return
@@ -539,10 +528,10 @@ public class TextUtilities {
 			}
 		}
 	}
-	
+
 	/**
 	 * Get the number of the first line containing a string or pattern
-	 * 
+	 *
 	 * @param dataString
 	 * @param searchTextOrPattern
 	 * @param searchCaseSensitive
@@ -567,7 +556,7 @@ public class TextUtilities {
 					searchPattern = Pattern.compile(searchTextOrPattern, Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.MULTILINE);
 				}
 			}
-			
+
 			lineNumberReader = new LineNumberReader(new StringReader(dataString));
 			String lineContent;
 			while ((lineContent = lineNumberReader.readLine()) != null) {
@@ -581,10 +570,10 @@ public class TextUtilities {
 			Utilities.closeQuietly(lineNumberReader);
 		}
 	}
-	
+
 	/**
 	 * Insert some string before a given line into a text
-	 * 
+	 *
 	 * @param dataString
 	 * @param insertText
 	 * @param lineNumber
@@ -601,10 +590,10 @@ public class TextUtilities {
 			return dataString;
 		}
 	}
-	
+
 	/**
 	 * Insert some string at the end of a given line into a text
-	 * 
+	 *
 	 * @param dataString
 	 * @param insertText
 	 * @param lineNumber
@@ -624,8 +613,8 @@ public class TextUtilities {
 
 	/**
 	 * Try to detect the encoding of a byte array xml data.
-	 * 
-	 * 
+	 *
+	 *
 	 * @param data
 	 * @return
 	 * @throws UnsupportedEncodingException
@@ -655,7 +644,8 @@ public class TextUtilities {
 							encodingStart++;
 						}
 						StringBuilder encodingString = new StringBuilder();
-						while (Character.isLetter(reducedInterimString.charAt(encodingStart)) || Character.isDigit(reducedInterimString.charAt(encodingStart)) || reducedInterimString.charAt(encodingStart) == '-') {
+						while (Character.isLetter(reducedInterimString.charAt(encodingStart)) || Character.isDigit(reducedInterimString.charAt(encodingStart))
+								|| reducedInterimString.charAt(encodingStart) == '-') {
 							encodingString.append(reducedInterimString.charAt(encodingStart));
 							encodingStart++;
 						}
@@ -672,7 +662,7 @@ public class TextUtilities {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			
+
 			String interimString = new String(data, "UTF-8").toLowerCase();
 			int zeroIndex = interimString.indexOf('\u0000');
 			if (zeroIndex >= 0 && zeroIndex <= 100) {
@@ -682,14 +672,14 @@ public class TextUtilities {
 					return new Tuple<String, Boolean>("UTF-16LE", false);
 				}
 			}
-			
+
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Replace the leading indentation by double blanks of a text by some other character like tab
-	 * 
+	 *
 	 * @param data
 	 * @param blankCount
 	 * @param replacement
@@ -709,7 +699,7 @@ public class TextUtilities {
 
 	/**
 	 * Remove the first leading whitespace of a string
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 */
@@ -721,7 +711,7 @@ public class TextUtilities {
 
 	/**
 	 * Indent the lines of a string by one tab
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 */
@@ -731,7 +721,7 @@ public class TextUtilities {
 
 	/**
 	 * Indent the lines of a string by some tabs
-	 * 
+	 *
 	 * @param data
 	 * @param numberOfTabs
 	 * @return
@@ -741,10 +731,10 @@ public class TextUtilities {
 		Matcher matcher = pattern.matcher(data);
 		return matcher.replaceAll(Utilities.repeat("\t", numberOfTabs));
 	}
-	
+
 	/**
 	 * Chop a string into pieces of maximum length
-	 * 
+	 *
 	 * @param value
 	 * @param length
 	 * @return
@@ -757,10 +747,10 @@ public class TextUtilities {
 		}
 		return parts;
 	}
-	
+
 	/**
 	 * Trim all strings in an array of strings to a maximum length and add the cut off rest as new lines
-	 * 
+	 *
 	 * @param lines
 	 * @param length
 	 * @return
@@ -772,10 +762,10 @@ public class TextUtilities {
 		}
 		return linesTruncated;
 	}
-	
+
 	/**
 	 * Trim all strings in a list of strings to a maximum length and add the cut off rest as new lines
-	 * 
+	 *
 	 * @param lines
 	 * @param length
 	 * @return
@@ -787,10 +777,10 @@ public class TextUtilities {
 		}
 		return linesTruncated;
 	}
-	
+
 	/**
 	 * Remove all leading and trailing whispaces, not only blanks like it is done by .trim()
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 */
@@ -798,17 +788,17 @@ public class TextUtilities {
 		Pattern pattern1 = Pattern.compile("^\\s*", Pattern.MULTILINE);
 		Matcher matcher1 = pattern1.matcher(data);
 		data = matcher1.replaceAll("");
-		
+
 		Pattern pattern2 = Pattern.compile("\\s*$", Pattern.MULTILINE);
 		Matcher matcher2 = pattern2.matcher(data);
 		data = matcher2.replaceAll("");
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * Remove all trailing whispaces
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 */
@@ -816,13 +806,13 @@ public class TextUtilities {
 		Pattern pattern = Pattern.compile("\\s*$", Pattern.MULTILINE);
 		Matcher matcher = pattern.matcher(data);
 		data = matcher.replaceAll("");
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * Scan an inputstream for start indexes of text lines
-	 * 
+	 *
 	 * @param input
 	 * @return
 	 * @throws IOException
@@ -839,22 +829,21 @@ public class TextUtilities {
 			} else if ((char) bufferPrevious == '\r') {
 				returnList.add(position);
 			}
-			
+
 			bufferPrevious = bufferNext;
 			position++;
 		}
-		
+
 		if ((char) bufferPrevious == '\r') {
 			returnList.add(position);
 		}
-		
+
 		return returnList;
 	}
-	
+
 	/**
-	 * Scan an inputstream for start indexes of text lines.
-	 * Skip the first characters up to startIndex.
-	 * 
+	 * Scan an inputstream for start indexes of text lines. Skip the first characters up to startIndex.
+	 *
 	 * @param input
 	 * @param startIndex
 	 * @return
@@ -877,21 +866,21 @@ public class TextUtilities {
 			} else if ((char) bufferPrevious == '\r') {
 				returnList.add(position);
 			}
-			
+
 			bufferPrevious = bufferNext;
 			position++;
 		}
-		
+
 		if ((char) bufferPrevious == '\r') {
 			returnList.add(position);
 		}
-		
+
 		return returnList;
 	}
-	
+
 	/**
 	 * Scan an inputstream for positions of linebreaks.
-	 * 
+	 *
 	 * @param dataInputStream
 	 * @return
 	 * @throws IOException
@@ -907,16 +896,16 @@ public class TextUtilities {
 			} else if ((char) bufferNext == '\r') {
 				returnList.add(position);
 			}
-			
+
 			bufferPrevious = bufferNext;
 			position++;
 		}
 		return returnList;
 	}
-	
+
 	/**
 	 * Break all lines after a maximum number of characters.
-	 * 
+	 *
 	 * @param dataString
 	 * @param maximumLength
 	 * @return
@@ -927,7 +916,7 @@ public class TextUtilities {
 
 	/**
 	 * Scan a string for the characters used in it
-	 * 
+	 *
 	 * @param data
 	 * @return
 	 */
@@ -940,10 +929,10 @@ public class TextUtilities {
 		}
 		return usedCharsList;
 	}
-	
+
 	/**
 	 * Check if a string ends with a stringpart caseinsensitive
-	 * 
+	 *
 	 * @param str
 	 * @param suffix
 	 * @return
@@ -961,7 +950,7 @@ public class TextUtilities {
 
 	/**
 	 * Check if a string starts with a stringpart caseinsensitive
-	 * 
+	 *
 	 * @param str
 	 * @param prefix
 	 * @return
@@ -975,10 +964,10 @@ public class TextUtilities {
 			return str.regionMatches(true, 0, prefix, 0, prefix.length());
 		}
 	}
-	
+
 	/**
 	 * Trim a string to a maximum number of characters and add a sign if it was cut off.
-	 * 
+	 *
 	 * @param inputString
 	 * @param laenge
 	 * @param interLeave
@@ -996,7 +985,7 @@ public class TextUtilities {
 
 	/**
 	 * Check if a string contains a stringpart caseinsensitive
-	 * 
+	 *
 	 * @param str
 	 * @param substr
 	 * @return
@@ -1014,7 +1003,7 @@ public class TextUtilities {
 			return str.regionMatches(true, 0, substr, 0, str.length());
 		}
 	}
-	
+
 	public static String mapToString(Map<? extends Object, ? extends Object> map) {
 		StringBuilder returnValue = new StringBuilder();
 		for (Entry<? extends Object, ? extends Object> entry : map.entrySet()) {
@@ -1029,12 +1018,12 @@ public class TextUtilities {
 			if (value == null) {
 				value = "";
 			}
-			
+
 			returnValue.append(key.toString() + ": " + value.toString());
 		}
 		return returnValue.toString();
 	}
-	
+
 	public static String mapToStringWithSortedKeys(Map<? extends String, ? extends Object> map) {
 		StringBuilder returnValue = new StringBuilder();
 		for (String key : Utilities.asSortedList(map.keySet())) {
@@ -1048,12 +1037,12 @@ public class TextUtilities {
 			if (value == null) {
 				value = "";
 			}
-			
+
 			returnValue.append(key.toString() + ": " + value.toString());
 		}
 		return returnValue.toString();
 	}
-	
+
 	public static int getColumnNumberFromColumnChars(String columnChars) {
 		int value = 0;
 		for (char columnChar : columnChars.toLowerCase().toCharArray()) {

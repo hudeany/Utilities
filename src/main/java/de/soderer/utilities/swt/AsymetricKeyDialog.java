@@ -22,16 +22,16 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 	private PublicKey publicKey;
 	private PrivateKey privateKey;
 
-	public AsymetricKeyDialog(Shell shell, String title, PublicKey publicKey, PrivateKey privateKey) {   
+	public AsymetricKeyDialog(Shell shell, String title, PublicKey publicKey, PrivateKey privateKey) {
 		super(shell, SWT.RESIZE, title);
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
 	}
-	
+
 	@Override
 	protected void createComponents(Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, false));
-		
+
 		Composite composite = new Composite(shell, SWT.NONE);
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		composite.setLayoutData(gridData);
@@ -41,29 +41,29 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		Label label = new Label(composite, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 2, 1));
 		label.setText(LangResources.get("publicKey"));
-		
+
 		if (publicKey != null) {
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 			label.setText(LangResources.get("keyType"));
-			
+
 			StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
 			textField.setText(publicKey.getAlgorithm());
-			
+
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 			label.setText(LangResources.get("keyFormat"));
-			
+
 			textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
 			textField.setText(publicKey.getFormat());
-	
+
 			if (publicKey instanceof JCERSAPublicKey) {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 				label.setText(LangResources.get("keyStrength"));
-				
+
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
 				textField.setText(Integer.toString(((JCERSAPublicKey) publicKey).getModulus().bitLength()));
@@ -73,37 +73,37 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 2, 1));
 			label.setText(LangResources.get("notFound"));
 		}
-			
-		Label separator = new Label (composite, SWT.SEPARATOR | SWT.HORIZONTAL);
+
+		Label separator = new Label(composite, SWT.SEPARATOR | SWT.HORIZONTAL);
 		separator.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 2, 1));
 
 		// Private key
 		label = new Label(composite, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 2, 1));
 		label.setText(LangResources.get("privateKey"));
-		
+
 		if (privateKey != null) {
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 			label.setText(LangResources.get("keyType"));
-			
+
 			StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
 			textField.setText(privateKey.getAlgorithm());
-			
+
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 			label.setText(LangResources.get("keyFormat"));
-			
+
 			textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
 			textField.setText(privateKey.getFormat());
-			
+
 			if (privateKey instanceof JCERSAPrivateCrtKey) {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
 				label.setText(LangResources.get("keyStrength"));
-				
+
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
 				textField.setText(Integer.toString(((JCERSAPrivateCrtKey) privateKey).getModulus().bitLength()));
@@ -113,12 +113,12 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 2, 1));
 			label.setText(LangResources.get("notFound"));
 		}
-		
+
 		composite = new Composite(shell, SWT.NONE);
 		gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		composite.setLayoutData(gridData);
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
-	    
+
 		Button buttonSave = new Button(composite, SWT.PUSH);
 		buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		buttonSave.setText(LangResources.get("save"));

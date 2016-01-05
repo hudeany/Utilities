@@ -53,7 +53,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 
 		String text1 = getText("ERROR_OCCURRED");
 		if (throwable instanceof VisibleException) {
-			text1 = ((VisibleException)throwable).getVisibleMessage();
+			text1 = ((VisibleException) throwable).getVisibleMessage();
 		}
 
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);

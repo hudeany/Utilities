@@ -23,22 +23,22 @@ public class HttpUtilities {
 			if (pingUrl.startsWith("https")) {
 				// Deactivate SSL-Certificates check
 				SSLContext sslContext = SSLContext.getInstance("TLS");
-				TrustManager[] tms = new TrustManager[] {
-					new X509TrustManager() {
-						@Override
-						public X509Certificate[] getAcceptedIssuers() {
-							return null;
-						}
-						@Override
-						public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-							// nothing to do
-						}
-						@Override
-						public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-							// nothing to do
-						}
-					}	
-				};
+				TrustManager[] tms = new TrustManager[] { new X509TrustManager() {
+					@Override
+					public X509Certificate[] getAcceptedIssuers() {
+						return null;
+					}
+
+					@Override
+					public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+						// nothing to do
+					}
+
+					@Override
+					public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+						// nothing to do
+					}
+				} };
 				sslContext.init(null, tms, null);
 				SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 				HttpsURLConnection connection = (HttpsURLConnection) new URL(pingUrl).openConnection();
@@ -49,8 +49,7 @@ public class HttpUtilities {
 				connection.setDoInput(true);
 				connection.setDoOutput(false);
 				downloadStream = connection.getInputStream();
-			}
-			else {
+			} else {
 				HttpURLConnection connection = (HttpURLConnection) new URL(pingUrl).openConnection();
 				connection.setRequestMethod("POST");
 				connection.setConnectTimeout(5000);
@@ -59,11 +58,9 @@ public class HttpUtilities {
 				connection.setDoOutput(false);
 				downloadStream = connection.getInputStream();
 			}
-		}
-		catch (SocketTimeoutException stex) {
-			// This Exception is expected for the real short timeout 
-		}
-		finally {
+		} catch (SocketTimeoutException stex) {
+			// This Exception is expected for the real short timeout
+		} finally {
 			if (downloadStream != null) {
 				Utilities.closeQuietly(downloadStream);
 			}

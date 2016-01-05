@@ -17,17 +17,17 @@ import javax.swing.JTextArea;
 
 public class TextDialog extends JDialog {
 	private static final long serialVersionUID = 2020023796052296409L;
-	
+
 	public TextDialog(final Frame parent, String title, String text, Color backgroundcolor) {
 		super(parent, title, Dialog.ModalityType.DOCUMENT_MODAL);
-		
-        final TextDialog textDialog = this;
 
-        setResizable(false);
-		
+		final TextDialog textDialog = this;
+
+		setResizable(false);
+
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
-		
+
 		JTextArea textField = new JTextArea();
 		textField.setText(text);
 		textField.setEditable(false);
@@ -48,12 +48,12 @@ public class TextDialog extends JDialog {
 			}
 		});
 		buttonPanel.add(cancelButton);
-        panel.add(buttonPanel);
-        
-        add(panel);
-        
-        pack();
-        
-        setLocationRelativeTo(null);
+		panel.add(buttonPanel);
+
+		add(panel);
+
+		pack();
+
+		setLocationRelativeTo(null);
 	}
 }

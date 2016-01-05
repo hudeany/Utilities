@@ -27,7 +27,7 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
 	public CharSequence getCharContent(boolean ignoreEncodingErrors) {
 		return code;
 	}
-	
+
 	public static void main(String[] args) {
 		try {
 			JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
@@ -35,13 +35,8 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
 				throw new Exception("Compiler unavailable");
 			}
 
-			String code =
-				"package de.soderer.test;\n"
-				+ "public class SimpleWorker {\n"
-					+ "public void runJob() throws Exception {\n"
-						+ "System.out.println(\"SimpleJobWorker worked\");\n"
-					+ "}\n"
-				+ "}\n";
+			String code = "package de.soderer.test;\n" + "public class SimpleWorker {\n" + "public void runJob() throws Exception {\n" + "System.out.println(\"SimpleJobWorker worked\");\n" + "}\n"
+					+ "}\n";
 
 			JavaSourceFromString javaSourceFromString = new JavaSourceFromString("de.soderer.test.SimpleWorker", code);
 

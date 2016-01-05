@@ -29,7 +29,7 @@ public class MapUtilities {
 		}
 		return returnMap;
 	}
-	
+
 	public static <K, V> LinkedHashMap<K, V> sortEntries(Map<K, V> map, Comparator<Entry<K, V>> comparator) {
 		LinkedHashMap<K, V> returnMap = new LinkedHashMap<K, V>();
 		List<Entry<K, V>> entries = new LinkedList<Entry<K, V>>(map.entrySet());
@@ -41,49 +41,50 @@ public class MapUtilities {
 	}
 
 	public static <K extends Comparable<K>, V, L extends LinkedHashMap<K, V>> L sort(L map) {
-         @SuppressWarnings("unchecked")
-         L returnMap = (L) map.clone();
-         returnMap.clear();
-         List<K> keys = new LinkedList<K>(map.keySet());
-         Collections.sort(keys);
-         for (K key : keys) {
-             returnMap.put(key, map.get(key));
-         }
-         return returnMap;
-     }
+		@SuppressWarnings("unchecked")
+		L returnMap = (L) map.clone();
+		returnMap.clear();
+		List<K> keys = new LinkedList<K>(map.keySet());
+		Collections.sort(keys);
+		for (K key : keys) {
+			returnMap.put(key, map.get(key));
+		}
+		return returnMap;
+	}
 
-     public static <K, V, L extends LinkedHashMap<K, V>> L sort(L map, Comparator<K> comparator) {
-         @SuppressWarnings("unchecked")
-         L returnMap = (L) map.clone();
-         returnMap.clear();
-         List<K> keys = new LinkedList<K>(map.keySet());
-         Collections.sort(keys, comparator);
-         for (K key : keys) {
-             returnMap.put(key, map.get(key));
-         }
-         return returnMap;
-     }
+	public static <K, V, L extends LinkedHashMap<K, V>> L sort(L map, Comparator<K> comparator) {
+		@SuppressWarnings("unchecked")
+		L returnMap = (L) map.clone();
+		returnMap.clear();
+		List<K> keys = new LinkedList<K>(map.keySet());
+		Collections.sort(keys, comparator);
+		for (K key : keys) {
+			returnMap.put(key, map.get(key));
+		}
+		return returnMap;
+	}
 
-     public static <K, V, L extends LinkedHashMap<K, V>> L sortEntries(L map, Comparator<Entry<K, V>> comparator) {
-         @SuppressWarnings("unchecked")
-         L returnMap = (L) map.clone();
-         returnMap.clear();
-         List<Entry<K, V>> entries = new LinkedList<Entry<K, V>>(map.entrySet());
-         Collections.sort(entries, comparator);
-         for (Entry<K, V> entry : entries) {
-             returnMap.put(entry.getKey(), entry.getValue());
-         }
-         return returnMap;
-     }
+	public static <K, V, L extends LinkedHashMap<K, V>> L sortEntries(L map, Comparator<Entry<K, V>> comparator) {
+		@SuppressWarnings("unchecked")
+		L returnMap = (L) map.clone();
+		returnMap.clear();
+		List<Entry<K, V>> entries = new LinkedList<Entry<K, V>>(map.entrySet());
+		Collections.sort(entries, comparator);
+		for (Entry<K, V> entry : entries) {
+			returnMap.put(entry.getKey(), entry.getValue());
+		}
+		return returnMap;
+	}
 
-     public static <K, V, L extends HashMap<K, V>> L filterEntries(L map, Predicate<Entry<K, V>> predicate) {
-         @SuppressWarnings("unchecked")
-         L returnMap = (L) map.clone();
-         returnMap.clear();
-         for (Entry<K, V> entry : map.entrySet()) {
-        	 if (predicate.evaluate(entry))
-        		 returnMap.put(entry.getKey(), entry.getValue());
-         }
-         return returnMap;
-     }
+	public static <K, V, L extends HashMap<K, V>> L filterEntries(L map, Predicate<Entry<K, V>> predicate) {
+		@SuppressWarnings("unchecked")
+		L returnMap = (L) map.clone();
+		returnMap.clear();
+		for (Entry<K, V> entry : map.entrySet()) {
+			if (predicate.evaluate(entry)) {
+				returnMap.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return returnMap;
+	}
 }
