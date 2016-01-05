@@ -98,7 +98,7 @@ public class ConfigurationProperties {
 	}
 	
 	public void set(String name, Date value) {
-		properties.setProperty(name, DateUtils.YYYYMMDD_HHMMSS.format(value));
+		properties.setProperty(name, DateUtilities.YYYYMMDD_HHMMSS.format(value));
 	}
 	
 	public int getInteger(String name) {
@@ -128,7 +128,7 @@ public class ConfigurationProperties {
 	public Date getDate(String name) {
 		try {
 			if (properties.containsKey(name)) {
-				return DateUtils.YYYYMMDD_HHMMSS.parse(properties.getProperty(name));
+				return DateUtilities.YYYYMMDD_HHMMSS.parse(properties.getProperty(name));
 			} else {
 				return null;
 			}

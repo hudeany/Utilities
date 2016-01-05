@@ -54,10 +54,10 @@ public class JschFileData {
 			// change date
 			String changeDateString = dataStringParts[5] + " " + dataStringParts[6] + " " + dataStringParts[7];
 			try {
-				changeDate = DateUtils.MMM_D_HHMM.parse(changeDateString);
+				changeDate = DateUtilities.MMM_D_HHMM.parse(changeDateString);
 			} catch (Exception e) {
 				try {
-					changeDate = DateUtils.MMM_D_YYYY.parse(changeDateString);
+					changeDate = DateUtilities.MMM_D_YYYY.parse(changeDateString);
 				} catch (Exception e1) {
 					throw new Exception("Invalid changeDate");
 				}

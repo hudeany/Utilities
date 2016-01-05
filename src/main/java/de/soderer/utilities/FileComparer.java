@@ -59,8 +59,8 @@ public class FileComparer {
 		
 		StringBuilder result = new StringBuilder();
 		result.append(generateUnifiedDiff(
-				file1.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file1.lastModified())), dataString1,
-				file2.getAbsolutePath() + " " + DateUtils.YYYY_MM_DD_HHMMSS.format(new Date(file2.lastModified())), dataString2,
+				file1.getAbsolutePath() + " " + DateUtilities.YYYY_MM_DD_HHMMSS.format(new Date(file1.lastModified())), dataString1,
+				file2.getAbsolutePath() + " " + DateUtilities.YYYY_MM_DD_HHMMSS.format(new Date(file2.lastModified())), dataString2,
 				ignoreLeadingAndTrailingWhitespaces, blockSensitiveCompare, outputMode));
 		
 		return result.toString();

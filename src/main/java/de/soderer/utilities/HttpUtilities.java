@@ -16,12 +16,12 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-public class HttpUtils {
+public class HttpUtilities {
 	public static void pingUrlWithoutSslCheckNoWaitForAnswer(String pingUrl) throws IOException, NoSuchAlgorithmException, KeyManagementException {
 		InputStream downloadStream = null;
 		try {
 			if (pingUrl.startsWith("https")) {
-				// Überprüfung der SSL-zertifikate ausschalten
+				// Deactivate SSL-Certificates check
 				SSLContext sslContext = SSLContext.getInstance("TLS");
 				TrustManager[] tms = new TrustManager[] {
 					new X509TrustManager() {
@@ -40,13 +40,11 @@ public class HttpUtils {
 					}	
 				};
 				sslContext.init(null, tms, null);
-				// SocketFactory für die Erstellung von HTTPS-Verbindungen erzeugen
 				SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 				HttpsURLConnection connection = (HttpsURLConnection) new URL(pingUrl).openConnection();
 				connection.setSSLSocketFactory(sslSocketFactory);
 				connection.setRequestMethod("POST");
 				connection.setConnectTimeout(5000);
-				// möglichst kurzer ReadTimeout
 				connection.setReadTimeout(100);
 				connection.setDoInput(true);
 				connection.setDoOutput(false);
@@ -56,7 +54,6 @@ public class HttpUtils {
 				HttpURLConnection connection = (HttpURLConnection) new URL(pingUrl).openConnection();
 				connection.setRequestMethod("POST");
 				connection.setConnectTimeout(5000);
-				// möglichst kurzer ReadTimeout
 				connection.setReadTimeout(100);
 				connection.setDoInput(true);
 				connection.setDoOutput(false);
@@ -64,11 +61,12 @@ public class HttpUtils {
 			}
 		}
 		catch (SocketTimeoutException stex) {
-			//Diese Exception wird erwartet, da der ReadTimeout sehr kurz sein soll
+			// This Exception is expected for the real short timeout 
 		}
 		finally {
-			if (downloadStream != null)
+			if (downloadStream != null) {
 				Utilities.closeQuietly(downloadStream);
+			}
 		}
 	}
 }

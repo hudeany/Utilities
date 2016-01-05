@@ -10,7 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
-import de.soderer.utilities.collection.MapUtils;
+import de.soderer.utilities.collection.MapUtilities;
 
 public class CollectionsTest {
 
@@ -21,7 +21,7 @@ public class CollectionsTest {
 		testMap.put("aBc", 2);
 		testMap.put("abC", 3);			
 		HashMap<String, Integer> testMap2 = new CaseInsensitiveOrderedMap<Integer>(testMap);
-		LinkedHashMap<String, Integer> sortedMap = MapUtils.sort(testMap2);
+		LinkedHashMap<String, Integer> sortedMap = MapUtilities.sort(testMap2);
 		Assert.assertEquals(2, sortedMap.size());
 		List<Entry<String, Integer>> entries = new ArrayList<Entry<String, Integer>>(sortedMap.entrySet());
 		Assert.assertEquals("abc", entries.get(0).getKey());

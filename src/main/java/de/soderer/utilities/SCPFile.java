@@ -6,33 +6,31 @@ public class SCPFile {
 	private static final String DOS_SEPARATOR = "\\";
 	
 	private String hostname = null;
-	private String path = null; // endet immer mit einem Separator
-	private String filename = null; // erlaubt sind auch Wildcards wie '*'
+	private String path = null; // always ends with a Separator
+	private String filename = null; // also allows wildcards like '*'
 
 	/**
-	 * Diese Klasse kapselt Dateibezeichner und stellt deren Einzelteile zur Verfügung.
-	 * Es wir dabei explizit auch mit Laufzeitsystem-fremden Fileseparatoren gearbeitet, welche durch die Verarbeitungen NICHT verändert werden.
-	 * Die Klasse java.io.File würde die Separatoren stets auf das Laufzeitsystem ändern.
+	 * This class encapsulates file descriptors and shares their parts.
+	 * It works explicitly with non system file separators, which are not changed while working with them.
+	 * Class java.io.File would change them.
 	 * 
-	 * Erlaubte Formate:
-	 *   "\\hostname\path1\path2\filename" => DOS-Datei
-	 * 	 "\\hostname/path1/path2/filename" => Unix-Datei
-	 * 	 "\\hostname/path1/path2/" => Verzeichnis
-	 *   "\\hostname/filename" => Root-Datei
+	 * Allowed formats:
+	 *   "\\hostname\path1\path2\filename" => DOS-file
+	 * 	 "\\hostname/path1/path2/filename" => Unix-file
+	 * 	 "\\hostname/path1/path2/" => directory
+	 *   "\\hostname/filename" => root-directory-file
 	 * 
-	 * In filename sind auch Wildcards wie '*' erlaubt
+	 * Filename also allows wildcards like '*'
 	 * 
 	 * @param hostnamePathAndFileName
 	 * @throws Exception
 	 */
 	public SCPFile(String hostnamePathAndFileName) throws Exception {
-		//Validierung
 		if (Utilities.isEmpty(hostnamePathAndFileName))
 			throw new Exception("SCPFile: Empty filespecifier");
 		if (!hostnamePathAndFileName.startsWith(PRELUDE))
 			throw new Exception("SCPFile: Invalid prelude in filespecifier: " + hostnamePathAndFileName);
 		
-		//Zerlegung
 		int firstIndexOfUnixPathSeparator = hostnamePathAndFileName.indexOf(UNIX_SEPARATOR, PRELUDE.length());
 		int firstIndexOfWindowsPathSeparator = hostnamePathAndFileName.indexOf(DOS_SEPARATOR, PRELUDE.length());
 		int firstIndexOfPathSeparator = -1;
@@ -61,7 +59,6 @@ public class SCPFile {
 	}
 	
 	public SCPFile(String hostname, String path, String filename) throws Exception {
-		//Validierung
 		if (Utilities.isEmpty(hostname))
 			throw new Exception("SCPFile: Empty hostname");
 		if (Utilities.isEmpty(path))
@@ -102,7 +99,8 @@ public class SCPFile {
 	}
 
 	/**
-	 * Erlaubt sind auch Wildcards wie '*'
+	 * Filename also allows wildcards like '*'
+	 * 
 	 * @return
 	 */
 	public String getFilename() {
@@ -125,9 +123,9 @@ public class SCPFile {
 	}
 
 	/**
-	 * Erlaubt sind auch Wildcards wie '*'
-	 * Setzen auf Wert null => Verzeichnis der Originaldatei
-	 * Setzen von Wert null auf "test" => neue Datei im Originalverzeichnis
+	 * Also allows wildcards like '*'
+	 * Put value to null => Directory of original file
+	 * Put value from null to "test" => new File in original directory
 	 * 
 	 * @param filename
 	 * @throws Exception 

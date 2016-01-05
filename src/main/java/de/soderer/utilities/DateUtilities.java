@@ -10,8 +10,9 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
-public class DateUtils {
+public class DateUtilities {
 	public static SimpleDateFormat DD_MM_YYYY_HH_MM_SS = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 	public static SimpleDateFormat DD_MM_YYYY_HH_MM_SS_Z = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss z");
 	public static SimpleDateFormat DD_MM_YYYY_HH_MM = new SimpleDateFormat("dd.MM.yyyy HH:mm");
@@ -19,11 +20,12 @@ public class DateUtils {
 	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
 	public static SimpleDateFormat HHMMSS = new SimpleDateFormat("HHmmss");
 	public static SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd");
-	public static SimpleDateFormat EE_DD_MM_YYYY = new SimpleDateFormat("EE dd.MM.yyyy", Locale.GERMAN); // EE => Wochentag
+	public static SimpleDateFormat EE_DD_MM_YYYY = new SimpleDateFormat("EE dd.MM.yyyy", Locale.GERMAN); // EE => Weekday
 	public static SimpleDateFormat DD_MM_YYYY_HH_MM_SS_ForFileName = new SimpleDateFormat("dd_MM_yyyy_HH_mm_ss");
 	public static SimpleDateFormat YYYYMMDDHHMMSS = new SimpleDateFormat("yyyyMMddHHmmss");
 	public static SimpleDateFormat YYYY_MM_DD_HHMMSS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	public static SimpleDateFormat YYYYMMDD_HHMMSS = new SimpleDateFormat("yyyyMMdd-HHmmss");
+	public static SimpleDateFormat HHMM = new SimpleDateFormat("HHmm");
 	public static SimpleDateFormat DD_MMM_YYYY_ENG = new SimpleDateFormat("dd-MMM-yy", Locale.ENGLISH);
 	public static SimpleDateFormat DD_MMM_YYYY_GER = new SimpleDateFormat("dd-MMM-yy", Locale.GERMAN);
 	public static SimpleDateFormat MMM_D_HHMM = new SimpleDateFormat("MMM d HH:mm", Locale.ENGLISH);
@@ -68,10 +70,10 @@ public class DateUtils {
 	}
 	
 	/**
-	 * Formatiert den Timestamp (Achtung Nanos im .Net Format)
+	 * Format a timestamp (Nanos in .Net format)
 	 * 
-	 * @param ts ein Timestamp
-	 * @return ein String im Format 'yyyy-mm-dd HH:MM:SS.NNNNNN'
+	 * @param ts a Timestamp
+	 * @return a String in format 'yyyy-mm-dd HH:MM:SS.NNNNNN'
 	 */
 	public static String formatTimestamp_yyyyMMdd_HHmmssNNNNNN(Timestamp ts) {
 		String returnString = "";
@@ -95,25 +97,23 @@ public class DateUtils {
 	}
 	
 	/**
-	 * Kovertiert ein Datum der Form "dd.MM.yyyy" oder "dd-MM-yyyy" in "yyyy-MM-dd"
+	 * Format a timestampString from format "dd.MM.yyyy" or "dd-MM-yyyy" to "yyyy-MM-dd"
 	 * 
 	 * @param ddMMyyyyString
 	 * @return
 	 */
 	public static String convert_ddMMyyyy_to_yyyyMMdd(String ddMMyyyyString) {
-		return ddMMyyyyString.substring(6, 10) + "-" + ddMMyyyyString.substring(3, 5) + "-"
-				+ ddMMyyyyString.substring(0, 2);
+		return ddMMyyyyString.substring(6, 10) + "-" + ddMMyyyyString.substring(3, 5) + "-" + ddMMyyyyString.substring(0, 2);
 	}
 
 	/**
-	 * Kovertiert ein Datum der Form "yyyy-MM-dd" oder "yyyy.MM.dd" in "dd.MM.yyyy"
+	 * Format a timestampString from format "yyyy-MM-dd" or "yyyy.MM.dd" to "dd.MM.yyyy"
 	 * 
 	 * @param ddMMyyyyString
 	 * @return
 	 */
 	public static String convert_yyyyMMdd_to_ddMMyyyy(String yyyyMMddString) {
-		return yyyyMMddString.substring(8, 10) + "." + yyyyMMddString.substring(5, 7) + "."
-				+ yyyyMMddString.substring(0, 4);
+		return yyyyMMddString.substring(8, 10) + "." + yyyyMMddString.substring(5, 7) + "." + yyyyMMddString.substring(0, 4);
 	}
 	
 	public static Date getDay(int daysToAdd) {
@@ -342,192 +342,237 @@ public class DateUtils {
 		}
 		return returnString;
 	}
-
+	
+	public static Date calculateNextJobStart(String timingString) throws Exception {
+		GregorianCalendar now = new GregorianCalendar();
+		return calculateNextJobStart(now, timingString);
+	}
+	
 	/**
-	 * Ermitteln des nächsten geplanten Startzeitpunktes Der Timingparameter kann Wochentage, Zeiten, Monats-, Quartalsplanungen und Feiertage enthalten
+	 * Calculation of next scheduled job start
+	 * Timingparameter may contain weekdays, clocktimes, months, quarters and holidays
 	 * 
-	 * Mögliche Ausprägungen: "ONCE" => nur einmalig (returns null) "0600;0800" => täglich um 06:00 und um 08:00 "MoMi:1700" => Montags und Mittwochs um 17:00 "M05:1600" => jeden 05.ten im Monat um
-	 * 16:00 "Q:1600" => Jeden ersten Tag im Quartal um 16:00 "QW:1600" => Jeden ersten Werktag im Quartal um 16:00 "MoDiMiDoFr:1700;!23012011" => Mo bis Fr um 17:00 aber nicht am 23.01.2011
-	 * (Feiertagsregelung durch '!'-Zeichen)
+	 * Allowed parameters:
+	 * "ONCE"                      => only once (returns null)
+	 * "0600;0800"                 => daily at 06:00 and 08:00
+	 * "MoMi:1700"                 => Every monday and wednesday at 17:00
+	 * "M05:1600"                  => every 05th day of month at 16:00
+	 * "Q:1600"                    => every first day of quarter at 16:00
+	 * "QW:1600"                   => every first working day of quarter at 16:00
+	 * "MoDiMiDoFr:1700;!23012011" => mondays to fridays at 17:00 exept for 23.01.2011 (Holidays marked by '!')
 	 * 
-	 * Alle Ausprägungen können beliebig kombiniert werden, werden dann durch Semikolons getrennt aufgelistet
+	 * All values may be combined separated by semicolons.
 	 * 
 	 * @param timingString
 	 * @return
+	 * @throws ParseException 
 	 * @throws Exception
 	 */
-	public static Timestamp calculateNextJobStart(String timingString) {
-		GregorianCalendar now = new GregorianCalendar();
+	public static Date calculateNextJobStart(GregorianCalendar now, String timingString) throws Exception {
 		GregorianCalendar returnStart = new GregorianCalendar();
 		returnStart.add(GregorianCalendar.YEAR, 1);
-
-		// Feiertage die explizit ausgeschlossen werden
+		
+		// Holidays to exclude
 		List<GregorianCalendar> excludedDays = new ArrayList<GregorianCalendar>();
-
-		if (timingString.equalsIgnoreCase("once")) {
+		
+		if (timingString.equalsIgnoreCase("once"))
 			return null;
-		}
 
-		String[] timingParameterList = timingString.split(";");
+		String[] timingParameterList = timingString.split(";|,| ");
 		for (String timingParameter : timingParameterList) {
 			if (timingParameter.startsWith("!")) {
 				try {
 					GregorianCalendar exclusionDate = new GregorianCalendar();
-					exclusionDate.setTime(DateUtils.DDMMYYYY.parse(timingParameter.substring(1)));
+					exclusionDate.setTime(new SimpleDateFormat("ddMMyyyy").parse(timingParameter.substring(1)));
 					excludedDays.add(exclusionDate);
 				} catch (ParseException e) {
-					e.printStackTrace();
+					throw e;
 				}
 			}
 		}
-
+		
 		for (String timingParameter : timingParameterList) {
 			GregorianCalendar nextStartByThisParameter = new GregorianCalendar();
 			nextStartByThisParameter.setTime(now.getTime());
 
 			if (timingParameter.startsWith("!")) {
-				// Exclusionen wurden bereits verarbeitet
+				// Exclusions are done previously
 				continue;
 			} else if (!timingParameter.contains(":")) {
-				if (Utilities.isNumber(timingParameter)) {
-					// tägliche Verarbeitung zur gegebenen Uhrzeit
+				if (NumberUtilities.isDigit(timingParameter)) {
+					// daily execution on given time
 					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(timingParameter.substring(0, 2)));
 					nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(timingParameter.substring(2)));
 					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-
-					// nächsten Start solange in die Zukunft verschieben (+1Tag)
-					// bis
-					// Parameter-Bedingung erfüllt ist
-					// Bei treffender Feiertagseintragung auch um einen Tag
-					// weiterschieben
-					while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart) || dayListIncludes(excludedDays, nextStartByThisParameter)) {
+	
+					// Move next start into future (+1 day) until rule is matched
+					// Move also when meeting holiday rule
+					while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)
+							|| DateUtilities.dayListIncludes(excludedDays, nextStartByThisParameter))
 						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
+				} else if (timingParameter.contains("*") && timingParameter.length() == 4) {
+					// daily execution on given time with wildcards '*' like '*4*5'
+					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
+					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
+	
+					// Move next start into future (+1 minute) until rule is matched
+					// Move also when meeting holiday rule
+					while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)
+							|| DateUtilities.dayListIncludes(excludedDays, nextStartByThisParameter)
+							|| !DateUtilities.checkTimeMatchesPattern(timingParameter, nextStartByThisParameter.getTime())) {
+						nextStartByThisParameter.add(GregorianCalendar.MINUTE, 1);
 					}
 				} else {
-					// wochentägliche Verarbeitung um 00:00 Uhr
+					// Fr: weekly execution on Friday at 00:00 Uhr
+					boolean onlyWithinOddWeeks = false;
+					boolean onlyWithinEvenWeeks = false;
 					List<Integer> weekdayIndexes = new ArrayList<Integer>();
 					for (String weekDay : TextUtilities.chopToChunks(timingParameter, 2)) {
-						weekdayIndexes.add(DateUtils.getWeekdayIndex(weekDay));
+						if (weekDay.equalsIgnoreCase("ev")) {
+							onlyWithinEvenWeeks = true;
+						} else if (weekDay.equalsIgnoreCase("od")) {
+							onlyWithinOddWeeks = true;
+						} else {
+							weekdayIndexes.add(getWeekdayIndex(weekDay));
+						}
 					}
-					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, 0);
+					nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY,0);
 					nextStartByThisParameter.set(GregorianCalendar.MINUTE, 0);
 					nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 					nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 
-					// nächsten Start solange in die Zukunft verschieben (+1Tag)
-					// bis
-					// Parameter-Bedingung erfüllt ist
-					// Bei treffender Feiertagseintragung auch um einen Tag
-					// weiterschieben
-					while ((nextStartByThisParameter.before(now) || !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
-							|| dayListIncludes(excludedDays, nextStartByThisParameter)) {
+					// Move next start into future (+1 day) until rule is matched
+					// Move also when meeting holiday rule
+					while ((nextStartByThisParameter.before(now)
+							|| !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
+							|| DateUtilities.dayListIncludes(excludedDays, nextStartByThisParameter)
+							|| (onlyWithinOddWeeks && (nextStartByThisParameter.get(Calendar.WEEK_OF_YEAR) % 2 == 0))
+							|| (onlyWithinEvenWeeks && (nextStartByThisParameter.get(Calendar.WEEK_OF_YEAR) % 2 != 0)))
 						nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
-					}
 				}
-			} else if (timingParameter.length() == 8) {
-				// Monatssteuerung "M01:1700"
+			} else if (timingParameter.startsWith("M") && timingParameter.length() == 8 && timingParameter.indexOf(":") == 3) {
+				// month rule "M01:1700"
 				String tag = timingParameter.substring(1, timingParameter.indexOf(":"));
 				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, Integer.parseInt(tag));
+				if (tag.equals("99")) {
+					// special day ultimo
+					nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, nextStartByThisParameter.getActualMaximum(GregorianCalendar.DAY_OF_MONTH));
+				} else {
+					nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, Integer.parseInt(tag));
+				}
 				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
 				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-
-				// Den nächsten passenden Monat finden
+				
+				// find next matching month
 				while (nextStartByThisParameter.before(now) && nextStartByThisParameter.before(returnStart)) {
-					nextStartByThisParameter.add(GregorianCalendar.MONTH, 1);
+					if (tag.equals("99")) {
+						// special day ultimo
+						nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, 1);
+						nextStartByThisParameter.add(GregorianCalendar.MONTH, 1);
+						nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, nextStartByThisParameter.getActualMaximum(GregorianCalendar.DAY_OF_MONTH));
+					} else {
+						nextStartByThisParameter.add(GregorianCalendar.MONTH, 1);
+					}
 				}
-
-				// Bei treffender Feiertagseintragung um einen Tag
-				// weiterschieben
-				while (dayListIncludes(excludedDays, nextStartByThisParameter)) {
+				
+				// Move also when meeting holiday rule
+				while (DateUtilities.dayListIncludes(excludedDays, nextStartByThisParameter)) {
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR, 1);
 				}
 			} else if (timingParameter.startsWith("Q:")) {
-				// Quartalsweise Planung (Q:1200): Start am ersten Kalendertag
-				// im Quartal
-				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL) {
+				// quarterly execution (Q:1200) at first day of month
+				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL)
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.APRIL);
-				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY) {
+				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY)
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JULY);
-				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER) {
+				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER)
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.OCTOBER);
-				} else {
+				else {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JANUARY);
 					nextStartByThisParameter.add(GregorianCalendar.YEAR, 1);
 				}
-
+				
 				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, 1);
 				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
 				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
 				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
-
-				// Bei treffender Feiertagseintragung um einen Tag
-				// weiterschieben
-				while (dayListIncludes(excludedDays, nextStartByThisParameter)) {
+				
+				// Move also when meeting holiday rule
+				while (DateUtilities.dayListIncludes(excludedDays, nextStartByThisParameter))
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_YEAR, 1);
-				}
 			} else if (timingParameter.startsWith("QW:")) {
-				// Quartalsweise Planung (QW:1200): Start am ersten Werktag im
-				// Quartal
-				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL) {
+				// quarterly execution (QW:1200) at first workingday of month
+				if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.APRIL)
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.APRIL);
-				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY) {
+				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.JULY)
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JULY);
-				} else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER) {
+				else if (nextStartByThisParameter.get(GregorianCalendar.MONTH) < GregorianCalendar.OCTOBER)
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.OCTOBER);
-				} else {
+				else {
 					nextStartByThisParameter.set(GregorianCalendar.MONTH, GregorianCalendar.JANUARY);
 					nextStartByThisParameter.add(GregorianCalendar.YEAR, 1);
 				}
-
+				
 				nextStartByThisParameter.set(GregorianCalendar.DAY_OF_MONTH, 1);
 
-				// Bei treffender Feiertagseintragung oder Wochentagsregelung um
-				// einen Tag weiterschieben
+				// Move also when meeting holiday rule
 				while (nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SATURDAY
-						|| nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY || dayListIncludes(excludedDays, nextStartByThisParameter)) {
+					|| nextStartByThisParameter.get(GregorianCalendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY
+					|| DateUtilities.dayListIncludes(excludedDays, nextStartByThisParameter))
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
-				}
-
+				
 				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
 				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
 				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 			} else {
-				// WochenTagessteuerung (ermöglicht auch Werktagssteuerung)
+				// weekday execution (also allowes workingday execution Werktagssteuerung)
 				String wochenTage = timingParameter.substring(0, timingParameter.indexOf(":"));
+				boolean onlyWithinOddWeeks = false;
+				boolean onlyWithinEvenWeeks = false;
 				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
 				List<Integer> weekdayIndexes = new ArrayList<Integer>();
 				for (String weekDay : TextUtilities.chopToChunks(wochenTage, 2)) {
-					weekdayIndexes.add(DateUtils.getWeekdayIndex(weekDay));
+					if (weekDay.equalsIgnoreCase("ev")) {
+						onlyWithinEvenWeeks = true;
+					} else if (weekDay.equalsIgnoreCase("od")) {
+						onlyWithinOddWeeks = true;
+					} else {
+						weekdayIndexes.add(getWeekdayIndex(weekDay));
+					}
 				}
 				nextStartByThisParameter.set(GregorianCalendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
 				nextStartByThisParameter.set(GregorianCalendar.MINUTE, Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(GregorianCalendar.SECOND, 0);
 				nextStartByThisParameter.set(GregorianCalendar.MILLISECOND, 0);
 
-				// nächsten Start solange in die Zukunft verschieben (+1Tag) bis
-				// Parameter-Bedingung erfüllt ist
-				// Bei treffender Feiertagseintragung auch um einen Tag
-				// weiterschieben
-				while ((nextStartByThisParameter.before(now) || !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
-						|| dayListIncludes(excludedDays, nextStartByThisParameter)) {
+				// Move next start into future (+1 day) until rule is matched
+				// Move also when meeting holiday rule
+				while ((nextStartByThisParameter.before(now)
+						|| !weekdayIndexes.contains(nextStartByThisParameter.get(Calendar.DAY_OF_WEEK))) && nextStartByThisParameter.before(returnStart)
+						|| DateUtilities.dayListIncludes(excludedDays, nextStartByThisParameter)
+						|| (onlyWithinOddWeeks && (nextStartByThisParameter.get(Calendar.WEEK_OF_YEAR) % 2 == 0))
+						|| (onlyWithinEvenWeeks && (nextStartByThisParameter.get(Calendar.WEEK_OF_YEAR) % 2 != 0)))
 					nextStartByThisParameter.add(GregorianCalendar.DAY_OF_MONTH, 1);
-				}
 			}
 
-			if (nextStartByThisParameter.before(returnStart)) {
+			if (nextStartByThisParameter.before(returnStart))
 				returnStart = nextStartByThisParameter;
-			}
 		}
 
-		return new Timestamp(returnStart.getTimeInMillis());
+		return returnStart.getTime();
+	}
+	
+	public static boolean checkTimeMatchesPattern(String pattern, Date time) {
+		Pattern timePattern = Pattern.compile(pattern.replace("*", "."));
+		String timeString = DateUtilities.HHMM.format(time);
+		return timePattern.matcher(timeString).matches();
 	}
 
 	/**

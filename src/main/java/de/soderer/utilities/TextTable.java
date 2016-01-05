@@ -28,7 +28,7 @@ public class TextTable {
 		columnRightAligned = new ArrayList<Boolean>();
 		lineColors = new ArrayList<String>();
 		
-		//Erste Zeile enthält die Header
+		// First line contains headers
 		columnNames.add(new ArrayList<String>());
 	}
 	
@@ -55,7 +55,7 @@ public class TextTable {
 		columnNames.get(0).add(columnName);
 		columnColors.add(farbe);
 		
-		// Zweite Zeile einfügen
+		// Insert second line
 		if (columnNameLine2 != null && columnNames.size() == 1)
 			columnNames.add(new ArrayList<String>());
 		
@@ -71,10 +71,11 @@ public class TextTable {
 		
 		columnRightAligned.add(alignRight);
 		
-		// Alle bestehenden Zeilen auf die Header-Länge bringen
+		// Adjust existing columns of lines to header length 
 		for (List<String> line : content) {
-			while (line.size() < columnNames.get(0).size())
+			while (line.size() < columnNames.get(0).size()) {
 				line.add("");
+			}
 		}
 	}
 	
@@ -82,19 +83,22 @@ public class TextTable {
 		columnNames.get(0).remove(index);
 		columnColors.remove(index);
 		
-		if (columnNames.size() > 1)
+		if (columnNames.size() > 1) {
 			columnNames.get(1).remove(index);
+		}
 		
 		columnRightAligned.remove(index);
 		
-		// Alle bestehenden Zeilen auf die Header-Länge bringen
-		for (List<String> line : content)
+		// Adjust existing columns of lines to header lengths
+		for (List<String> line : content) {
 			line.remove(index);
+		}
 	}
 	
 	public void setAlignmentForColumn(int columnIndex, boolean alignRight) throws Exception {
-		if (columnIndex < 0 || columnIndex >= columnNames.get(0).size())
+		if (columnIndex < 0 || columnIndex >= columnNames.get(0).size()) {
 			throw new Exception("Ungültige Spalten-Indexangabe: " + columnIndex);
+		}
 		
 		columnRightAligned.set(columnIndex, alignRight);
 	}
@@ -109,9 +113,10 @@ public class TextTable {
 		currentLineIndex++;
 		currentColumnIndex = 0;
 		
-		// Neue Zeile auf die Header-Länge bringen
-		while (content.get(currentLineIndex).size() < columnNames.get(0).size())
+		// Adjust columns of new line to header lengths 
+		while (content.get(currentLineIndex).size() < columnNames.get(0).size()) {
 			content.get(currentLineIndex).add("");
+		}
 	}
 	
 	public void addValueToCurrentLine(int value) throws Exception {
@@ -119,12 +124,15 @@ public class TextTable {
 	}
 	
 	public void addValueToCurrentLine(String value) throws Exception {
-		if (currentLineIndex == -1)
+		if (currentLineIndex == -1) {
 			throw new Exception("Keine Zeile zum Erweitern angelegt");
-		else if (content.get(currentLineIndex).size() <= currentColumnIndex)
+		} else if (content.get(currentLineIndex).size() <= currentColumnIndex) {
 			throw new Exception("Versuch in eine Spalte zu Schreiben die noch nicht angelegt wurde");
+		}
 		
-		if (value == null) value = "";
+		if (value == null) {
+			value = "";
+		}
 		content.get(currentLineIndex).set(currentColumnIndex, value);
 		currentColumnIndex++;
 	}
@@ -154,7 +162,7 @@ public class TextTable {
 			contentLines.add(new StringBuilder());
 		}
 		
-		//Über alle Spalten iterieren
+		// Iterate over all columns
 		for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 			int size = getMaxSizeOfColumn(columnIndex);
 			
@@ -165,7 +173,7 @@ public class TextTable {
 				columnNamesLines.get(lineIndex).append(TextUtilities.trimStringToLengthAlignedLeft(columnNames.get(lineIndex).get(columnIndex), size));
 			}
 			
-			//Über alle Zeilen iterieren
+			// Iterate over all lies
 			for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 				if (columnIndex > 0)
 					contentLines.get(lineIndex).append(" ");
@@ -181,7 +189,7 @@ public class TextTable {
 		for (int lineIndex = 0 ; lineIndex < columnNamesLines.size(); lineIndex++) {
 			text.append(columnNamesLines.get(lineIndex) + "\n");
 		}
-		//Headerline abtrennen
+		// Remove headerline
 		text.append(TextUtilities.repeatString("-", columnNamesLines.get(0).length()) + "\n");
 		for (int lineIndex = 0 ; lineIndex < contentLines.size(); lineIndex++) {
 			text.append(contentLines.get(lineIndex) + "\n");
@@ -193,20 +201,20 @@ public class TextTable {
 	public String toCsvString() {
 		StringBuilder csvText = new StringBuilder();
 		
-		//Zuerst die Columnheader wegschreiben
-		//Über alle HeaderZeilen iterieren
+		// Write columnheader first
+		// Iterate over all header lines
 		for (int lineIndex = 0; lineIndex < columnNames.size(); lineIndex++) {
-			//Über alle Spalten iterieren
+			// Iterate over all columns
 			for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 				csvText.append("\"" + columnNames.get(lineIndex).get(columnIndex) + "\";");
 			}
 			csvText.append("\n");
 		}
 		
-		//Dann den Datenzeileninhalt wegschreiben
-		//Über alle Zeilen iterieren
+		// Write data lines second
+		// Iterate over all lines
 		for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
-			//Über alle Spalten iterieren
+			// Iterate over all columns
 			for (int columnIndex = 0 ; columnIndex < content.get(0).size(); columnIndex++) {
 				csvText.append("\"" + content.get(lineIndex).get(columnIndex) + "\";");
 			}
@@ -219,12 +227,12 @@ public class TextTable {
 	public String toCsvStringWithMetaData() {
 		StringBuilder csvText = new StringBuilder();
 		
-		//Zuerst die Columnheader wegschreiben
-		//Über alle HeaderZeilen iterieren
+		// Write columnheader first
+		// Iterate over all header lines
 		for (int lineIndex = 0; lineIndex < columnNames.size(); lineIndex++) {
 			csvText.append("\"" + METADATA_HEADER + "\";");
 			
-			//Über alle Spalten iterieren
+			// Iterate over all columns
 			for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 				csvText.append("\"" + columnNames.get(lineIndex).get(columnIndex) + "\";");
 			}
@@ -243,14 +251,14 @@ public class TextTable {
 		}
 		csvText.append("\n");
 		
-		//Dann den Datenzeileninhalt wegschreiben
-		//Über alle Zeilen iterieren
+		// Write data lines second
+				// Iterate over all lines
 		for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 			csvText.append("\"" + lineColors.get(lineIndex) + "\";");
 			
-			//Über alle Spalten iterieren
+			// Iterate over all columns
 			for (int columnIndex = 0 ; columnIndex < content.get(0).size(); columnIndex++) {
-				//Führendes Apostroph abschneiden
+				// Remove leading apostrophes
 				String cellContentString = content.get(lineIndex).get(columnIndex);
 				if (cellContentString != null && cellContentString.startsWith("'") && !cellContentString.endsWith("'"))
 					cellContentString = cellContentString.substring(1);
@@ -278,7 +286,7 @@ public class TextTable {
 			+ "</head>\n"
 			+ "<body>\n"
 			+ "<h2>" + title + "</h2>\n"
-			+ (mitZeit ? "<h4>Stand: " + DateUtils.DD_MM_YYYY_HH_MM_SS.format(new GregorianCalendar().getTime()) + "</h4>\n" : "");
+			+ (mitZeit ? "<h4>Stand: " + DateUtilities.DD_MM_YYYY_HH_MM_SS.format(new GregorianCalendar().getTime()) + "</h4>\n" : "");
 	}
 	
 	public static String getHtmlFooter() {
@@ -296,12 +304,12 @@ public class TextTable {
 		if (fontsizeInPt > 0)
 			htmlTableStringBuffer.append("<STYLE TYPE=\"text/css\"><!--TD{font-family: Arial; font-size: " + fontsizeInPt + "pt;}---></STYLE>");
 		htmlTableStringBuffer.append("<table border='1' cellspacing='1' cellpadding='1'>\n");
-		// Alternative für volle Breite: "<table border='1' width='100%' cellspacing='1' cellpadding='1'>\n");
+		// Alternatively for full width: "<table border='1' width='100%' cellspacing='1' cellpadding='1'>\n");
 	
 		int rowcount = 0;
 		
 		htmlTableStringBuffer.append("<tr align='center'>");
-		//Über alle Spalten iterieren
+		// Iterate over all columns
 		for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
 			if (columnColors.get(columnIndex) == null)
 				htmlTableStringBuffer.append("<td>");
@@ -315,7 +323,7 @@ public class TextTable {
 		}
 		htmlTableStringBuffer.append("</tr>\n");
 		
-		//Über alle Zeilen iterieren
+		// Iterate over all lines
 		for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 			if (lineColors.get(lineIndex) != null)
 				htmlTableStringBuffer.append("<tr align='right' bgcolor='" + lineColors.get(lineIndex) + "'>");
@@ -324,9 +332,9 @@ public class TextTable {
 			else
 				htmlTableStringBuffer.append("<tr align='right' bgcolor='lightblue'>");
 			
-			//Über alle Spalten iterieren
+			// Iterate over all columns
 			for (int columnIndex = 0 ; columnIndex < columnNames.get(0).size(); columnIndex++) {
-				//Führendes Apostroph abschneiden
+				// Remove leading apostrophes
 				String cellContentString = content.get(lineIndex).get(columnIndex);
 				if (cellContentString != null && cellContentString.startsWith("'") && !cellContentString.endsWith("'"))
 					cellContentString = cellContentString.substring(1);
@@ -376,7 +384,7 @@ public class TextTable {
 		else if ("ROSE".equalsIgnoreCase(xlsColor))
 			return "fuchsia";
 		else if ("WOCHENENDE".equalsIgnoreCase(xlsColor))
-			//Spezielle Farbanpassung für HtmlVerdistatistik
+			// Special color adaptions for Html statistics
 			return "coral";
 		else
 			return "white";

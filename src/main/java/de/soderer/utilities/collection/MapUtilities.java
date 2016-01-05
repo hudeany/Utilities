@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class MapUtils {
+public class MapUtilities {
 	public static <K extends Comparable<K>, V> LinkedHashMap<K, V> sort(Map<K, V> map) {
 		LinkedHashMap<K, V> returnMap = new LinkedHashMap<K, V>();
 		List<K> keys = new LinkedList<K>(map.keySet());

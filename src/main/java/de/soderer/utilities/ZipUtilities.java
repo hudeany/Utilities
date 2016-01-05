@@ -22,8 +22,8 @@ import java.util.zip.ZipOutputStream;
 
 public class ZipUtilities {
 	/**
-	 * Zippen einer Datei oder rekursiv aller Dateien und Unterdateien eines Ordners
-	 * Dabei wird das Zipfile im gleichen Verzeichnis wie die zu zippende Datei abgelegt
+	 * Zip a file or recursively all files and subdirectories of a directory.
+	 * The zipped file is placed in the same directory as the zipped file.
 	 * 
 	 * @param sourceFile
 	 * @return
@@ -36,7 +36,7 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Zippen einer Datei oder rekursiv aller Dateien und Unterdateien eines Ordners
+	 * Zip a file or recursively all files and subdirectories of a directory.
 	 * 
 	 * @param sourceFile
 	 * @param destinationZipFile
@@ -72,8 +72,8 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Zippen einer Datei oder rekursiv aller Dateien und Unterdateien eines Ordners
-	 * Es wird hierbei ein neuer relativer Pfad begonnen
+	 * Zip a file or recursively all files and subdirectories of a directory.
+	 * A new relative path is started.
 	 * 
 	 * @param sourceFile
 	 * @param destinationZipFileSream
@@ -84,7 +84,7 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Zippen einer Datei oder rekursiv aller Dateien und Unterdateien eines Ordners
+	 * Zip a file or recursively all files and subdirectories of a directory.
 	 * 
 	 * @param sourceFile
 	 * @param destinationZipFileSream
@@ -138,7 +138,7 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Hinzufügen von Daten zu einem offenen ZipOutputStream als virtuelle Datei
+	 * Add a file to an opened ZipOutputStream
 	 * 
 	 * @param fileData
 	 * @param filename
@@ -150,7 +150,7 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Öffnen eines neuen ZipOutputStream basierend auf eine Datei in die geschrieben werden soll
+	 * Open a ZipOutputStream based on a file in which is written
 	 * 
 	 * @param destinationZipFile
 	 * @return
@@ -174,7 +174,7 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Öffnen eines neuen ZipOutputStream basierend auf einem beliebeigen OutputStream in den geschrieben werden soll
+	 * Open a ZipOutputStream based on a OutputStream in which is written
 	 * 
 	 * @param destinationZipStream
 	 * @return
@@ -188,7 +188,7 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Hinzufügen von Daten zu einem offenen ZipOutputStream als virtuelle Datei
+	 * Add a file to an opened ZipOutputStream
 	 * 
 	 * @param fileData
 	 * @param relativeDirPath
@@ -222,8 +222,8 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Hinzufügen einer Datei oder rekursiv aller Dateien und Unterdateien eines Ordners zu einer bereits existierenden ZipFile
-	 * Dabei werden alle Einträge der OriginalZipFile in eine neue ZipFile umkopiert
+	 * Add a file or recursively all files and subdirectories of a directory to an existing ZipFile.
+	 * All existing entries are preserved.
 	 * 
 	 * @param sourceFile
 	 * @return
@@ -240,8 +240,8 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Hinzufügen einer Liste von Datei oder rekursiv aller Dateien und Unterdateien eines Ordners zu einer bereits existierenden ZipFile
-	 * Dabei werden alle Einträge der OriginalZipFile in eine neue ZipFile umkopiert
+	 * Add a list of files or recursively all files and subdirectories of a directory to an existing ZipFile.
+	 * All existing entries are preserved.
 	 * 
 	 * @param sourceFile
 	 * @return
@@ -260,7 +260,8 @@ public class ZipUtilities {
 	}
 
 	/**
-	 * Öffnen einer existierenden Zip-Datei um neue Dateien anzuhängen oder wenn diese Datei noch nicht existiert eine neue Zip-Datei erstellen
+	 * Open an exsiting ZipFile for appending new files or create a new ZipFile if it does not exist yet.
+	 * 
 	 * @param file
 	 * @return
 	 * @throws IOException
@@ -273,8 +274,8 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Öffnen einer existierenden ZipFile um neue Dateien anzuhängen
-	 * Dabei werden alle Einträge der OriginalZipFile in eine neue ZipFile umkopiert
+	 * Open an exsiting ZipFile for appending new files.
+	 * All existing entries are preserved.
 	 * 
 	 * @param zipFile
 	 * @return
@@ -282,7 +283,6 @@ public class ZipUtilities {
 	 * @throws ZipException 
 	 */
 	public static ZipOutputStream openExistingZipFileForExtension(File zipFile) throws IOException {
-		//Umbenennen des QuellZipFiles (Achtung: der String Pfad und Name von zipFile bleibt dabei erhalten und wird nicht mit umbenannt)
 		File originalFileTemp = new File(zipFile.getParentFile().getAbsolutePath() + "/" + String.valueOf(System.currentTimeMillis()));
 		zipFile.renameTo(originalFileTemp);
 		
@@ -292,7 +292,6 @@ public class ZipUtilities {
 		ZipFile sourceZipFile = null;
 		try {
 			sourceZipFile = new ZipFile(originalFileTemp);
-			// Umkopieren der Einträge
 			Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
 			while (srcEntries.hasMoreElements()) {
 				ZipEntry sourceZipFileEntry = srcEntries.nextElement();
@@ -320,13 +319,11 @@ public class ZipUtilities {
 			return zipOutputStream;
 		}
 		catch (IOException e) {
-			// Löschen des evtl. vorhandenen neuen ZipFiles
 			if (zipFile.exists()) {
 				Utilities.closeQuietly(zipOutputStream);
 				zipFile.delete();
 			}
 			
-			//Zurückdrehen der Umbenennung des QuellZipFiles
 			originalFileTemp.renameTo(zipFile);
 			throw e;
 		}
@@ -337,9 +334,10 @@ public class ZipUtilities {
 	}
 	
 	/**
-	 * Auslesen einer ZipDatei
+	 * Read a ZipFile
+	 * 
 	 * @param zipFile
-	 * @return alle Dateieinträge in einer Map
+	 * @return All entries in a map
 	 * @throws IOException
 	 */
 	public static Map<String, byte[]> readExistingZipFile(File zipFile) throws IOException {
@@ -352,7 +350,6 @@ public class ZipUtilities {
 		try {
 			sourceZipFile = new ZipFile(zipFile);
 			
-			// Lesen der Einträge
 			Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
 			while (srcEntries.hasMoreElements()) {
 				ZipEntry sourceZipFileEntry = srcEntries.nextElement();
