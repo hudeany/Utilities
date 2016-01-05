@@ -300,7 +300,7 @@ public class TextTable {
 	
 	public String toHtmlString(String tableTitle, int fontsizeInPt) {
 		StringBuilder htmlTableStringBuffer = new StringBuilder();
-		htmlTableStringBuffer.append(HtmlUtilities.htmlEncodeString(tableTitle) + "<br><br>\n");
+		htmlTableStringBuffer.append(htmlEncodeString(tableTitle) + "<br><br>\n");
 		if (fontsizeInPt > 0)
 			htmlTableStringBuffer.append("<STYLE TYPE=\"text/css\"><!--TD{font-family: Arial; font-size: " + fontsizeInPt + "pt;}---></STYLE>");
 		htmlTableStringBuffer.append("<table border='1' cellspacing='1' cellpadding='1'>\n");
@@ -316,9 +316,9 @@ public class TextTable {
 			else
 				htmlTableStringBuffer.append("<td bgcolor='" + convertXlsColor2HtmlColor(columnColors.get(columnIndex)) + "'>");
 			
-			htmlTableStringBuffer.append(HtmlUtilities.htmlEncodeString(columnNames.get(0).get(columnIndex)).replace(" ", "&nbsp;").replace("-", "&#8209;"));
+			htmlTableStringBuffer.append(htmlEncodeString(columnNames.get(0).get(columnIndex)).replace(" ", "&nbsp;").replace("-", "&#8209;"));
 			if (columnNames.size() > 1)
-				htmlTableStringBuffer.append("<br/>" + HtmlUtilities.htmlEncodeString(columnNames.get(1).get(columnIndex)).replace(" ", "&nbsp;").replace("-", "&#8209;"));
+				htmlTableStringBuffer.append("<br/>" + htmlEncodeString(columnNames.get(1).get(columnIndex)).replace(" ", "&nbsp;").replace("-", "&#8209;"));
 			htmlTableStringBuffer.append("</td>");
 		}
 		htmlTableStringBuffer.append("</tr>\n");
@@ -338,7 +338,7 @@ public class TextTable {
 				String cellContentString = content.get(lineIndex).get(columnIndex);
 				if (cellContentString != null && cellContentString.startsWith("'") && !cellContentString.endsWith("'"))
 					cellContentString = cellContentString.substring(1);
-				htmlTableStringBuffer.append("<td>" + HtmlUtilities.htmlEncodeString(cellContentString).replace(" ", "&nbsp;").replace("-", "&#8209;") + "</td>");
+				htmlTableStringBuffer.append("<td>" + htmlEncodeString(cellContentString).replace(" ", "&nbsp;").replace("-", "&#8209;") + "</td>");
 			}
 			htmlTableStringBuffer.append("</tr>\n");
 
@@ -504,4 +504,17 @@ public class TextTable {
 			throw new Exception("Invalid data request at line index " + lineIndex + " column index " + columnIndex);
 		return content.get(lineIndex).get(columnIndex);
 	}
+	
+	public static String htmlEncodeString(String value) {
+        return value
+            .replace("&", "&amp;")
+        	.replace("<", "&lt;")
+        	.replace("Ä", "&Auml;")
+        	.replace("ä", "&auml;")
+        	.replace("Ö", "&Ouml;")
+        	.replace("ö", "&ouml;")
+        	.replace("Ü", "&Uuml;")
+        	.replace("ü", "&uuml;")
+        	.replace("ß", "&slig;");
+    }
 }
