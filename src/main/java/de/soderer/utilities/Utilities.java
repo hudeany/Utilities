@@ -932,7 +932,9 @@ public class Utilities {
 		if (indexToRemove >= 0) {
 			@SuppressWarnings("unchecked")
 			T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length - 1);
-			System.arraycopy(array, 0, result, 0, indexToRemove);
+			if (indexToRemove > 0) {
+				System.arraycopy(array, 0, result, 0, indexToRemove);
+			}
 			if (indexToRemove < array.length - 1) {
 			    System.arraycopy(array, indexToRemove + 1, result, indexToRemove, array.length - indexToRemove - 1);
 			}
