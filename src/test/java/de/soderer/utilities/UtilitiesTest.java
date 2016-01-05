@@ -121,6 +121,12 @@ public class UtilitiesTest {
 			
 			String[] result4 = Utilities.remove(new String[]{"a", "b", "c", "b"}, "b");
 			Assert.assertTrue(Utilities.compare(new String[]{"a", "c", "b"}, result4));
+			
+			String[] result5 = Utilities.remove(new String[]{"a", "b", "c"}, "a");
+			Assert.assertTrue(Utilities.compare(new String[]{"b", "c"}, result5));
+			
+			String[] result6 = Utilities.remove(new String[]{"a", "b", "c"}, "c");
+			Assert.assertTrue(Utilities.compare(new String[]{"a", "b"}, result6));
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
