@@ -16,6 +16,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -1080,6 +1081,24 @@ public class Utilities {
 			return lines;
 		} finally {
 			closeQuietly(reader);
+		}
+	}
+	
+	public static String trimLeft(String value) {
+		return value.replaceAll("^\\s+", "");
+	}
+	
+	public static String trimRight(String value) {
+		return value.replaceAll("\\s+$", "");
+	}
+	
+	public static void addFileToClasspath(String filePath) throws IOException {
+		try {
+			Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+			method.setAccessible(true);
+			method.invoke(ClassLoader.getSystemClassLoader(), new Object[] { new URL(new File(filePath).toURI().toString()) });
+		} catch (Throwable t) {
+			throw new IOException("Error, could not add file to system classloader: " + t.getMessage(), t);
 		}
 	}
 }
