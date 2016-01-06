@@ -6,15 +6,18 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-
-import de.soderer.utilities.SystemUtilities;
-import de.soderer.utilities.Utilities;
-import de.soderer.utilities.ZipUtilities;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
 public class JarInJarLoader {
+	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
+	
 	private static class ManifestInfo {
 		String rsrcMainClass;
 		String[] rsrcClassPath;
@@ -27,7 +30,7 @@ public class JarInJarLoader {
 				String jarFilePath = currentJarUrlPath.substring(0, currentJarUrlPath.lastIndexOf("!")).replaceFirst("jar:file:", "");
 				File jarFile = new File(jarFilePath);
 				if (jarFile.exists()) {
-					System.getProperties().put(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR, jarFile.getAbsolutePath());
+					System.getProperties().put(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR, jarFile.getAbsolutePath());
 				}
 			}
 		} catch (Exception e) {
@@ -71,7 +74,7 @@ public class JarInJarLoader {
 							jarFilePath = jarFilePath.substring(5);
 						}
 						try {
-							for (String entryName : ZipUtilities.getZipFileEntries(new File(jarFilePath))) {
+							for (String entryName : getZipFileEntries(new File(jarFilePath))) {
 								if (entryName.toLowerCase().endsWith(".jar")) {
 									rsrcClassPath += " " + entryName;
 								}
@@ -81,7 +84,7 @@ public class JarInJarLoader {
 						}
 					}
 					result.rsrcClassPath = rsrcClassPath.split(" ");
-					if (Utilities.isNotBlank(result.rsrcMainClass)) {
+					if (isNotBlank(result.rsrcMainClass)) {
 						return result;
 					}
 				}
@@ -91,5 +94,25 @@ public class JarInJarLoader {
 		}
 		System.err.println("Missing attributes for JarInJarLoader in Manifest (Rsrc-Main-Class, Rsrc-Class-Path)");
 		return null;
+	}
+
+	private static boolean isBlank(String value) {
+		return value == null || value.length() == 0 || value.trim().length() == 0;
+	}
+
+	private static boolean isNotBlank(String value) {
+		return !isBlank(value);
+	}
+
+	private static String[] getZipFileEntries(File file) throws ZipException, IOException {
+		try (ZipFile zipFile = new ZipFile(file)) {
+			Enumeration<? extends ZipEntry> entries = zipFile.entries();
+			List<String> entryList = new ArrayList<String>();
+			while (entries.hasMoreElements()) {
+				ZipEntry entry = entries.nextElement();
+				entryList.add(entry.getName());
+			}
+			return entryList.toArray(new String[0]);
+		}
 	}
 }
