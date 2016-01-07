@@ -32,6 +32,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	 *            &lt;bitmode> : replaced by "32" or "64"<br />
 	 *            &lt;username> : interactive username dialog<br />
 	 *            &lt;password> : interactive password dialog
+	 *            &lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
 	 * @throws Exception
 	 */
 	public ApplicationUpdateHelper(String applicationName, String applicationVersion, String versionIndexFileLocation, UpdateParent updateParent) throws Exception {
@@ -344,6 +345,10 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				} else if (SystemUtilities.isLinuxSystem()) {
 					value = value.replace("<bitmode>", "32");
 				}
+			}
+			
+			if (value.contains("<time_seconds>")) {
+				value = value.replace("<time_seconds>", "" + (new Date().getTime() / 1000));
 			}
 
 			return value;
