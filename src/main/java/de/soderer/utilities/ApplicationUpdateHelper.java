@@ -24,6 +24,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	private FileDownloadWorker fileDownloadWorker;
 	private String updateFileLocation;
 	private String updateFileMd5Checksum = null;
+	private String restartParameter;
 
 	/**
 	 * @param versionIndexFileLocation
@@ -35,7 +36,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	 *            &lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
 	 * @throws Exception
 	 */
-	public ApplicationUpdateHelper(String applicationName, String applicationVersion, String versionIndexFileLocation, UpdateParent updateParent) throws Exception {
+	public ApplicationUpdateHelper(String applicationName, String applicationVersion, String versionIndexFileLocation, UpdateParent updateParent, String restartParameter) throws Exception {
 		if (Utilities.isEmpty(versionIndexFileLocation)) {
 			throw new Exception("Invalid version index location");
 		}
@@ -44,6 +45,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		this.applicationVersion = new Version(applicationVersion);
 		this.versionIndexFileLocation = replacePlaceholders(versionIndexFileLocation);
 		this.updateParent = updateParent;
+		this.restartParameter = restartParameter;
 	}
 
 	public void executeUpdate() {
@@ -146,176 +148,28 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 
 			File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 
-			if (updateFileLocation.toLowerCase().startsWith("http")) {
-				// Download file
-				boolean retryDownload = true;
-				while (retryDownload) {
-					String downloadUrlWithCredentials = updateFileLocation;
-					if (downloadUrlWithCredentials.contains("<username>")) {
-						if (updateParent != null) {
-							String username = updateParent.aquireUserName();
-							if (Utilities.isEmpty(username)) {
-								updateParent.showUpdateError("Update error:\nusername required");
-								return;
-							} else {
-								downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", username);
-							}
-						} else {
-							if (updateParent != null) {
-								updateParent.showUpdateError("Update error:\n" + "username required");
-							} else {
-								System.err.println("Update error:\n" + "username required");
-							}
-							return;
-						}
+			boolean downloadSuccess = getNewApplicationVersionFile(downloadTempFile);
+			if (downloadSuccess) {
+				if (updateFileMd5Checksum != null && !updateFileMd5Checksum.equalsIgnoreCase("") && !updateFileMd5Checksum.equalsIgnoreCase("NONE")
+						&& !updateFileMd5Checksum.equalsIgnoreCase(createMd5Checksum(downloadTempFile))) {
+					if (updateParent != null) {
+						updateParent.showUpdateError("Update error:\n" + "MD5-Checksum of updatefile is invalid");
+					} else {
+						System.err.println("Update error:\n" + "MD5-Checksum of updatefile is invalid");
 					}
-
-					if (downloadUrlWithCredentials.contains("<password>")) {
-						if (updateParent != null) {
-							String password = new String(updateParent.aquirePassword());
-							if (Utilities.isEmpty(password)) {
-								updateParent.showUpdateError("Update error:\npassword required");
-								return;
-							} else {
-								downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", password);
-							}
-						} else {
-							if (updateParent != null) {
-								updateParent.showUpdateError("Update error:\n" + "password required");
-							} else {
-								System.err.println("Update error:\n" + "password required");
-							}
-							return;
-						}
-					}
-
-					retryDownload = false;
-					try {
-						if (downloadTempFile.exists()) {
-							downloadTempFile.delete();
-						}
-						boolean success = downloadUpdateFile(downloadTempFile, downloadUrlWithCredentials);
-						if (!success) {
-							// download stopped by user
-							updateParent.showUpdateError("Canceled by user");
-							return;
-						}
-					} catch (UserError e) {
-						if (updateParent != null) {
-							updateParent.showUpdateError("Update error:\n" + e.getMessage());
-
-							if (e.getReason() == Reason.UnauthenticatedOrUnauthorized) {
-								if (updateFileLocation.contains("<username>") || updateFileLocation.contains("<password>")) {
-									retryDownload = true;
-								} else {
-									System.err.println("Update error:\nAuthentication error");
-									return;
-								}
-							} else {
-								return;
-							}
-						} else {
-							System.err.println("Update error:\n" + e.getMessage());
-							return;
-						}
-					} catch (Exception e) {
-						if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
-							if (updateParent != null) {
-								updateParent.showUpdateError("Update error:\n" + ((UserError) e.getCause()).getMessage());
-
-								if (((UserError) e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
-									if (updateFileLocation.contains("<username>") || updateFileLocation.contains("<password>")) {
-										retryDownload = true;
-									} else {
-										System.err.println("Update error:\nAuthentication error");
-										return;
-									}
-								} else {
-									return;
-								}
-							} else {
-								System.err.println("Update error:\n" + ((UserError) e.getCause()).getMessage());
-								return;
-							}
-						} else {
-							if (updateParent != null) {
-								updateParent.showUpdateError("Update error:\n" + e.getMessage());
-							} else {
-								System.err.println("Update error:\n" + e.getMessage());
-							}
-							return;
-						}
-					}
+					return;
 				}
-			} else {
-				// Copy file
-				Files.copy(new File(updateFileLocation).toPath(), downloadTempFile.toPath());
-			}
-
-			if (updateFileMd5Checksum != null && !updateFileMd5Checksum.equalsIgnoreCase("") && !updateFileMd5Checksum.equalsIgnoreCase("NONE")
-					&& !updateFileMd5Checksum.equalsIgnoreCase(createMd5Checksum(downloadTempFile))) {
+	
+				String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile);
+				
 				if (updateParent != null) {
-					updateParent.showUpdateError("Update error:\n" + "MD5-Checksum of updatefile is invalid");
-				} else {
-					System.err.println("Update error:\n" + "MD5-Checksum of updatefile is invalid");
+					updateParent.showUpdateDone();
 				}
-				return;
-			}
-
-			if (SystemUtilities.isWindowsSystem()) {
-				File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
-
-				// Create Batchfile
-				writeFile(batchFile,
-						"@echo off\r\n"
-						+ "del \"" + jarFilePath + "\"\r\n"
-						+ "if exist \"" + jarFilePath + "\" (\r\n"
-							+ "ping -n 3 127.0.0.1 >nul\r\n"
-							+ "del \"" + jarFilePath + "\"\r\n"
-							+ "if exist \"" + jarFilePath + "\" (\r\n"
-								+ "ping -n 3 127.0.0.1 >nul\r\n"
-								+ "del \"" + jarFilePath + "\"\r\n"
-								+ "if exist \"" + jarFilePath + "\" (\r\n"
-									+ "ping -n 3 127.0.0.1 >nul\r\n"
-									+ "del \"" + jarFilePath + "\"\r\n"
-								+ ")\r\n"
-							+ ")\r\n"
-						+ ")\r\n"
-						+ "ren \"" + downloadTempFile.getAbsolutePath() + "\" \"" + new File(jarFilePath).getName() + "\"\r\n"
-						+ "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n"
-							+ "java -jar \"" + jarFilePath + "\"\r\n"
-							+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n"
-						+ ")\r\n");
-
-					Runtime.getRuntime().exec("cmd /c start /B " + batchFile.getAbsolutePath());
+				
+				if (restartCommand != null) {
+					Runtime.getRuntime().exec(restartCommand);
 					Runtime.getRuntime().exit(0);
-				} else if (SystemUtilities.isLinuxSystem()) {
-					File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".sh");
-
-					// Create Batchfile
-					writeFile(batchFile,
-						"#!/bin/bash\n"
-						+ "rm \"" + jarFilePath + "\"\n"
-						+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
-							+ "sleep 3\n"
-							+ "rm \"" + jarFilePath + "\"\n"
-							+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
-								+ "sleep 3\n"
-								+ "rm \"" + jarFilePath + "\"\n"
-								+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
-									+ "sleep 3\n"
-									+ "rm \"" + jarFilePath + "\"\n"
-								+ "fi\n"
-							+ "fi\n"
-						+ "fi\n"
-						+ "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n"
-						+ "if ! [ -f \"" + downloadTempFile.getAbsolutePath() + "\" ]; then\n"
-							+ "java -jar \"" + jarFilePath + "\"\n"
-							+ "rm \"" + batchFile.getAbsolutePath() + "\"\n"
-						+ "fi\n");
-					
-				Runtime.getRuntime().exec("sh " + batchFile.getAbsolutePath());
-				Runtime.getRuntime().exit(0);
+				}
 			}
 		} catch (Exception e) {
 			if (updateParent != null) {
@@ -324,6 +178,186 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				System.err.println("Update error:\n" + e.getMessage());
 			}
 			return;
+		}
+	}
+
+	private boolean getNewApplicationVersionFile(File downloadTempFile) throws Exception {
+		if (updateFileLocation.toLowerCase().startsWith("http")) {
+			// Download file
+			boolean retryDownload = true;
+			while (retryDownload) {
+				String downloadUrlWithCredentials = updateFileLocation;
+				if (downloadUrlWithCredentials.contains("<username>") && downloadUrlWithCredentials.contains("<password>")) {
+					if (updateParent != null) {
+						Credentials credentials = updateParent.aquireCredentials("Please enter update credentials", true, true);
+						if (credentials == null || Utilities.isEmpty(credentials.getUsername()) || Utilities.isEmpty(credentials.getPassword())) {
+							updateParent.showUpdateError("Update error:\nusername and password required");
+							return false;
+						} else {
+							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", credentials.getUsername());
+							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", new String(credentials.getPassword()));
+						}
+					} else {
+						if (updateParent != null) {
+							updateParent.showUpdateError("Update error:\n" + "username required");
+						} else {
+							System.err.println("Update error:\n" + "username required");
+						}
+						return false;
+					}
+				} else if (downloadUrlWithCredentials.contains("<username>")) {
+					if (updateParent != null) {
+						Credentials credentials = updateParent.aquireCredentials("Please enter update credentials", true, false);
+						if (credentials == null || Utilities.isEmpty(credentials.getUsername())) {
+							updateParent.showUpdateError("Update error:\nusername required");
+							return false;
+						} else {
+							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", credentials.getUsername());
+						}
+					} else {
+						if (updateParent != null) {
+							updateParent.showUpdateError("Update error:\n" + "username required");
+						} else {
+							System.err.println("Update error:\n" + "username required");
+						}
+						return false;
+					}
+				} else if (downloadUrlWithCredentials.contains("<password>")) {
+					if (updateParent != null) {
+						Credentials credentials = updateParent.aquireCredentials("Please enter update credentials", false, true);
+						if (credentials == null || Utilities.isEmpty(credentials.getPassword())) {
+							updateParent.showUpdateError("Update error:\npassword required");
+							return false;
+						} else {
+							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", new String(credentials.getPassword()));
+						}
+					} else {
+						if (updateParent != null) {
+							updateParent.showUpdateError("Update error:\n" + "password required");
+						} else {
+							System.err.println("Update error:\n" + "password required");
+						}
+						return false;
+					}
+				}
+
+				retryDownload = false;
+				try {
+					if (downloadTempFile.exists()) {
+						downloadTempFile.delete();
+					}
+					boolean success = downloadUpdateFile(downloadTempFile, downloadUrlWithCredentials);
+					if (!success) {
+						// download stopped by user
+						updateParent.showUpdateError("Canceled by user");
+						return false;
+					}
+				} catch (UserError e) {
+					if (updateParent != null) {
+						updateParent.showUpdateError("Update error:\n" + e.getMessage());
+
+						if (e.getReason() == Reason.UnauthenticatedOrUnauthorized) {
+							if (updateFileLocation.contains("<username>") || updateFileLocation.contains("<password>")) {
+								retryDownload = true;
+							} else {
+								System.err.println("Update error:\nAuthentication error");
+								return false;
+							}
+						} else {
+							return false;
+						}
+					} else {
+						System.err.println("Update error:\n" + e.getMessage());
+						return false;
+					}
+				} catch (Exception e) {
+					if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
+						if (updateParent != null) {
+							updateParent.showUpdateError("Update error:\n" + ((UserError) e.getCause()).getMessage());
+
+							if (((UserError) e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
+								if (updateFileLocation.contains("<username>") || updateFileLocation.contains("<password>")) {
+									retryDownload = true;
+								} else {
+									System.err.println("Update error:\nAuthentication error");
+									return false;
+								}
+							} else {
+								return false;
+							}
+						} else {
+							System.err.println("Update error:\n" + ((UserError) e.getCause()).getMessage());
+							return false;
+						}
+					} else {
+						if (updateParent != null) {
+							updateParent.showUpdateError("Update error:\n" + e.getMessage());
+						} else {
+							System.err.println("Update error:\n" + e.getMessage());
+						}
+						return false;
+					}
+				}
+			}
+		} else {
+			// Copy file
+			Files.copy(new File(updateFileLocation).toPath(), downloadTempFile.toPath());
+		}
+		
+		return downloadTempFile.exists();
+	}
+
+	private String createUpdateBatchFile(String jarFilePath, File downloadTempFile) throws Exception {
+		if (SystemUtilities.isWindowsSystem()) {
+			File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
+			writeFile(batchFile,
+				"@echo off\r\n"
+				+ "del \"" + jarFilePath + "\"\r\n"
+				+ "if exist \"" + jarFilePath + "\" (\r\n"
+					+ "ping -n 3 127.0.0.1 >nul\r\n"
+					+ "del \"" + jarFilePath + "\"\r\n"
+					+ "if exist \"" + jarFilePath + "\" (\r\n"
+						+ "ping -n 3 127.0.0.1 >nul\r\n"
+						+ "del \"" + jarFilePath + "\"\r\n"
+						+ "if exist \"" + jarFilePath + "\" (\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "del \"" + jarFilePath + "\"\r\n"
+						+ ")\r\n"
+					+ ")\r\n"
+				+ ")\r\n"
+				+ "ren \"" + downloadTempFile.getAbsolutePath() + "\" \"" + new File(jarFilePath).getName() + "\"\r\n"
+				+ "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n"
+					+ "java -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n"
+					+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n"
+				+ ")\r\n");
+
+			return "cmd /c start /B " + batchFile.getAbsolutePath();
+		} else if (SystemUtilities.isLinuxSystem()) {
+			File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".sh");
+			writeFile(batchFile,
+				"#!/bin/bash\n"
+				+ "rm \"" + jarFilePath + "\"\n"
+				+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
+					+ "sleep 3\n"
+					+ "rm \"" + jarFilePath + "\"\n"
+					+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
+						+ "sleep 3\n"
+						+ "rm \"" + jarFilePath + "\"\n"
+						+ "if [ -f \"" + jarFilePath + "\" ]; then\n"
+							+ "sleep 3\n"
+							+ "rm \"" + jarFilePath + "\"\n"
+						+ "fi\n"
+					+ "fi\n"
+				+ "fi\n"
+				+ "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n"
+				+ "if ! [ -f \"" + downloadTempFile.getAbsolutePath() + "\" ]; then\n"
+					+ "java -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n"
+					+ "rm \"" + batchFile.getAbsolutePath() + "\"\n"
+				+ "fi\n");
+				
+			return "sh " + batchFile.getAbsolutePath();
+		} else {
+			return null;
 		}
 	}
 
@@ -368,9 +402,13 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			fileDownloadWorker = new FileDownloadWorker(this, downloadUrl, downloadTempFile);
 			new Thread(fileDownloadWorker).start();
 
-			while (!fileDownloadWorker.isDone()) {
-				// Wait for download process
-				Thread.sleep(1000);
+			if (updateParent != null) {
+				updateParent.showUpdateDownloadStart(fileDownloadWorker);
+			} else {
+				while (!fileDownloadWorker.isDone()) {
+					// Wait for download process
+					Thread.sleep(1000);
+				}
 			}
 
 			if (!fileDownloadWorker.get()) {
@@ -426,13 +464,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	@Override
 	public void showDone(Date start, Date end, long itemsDone) {
 		if (updateParent != null) {
-			try {
-				if (fileDownloadWorker.get()) {
-					updateParent.showUpdateDone(start, end, itemsDone);
-				}
-			} catch (Exception e) {
-				updateParent.showUpdateError("Update error:\n" + e.getMessage());
-			}
+			updateParent.showUpdateDownloadEnd();
 		}
 	}
 

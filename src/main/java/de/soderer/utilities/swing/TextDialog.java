@@ -8,6 +8,7 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -36,7 +37,14 @@ public class TextDialog extends JDialog {
 		}
 		JScrollPane textScrollpane = new JScrollPane(textField);
 		textScrollpane.setPreferredSize(new Dimension(400, 200));
-		panel.add(textScrollpane);
+		
+		// Text Panel
+		JPanel textPanel = new JPanel();
+		textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.LINE_AXIS));
+
+		textPanel.add(Box.createRigidArea(new Dimension(5, 0)));
+		textPanel.add(textScrollpane);
+		textPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
@@ -48,6 +56,9 @@ public class TextDialog extends JDialog {
 			}
 		});
 		buttonPanel.add(cancelButton);
+
+		panel.add(Box.createRigidArea(new Dimension(0, 5)));
+		panel.add(textPanel);
 		panel.add(buttonPanel);
 
 		add(panel);

@@ -95,14 +95,17 @@ public class Utilities {
 	 * @return
 	 */
 	public static byte[] gzipByteArray(byte[] clearData) {
+		GZIPOutputStream gzipCompresser = null;
 		try {
 			ByteArrayOutputStream encoded = new ByteArrayOutputStream();
-			GZIPOutputStream gzipCompresser = new GZIPOutputStream(encoded);
+			gzipCompresser = new GZIPOutputStream(encoded);
 			gzipCompresser.write(clearData);
 			gzipCompresser.close();
 			return encoded.toByteArray();
 		} catch (IOException e) {
 			return null;
+		} finally {
+			closeQuietly(gzipCompresser);
 		}
 	}
 
@@ -831,6 +834,31 @@ public class Utilities {
 	}
 
 	public static boolean isNotBlank(String value) {
+		return !isBlank(value);
+	}
+
+	public static boolean isEmpty(char[] value) {
+		return value == null || value.length == 0;
+	}
+
+	public static boolean isNotEmpty(char[] value) {
+		return !isEmpty(value);
+	}
+
+	public static boolean isBlank(char[] value) {
+		if (value == null || value.length == 0) {
+			return true;
+		} else {
+			for (char character : value) {
+				if (!Character.isWhitespace(character)) {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
+	public static boolean isNotBlank(char[] value) {
 		return !isBlank(value);
 	}
 

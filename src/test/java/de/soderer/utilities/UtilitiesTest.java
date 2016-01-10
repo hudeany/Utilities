@@ -49,7 +49,7 @@ public class UtilitiesTest {
 	@Test
 	public void test_Empty() {
 		try {
-			Assert.assertTrue(Utilities.isEmpty(null));
+			Assert.assertTrue(Utilities.isEmpty((String) null));
 			Assert.assertTrue(Utilities.isEmpty(""));
 			Assert.assertFalse(Utilities.isEmpty("."));
 			Assert.assertFalse(Utilities.isEmpty("a"));
@@ -64,7 +64,7 @@ public class UtilitiesTest {
 	@Test
 	public void test_Blank() {
 		try {
-			Assert.assertTrue(Utilities.isBlank(null));
+			Assert.assertTrue(Utilities.isBlank((String) null));
 			Assert.assertTrue(Utilities.isBlank(""));
 			Assert.assertFalse(Utilities.isBlank("."));
 			Assert.assertFalse(Utilities.isBlank("a"));
