@@ -1,10 +1,10 @@
 package de.soderer.utilities;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.Date;
@@ -150,14 +150,16 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 
 			boolean downloadSuccess = getNewApplicationVersionFile(downloadTempFile);
 			if (downloadSuccess) {
-				if (updateFileMd5Checksum != null && !updateFileMd5Checksum.equalsIgnoreCase("") && !updateFileMd5Checksum.equalsIgnoreCase("NONE")
-						&& !updateFileMd5Checksum.equalsIgnoreCase(createMd5Checksum(downloadTempFile))) {
-					if (updateParent != null) {
-						updateParent.showUpdateError("Update error:\n" + "MD5-Checksum of updatefile is invalid");
-					} else {
-						System.err.println("Update error:\n" + "MD5-Checksum of updatefile is invalid");
+				if (updateFileMd5Checksum != null && !updateFileMd5Checksum.equalsIgnoreCase("") && !updateFileMd5Checksum.equalsIgnoreCase("NONE")) {
+					String downloadTempFileMd5Checksum = createMd5Checksum(downloadTempFile);
+					if (!updateFileMd5Checksum.equalsIgnoreCase(downloadTempFileMd5Checksum)) {
+						if (updateParent != null) {
+							updateParent.showUpdateError("Update error:\n" + "MD5-Checksum of updatefile is invalid (expected: " + updateFileMd5Checksum + ", actual: " + downloadTempFileMd5Checksum + ")");
+						} else {
+							System.err.println("Update error:\n" + "MD5-Checksum of updatefile is invalid (expected: " + updateFileMd5Checksum + ", actual: " + downloadTempFileMd5Checksum + ")");
+						}
+						return;
 					}
-					return;
 				}
 	
 				String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile);
@@ -428,7 +430,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	private String createMd5Checksum(File file) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("MD5");
-			try (InputStream is = Files.newInputStream(Paths.get("file.txt")); DigestInputStream dis = new DigestInputStream(is, md)) {
+			try (InputStream is = new FileInputStream(file); DigestInputStream dis = new DigestInputStream(is, md)) {
 				// Just read the file
 			}
 			return bytesToHexString(md.digest());
