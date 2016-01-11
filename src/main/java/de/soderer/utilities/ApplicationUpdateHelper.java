@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
@@ -429,11 +428,15 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 
 	private String createMd5Checksum(File file) {
 		try {
-			MessageDigest md = MessageDigest.getInstance("MD5");
-			try (InputStream is = new FileInputStream(file); DigestInputStream dis = new DigestInputStream(is, md)) {
-				// Just read the file
+			MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+			try (InputStream inputStream = new FileInputStream(file)) {
+				byte[] buffer = new byte[4096];
+				int bytesRead;
+				while ((bytesRead = inputStream.read(buffer)) >= 0) {
+					messageDigest.update(buffer, 0, bytesRead);
+				}
 			}
-			return bytesToHexString(md.digest());
+			return bytesToHexString(messageDigest.digest());
 		} catch (Exception e) {
 			return null;
 		}
