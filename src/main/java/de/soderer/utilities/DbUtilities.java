@@ -30,12 +30,17 @@ import de.soderer.utilities.collection.CaseInsensitiveMap;
 public class DbUtilities {
 	public static final String DB_DRIVER_NAME_ORACLE = "oracle.jdbc.OracleDriver";
 	public static final String DB_DRIVER_NAME_MYSQL = "com.mysql.jdbc.Driver";
+	public static final String DB_DRIVER_NAME_POSTGRESQL = "org.postgresql.Driver";
 
-	public static String generateUrlConnectionString(boolean isOracle, String dbServerHostname, int dbServerPort, String dbName) {
-		if (isOracle) {
+	public static String generateUrlConnectionString(String dbVendor, String dbServerHostname, int dbServerPort, String dbName) throws Exception {
+		if ("oracle".equalsIgnoreCase(dbVendor)) {
 			return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? 1521 : dbServerPort) + ":" + dbName;
-		} else {
+		} else if ("mysql".equalsIgnoreCase(dbVendor)) {
 			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? 3306 : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+		} else if ("postgres".equalsIgnoreCase(dbVendor) || "postgresql".equalsIgnoreCase(dbVendor)) {
+			return "jdbc:postgresql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? 5432 : dbServerPort) + "/" + dbName;
+		} else {
+			throw new Exception("Unknown db vendor");
 		}
 	}
 
@@ -1385,6 +1390,18 @@ public class DbUtilities {
 				closeQuietly(resultSet);
 				resultSet = null;
 			}
+		}
+	}
+	
+	public static String getDriverClassName(String dbVendor) throws Exception {
+		if ("oracle".equalsIgnoreCase(dbVendor)) {
+			return DbUtilities.DB_DRIVER_NAME_ORACLE;
+		} else if ("mysql".equalsIgnoreCase(dbVendor)) {
+			return DbUtilities.DB_DRIVER_NAME_ORACLE;
+		} else if ("postgres".equalsIgnoreCase(dbVendor) || "postgresql".equalsIgnoreCase(dbVendor)) {
+			return DbUtilities.DB_DRIVER_NAME_POSTGRESQL;
+		} else {
+			throw new Exception("Unknown db vendor: " + dbVendor);
 		}
 	}
 }
