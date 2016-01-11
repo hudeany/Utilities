@@ -28,16 +28,46 @@ import javax.sql.DataSource;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class DbUtilities {
-	public static final String DB_DRIVER_NAME_ORACLE = "oracle.jdbc.OracleDriver";
-	public static final String DB_DRIVER_NAME_MYSQL = "com.mysql.jdbc.Driver";
-	public static final String DB_DRIVER_NAME_POSTGRESQL = "org.postgresql.Driver";
+	public enum DbVendor {
+		Oracle("oracle.jdbc.OracleDriver", 1521),
+		MySQL("com.mysql.jdbc.Driver", 3306),
+		PostgreSQL("org.postgresql.Driver", 5432);
+		
+		public static DbVendor getDbVendorByName(String dbVendorName) throws Exception {
+			if ("oracle".equalsIgnoreCase(dbVendorName)) {
+				return DbUtilities.DbVendor.Oracle;
+			} else if ("mysql".equalsIgnoreCase(dbVendorName)) {
+				return DbUtilities.DbVendor.MySQL;
+			} else if ("postgres".equalsIgnoreCase(dbVendorName) || "postgresql".equalsIgnoreCase(dbVendorName)) {
+				return DbUtilities.DbVendor.PostgreSQL;
+			} else {
+				throw new Exception("Unknown db vendor: " + dbVendorName);
+			}
+		}
+		
+		private String driverClassName;
+		private int defaultPort;
+		
+		private DbVendor(String driverClassName, int defaultPort) {
+			this.driverClassName = driverClassName;
+			this.defaultPort = defaultPort;
+		}
+		
+		public String getDriverClassName() {
+			return driverClassName;
+		}
+		
+		public int getDefaultPort() {
+			return defaultPort;
+		}
+	}
 
-	public static String generateUrlConnectionString(String dbVendor, String dbServerHostname, int dbServerPort, String dbName) throws Exception {
-		if ("oracle".equalsIgnoreCase(dbVendor)) {
+	public static String generateUrlConnectionString(DbVendor dbVendor, String dbServerHostname, int dbServerPort, String dbName) throws Exception {
+		if (DbVendor.Oracle == dbVendor) {
 			return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? 1521 : dbServerPort) + ":" + dbName;
-		} else if ("mysql".equalsIgnoreCase(dbVendor)) {
+		} else if (DbVendor.MySQL == dbVendor) {
 			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? 3306 : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
-		} else if ("postgres".equalsIgnoreCase(dbVendor) || "postgresql".equalsIgnoreCase(dbVendor)) {
+		} else if (DbVendor.PostgreSQL == dbVendor) {
 			return "jdbc:postgresql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? 5432 : dbServerPort) + "/" + dbName;
 		} else {
 			throw new Exception("Unknown db vendor");
@@ -1390,18 +1420,6 @@ public class DbUtilities {
 				closeQuietly(resultSet);
 				resultSet = null;
 			}
-		}
-	}
-	
-	public static String getDriverClassName(String dbVendor) throws Exception {
-		if ("oracle".equalsIgnoreCase(dbVendor)) {
-			return DbUtilities.DB_DRIVER_NAME_ORACLE;
-		} else if ("mysql".equalsIgnoreCase(dbVendor)) {
-			return DbUtilities.DB_DRIVER_NAME_ORACLE;
-		} else if ("postgres".equalsIgnoreCase(dbVendor) || "postgresql".equalsIgnoreCase(dbVendor)) {
-			return DbUtilities.DB_DRIVER_NAME_POSTGRESQL;
-		} else {
-			throw new Exception("Unknown db vendor: " + dbVendor);
 		}
 	}
 }

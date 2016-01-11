@@ -143,11 +143,11 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 	public BasicDataSource getDbDatasource() throws Exception {
 		BasicDataSource basicDataSource = new BasicDataSource();
 		if (isOracle) {
-			basicDataSource.setDriverClassName(DbUtilities.DB_DRIVER_NAME_ORACLE);
+			basicDataSource.setDriverClassName(DbUtilities.DbVendor.Oracle.getDriverClassName());
 		} else {
-			basicDataSource.setDriverClassName(DbUtilities.DB_DRIVER_NAME_MYSQL);
+			basicDataSource.setDriverClassName(DbUtilities.DbVendor.MySQL.getDriverClassName());
 		}
-		basicDataSource.setUrl(DbUtilities.generateUrlConnectionString(isOracle ? "oracle" : "mysql", dbServerHostname, dbServerPort, dbName));
+		basicDataSource.setUrl(DbUtilities.generateUrlConnectionString(isOracle ? DbUtilities.DbVendor.Oracle : DbUtilities.DbVendor.MySQL, dbServerHostname, dbServerPort, dbName));
 
 		basicDataSource.setUsername(userName);
 		basicDataSource.setPassword(password);
