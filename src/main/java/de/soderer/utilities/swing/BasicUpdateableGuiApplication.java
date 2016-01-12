@@ -59,7 +59,7 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 			updateProgressDialog = null;
 		}
 		
-		new QuestionDialog(this, "Update Error", "Restart").setVisible(true);
+		new QuestionDialog(this, "Update Error", "Updated application may be restarted", "Restart now").setVisible(true);
 	}
 
 	@Override
