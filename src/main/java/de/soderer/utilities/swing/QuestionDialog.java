@@ -50,6 +50,8 @@ public class QuestionDialog extends JDialog {
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		
+		JButton focusButton = null;
+		
 		if (buttonTexts != null && buttonTexts.length > 0) {
 			for (int i = 0; i < buttonTexts.length; i++) {
 				if (i == 0) {
@@ -58,15 +60,19 @@ public class QuestionDialog extends JDialog {
 				
 				final int answerButtonIndex = i;
 				
-				JButton cancelButton = new JButton(buttonTexts[i]);
-				cancelButton.addActionListener(new ActionListener() {
+				JButton someButton = new JButton(buttonTexts[i]);
+				someButton.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent event) {
 						questionDialog.setAnswerButtonIndex(answerButtonIndex);
 						questionDialog.dispose();
 					}
 				});
-				buttonPanel.add(cancelButton);
+				buttonPanel.add(someButton);
+				
+				if (i == 0) {
+					focusButton = someButton;
+				}
 			}
 		} else {
 			JButton cancelButton = new JButton("Close");
@@ -77,6 +83,8 @@ public class QuestionDialog extends JDialog {
 				}
 			});
 			buttonPanel.add(cancelButton);
+			
+			focusButton = cancelButton;
 		}
 
 		panel.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -88,6 +96,10 @@ public class QuestionDialog extends JDialog {
 		pack();
 
 		setLocationRelativeTo(null);
+		
+		if (focusButton != null) {
+			getRootPane().setDefaultButton(focusButton);
+		}
 	}
 
 	public int getAnswerButtonIndex() {

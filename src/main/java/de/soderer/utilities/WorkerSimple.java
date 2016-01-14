@@ -28,6 +28,10 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	public WorkerSimple(WorkerParentSimple parent) {
 		this.parent = parent;
 	}
+	
+	public void setParent(WorkerParentSimple parent) {
+		this.parent = parent;
+	}
 
 	/**
 	 * Minimum time between two parent.showProgress calls. (default 500 millis)
@@ -105,6 +109,10 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			return result;
 		}
 	}
+	
+	public Exception getError() {
+		return error;
+	}
 
 	@Override
 	public T get(long arg0, TimeUnit arg1) throws InterruptedException, ExecutionException, TimeoutException {
@@ -119,6 +127,22 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	@Override
 	public boolean isDone() {
 		return isDone;
+	}
+
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public long getItemsToDo() {
+		return itemsToDo;
+	}
+
+	public long getItemsDone() {
+		return itemsDone;
 	}
 
 	protected void letGuiRefresh() {

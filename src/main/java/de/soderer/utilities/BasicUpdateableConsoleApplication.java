@@ -75,10 +75,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 	}
 
 	@Override
-	public void showUpdateDownloadStart(WorkerSimple<?> worker) throws Exception {
-		while (!worker.isDone()) {
-			Thread.sleep(1000);
-		}
+	public void showUpdateDownloadStart() {
 	}
 
 	@Override

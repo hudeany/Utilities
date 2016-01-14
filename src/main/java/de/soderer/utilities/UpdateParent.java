@@ -11,7 +11,7 @@ public interface UpdateParent extends CredentialsParent {
 
 	public boolean askForUpdate(String availableNewVersion) throws Exception;
 
-	public void showUpdateDownloadStart(WorkerSimple<?> worker) throws Exception;
+	public void showUpdateDownloadStart();
 	
 	public void showUpdateDownloadEnd();
 }

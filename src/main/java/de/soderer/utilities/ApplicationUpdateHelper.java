@@ -404,12 +404,12 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			new Thread(fileDownloadWorker).start();
 
 			if (updateParent != null) {
-				updateParent.showUpdateDownloadStart(fileDownloadWorker);
-			} else {
-				while (!fileDownloadWorker.isDone()) {
-					// Wait for download process
-					Thread.sleep(1000);
-				}
+				updateParent.showUpdateDownloadStart();
+			}
+			
+			while (!fileDownloadWorker.isDone()) {
+				// Wait for download process
+				Thread.sleep(1000);
 			}
 
 			if (!fileDownloadWorker.get()) {

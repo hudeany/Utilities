@@ -7,10 +7,8 @@ import java.util.Date;
 import javax.swing.JFrame;
 
 import de.soderer.utilities.Credentials;
-import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.UpdateParent;
 import de.soderer.utilities.Version;
-import de.soderer.utilities.WorkerSimple;
 
 public class BasicUpdateableGuiApplication extends JFrame implements UpdateParent {
 	private static final long serialVersionUID = 1869492889654406822L;
@@ -18,7 +16,7 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 	private String applicationName;
 	private Version applicationVersion;
 	
-	private SimpleProgressDialog updateProgressDialog;
+	private SimpleProgressDialog<?> updateProgressDialog;
 	
 	public BasicUpdateableGuiApplication(String applicationName, Version applicationVersion) throws HeadlessException {
 		super(applicationName + " (Version " + applicationVersion.toString() + ")");
@@ -47,8 +45,7 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 	@Override
 	public void showUpdateProgress(Date itemStart, long itemsToDo, long itemsDone) {
 		if (updateProgressDialog != null) {
-			updateProgressDialog.setProgress(itemsToDo, itemsDone);
-			updateProgressDialog.setETA(DateUtilities.calculateETA(itemStart, itemsToDo, itemsDone));
+			updateProgressDialog.showProgress(itemStart, itemsToDo, itemsDone);
 		}
 	}
 
@@ -76,9 +73,9 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 	}
 
 	@Override
-	public void showUpdateDownloadStart(WorkerSimple<?> worker) throws Exception {
-		updateProgressDialog = new SimpleProgressDialog(this, "Update");
-		updateProgressDialog.setVisible(true);
+	public void showUpdateDownloadStart() {
+		updateProgressDialog = new SimpleProgressDialog<>(this, "Update", null);
+		updateProgressDialog.showDialog();
 	}
 
 	@Override

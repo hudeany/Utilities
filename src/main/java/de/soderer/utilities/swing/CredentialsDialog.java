@@ -126,6 +126,12 @@ public class CredentialsDialog extends JDialog {
 		pack();
 
 		setLocationRelativeTo(null);
+		
+		if (userField != null) {
+			userField.requestFocus();
+		} else if (passwordField != null) {
+			passwordField.requestFocus();
+		}
 	}
 
 	public Credentials getCredentials() {

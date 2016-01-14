@@ -1,6 +1,5 @@
 package de.soderer.utilities.swing;
 
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Frame;
@@ -10,25 +9,33 @@ import java.util.Date;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
 
+import de.soderer.utilities.WorkerDual;
 import de.soderer.utilities.WorkerParentDual;
 
-public class DualProgressDialog extends JDialog {
-	private static final long serialVersionUID = 775327679829244076L;
-
-	private JProgressBar progressBar;
+public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressDialog<T> implements WorkerParentDual {
+	private static final long serialVersionUID = 1891862599169713021L;
+	
 	private JLabel label;
 	private JProgressBar subItemProgressBar;
-	private boolean canceledByUser = false;
 
-	public DualProgressDialog(final Frame parent, String title) {
-		super(parent, title, Dialog.ModalityType.DOCUMENT_MODAL);
+	public DualProgressDialog(WorkerParentDual parent, String title) {
+		this((Frame) parent, title, null);
+	}
 
-		final DualProgressDialog dualProgressDialog = this;
+	public DualProgressDialog(Frame parent, String title, T worker) {
+		super(parent);
+		
+		setTitle(title);
+		
+		this.worker = worker;
+		if (worker != null) {
+			worker.setParent(this);
+		}
 
 		setResizable(false);
 
@@ -62,11 +69,7 @@ public class DualProgressDialog extends JDialog {
 		cancelButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				canceledByUser = true;
-				dualProgressDialog.dispose();
-				if (parent instanceof WorkerParentDual) {
-					((WorkerParentDual) parent).cancel();
-				}
+				cancel();
 			}
 		});
 		buttonPanel.add(cancelButton);
@@ -76,69 +79,73 @@ public class DualProgressDialog extends JDialog {
 
 		pack();
 
-		setLocationRelativeTo(null);
-	}
-
-	public void setIndeterminate() {
-		progressBar.setIndeterminate(true);
-	}
-
-	public void setProgressPercentage(int value) {
-		progressBar.setIndeterminate(false);
-		progressBar.setValue(value);
-		progressBar.setString(value + "%");
-		progressBar.setStringPainted(true);
-	}
-
-	public void setProgress(long itemsToDo, long itemsDone) {
-		if (itemsToDo > 0) {
-			setProgressPercentage((int) (itemsDone * 100 / itemsToDo));
-		} else {
-			setProgressPercentage(0);
+        setLocationRelativeTo((Frame) parent);
+		
+		if (cancelButton != null) {
+			getRootPane().setDefaultButton(cancelButton);
 		}
 	}
 
-	public void setETA(Date estimatedEnd) {
-		if (estimatedEnd != null) {
-			progressBar.setToolTipText(estimatedEnd.toString());
+	@Override
+	public void showUnlimitedSubProgress() {
+		if (SwingUtilities.isEventDispatchThread()) {
+			subItemProgressBar.setIndeterminate(true);
+			subItemProgressBar.setStringPainted(false);
 		} else {
-			progressBar.setToolTipText(null);
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					showUnlimitedSubProgress();
+				}
+			});
 		}
 	}
 
-	public void setSubItemTitle(String subItemTitle) {
-		label.setText(subItemTitle);
-		setSubProgressPercentage(0);
-	}
-
-	public void setSubItemIndeterminate() {
-		subItemProgressBar.setIndeterminate(true);
-	}
-
-	public void setSubProgressPercentage(int value) {
-		subItemProgressBar.setIndeterminate(false);
-		subItemProgressBar.setValue(value);
-		subItemProgressBar.setString(value + "%");
-		subItemProgressBar.setStringPainted(true);
-	}
-
-	public void setSubProgress(long itemsToDo, long itemsDone) {
-		if (itemsToDo > 0) {
-			setSubProgressPercentage((int) (itemsDone * 100 / itemsToDo));
+	@Override
+	public void showItemStart(final String itemName) {
+		if (SwingUtilities.isEventDispatchThread()) {
+			label.setText(itemName);
+			
+			int value = 0;
+			subItemProgressBar.setIndeterminate(false);
+			subItemProgressBar.setValue(value);
+			subItemProgressBar.setString(value + "%");
+			subItemProgressBar.setStringPainted(true);
 		} else {
-			setSubProgressPercentage(0);
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					showItemStart(itemName);
+				}
+			});
 		}
 	}
 
-	public void setSubETA(Date estimatedEnd) {
-		if (estimatedEnd != null) {
-			subItemProgressBar.setToolTipText(estimatedEnd.toString());
+	@Override
+	public void showItemProgress(final Date itemStart, final long subItemToDo, final long subItemDone) {
+		if (SwingUtilities.isEventDispatchThread()) {
+			updateProgressBar(subItemProgressBar, itemStart, subItemToDo, subItemDone);
 		} else {
-			subItemProgressBar.setToolTipText(null);
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					showItemProgress(itemStart, subItemToDo, subItemDone);
+				}
+			});
 		}
 	}
 
-	public boolean wasCanceledByUser() {
-		return canceledByUser;
+	@Override
+	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
+		if (SwingUtilities.isEventDispatchThread()) {
+			int value = 100;
+			subItemProgressBar.setIndeterminate(false);
+			subItemProgressBar.setValue(value);
+			subItemProgressBar.setString(value + "%");
+			subItemProgressBar.setStringPainted(true);
+		} else {
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					showItemDone(itemStart, itemEnd, subItemsDone);
+				}
+			});
+		}
 	}
 }
