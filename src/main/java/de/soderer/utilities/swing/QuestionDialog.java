@@ -95,7 +95,7 @@ public class QuestionDialog extends JDialog {
 
 		pack();
 
-		setLocationRelativeTo(null);
+		setLocationRelativeTo(parent);
 		
 		if (focusButton != null) {
 			getRootPane().setDefaultButton(focusButton);

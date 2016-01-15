@@ -8,7 +8,6 @@ import java.util.concurrent.TimeoutException;
 
 public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	private static final long DEFAULT_SHOW_PROGRESS_AFTER_MILLISECONDS = 500;
-	private static final long DEFAULT_SHOW_PROGRESS_OVERRIDE_REFRESH_MILLISECONDS = 200;
 
 	protected Date startTime;
 	protected Date endTime;
@@ -16,7 +15,6 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	protected long itemsDone = -1;
 	protected Date lastProgressShow = new Date();
 	protected long showProgressAfterMilliseconds = DEFAULT_SHOW_PROGRESS_AFTER_MILLISECONDS;
-	protected long showProgressOverrideRefreshMilliseconds = DEFAULT_SHOW_PROGRESS_OVERRIDE_REFRESH_MILLISECONDS;
 	protected T result = null;
 
 	protected WorkerParentSimple parent;
@@ -42,15 +40,6 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		showProgressAfterMilliseconds = value;
 	}
 
-	/**
-	 * May be set to 0 to speed up actions, when there is no GUI that must handle the progress show requests. (default 150 millis)
-	 *
-	 * @param value
-	 */
-	public void setShowProgressOverrideRefreshMilliseconds(long value) {
-		showProgressOverrideRefreshMilliseconds = value;
-	}
-
 	protected void showProgress() {
 		showProgress(false);
 	}
@@ -63,7 +52,6 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 				lastProgressShow = new Date();
 			} else if (overrideRefreshTime) {
 				// Important progress update, which may not be left out
-				letGuiRefresh();
 				parent.showProgress(startTime, itemsToDo, itemsDone);
 				lastProgressShow = new Date();
 			}
@@ -74,14 +62,12 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		endTime = new Date();
 		isDone = true;
 		if (parent != null) {
-			letGuiRefresh();
 			parent.showDone(startTime, endTime, itemsDone);
 		}
 	}
 
 	protected void showUnlimitedProgress() {
 		if (parent != null) {
-			letGuiRefresh();
 			parent.showUnlimitedProgress();
 		}
 	}
@@ -100,7 +86,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	 * Check for error and return result value
 	 */
 	@Override
-	public T get() throws InterruptedException, ExecutionException {
+	public T get() throws ExecutionException {
 		if (!isDone) {
 			throw new ExecutionException(new Exception("Worker is not done yet"));
 		} else if (error != null) {
@@ -143,17 +129,6 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 
 	public long getItemsDone() {
 		return itemsDone;
-	}
-
-	protected void letGuiRefresh() {
-		if (showProgressOverrideRefreshMilliseconds > 0) {
-			try {
-				// Allow GUI to refresh
-				Thread.sleep(showProgressOverrideRefreshMilliseconds);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
 	}
 
 	@Override

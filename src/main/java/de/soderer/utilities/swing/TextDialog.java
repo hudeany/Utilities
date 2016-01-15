@@ -65,6 +65,8 @@ public class TextDialog extends JDialog {
 
 		pack();
 
-		setLocationRelativeTo(null);
+		setLocationRelativeTo(parent);
+		
+		getRootPane().setDefaultButton(cancelButton);
 	}
 }

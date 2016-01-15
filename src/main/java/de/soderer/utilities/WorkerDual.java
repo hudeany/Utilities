@@ -17,7 +17,6 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 		currentItemName = itemName;
 		startTimeSub = new Date();
 		if (parent != null && !cancel) {
-			letGuiRefresh();
 			((WorkerParentDual) parent).showItemStart(currentItemName);
 		}
 	}
@@ -34,7 +33,6 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 				lastProgressShow = new Date();
 			} else if (overrideRefreshTime) {
 				// Important progress update, which may not be left out
-				letGuiRefresh();
 				((WorkerParentDual) parent).showItemProgress(startTimeSub, subItemsToDo, subItemsDone);
 				lastProgressShow = new Date();
 			}
@@ -44,7 +42,6 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	protected void showItemDone() {
 		endTimeSub = new Date();
 		if (parent != null) {
-			letGuiRefresh();
 			((WorkerParentDual) parent).showItemDone(startTimeSub, endTimeSub, subItemsDone);
 			currentItemName = null;
 		}
@@ -52,7 +49,6 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 
 	protected void showUnlimitedSubProgress() {
 		if (parent != null) {
-			letGuiRefresh();
 			((WorkerParentDual) parent).showUnlimitedSubProgress();
 		}
 	}

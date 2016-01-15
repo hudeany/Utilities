@@ -125,7 +125,7 @@ public class CredentialsDialog extends JDialog {
 
 		pack();
 
-		setLocationRelativeTo(null);
+		setLocationRelativeTo(parent);
 		
 		if (userField != null) {
 			userField.requestFocus();

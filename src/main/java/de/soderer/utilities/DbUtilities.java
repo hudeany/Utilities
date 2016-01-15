@@ -8,6 +8,7 @@ import java.sql.BatchUpdateException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -72,6 +73,28 @@ public class DbUtilities {
 		} else {
 			throw new Exception("Unknown db vendor");
 		}
+	}
+	
+	public static Connection createConnection(DbVendor dbVendor, String hostname, String dbName, String userName, char[] password) throws Exception {
+		if (dbVendor == null) {
+			throw new Exception("Unknown db vendor");
+		}
+		
+		Class.forName(dbVendor.getDriverClassName());
+	
+		int port;
+		String[] hostParts = hostname.split(":");
+		if (hostParts.length == 2) {
+			try {
+				port = Integer.parseInt(hostParts[1]);
+			} catch (Exception e) {
+				throw new Exception("Invalid port: " + hostParts[1]);
+			}
+		} else {
+			port = dbVendor.getDefaultPort();
+		}
+	
+		return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
 	}
 
 	public static int readoutTableData(DataSource dataSource, String tableName, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
@@ -581,11 +604,11 @@ public class DbUtilities {
 		}
 	}
 
-	public static boolean checkDbVendorIsOracle(DataSource dataSource) {
+	public static DbVendor getDbVendor(DataSource dataSource) throws Exception {
 		Connection connection = null;
 		try {
 			connection = dataSource.getConnection();
-			return checkDbVendorIsOracle(connection);
+			return getDbVendor(connection);
 		} catch (SQLException e) {
 			throw new RuntimeException("Cannot check db vendor: " + e.getMessage(), e);
 		} finally {
@@ -593,21 +616,25 @@ public class DbUtilities {
 		}
 	}
 
-	public static boolean checkDbVendorIsOracle(Connection connection) {
+	public static DbVendor getDbVendor(Connection connection) throws Exception {
 		try {
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 			if (databaseMetaData != null) {
 				String productName = databaseMetaData.getDatabaseProductName();
-				if ("oracle".equalsIgnoreCase(productName)) {
-					return true;
+				if (productName != null && productName.toLowerCase().contains("oracle")) {
+					return DbVendor.Oracle;
+				} else if (productName != null && productName.toLowerCase().contains("mysql")) {
+					return DbVendor.MySQL;
+				} else if (productName != null && productName.toLowerCase().contains("postgres")) {
+					return DbVendor.PostgreSQL;
 				} else {
-					return false;
+					throw new Exception("Unknown db vendor: " + productName);
 				}
 			} else {
-				return false;
+				throw new Exception("Undetectable db vendor");
 			}
 		} catch (SQLException e) {
-			return false;
+			throw new Exception("Error while detecting db vendor: " + e.getMessage(), e);
 		}
 	}
 
@@ -849,7 +876,8 @@ public class DbUtilities {
 				int numericPrecision;
 				int numericScale;
 				boolean isNullable;
-				if (checkDbVendorIsOracle(connection)) {
+				DbVendor dbVendor = getDbVendor(connection);
+				if (DbVendor.Oracle == dbVendor) {
 					// Watchout: Oracle's timestamp datatype is "TIMESTAMP(6)", so remove the bracket value
 					String sql = "SELECT NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) as data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE lower(table_name) = lower(?) AND lower(column_name) = lower(?)";
 					preparedStatement = connection.prepareStatement(sql);
@@ -876,7 +904,7 @@ public class DbUtilities {
 					} else {
 						return null;
 					}
-				} else {
+				} else if (DbVendor.MySQL == dbVendor) {
 					String sql = "SELECT data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = schema() AND lower(table_name) = lower(?) AND lower(column_name) = lower(?)";
 					preparedStatement = connection.prepareStatement(sql);
 					preparedStatement.setString(1, tableName);
@@ -902,6 +930,8 @@ public class DbUtilities {
 					} else {
 						return null;
 					}
+				} else {
+					throw new Exception("Unsupported db vendor");
 				}
 			} catch (Exception e) {
 				return null;
@@ -944,7 +974,8 @@ public class DbUtilities {
 			try {
 				CaseInsensitiveMap<DbColumnType> returnMap = new CaseInsensitiveMap<DbColumnType>();
 				connection = dataSource.getConnection();
-				if (checkDbVendorIsOracle(dataSource)) {
+				DbVendor dbVendor = getDbVendor(connection);
+				if (DbVendor.Oracle == dbVendor) {
 					// Watchout: Oracle's timestamp datatype is "TIMESTAMP(6)", so remove the bracket value
 					String sql = "SELECT column_name, NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) as data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE lower(table_name) = lower(?)";
 					preparedStatement = connection.prepareStatement(sql);
@@ -967,7 +998,7 @@ public class DbUtilities {
 
 						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable));
 					}
-				} else {
+				} else if (DbVendor.MySQL == dbVendor) {
 					String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = schema() AND lower(table_name) = lower(?)";
 					preparedStatement = connection.prepareStatement(sql);
 					preparedStatement.setString(1, tableName);
@@ -989,6 +1020,8 @@ public class DbUtilities {
 
 						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable));
 					}
+				} else {
+					throw new Exception("Unsupported db vendor");
 				}
 				return returnMap;
 			} catch (Exception e) {
@@ -1101,7 +1134,8 @@ public class DbUtilities {
 			try {
 				connection = dataSource.getConnection();
 				String sql;
-				if (checkDbVendorIsOracle(dataSource)) {
+				DbVendor dbVendor = getDbVendor(connection);
+				if (DbVendor.Oracle == dbVendor) {
 					sql = "SELECT data_length FROM user_tab_cols WHERE table_name = ? AND column_name = ?";
 					preparedStatement = connection.prepareStatement(sql);
 					preparedStatement.setString(1, tableName.toUpperCase());
@@ -1146,7 +1180,8 @@ public class DbUtilities {
 				try {
 					connection = dataSource.getConnection();
 					String sql;
-					if (checkDbVendorIsOracle(dataSource)) {
+					DbVendor dbVendor = getDbVendor(connection);
+					if (DbVendor.Oracle == dbVendor) {
 						sql = "SELECT data_default FROM user_tab_cols WHERE table_name = ? AND column_name = ?";
 						preparedStatement = connection.prepareStatement(sql);
 						preparedStatement.setString(1, tableName.toUpperCase());
@@ -1199,18 +1234,23 @@ public class DbUtilities {
 		}
 	}
 
-	public static String getDateDefaultValue(DataSource dataSource, String fieldDefault) throws SQLException {
+	public static String getDateDefaultValue(DataSource dataSource, String fieldDefault) throws Exception {
+		DbVendor dbVendor = getDbVendor(dataSource);
 		if (fieldDefault.equalsIgnoreCase("sysdate") || fieldDefault.equalsIgnoreCase("sysdate()") || fieldDefault.equalsIgnoreCase("current_timestamp")) {
-			if (checkDbVendorIsOracle(dataSource)) {
+			if (dbVendor == DbVendor.Oracle) {
 				return "current_timestamp";
-			} else {
+			} else if (dbVendor == DbVendor.MySQL) {
 				return "sysdate()";
+			} else {
+				throw new Exception("Unsupported db vendor");
 			}
 		} else {
-			if (checkDbVendorIsOracle(dataSource)) {
+			if (dbVendor == DbVendor.Oracle) {
 				return "to_date('" + fieldDefault + "', 'DD.MM.YYYY')";
-			} else {
+			} else if (dbVendor == DbVendor.MySQL) {
 				return "'" + fieldDefault + "'";
+			} else {
+				throw new Exception("Unsupported db vendor");
 			}
 		}
 	}
@@ -1314,10 +1354,13 @@ public class DbUtilities {
 			}
 
 			String changeColumnStatement;
-			if (checkDbVendorIsOracle(dataSource)) {
+			DbVendor dbVendor = getDbVendor(dataSource);
+			if (DbVendor.Oracle == dbVendor) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY (" + changeColumnStatementPart + ")";
-			} else {
+			} else if (DbVendor.MySQL == dbVendor) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY " + changeColumnStatementPart;
+			} else {
+				throw new Exception("Unsupported db vendor");
 			}
 
 			Connection connection = null;
@@ -1344,7 +1387,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static boolean checkOracleTablespaceExists(DataSource dataSource, String tablespaceName) {
+	public static boolean checkOracleTablespaceExists(DataSource dataSource, String tablespaceName) throws Exception {
 		Connection connection = null;
 		try {
 			connection = dataSource.getConnection();
@@ -1362,9 +1405,11 @@ public class DbUtilities {
 	 * @param connection
 	 * @param tablespaceName
 	 * @return
+	 * @throws Exception 
 	 */
-	public static boolean checkOracleTablespaceExists(Connection connection, String tablespaceName) {
-		if (DbUtilities.checkDbVendorIsOracle(connection) && tablespaceName != null) {
+	public static boolean checkOracleTablespaceExists(Connection connection, String tablespaceName) throws Exception {
+		DbVendor dbVendor = getDbVendor(connection);
+		if (dbVendor == DbVendor.Oracle && tablespaceName != null) {
 			PreparedStatement statement = null;
 			ResultSet resultSet = null;
 
@@ -1419,6 +1464,92 @@ public class DbUtilities {
 			} finally {
 				closeQuietly(resultSet);
 				resultSet = null;
+			}
+		}
+	}
+	
+	/**
+	 * tablePatternExpression contains a comma-separated list of tablenames with wildcards *? and !(not, before tablename)
+	 * 
+	 * @param connection
+	 * @param tablePatternExpression
+	 * @return
+	 * @throws Exception
+	 */
+	public static List<String> getAvailableTables(Connection connection, String tablePatternExpression) throws Exception {
+		Statement statement = null;
+		ResultSet resultSet = null;
+
+		try {
+			DbVendor dbVendor = getDbVendor(connection);
+			statement = connection.createStatement();
+
+			String tableQuery;
+			if (DbVendor.Oracle == dbVendor) {
+				tableQuery = "SELECT DISTINCT table_name FROM all_tables WHERE owner NOT IN ('CTXSYS', 'DBSNMP', 'MDDATA', 'MDSYS', 'DMSYS', 'OLAPSYS', 'ORDPLUGINS', 'OUTLN', 'SI_INFORMATN_SCHEMA', 'SYS', 'SYSMAN', 'SYSTEM')";
+				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
+					if (Utilities.isNotBlank(tablePattern)) {
+						tablePattern = tablePattern.trim().toUpperCase().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						if (tablePattern.startsWith("!")) {
+							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "' ESCAPE '\\'";
+						} else {
+							tableQuery += " AND table_name LIKE '" + tablePattern + "' ESCAPE '\\'";
+						}
+					}
+				}
+				tableQuery += " ORDER BY table_name";
+			} else if (DbVendor.MySQL == dbVendor) {
+				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema')";
+				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
+					if (Utilities.isNotBlank(tablePattern)) {
+						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						if (tablePattern.startsWith("!")) {
+							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "'";
+						} else {
+							tableQuery += " AND table_name LIKE '" + tablePattern + "'";
+						}
+					}
+				}
+				tableQuery += " ORDER BY table_name";
+			} else if (DbVendor.PostgreSQL == dbVendor) {
+				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog')";
+				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
+					if (Utilities.isNotBlank(tablePattern)) {
+						tablePattern = tablePattern.trim().toUpperCase().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						if (tablePattern.startsWith("!")) {
+							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "' ESCAPE '\\'";
+						} else {
+							tableQuery += " AND table_name LIKE '" + tablePattern + "' ESCAPE '\\'";
+						}
+					}
+				}
+				tableQuery += " ORDER BY table_name";
+			} else {
+				throw new Exception("Unknown db vendor");
+			}
+			resultSet = statement.executeQuery(tableQuery);
+			List<String> tableNamesToExport = new ArrayList<String>();
+			while (resultSet.next()) {
+				tableNamesToExport.add(resultSet.getString("table_name"));
+			}
+			return tableNamesToExport;
+		} catch (Exception e) {
+			throw e;
+		} finally {
+			if (resultSet != null) {
+				try {
+					resultSet.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
