@@ -43,20 +43,23 @@ public class JsonReader implements Closeable {
 	public Object read() throws Exception {
 		if (inputReader == null) {
 			inputReader = new BufferedReader(new InputStreamReader(inputStream, encoding));
+		} else {
+			throw new Exception("JsonReader position was already initialized for readNextRootArrayJsonItem()");
 		}
 		
 		char nextChar = readNextNonWhitespace(inputReader);
 		if (nextChar == '{') {
 			// Read root Json object
 			Object returnObject = readJsonObject(inputReader);
-			close();
+			inputReader = null;
 			return returnObject;
 		} else if (nextChar == '[') {
 			// Read root Json array
 			Object returnObject = readJsonArray(inputReader);
-			close();
+			inputReader = null;
 			return returnObject;
 		} else {
+			inputReader = null;
 			throw new Exception("Invalid json data: No Json object or Json array at root");
 		}
 	}
@@ -76,6 +79,8 @@ public class JsonReader implements Closeable {
 	public void openRootArray() throws Exception {
 		if (inputReader == null) {
 			inputReader = new BufferedReader(new InputStreamReader(inputStream, encoding));
+		} else {
+			throw new Exception("JsonReader position was already initialized for readNextRootArrayJsonItem()");
 		}
 		
 		char nextChar = readNextNonWhitespace(inputReader);
@@ -102,7 +107,7 @@ public class JsonReader implements Closeable {
 	 */
 	public Object readNextRootArrayJsonItem() throws Exception {
 		if (inputReader == null) {
-			throw new Exception("JsonReader position was not initialized for readNext()");
+			throw new Exception("JsonReader position was not initialized for readNextRootArrayJsonItem()");
 		}
 		
 		char nextChar = readNextNonWhitespace(inputReader);
@@ -114,13 +119,14 @@ public class JsonReader implements Closeable {
 		isFirstRootArrayObjectRead = false;
 		
 		if (nextChar == ']') {
-			close();
+			inputReader = null;
 			return null;
 		} else if (nextChar == '{') {
 			return readJsonObject(inputReader);
 		} else if (nextChar == '[') {
 			return readJsonArray(inputReader);
 		} else {
+			inputReader = null;
 			throw new Exception("Invalid json data: No Json object or Json array in root array");
 		}
 	}
