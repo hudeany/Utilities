@@ -310,7 +310,7 @@ public class JsonTest {
 			
 			Object nextRootArrayObject;
 			int count = 0;
-			while((nextRootArrayObject = jsonReader.readNextRootArrayObject()) != null) {
+			while((nextRootArrayObject = jsonReader.readNextRootArrayJsonItem()) != null) {
 				if (nextRootArrayObject instanceof JsonObject) {
 					Assert.assertEquals(new Long(count), ((JsonObject) nextRootArrayObject).get("number"));
 				} else {

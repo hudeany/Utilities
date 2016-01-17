@@ -69,7 +69,7 @@ public class JsonReader implements Closeable {
 	 * <br />
 	 * Usage:<br />
 	 * First open the Json array with openRootArray()<br />
-	 * Read Json items with readNextRootArrayObject() until null is returned<br />
+	 * Read Json items with readNextRootArrayJsonItem() until null is returned<br />
 	 * 
 	 * @throws Exception
 	 */
@@ -95,12 +95,12 @@ public class JsonReader implements Closeable {
 	 * <br />
 	 * Usage:<br />
 	 * First open the Json array with openRootArray()<br />
-	 * Read Json items with readNextRootArrayObject() until null is returned<br />
+	 * Read Json items with readNextRootArrayJsonItem() until null is returned<br />
 	 * 
 	 * @return null if there is no more Json item left to read
 	 * @throws Exception
 	 */
-	public Object readNextRootArrayObject() throws Exception {
+	public Object readNextRootArrayJsonItem() throws Exception {
 		if (inputReader == null) {
 			throw new Exception("JsonReader position was not initialized for readNext()");
 		}
