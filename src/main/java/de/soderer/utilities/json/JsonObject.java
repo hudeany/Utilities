@@ -1,13 +1,15 @@
 package de.soderer.utilities.json;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import de.soderer.utilities.Utilities;
 
-public class JsonObject {
+public class JsonObject implements Iterable<Map.Entry<String, Object>>, JsonItem {
 	private Map<String, Object> properties = new LinkedHashMap<String, Object>();
 
 	/**
@@ -37,6 +39,11 @@ public class JsonObject {
 	}
 
 	@Override
+	public Iterator<Entry<String, Object>> iterator() {
+		return properties.entrySet().iterator();
+	}
+
+	@Override
 	public String toString() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
@@ -53,5 +60,15 @@ public class JsonObject {
 			Utilities.closeQuietly(output);
 			Utilities.closeQuietly(writer);
 		}
+	}
+
+	@Override
+	public boolean isJsonObject() {
+		return true;
+	}
+
+	@Override
+	public boolean isJsonArray() {
+		return false;
 	}
 }

@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import de.soderer.utilities.json.JsonArray;
+import de.soderer.utilities.json.JsonItem;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
 import de.soderer.utilities.json.JsonWriter;
@@ -237,7 +238,7 @@ public class JsonTest {
 			Date testDate = new Date();
 			output = new ByteArrayOutputStream();
 			
-			JsonObject jsonObject = new JsonObject();	
+			JsonObject jsonObject = new JsonObject();
 			jsonObject.add("test_null", null);
 			jsonObject.add("test_true", true);
 			jsonObject.add("1", 1);
@@ -248,6 +249,8 @@ public class JsonTest {
 			jsonObject.add("test_doubleE", 0.000003d);
 			jsonObject.add("test_äÄ", TextUtilities.GERMAN_TEST_STRING);
 			jsonObject.add("test_date", testDate);
+			jsonObject.add("minInteger", Integer.MIN_VALUE);
+			jsonObject.add("maxInteger", Integer.MAX_VALUE);
 
 			writer = new JsonWriter(output, "UTF-8");
 			writer.add(jsonObject);
@@ -267,7 +270,9 @@ public class JsonTest {
 				+ "\t\"test_double\": 1.3,\n"
 				+ "\t\"test_doubleE\": 3.0E-6,\n"
 				+ "\t\"test_äÄ\": \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
-				+ "\t\"test_date\": \"" + DateUtilities.ISO_8601_DATETIME_FORMAT.format(testDate) + "\"\n"
+				+ "\t\"test_date\": \"" + DateUtilities.ISO_8601_DATETIME_FORMAT.format(testDate) + "\",\n"
+				+ "\t\"minInteger\": " + Integer.MIN_VALUE + ",\n"
+				+ "\t\"maxInteger\": " + Integer.MAX_VALUE + "\n"
 				+ "}\n",
 				result);
 			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
@@ -299,6 +304,9 @@ public class JsonTest {
 				jsonObject.add("text", TextUtilities.GERMAN_TEST_STRING);
 				writer.add(jsonObject);
 			}
+			writer.addSimpleJsonArrayValue(null);
+			writer.addSimpleJsonArrayValue(true);
+			writer.addSimpleJsonArrayValue(false);
 			writer.closeJsonArray();
 			
 			writer.close();
@@ -306,25 +314,117 @@ public class JsonTest {
 
 			String result = new String(output.toByteArray(), "UTF-8");
 			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
-			jsonReader.openRootArray();
+			Assert.assertEquals(JsonReader.JsonToken.JsonArray_Open, jsonReader.readNextToken());
 			
-			Object nextRootArrayObject;
-			int count = 0;
-			while((nextRootArrayObject = jsonReader.readNextRootArrayJsonItem()) != null) {
-				if (nextRootArrayObject instanceof JsonObject) {
-					Assert.assertEquals(new Long(count), ((JsonObject) nextRootArrayObject).get("number"));
+			for (int i = 0; i < 5; i++) {
+				Assert.assertTrue(jsonReader.readNextJsonItem());
+				Object nextJsonItem = jsonReader.getCurrentObject();
+				if (nextJsonItem instanceof JsonObject) {
+					Assert.assertEquals(new Integer(i), ((JsonObject) nextJsonItem).get("number"));
 				} else {
 					Assert.fail();
 				}
-				count++;
 			}
-			Assert.assertEquals(5, count);
+			Assert.assertTrue(jsonReader.readNextJsonItem());
+			Assert.assertEquals(null, jsonReader.getCurrentObject());
+			Assert.assertTrue(jsonReader.readNextJsonItem());
+			Assert.assertEquals(true, jsonReader.getCurrentObject());
+			Assert.assertTrue(jsonReader.readNextJsonItem());
+			Assert.assertEquals(false, jsonReader.getCurrentObject());
+			Assert.assertEquals(JsonReader.JsonToken.JsonArray_Close, jsonReader.readNextToken());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
 		} finally {
 			Utilities.closeQuietly(output);
 			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testUglified() {
+		JsonWriter writer = null;
+		ByteArrayOutputStream output = null;
+		JsonReader jsonReader = null;
+		try {
+			output = new ByteArrayOutputStream();
+			
+			JsonArray jsonArray = new JsonArray();
+			jsonArray.add(1);
+			jsonArray.add("Abc");
+			
+			JsonObject jsonObject = new JsonObject();
+			jsonObject.add("Number", 2);
+			jsonObject.add("Text", "Abc2");
+			jsonObject.add("Array", jsonArray);
+
+			writer = new JsonWriter(output, "UTF-8");
+			writer.setUglify(true);
+			writer.add(jsonObject);
+			writer.close();
+			output.close();
+
+			String result = new String(output.toByteArray(), "UTF-8");
+			Assert.assertEquals("{\"Number\":2,\"Text\":\"Abc2\",\"Array\":[1,\"Abc\"]}", result);
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonObject());
+			Assert.assertEquals(3, ((JsonObject) jsonItem).size());
+			Assert.assertEquals("Abc", ((JsonArray) ((JsonObject) jsonItem).get("Array")).get(1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(output);
+			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testReadToken() {
+		JsonReader jsonReader = null;
+		try {
+			jsonReader = new JsonReader(new ByteArrayInputStream("{\"Number\":1,\"Text\":\"Abc2\",\"Array\":[1,\"Abc\"],\"Number2\":2}".getBytes("UTF-8")));
+			
+			String[] tokenValues = new String[]{
+				"JsonObject_Open: null",
+					"JsonObject_PropertyKey: Number", "JsonSimpleValue: 1",
+					"JsonObject_PropertyKey: Text", "JsonSimpleValue: Abc2",
+					"JsonObject_PropertyKey: Array",
+						"JsonArray_Open: null",
+							"JsonSimpleValue: 1",
+							"JsonSimpleValue: Abc",
+						"JsonArray_Close: null",
+					"JsonObject_PropertyKey: Number2", "JsonSimpleValue: 2",
+				"JsonObject_Close: null"
+			};
+			
+			for (String tokenValue : tokenValues) {
+				String nextToken = jsonReader.readNextToken() + ": " + jsonReader.getCurrentObject();
+				Assert.assertEquals(tokenValue, nextToken);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testInvalidData() {
+		JsonReader jsonReader = null;
+		try {
+			jsonReader = new JsonReader(new ByteArrayInputStream("{".getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing an expected exception");
+		} catch (Exception e) {
+			// Expected Exception
+			Assert.assertEquals("Invalid json data: premature end of data", e.getMessage());
+		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
 	}
