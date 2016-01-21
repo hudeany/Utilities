@@ -149,7 +149,7 @@ public class JsonReader implements Closeable {
 		} else if (nextToken == JsonToken.JsonSimpleValue) {
 			// value was already read
 			return true;
-		}else if (nextToken == JsonToken.JsonObject_Close) {
+		} else if (nextToken == JsonToken.JsonObject_Close) {
 			reuseChar = currentChar;
 			openJsonItems.push(JsonToken.JsonObject_Open);
 			return false;

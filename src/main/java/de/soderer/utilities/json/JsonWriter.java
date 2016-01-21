@@ -75,6 +75,9 @@ public class JsonWriter implements Closeable {
 					write("," + linebreak, false);
 				} else if (latestOpenJsonItem == JsonStackItem.Array_Empty) {
 					write(linebreak, false);
+				} else if (latestOpenJsonItem == JsonStackItem.Object_Value) {
+					openJsonStackItems.push(JsonStackItem.Object_Value);
+					write(linebreak, false);
 				}
 				
 				if (latestOpenJsonItem != JsonStackItem.Object_Value) {

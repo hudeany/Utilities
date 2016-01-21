@@ -528,4 +528,98 @@ public class JsonTest {
 			Utilities.closeQuietly(jsonReader);
 		}
 	}
+	
+	@Test
+	public void testObjectOfObjects() {
+		JsonWriter writer = null;
+		ByteArrayOutputStream output = null;
+		JsonReader jsonReader = null;
+		try {
+			output = new ByteArrayOutputStream();
+			
+			JsonObject jsonObject1 = new JsonObject();
+			jsonObject1.add("Number", 1);
+			jsonObject1.add("Text", "Abc1");
+			
+			JsonObject jsonObject2 = new JsonObject();
+			jsonObject2.add("Number", 2);
+			jsonObject2.add("Text", "Abc2");
+			
+			JsonObject jsonObjectOfObjects = new JsonObject();
+			jsonObjectOfObjects.add("Text", "Abc");
+			jsonObjectOfObjects.add("Object1", jsonObject1);
+			jsonObjectOfObjects.add("Object2", jsonObject2);
+			
+			Assert.assertEquals("{\n\t\"Text\": \"Abc\",\n\t\"Object1\":\n\t\t{\n\t\t\t\"Number\": 1,\n\t\t\t\"Text\": \"Abc1\"\n\t\t},\n\t\"Object2\":\n\t\t{\n\t\t\t\"Number\": 2,\n\t\t\t\"Text\": \"Abc2\"\n\t\t}\n}\n", jsonObjectOfObjects.toString());
+
+			writer = new JsonWriter(output, "UTF-8");
+			writer.setUglify(true);
+			writer.add(jsonObjectOfObjects);
+			writer.close();
+			output.close();
+
+			String result = new String(output.toByteArray(), "UTF-8");
+			Assert.assertEquals("{\"Text\":\"Abc\",\"Object1\":{\"Number\":1,\"Text\":\"Abc1\"},\"Object2\":{\"Number\":2,\"Text\":\"Abc2\"}}", result);
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonObject());
+			Assert.assertEquals(3, ((JsonObject) jsonItem).size());
+			Assert.assertEquals("Abc1", ((JsonObject) ((JsonObject) jsonItem).get("Object1")).get("Text"));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(output);
+			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testArrayOfArrays() {
+		JsonWriter writer = null;
+		ByteArrayOutputStream output = null;
+		JsonReader jsonReader = null;
+		try {
+			output = new ByteArrayOutputStream();
+			
+			JsonArray jsonArray1 = new JsonArray();
+			jsonArray1.add(1);
+			jsonArray1.add("Abc1");
+			
+			JsonArray jsonArray2 = new JsonArray();
+			jsonArray2.add(2);
+			jsonArray2.add("Abc2");
+			
+			JsonArray jsonArrayOfArrays = new JsonArray();
+			jsonArrayOfArrays.add("Abc");
+			jsonArrayOfArrays.add(jsonArray1);
+			jsonArrayOfArrays.add(jsonArray2);
+			
+			Assert.assertEquals("[\n\t\"Abc\",\n\t[\n\t\t1,\n\t\t\"Abc1\"\n\t],\n\t[\n\t\t2,\n\t\t\"Abc2\"\n\t]\n]\n", jsonArrayOfArrays.toString());
+
+			writer = new JsonWriter(output, "UTF-8");
+			writer.setUglify(true);
+			writer.add(jsonArrayOfArrays);
+			writer.close();
+			output.close();
+
+			String result = new String(output.toByteArray(), "UTF-8");
+			Assert.assertEquals("[\"Abc\",[1,\"Abc1\"],[2,\"Abc2\"]]", result);
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonArray());
+			Assert.assertEquals(3, ((JsonArray) jsonItem).size());
+			Assert.assertEquals("Abc1", ((JsonArray) ((JsonArray) jsonItem).get(1)).get(1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(output);
+			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
 }
