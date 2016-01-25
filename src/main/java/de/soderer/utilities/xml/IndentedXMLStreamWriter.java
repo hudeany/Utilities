@@ -15,6 +15,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 		DATA
 	}
 	
+	private int currentDepth = 0;
 	private State currentState = State.NOTHING;
 	private Stack<State> stateStack = new Stack<State>();
 
@@ -50,15 +51,6 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 			indentationStringBuilder.append(indentationCharacter);
 		}
 		indentationString = indentationStringBuilder.toString();
-	}
-
-	private void onStartElement() throws XMLStreamException {
-		stateStack.push(State.ELEMENT);
-		currentState = State.NOTHING;
-		if (!stateStack.isEmpty()) {
-			writer.writeCharacters("\n");
-		}
-		doIndent();
 	}
 
 	@Override
@@ -234,7 +226,18 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 		return writer.getProperty(name);
 	}
 
+	private void onStartElement() throws XMLStreamException {
+		stateStack.push(State.ELEMENT);
+		currentState = State.NOTHING;
+		if (currentDepth > 0) {
+			writer.writeCharacters("\n");
+		}
+		doIndent();
+		currentDepth++;
+	}
+
 	private void onEndElement() throws XMLStreamException {
+		currentDepth--;
 		if (currentState == State.ELEMENT) {
 			writer.writeCharacters("\n");
 			doIndent();
@@ -244,15 +247,17 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 
 	private void onEmptyElement() throws XMLStreamException {
 		currentState = State.ELEMENT;
-		if (!stateStack.isEmpty()) {
+		if (currentDepth > 0) {
 			writer.writeCharacters("\n");
 		}
 		doIndent();
 	}
 
 	private void doIndent() throws XMLStreamException {
-		for (int i = 0; i < stateStack.size(); i++) {
-			writer.writeCharacters(indentationString);
+		if (currentDepth > 0) {
+			for (int i = 0; i < currentDepth; i++) {
+				writer.writeCharacters(indentationString);
+			}
 		}
 	}
 }
