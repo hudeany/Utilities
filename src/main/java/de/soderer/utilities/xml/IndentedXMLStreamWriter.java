@@ -8,14 +8,8 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
 public class IndentedXMLStreamWriter implements XMLStreamWriter {
-	private enum State {
-		NOTHING,
-		ELEMENT,
-		DATA
-	}
-	
 	private int currentDepth = 0;
-	private State currentState = State.NOTHING;
+	private boolean closeElementInNewLine = false;
 
 	private String indentationString;
 
@@ -113,19 +107,19 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 
 	@Override
 	public void writeCharacters(String text) throws XMLStreamException {
-		currentState = State.DATA;
+		closeElementInNewLine = false;
 		writer.writeCharacters(text);
 	}
 
 	@Override
 	public void writeCharacters(char[] text, int start, int len) throws XMLStreamException {
-		currentState = State.DATA;
+		closeElementInNewLine = false;
 		writer.writeCharacters(text, start, len);
 	}
 
 	@Override
 	public void writeCData(String data) throws XMLStreamException {
-		currentState = State.DATA;
+		closeElementInNewLine = false;
 		writer.writeCData(data);
 	}
 
@@ -226,7 +220,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 	}
 
 	private void onStartElement() throws XMLStreamException {
-		currentState = State.NOTHING;
+		closeElementInNewLine = false;
 		if (currentDepth > 0) {
 			writer.writeCharacters("\n");
 		}
@@ -236,11 +230,11 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 
 	private void onEndElement() throws XMLStreamException {
 		currentDepth--;
-		if (currentState == State.ELEMENT) {
+		if (closeElementInNewLine) {
 			writer.writeCharacters("\n");
 			doIndent();
 		}
-		currentState = State.ELEMENT;
+		closeElementInNewLine = true;
 	}
 
 	private void onEndDocument() throws XMLStreamException {
@@ -248,7 +242,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 	}
 
 	private void onEmptyElement() throws XMLStreamException {
-		currentState = State.ELEMENT;
+		closeElementInNewLine = true;
 		if (currentDepth > 0) {
 			writer.writeCharacters("\n");
 		}
