@@ -1,7 +1,6 @@
 package de.soderer.utilities.xml;
 
 import java.io.OutputStream;
-import java.util.Stack;
 
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.stream.XMLOutputFactory;
@@ -17,7 +16,6 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 	
 	private int currentDepth = 0;
 	private State currentState = State.NOTHING;
-	private Stack<State> stateStack = new Stack<State>();
 
 	private String indentationString;
 
@@ -148,6 +146,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 
 	@Override
 	public void writeEndDocument() throws XMLStreamException {
+		onEndDocument();
 		writer.writeEndDocument();
 	}
 
@@ -227,7 +226,6 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 	}
 
 	private void onStartElement() throws XMLStreamException {
-		stateStack.push(State.ELEMENT);
 		currentState = State.NOTHING;
 		if (currentDepth > 0) {
 			writer.writeCharacters("\n");
@@ -242,7 +240,11 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter {
 			writer.writeCharacters("\n");
 			doIndent();
 		}
-		currentState = stateStack.pop();
+		currentState = State.ELEMENT;
+	}
+
+	private void onEndDocument() throws XMLStreamException {
+		writer.writeCharacters("\n");
 	}
 
 	private void onEmptyElement() throws XMLStreamException {
