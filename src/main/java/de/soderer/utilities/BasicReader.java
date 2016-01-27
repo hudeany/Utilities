@@ -36,6 +36,11 @@ public abstract class BasicReader implements Closeable {
 		this.inputStream = inputStream;
 		this.encoding = isBlank(encoding) ? Charset.forName(DEFAULT_ENCODING) : Charset.forName(encoding);
 	}
+	
+	public void reuseCurrentChar() {
+		reuseChar = currentChar;
+		readCharacters--;
+	}
 
 	protected char readNextCharacter() throws Exception {
 		if (inputReader == null) {
@@ -74,12 +79,13 @@ public abstract class BasicReader implements Closeable {
 			throw new Exception("Invalid escape characters");
 		}
 		
-		StringBuilder returnValue = new StringBuilder(currentChar);
+		StringBuilder returnValue = new StringBuilder();
+		returnValue.append(currentChar);
 		boolean escapeNextCharacter = false;
 		while (true) {
 			readNextCharacter();
 			if (!escapeNextCharacter) {
-				if (escapeCharacter == currentChar) {
+				if (escapeCharacter != null && escapeCharacter == currentChar) {
 					escapeNextCharacter = true;
 				} else {
 					for (char endChar : endChars) {
@@ -87,8 +93,7 @@ public abstract class BasicReader implements Closeable {
 							if (includeLimitChars) {
 								returnValue.append(currentChar);
 							} else {
-								reuseChar = currentChar;
-								readCharacters--;
+								reuseCurrentChar();
 							}
 							return returnValue.toString();
 						}
@@ -98,6 +103,8 @@ public abstract class BasicReader implements Closeable {
 			} else {
 				if (escapeCharacter == currentChar) {
 					returnValue.append(escapeCharacter);
+				} else if ('\n' == currentChar) {
+					returnValue.append('\n');
 				} else {
 					for (char endChar : endChars) {
 						if (endChar == currentChar) {
@@ -110,21 +117,12 @@ public abstract class BasicReader implements Closeable {
 		}
 	}
 
-	protected String readDoubleQuotedText(Character escapeCharacter) throws Exception {
-		if (currentChar != '"') {
+	protected String readQuotedText(char quoteChar, Character escapeCharacter) throws Exception {
+		if (currentChar != quoteChar) {
 			throw new Exception("Invalid start of double-quoted text");
 		}
 		
-		String returnValue = readUpToNext(true, escapeCharacter, '"');
-		return returnValue.substring(1, returnValue.length() - 1);
-	}
-
-	protected String readSingleQuotedText(Character escapeCharacter) throws Exception {
-		if (currentChar != '\'') {
-			throw new Exception("Invalid start of single-quoted text");
-		}
-		
-		String returnValue = readUpToNext(true, escapeCharacter, '\'');
+		String returnValue = readUpToNext(true, escapeCharacter, quoteChar);
 		return returnValue.substring(1, returnValue.length() - 1);
 	}
 

@@ -525,7 +525,7 @@ public class JsonTest {
 			Assert.fail("Missing an expected exception");
 		} catch (Exception e) {
 			// Expected Exception
-			Assert.assertEquals("Invalid json data: premature end of data", e.getMessage());
+			Assert.assertEquals("Premature end of data", e.getMessage());
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -631,7 +631,7 @@ public class JsonTest {
 		try {
 			String data =
 				"{\n"
-					+ "\ttest: 1\n"
+					+ "\ttest : 1\n"
 				+ "}\n";
 			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
 			jsonReader.read();

@@ -470,11 +470,16 @@ public class Utilities {
 	}
 
 	public static boolean contains(char[] characterArray, Character searchCharacter) {
+		if (characterArray == null || searchCharacter == null) {
+			return false;
+		}
+		
 		for (char character : characterArray) {
 			if (character == searchCharacter) {
 				return true;
 			}
 		}
+		
 		return false;
 	}
 

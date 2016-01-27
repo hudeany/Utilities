@@ -524,7 +524,7 @@ public class Json5Test {
 			Assert.fail("Missing an expected exception");
 		} catch (Exception e) {
 			// Expected Exception
-			Assert.assertEquals("Invalid json data: premature end of data", e.getMessage());
+			Assert.assertEquals("Premature end of data", e.getMessage());
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -630,17 +630,57 @@ public class Json5Test {
 		try {
 			String data =
 				"{\n"
-					+ "\ttest: 1\n"
+					+ "\ttest1 : 1,\n"
+					+ "\t$test2 : 2,\n"
+					+ "\t_test3 : 3\n"
 				+ "}\n";
 			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
 			JsonItem jsonItem = jsonReader.read();
 			Assert.assertNotNull(jsonItem);
 			Assert.assertTrue(jsonItem.isJsonObject());
-			Assert.assertEquals(1, ((JsonObject) jsonItem).size());
-			Assert.assertEquals(1, ((JsonObject) jsonItem).get("test"));
+			Assert.assertEquals(3, ((JsonObject) jsonItem).size());
+			Assert.assertEquals(1, ((JsonObject) jsonItem).get("test1"));
+			Assert.assertEquals(2, ((JsonObject) jsonItem).get("$test2"));
+			Assert.assertEquals(3, ((JsonObject) jsonItem).get("_test3"));
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5ObjectUnquotedKeyError1() {
+		Json5Reader jsonReader = null;
+		try {
+			String data =
+				"{\n"
+					+ "\t1test : 1\n"
+				+ "}\n";
+			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5ObjectUnquotedKeyError2() {
+		Json5Reader jsonReader = null;
+		try {
+			String data =
+				"{\n"
+					+ "\tte st : 1\n"
+				+ "}\n";
+			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
