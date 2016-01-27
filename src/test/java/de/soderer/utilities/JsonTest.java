@@ -7,6 +7,7 @@ import java.util.Date;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.json.Json5Reader;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonItem;
 import de.soderer.utilities.json.JsonObject;
@@ -39,6 +40,7 @@ public class JsonTest {
 			Utilities.closeQuietly(jsonReader);
 		}
 	}
+	
 	@Test
 	public void testEmptyArray2() {
 		JsonWriter writer = null;
@@ -619,6 +621,260 @@ public class JsonTest {
 		} finally {
 			Utilities.closeQuietly(output);
 			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5ObjectUnquotedKey() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"{\n"
+					+ "\ttest: 1\n"
+				+ "}\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5ObjectSingleQuotedKey() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"{\n"
+					+ "\t'test': 1\n"
+				+ "}\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5ObjectTrailingComma() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"{\n"
+					+ "\t\"test\": 1,\n"
+				+ "}\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5ArraySingleQuotedStrings() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "'Abc'"
+				+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5ArrayTrailingComma() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "\"Abc\","
+				+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5MultilineStringDoubleQuoted() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "\t\"Abc \\\n Abc\"\n"
+				+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonArray());
+			Assert.assertEquals(1, ((JsonArray) jsonItem).size());
+			Assert.assertEquals("Abc \n Abc", ((JsonArray) jsonItem).get(0));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5MultilineStringSingleQuoted() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "\t'Abc \\\n Abc'\n"
+				+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5HexadecimalNumberValue() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "0x1a2B3c4D5e6F\n"
+				+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5LeadingAnTrailingNumberPoints() {
+		Json5Reader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "123.,\n"
+					+ ".123\n"
+				+ "]\n";
+			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonArray());
+			Assert.assertEquals(2, ((JsonArray) jsonItem).size());
+			Assert.assertEquals(123.0, ((JsonArray) jsonItem).get(0));
+			Assert.assertEquals(0.123, ((JsonArray) jsonItem).get(1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5ExtremeNumber() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "Infinity,\n"
+					+ "-Infinity,\n"
+					+ "NaN,\n"
+					+ "-NaN\n"
+				+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5LeadingPlusNumbers() {
+		Json5Reader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "+123\n"
+				+ "]\n";
+			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonArray());
+			Assert.assertEquals(1, ((JsonArray) jsonItem).size());
+			Assert.assertEquals(123, ((JsonArray) jsonItem).get(0));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5InlineComment() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "// comment in single line\n"
+					+ "123\n"
+				+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testJson5BlockComment() {
+		JsonReader jsonReader = null;
+		try {
+			String data =
+				"[\n"
+					+ "/* comment in \n"
+					+ " multiline*/\n"
+					+ "123\n"
+				+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
+		} catch (Exception e) {
+			// Expected Exception
+		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
 	}

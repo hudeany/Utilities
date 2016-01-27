@@ -469,6 +469,15 @@ public class Utilities {
 		return false;
 	}
 
+	public static boolean contains(char[] characterArray, Character searchCharacter) {
+		for (char character : characterArray) {
+			if (character == searchCharacter) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Math.square
 	 *
