@@ -368,6 +368,23 @@ public class UtilitiesTest {
 		}
 	}
 	
+	@Test
+	public void testShortenStringToMaxLength() {
+		try {
+			Assert.assertEquals("Abcdefgh", Utilities.shortenStringToMaxLengthCutRight("Abcdefgh", 10));
+			Assert.assertEquals("Abc ...", Utilities.shortenStringToMaxLengthCutRight("Abcdefgh", 7));
+			Assert.assertEquals("Abc ...", Utilities.shortenStringToMaxLengthCutRight("Abcdefgh1234567890", 7));
+			Assert.assertEquals("Abcdefgh", Utilities.shortenStringToMaxLengthCutMiddle("Abcdefgh", 10));
+			Assert.assertEquals("A ... h", Utilities.shortenStringToMaxLengthCutMiddle("Abcdefgh", 7));
+			Assert.assertEquals("Ab ... 90", Utilities.shortenStringToMaxLengthCutMiddle("Abcdefgh1234567890", 9));
+			Assert.assertEquals("Abcdefgh", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh", 10));
+			Assert.assertEquals("... fgh", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh", 7));
+			Assert.assertEquals("... 890", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh1234567890", 7));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
 //	@Test
 //	public void testEncodingUTF_8() {
 //		try {
