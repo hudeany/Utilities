@@ -10,6 +10,7 @@ import org.junit.Test;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonItem;
 import de.soderer.utilities.json.JsonObject;
+import de.soderer.utilities.json.JsonReader;
 import de.soderer.utilities.json.Json5Reader;
 import de.soderer.utilities.json.JsonWriter;
 
@@ -105,6 +106,60 @@ public class Json5Test {
 				result);
 			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			Assert.assertNotNull(jsonReader.read());
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(output);
+			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testLinebreakMac() {
+		JsonWriter writer = null;
+		ByteArrayOutputStream output = null;
+		JsonReader jsonReader = null;
+		try {
+			String result = 
+				"[\r"
+					+ "\t1,\r"
+					+ "\t2\r"
+				+ "]\r";
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonArray());
+			Assert.assertEquals(1, ((JsonArray) jsonItem).get(0));
+			Assert.assertEquals(2, ((JsonArray) jsonItem).get(1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(output);
+			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testLinebreakWindows() {
+		JsonWriter writer = null;
+		ByteArrayOutputStream output = null;
+		JsonReader jsonReader = null;
+		try {
+			String result = 
+				"[\r\n"
+					+ "\t1,\r\n"
+					+ "\t2\r\n"
+				+ "]\r\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonArray());
+			Assert.assertEquals(1, ((JsonArray) jsonItem).get(0));
+			Assert.assertEquals(2, ((JsonArray) jsonItem).get(1));
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());

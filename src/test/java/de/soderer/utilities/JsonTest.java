@@ -117,6 +117,60 @@ public class JsonTest {
 	}
 	
 	@Test
+	public void testLinebreakMac() {
+		JsonWriter writer = null;
+		ByteArrayOutputStream output = null;
+		JsonReader jsonReader = null;
+		try {
+			String result = 
+				"[\r"
+					+ "\t1,\r"
+					+ "\t2\r"
+				+ "]\r";
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonArray());
+			Assert.assertEquals(1, ((JsonArray) jsonItem).get(0));
+			Assert.assertEquals(2, ((JsonArray) jsonItem).get(1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(output);
+			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
+	public void testLinebreakWindows() {
+		JsonWriter writer = null;
+		ByteArrayOutputStream output = null;
+		JsonReader jsonReader = null;
+		try {
+			String result = 
+				"[\r\n"
+					+ "\t1,\r\n"
+					+ "\t2\r\n"
+				+ "]\r\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			JsonItem jsonItem = jsonReader.read();
+			Assert.assertNotNull(jsonItem);
+			Assert.assertTrue(jsonItem.isJsonArray());
+			Assert.assertEquals(1, ((JsonArray) jsonItem).get(0));
+			Assert.assertEquals(2, ((JsonArray) jsonItem).get(1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(output);
+			Utilities.closeQuietly(writer);
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+	
+	@Test
 	public void testArray2() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
