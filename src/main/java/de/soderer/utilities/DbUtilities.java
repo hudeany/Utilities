@@ -1600,15 +1600,15 @@ public class DbUtilities {
 					tableNamesToExport.add(resultSet.getString("name"));
 				}
 				return tableNamesToExport;
-			}  else if (DbVendor.SQLite == dbVendor) {
+			}  else if (DbVendor.Derby == dbVendor) {
 				tableQuery = "SELECT tablename FROM sys.systables WHERE tabletype = 'T'";
 				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
 					if (Utilities.isNotBlank(tablePattern)) {
 						tablePattern = tablePattern.trim().toUpperCase().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						if (tablePattern.startsWith("!")) {
-							tableQuery += " AND name NOT LIKE '" + tablePattern.substring(1) + "' {ESCAPE '\\'}";
+							tableQuery += " AND tablename NOT LIKE '" + tablePattern.substring(1) + "' {ESCAPE '\\'}";
 						} else {
-							tableQuery += " AND name LIKE '" + tablePattern + "' {ESCAPE '\\'}";
+							tableQuery += " AND tablename LIKE '" + tablePattern + "' {ESCAPE '\\'}";
 						}
 					}
 				}
