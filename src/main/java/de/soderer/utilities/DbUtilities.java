@@ -781,6 +781,36 @@ public class DbUtilities {
 			statement = null;
 		}
 	}
+	
+	public static boolean checkTableExist(Connection connection, String tableName) throws Exception {
+		return checkTableExist(connection, tableName, false);
+	}
+
+	public static boolean checkTableExist(Connection connection, String tableName, boolean throwExceptionOnError) throws Exception {
+		Statement statement = null;
+		ResultSet resultSet = null;
+
+		try {
+			statement = connection.createStatement();
+
+			// Check if table exists
+			try {
+				resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0");
+			} catch (Exception e) {
+				if (throwExceptionOnError) {
+					throw new Exception("Table '" + tableName + "' does not exist");
+				} else {
+					return false;
+				}
+			}
+			return true;
+		} finally {
+			closeQuietly(resultSet);
+			resultSet = null;
+			closeQuietly(statement);
+			statement = null;
+		}
+	}
 
 	public static String callStoredProcedureWithDbmsOutput(Connection connection, String procedureName, Object... parameters) throws SQLException {
 		CallableStatement callableStatement = null;
