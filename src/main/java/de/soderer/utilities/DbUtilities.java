@@ -86,9 +86,33 @@ public class DbUtilities {
 		} else if (DbVendor.SQLite == dbVendor) {
 			return "jdbc:sqlite:" + dbName.replace("~", System.getProperty("user.home"));
 		} else if (DbVendor.Derby == dbVendor) {
-			return "jdbc:derby:" + dbName.replace("~", System.getProperty("user.home") + ";create=false");
+			return "jdbc:derby:" + dbName.replace("~", System.getProperty("user.home") + ";create=true");
 		} else {
 			throw new Exception("Unknown db vendor");
+		}
+	}
+	
+	public static Connection createNewDatabase(DbVendor dbVendor, String dbPath) throws Exception {
+		if (dbVendor == null) {
+			throw new Exception("Unknown db vendor");
+		}
+		
+		Class.forName(dbVendor.getDriverClassName());
+	
+		if (dbVendor == DbVendor.SQLite) {
+			dbPath = dbPath.replace("~", System.getProperty("user.home"));
+			if (new File(dbPath).exists()) {
+				throw new Exception("SQLite db file '" + dbPath + "' already exists");
+			}
+			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, "", 0, dbPath));
+		} else if (dbVendor == DbVendor.Derby) {
+			dbPath = dbPath.replace("~", System.getProperty("user.home"));
+			if (new File(dbPath).exists()) {
+				throw new Exception("Derby db directory '" + dbPath + "' already exists");
+			}
+			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, "", 0, dbPath) + ";create=true");
+		} else {
+			throw new Exception("Invalid db vendor '" + dbVendor.toString() + "'. Only SQLite or Derby db can be created this way.");
 		}
 	}
 	
@@ -103,12 +127,16 @@ public class DbUtilities {
 			dbName = dbName.replace("~", System.getProperty("user.home"));
 			if (!new File(dbName).exists()) {
 				throw new Exception("SQLite db file '" + dbName + "' is not available");
+			} else if (!new File(dbName).isFile()) {
+				throw new Exception("SQLite db file '" + dbName + "' is not a file");
 			}
 			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, "", 0, dbName));
 		} else if (dbVendor == DbVendor.Derby) {
 			dbName = dbName.replace("~", System.getProperty("user.home"));
 			if (!new File(dbName).exists()) {
-				throw new Exception("Derby db file '" + dbName + "' is not available");
+				throw new Exception("Derby db directory '" + dbName + "' is not available");
+			} else if (!new File(dbName).isDirectory()) {
+				throw new Exception("Derby db directory '" + dbName + "' is not a directory");
 			}
 			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, "", 0, dbName));
 		} else {
