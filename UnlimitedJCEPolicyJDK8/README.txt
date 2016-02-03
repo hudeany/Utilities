@@ -1,6 +1,6 @@
 
    Unlimited Strength Java(TM) Cryptography Extension Policy Files
-  for the Java(TM) Platform, Standard Edition Runtime Environment 7
+  for the Java(TM) Platform, Standard Edition Runtime Environment 8
 
                                README
 
@@ -22,18 +22,18 @@ Introduction
 
 Thank you for downloading the Unlimited Strength Java(TM) Cryptography
 Extension (JCE) Policy Files for the Java(TM) Platform, Standard
-Edition (Java SE) Runtime Environment 7.
+Edition (Java SE) Runtime Environment 8.
 
 Due to import control restrictions of some countries, the version of
 the JCE policy files that are bundled in the Java Runtime Environment,
-or JRE(TM), 7 environment allow "strong" but limited cryptography to be
+or JRE(TM), 8 environment allow "strong" but limited cryptography to be
 used. This download bundle (the one including this README file)
 provides "unlimited strength" policy files which contain no
 restrictions on cryptographic strengths.
 
 Please note that this download file does NOT contain any encryption
 functionality as all such functionality is contained within Oracle's
-JRE 7. This bundles assumes that the JRE 7 has already been installed.
+JRE 8. This bundles assumes that the JRE 8 has already been installed.
 
 
 ----------------------------------------------------------------------
@@ -51,14 +51,14 @@ on the Java SE download site:
 Understanding The Export/Import Issues
 ----------------------------------------------------------------------
 
-JCE for Java SE 7 has been through the U.S. export review process.  The
+JCE for Java SE 8 has been through the U.S. export review process.  The
 JCE framework, along with the various JCE providers that come standard
 with it (SunJCE, SunEC, SunPKCS11, SunMSCAPI, etc), is exportable.
 
 The JCE architecture allows flexible cryptographic strength to be
 configured via jurisdiction policy files. Due to the import
 restrictions of some countries, the jurisdiction policy files
-distributed with the Java SE 7 software have built-in restrictions on
+distributed with the Java SE 8 software have built-in restrictions on
 available cryptographic strength. The jurisdiction policy files in this
 download bundle (the bundle including this README file) contain no
 restrictions on cryptographic strengths.  This is appropriate for most
@@ -80,7 +80,7 @@ The following documents may be of interest to you:
 
     o  The Java(TM) Cryptography Architecture (JCA) Reference Guide at:
 
-       http://download.oracle.com/javase/7/docs/technotes/guides/security
+       http://docs.oracle.com/javase/8/docs/technotes/guides/security
 
     o  The Java SE Security web site has more information about JCE,
        plus additional information about the Java SE Security Model.
@@ -95,26 +95,27 @@ Installation
 
 Notes:
 
-  o Unix (Solaris/Linux) and Windows use different pathname separators,
-    so please use the appropriate one ("\", "/") for your environment.
+  o Unix (Solaris/Linux/Mac OS X) and Windows use different pathname
+    separators, so please use the appropriate one ("\", "/") for your
+    environment.
 
   o <java-home> (below) refers to the directory where the JRE was
     installed. It is determined based on whether you are running JCE
     on a JRE or a JRE contained within the Java Development Kit, or
     JDK(TM). The JDK contains the JRE, but at a different level in the
     file hierarchy. For example, if the JDK is installed in
-    /home/user1/jdk1.7.0 on Unix or in C:\jdk1.7.0 on Windows, then
+    /home/user1/jdk1.8.0 on Unix or in C:\jdk1.8.0 on Windows, then
     <java-home> is:
 
-        /home/user1/jdk1.7.0/jre           [Unix]
-        C:\jdk1.7.0\jre                    [Windows]
+        /home/user1/jdk1.8.0/jre           [Unix]
+        C:\jdk1.8.0\jre                    [Windows]
 
-    If on the other hand the JRE is installed in /home/user1/jre1.7.0
-    on Unix or in C:\jre1.7.0 on Windows, and the JDK is not
+    If on the other hand the JRE is installed in /home/user1/jre1.8.0
+    on Unix or in C:\jre1.8.0 on Windows, and the JDK is not
     installed, then <java-home> is:
 
-        /home/user1/jre1.7.0               [Unix]
-        C:\jre1.7.0                        [Windows]
+        /home/user1/jre1.8.0               [Unix]
+        C:\jre1.8.0                        [Windows]
 
   o On Windows, for each JDK installation, there may be additional
     JREs installed under the "Program Files" directory. Please make
@@ -188,6 +189,7 @@ Reporting Bugs
 
 To report bugs (with sample code) or request a feature, please see:
 
+    http://bugs.sun.com/
     http://bugreport.sun.com/bugreport/
 
 Bug reports with specific, reproducible test cases are greatly
