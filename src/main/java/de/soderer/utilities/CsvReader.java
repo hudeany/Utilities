@@ -424,10 +424,10 @@ public class CsvReader extends BasicReader {
 	 */
 	private String parseValue(String rawValue) throws CsvDataException {
 		String returnValue = rawValue;
-		String stringQuoteString = Character.toString(stringQuote);
 
 		if (isNotEmpty(returnValue)) {
 			if (useStringQuote) {
+				String stringQuoteString = Character.toString(stringQuote);
 				if (returnValue.contains(stringQuoteString)) {
 					returnValue = returnValue.trim();
 				}

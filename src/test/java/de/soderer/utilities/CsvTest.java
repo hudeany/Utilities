@@ -233,4 +233,86 @@ public class CsvTest {
 			}
 		}
 	}
+
+	@Test
+	public void testWhitespaceOnlyValue() {
+		CsvReader reader = null;
+		try {
+			String csvData = "abc; ;123";
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
+			List<List<String>> dataLines = reader.readAll();
+			Assert.assertEquals("abc", dataLines.get(0).get(0));
+			Assert.assertEquals(" ", dataLines.get(0).get(1));
+			Assert.assertEquals("123", dataLines.get(0).get(2));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+		}
+	}
+
+	@Test
+	public void testWhitespaceOnlyValueTrimed() {
+		CsvReader reader = null;
+		try {
+			String csvData = "abc; ;123";
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
+			reader.setAlwaysTrim(true);
+			List<List<String>> dataLines = reader.readAll();
+			Assert.assertEquals("abc", dataLines.get(0).get(0));
+			Assert.assertEquals("", dataLines.get(0).get(1));
+			Assert.assertEquals("123", dataLines.get(0).get(2));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+		}
+	}
+
+	@Test
+	public void testWhitespaceOnlyValueTrimedQuoted() {
+		CsvReader reader = null;
+		try {
+			String csvData = "abc; \" \" ;123";
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
+			reader.setAlwaysTrim(true);
+			List<List<String>> dataLines = reader.readAll();
+			Assert.assertEquals("abc", dataLines.get(0).get(0));
+			Assert.assertEquals("", dataLines.get(0).get(1));
+			Assert.assertEquals("123", dataLines.get(0).get(2));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+		}
+	}
+
+	@Test
+	public void testWhitespaceOnlyValueQuoted() {
+		CsvReader reader = null;
+		try {
+			String csvData = "abc; \" \" ;123";
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
+			List<List<String>> dataLines = reader.readAll();
+			Assert.assertEquals("abc", dataLines.get(0).get(0));
+			Assert.assertEquals(" ", dataLines.get(0).get(1));
+			Assert.assertEquals("123", dataLines.get(0).get(2));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+		}
+	}
 }
