@@ -3,7 +3,6 @@ package de.soderer.utilities.swt.worker;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
 
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPObjectFactory;
@@ -37,19 +36,15 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
-
-		itemsToDo = dataToVerify.available();
 	}
 
 	@Override
-	public void run() {
-		startTime = new Date();
-		itemsToDo = 0L;
-		itemsDone = 0L;
-		result = null;
+	public Boolean work() throws Exception {
 		showProgress();
 
 		try {
+			itemsToDo = dataToVerify.available();
+			
 			PGPObjectFactory pgpFact = new PGPObjectFactory(PGPUtil.getDecoderStream(signatureData));
 			PGPSignatureList p3;
 
@@ -79,11 +74,9 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 				}
 			}
 
-			result = signature.verify();
+			return signature.verify();
 		} catch (Exception e) {
-			error = new Exception("Cannot verify signature", e);
-		} finally {
-			showDone();
+			throw new Exception("Cannot verify signature", e);
 		}
 	}
 }

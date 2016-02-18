@@ -3,7 +3,9 @@ package de.soderer.utilities;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
@@ -420,9 +423,16 @@ public class FileUtilities {
 	 * @throws IOException
 	 */
 	public static int getLineCount(File file) throws IOException {
+		InputStream inputStream = null;
 		LineNumberReader lineNumberReader = null;
 		try {
-			lineNumberReader = new LineNumberReader(new InputStreamReader(new FileInputStream(file)));
+			inputStream = new FileInputStream(file);
+			if (Utilities.endsWithIgnoreCase(file.getName(), ".zip")) {
+				inputStream = new ZipInputStream(inputStream);
+				((ZipInputStream) inputStream).getNextEntry();
+			}
+			
+			lineNumberReader = new LineNumberReader(new InputStreamReader(inputStream));
 			while (lineNumberReader.readLine() != null) {
 				// do nothing
 			}
@@ -430,6 +440,13 @@ public class FileUtilities {
 			return lineNumberReader.getLineNumber();
 		} finally {
 			Utilities.closeQuietly(lineNumberReader);
+			Utilities.closeQuietly(inputStream);
+		}
+	}
+
+	public static void write(File file, byte[] data) throws Exception {
+		try (FileOutputStream out = new FileOutputStream(file)) {
+			out.write(data);
 		}
 	}
 }

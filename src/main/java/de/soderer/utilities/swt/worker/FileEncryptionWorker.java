@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PublicKey;
 import java.security.Security;
-import java.util.Date;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -68,8 +67,6 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 		if (Utilities.isBlank(this.encryptionMethod)) {
 			this.encryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD;
 		}
-
-		itemsToDo = fileToEncrypt.length();
 	}
 
 	/**
@@ -116,66 +113,55 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 		if (initializationVector == null) {
 			initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
 		}
-
-		itemsToDo = fileToEncrypt.length();
 	}
 
 	@Override
-	public void run() {
-		startTime = new Date();
-		itemsToDo = 0L;
-		itemsDone = 0L;
-		result = null;
+	public Boolean work() throws Exception {
 		showProgress();
 
+		InputStream inputStream = null;
+		OutputStream outputStream = null;
 		try {
-			InputStream inputStream = null;
-			OutputStream outputStream = null;
-			try {
-				Security.addProvider(new BouncyCastleProvider());
+			itemsToDo = fileToEncrypt.length();
+			
+			Security.addProvider(new BouncyCastleProvider());
 
-				inputStream = new BufferedInputStream(new FileInputStream(fileToEncrypt));
+			inputStream = new BufferedInputStream(new FileInputStream(fileToEncrypt));
 
-				Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
-				if (publicKey != null) {
-					encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-				} else {
-					byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
-					SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-					encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-				}
-				outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(encryptedFile)), encryptCipher);
+			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			if (publicKey != null) {
+				encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+			} else {
+				byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
+				SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+				encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
+			}
+			outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(encryptedFile)), encryptCipher);
 
-				if (zipBeforeEncryption) {
-					outputStream = new ZipOutputStream(outputStream);
-					ZipEntry entry = new ZipEntry(fileToEncrypt.getName());
-					entry.setTime(fileToEncrypt.lastModified());
-					((ZipOutputStream) outputStream).putNextEntry(entry);
-				}
-
-				byte[] buffer = new byte[4096];
-				int bytesRead;
-				while ((bytesRead = inputStream.read(buffer)) >= 0) {
-					if (cancel) {
-						break;
-					} else {
-						outputStream.write(buffer, 0, bytesRead);
-						itemsDone += bytesRead;
-						showProgress();
-					}
-				}
-			} catch (Exception e) {
-				throw new Exception("Error while encrypting: " + e.getMessage(), e);
-			} finally {
-				Utilities.closeQuietly(outputStream);
-				Utilities.closeQuietly(inputStream);
+			if (zipBeforeEncryption) {
+				outputStream = new ZipOutputStream(outputStream);
+				ZipEntry entry = new ZipEntry(fileToEncrypt.getName());
+				entry.setTime(fileToEncrypt.lastModified());
+				((ZipOutputStream) outputStream).putNextEntry(entry);
 			}
 
-			result = true;
+			byte[] buffer = new byte[4096];
+			int bytesRead;
+			while ((bytesRead = inputStream.read(buffer)) >= 0) {
+				if (cancel) {
+					break;
+				} else {
+					outputStream.write(buffer, 0, bytesRead);
+					itemsDone += bytesRead;
+					showProgress();
+				}
+			}
+			return true;
 		} catch (Exception e) {
-			error = e;
+			throw new Exception("Error while encrypting: " + e.getMessage(), e);
 		} finally {
-			showDone();
+			Utilities.closeQuietly(outputStream);
+			Utilities.closeQuietly(inputStream);
 		}
 	}
 }

@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.Security;
-import java.util.Date;
 import java.util.zip.ZipInputStream;
 
 import javax.crypto.Cipher;
@@ -68,8 +67,6 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 		if (Utilities.isBlank(this.decryptionMethod)) {
 			this.decryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD;
 		}
-
-		itemsToDo = fileToDecrypt.length();
 	}
 
 	/**
@@ -118,64 +115,54 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 		if (initializationVector == null) {
 			initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
 		}
-
-		itemsToDo = fileToDecrypt.length();
 	}
 
 	@Override
-	public void run() {
-		startTime = new Date();
-		itemsToDo = 0L;
-		itemsDone = 0L;
-		result = null;
+	public Boolean work() throws Exception {
 		showProgress();
 
+		OutputStream outputStream = null;
+		InputStream inputStream = null;
 		try {
-			OutputStream outputStream = null;
-			InputStream inputStream = null;
-			try {
-				Security.addProvider(new BouncyCastleProvider());
+			itemsToDo = fileToDecrypt.length();
+			
+			Security.addProvider(new BouncyCastleProvider());
 
-				outputStream = new BufferedOutputStream(new FileOutputStream(decryptedFile));
+			outputStream = new BufferedOutputStream(new FileOutputStream(decryptedFile));
 
-				Cipher decryptCipher = Cipher.getInstance(decryptionMethod, "BC");
-				if (privateKey != null) {
-					decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-				} else {
-					byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
-					SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-					decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-				}
-				inputStream = new CipherInputStream(new BufferedInputStream(new FileInputStream(fileToDecrypt)), decryptCipher);
+			Cipher decryptCipher = Cipher.getInstance(decryptionMethod, "BC");
+			if (privateKey != null) {
+				decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+			} else {
+				byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
+				SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+				decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
+			}
+			inputStream = new CipherInputStream(new BufferedInputStream(new FileInputStream(fileToDecrypt)), decryptCipher);
 
-				if (unzipAfterDecryption) {
-					inputStream = new ZipInputStream(inputStream);
-					((ZipInputStream) inputStream).getNextEntry();
-				}
-
-				byte[] buffer = new byte[4096];
-				int bytesRead;
-				while ((bytesRead = inputStream.read(buffer)) >= 0) {
-					if (cancel) {
-						break;
-					} else {
-						outputStream.write(buffer, 0, bytesRead);
-						itemsDone += bytesRead;
-						showProgress();
-					}
-				}
-			} catch (Exception e) {
-				throw new Exception("Error while decrypting: " + e.getMessage(), e);
-			} finally {
-				Utilities.closeQuietly(outputStream);
-				Utilities.closeQuietly(inputStream);
+			if (unzipAfterDecryption) {
+				inputStream = new ZipInputStream(inputStream);
+				((ZipInputStream) inputStream).getNextEntry();
 			}
 
-			result = true;
+			byte[] buffer = new byte[4096];
+			int bytesRead;
+			while ((bytesRead = inputStream.read(buffer)) >= 0) {
+				if (cancel) {
+					break;
+				} else {
+					outputStream.write(buffer, 0, bytesRead);
+					itemsDone += bytesRead;
+					showProgress();
+				}
+			}
+			
+			return true;
 		} catch (Exception e) {
-			error = e;
+			throw new Exception("Error while decrypting: " + e.getMessage(), e);
 		} finally {
-			showDone();
+			Utilities.closeQuietly(outputStream);
+			Utilities.closeQuietly(inputStream);
 		}
 	}
 }

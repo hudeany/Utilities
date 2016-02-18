@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.Signature;
-import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -36,20 +35,16 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
 		}
-
-		itemsToDo = fileToSign.length();
 	}
 
 	@Override
-	public void run() {
-		startTime = new Date();
-		itemsToDo = 0L;
-		itemsDone = 0L;
-		result = null;
+	public Boolean work() throws Exception {
 		showProgress();
 
 		BufferedInputStream dataStream = null;
 		try {
+			itemsToDo = fileToSign.length();
+			
 			Security.addProvider(new BouncyCastleProvider());
 
 			dataStream = new BufferedInputStream(new FileInputStream(fileToSign));
@@ -69,13 +64,11 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 			byte[] signatureData = signature.sign();
 			FileUtils.writeByteArrayToFile(signatureDestinationFile, signatureData);
 
-			result = true;
+			return true;
 		} catch (Exception e) {
-			error = new Exception("Cannot create signature", e);
+			throw new Exception("Cannot create signature", e);
 		} finally {
 			Utilities.closeQuietly(dataStream);
-
-			showDone();
 		}
 	}
 }

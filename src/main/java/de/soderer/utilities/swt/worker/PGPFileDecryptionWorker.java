@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
-import java.util.Date;
 import java.util.Iterator;
 
 import org.bouncycastle.openpgp.PGPCompressedData;
@@ -41,21 +40,17 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		this.decryptedData = decryptedData;
 		this.secretKey = secretKey;
 		this.password = password;
-
-		itemsToDo = encryptedData.available();
 	}
 
 	@Override
-	public void run() {
-		startTime = new Date();
-		itemsToDo = 0L;
-		itemsDone = 0L;
-		result = null;
+	public Boolean work() throws Exception {
 		showProgress();
 
 		InputStream decryptedPacketInputStream = null;
 		InputStream decodedInputStream = null;
 		try {
+			itemsToDo = encryptedData.available();
+			
 			PGPPrivateKey privateKey = null;
 			encryptedData = PGPUtil.getDecoderStream(encryptedData);
 
@@ -63,16 +58,12 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 				privateKey = secretKey.extractPrivateKey(password, "BC");
 			} catch (PGPException e) {
 				if (e.getUnderlyingException() != null && e.getUnderlyingException().getMessage().contains("Illegal key size")) {
-					error = new UserError("keystrengthExceedsAllowedJCE", e);
+					throw new UserError("keystrengthExceedsAllowedJCE", e);
 				} else {
-					error = new UserError("cannotReadPrivateKey", e);
+					throw new UserError("cannotReadPrivateKey", e);
 				}
-				showDone();
-				return;
 			} catch (Exception e) {
-				error = new UserError("cannotReadPrivateKey", e);
-				showDone();
-				return;
+				throw new UserError("cannotReadPrivateKey", e);
 			}
 
 			PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(encryptedData);
@@ -136,21 +127,19 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 				throw new Exception("no message integrity check");
 			}
 
-			result = true;
+			return true;
 		} catch (PGPException pgpe) {
 			if (pgpe.getUnderlyingException() != null && pgpe.getUnderlyingException() instanceof InvalidKeyException
 					&& TextUtilities.containsIgnoreCase(((InvalidKeyException) pgpe.getUnderlyingException()).getMessage(), "Illegal key size") && !SystemUtilities.isunlimitedKeyStrengthAllowed()) {
-				error = new UserError(LangResources.get("keystrengthExceedsAllowedJCE"), pgpe);
+				throw new UserError(LangResources.get("keystrengthExceedsAllowedJCE"), pgpe);
 			} else {
-				error = pgpe;
+				throw pgpe;
 			}
 		} catch (Exception e) {
-			error = new Exception("Error while decrypting", e);
+			throw new Exception("Error while decrypting", e);
 		} finally {
 			Utilities.closeQuietly(decodedInputStream);
 			Utilities.closeQuietly(decryptedPacketInputStream);
-
-			showDone();
 		}
 	}
 }

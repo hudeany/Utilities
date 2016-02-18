@@ -144,7 +144,7 @@ public class ExcelTextTable extends TextTable {
 
 				for (int columnIndex = 0; columnIndex < columnNames.get(0).size(); columnIndex++) {
 					String cellContentString = content.get(lineIndex).get(columnIndex);
-					if (Utilities.isNumber(cellContentString)) {
+					if (Utilities.isInteger(cellContentString)) {
 						sheet.addCell(new Number(columnIndex, lineIndex + columnNames.size(), Integer.parseInt(cellContentString), lineFormat));
 					} else {
 						// Führendes Apostroph abschneiden

@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
-import java.util.Date;
 
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.BCPGOutputStream;
@@ -42,16 +41,10 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 		if (Utilities.isBlank(this.signatureMethod)) {
 			this.signatureMethod = PgpUtilities.DEFAULT_SIGNATURE_METHOD_PGP;
 		}
-
-		itemsToDo = dataToSign.available();
 	}
 
 	@Override
-	public void run() {
-		startTime = new Date();
-		itemsToDo = 0L;
-		itemsDone = 0L;
-		result = null;
+	public byte[] work() throws Exception {
 		showProgress();
 
 		PGPPrivateKey privateKey = null;
@@ -64,20 +57,17 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 			privateKey = secretKey.extractPrivateKey(password, "BC");
 		} catch (PGPException e) {
 			if (e.getUnderlyingException() != null && e.getUnderlyingException().getMessage().contains("Illegal key size")) {
-				error = new UserError("keystrengthExceedsAllowedJCE", e);
+				throw new UserError("keystrengthExceedsAllowedJCE", e);
 			} else {
-				error = new UserError("cannotReadPrivateKey", e);
+				throw new UserError("cannotReadPrivateKey", e);
 			}
-			showDone();
-			return;
 		} catch (Exception e) {
-			error = new UserError("cannotReadPrivateKey", e);
-			showDone();
-			return;
+			throw new UserError("cannotReadPrivateKey", e);
 		}
 
 		try {
-			itemsDone = 0L;
+			itemsToDo = dataToSign.available();
+			
 			showProgress();
 
 			Security.addProvider(new BouncyCastleProvider());
@@ -107,16 +97,14 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 
 			outputStream2.close();
 
-			result = outputStream.toByteArray();
+			return outputStream.toByteArray();
 		} catch (Exception e) {
-			error = new Exception("Cannot create signature", e);
+			throw new Exception("Cannot create signature", e);
 		} finally {
 			Utilities.closeQuietly(dataStream);
 			Utilities.closeQuietly(bcpgOutputStream);
 			Utilities.closeQuietly(outputStream2);
 			Utilities.closeQuietly(outputStream);
-
-			showDone();
 		}
 	}
 }

@@ -33,17 +33,11 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		this.dataToEncrypt = dataToEncrypt;
 		this.encryptedData = encryptedData;
 		this.publicKey = publicKey;
-
-		itemsToDo = dataToEncrypt.available();
 	}
 
 	// TODO: Encrypt big file
 	@Override
-	public void run() {
-		startTime = new Date();
-		itemsToDo = 0L;
-		itemsDone = 0L;
-		result = null;
+	public Boolean work() throws Exception {
 		showProgress();
 
 		boolean armor = true;
@@ -52,6 +46,8 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		OutputStream outputStream3 = null;
 		OutputStream outputStream4 = null;
 		try {
+			itemsToDo = dataToEncrypt.available();
+			
 			Security.addProvider(new BouncyCastleProvider());
 
 			dataToEncrypt = new BufferedInputStream(dataToEncrypt);
@@ -95,9 +91,9 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 
 			outputStream3.write(bytes);
 
-			result = true;
+			return true;
 		} catch (Exception e) {
-			error = new Exception("Error while encrypting", e);
+			throw new Exception("Error while encrypting", e);
 		} finally {
 			Utilities.closeQuietly(outputStream4);
 			Utilities.closeQuietly(outputStream3);
@@ -105,7 +101,6 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 			if (armor) {
 				Utilities.closeQuietly(encryptedData);
 			}
-			showDone();
 		}
 	}
 }
