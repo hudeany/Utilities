@@ -20,8 +20,8 @@
 			<url>https://repository.apache.org/content/repositories/snapshots</url>
 		</repository>
 	    <repository>
-	        <id>swt-repo</id>
-	        <url>https://swt-repo.googlecode.com/svn/repo/</url>
+	        <id>maven-eclipse-github-repo</id>
+        <url>http://maven-eclipse.github.io/maven</url>
 	    </repository>
 	</repositories>
 
@@ -45,11 +45,6 @@
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>1.9</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-pool</groupId>
-			<artifactId>commons-pool</artifactId>
-			<version>1.6</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -87,21 +82,9 @@
 			<version>1.46</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.tomcat</groupId>
-			<artifactId>dbcp</artifactId>
-			<version>6.0.39</version>
-		</dependency>
-		<dependency>
-			<groupId>
-				org.eclipse.swt.org.eclipse.swt.gtk.linux.x86.4.3.swt
-			</groupId>
-			<artifactId>org.eclipse.swt.gtk.linux.x86</artifactId>
-			<version>4.3</version>
-		</dependency>
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>5.1.38</version>
+			<groupId>org.eclipse.swt</groupId>
+			<artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
+			<version>4.5</version>
 		</dependency>
 	</dependencies>
 

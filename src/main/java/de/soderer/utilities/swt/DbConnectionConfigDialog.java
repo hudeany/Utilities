@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -12,7 +11,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import de.soderer.utilities.DbUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.swt.RadioButtonGroup.ArrangementStyle;
@@ -140,38 +138,31 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 				&& Utilities.isNotBlank(passwordText.getText()));
 	}
 
-	public BasicDataSource getDbDatasource() throws Exception {
-		BasicDataSource basicDataSource = new BasicDataSource();
-		if (isOracle) {
-			basicDataSource.setDriverClassName(DbUtilities.DbVendor.Oracle.getDriverClassName());
-		} else {
-			basicDataSource.setDriverClassName(DbUtilities.DbVendor.MySQL.getDriverClassName());
-		}
-		basicDataSource.setUrl(DbUtilities.generateUrlConnectionString(isOracle ? DbUtilities.DbVendor.Oracle : DbUtilities.DbVendor.MySQL, dbServerHostname, dbServerPort, dbName));
+	public String getDbServerHostname() {
+		return dbServerHostname;
+	}
 
-		basicDataSource.setUsername(userName);
-		basicDataSource.setPassword(password);
+	public int getDbServerPort() {
+		return dbServerPort;
+	}
 
-		// basicDataSource.setMaxActive();
-		// basicDataSource.setMaxIdle();
-		// basicDataSource.setMaxWait();
-		// basicDataSource.setMinIdle();
-		// basicDataSource.setDefaultAutoCommit();
-		// basicDataSource.setDefaultReadOnly();
-		// basicDataSource.setTestOnBorrow();
-		// basicDataSource.setTestOnReturn();
-		// basicDataSource.setTestWhileIdle();
-		// basicDataSource.setMinEvictableIdleTimeMillis();
-		// basicDataSource.setTimeBetweenEvictionRunsMillis();
-		// basicDataSource.setNumTestsPerEvictionRun();
-		// basicDataSource.setMaxOpenPreparedStatements();
-		// basicDataSource.setAccessToUnderlyingConnectionAllowed();
-		// basicDataSource.setInitialSize();
-		// basicDataSource.setPoolPreparedStatements();
-		// basicDataSource.setDefaultTransactionIsolation();
-		// basicDataSource.setDefaultCatalog();
-		// basicDataSource.setValidationQuery();
+	public String getDbName() {
+		return dbName;
+	}
 
-		return basicDataSource;
+	public String getUserName() {
+		return userName;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public Text getDbNameText() {
+		return dbNameText;
+	}
+
+	public boolean isOracle() {
+		return isOracle;
 	}
 }
