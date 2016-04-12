@@ -1,10 +1,9 @@
 package de.soderer.utilities;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.BatchUpdateException;
 import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -16,12 +15,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -268,150 +265,73 @@ public class DbUtilities {
 			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
 		}
 	}
-
-	public static int readoutTableData(DataSource dataSource, String tableName, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
-		return readoutData(dataSource, "SELECT * FROM " + tableName, outputStream, encoding, separator, stringQuote);
-	}
-
-	public static int readoutData(DataSource dataSource, String statementString, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
-		Connection connection = null;
-		Statement statement = null;
-		ResultSet resultSet = null;
-		CsvWriter csvWriter = null;
-		try {
-			connection = dataSource.getConnection();
-			statement = connection.createStatement();
-			resultSet = statement.executeQuery(statementString);
-			csvWriter = new CsvWriter(outputStream, encoding, separator, stringQuote);
-			ResultSetMetaData metaData = resultSet.getMetaData();
-			// write headers
-			List<String> headers = new ArrayList<String>();
-			for (int i = 1; i <= metaData.getColumnCount(); i++) {
-				headers.add(metaData.getColumnName(i));
-			}
-			csvWriter.writeValues(headers);
-
-			// write values
-			while (resultSet.next()) {
-				List<String> values = new ArrayList<String>();
-				for (int i = 1; i <= metaData.getColumnCount(); i++) {
-					values.add(resultSet.getString(i));
-				}
-				csvWriter.writeValues(values);
-			}
-
-			return csvWriter.getWrittenLines();
-		} finally {
-			if (resultSet != null) {
-				resultSet.close();
-			}
-
-			if (statement != null) {
-				statement.close();
-			}
-
-			if (connection != null) {
-				connection.close();
-			}
-
-			Utilities.closeQuietly(csvWriter);
+	
+	public static int readoutInOutputStream(DataSource dataSource, String statementString, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			return readoutInOutputStream(connection, statementString, outputStream, encoding, separator, stringQuote);
 		}
 	}
+	
+	public static int readoutInOutputStream(Connection connection, String statementString, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
+		try (Statement statement = connection.createStatement()) {
+			try (ResultSet resultSet = statement.executeQuery(statementString)) {
+				try (CsvWriter csvWriter = new CsvWriter(outputStream, encoding, separator, stringQuote)) {
+					ResultSetMetaData metaData = resultSet.getMetaData();
 
-	public static String readout(Connection connection, String statementString, char separator) throws Exception {
-		Statement statement = null;
-		ResultSet resultSet = null;
-		try {
-			statement = connection.createStatement();
-			resultSet = statement.executeQuery(statementString);
-			StringBuilder tableDataString = new StringBuilder();
-			ResultSetMetaData metaData = resultSet.getMetaData();
-			// write headers
-			List<String> headers = new ArrayList<String>();
-			for (int i = 1; i <= metaData.getColumnCount(); i++) {
-				headers.add(metaData.getColumnName(i));
-			}
-			tableDataString.append(CsvWriter.getCsvLine(separator, '"', headers));
-			tableDataString.append("\n");
+					List<String> headers = new ArrayList<>();
+					for (int i = 1; i <= metaData.getColumnCount(); i++) {
+						headers.add(metaData.getColumnName(i));
+					}
+					csvWriter.writeValues(headers);
 
-			// write values
-			while (resultSet.next()) {
-				List<String> values = new ArrayList<String>();
-				for (int i = 1; i <= metaData.getColumnCount(); i++) {
-					if (metaData.getColumnType(i) == Types.BLOB || metaData.getColumnType(i) == Types.BINARY || metaData.getColumnType(i) == Types.VARBINARY || metaData.getColumnType(i) == Types.LONGVARBINARY) {
-						if (getDbVendor(connection) == DbVendor.SQLite || getDbVendor(connection) == DbVendor.PostgreSQL) {
-							// getBlob-method is not implemented by SQLite JDBC
-							resultSet.getObject(i);
-							if (resultSet.wasNull()) {
-								values.add("");
-							} else {
-								InputStream blobStream = null;
-								try {
-									blobStream = resultSet.getBinaryStream(i);
-									byte[] data = Utilities.toByteArray(blobStream);
-									values.add(Base64.getEncoder().encodeToString(data));
-								} finally {
-									Utilities.closeQuietly(blobStream);
+					while (resultSet.next()) {
+						List<String> values = new ArrayList<String>();
+						for (int i = 1; i <= metaData.getColumnCount(); i++) {
+							if (metaData.getColumnType(i) == Types.BLOB
+									|| metaData.getColumnType(i) == Types.BINARY
+									|| metaData.getColumnType(i) == Types.VARBINARY
+									|| metaData.getColumnType(i) == Types.LONGVARBINARY) {
+								Blob blob = resultSet.getBlob(i);
+								if (resultSet.wasNull()) {
+									values.add("");
+								} else {
+									try (InputStream input = blob.getBinaryStream()) {
+										byte[] data = Utilities.toByteArray(input);
+										values.add(Base64.getEncoder().encodeToString(data));
+									}
 								}
-							}
-						} else {
-							Blob blob = resultSet.getBlob(i);
-							if (resultSet.wasNull()) {
-								values.add("");
 							} else {
-								try (InputStream input = blob.getBinaryStream()) {
-									byte[] data = Utilities.toByteArray(input);
-									values.add(Base64.getEncoder().encodeToString(data));
-								}
+								values.add(resultSet.getString(i));
 							}
 						}
-					} else {
-						values.add(resultSet.getString(i));
+						csvWriter.writeValues(values);
 					}
+
+					return csvWriter.getWrittenLines() - 1;
 				}
-				tableDataString.append(CsvWriter.getCsvLine(separator, '"', values));
-				tableDataString.append("\n");
-			}
-
-			return tableDataString.toString();
-		} finally {
-			if (resultSet != null) {
-				resultSet.close();
-			}
-
-			if (statement != null) {
-				statement.close();
 			}
 		}
 	}
 
-	public static String readout(DataSource dataSource, String statementString, char separator) throws Exception {
-		Connection connection = null;
-		try {
-			connection = dataSource.getConnection();
-
-			return readout(connection, statementString, separator);
-		} finally {
-			if (connection != null) {
-				connection.close();
-			}
+	public static String readout(DataSource dataSource, String statementString, char separator, Character stringQuote) throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			return readout(connection, statementString, separator, stringQuote);
 		}
 	}
-
-	public static String readoutTable(DataSource dataSource, String tableName, char separator) throws Exception {
-		Connection connection = null;
-		try {
-			connection = dataSource.getConnection();
-
-			return readoutTable(connection, tableName, separator);
-		} finally {
-			if (connection != null) {
-				connection.close();
-			}
-		}
+    
+    public static String readout(Connection connection, String statementString, char separator, Character stringQuote) throws Exception {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		readoutInOutputStream(connection, statementString, outputStream, "UTF-8", separator, stringQuote);
+		return new String(outputStream.toByteArray(), "UTF-8");
 	}
+    
+    public static String readoutTable(DataSource dataSource, String tableName, char separator, Character stringQuote) throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			return readoutTable(connection, tableName, separator, stringQuote);
+		}
+    }
 
-	public static String readoutTable(Connection connection, String tableName, char separator) throws Exception {
+	public static String readoutTable(Connection connection, String tableName, char separator, Character stringQuote) throws Exception {
 		if (connection == null) {
 			throw new Exception("Invalid empty connection for getColumnNames");
 		} else if (Utilities.isBlank(tableName)) {
@@ -432,406 +352,7 @@ public class DbUtilities {
 			if (!keyColumnNames.isEmpty()) {
 				orderPart = " ORDER BY " + Utilities.join(keyColumnNames, ", ");
 			}
-			return readout(connection, "SELECT " + Utilities.join(readoutColumns, ", ") + " FROM " + tableName + orderPart, separator);
-		}
-	}
-
-	public static Map<Integer, Object[]> insertDataInTable(DataSource dataSource, String tableName, String[] tableColumns, List<Object[]> dataSets, boolean commitOnFullSuccessOnly) throws Exception {
-		if (Utilities.isBlank(tableName)) {
-			throw new Exception("Missing parameter tableName for datainsert");
-		}
-
-		Connection connection = null;
-		PreparedStatement preparedStatement = null;
-		boolean previousAutoCommit = true;
-
-		try {
-			connection = dataSource.getConnection();
-			previousAutoCommit = connection.getAutoCommit();
-			connection.setAutoCommit(false);
-
-			checkTableAndColumnsExist(connection, tableName, true, tableColumns);
-
-			// Insert data
-			Map<Integer, Object[]> notInsertedData = new HashMap<Integer, Object[]>();
-			String insertStatementString = "INSERT INTO " + tableName + " (" + Utilities.join(tableColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", tableColumns.length, ", ") + ")";
-			preparedStatement = connection.prepareStatement(insertStatementString);
-			boolean hasOpenData = false;
-			List<Object[]> currentUncommitedLines = new ArrayList<Object[]>();
-			int datasetIndex;
-			for (datasetIndex = 0; datasetIndex < dataSets.size(); datasetIndex++) {
-				Object[] dataSet = dataSets.get(datasetIndex);
-				currentUncommitedLines.add(dataSet);
-				hasOpenData = true;
-
-				if (dataSet.length != tableColumns.length) {
-					if (!commitOnFullSuccessOnly) {
-						notInsertedData.put(datasetIndex, dataSet);
-					} else {
-						connection.rollback();
-						throw new Exception("Error on insert of dataset at index " + datasetIndex + ": invalid number of dataitems");
-					}
-				} else {
-					preparedStatement.clearParameters();
-					for (int parameterIndex = 0; parameterIndex < dataSet.length; parameterIndex++) {
-						if (dataSet[parameterIndex].getClass() == Date.class) {
-							preparedStatement.setObject(parameterIndex + 1, new java.sql.Date(((Date) dataSet[parameterIndex]).getTime()));
-						} else {
-							preparedStatement.setObject(parameterIndex + 1, dataSet[parameterIndex]);
-						}
-					}
-					preparedStatement.addBatch();
-
-					if ((datasetIndex + 1) % 100 == 0) {
-						hasOpenData = false;
-						try {
-							preparedStatement.executeBatch();
-							if (!commitOnFullSuccessOnly) {
-								connection.commit();
-							}
-							currentUncommitedLines.clear();
-						} catch (BatchUpdateException bue) {
-							if (commitOnFullSuccessOnly) {
-								connection.rollback();
-								throw new Exception(
-										"Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": " + bue.getMessage());
-							} else {
-								connection.rollback();
-								insertDataInTable(datasetIndex - currentUncommitedLines.size(), connection, preparedStatement, tableColumns, currentUncommitedLines, notInsertedData);
-							}
-						} catch (Exception e) {
-							connection.rollback();
-							throw new Exception("Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": " + e.getMessage());
-						}
-					}
-				}
-			}
-
-			if (hasOpenData) {
-				hasOpenData = false;
-				try {
-					preparedStatement.executeBatch();
-					if (!commitOnFullSuccessOnly) {
-						connection.commit();
-					}
-					currentUncommitedLines.clear();
-				} catch (BatchUpdateException bue) {
-					if (commitOnFullSuccessOnly) {
-						connection.rollback();
-						throw new Exception("Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": " + bue.getMessage());
-					} else {
-						connection.rollback();
-						insertDataInTable(datasetIndex - currentUncommitedLines.size(), connection, preparedStatement, tableColumns, currentUncommitedLines, notInsertedData);
-					}
-				} catch (Exception e) {
-					connection.rollback();
-					throw new Exception("Error on insert of dataset between index " + (datasetIndex - currentUncommitedLines.size()) + " and index " + datasetIndex + ": " + e.getMessage());
-				}
-			}
-
-			if (commitOnFullSuccessOnly && notInsertedData.size() == 0) {
-				connection.commit();
-			} else {
-				connection.rollback();
-			}
-
-			return notInsertedData;
-		} finally {
-			if (preparedStatement != null) {
-				preparedStatement.close();
-			}
-
-			if (connection != null) {
-				try {
-					connection.setAutoCommit(previousAutoCommit);
-				} catch (SQLException e) {
-					// fo nothing
-				}
-
-				connection.rollback();
-				connection.close();
-			}
-		}
-	}
-
-	private static void insertDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, List<Object[]> data,
-			Map<Integer, Object[]> notInsertedData) throws Exception {
-		int dataLineIndex = offsetIndex;
-		for (Object[] dataLine : data) {
-			dataLineIndex++;
-			if (dataLine.length != columnMapping.length) {
-				notInsertedData.put(dataLineIndex, dataLine);
-			} else {
-				int parameterIndex = 1;
-				for (int csvValueIndex = 0; csvValueIndex < dataLine.length; csvValueIndex++) {
-					if (columnMapping[csvValueIndex] != null) {
-						if (dataLine[csvValueIndex].getClass() == Date.class) {
-							preparedStatement.setObject(parameterIndex++, new java.sql.Date(((Date) dataLine[csvValueIndex]).getTime()));
-						} else {
-							preparedStatement.setObject(parameterIndex++, dataLine[csvValueIndex]);
-						}
-					}
-				}
-
-				try {
-					preparedStatement.execute();
-					connection.commit();
-				} catch (Exception e) {
-					notInsertedData.put(dataLineIndex, dataLine);
-					connection.rollback();
-				}
-			}
-		}
-	}
-
-	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding,
-			boolean commitOnFullSuccessOnly) throws Exception {
-		FileInputStream fileInputStream = null;
-		try {
-			fileInputStream = new FileInputStream(csvFile);
-			return insertCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, false, commitOnFullSuccessOnly);
-		} finally {
-			Utilities.closeQuietly(fileInputStream);
-		}
-	}
-
-	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, File csvFile, String encoding,
-			boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		FileInputStream fileInputStream = null;
-		try {
-			fileInputStream = new FileInputStream(csvFile);
-			return insertCsvFileInTable(dataSource, tableName, columnMapping, fileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
-		} finally {
-			Utilities.closeQuietly(fileInputStream);
-		}
-	}
-
-	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding,
-			boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		return insertCsvFileInTable(dataSource, tableName, columnMapping, csvFileInputStream, encoding, false, commitOnFullSuccessOnly, containsHeadersInFirstRow);
-	}
-
-	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, FileInputStream csvFileInputStream, String encoding,
-			boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		return insertCsvFileInTable(dataSource, tableName, columnMapping, null, csvFileInputStream, encoding, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly, containsHeadersInFirstRow);
-	}
-
-	public static Map<Integer, Tuple<List<String>, String>> insertCsvFileInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDataFormats,
-			InputStream csvInputStream, String encoding, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly, boolean containsHeadersInFirstRow) throws Exception {
-		return insertCsvDataInTable(dataSource, tableName, columnMapping, columnDataFormats, csvInputStream, encoding, ';', null, fillMissingTrailingColumnsWithNull, commitOnFullSuccessOnly,
-				containsHeadersInFirstRow);
-	}
-
-	public static Map<Integer, Tuple<List<String>, String>> insertCsvDataInTable(DataSource dataSource, String tableName, String[] columnMapping, String[] columnDataFormats,
-			InputStream csvInputStream, String encoding, char separatorChar, Character stringQuoteChar, boolean fillMissingTrailingColumnsWithNull, boolean commitOnFullSuccessOnly,
-			boolean containsHeadersInFirstRow) throws Exception {
-		if (Utilities.isBlank(tableName)) {
-			throw new Exception("Missing parameter tableName for datainsert");
-		}
-
-		Connection connection = null;
-		boolean previousAutoCommit = true;
-		PreparedStatement preparedStatement = null;
-		Statement statement = null;
-		ResultSet resultSet = null;
-
-		CsvReader csvReader = null;
-
-		try {
-			connection = dataSource.getConnection();
-			previousAutoCommit = connection.getAutoCommit();
-			connection.setAutoCommit(false);
-			statement = connection.createStatement();
-
-			csvReader = new CsvReader(csvInputStream, encoding, separatorChar, stringQuoteChar);
-			csvReader.setFillMissingTrailingColumnsWithNull(fillMissingTrailingColumnsWithNull);
-
-			// First line may contain headers
-			List<String> csvLine;
-			if (containsHeadersInFirstRow) {
-				csvLine = csvReader.readNextCsvLine();
-				if (columnMapping == null) {
-					columnMapping = csvLine.toArray(new String[0]);
-				}
-			}
-
-			checkTableAndColumnsExist(connection, tableName, true, columnMapping);
-
-			List<String> dbColumns = new ArrayList<String>();
-			for (String column : columnMapping) {
-				if (column != null) {
-					dbColumns.add(column);
-				}
-			}
-
-			Map<Integer, Tuple<List<String>, String>> notInsertedData = new HashMap<Integer, Tuple<List<String>, String>>();
-			String insertStatementString = "INSERT INTO " + tableName + " (" + Utilities.join(dbColumns, ", ") + ") VALUES (" + TextUtilities.repeatString("?", dbColumns.size(), ", ") + ")";
-			preparedStatement = connection.prepareStatement(insertStatementString);
-
-			// Read and insert data
-			int csvLineIndex = 1; // index obeys headerline => real lineindex in csv-file
-			boolean hasOpenData = false;
-			List<List<String>> currentUncommitedLines = new ArrayList<List<String>>();
-			while ((csvLine = csvReader.readNextCsvLine()) != null) {
-				csvLineIndex++;
-				currentUncommitedLines.add(csvLine);
-				hasOpenData = true;
-
-				if (csvLine.size() != columnMapping.length) {
-					if (!commitOnFullSuccessOnly) {
-						notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, "Not enough values"));
-					} else {
-						connection.rollback();
-						throw new Exception("Error on insert of dataset at line " + csvLineIndex + ": invalid number of dataitems");
-					}
-				} else {
-					int parameterIndex = 1;
-					for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
-						if (columnMapping[csvValueIndex] != null) {
-							String value = csvLine.get(csvValueIndex);
-							if (columnDataFormats != null && Utilities.isNotBlank(columnDataFormats[csvValueIndex])) {
-								if (".".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
-									value = value.replace(",", "");
-									preparedStatement.setObject(parameterIndex++, value);
-								} else if (",".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
-									value = value.replace(".", "");
-									value = value.replace(",", ".");
-									preparedStatement.setObject(parameterIndex++, value);
-								} else {
-									preparedStatement.setObject(parameterIndex++, new java.sql.Date(new SimpleDateFormat(columnDataFormats[csvValueIndex]).parse(value).getTime()));
-								}
-							} else {
-								preparedStatement.setString(parameterIndex++, value);
-							}
-						}
-					}
-					preparedStatement.addBatch();
-
-					if (csvLineIndex % 100 == 0) {
-						hasOpenData = false;
-						try {
-							preparedStatement.executeBatch();
-							if (!commitOnFullSuccessOnly) {
-								connection.commit();
-							}
-							currentUncommitedLines.clear();
-						} catch (BatchUpdateException bue) {
-							if (commitOnFullSuccessOnly) {
-								connection.rollback();
-								throw new Exception(
-										"Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
-							} else {
-								connection.rollback();
-								insertCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDataFormats, currentUncommitedLines,
-										notInsertedData);
-							}
-						} catch (Exception e) {
-							if (!commitOnFullSuccessOnly) {
-								notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, e.getMessage()));
-								connection.rollback();
-							} else {
-								connection.rollback();
-								throw new Exception("Error on insert of dataset at line " + csvLineIndex + ": " + e.getMessage());
-							}
-						}
-					}
-				}
-			}
-
-			if (hasOpenData) {
-				hasOpenData = false;
-				try {
-					preparedStatement.executeBatch();
-					if (!commitOnFullSuccessOnly) {
-						connection.commit();
-					}
-					currentUncommitedLines.clear();
-				} catch (BatchUpdateException bue) {
-					if (commitOnFullSuccessOnly) {
-						connection.rollback();
-						throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + bue.getMessage());
-					} else {
-						connection.rollback();
-						insertCsvDataInTable(csvLineIndex - currentUncommitedLines.size(), connection, preparedStatement, columnMapping, columnDataFormats, currentUncommitedLines, notInsertedData);
-					}
-				} catch (Exception e) {
-					connection.rollback();
-					throw new Exception("Error on insert of dataset between line " + (csvLineIndex - currentUncommitedLines.size()) + " and line " + csvLineIndex + ": " + e.getMessage());
-				}
-			}
-
-			if (commitOnFullSuccessOnly && notInsertedData.size() == 0) {
-				connection.commit();
-			} else {
-				connection.rollback();
-			}
-
-			return notInsertedData;
-		} finally {
-			if (csvReader != null) {
-				csvReader.close();
-			}
-
-			if (resultSet != null) {
-				resultSet.close();
-			}
-
-			if (statement != null) {
-				statement.close();
-			}
-
-			if (preparedStatement != null) {
-				preparedStatement.close();
-			}
-
-			if (connection != null) {
-				try {
-					connection.setAutoCommit(previousAutoCommit);
-				} catch (SQLException e) {
-					// fo nothing
-				}
-
-				connection.rollback();
-				connection.close();
-			}
-		}
-	}
-
-	public static void insertCsvDataInTable(int offsetIndex, Connection connection, PreparedStatement preparedStatement, String[] columnMapping, String[] columnDataFormats, List<List<String>> data,
-			Map<Integer, Tuple<List<String>, String>> notInsertedData) throws Exception {
-		int csvLineIndex = offsetIndex;
-		for (List<String> csvLine : data) {
-			csvLineIndex++;
-			if (csvLine.size() != columnMapping.length) {
-				notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, "Not enough values"));
-			} else {
-				int parameterIndex = 1;
-				for (int csvValueIndex = 0; csvValueIndex < csvLine.size(); csvValueIndex++) {
-					String value = csvLine.get(csvValueIndex);
-					if (columnDataFormats != null && Utilities.isNotBlank(columnDataFormats[csvValueIndex])) {
-						if (".".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
-							value = value.replace(",", "");
-							preparedStatement.setObject(parameterIndex++, value);
-						} else if (",".equalsIgnoreCase(columnDataFormats[csvValueIndex])) {
-							value = value.replace(".", "");
-							value = value.replace(",", ".");
-							preparedStatement.setObject(parameterIndex++, value);
-						} else {
-							preparedStatement.setObject(parameterIndex++, new java.sql.Date(new SimpleDateFormat(columnDataFormats[csvValueIndex]).parse(value).getTime()));
-						}
-					} else {
-						preparedStatement.setString(parameterIndex++, value);
-					}
-				}
-
-				try {
-					preparedStatement.execute();
-					connection.commit();
-				} catch (Exception e) {
-					notInsertedData.put(csvLineIndex, new Tuple<List<String>, String>(csvLine, e.getMessage()));
-					connection.rollback();
-				}
-			}
+			return readout(connection, "SELECT " + Utilities.join(readoutColumns, ", ") + " FROM " + tableName + orderPart, separator, stringQuote);
 		}
 	}
 
@@ -1821,7 +1342,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static String getSQLSafeString(String value) {
+	private static String getSQLSafeString(String value) {
 		if (value == null) {
 			return null;
 		} else {
@@ -2149,10 +1670,20 @@ public class DbUtilities {
 	}
 
 	public static void createTable(Connection connection, String tablename, Map<String, DbColumnType> columnsAndTypes, List<String> keyColumns) throws Exception {
+		boolean hasKeyColumns = false;
 		if  (keyColumns != null) {
 			for (String keyColumn : keyColumns) {
-				if (!columnsAndTypes.containsKey(keyColumn)) {
-					throw new Exception("Cannot create table. Keycolumn '" + keyColumn + "' is not included in column types");
+				if (Utilities.isNotBlank(keyColumn)) {
+					keyColumn = keyColumn.trim();
+					if (Utilities.startsWithCaseinsensitive(keyColumn, "lower(") && keyColumn.endsWith(")")) {
+						keyColumn = keyColumn.substring(6, keyColumn.length() - 1).trim();
+					}
+					
+					if (!columnsAndTypes.containsKey(keyColumn)) {
+						throw new Exception("Cannot create table. Keycolumn '" + keyColumn + "' is not included in column types");
+					} else {
+						hasKeyColumns = true;
+					}
 				}
 			}
 		}
@@ -2173,8 +1704,20 @@ public class DbUtilities {
 			
 			statement = connection.createStatement();
 			String primaryKeyPart = "";
-			if (Utilities.isNotEmpty(keyColumns)) {
-				primaryKeyPart = ", PRIMARY KEY (" + Utilities.join(keyColumns, ", ") + ")";
+			if (Utilities.isNotEmpty(keyColumns) && hasKeyColumns) {
+				String keyColumnPart = "";
+				for (String keyColumn : keyColumns) {
+					if (keyColumnPart.length() > 0) {
+						keyColumnPart += ", ";
+					}
+					keyColumn = keyColumn.trim();
+					if (Utilities.startsWithCaseinsensitive(keyColumn, "lower(") && keyColumn.endsWith(")")) {
+						keyColumn = keyColumn.substring(6, keyColumn.length() - 1).trim();
+					}
+					keyColumnPart += keyColumn;
+				}
+				
+				primaryKeyPart = ", PRIMARY KEY (" + keyColumnPart + ")";
 			}
 			statement.execute("CREATE TABLE " + tablename + " (" + columnPart + primaryKeyPart + ")");
 			if (getDbVendor(connection) == DbVendor.Derby) {

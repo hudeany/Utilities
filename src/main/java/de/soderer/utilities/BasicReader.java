@@ -67,11 +67,11 @@ public abstract class BasicReader implements Closeable {
 			if (currentCharInt != -1) {
 				// Check for UTF-8 BOM at data start
 				if (readCharacters == 0 && encoding == Charset.forName("UTF-8") && currentCharInt == Utilities.BOM_UTF_8_CHAR) {
-					readNextCharacter();
+					return readNextCharacter();
+				} else {
+					currentChar = (char) currentCharInt;
+					readCharacters++;
 				}
-				
-				currentChar = (char) currentCharInt;
-				readCharacters++;
 			} else {
 				currentChar = null;
 			}

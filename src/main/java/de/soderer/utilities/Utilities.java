@@ -1409,4 +1409,12 @@ public class Utilities {
 			return value;
 		}
 	}
+
+	public static boolean startsWithCaseinsensitive(String data, String prefix) {
+		if (data == null || prefix == null) {
+			return false;
+		} else {
+			return data.toLowerCase().startsWith(prefix.toLowerCase());
+		}
+	}
 }
