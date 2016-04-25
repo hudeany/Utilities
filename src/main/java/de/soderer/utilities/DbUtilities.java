@@ -205,64 +205,93 @@ public class DbUtilities {
 	public static Connection createConnection(DbVendor dbVendor, String hostname, String dbName, String userName, char[] password) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
+		} else if (Utilities.isEmpty(hostname)){
+			throw new Exception("Cannot create db connection: Missing hostname");
+		} else if (Utilities.isEmpty(dbName)){
+			throw new Exception("Cannot create db connection: Missing dbName");
 		}
 		
-		Class.forName(dbVendor.getDriverClassName());
+		try {
+			Class.forName(dbVendor.getDriverClassName());
+		} catch (Exception e1) {
+			throw new Exception("Cannot create db connection, caused by unknown DriverClassName: " + e1.getMessage());
+		}
 	
-		if (dbVendor == DbVendor.SQLite) {
-			dbName = dbName.replace("~", System.getProperty("user.home"));
-			if (!new File(dbName).exists()) {
-				throw new Exception("SQLite db file '" + dbName + "' is not available");
-			} else if (!new File(dbName).isFile()) {
-				throw new Exception("SQLite db file '" + dbName + "' is not a file");
-			}
-			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, "", 0, dbName));
-		} else if (dbVendor == DbVendor.Derby) {
-			dbName = dbName.replace("~", System.getProperty("user.home"));
-			if (!new File(dbName).exists()) {
-				throw new Exception("Derby db directory '" + dbName + "' is not available");
-			} else if (!new File(dbName).isDirectory()) {
-				throw new Exception("Derby db directory '" + dbName + "' is not a directory");
-			}
-			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, "", 0, dbName));
-		} else if (dbVendor == DbVendor.HSQL) {
-			dbName = dbName.replace("~", System.getProperty("user.home"));
-			if (dbName.startsWith("/")) {
-				if (getFilesByPattern(new File(dbName.substring(0, dbName.lastIndexOf("/"))), dbName.substring(dbName.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() <= 0) {
-					throw new Exception("HSQL db directory '" + dbName + "' is not a directory");
+		try {
+			if (dbVendor == DbVendor.SQLite) {
+				dbName = dbName.replace("~", System.getProperty("user.home"));
+				if (!new File(dbName).exists()) {
+					throw new Exception("SQLite db file '" + dbName + "' is not available");
+				} else if (!new File(dbName).isFile()) {
+					throw new Exception("SQLite db file '" + dbName + "' is not a file");
 				}
-			}
-			int port;
-			String[] hostParts = hostname.split(":");
-			if (hostParts.length == 2) {
-				try {
-					port = Integer.parseInt(hostParts[1]);
-				} catch (Exception e) {
-					throw new Exception("Invalid port: " + hostParts[1]);
+				return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, "", 0, dbName));
+			} else if (dbVendor == DbVendor.Derby) {
+				dbName = dbName.replace("~", System.getProperty("user.home"));
+				if (!new File(dbName).exists()) {
+					throw new Exception("Derby db directory '" + dbName + "' is not available");
+				} else if (!new File(dbName).isDirectory()) {
+					throw new Exception("Derby db directory '" + dbName + "' is not a directory");
 				}
+				return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, "", 0, dbName));
+			} else if (dbVendor == DbVendor.HSQL) {
+				dbName = dbName.replace("~", System.getProperty("user.home"));
+				if (dbName.startsWith("/")) {
+					if (getFilesByPattern(new File(dbName.substring(0, dbName.lastIndexOf("/"))), dbName.substring(dbName.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() <= 0) {
+						throw new Exception("HSQL db directory '" + dbName + "' is not a directory");
+					}
+				}
+				int port;
+				String[] hostParts = hostname.split(":");
+				if (hostParts.length == 2) {
+					try {
+						port = Integer.parseInt(hostParts[1]);
+					} catch (Exception e) {
+						throw new Exception("Invalid port: " + hostParts[1]);
+					}
+				} else {
+					port = dbVendor.getDefaultPort();
+				}
+				
+				// Logger must be kept in a local variable for making it work
+				Logger dbLogger = Logger.getLogger("hsqldb.db");
+				dbLogger.setLevel(Level.WARNING);
+				
+				return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
 			} else {
-				port = dbVendor.getDefaultPort();
-			}
-			
-			// Logger must be kept in a local variable for making it work
-			Logger dbLogger = Logger.getLogger("hsqldb.db");
-			dbLogger.setLevel(Level.WARNING);
-			
-			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
-		} else {
-			int port;
-			String[] hostParts = hostname.split(":");
-			if (hostParts.length == 2) {
-				try {
-					port = Integer.parseInt(hostParts[1]);
-				} catch (Exception e) {
-					throw new Exception("Invalid port: " + hostParts[1]);
+				int port;
+				String[] hostParts = hostname.split(":");
+				if (hostParts.length == 2) {
+					try {
+						port = Integer.parseInt(hostParts[1]);
+					} catch (Exception e) {
+						throw new Exception("Invalid port: " + hostParts[1]);
+					}
+				} else {
+					port = dbVendor.getDefaultPort();
 				}
-			} else {
-				port = dbVendor.getDefaultPort();
+			
+				return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
 			}
-		
-			return DriverManager.getConnection(DbUtilities.generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+		} catch (Exception e) {
+			try {
+				int port;
+				if (hostname.contains(":")) {
+					try {
+						port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
+					} catch (Exception e1) {
+						throw new Exception("Invalid port: " + hostname.substring(hostname.indexOf(":") + 1));
+					}
+					hostname = hostname.substring(0, hostname.indexOf(":"));
+				} else {
+					port = dbVendor.getDefaultPort();
+				}
+				
+				NetworkUtilities.testConnection(hostname, port);
+				throw new Exception("Cannot create db connection: " + e.getMessage());
+			} catch (Exception e1) {
+				throw new Exception("Cannot create db connection, caused by Url: " + e1.getMessage(), e1);
+			}
 		}
 	}
 	

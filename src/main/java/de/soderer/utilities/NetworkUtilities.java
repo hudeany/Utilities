@@ -30,13 +30,13 @@ public class NetworkUtilities {
 			InetSocketAddress endPoint = new InetSocketAddress(hostname, port);
 			int timeout = 2000; // 2 Sekunden
 			if (endPoint.isUnresolved()) {
-				throw new Exception("Hostname '" + hostname + "' konnte nicht aufgelöst werden");
+				throw new Exception("Cannot resolve hostname '" + hostname + "'");
 			} else {
 				try {
 					socket.connect(endPoint, timeout);
 					return true;
 				} catch (IOException ioe) {
-					throw new Exception("Verbindung zum Host '" + hostname + "' auf Port " + port + " konnte nicht aufgebaut werden: " + ioe.getClass().getSimpleName() + ": " + ioe.getMessage());
+					throw new Exception("Cannot connect to host '" + hostname + "' on port " + port + ": " + ioe.getClass().getSimpleName() + ": " + ioe.getMessage());
 				}
 			}
 		} finally {
