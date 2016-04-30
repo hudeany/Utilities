@@ -33,9 +33,11 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -548,8 +550,42 @@ public class Utilities {
 	 */
 	public static <T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
 		List<T> list = new ArrayList<T>(c);
-		java.util.Collections.sort(list);
+		Collections.sort(list);
 		return list;
+	}
+	
+	/**
+	 * Sort a map by a Comparator for the keytype
+	 *
+	 * @param mapToSort
+	 * @param comparator
+	 * @return
+	 */
+	public static <Key, Value> Map<Key, Value> sortMap(Map<Key, Value> mapToSort, Comparator<Key> comparator) {
+		List<Key> keys = new ArrayList<Key>(mapToSort.keySet());
+		Collections.sort(keys, comparator);
+		LinkedHashMap<Key, Value> sortedContent = new LinkedHashMap<Key, Value>();
+		for (Key key : keys) {
+			sortedContent.put(key, mapToSort.get(key));
+		}
+		return sortedContent;
+	}
+	
+	/**
+	 * Sort a map by the String keytype
+	 *
+	 * @param mapToSort
+	 * @param comparator
+	 * @return
+	 */
+	public static <Value> Map<String, Value> sortMap(Map<String, Value> mapToSort) {
+		List<String> keys = new ArrayList<String>(mapToSort.keySet());
+		Collections.sort(keys);
+		LinkedHashMap<String, Value> sortedContent = new LinkedHashMap<String, Value>();
+		for (String key : keys) {
+			sortedContent.put(key, mapToSort.get(key));
+		}
+		return sortedContent;
 	}
 
 	/**

@@ -1,32 +1,41 @@
 package de.soderer.utilities;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map.Entry;
-
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
-import de.soderer.utilities.collection.MapUtilities;
+import de.soderer.utilities.collection.CaseInsensitiveMap;
+import de.soderer.utilities.collection.CaseInsensitiveSet;
 
 public class CollectionsTest {
+	@Test
+	public void testCaseInsensitiveMap() {
+		CaseInsensitiveMap<String> map = new CaseInsensitiveMap<String>();
+		map.put("AbcD123äÄ", "Test1");
+		map.put("abcd123ää", "Test2");
+		map.put("AbcD123äÄ", "Test3");
+		map.put("abcd124ää", "Test4");
+		map.put("AbcD124äÄ", "Test5");
+
+		Assert.assertEquals("Test3", map.get("AbcD123äÄ"));
+		Assert.assertEquals("Test3", map.get("abcd123ää"));
+		Assert.assertEquals("Test5", map.get("abcd124ää"));
+		Assert.assertEquals("Test5", map.get("AbcD124äÄ"));
+		Assert.assertNull(map.get("AbcD125äÄ"));
+	}
 
 	@Test
-	public void test() {
-		HashMap<String, Integer> testMap = new LinkedHashMap<String, Integer>(2);
-		testMap.put("DEF", 1);
-		testMap.put("aBc", 2);
-		testMap.put("abC", 3);			
-		HashMap<String, Integer> testMap2 = new CaseInsensitiveOrderedMap<Integer>(testMap);
-		LinkedHashMap<String, Integer> sortedMap = MapUtilities.sort(testMap2);
-		Assert.assertEquals(2, sortedMap.size());
-		List<Entry<String, Integer>> entries = new ArrayList<Entry<String, Integer>>(sortedMap.entrySet());
-		Assert.assertEquals("abc", entries.get(0).getKey());
-		Assert.assertEquals(3, entries.get(0).getValue().intValue());
-		Assert.assertEquals("def", entries.get(1).getKey());
-		Assert.assertEquals(1, entries.get(1).getValue().intValue());
+	public void testCaseInsensitiveSet() {
+		CaseInsensitiveSet set = new CaseInsensitiveSet();
+		set.add("AbcD123äÄ");
+		set.add("abcd123ää");
+		set.add("AbcD123äÄ");
+		set.add("abcd124ää");
+		set.add("AbcD124äÄ");
+
+		Assert.assertTrue(set.contains("AbcD123äÄ"));
+		Assert.assertTrue(set.contains("abcd123ää"));
+		Assert.assertTrue(set.contains("abcd124ää"));
+		Assert.assertTrue(set.contains("AbcD124äÄ"));
+		Assert.assertFalse(set.contains("AbcD125äÄ"));
 	}
 }

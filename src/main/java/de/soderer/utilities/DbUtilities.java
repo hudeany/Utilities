@@ -19,11 +19,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -32,6 +30,7 @@ import javax.sql.DataSource;
 
 import de.soderer.utilities.DbColumnType.SimpleDataType;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
+import de.soderer.utilities.collection.CaseInsensitiveSet;
 
 public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_MYSQL = "https://dev.mysql.com/downloads/connector/j/";
@@ -366,9 +365,9 @@ public class DbUtilities {
 		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnNames");
 		} else {
-			List<String> columnNames = getColumnNames(connection, tableName);
+			List<String> columnNames = new ArrayList<String>(getColumnNames(connection, tableName));
 			Collections.sort(columnNames);
-			List<String> keyColumnNames = getPrimaryKeyColumns(connection, tableName);
+			List<String> keyColumnNames = new ArrayList<String>(getPrimaryKeyColumns(connection, tableName));
 			Collections.sort(keyColumnNames);
 			List<String> readoutColumns = new ArrayList<String>();
 			readoutColumns.addAll(keyColumnNames);
@@ -483,14 +482,14 @@ public class DbUtilities {
 			}
 
 			// Check if all needed columns exist
-			Set<String> dbTableColumns = new HashSet<String>();
+			CaseInsensitiveSet dbTableColumns = new CaseInsensitiveSet();
 			ResultSetMetaData metaData = resultSet.getMetaData();
 			for (int i = 1; i <= metaData.getColumnCount(); i++) {
-				dbTableColumns.add(metaData.getColumnName(i).toUpperCase());
+				dbTableColumns.add(metaData.getColumnName(i));
 			}
 			if (columns != null) {
 				for (String column : columns) {
-					if (column != null && !dbTableColumns.contains(column.toUpperCase())) {
+					if (column != null && !dbTableColumns.contains(column)) {
 						if (throwExceptionOnError) {
 							throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
 						} else {
@@ -653,7 +652,7 @@ public class DbUtilities {
 		}
 	}
 	
-	public static List<String> getColumnNames(DataSource dataSource, String tableName) throws Exception {
+	public static CaseInsensitiveSet getColumnNames(DataSource dataSource, String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnNames");
 		}
@@ -669,7 +668,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static List<String> getColumnNames(Connection connection, String tableName) throws Exception {
+	public static CaseInsensitiveSet getColumnNames(Connection connection, String tableName) throws Exception {
 		if (connection == null) {
 			throw new Exception("Invalid empty connection for getColumnNames");
 		} else if (Utilities.isBlank(tableName)) {
@@ -681,7 +680,7 @@ public class DbUtilities {
 				statement = connection.createStatement();
 				String sql = "SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0";
 				resultSet = statement.executeQuery(sql);
-				List<String> columnNamesList = new ArrayList<String>();
+				CaseInsensitiveSet columnNamesList = new CaseInsensitiveSet();
 				for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
 					columnNamesList.add(resultSet.getMetaData().getColumnName(i));
 				}
@@ -1425,7 +1424,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static List<String> getPrimaryKeyColumns(DataSource dataSource, String tableName) {
+	public static CaseInsensitiveSet getPrimaryKeyColumns(DataSource dataSource, String tableName) {
 		Connection connection = null;
 		try {
 			connection = dataSource.getConnection();
@@ -1437,7 +1436,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static List<String> getPrimaryKeyColumns(Connection connection, String tableName) {
+	public static CaseInsensitiveSet getPrimaryKeyColumns(Connection connection, String tableName) {
 		if (Utilities.isBlank(tableName)) {
 			return null;
 		} else {
@@ -1450,7 +1449,7 @@ public class DbUtilities {
 				DatabaseMetaData metaData = connection.getMetaData();
 				resultSet = metaData.getPrimaryKeys(connection.getCatalog(), null, tableName);
 
-				List<String> returnList = new ArrayList<String>();
+				CaseInsensitiveSet returnList = new CaseInsensitiveSet();
 				while (resultSet.next()) {
 					returnList.add(resultSet.getString("COLUMN_NAME"));
 				}
@@ -1699,20 +1698,10 @@ public class DbUtilities {
 	}
 
 	public static void createTable(Connection connection, String tablename, Map<String, DbColumnType> columnsAndTypes, List<String> keyColumns) throws Exception {
-		boolean hasKeyColumns = false;
 		if  (keyColumns != null) {
 			for (String keyColumn : keyColumns) {
-				if (Utilities.isNotBlank(keyColumn)) {
-					keyColumn = keyColumn.trim();
-					if (Utilities.startsWithCaseinsensitive(keyColumn, "lower(") && keyColumn.endsWith(")")) {
-						keyColumn = keyColumn.substring(6, keyColumn.length() - 1).trim();
-					}
-					
-					if (!columnsAndTypes.containsKey(keyColumn)) {
-						throw new Exception("Cannot create table. Keycolumn '" + keyColumn + "' is not included in column types");
-					} else {
-						hasKeyColumns = true;
-					}
+				if (!columnsAndTypes.containsKey(keyColumn)) {
+					throw new Exception("Cannot create table. Keycolumn '" + keyColumn + "' is not included in column types");
 				}
 			}
 		}
@@ -1733,20 +1722,8 @@ public class DbUtilities {
 			
 			statement = connection.createStatement();
 			String primaryKeyPart = "";
-			if (Utilities.isNotEmpty(keyColumns) && hasKeyColumns) {
-				String keyColumnPart = "";
-				for (String keyColumn : keyColumns) {
-					if (keyColumnPart.length() > 0) {
-						keyColumnPart += ", ";
-					}
-					keyColumn = keyColumn.trim();
-					if (Utilities.startsWithCaseinsensitive(keyColumn, "lower(") && keyColumn.endsWith(")")) {
-						keyColumn = keyColumn.substring(6, keyColumn.length() - 1).trim();
-					}
-					keyColumnPart += keyColumn;
-				}
-				
-				primaryKeyPart = ", PRIMARY KEY (" + keyColumnPart + ")";
+			if (Utilities.isNotEmpty(keyColumns)) {
+				primaryKeyPart = ", PRIMARY KEY (" + Utilities.join(keyColumns, ", ") + ")";
 			}
 			statement.execute("CREATE TABLE " + tablename + " (" + columnPart + primaryKeyPart + ")");
 			if (getDbVendor(connection) == DbVendor.Derby) {
@@ -1897,4 +1874,6 @@ public class DbUtilities {
 			throw new Exception("Invalid db vendor");
 		}
 	}
+	
+	
 }
