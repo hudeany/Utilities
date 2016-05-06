@@ -54,7 +54,8 @@ public class DbUtilities {
 		Firebird("org.firebirdsql.jdbc.FBDriver", 3050),
 		SQLite("org.sqlite.JDBC", 0),
 		Derby("org.apache.derby.jdbc.EmbeddedDriver", 0),
-		HSQL("org.hsqldb.jdbc.JDBCDriver", 0);
+		HSQL("org.hsqldb.jdbc.JDBCDriver", 0),
+		DerbyCSV("org.apache.derby.jdbc.EmbeddedDriver", 0);
 		
 		public static DbVendor getDbVendorByName(String dbVendorName) throws Exception {
 			if ("oracle".equalsIgnoreCase(dbVendorName)) {
@@ -67,6 +68,8 @@ public class DbUtilities {
 				return DbUtilities.DbVendor.SQLite;
 			} else if ("derby".equalsIgnoreCase(dbVendorName)) {
 				return DbUtilities.DbVendor.Derby;
+			} else if ("derbycsv".equalsIgnoreCase(dbVendorName)) {
+				return DbUtilities.DbVendor.DerbyCSV;
 			} else if ("hsql".equalsIgnoreCase(dbVendorName) || "hypersql".equalsIgnoreCase(dbVendorName)) {
 				return DbUtilities.DbVendor.HSQL;
 			} else if ("firebird".equalsIgnoreCase(dbVendorName)) {
@@ -204,7 +207,7 @@ public class DbUtilities {
 	public static Connection createConnection(DbVendor dbVendor, String hostname, String dbName, String userName, char[] password) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
-		} else if (Utilities.isEmpty(hostname)){
+		} else if (Utilities.isEmpty(hostname) && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby && dbVendor != DbVendor.DerbyCSV){
 			throw new Exception("Cannot create db connection: Missing hostname");
 		} else if (Utilities.isEmpty(dbName)){
 			throw new Exception("Cannot create db connection: Missing dbName");

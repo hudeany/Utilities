@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -448,5 +449,20 @@ public class FileUtilities {
 		try (FileOutputStream out = new FileOutputStream(file)) {
 			out.write(data);
 		}
+	}
+	
+	public static byte[] readFileToByteArray(File dataFile) throws Exception {
+		ByteArrayOutputStream output = null;
+		try (FileInputStream input = new FileInputStream(dataFile)) {
+			output = new ByteArrayOutputStream();
+			Utilities.copy(input, output);
+			return output.toByteArray();
+		} catch (Exception e) {
+			throw e;
+		}
+	}
+	
+	public static String readFileToString(File dataFile, String encoding) throws Exception {
+		return new String(readFileToByteArray(dataFile), encoding);
 	}
 }
