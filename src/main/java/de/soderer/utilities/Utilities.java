@@ -1453,4 +1453,10 @@ public class Utilities {
 			return data.toLowerCase().startsWith(prefix.toLowerCase());
 		}
 	}
+
+	public static byte[] readStreamToByteArray(InputStream inputStream) throws IOException {
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		copy(inputStream, byteArrayOutputStream);
+		return byteArrayOutputStream.toByteArray();
+	}
 }
