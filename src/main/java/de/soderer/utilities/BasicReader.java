@@ -8,6 +8,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 
 public abstract class BasicReader implements Closeable {
+	/** UTF-8 BOM (Byte Order Mark) character for readers. */
+	public static final char BOM_UTF_8_CHAR = (char) 65279;
+	
 	/** Default input encoding. */
 	public static final String DEFAULT_ENCODING = "UTF-8";
 	
@@ -66,7 +69,7 @@ public abstract class BasicReader implements Closeable {
 			int currentCharInt = inputReader.read();
 			if (currentCharInt != -1) {
 				// Check for UTF-8 BOM at data start
-				if (readCharacters == 0 && encoding == Charset.forName("UTF-8") && currentCharInt == Utilities.BOM_UTF_8_CHAR) {
+				if (readCharacters == 0 && encoding == Charset.forName("UTF-8") && currentCharInt == BOM_UTF_8_CHAR) {
 					return readNextCharacter();
 				} else {
 					currentChar = (char) currentCharInt;
@@ -89,9 +92,9 @@ public abstract class BasicReader implements Closeable {
 	}
 
 	protected String readUpToNext(boolean includeLimitChars, Character escapeCharacter, char... endChars) throws Exception {
-		if (Utilities.anyCharsAreEqual(endChars)) {
+		if (anyCharsAreEqual(endChars)) {
 			throw new Exception("Invalid limit characters");
-		} else if (Utilities.contains(endChars, escapeCharacter)) {
+		} else if (contains(endChars, escapeCharacter)) {
 			throw new Exception("Invalid escape characters");
 		}
 		
@@ -195,5 +198,42 @@ public abstract class BasicReader implements Closeable {
 				// Do nothing
 			}
 		}
+	}
+
+	/**
+	 * Check if any characters in a list are equal
+	 *
+	 * @param values
+	 * @return
+	 */
+	private static boolean anyCharsAreEqual(char... values) {
+		for (int i = 0; i < values.length; i++) {
+			for (int j = i + 1; j < values.length; j++) {
+				if (values[i] == values[j]) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check if character array contains specific character
+	 * @param characterArray
+	 * @param searchCharacter
+	 * @return
+	 */
+	private static boolean contains(char[] characterArray, Character searchCharacter) {
+		if (characterArray == null || searchCharacter == null) {
+			return false;
+		}
+		
+		for (char character : characterArray) {
+			if (character == searchCharacter) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 }

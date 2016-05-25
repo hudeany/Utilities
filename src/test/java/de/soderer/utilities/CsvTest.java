@@ -315,4 +315,55 @@ public class CsvTest {
 			}
 		}
 	}
+
+	@Test
+	public void testSpecialQuotation() {
+		try {
+			List<String> dataLine = CsvReader.parseCsvLine(';', '"', '\\', "\"abc\\\"123\"");
+			Assert.assertEquals("abc\"123", dataLine.get(0));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testQuotationError1() {
+		try {
+			CsvReader.parseCsvLine(';', '"', '\\', "abc\\\"123");
+			Assert.fail("Missing expected exception");
+		} catch (Exception e) {
+			Assert.assertTrue(e.getMessage().contains("line 1"));
+		}
+	}
+
+	@Test
+	public void testQuotationError2() {
+		try {
+			CsvReader.parseCsvLine(';', '"', '\\', "\"abc\\\"\"123");
+			Assert.fail("Missing expected exception");
+		} catch (Exception e) {
+			Assert.assertTrue(e.getMessage().contains("line 1"));
+		}
+	}
+
+	@Test
+	public void testQuotationError3() {
+		try {
+			CsvReader.parseCsvLine(';', '"', '\\', "abc\"");
+			Assert.fail("Missing expected exception");
+		} catch (Exception e) {
+			Assert.assertTrue(e.getMessage().contains("line 1"));
+		}
+	}
+
+	@Test
+	public void testQuotationError4() {
+		try {
+			CsvReader.parseCsvLine(';', '"', '"', "abc\\\"123");
+			Assert.fail("Missing expected exception");
+		} catch (Exception e) {
+			Assert.assertTrue(e.getMessage().contains("line 1"));
+		}
+	}
 }

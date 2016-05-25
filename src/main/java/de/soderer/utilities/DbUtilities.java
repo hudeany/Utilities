@@ -1718,9 +1718,15 @@ public class DbUtilities {
 				if (columnPart.length() > 0) {
 					columnPart += ", ";
 				}
-				String dataType = DbUtilities.getDataType(dbVendor, columnAndType.getValue().getSimpleDataType());
-				int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnAndType.getValue().getCharacterLength() : 0;
-				columnPart += columnAndType.getKey() + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
+				DbColumnType columnType = columnAndType.getValue();
+				if (columnType != null) {
+					String dataType = DbUtilities.getDataType(dbVendor, columnType.getSimpleDataType());
+					int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterLength() : 0;
+					columnPart += columnAndType.getKey() + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
+				} else {
+					String dataType = DbUtilities.getDataType(dbVendor, SimpleDataType.String);
+					columnPart += columnAndType.getKey() + " " + dataType + "(1)";
+				}
 			}
 			
 			statement = connection.createStatement();

@@ -235,7 +235,7 @@ public class CsvReader extends BasicReader {
 	 */
 	public void setStringQuoteEscapeCharacter(char stringQuoteEscapeCharacter) {
 		this.stringQuoteEscapeCharacter = stringQuoteEscapeCharacter;
-		if (useStringQuote && anyCharsAreEqual(separator, stringQuote, '\r', '\n', stringQuoteEscapeCharacter)) {
+		if (useStringQuote && anyCharsAreEqual(separator, '\r', '\n', stringQuoteEscapeCharacter)) {
 			throw new IllegalArgumentException("Stringquote escape character '" + this.stringQuoteEscapeCharacter + "' is invalid");
 		}
 	}
@@ -302,6 +302,7 @@ public class CsvReader extends BasicReader {
 		List<String> returnList = new ArrayList<String>();
 		StringBuilder nextValue = new StringBuilder();
 		boolean insideString = false;
+		boolean isQuotedString = false;
 		Character nextCharacter;
 		char previousCharacter = (char) -1;
 		
@@ -316,6 +317,7 @@ public class CsvReader extends BasicReader {
 					insideString = !insideString;
 				}
 				nextValue.append(nextChar);
+				isQuotedString = true;
 			} else if (!insideString) {
 				if (nextChar == '\r' || nextChar == '\n') {
 					if (nextValue.length() > 0 || previousCharacter == separator) {
@@ -338,6 +340,11 @@ public class CsvReader extends BasicReader {
 				} else if (nextChar == separator) {
 					returnList.add(parseValue(nextValue.toString()));
 					nextValue = new StringBuilder();
+					isQuotedString = false;
+				} else if (isQuotedString) {
+					if (!Character.isWhitespace(nextChar)) {
+						throw new CsvDataException("Not allowed textdata after quoted text in data in line " + readLines, readLines);
+					}
 				} else {
 					nextValue.append(nextChar);
 				}
@@ -354,7 +361,7 @@ public class CsvReader extends BasicReader {
 
 		if (insideString) {
 			close();
-			throw new IOException("Unexpected end of data after quoted csv-value was started");
+			throw new IOException("Unexpected end of data after quoted csv-value was started in line " + readLines);
 		} else {
 			if (nextValue.length() > 0 || previousCharacter == separator) {
 				returnList.add(parseValue(nextValue.toString()));
@@ -485,6 +492,39 @@ public class CsvReader extends BasicReader {
 		CsvReader reader = null;
 		try {
 			reader = new CsvReader(new ByteArrayInputStream(csvLine.getBytes("UTF-8")), "UTF-8", separator, stringQuote);
+			List<List<String>> fullData = reader.readAll();
+			if (fullData.size() != 1) {
+				throw new Exception("Too many csv lines in data");
+			} else {
+				return fullData.get(0);
+			}
+		} catch (CsvDataException e) {
+			throw e;
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+		}
+	}
+
+	/**
+	 * Parse a single csv data line for data entries.
+	 *
+	 * @param separator
+	 *            the separator
+	 * @param stringQuote
+	 *            the string quote
+	 * @param csvLine
+	 *            the csv line
+	 * @return the list
+	 * @throws Exception
+	 *             the exception
+	 */
+	public static List<String> parseCsvLine(char separator, Character stringQuote, Character escapeStringQuote, String csvLine) throws Exception {
+		CsvReader reader = null;
+		try {
+			reader = new CsvReader(new ByteArrayInputStream(csvLine.getBytes("UTF-8")), "UTF-8", separator, stringQuote);
+			reader.setStringQuoteEscapeCharacter(escapeStringQuote);
 			List<List<String>> fullData = reader.readAll();
 			if (fullData.size() != 1) {
 				throw new Exception("Too many csv lines in data");
