@@ -7,10 +7,10 @@ public class CsvFormat {
 	/** The Constant DEFAULT_STRING_QUOTE. */
 	public static final char DEFAULT_STRING_QUOTE = '"';
 
-	/** Mandatory separating charactor. */
+	/** Mandatory separating charactor */
 	private char separator;
 
-	/** Character for stringquotes: if set to null, no quoting will be done. */
+	/** Character for stringquotes */
 	private char stringQuote;
 
 	/**
@@ -26,7 +26,8 @@ public class CsvFormat {
 	/** Allow linebreaks in data texts without the effect of a new data set line. */
 	private boolean lineBreakInDataAllowed = true;
 
-	/** Allow double stringquotes to use it as a character in data text. */
+	/** Allow escaped stringquotes to use them as a character in data text.
+	 * Maybe turned off for data consistency checks. */
 	private boolean escapedStringQuoteInDataAllowed = true;
 
 	/** Allow lines with less than the expected number of data entries per line. */

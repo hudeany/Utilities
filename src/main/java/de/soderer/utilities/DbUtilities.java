@@ -311,7 +311,7 @@ public class DbUtilities {
 
 					List<String> headers = new ArrayList<>();
 					for (int i = 1; i <= metaData.getColumnCount(); i++) {
-						headers.add(metaData.getColumnName(i));
+						headers.add(metaData.getColumnLabel(i));
 					}
 					csvWriter.writeValues(headers);
 
@@ -635,7 +635,7 @@ public class DbUtilities {
 			resultSet = preparedStatement.executeQuery();
 			TextTable textTable = new TextTable();
 			for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-				textTable.addColumn(resultSet.getMetaData().getColumnName(columnIndex));
+				textTable.addColumn(resultSet.getMetaData().getColumnLabel(columnIndex));
 			}
 			while (resultSet.next()) {
 				textTable.startNewLine();
