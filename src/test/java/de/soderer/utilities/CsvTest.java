@@ -14,7 +14,12 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc;def;123\n\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"\"´`^°²³*#.,:=+-~_|\";jkl;\"4\n\r\n;\"\"56\"";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
+
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';');
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+			
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("abc", dataLines.get(0).get(0));
 			Assert.assertEquals("def", dataLines.get(0).get(1));
@@ -37,7 +42,13 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc,d\"ef,123";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ',', null);
+
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(',')
+				.setStringQuote(null);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+			
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("abc", dataLines.get(0).get(0));
 			Assert.assertEquals("d\"ef", dataLines.get(0).get(1));
@@ -56,8 +67,14 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc;def;123\nabc;def";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', null);
-			reader.setFillMissingTrailingColumnsWithNull(true);
+			
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';')
+				.setStringQuote(null)
+				.setFillMissingTrailingColumnsWithNull(true);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+			
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("abc", dataLines.get(0).get(0));
 			Assert.assertEquals("def", dataLines.get(0).get(1));
@@ -79,8 +96,14 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc;def;123\nabc;def";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', null);
-			reader.setFillMissingTrailingColumnsWithNull(true);
+			
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';')
+				.setStringQuote(null)
+				.setFillMissingTrailingColumnsWithNull(true);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+
 			reader.readAll();
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -96,7 +119,13 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc;def;123\nabc;def";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', null);
+			
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';')
+				.setStringQuote(null);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+			
 			reader.readAll();
 			Assert.fail("Exception expected");
 		} catch (Exception e) {
@@ -113,8 +142,14 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc;def;123\nabc;def\n";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', null);
-			reader.setFillMissingTrailingColumnsWithNull(true);
+			
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';')
+				.setStringQuote(null)
+				.setFillMissingTrailingColumnsWithNull(true);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+			
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("abc", dataLines.get(0).get(0));
 			Assert.assertEquals("def", dataLines.get(0).get(1));
@@ -136,9 +171,15 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "123;\"ab\\\"c\";456\n";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', '\"');
-			reader.setStringQuoteEscapeCharacter('\\');
-			reader.setFillMissingTrailingColumnsWithNull(true);
+
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';')
+				.setStringQuote('\"')
+				.setStringQuoteEscapeCharacter('\\')
+				.setFillMissingTrailingColumnsWithNull(true);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("123", dataLines.get(0).get(0));
 			Assert.assertEquals("ab\"c", dataLines.get(0).get(1));
@@ -157,9 +198,15 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "123; \"abc\" ;456\n";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';', '\"');
-			reader.setStringQuoteEscapeCharacter('\\');
-			reader.setFillMissingTrailingColumnsWithNull(true);
+			
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';')
+				.setStringQuote('\"')
+				.setStringQuoteEscapeCharacter('\\')
+				.setFillMissingTrailingColumnsWithNull(true);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+			
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("123", dataLines.get(0).get(0));
 			Assert.assertEquals("abc", dataLines.get(0).get(1));
@@ -178,7 +225,7 @@ public class CsvTest {
 		CsvWriter writer = null;
 		try {
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			writer = new CsvWriter(byteArrayOutputStream, ';', '\"');
+			writer = new CsvWriter(byteArrayOutputStream, new CsvFormat().setSeparator(';').setStringQuote('\"'));
 			writer.writeValues(new Object[] {
 				"abc",
 				"def",
@@ -208,8 +255,7 @@ public class CsvTest {
 		CsvWriter writer = null;
 		try {
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			writer = new CsvWriter(byteArrayOutputStream, ';', '\"');
-			writer.setStringQuoteEscapeCharacter('\\');
+			writer = new CsvWriter(byteArrayOutputStream, new CsvFormat().setSeparator(';').setStringQuote('\"').setStringQuoteEscapeCharacter('\\'));
 			writer.writeValues(new Object[] {
 				"abc",
 				"def",
@@ -239,7 +285,12 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc; ;123";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
+
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';');
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+			
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("abc", dataLines.get(0).get(0));
 			Assert.assertEquals(" ", dataLines.get(0).get(1));
@@ -259,8 +310,13 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc; ;123";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
-			reader.setAlwaysTrim(true);
+
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';')
+				.setAlwaysTrim(true);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("abc", dataLines.get(0).get(0));
 			Assert.assertEquals("", dataLines.get(0).get(1));
@@ -280,8 +336,13 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc; \" \" ;123";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
-			reader.setAlwaysTrim(true);
+
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';')
+				.setAlwaysTrim(true);
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("abc", dataLines.get(0).get(0));
 			Assert.assertEquals("", dataLines.get(0).get(1));
@@ -301,7 +362,12 @@ public class CsvTest {
 		CsvReader reader = null;
 		try {
 			String csvData = "abc; \" \" ;123";
-			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), ';');
+
+			CsvFormat csvFormat = new CsvFormat()
+				.setSeparator(';');
+			
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), csvFormat);
+			
 			List<List<String>> dataLines = reader.readAll();
 			Assert.assertEquals("abc", dataLines.get(0).get(0));
 			Assert.assertEquals(" ", dataLines.get(0).get(1));
@@ -319,7 +385,7 @@ public class CsvTest {
 	@Test
 	public void testSpecialQuotation() {
 		try {
-			List<String> dataLine = CsvReader.parseCsvLine(';', '"', '\\', "\"abc\\\"123\"");
+			List<String> dataLine = CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"').setStringQuoteEscapeCharacter('\\'), "\"abc\\\"123\"");
 			Assert.assertEquals("abc\"123", dataLine.get(0));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -330,7 +396,7 @@ public class CsvTest {
 	@Test
 	public void testQuotationError1() {
 		try {
-			CsvReader.parseCsvLine(';', '"', '\\', "abc\\\"123");
+			CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"').setStringQuoteEscapeCharacter('\\'), "abc\\\"123");
 			Assert.fail("Missing expected exception");
 		} catch (Exception e) {
 			Assert.assertTrue(e.getMessage().contains("line 1"));
@@ -340,7 +406,7 @@ public class CsvTest {
 	@Test
 	public void testQuotationError2() {
 		try {
-			CsvReader.parseCsvLine(';', '"', '\\', "\"abc\\\"\"123");
+			CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"').setStringQuoteEscapeCharacter('\\'), "\"abc\\\"\"123");
 			Assert.fail("Missing expected exception");
 		} catch (Exception e) {
 			Assert.assertTrue(e.getMessage().contains("line 1"));
@@ -350,7 +416,7 @@ public class CsvTest {
 	@Test
 	public void testQuotationError3() {
 		try {
-			CsvReader.parseCsvLine(';', '"', '\\', "abc\"");
+			CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"').setStringQuoteEscapeCharacter('\\'), "abc\"");
 			Assert.fail("Missing expected exception");
 		} catch (Exception e) {
 			Assert.assertTrue(e.getMessage().contains("line 1"));
@@ -360,7 +426,7 @@ public class CsvTest {
 	@Test
 	public void testQuotationError4() {
 		try {
-			CsvReader.parseCsvLine(';', '"', '"', "abc\\\"123");
+			CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"').setStringQuoteEscapeCharacter('"'), "abc\\\"123");
 			Assert.fail("Missing expected exception");
 		} catch (Exception e) {
 			Assert.assertTrue(e.getMessage().contains("line 1"));
