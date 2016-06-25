@@ -384,6 +384,10 @@ public class DbUtilities {
 			return readoutTable(connection, tableName, separator, stringQuote);
 		}
     }
+    
+    public static String readoutTable(Connection connection, String tableName) throws Exception {
+		return readoutTable(connection, tableName, ';', '"');
+    }
 
 	public static String readoutTable(Connection connection, String tableName, char separator, Character stringQuote) throws Exception {
 		if (connection == null) {
@@ -751,7 +755,7 @@ public class DbUtilities {
 						}
 						boolean isNullable = resultSet.getString("nullable").equalsIgnoreCase("y");
 
-						//TODO check autoincrement
+						// TODO AutoIncrements will be introduced with Oracle 12
 						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, false));
 					}
 				} else if (DbVendor.MySQL == dbVendor) {
@@ -796,9 +800,9 @@ public class DbUtilities {
 							numericScale = -1;
 						}
 						boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+						boolean isAutoIncrement = resultSet.getString("is_autoincrement").equalsIgnoreCase("yes");
 
-						//TODO check autoincrement
-						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("type_name"), characterLength, numericPrecision, numericScale, isNullable, false));
+						returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("type_name"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 					}
 				} else if (DbVendor.Derby == dbVendor) {
 					String sql = "SELECT columnname, columndatatype, autoincrementvalue FROM sys.systables, sys.syscolumns WHERE tableid = referenceid AND LOWER(tablename) = LOWER(?)";
@@ -914,7 +918,6 @@ public class DbUtilities {
 							type = type.substring(0, type.indexOf("("));
 						}
 
-						//TODO check autoincrement
 						returnMap.put(resultSet.getString("name"), new DbColumnType(type, characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 					}
 				} else if (DbVendor.PostgreSQL == dbVendor) {
@@ -2196,14 +2199,13 @@ public class DbUtilities {
 					String updatedIndexColumn = null;
 					try {
 						originalItemIndexColumn = createLineNumberIndexColumn(connection, destinationTableName, "itemindex");
-						DbVendor dbVendor = getDbVendor(connection);
 						
 						// Mark duplicates in temp table
 						List<String> keycolumnParts = new ArrayList<String>();
 						for (String keyColumn : keyColumns) {
-							keycolumnParts.add("src." + keyColumn + " = dst." + keyColumn + " AND src." + keyColumn + " IS NOT NULL");
+							keycolumnParts.add("src." + keyColumn + " = " + sourceTableName + "." + keyColumn + " AND src." + keyColumn + " IS NOT NULL");
 						}
-						String updateStatement = "UPDATE " + sourceTableName + " dst SET dst." + itemIndexColumn + " = " + getIfNullFunctionName(dbVendor) + "((SELECT MIN(src." + originalItemIndexColumn + ") FROM " + destinationTableName + " src WHERE " + Utilities.join(keycolumnParts, " AND ") + "), 0)";
+						String updateStatement = "UPDATE " + sourceTableName + " SET " + itemIndexColumn + " = COALESCE((SELECT MIN(src." + originalItemIndexColumn + ") FROM " + destinationTableName + " src WHERE " + Utilities.join(keycolumnParts, " AND ") + "), 0)";
 						statement.executeUpdate(updateStatement);
 						connection.commit();
 						
@@ -2251,16 +2253,4 @@ public class DbUtilities {
 		
 		return updatedItems;
 	}
-
-    public static String getIfNullFunctionName(DbVendor dbVendor) throws Exception {
-        if (dbVendor == DbVendor.Oracle) {
-        	return "NVL";
-        } else if (dbVendor == DbVendor.MySQL) {
-        	return "IFNULL";
-        } else if (dbVendor == DbVendor.Derby) {
-        	return "COALESCE";
-        } else {
-        	throw new Exception("Unsupported db vendor");
-		}
-    }
 }
