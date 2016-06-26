@@ -1668,6 +1668,18 @@ public class DbUtilities {
 		}
 	}
 
+	public static int detectDuplicatesCrossTables(Connection connection, String detectTableName, String fromTableName, List<String> keyColumnsWithFunctions) throws Exception {
+		try (Statement statement = connection.createStatement()) {
+			String selectDuplicatesNumber = "SELECT COUNT(*) FROM " + detectTableName + " a WHERE EXISTS (SELECT 1 FROM " + fromTableName + " b WHERE " + getKeyColumnEquationList(keyColumnsWithFunctions, "a", "b") + ")";
+			try (ResultSet resultSet = statement.executeQuery(selectDuplicatesNumber)) {
+				resultSet.next();
+				return resultSet.getInt(1);
+			}
+		} catch (Exception e) {
+			throw new Exception("Cannot detectDuplicatesCrossTables: " + e.getMessage(), e);
+		}
+	}
+
 	public static String addIndexedIntegerColumn(Connection connection, String tableName, String columnBaseName) throws Exception {
 		String columnName = columnBaseName;
 		int i = 0;
@@ -1690,6 +1702,22 @@ public class DbUtilities {
 		}
 		
 		return columnName;
+	}
+
+	public static int dropDuplicatesCrossTable(Connection connection, String keepInTableName, String deleteInTableName, List<String> keyColumnsWithFunctions) throws Exception {
+		if (Utilities.isEmpty(keyColumnsWithFunctions)) {
+			try (Statement statement = connection.createStatement()) {
+				String deleteDuplicates = "DELETE FROM " + deleteInTableName + " WHERE " + Utilities.join(keyColumnsWithFunctions,  ", ") + " IN (SELECT " + Utilities.join(keyColumnsWithFunctions,  ", ") + " FROM " + keepInTableName + ")";
+				int numberOfDeletedDuplicates = statement.executeUpdate(deleteDuplicates);
+				connection.commit();
+				return numberOfDeletedDuplicates;
+			} catch (Exception e) {
+				connection.rollback();
+				throw new Exception("Cannot deleteTableCrossDuplicates: " + e.getMessage(), e);
+			}
+		} else {
+			return 0;
+		}
 	}
 
 	public static int dropDuplicates(Connection connection, String tableName, Collection<String> keyColumns) throws Exception {

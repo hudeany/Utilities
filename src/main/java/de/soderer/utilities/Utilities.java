@@ -971,46 +971,6 @@ public class Utilities {
 		}
 	}
 
-	public static void closeQuietly(Statement statement) {
-		if (statement != null) {
-			try {
-				statement.close();
-			} catch (SQLException e) {
-				// Do nothing
-			}
-		}
-	}
-
-	public static void closeQuietly(ResultSet resultSet) {
-		if (resultSet != null) {
-			try {
-				resultSet.close();
-			} catch (SQLException e) {
-				// Do nothing
-			}
-		}
-	}
-
-	public static void closeQuietly(Connection connection) {
-		if (connection != null) {
-			try {
-				connection.close();
-			} catch (SQLException e) {
-				// Do nothing
-			}
-		}
-	}
-
-	public static void closeQuietly(PreparedStatement preparedStatement) {
-		if (preparedStatement != null) {
-			try {
-				preparedStatement.close();
-			} catch (SQLException e) {
-				// Do nothing
-			}
-		}
-	}
-
 	public static String repeat(String value, int count) {
 		return repeat(value, count, null);
 	}
