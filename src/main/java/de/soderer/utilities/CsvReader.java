@@ -185,7 +185,7 @@ public class CsvReader extends BasicReader {
 					isQuotedString = false;
 				} else if (isQuotedString) {
 					if (!Character.isWhitespace(nextChar)) {
-						throw new CsvDataException("Not allowed textdata after quoted text in data in line " + readLines, readLines);
+						throw new CsvDataException("Not allowed textdata '" + nextChar + "' after quoted text in data in line " + readLines, readLines);
 					}
 				} else {
 					nextValue.append(nextChar);

@@ -56,8 +56,7 @@ public class DbUtilities {
 		Firebird("org.firebirdsql.jdbc.FBDriver", 3050),
 		SQLite("org.sqlite.JDBC", 0),
 		Derby("org.apache.derby.jdbc.EmbeddedDriver", 0),
-		HSQL("org.hsqldb.jdbc.JDBCDriver", 0),
-		DerbyCSV("org.apache.derby.jdbc.EmbeddedDriver", 0);
+		HSQL("org.hsqldb.jdbc.JDBCDriver", 0);
 		
 		public static DbVendor getDbVendorByName(String dbVendorName) throws Exception {
 			if ("oracle".equalsIgnoreCase(dbVendorName)) {
@@ -70,8 +69,6 @@ public class DbUtilities {
 				return DbVendor.SQLite;
 			} else if ("derby".equalsIgnoreCase(dbVendorName)) {
 				return DbVendor.Derby;
-			} else if ("derbycsv".equalsIgnoreCase(dbVendorName)) {
-				return DbVendor.DerbyCSV;
 			} else if ("hsql".equalsIgnoreCase(dbVendorName) || "hypersql".equalsIgnoreCase(dbVendorName)) {
 				return DbVendor.HSQL;
 			} else if ("firebird".equalsIgnoreCase(dbVendorName)) {
@@ -209,7 +206,7 @@ public class DbUtilities {
 	public static Connection createConnection(DbVendor dbVendor, String hostname, String dbName, String userName, char[] password) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
-		} else if (Utilities.isEmpty(hostname) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby && dbVendor != DbVendor.DerbyCSV){
+		} else if (Utilities.isEmpty(hostname) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby){
 			throw new Exception("Cannot create db connection: Missing hostname");
 		} else if (Utilities.isEmpty(dbName)){
 			throw new Exception("Cannot create db connection: Missing dbName");
@@ -225,7 +222,7 @@ public class DbUtilities {
 			if (dbVendor == DbVendor.SQLite) {
 				dbName = dbName.replace("~", System.getProperty("user.home"));
 				if (!new File(dbName).exists()) {
-					throw new Exception("SQLite db file '" + dbName + "' is not available");
+					throw new DbNotExistsException("SQLite db file '" + dbName + "' is not available");
 				} else if (!new File(dbName).isFile()) {
 					throw new Exception("SQLite db file '" + dbName + "' is not a file");
 				}
@@ -233,7 +230,7 @@ public class DbUtilities {
 			} else if (dbVendor == DbVendor.Derby) {
 				dbName = dbName.replace("~", System.getProperty("user.home"));
 				if (!new File(dbName).exists()) {
-					throw new Exception("Derby db directory '" + dbName + "' is not available");
+					throw new DbNotExistsException("Derby db directory '" + dbName + "' is not available");
 				} else if (!new File(dbName).isDirectory()) {
 					throw new Exception("Derby db directory '" + dbName + "' is not a directory");
 				}
@@ -242,7 +239,7 @@ public class DbUtilities {
 				dbName = dbName.replace("~", System.getProperty("user.home"));
 				if (dbName.startsWith("/")) {
 					if (getFilesByPattern(new File(dbName.substring(0, dbName.lastIndexOf("/"))), dbName.substring(dbName.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() <= 0) {
-						throw new Exception("HSQL db directory '" + dbName + "' is not a directory");
+						throw new DbNotExistsException("HSQL db '" + dbName + "' is not available");
 					}
 				}
 				int port;
@@ -277,6 +274,8 @@ public class DbUtilities {
 			
 				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
 			}
+		} catch (DbNotExistsException e) {
+			throw e;
 		} catch (Exception e) {
 			try {
 				int port;
@@ -326,7 +325,7 @@ public class DbUtilities {
 							|| metaData.getColumnType(i) == Types.BINARY
 							|| metaData.getColumnType(i) == Types.VARBINARY
 							|| metaData.getColumnType(i) == Types.LONGVARBINARY) {
-						if (dbVendor == DbVendor.SQLite) {
+						if (dbVendor == DbVendor.SQLite || dbVendor == DbVendor.PostgreSQL) {
 							// SQLite does not allow "resultSet.getBlob(i)"
 							InputStream input = null;
 							try {
@@ -809,11 +808,14 @@ public class DbUtilities {
 				}
 			} else if (DbVendor.SQLite == dbVendor) {
 				boolean hasAutoIncrement = false;
-				try (PreparedStatement preparedStatement2 = connection.prepareStatement("SELECT COUNT(*) FROM sqlite_sequence WHERE LOWER(name) = LOWER(?)")) {
-					preparedStatement2.setString(1, tableName);
-					try (ResultSet resultSet2 = preparedStatement2.executeQuery()) {
-						if (resultSet2.next()) {
-							hasAutoIncrement = resultSet2.getInt(1) > 0;
+				if (checkTableExist(connection, "sqlite_sequence")) {
+					// sqlite_sequence only exists if there is any table with auto_increment
+					try (PreparedStatement preparedStatement2 = connection.prepareStatement("SELECT COUNT(*) FROM sqlite_sequence WHERE LOWER(name) = LOWER(?)")) {
+						preparedStatement2.setString(1, tableName);
+						try (ResultSet resultSet2 = preparedStatement2.executeQuery()) {
+							if (resultSet2.next()) {
+								hasAutoIncrement = resultSet2.getInt(1) > 0;
+							}
 						}
 					}
 				}
@@ -840,7 +842,7 @@ public class DbUtilities {
 					}
 				}
 			} else if (DbVendor.PostgreSQL == dbVendor) {
-				String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND LOWER(table_name) = LOWER(?)";
+				String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -858,9 +860,14 @@ public class DbUtilities {
 								numericScale = -1;
 							}
 							boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+							
+							String defaultValue = resultSet.getString("column_default");
+							boolean isAutoIncrement = false;
+							if (defaultValue!= null && defaultValue.toLowerCase().startsWith("nextval(")) {
+								isAutoIncrement = true;
+							}
 	
-							//TODO check autoincrement
-							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, false));
+							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
 					}
 				}
@@ -1693,10 +1700,11 @@ public class DbUtilities {
 		
 		try (Statement statement = connection.createStatement()) {
 			statement.execute("ALTER TABLE " + tableName + " ADD " + columnName + " INTEGER");
-			String dateSuffix = DateUtilities.YYYYMMDDHHMMSS.format(new Date());
+			String dateSuffix = DateUtilities.YYYYMMDDHHMMSSSSS.format(new Date());
 			try {
 				statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + columnName + ")");
 			} catch (Exception e) {
+				e.printStackTrace();
 				// Work without index. Maybe it already exists or it is a not allowed function based index
 			}
 		}
@@ -1769,6 +1777,7 @@ public class DbUtilities {
 				if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
 					try {
 						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + Utilities.join(keyColumnsWithFunctions, ", ") + ")");
+						connection.commit();
 					} catch (Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
 					}
@@ -1835,6 +1844,23 @@ public class DbUtilities {
 			} else if (dbVendor == DbVendor.HSQL) {
 				statement.executeUpdate("UPDATE " + tableName + " SET " + indexColumnName + " = ROWNUM()");
 			} else if (dbVendor == DbVendor.Derby) {
+				String autoIncrementColumn = null;
+				List<String> columnsWithoutAutoIncrement = new ArrayList<String>();
+				for (Entry<String, DbColumnType> column : getColumnDataTypes(connection, tableName).entrySet()) {
+					if (!column.getValue().isAutoIncrement()) {
+						columnsWithoutAutoIncrement.add(column.getKey());
+					} else {
+						autoIncrementColumn = column.getKey();
+					}
+				}
+				columnsWithoutAutoIncrement.remove(indexColumnName);
+				if (autoIncrementColumn != null) {
+					statement.executeUpdate("UPDATE " + tableName + " SET " + indexColumnName + " = " + autoIncrementColumn);
+				} else {
+					statement.executeUpdate("INSERT INTO " + tableName + " (" + Utilities.join(columnsWithoutAutoIncrement, ", ") + ", " + indexColumnName + ") (SELECT " + Utilities.join(columnsWithoutAutoIncrement, ", ") + ", ROW_NUMBER() OVER() FROM " + tableName + ")");
+					statement.executeUpdate("DELETE FROM " + tableName + " WHERE " + indexColumnName + " IS NULL");
+				}
+			} else if (dbVendor == DbVendor.PostgreSQL) {
 				String autoIncrementColumn = null;
 				List<String> columnsWithoutAutoIncrement = new ArrayList<String>();
 				for (Entry<String, DbColumnType> column : getColumnDataTypes(connection, tableName).entrySet()) {
