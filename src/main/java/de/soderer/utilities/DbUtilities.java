@@ -1934,6 +1934,7 @@ public class DbUtilities {
 		if (connection != null && tableName != null && checkTableExist(connection, tableName)) {
 			try (Statement statement = connection.createStatement()) {
 				statement.execute("DROP TABLE " + tableName);
+				connection.commit();
 				return true;
 			}
 		}
