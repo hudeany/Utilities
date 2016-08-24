@@ -56,25 +56,21 @@ public class DbUtilities {
 		Firebird("org.firebirdsql.jdbc.FBDriver", 3050),
 		SQLite("org.sqlite.JDBC", 0),
 		Derby("org.apache.derby.jdbc.EmbeddedDriver", 0),
-		HSQL("org.hsqldb.jdbc.JDBCDriver", 0);
+		HSQL("org.hsqldb.jdbc.JDBCDriver", 0),
+		Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000);
 		
 		public static DbVendor getDbVendorByName(String dbVendorName) throws Exception {
-			if ("oracle".equalsIgnoreCase(dbVendorName)) {
-				return DbVendor.Oracle;
-			} else if ("mysql".equalsIgnoreCase(dbVendorName)) {
-				return DbVendor.MySQL;
-			} else if ("postgres".equalsIgnoreCase(dbVendorName) || "postgresql".equalsIgnoreCase(dbVendorName)) {
+			for (DbVendor dbVendor : DbVendor.values()) {
+				if (dbVendor.toString().equalsIgnoreCase(dbVendorName)) {
+					return dbVendor;
+				}
+			}
+			if ("postgres".equalsIgnoreCase(dbVendorName)) {
 				return DbVendor.PostgreSQL;
-			} else if ("sqlite".equalsIgnoreCase(dbVendorName)) {
-				return DbVendor.SQLite;
-			} else if ("derby".equalsIgnoreCase(dbVendorName)) {
-				return DbVendor.Derby;
-			} else if ("hsql".equalsIgnoreCase(dbVendorName) || "hypersql".equalsIgnoreCase(dbVendorName)) {
+			} else if ("hypersql".equalsIgnoreCase(dbVendorName)) {
 				return DbVendor.HSQL;
-			} else if ("firebird".equalsIgnoreCase(dbVendorName)) {
-				return DbVendor.Firebird;
 			} else {
-				throw new Exception("Unknown db vendor: " + dbVendorName);
+				throw new Exception("Invalid db vendor: " + dbVendorName);
 			}
 		}
 		
@@ -130,6 +126,8 @@ public class DbUtilities {
 			} else {
 				return "jdbc:hsqldb:mem:" + dbName;
 			}
+		} else if (DbVendor.Cassandra == dbVendor) {
+			return "jdbc:cassandra://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?primarydc=DC1&backupdc=DC2&consistency=QUORUM";
 		} else {
 			throw new Exception("Unknown db vendor");
 		}
@@ -271,8 +269,23 @@ public class DbUtilities {
 				} else {
 					port = dbVendor.getDefaultPort();
 				}
-			
-				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+
+//				if (dbVendor == DbVendor.Oracle && new File("/dev/urandom").exists()) {
+//					// Set the alternative random generator to improve the connection creation speed, which may even cause a "I/O-Fehler: Connection reset"-error on low performance systems
+//					System.setProperty("java.security.egd", "file:///dev/./urandom");
+//					
+//					// Alternatively you can change the file $JAVA_HOME/jre/lib/security/java.security and add following line:
+//					// securerandom.source=file:/dev/./urandom
+//				}
+				
+				Connection connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+
+//				if (dbVendor == DbVendor.Oracle && new File("/dev/random").exists()) {
+//					// Reset the alternative random generator
+//					System.clearProperty("java.security.egd");
+//				}
+				
+				return connection;
 			}
 		} catch (DbNotExistsException e) {
 			throw e;
@@ -438,6 +451,8 @@ public class DbUtilities {
 					return DbVendor.HSQL;
 				} else if (productName != null && productName.toLowerCase().contains("firebird")) {
 					return DbVendor.Firebird;
+				} else if (productName != null && productName.toLowerCase().contains("cassandra")) {
+					return DbVendor.Cassandra;
 				} else {
 					throw new Exception("Unknown db vendor: " + productName);
 				}
@@ -801,7 +816,7 @@ public class DbUtilities {
 								default: dataType = getTypeNameById(resultSet.getInt("rdb$field_type"));
 							}
 	
-							//TODO check autoincrement
+							// TODO check autoincrement
 							returnMap.put(resultSet.getString("rdb$field_name").trim(), new DbColumnType(dataType, characterLength, numericPrecision, numericScale, isNullable, false));
 						}
 					}

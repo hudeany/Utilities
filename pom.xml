@@ -1,5 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project
+	xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>de.soderer</groupId>
@@ -20,8 +23,9 @@
 			<url>https://repository.apache.org/content/repositories/snapshots</url>
 		</repository>
 	    <repository>
+	    	<name>SWT Repository</name>
 	        <id>maven-eclipse-github-repo</id>
-        <url>http://maven-eclipse.github.io/maven</url>
+        	<url>http://maven-eclipse.github.io/maven</url>
 	    </repository>
 	</repositories>
 
@@ -117,9 +121,9 @@
 						<phase>package</phase>
 						<configuration>
 							<target>
-								<signjar destDir="target" alias="soderer-de-java-2014" keystore="../Certificates/soderer-de-java-2014/soderer-de-java-2014_keystore.jks" storepass="6x_dXZSBwA" preservelastmodified="true" tsaurl="https://timestamp.geotrust.com/tsa">
+								<signjar destDir="target" alias="soderer-de-java-2016" keystore="../soderer-de-java-2016_keystore.jks" storepass="+u1F}&lt;}D(Kf_NvFrFX706574780T?LP'" preservelastmodified="true" tsaurl="https://timestamp.geotrust.com/tsa">
 									<path>
-										<fileset dir="target" includes="soderer-utilities-2.0.0.jar" />
+										<fileset dir="target" includes="soderer-utilities-*.jar" />
 									</path>
 									<flattenmapper />
 								</signjar>
