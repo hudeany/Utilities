@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLRecoverableException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -200,8 +201,12 @@ public class DbUtilities {
 			throw new Exception("Invalid db vendor '" + dbVendor.toString() + "'. Only SQLite, HSQL or Derby db can be deleted this way.");
 		}
 	}
-	
+
 	public static Connection createConnection(DbVendor dbVendor, String hostname, String dbName, String userName, char[] password) throws Exception {
+		return createConnection(dbVendor, hostname, dbName, userName, password, false);
+	}
+	
+	public static Connection createConnection(DbVendor dbVendor, String hostname, String dbName, String userName, char[] password, boolean retryOnError) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
 		} else if (Utilities.isEmpty(hostname) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby){
@@ -278,7 +283,16 @@ public class DbUtilities {
 //					// securerandom.source=file:/dev/./urandom
 //				}
 				
-				Connection connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+				Connection connection;
+				try {
+					connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+				} catch (Exception e) {
+					if (retryOnError && e.getCause() != null && e.getCause() instanceof SQLRecoverableException) {
+						connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+					} else {
+						throw e;
+					}
+				}
 
 //				if (dbVendor == DbVendor.Oracle && new File("/dev/random").exists()) {
 //					// Reset the alternative random generator
@@ -305,7 +319,7 @@ public class DbUtilities {
 				}
 				
 				// No Exception from testConnection, so it must be some other problem
-				throw new Exception("Cannot create db connection: " + e.getMessage());
+				throw new Exception("Cannot create db connection: " + e.getMessage(), e);
 			} catch (Exception e1) {
 				throw new Exception("Cannot create db connection, caused by Url (" + hostname + "): " + e1.getMessage(), e1);
 			}
