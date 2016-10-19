@@ -130,7 +130,7 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 
 			outputStream = new BufferedOutputStream(new FileOutputStream(decryptedFile));
 
-			Cipher decryptCipher = Cipher.getInstance(decryptionMethod, "BC");
+			Cipher decryptCipher = Cipher.getInstance(decryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			if (privateKey != null) {
 				decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
 			} else {

@@ -128,7 +128,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 
 			inputStream = new BufferedInputStream(new FileInputStream(fileToEncrypt));
 
-			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			if (publicKey != null) {
 				encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
 			} else {

@@ -23,11 +23,6 @@ import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -1418,5 +1413,24 @@ public class Utilities {
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 		copy(inputStream, byteArrayOutputStream);
 		return byteArrayOutputStream.toByteArray();
+	}
+	
+	public static Map<String, String> createMap(String... data) {
+		Map<String, String> returnMap = new HashMap<String, String>();
+		if (data != null && data.length > 0) {
+			for (int i = 0; i < data.length / 2; i++) {
+				String key = data[i * 2];
+				String value = data[i * 2 + 1];
+				returnMap.put(key, value);
+			}
+		}
+		return returnMap;
+	}
+	
+	/**
+	 * Replace ~ by user.home
+	 */
+	public static String replaceHomeTilde(String filePath) {
+		return filePath.replace("~", System.getProperty("user.home"));
 	}
 }

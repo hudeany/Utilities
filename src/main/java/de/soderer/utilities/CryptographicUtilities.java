@@ -48,23 +48,44 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
-import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameBuilder;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.crypto.AsymmetricBlockCipher;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.PBEParametersGenerator;
+import org.bouncycastle.crypto.encodings.ISO9796d1Encoding;
+import org.bouncycastle.crypto.encodings.OAEPEncoding;
+import org.bouncycastle.crypto.encodings.PKCS1Encoding;
+import org.bouncycastle.crypto.engines.ElGamalEngine;
+import org.bouncycastle.crypto.engines.RSAEngine;
+import org.bouncycastle.crypto.generators.ElGamalKeyPairGenerator;
+import org.bouncycastle.crypto.generators.ElGamalParametersGenerator;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ElGamalKeyGenerationParameters;
+import org.bouncycastle.crypto.params.ElGamalParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
+import org.bouncycastle.crypto.util.PrivateKeyFactory;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMReader;
-import org.bouncycastle.openssl.PEMWriter;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /**
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
@@ -92,16 +113,27 @@ public class CryptographicUtilities {
 
 	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "ElGamal" };
 	public static String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
-	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS = new String[] { DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD, "RSA/ECB/OAEPPadding", "RSA/NONE/NoPadding", "RSA/NONE/PKCS1Padding",
-			"RSA/NONE/OAEPWithMD5AndMGF1Padding", "RSA/NONE/OAEPWithSHA1AndMGF1Padding", "RSA/NONE/OAEPWithSHA224AndMGF1Padding", "RSA/NONE/OAEPWithSHA256AndMGF1Padding",
-			"RSA/NONE/OAEPWithSHA384AndMGF1Padding", "RSA/NONE/OAEPWithSHA512AndMGF1Padding", "RSA/NONE/ISO9796-1Padding", "ElGamal/NONE/NoPadding" };
+	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS = new String[] {
+		"RSA/ECB/PKCS1Padding",
+		"RSA/ECB/OAEPPadding",
+		"RSA/NONE/NoPadding",
+		"RSA/NONE/PKCS1Padding",
+		"RSA/NONE/OAEPWithMD5AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA1AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA224AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA256AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA384AndMGF1Padding",
+		"RSA/NONE/OAEPWithSHA512AndMGF1Padding",
+		"RSA/NONE/ISO9796-1Padding",
+		"ElGamal/NONE/NoPadding"
+	};
 
 	public static AsymmetricCipherKeyPair generateRsaKeyPair(int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
 			RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
-			generator.init(new RSAKeyGenerationParameters(RSAKeyGenParameterSpec.F4, SecureRandom.getInstance("SHA1PRNG"), keyStrength, 80));
+			generator.init(new RSAKeyGenerationParameters(RSAKeyGenParameterSpec.F4, new SecureRandom(), keyStrength, 80));
 			AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
 			return keyPair;
 		} catch (Exception e) {
@@ -109,38 +141,70 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerName, String subjectName, Date validFrom, Date validUntil) throws Exception {
-		return generateRsaCertificate(keyPair, issuerName, subjectName, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	@SuppressWarnings("deprecation")
-	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerName, String subjectName, Date validFrom, Date validUntil, String signatureMethod)
-			throws Exception {
+	public static AsymmetricCipherKeyPair generateElGamalKeyPair(int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			org.bouncycastle.x509.X509V3CertificateGenerator certificateGenerator = new org.bouncycastle.x509.X509V3CertificateGenerator();
+			ElGamalParametersGenerator elGamalParametersGenerator = new ElGamalParametersGenerator();
+			elGamalParametersGenerator.init(keyStrength, 80, new SecureRandom());
+			ElGamalParameters elGamalParameters = elGamalParametersGenerator.generateParameters();
+			ElGamalKeyPairGenerator generator = new ElGamalKeyPairGenerator();
+			generator.init(new ElGamalKeyGenerationParameters(new SecureRandom(), elGamalParameters));
+			AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
+			return keyPair;
+		} catch (Exception e) {
+			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
 
-			certificateGenerator.setSerialNumber(BigInteger.valueOf(System.currentTimeMillis()));
-			certificateGenerator.setSubjectDN(new X500Principal("CN=" + subjectName));
-			certificateGenerator.setIssuerDN(new X500Principal("CN=" + issuerName));
-			certificateGenerator.setNotBefore(validFrom);
-			certificateGenerator.setNotAfter(validUntil);
-			certificateGenerator.setPublicKey(getPublicKeyFromKeyPair(keyPair));
-			certificateGenerator.setSignatureAlgorithm(signatureMethod);
+	public static X509Certificate generateRsaCertificate(KeyPair keyPair, String issuerName, Date validFrom, Date validUntil) throws Exception {
+		return generateRsaCertificate(keyPair, issuerName, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
+	}
 
-			return certificateGenerator.generate(getPrivateKeyFromKeyPair(keyPair), "BC");
+	public static X509Certificate generateRsaCertificate(KeyPair keyPair, String issuerName, Date validFrom, Date validUntil, String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		try {
+			X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
+	        builder.addRDN(BCStyle.CN, issuerName);
+	        X500Name x500Name = builder.build();
+	        
+			ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(keyPair.getPrivate());
+	        X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, keyPair.getPublic());
+	        return new JcaX509CertificateConverter().getCertificate(certGen.build(sigGen));
+		} catch (Exception e) {
+			throw new Exception("Cannot create RSA certificate", e);
+		}
+	}
+
+	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerName, Date validFrom, Date validUntil) throws Exception {
+		return generateRsaCertificate(keyPair, issuerName, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
+	}
+
+	public static X509Certificate generateRsaCertificate(AsymmetricCipherKeyPair keyPair, String issuerName, Date validFrom, Date validUntil, String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		try {
+			X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
+	        builder.addRDN(BCStyle.CN, issuerName);
+	        X500Name x500Name = builder.build();
+	        
+			ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(getPrivateKeyFromKeyPair(keyPair));
+	        X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, getPublicKeyFromKeyPair(keyPair));
+	        return new JcaX509CertificateConverter().getCertificate(certGen.build(sigGen));
 		} catch (Exception e) {
 			throw new Exception("Cannot create RSA certificate", e);
 		}
 	}
 
 	public static String getStringFromX509Certificate(X509Certificate certificate) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
 		StringWriter stringWriter = null;
-		PEMWriter pemWriter = null;
+		JcaPEMWriter pemWriter = null;
 		try {
 			stringWriter = new StringWriter();
-			pemWriter = new PEMWriter(stringWriter);
+			pemWriter = new JcaPEMWriter(stringWriter);
 			pemWriter.writeObject(certificate);
 			pemWriter.close();
 			return stringWriter.toString();
@@ -152,48 +216,86 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static void encryptAsymmetric(InputStream dataStream, OutputStream encryptedOutputStream, PublicKey publicKey) throws Exception {
+	public static void encryptAsymmetric(InputStream dataStream, OutputStream encryptedOutputStream, AsymmetricKeyParameter publicKey) throws Exception {
 		encryptAsymmetric(dataStream, encryptedOutputStream, publicKey, DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD);
 	}
 
-	public static void encryptAsymmetric(InputStream dataStream, OutputStream encryptedOutputStream, PublicKey publicKey, String encryptionMethod) throws Exception {
+	public static void encryptAsymmetric(InputStream dataStream, OutputStream encryptedOutputStream, AsymmetricKeyParameter publicKey, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		CipherOutputStream cipherOutputStream = null;
 		try {
-			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
-			encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-			cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher);
-			Utilities.copy(dataStream, cipherOutputStream);
+			if (Utilities.isBlank(encryptionMethod)) {
+				throw new Exception("Empty asymmetric encryption method");
+			}
+			encryptionMethod = encryptionMethod.toLowerCase();
+			AsymmetricBlockCipher encryptCipher;
+			if (encryptionMethod.startsWith("rsa")) {
+				encryptCipher = new RSAEngine();
+			} else if (encryptionMethod.startsWith("elgamal")) {
+				encryptCipher = new ElGamalEngine();
+			} else {
+				throw new Exception("Unknown asymmetric encryption cipher method: " + encryptionMethod);
+			}
+			if (encryptionMethod.contains("pkcs1")) {
+				encryptCipher = new PKCS1Encoding(encryptCipher);
+			} else if (encryptionMethod.contains("oaep")) {
+				encryptCipher = new OAEPEncoding(encryptCipher);
+			} else if (encryptionMethod.contains("iso9796")) {
+				encryptCipher = new ISO9796d1Encoding(encryptCipher);
+			} else {
+				throw new Exception("Unknown asymmetric encryption padding method: " + encryptionMethod);
+			}
+			encryptCipher.init(true, publicKey);
+			
+            byte[] buffer = new byte[encryptCipher.getInputBlockSize()];
+            int readBytes;
+            while ((readBytes = dataStream.read(buffer)) > -1) {
+                encryptedOutputStream.write(encryptCipher.processBlock(buffer, 0, readBytes));
+            }
 		} catch (Exception e) {
 			throw new Exception("Error while encrypting: " + e.getMessage(), e);
-		} finally {
-			if (cipherOutputStream != null) {
-				cipherOutputStream.close();
-			}
 		}
 	}
 
-	public static void decryptAsymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, PrivateKey privateKey) throws Exception {
+	public static void decryptAsymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, AsymmetricKeyParameter privateKey) throws Exception {
 		decryptAsymmetric(encryptedDataStream, dataOutputStream, privateKey, DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD);
 	}
 
-	public static void decryptAsymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, PrivateKey privateKey, String encryptionMethod) throws Exception {
+	public static void decryptAsymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, AsymmetricKeyParameter privateKey, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
-		InputStream cipherInputStream = null;
-
+		
 		try {
-			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, "BC");
-			decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-			cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher);
-			Utilities.copy(cipherInputStream, dataOutputStream);
-		} catch (Exception e) {
-			throw new Exception("Error while decrypting: " + e.getMessage(), e);
-		} finally {
-			if (cipherInputStream != null) {
-				cipherInputStream.close();
+			if (Utilities.isBlank(encryptionMethod)) {
+				throw new Exception("Empty asymmetric encryption method");
 			}
+			encryptionMethod = encryptionMethod.toLowerCase();
+			AsymmetricBlockCipher decryptCipher;
+			if (encryptionMethod.startsWith("rsa")) {
+				decryptCipher = new RSAEngine();
+			} else if (encryptionMethod.startsWith("elgamal")) {
+				decryptCipher = new ElGamalEngine();
+			} else {
+				throw new Exception("Unknown asymmetric encryption cipher method: " + encryptionMethod);
+			}
+			if (encryptionMethod.contains("pkcs1")) {
+				decryptCipher = new PKCS1Encoding(decryptCipher);
+			} else if (encryptionMethod.contains("oaep")) {
+				decryptCipher = new OAEPEncoding(decryptCipher);
+			} else if (encryptionMethod.contains("iso9796")) {
+				decryptCipher = new ISO9796d1Encoding(decryptCipher);
+			} else {
+				throw new Exception("Unknown asymmetric encryption padding method: " + encryptionMethod);
+			}
+			
+			decryptCipher.init(false, privateKey);
+			
+			byte[] buffer = new byte[decryptCipher.getInputBlockSize()];
+            int readBytes;
+            while ((readBytes = encryptedDataStream.read(buffer)) > -1) {
+            	dataOutputStream.write(decryptCipher.processBlock(buffer, 0, readBytes));
+            }
+		} catch (Exception e) {
+			throw new Exception("Error while encrypting: " + e.getMessage(), e);
 		}
 	}
 
@@ -212,11 +314,13 @@ public class CryptographicUtilities {
 	}
 
 	public static String getStringFromKeyPair(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
 		StringWriter stringWriter = null;
-		PEMWriter pemWriter = null;
+		JcaPEMWriter pemWriter = null;
 		try {
 			stringWriter = new StringWriter();
-			pemWriter = new PEMWriter(stringWriter);
+			pemWriter = new JcaPEMWriter(stringWriter);
 			pemWriter.writeObject(privateKey);
 			pemWriter.writeObject(publicKey);
 			pemWriter.close();
@@ -229,16 +333,36 @@ public class CryptographicUtilities {
 		}
 	}
 
+	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(InputStream inputStream) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		PEMKeyPair keyPair = getPEMKeyPairFromString(new String(Utilities.readStreamToByteArray(inputStream), "UTF-8"));
+		AsymmetricKeyParameter privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
+		AsymmetricKeyParameter publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
+		
+		return new AsymmetricCipherKeyPair(privateAsymmetricKeyParameter, publicAsymmetricKeyParameter);
+	}
+
+	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		PEMKeyPair keyPair = getPEMKeyPairFromString(getStringFromKeyPair(privateKey, publicKey));
+		AsymmetricKeyParameter privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
+		AsymmetricKeyParameter publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
+		
+		return new AsymmetricCipherKeyPair(privateAsymmetricKeyParameter, publicAsymmetricKeyParameter);
+	}
+
 	public static PublicKey getPublicKeyFromKeyPair(AsymmetricCipherKeyPair keyPair) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		RSAKeyParameters publicKey = (RSAKeyParameters) keyPair.getPublic();
 		return KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(publicKey.getModulus(), publicKey.getExponent()));
 	}
 
 	public static PrivateKey getPrivateKeyFromKeyPair(AsymmetricCipherKeyPair keyPair) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		RSAPrivateCrtKeyParameters privateKey = (RSAPrivateCrtKeyParameters) keyPair.getPrivate();
 		RSAKeyParameters publicKey = (RSAKeyParameters) keyPair.getPublic();
 		return KeyFactory.getInstance("RSA").generatePrivate(new RSAPrivateCrtKeySpec(privateKey.getModulus(), publicKey.getExponent(), privateKey.getExponent(), privateKey.getP(), privateKey.getQ(),
@@ -248,11 +372,37 @@ public class CryptographicUtilities {
 	/**
 	 * Generates Private Key from BASE64 encoded string
 	 */
+	public static PEMKeyPair getPEMKeyPairFromString(String keyString) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		try {
+			PEMParser pemReader = new PEMParser(new StringReader(keyString));
+			Object readObject = pemReader.readObject();
+			pemReader.close();
+//			if (readObject instanceof PEMEncryptedKeyPair) {
+//                PEMEncryptedKeyPair pemEncryptedKeyPairKeyPair = (PEMEncryptedKeyPair) readObject;
+//                JcePEMDecryptorProviderBuilder jcePEMDecryptorProviderBuilder = new JcePEMDecryptorProviderBuilder();
+//                PEMKeyPair pemKeyPair = pemEncryptedKeyPairKeyPair.decryptKeyPair(jcePEMDecryptorProviderBuilder.build(keyPassword.toCharArray()));
+//            } else
+            	if (readObject instanceof PEMKeyPair) {
+				PEMKeyPair keyPair = (PEMKeyPair) readObject;
+				return keyPair;
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			throw new Exception("Cannot read private key", e);
+		}
+	}
+
+	/**
+	 * Generates Private Key from BASE64 encoded string
+	 */
 	public static PrivateKey getPrivateKeyFromString(String keyString) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		try {
-			PEMReader pemReader = new PEMReader(new StringReader(keyString));
+			PEMParser pemReader = new PEMParser(new StringReader(keyString));
 			Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof KeyPair) {
@@ -273,9 +423,9 @@ public class CryptographicUtilities {
 	 */
 	public static PublicKey getPublicKeyFromString(String keyString) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		try {
-			PEMReader pemReader = new PEMReader(new StringReader(keyString));
+			PEMParser pemReader = new PEMParser(new StringReader(keyString));
 			Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof KeyPair) {
@@ -296,9 +446,9 @@ public class CryptographicUtilities {
 	 */
 	public static X509Certificate getCertificateFromString(String certificateString) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		try {
-			PEMReader pemReader = new PEMReader(new StringReader(certificateString));
+			PEMParser pemReader = new PEMParser(new StringReader(certificateString));
 			Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof X509Certificate) {
@@ -337,15 +487,14 @@ public class CryptographicUtilities {
 		encryptSymmetric(dataStream, encryptedOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
 	}
 
-	public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedOutputStream, char[] password, byte[] salt, byte[] initializationVector, String encryptionMethod)
-			throws Exception {
+	public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedOutputStream, char[] password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		CipherOutputStream cipherOutputStream = null;
 		try {
 			byte[] keyBytes = stretchPassword(password, 128, salt);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher);
 			Utilities.copy(dataStream, cipherOutputStream);
@@ -362,15 +511,14 @@ public class CryptographicUtilities {
 		decryptSymmetric(encryptedDataStream, dataOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
 	}
 
-	public static void decryptSymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, char[] password, byte[] salt, byte[] initializationVector, String encryptionMethod)
-			throws Exception {
+	public static void decryptSymmetric(InputStream encryptedDataStream, OutputStream dataOutputStream, char[] password, byte[] salt, byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		CipherInputStream cipherInputStream = null;
 		try {
 			byte[] keyBytes = stretchPassword(password, 128, salt);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, "BC");
+			Cipher decryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher);
 			Utilities.copy(cipherInputStream, dataOutputStream);
@@ -384,6 +532,8 @@ public class CryptographicUtilities {
 	}
 
 	public static byte[] stretchPassword(char[] password, int keyLength, byte[] salt) {
+		Security.addProvider(new BouncyCastleProvider());
+		
 		PBEParametersGenerator generator = new PKCS5S2ParametersGenerator();
 		generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password), salt, 1000);
 		KeyParameter params = (KeyParameter) generator.generateDerivedParameters(keyLength);
@@ -396,9 +546,9 @@ public class CryptographicUtilities {
 
 	public static byte[] signData(byte[] data, PrivateKey privateKey, String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		try {
-			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
 			signature.initSign(privateKey);
 			signature.update(data);
 			return signature.sign();
@@ -413,9 +563,9 @@ public class CryptographicUtilities {
 
 	public static byte[] signStream(InputStream dataStream, PrivateKey privateKey, String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		try {
-			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
 			signature.initSign(privateKey);
 			byte[] buffer = new byte[4096];
 			int bytesRead = dataStream.read(buffer);
@@ -435,9 +585,9 @@ public class CryptographicUtilities {
 
 	public static boolean verifyData(byte[] data, PublicKey publicKey, byte[] signatureData, String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		try {
-			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
 			signature.initVerify(publicKey);
 			signature.update(data);
 			return signature.verify(signatureData);
@@ -452,9 +602,9 @@ public class CryptographicUtilities {
 
 	public static boolean verifyStream(InputStream dataStream, PublicKey publicKey, byte[] signatureData, String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
-
+		
 		try {
-			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
 			signature.initVerify(publicKey);
 			byte[] buffer = new byte[4096];
 			int bytesRead = dataStream.read(buffer);
@@ -648,12 +798,10 @@ public class CryptographicUtilities {
 	}
 
 	public static X509Certificate[] loadCertificatesFromPemFile(File pemFile) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		PEMReader pemReader = null;
+		PEMParser pemReader = null;
 		try {
 			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
-			pemReader = new PEMReader(new FileReader(pemFile));
+			pemReader = new PEMParser(new FileReader(pemFile));
 			Object nextCertificate;
 			while ((nextCertificate = pemReader.readObject()) != null) {
 				if (nextCertificate instanceof X509Certificate) {
@@ -667,12 +815,10 @@ public class CryptographicUtilities {
 	}
 
 	public static X509Certificate[] loadCertificatesFromPemStream(InputStream pemInputStream) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		PEMReader pemReader = null;
+		PEMParser pemReader = null;
 		try {
 			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
-			pemReader = new PEMReader(new InputStreamReader(pemInputStream));
+			pemReader = new PEMParser(new InputStreamReader(pemInputStream));
 			Object nextCertificate;
 			while ((nextCertificate = pemReader.readObject()) != null) {
 				if (nextCertificate instanceof X509Certificate) {

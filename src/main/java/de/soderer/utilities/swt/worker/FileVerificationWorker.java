@@ -48,7 +48,7 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 			Security.addProvider(new BouncyCastleProvider());
 
 			dataStream = new BufferedInputStream(new FileInputStream(fileToVerify));
-			Signature signature = Signature.getInstance(signatureMethod, "BC");
+			Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
 			signature.initVerify(publicKey);
 			byte[] buffer = new byte[4096];
 			int bytesRead;

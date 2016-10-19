@@ -7,11 +7,11 @@ import java.util.Date;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.json.Json5Reader;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonItem;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
-import de.soderer.utilities.json.Json5Reader;
 import de.soderer.utilities.json.JsonWriter;
 
 public class Json5Test {

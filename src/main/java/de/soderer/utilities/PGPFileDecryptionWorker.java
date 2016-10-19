@@ -1,11 +1,13 @@
-package de.soderer.utilities.swt.worker;
+package de.soderer.utilities;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
+import java.security.Security;
 import java.util.Iterator;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPEncryptedDataList;
 import org.bouncycastle.openpgp.PGPException;
@@ -16,13 +18,9 @@ import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKeyEncryptedData;
 import org.bouncycastle.openpgp.PGPSecretKey;
 import org.bouncycastle.openpgp.PGPUtil;
+import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
+import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
-import de.soderer.utilities.LangResources;
-import de.soderer.utilities.SystemUtilities;
-import de.soderer.utilities.TextUtilities;
-import de.soderer.utilities.UserError;
-import de.soderer.utilities.Utilities;
-import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 /**
@@ -51,22 +49,12 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		try {
 			itemsToDo = encryptedData.available();
 			
-			PGPPrivateKey privateKey = null;
+			Security.addProvider(new BouncyCastleProvider());
+			
+			PGPPrivateKey privateKey = PgpUtilities.readPGPPrivateKey(secretKey, password);
 			encryptedData = PGPUtil.getDecoderStream(encryptedData);
 
-			try {
-				privateKey = secretKey.extractPrivateKey(password, "BC");
-			} catch (PGPException e) {
-				if (e.getUnderlyingException() != null && e.getUnderlyingException().getMessage().contains("Illegal key size")) {
-					throw new UserError("keystrengthExceedsAllowedJCE", e);
-				} else {
-					throw new UserError("cannotReadPrivateKey", e);
-				}
-			} catch (Exception e) {
-				throw new UserError("cannotReadPrivateKey", e);
-			}
-
-			PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(encryptedData);
+			PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(encryptedData, new JcaKeyFingerprintCalculator());
 			PGPEncryptedDataList encodedDataList;
 			Object encodedDataObject = pgpObjectFactory.nextObject();
 			if (encodedDataObject instanceof PGPEncryptedDataList) {
@@ -88,12 +76,12 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			}
 
 			// This execution checks for the JCE allowed key strength
-			decryptedPacketInputStream = publicKeyEncryptedData.getDataStream(privateKey, "BC");
+			decryptedPacketInputStream = publicKeyEncryptedData.getDataStream(new BcPublicKeyDataDecryptorFactory(privateKey));
 
-			Object message = new PGPObjectFactory(decryptedPacketInputStream).nextObject();
+			Object message = new PGPObjectFactory(decryptedPacketInputStream, new JcaKeyFingerprintCalculator()).nextObject();
 
 			if (message instanceof PGPCompressedData) {
-				message = new PGPObjectFactory(((PGPCompressedData) message).getDataStream()).nextObject();
+				message = new PGPObjectFactory(((PGPCompressedData) message).getDataStream(), new JcaKeyFingerprintCalculator()).nextObject();
 			}
 
 			if (message instanceof PGPLiteralData) {

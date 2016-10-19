@@ -138,8 +138,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				}
 			}
 
-			// Replace ~ by user.home
-			jarFilePath = jarFilePath.replace("~", System.getProperty("user.home"));
+			jarFilePath = Utilities.replaceHomeTilde(jarFilePath);
 
 			if (jarFilePath == null || !new File(jarFilePath).exists()) {
 				throw new Exception("Current running jar file was not found");

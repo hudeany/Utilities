@@ -1,4 +1,4 @@
-package de.soderer.utilities.swt.worker;
+package de.soderer.utilities;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -10,10 +10,9 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
+import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
+import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
-import de.soderer.utilities.CryptographicUtilities;
-import de.soderer.utilities.Utilities;
-import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
@@ -45,20 +44,20 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 		try {
 			itemsToDo = dataToVerify.available();
 			
-			PGPObjectFactory pgpFact = new PGPObjectFactory(PGPUtil.getDecoderStream(signatureData));
+			PGPObjectFactory pgpFact = new PGPObjectFactory(PGPUtil.getDecoderStream(signatureData), new JcaKeyFingerprintCalculator());
 			PGPSignatureList p3;
 
 			Object o = pgpFact.nextObject();
 			if (o instanceof PGPCompressedData) {
 				PGPCompressedData c1 = (PGPCompressedData) o;
-				pgpFact = new PGPObjectFactory(c1.getDataStream());
+				pgpFact = new PGPObjectFactory(c1.getDataStream(), new JcaKeyFingerprintCalculator());
 				p3 = (PGPSignatureList) pgpFact.nextObject();
 			} else {
 				p3 = (PGPSignatureList) o;
 			}
 
 			PGPSignature signature = p3.get(0);
-			signature.initVerify(publicKey, "BC");
+			signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
 
 			dataToVerify = new BufferedInputStream(dataToVerify);
 
