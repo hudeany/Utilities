@@ -21,7 +21,12 @@ import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
 import org.bouncycastle.bcpg.sig.NotationData;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPairGenerator;
+import org.bouncycastle.crypto.KeyGenerationParameters;
+import org.bouncycastle.crypto.generators.DSAKeyPairGenerator;
+import org.bouncycastle.crypto.generators.DSAParametersGenerator;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
+import org.bouncycastle.crypto.params.DSAKeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPEncryptedData;
@@ -51,7 +56,7 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 
-public class PgpUtilities {
+public class PGPUtilities {
 	public static final String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES-256";
 
 	public enum PgpSymmetricEncryptionMethod {
@@ -107,10 +112,12 @@ public class PgpUtilities {
 	public static final String DEFAULT_PUBLIC_ENCRYPTION_METHOD = "RSA-GENERAL";
 	
 	public enum PgpPublicEncryptionMethod {
+		RSA(PublicKeyAlgorithmTags.RSA_GENERAL),
 		RSA_GENERAL(PublicKeyAlgorithmTags.RSA_GENERAL),
 	    RSA_ENCRYPT(PublicKeyAlgorithmTags.RSA_ENCRYPT),
 	    RSA_SIGN(PublicKeyAlgorithmTags.RSA_SIGN),
-	    
+
+	    ELGAMAL(PublicKeyAlgorithmTags.ELGAMAL_GENERAL),
 	    ELGAMAL_GENERAL(PublicKeyAlgorithmTags.ELGAMAL_GENERAL),
 	    ELGAMAL_ENCRYPT(PublicKeyAlgorithmTags.ELGAMAL_ENCRYPT),
 	    
@@ -214,19 +221,42 @@ public class PgpUtilities {
 	    }
 	}
 	
-	public static PGPSecretKey generatePGPSecretKey(int keyStrength, String identity, char[] password, Date validity) throws Exception {
+	public static PGPSecretKey generatePGPSecretKey(int keyStrength, PgpPublicEncryptionMethod keyType, String identity, char[] password, Date validity) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
+
+		AsymmetricCipherKeyPairGenerator keyPairGenerator;
+		KeyGenerationParameters keyGenerationParameters;
+		if (keyType == PgpPublicEncryptionMethod.RSA
+				|| keyType == PgpPublicEncryptionMethod.RSA_GENERAL
+				|| keyType == PgpPublicEncryptionMethod.RSA_ENCRYPT
+				|| keyType == PgpPublicEncryptionMethod.RSA_SIGN) {
+			keyPairGenerator = new RSAKeyPairGenerator();
+			keyGenerationParameters = new RSAKeyGenerationParameters(BigInteger.valueOf(0x10001), new SecureRandom(), keyStrength, 80);
+//		} else if (keyType == PgpPublicEncryptionMethod.ELGAMAL
+//				|| keyType == PgpPublicEncryptionMethod.ELGAMAL_GENERAL
+//				|| keyType == PgpPublicEncryptionMethod.ELGAMAL_ENCRYPT) {
+//			keyPairGenerator = new ElGamalKeyPairGenerator();
+//			ElGamalParametersGenerator elGamalParametersGenerator = new ElGamalParametersGenerator();
+//			elGamalParametersGenerator.init(keyStrength, 12, new SecureRandom());
+//			keyGenerationParameters = new ElGamalKeyGenerationParameters(new SecureRandom(), elGamalParametersGenerator.generateParameters());
+		} else if (keyType == PgpPublicEncryptionMethod.DSA) {
+			keyPairGenerator = new DSAKeyPairGenerator();
+			DSAParametersGenerator dsaParametersGenerator = new DSAParametersGenerator();
+			dsaParametersGenerator.init(keyStrength, 80, new SecureRandom());
+			keyGenerationParameters = new DSAKeyGenerationParameters(new SecureRandom(), dsaParametersGenerator.generateParameters());
+		} else {
+			throw new Exception("Unsupported keytype: " + keyType.name());
+		}
 		
-		RSAKeyPairGenerator keyPairGenerator = new RSAKeyPairGenerator();
-		keyPairGenerator.init(new RSAKeyGenerationParameters(BigInteger.valueOf(0x10001), new SecureRandom(), keyStrength, 80));
+		keyPairGenerator.init(keyGenerationParameters);
 		
-		PGPKeyPair keyPair = new BcPGPKeyPair(PGPPublicKey.RSA_GENERAL, keyPairGenerator.generateKeyPair(), new Date());
+		PGPKeyPair keyPair = new BcPGPKeyPair(keyType.getId(), keyPairGenerator.generateKeyPair(), new Date());
 		
 		PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
 		
 		// Add signed metadata on the signature.
 		// Declare its purpose
-		subpacketGenerator.setKeyFlags(false, KeyFlags.SIGN_DATA | KeyFlags.CERTIFY_OTHER | KeyFlags.ENCRYPT_COMMS|KeyFlags.ENCRYPT_STORAGE);
+		subpacketGenerator.setKeyFlags(false, KeyFlags.SIGN_DATA | KeyFlags.CERTIFY_OTHER | KeyFlags.ENCRYPT_COMMS | KeyFlags.ENCRYPT_STORAGE);
 		// Set preferences for secondary crypto algorithms to use when sending messages to this key.
 		subpacketGenerator.setPreferredSymmetricAlgorithms
             (false, new int[] {
@@ -435,7 +465,7 @@ public class PgpUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		try {
-			PGPPublicKeyRingCollection pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(inputStream), new JcaKeyFingerprintCalculator());
+			PGPPublicKeyRingCollection pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(new PGPKeyStorageStringSplitter(inputStream).getPublicKeyInputStream()), new JcaKeyFingerprintCalculator());
 			@SuppressWarnings("rawtypes")
 			Iterator keyRingIterator = pgpPublicKeyRingCollection.getKeyRings();
 			while (keyRingIterator.hasNext()) {
@@ -461,7 +491,7 @@ public class PgpUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 		
 		try {
-			PGPSecretKeyRingCollection pgpSecretKeyRingCollection = new PGPSecretKeyRingCollection(PGPUtil.getDecoderStream(inputStream), new JcaKeyFingerprintCalculator());
+			PGPSecretKeyRingCollection pgpSecretKeyRingCollection = new PGPSecretKeyRingCollection(PGPUtil.getDecoderStream(new PGPKeyStorageStringSplitter(inputStream).getPrivateKeyInputStream()), new JcaKeyFingerprintCalculator());
 			@SuppressWarnings("rawtypes")
 			Iterator keyRingIterator = pgpSecretKeyRingCollection.getKeyRings();
 			while (keyRingIterator.hasNext()) {
@@ -484,8 +514,6 @@ public class PgpUtilities {
 	}
 
 	public static PGPPrivateKey readPGPPrivateKey(PGPSecretKey secretKey, char[] password) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-		
 		Security.addProvider(new BouncyCastleProvider());
 		
 		try {
@@ -529,7 +557,35 @@ public class PgpUtilities {
 		
 		if (notationData == null) {
 			PGPSignatureSubpacketGenerator pgpSignatureSubpacketGenerator = new PGPSignatureSubpacketGenerator();
-	        pgpSignatureSubpacketGenerator.setNotationData(true, true, "identity", PgpUtilities.getIdentityFromPgpPublicKey(pgpSecretKey.getPublicKey()));
+	        pgpSignatureSubpacketGenerator.setNotationData(true, true, "identity", PGPUtilities.getIdentityFromPgpPublicKey(pgpSecretKey.getPublicKey()));
+	        PGPSignatureSubpacketVector pgpSignatureSubpacketVector = pgpSignatureSubpacketGenerator.generate();
+			signatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
+		} else if (!notationData.isEmpty()) {
+			PGPSignatureSubpacketGenerator pgpSignatureSubpacketGenerator = new PGPSignatureSubpacketGenerator();
+			for (Entry<String, String> notation : notationData.entrySet()) {
+		        pgpSignatureSubpacketGenerator.setNotationData(true, true, notation.getKey(), notation.getValue());
+		        PGPSignatureSubpacketVector pgpSignatureSubpacketVector = pgpSignatureSubpacketGenerator.generate();
+				signatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
+			}
+		}
+        
+		PGPSignature certification = signatureGenerator.generateCertification(publicKeyToBeSigned);
+		return PGPPublicKey.addCertification(publicKeyToBeSigned, certification);
+	}
+
+	public static PGPPublicKey signPublicKey(PGPPrivateKey pgpPrivKey, PGPPublicKey pgpPublicKey, PGPPublicKey publicKeyToBeSigned) throws Exception {
+		return signPublicKey(pgpPrivKey, pgpPublicKey, publicKeyToBeSigned, null);
+	}
+	
+	public static PGPPublicKey signPublicKey(PGPPrivateKey pgpPrivKey, PGPPublicKey pgpPublicKey, PGPPublicKey publicKeyToBeSigned, Map<String, String> notationData) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(PgpPublicEncryptionMethod.RSA_GENERAL.getId(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()));
+		signatureGenerator.init(PGPSignature.DIRECT_KEY, pgpPrivKey);
+		
+		if (notationData == null) {
+			PGPSignatureSubpacketGenerator pgpSignatureSubpacketGenerator = new PGPSignatureSubpacketGenerator();
+	        pgpSignatureSubpacketGenerator.setNotationData(true, true, "identity", PGPUtilities.getIdentityFromPgpPublicKey(pgpPublicKey));
 	        PGPSignatureSubpacketVector pgpSignatureSubpacketVector = pgpSignatureSubpacketGenerator.generate();
 			signatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
 		} else if (!notationData.isEmpty()) {
@@ -561,10 +617,11 @@ public class PgpUtilities {
 	}
 	
 	public static List<Map<String, Object>> getKeySigners(PGPPublicKey publicKey) {
+		Security.addProvider(new BouncyCastleProvider());
+		
 		List<Map<String, Object>> signersData = new ArrayList<Map<String, Object>>();
 		@SuppressWarnings("unchecked")
 		Iterator<PGPSignature> signerIterator = publicKey.getSignatures();
-		List<String> identities = new ArrayList<String>();
 		while (signerIterator.hasNext()) {
 			Map<String, Object> signatureData = new HashMap<String, Object>();
 			PGPSignature signature = signerIterator.next();
@@ -601,8 +658,6 @@ public class PgpUtilities {
 					identity += notationData[i].getNotationName() + ": ";
 				}
 				identity += notationData[i].getNotationValue();
-				
-				identities.add(identity);
 			}
 			if (publicKey != null && id == publicKey.getKeyID()) {
 				if (Utilities.isNotBlank(identity)) {
@@ -620,5 +675,19 @@ public class PgpUtilities {
 		}
 		
 		return signersData;
+	}
+	
+	public static List<String> getSignerKeyIDs(PGPPublicKey publicKey) {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		List<String> signatureIDs = new ArrayList<String>();
+		@SuppressWarnings("unchecked")
+		Iterator<PGPSignature> signerIterator = publicKey.getSignatures();
+		while (signerIterator.hasNext()) {
+			PGPSignature signature = signerIterator.next();
+			long id = signature.getKeyID();
+			signatureIDs.add(Long.toHexString(id).toUpperCase());
+		}
+		return signatureIDs;
 	}
 }

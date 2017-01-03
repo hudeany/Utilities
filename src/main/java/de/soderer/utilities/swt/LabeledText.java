@@ -1,7 +1,6 @@
 package de.soderer.utilities.swt;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.layout.GridData;
@@ -13,7 +12,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.TypedListener;
 
 public class LabeledText extends Composite {
-	protected StyledText textField;
+	protected Text textField;
 	protected Text passwordTextField = null;
 
 	public enum ArrangementStyle {
@@ -46,7 +45,7 @@ public class LabeledText extends Composite {
 		label.setText(labelText);
 
 		if (style != SWT.PASSWORD) {
-			textField = new StyledText(this, SWT.BORDER | style);
+			textField = new Text(this, SWT.BORDER | style);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 			textField.setText("");
 			textField.addModifyListener(new ModifyListener() {

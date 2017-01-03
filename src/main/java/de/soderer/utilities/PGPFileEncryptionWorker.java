@@ -18,7 +18,7 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.operator.bc.BcPGPDataEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPublicKeyKeyEncryptionMethodGenerator;
 
-import de.soderer.utilities.PgpUtilities.PgpSymmetricEncryptionMethod;
+import de.soderer.utilities.PGPUtilities.PgpSymmetricEncryptionMethod;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 /**
@@ -59,7 +59,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 				encryptedData = new ArmoredOutputStream(encryptedData);
 			}
 
-			BcPGPDataEncryptorBuilder builder = new BcPGPDataEncryptorBuilder(PgpSymmetricEncryptionMethod.getByName(PgpUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).getId());
+			BcPGPDataEncryptorBuilder builder = new BcPGPDataEncryptorBuilder(PgpSymmetricEncryptionMethod.getByName(PGPUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).getId());
 			encryptedDataGenerator = new PGPEncryptedDataGenerator(builder);
 			BcPublicKeyKeyEncryptionMethodGenerator encryptionMethodGenerator = new BcPublicKeyKeyEncryptionMethodGenerator(publicKey);
 			encryptedDataGenerator.addMethod(encryptionMethodGenerator);

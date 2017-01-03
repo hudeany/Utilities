@@ -51,7 +51,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			
 			Security.addProvider(new BouncyCastleProvider());
 			
-			PGPPrivateKey privateKey = PgpUtilities.readPGPPrivateKey(secretKey, password);
+			PGPPrivateKey privateKey = PGPUtilities.readPGPPrivateKey(secretKey, password);
 			encryptedData = PGPUtil.getDecoderStream(encryptedData);
 
 			PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(encryptedData, new JcaKeyFingerprintCalculator());

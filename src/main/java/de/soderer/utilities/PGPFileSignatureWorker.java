@@ -15,7 +15,7 @@ import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureGenerator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
 
-import de.soderer.utilities.PgpUtilities.PgpHashMethod;
+import de.soderer.utilities.PGPUtilities.PgpHashMethod;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
@@ -36,7 +36,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 		this.hashingMethod = hashingMethod;
 
 		if (Utilities.isBlank(this.hashingMethod)) {
-			this.hashingMethod = PgpUtilities.DEFAULT_HASHING_METHOD;
+			this.hashingMethod = PGPUtilities.DEFAULT_HASHING_METHOD;
 		}
 	}
 
@@ -44,7 +44,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 	public byte[] work() throws Exception {
 		showProgress();
 
-		PGPPrivateKey privateKey = PgpUtilities.readPGPPrivateKey(secretKey, password);
+		PGPPrivateKey privateKey = PGPUtilities.readPGPPrivateKey(secretKey, password);
 		ByteArrayOutputStream outputStream = null;
 		ArmoredOutputStream outputStream2 = null;
 		BufferedInputStream dataStream = null;

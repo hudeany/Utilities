@@ -41,7 +41,7 @@ public class FileInputDialog extends ModalDialog<String> {
 			label.setText(text);
 		}
 
-		labeledFileText = new LabeledFileText(shell, composite, SWT.NONE, null, ArrangementStyle.Horizontal);
+		labeledFileText = new LabeledFileText(shell, composite, SWT.NONE, null, true, ArrangementStyle.Horizontal);
 		labeledFileText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		labeledFileText.addModifyListener(new ModifyListener() {
 			@Override

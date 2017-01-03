@@ -14,7 +14,7 @@ public class PGPWorkerTest {
 
 	private static PGPSecretKey getPgpSecretKey() throws Exception {
 		if (pgpSecretKey == null) {
-			pgpSecretKey = PgpUtilities.generatePGPSecretKey(1024, "Test identity", password, new Date(new Date().getTime() + (1000 * 60 * 60)));
+			pgpSecretKey = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.RSA_GENERAL, "Test identity", password, new Date(new Date().getTime() + (1000 * 60 * 60)));
 		}
 
 		return pgpSecretKey;

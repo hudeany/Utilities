@@ -5,11 +5,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import de.soderer.utilities.collection.MapUtilities;
 
 public class UtilitiesTest {
 	@Test
@@ -380,6 +384,100 @@ public class UtilitiesTest {
 			Assert.assertEquals("Abcdefgh", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh", 10));
 			Assert.assertEquals("... fgh", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh", 7));
 			Assert.assertEquals("... 890", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh1234567890", 7));
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testParseMapStringWithObjectValue() {
+		try {
+			Map<String, Object> map = new HashMap<String, Object>();
+
+			map.put("abc122", null);
+			map.put("abc123", 123);
+			map.put("abc 124", "abc 124");
+			map.put("aBc\"125", "aBc\"125");
+			
+			String parsedMapString = MapUtilities.mapToString(map);
+			Assert.assertEquals(
+				"abc122=null"
+				+ ",abc123=123"
+				+ ",\"aBc\"\"125\"=\"aBc\"\"125\""
+				+ ",abc 124=abc 124",
+				parsedMapString);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testParseMapString() {
+		try {
+			String mapString =
+				"abc123=123"
+				+ ",\"abc 124\"=\"abc 124\""
+				+ ",\"aBc\"\"125\"=\"aBc\"\"125\"";
+			Map<String, String> map = MapStringReader.readMap(mapString);
+			
+			Assert.assertEquals("123", map.get("abc123"));
+			Assert.assertEquals("abc 124", map.get("abc 124"));
+			Assert.assertEquals("aBc\"125", map.get("aBc\"125"));
+			
+			String parsedMapString = MapUtilities.mapToString(map);
+			Assert.assertEquals(
+				"abc123=123"
+				+ ",\"aBc\"\"125\"=\"aBc\"\"125\""
+				+ ",abc 124=abc 124",
+				parsedMapString);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testParseMapStringBlankSeparated() {
+		try {
+			String mapString =
+				"abc123=123"
+				+ " \"abc 124\"=\"abc 124\""
+				+ " \"aBc\"\"125\"=\"aBc\"\"125\"";
+			Map<String, String> map = MapStringReader.readMap(mapString);
+			
+			Assert.assertEquals("123", map.get("abc123"));
+			Assert.assertEquals("abc 124", map.get("abc 124"));
+			Assert.assertEquals("aBc\"125", map.get("aBc\"125"));
+			
+			String parsedMapString = MapUtilities.mapToString(map, '\"', false, ' ');
+			Assert.assertEquals(
+				"abc123=123"
+				+ " \"aBc\"\"125\"=\"aBc\"\"125\""
+				+ " \"abc 124\"=\"abc 124\"",
+				parsedMapString);
+		} catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testParseMapStringQuoted() {
+		try {
+			String mapString =
+				"\"abc123\"=\"123\""
+				+ ",\"abc 124\"=\"abc 124\""
+				+ ",\"aBc\"\"125\"=\"aBc\"\"125\"";
+			Map<String, String> map = MapStringReader.readMap(mapString);
+			
+			Assert.assertEquals("123", map.get("abc123"));
+			Assert.assertEquals("abc 124", map.get("abc 124"));
+			Assert.assertEquals("aBc\"125", map.get("aBc\"125"));
+			
+			String parsedMapString = MapUtilities.mapToString(map, '\"', true, ',');
+			Assert.assertEquals(
+				"\"abc123\"=\"123\""
+				+ ",\"aBc\"\"125\"=\"aBc\"\"125\""
+				+ ",\"abc 124\"=\"abc 124\"",
+				parsedMapString);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}

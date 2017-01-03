@@ -11,6 +11,9 @@ public abstract class BasicReader implements Closeable {
 	/** UTF-8 BOM (Byte Order Mark) character for readers. */
 	public static final char BOM_UTF_8_CHAR = (char) 65279;
 	
+	/** UTF-8 BOM (Byte Order Mark) first character for wrong encoding ISO-8859. */
+	public static final char BOM_UTF_8_CHAR_ISO_8859 = (char) 239;
+	
 	/** Default input encoding. */
 	public static final String DEFAULT_ENCODING = "UTF-8";
 	
@@ -69,8 +72,10 @@ public abstract class BasicReader implements Closeable {
 			int currentCharInt = inputReader.read();
 			if (currentCharInt != -1) {
 				// Check for UTF-8 BOM at data start
-				if (readCharacters == 0 && encoding == Charset.forName("UTF-8") && currentCharInt == BOM_UTF_8_CHAR) {
+				if (readCharacters == 0 && currentCharInt == BOM_UTF_8_CHAR && encoding == Charset.forName("UTF-8")) {
 					return readNextCharacter();
+				} else if (readCharacters == 0 && currentCharInt == BOM_UTF_8_CHAR_ISO_8859 && encoding.displayName().toUpperCase().startsWith("ISO-8859-")) {
+					throw new IOException("Data encoding \"" + encoding + "\" is invalid: UTF-8 BOM detected");
 				} else {
 					currentChar = (char) currentCharInt;
 					readCharacters++;

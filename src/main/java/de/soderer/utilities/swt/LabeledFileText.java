@@ -1,7 +1,6 @@
 package de.soderer.utilities.swt;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -15,6 +14,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
@@ -23,11 +23,11 @@ public class LabeledFileText extends LabeledText {
 	private boolean selectDirectory = false;
 	private Button dataBrowseButton;
 
-	public LabeledFileText(Shell shell, Composite parent, int style, String labelText) throws Exception {
-		this(shell, parent, style, labelText, null);
+	public LabeledFileText(Shell shell, Composite parent, int style, String labelText, boolean openExisting) throws Exception {
+		this(shell, parent, style, labelText, openExisting, null);
 	}
 
-	public LabeledFileText(Shell shell, Composite parent, int style, String labelText, ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledFileText(Shell shell, Composite parent, int style, String labelText, final boolean openExisting, ArrangementStyle arrangementStyle) throws Exception {
 		super(parent, style);
 
 		final LabeledFileText labeledFileText = this;
@@ -48,8 +48,8 @@ public class LabeledFileText extends LabeledText {
 			label.setText(labelText);
 		}
 
-		textField = new StyledText(this, SWT.BORDER | style);
-		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		textField = new Text(this, SWT.BORDER | style);
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 		textField.setText("");
 		textField.addModifyListener(new ModifyListener() {
 			@Override
@@ -66,7 +66,7 @@ public class LabeledFileText extends LabeledText {
 			dataBrowseButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					DirectoryDialog dialog = new DirectoryDialog(shellForFileDialog, SWT.OPEN);
+					DirectoryDialog dialog = new DirectoryDialog(shellForFileDialog, openExisting ? SWT.OPEN : SWT.SAVE);
 					dialog.setText(LangResources.get("openDataDirectory"));
 					String fileName = dialog.open();
 					if (Utilities.isNotBlank(fileName)) {
@@ -78,7 +78,7 @@ public class LabeledFileText extends LabeledText {
 			dataBrowseButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					FileDialog dialog = new FileDialog(shellForFileDialog, SWT.OPEN);
+					FileDialog dialog = new FileDialog(shellForFileDialog, openExisting ? SWT.OPEN : SWT.SAVE);
 					dialog.setText(LangResources.get("openFileDirectory"));
 					String fileName = dialog.open();
 					if (Utilities.isNotBlank(fileName)) {
@@ -97,5 +97,10 @@ public class LabeledFileText extends LabeledText {
 	public void setEnabled(boolean enabled) {
 		textField.setEnabled(enabled);
 		dataBrowseButton.setEnabled(enabled);
+	}
+
+	@Override
+	public String getText() {
+		return Utilities.replaceHomeTilde(super.getText());
 	}
 }
