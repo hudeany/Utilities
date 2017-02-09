@@ -453,7 +453,7 @@ public class DbUtilities {
 				String productName = databaseMetaData.getDatabaseProductName();
 				if (productName != null && productName.toLowerCase().contains("oracle")) {
 					return DbVendor.Oracle;
-				} else if (productName != null && productName.toLowerCase().contains("mysql")) {
+				} else if (productName != null && (productName.toLowerCase().contains("mysql") || productName.toLowerCase().contains("maria"))) {
 					return DbVendor.MySQL;
 				} else if (productName != null && productName.toLowerCase().contains("postgres")) {
 					return DbVendor.PostgreSQL;
@@ -2008,10 +2008,11 @@ public class DbUtilities {
 		}
 	}
 	
-	public static void createIndex(Connection connection, String tableName, List<String> columns) throws Exception {
+	public static String createIndex(Connection connection, String tableName, List<String> columns) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			String dateSuffix = DateUtilities.YYYYMMDDHHMMSS.format(new Date());
-			statement.execute("CREATE INDEX " + tableName + "_" + dateSuffix + "_ix ON " + tableName + " (" + Utilities.join(columns, ", ") + ")");
+			String indexNameSuffix = "_" + DateUtilities.YYYYMMDDHHMMSS.format(new Date()) + "_ix";
+			statement.execute("CREATE INDEX " + Utilities.shortenStringToMaxLengthCutRight(tableName, 30 - indexNameSuffix.length()) + indexNameSuffix + " ON " + tableName + " (" + Utilities.join(columns, ", ") + ")");
+			return indexNameSuffix;
 		} catch (Exception e) {
 			throw new Exception("Cannot create index: " + e.getMessage(), e);
 		}
@@ -2207,5 +2208,47 @@ public class DbUtilities {
 		}
 		
 		return updatedItems;
+	}
+
+	/**
+	 * Check for existing index
+	 * Returns null, if check cannot be executed (happens on some db vendors)
+	 * 
+	 * @param connection
+	 * @param tableName
+	 * @param keyColumns
+	 * @return
+	 * @throws Exception 
+	 */
+	public static Boolean checkForIndex(Connection connection, String tableName, List<String> keyColumns) throws Exception {
+		DbVendor dbVendor = getDbVendor(connection);
+		if (dbVendor == DbVendor.Oracle) {
+			try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM user_ind_columns WHERE LOWER(table_name) = ? AND LOWER(column_name) = ?")) {
+	        	for (String keyColumn : keyColumns) {
+	        		statement.setString(1, tableName.toLowerCase());
+	        		statement.setString(2, keyColumn.toLowerCase());
+	        		try (ResultSet resultSet = statement.executeQuery()) {
+			            if (!resultSet.next() || resultSet.getInt(1) <= 0) {
+			            	return false;
+			            }
+	        		}
+	        	}
+	            return true;
+			}
+        } else if (dbVendor == DbVendor.MySQL) {
+			try (PreparedStatement statement = connection.prepareStatement("SHOW INDEX FROM " + tableName.toLowerCase() + " WHERE column_name = ?")) {
+	        	for (String keyColumn : keyColumns) {
+	        		statement.setString(1, keyColumn.toLowerCase());
+	        		try (ResultSet resultSet = statement.executeQuery()) {
+			            if (!resultSet.next()) {
+			            	return false;
+			            }
+	        		}
+	        	}
+	            return true;
+			}
+        } else {
+        	return null;
+        }
 	}
 }
