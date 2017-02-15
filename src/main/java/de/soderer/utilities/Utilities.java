@@ -1240,12 +1240,16 @@ public class Utilities {
 		}
 	}
 
-	public static String shortenStringToMaxLengthCutRight(String value, int maxLength) {
+	public static String shortenStringToMaxLengthCutRight(String value, int maxLength, String cutSign) {
 		if (value != null && value.length() > maxLength) {
-			return value.substring(0, maxLength - 4) + " ...";
+			return value.substring(0, maxLength - 4) + cutSign;
 		} else {
 			return value;
 		}
+	}
+
+	public static String shortenStringToMaxLengthCutRight(String value, int maxLength) {
+		return shortenStringToMaxLengthCutRight(value, maxLength, " ...");
 	}
 
 	public static String shortenStringToMaxLengthCutMiddle(String value, int maxLength) {
