@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
@@ -24,6 +25,8 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	private String updateFileLocation;
 	private String updateFileMd5Checksum = null;
 	private String restartParameter;
+	private String trustedCaCertificateFileName = null;
+	private Class<?> applicationClassForCaLoad = null;
 
 	/**
 	 * @param versionIndexFileLocation
@@ -35,7 +38,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	 *            &lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
 	 * @throws Exception
 	 */
-	public ApplicationUpdateHelper(String applicationName, String applicationVersion, String versionIndexFileLocation, UpdateParent updateParent, String restartParameter) throws Exception {
+	public ApplicationUpdateHelper(String applicationName, String applicationVersion, String versionIndexFileLocation, UpdateParent updateParent, String restartParameter, String trustedCaCertificateFileName, Class<?> applicationClassForCaLoad) throws Exception {
 		if (Utilities.isEmpty(versionIndexFileLocation)) {
 			throw new Exception("Invalid version index location");
 		}
@@ -45,6 +48,8 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		this.versionIndexFileLocation = replacePlaceholders(versionIndexFileLocation);
 		this.updateParent = updateParent;
 		this.restartParameter = restartParameter;
+		this.trustedCaCertificateFileName = trustedCaCertificateFileName;
+		this.applicationClassForCaLoad = applicationClassForCaLoad;
 	}
 
 	public void executeUpdate() {
@@ -95,11 +100,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				return null;
 			}
 		} catch (Exception e) {
-			if (updateParent != null) {
-				updateParent.showUpdateError("Update error:\n" + e.getMessage());
-			} else {
-				System.err.println("Update error:\n" + e.getMessage());
-			}
+			showUpdateError("Update error while checking for new version:\n" + e.getMessage());
 			return null;
 		}
 	}
@@ -109,11 +110,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			try {
 				return updateParent.askForUpdate(availableNewVersion);
 			} catch (Exception e) {
-				if (updateParent != null) {
-					updateParent.showUpdateError("Update error:\n" + e.getMessage());
-				} else {
-					System.err.println("Update error:\n" + e.getMessage());
-				}
+				updateParent.showUpdateError("Update error :\n" + e.getMessage());
 				return false;
 			}
 		} else {
@@ -148,14 +145,30 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 
 			boolean downloadSuccess = getNewApplicationVersionFile(downloadTempFile);
 			if (downloadSuccess) {
-				if (updateFileMd5Checksum != null && !updateFileMd5Checksum.equalsIgnoreCase("") && !updateFileMd5Checksum.equalsIgnoreCase("NONE")) {
+				if (Utilities.isNotEmpty(trustedCaCertificateFileName)) {
+					X509Certificate[] trustedCerts = null;
+					ClassLoader applicationClassLoader = applicationClassForCaLoad.getClassLoader();
+					if (applicationClassLoader == null) {
+						showUpdateError("Update error:\n" + "Applications classloader is not readable");
+						return;
+					}
+					try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
+						trustedCerts = CryptographicUtilities.loadCertificatesFromPemStream(trustedUpdateCertificatesStream);
+					} catch (Exception e) {
+						showUpdateError("Update error:\n" + "Trusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
+						return;
+					}
+					if (trustedCerts == null || trustedCerts.length == 0) {
+						showUpdateError("Update error:\n" + "Trusted CA certificate is missing");
+						return;
+					} else if (!CryptographicUtilities.verifyJarSignature(downloadTempFile, trustedCerts)) {
+						showUpdateError("Update error:\n" + "Signature of updatefile is invalid");
+						return;
+					}
+				} else if (Utilities.isNotEmpty(updateFileMd5Checksum) && !updateFileMd5Checksum.equalsIgnoreCase("NONE")) {
 					String downloadTempFileMd5Checksum = createMd5Checksum(downloadTempFile);
 					if (!updateFileMd5Checksum.equalsIgnoreCase(downloadTempFileMd5Checksum)) {
-						if (updateParent != null) {
-							updateParent.showUpdateError("Update error:\n" + "MD5-Checksum of updatefile is invalid (expected: " + updateFileMd5Checksum + ", actual: " + downloadTempFileMd5Checksum + ")");
-						} else {
-							System.err.println("Update error:\n" + "MD5-Checksum of updatefile is invalid (expected: " + updateFileMd5Checksum + ", actual: " + downloadTempFileMd5Checksum + ")");
-						}
+						showUpdateError("Update error:\n" + "MD5-Checksum of updatefile is invalid (expected: " + updateFileMd5Checksum + ", actual: " + downloadTempFileMd5Checksum + ")");
 						return;
 					}
 				}
@@ -172,11 +185,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				}
 			}
 		} catch (Exception e) {
-			if (updateParent != null) {
-				updateParent.showUpdateError("Update error:\n" + e.getMessage());
-			} else {
-				System.err.println("Update error:\n" + e.getMessage());
-			}
+			showUpdateError("Update error while updating to new version:\n" + e.getMessage());
 			return;
 		}
 	}
@@ -198,11 +207,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", new String(credentials.getPassword()));
 						}
 					} else {
-						if (updateParent != null) {
-							updateParent.showUpdateError("Update error:\n" + "username required");
-						} else {
-							System.err.println("Update error:\n" + "username required");
-						}
+						showUpdateError("Update error:\n" + "username required");
 						return false;
 					}
 				} else if (downloadUrlWithCredentials.contains("<username>")) {
@@ -215,11 +220,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", credentials.getUsername());
 						}
 					} else {
-						if (updateParent != null) {
-							updateParent.showUpdateError("Update error:\n" + "username required");
-						} else {
-							System.err.println("Update error:\n" + "username required");
-						}
+						showUpdateError("Update error:\n" + "username required");
 						return false;
 					}
 				} else if (downloadUrlWithCredentials.contains("<password>")) {
@@ -232,11 +233,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", new String(credentials.getPassword()));
 						}
 					} else {
-						if (updateParent != null) {
-							updateParent.showUpdateError("Update error:\n" + "password required");
-						} else {
-							System.err.println("Update error:\n" + "password required");
-						}
+						showUpdateError("Update error:\n" + "password required");
 						return false;
 					}
 				}
@@ -267,7 +264,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 							return false;
 						}
 					} else {
-						System.err.println("Update error:\n" + e.getMessage());
+						System.err.println("Update error while downloading new version:\n" + e.getMessage());
 						return false;
 					}
 				} catch (Exception e) {
@@ -286,15 +283,11 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 								return false;
 							}
 						} else {
-							System.err.println("Update error:\n" + ((UserError) e.getCause()).getMessage());
+							System.err.println("Update error while downloading new version:\n" + ((UserError) e.getCause()).getMessage());
 							return false;
 						}
 					} else {
-						if (updateParent != null) {
-							updateParent.showUpdateError("Update error:\n" + e.getMessage());
-						} else {
-							System.err.println("Update error:\n" + e.getMessage());
-						}
+						showUpdateError("Update error:\n" + e.getMessage());
 						return false;
 					}
 				}
@@ -475,5 +468,15 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	@Override
 	public void cancel() {
 		// Do nothing
+	}
+	
+	private void showUpdateError(String errorMessage) {
+		if (updateParent != null) {
+			updateParent.showUpdateError(errorMessage);
+		} else {
+			// Linebreak to end progress display
+			System.err.println("");
+			System.err.println(errorMessage);
+		}
 	}
 }

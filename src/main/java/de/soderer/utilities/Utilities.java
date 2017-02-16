@@ -1136,7 +1136,12 @@ public class Utilities {
 			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
 			percentageDone = (int) (itemsDone * 100 / itemsToDo);
 			percentageString = leftPad(percentageDone + "%", 3);
-			int speed = (int) (itemsDone / ((now.getTime() - start.getTime()) / 1000));
+			long elapsedSeconds = (now.getTime() - start.getTime()) / 1000;
+			// Prevent division by zero, when start is fast
+			if (elapsedSeconds == 0) {
+				elapsedSeconds = 1;
+			}
+			int speed = (int) (itemsDone / elapsedSeconds);
 			speedString = getHumanReadableNumber(speed, "", true) + "/s";
 			Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(estimatedEnd.getTime() - now.getTime(), false);

@@ -70,7 +70,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 	@Override
 	public void showUpdateDone() {
 		System.out.println();
-		System.out.println("Restarting after update");
+		System.out.println("Update done");
 		System.out.println();
 	}
 

@@ -52,10 +52,10 @@ import javax.naming.ldap.Rdn;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -91,8 +91,6 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
  */
 public class CryptographicUtilities {
-	public static Logger logger = Logger.getLogger(CryptographicUtilities.class);
-
 	public static byte[] DEFAULT_SALT = new byte[] { 48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107 };
 	public static byte[] DEFAULT_SYMMETRIC_INITALIZATION_VECTOR = new byte[] { 48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107, 48, 57, 56, 107 };
 	public static final String[] SYMMETRIC_CIPHERS = {
@@ -815,19 +813,21 @@ public class CryptographicUtilities {
 	}
 
 	public static X509Certificate[] loadCertificatesFromPemStream(InputStream pemInputStream) throws Exception {
-		PEMParser pemReader = null;
-		try {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		try (PEMParser pemReader = new PEMParser(new InputStreamReader(pemInputStream))) {
 			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
-			pemReader = new PEMParser(new InputStreamReader(pemInputStream));
-			Object nextCertificate;
-			while ((nextCertificate = pemReader.readObject()) != null) {
-				if (nextCertificate instanceof X509Certificate) {
-					certificateList.add((X509Certificate) nextCertificate);
+			Object pemReaderObject;
+			while ((pemReaderObject = pemReader.readObject()) != null) {
+				if (pemReaderObject instanceof X509Certificate) {
+					// Old BouncyCastle API
+					certificateList.add((X509Certificate) pemReaderObject);
+				} else if (pemReaderObject instanceof X509CertificateHolder) {
+					X509Certificate certificate = new JcaX509CertificateConverter().setProvider("BC").getCertificate((X509CertificateHolder) pemReaderObject);
+					certificateList.add(certificate);
 				}
 			}
 			return certificateList.toArray(new X509Certificate[0]);
-		} finally {
-			Utilities.closeQuietly(pemReader);
 		}
 	}
 
