@@ -26,7 +26,6 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	private String updateFileMd5Checksum = null;
 	private String restartParameter;
 	private String trustedCaCertificateFileName = null;
-	private Class<?> applicationClassForCaLoad = null;
 
 	/**
 	 * @param versionIndexFileLocation
@@ -38,7 +37,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	 *            &lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
 	 * @throws Exception
 	 */
-	public ApplicationUpdateHelper(String applicationName, String applicationVersion, String versionIndexFileLocation, UpdateParent updateParent, String restartParameter, String trustedCaCertificateFileName, Class<?> applicationClassForCaLoad) throws Exception {
+	public ApplicationUpdateHelper(String applicationName, String applicationVersion, String versionIndexFileLocation, UpdateParent updateParent, String restartParameter, String trustedCaCertificateFileName) throws Exception {
 		if (Utilities.isEmpty(versionIndexFileLocation)) {
 			throw new Exception("Invalid version index location");
 		}
@@ -49,7 +48,6 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		this.updateParent = updateParent;
 		this.restartParameter = restartParameter;
 		this.trustedCaCertificateFileName = trustedCaCertificateFileName;
-		this.applicationClassForCaLoad = applicationClassForCaLoad;
 	}
 
 	public void executeUpdate() {
@@ -147,7 +145,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			if (downloadSuccess) {
 				if (Utilities.isNotEmpty(trustedCaCertificateFileName)) {
 					X509Certificate[] trustedCerts = null;
-					ClassLoader applicationClassLoader = applicationClassForCaLoad.getClassLoader();
+					ClassLoader applicationClassLoader = getClass().getClassLoader();
 					if (applicationClassLoader == null) {
 						showUpdateError("Update error:\n" + "Applications classloader is not readable");
 						return;
