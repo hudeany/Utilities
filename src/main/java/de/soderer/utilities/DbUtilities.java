@@ -1230,7 +1230,7 @@ public class DbUtilities {
 					return returnList;
 				}
 			} catch (Exception e) {
-				throw new RuntimeException("Cannot read primarykey columns for table " + tableName + ": " + e.getMessage(), e);
+				throw new RuntimeException("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
 			}
 		}
 	}
@@ -1424,6 +1424,7 @@ public class DbUtilities {
 	public static void createTable(Connection connection, String tablename, Map<String, DbColumnType> columnsAndTypes, Collection<String> keyColumns) throws Exception {
 		if  (keyColumns != null) {
 			for (String keyColumn : keyColumns) {
+				keyColumn = Utilities.trimSimultaneously(Utilities.trimSimultaneously(keyColumn, "\""), "`");
 				if (!columnsAndTypes.containsKey(keyColumn)) {
 					throw new Exception("Cannot create table. Keycolumn '" + keyColumn + "' is not included in column types");
 				}
@@ -1442,16 +1443,20 @@ public class DbUtilities {
 				if (columnType != null) {
 					String dataType = getDataType(dbVendor, columnType.getSimpleDataType());
 					int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterLength() : 0;
-					columnPart += columnAndType.getKey() + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
+					columnPart += replaceVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
 				} else {
 					String dataType = getDataType(dbVendor, SimpleDataType.String);
-					columnPart += columnAndType.getKey() + " " + dataType + "(1)";
+					columnPart += replaceVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + "(1)";
 				}
 			}
 			
 			String primaryKeyPart = "";
 			if (Utilities.isNotEmpty(keyColumns)) {
-				primaryKeyPart = ", PRIMARY KEY (" + Utilities.join(keyColumns, ", ") + ")";
+				List<String> escapedKeyColumns = new ArrayList<String>();
+				for (String keyColumn : keyColumns) {
+					escapedKeyColumns.add(replaceVendorReservedNames(dbVendor, keyColumn));
+				}
+				primaryKeyPart = ", PRIMARY KEY (" + Utilities.join(escapedKeyColumns, ", ") + ")";
 			}
 			statement.execute("CREATE TABLE " + tablename + " (" + columnPart + primaryKeyPart + ")");
 			if (getDbVendor(connection) == DbVendor.Derby) {

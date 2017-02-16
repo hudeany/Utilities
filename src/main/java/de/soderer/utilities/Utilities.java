@@ -1186,6 +1186,24 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Only trim the value when the sourrounding occures on both ends
+	 * @param value
+	 * @param prefix
+	 * @return
+	 */
+	public static String trimSimultaneously(String value, String sourrounding) {
+		if (value == null) {
+			return null;
+		} else if (isEmpty(sourrounding)) {
+			return value;
+		} else if (value.startsWith(sourrounding) && value.endsWith(sourrounding)) {
+			return value.substring(sourrounding.length(), value.length() - sourrounding.length());
+		} else {
+			return value;
+		}
+	}
+
 	public static String trim(String value) {
 		if (value == null) {
 			return null;
