@@ -46,10 +46,21 @@ public class NetworkUtilities {
 
 	public static boolean ping(String ipOrHostname) {
 		try {
-			if (ipOrHostname.toLowerCase().contains("https://")) {
-				URL server = new URL("https://" + getHostnameFromRequestString(ipOrHostname));
-				HttpURLConnection connection = (HttpURLConnection) server.openConnection();
-				connection.connect();
+			if (ipOrHostname.toLowerCase().trim().startsWith("http://")) {
+				URL url = new URL("http://" + getHostnameFromRequestString(ipOrHostname));
+				HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+	            httpURLConnection.setConnectTimeout(2000);
+	            httpURLConnection.setReadTimeout(2000);
+	            httpURLConnection.setAllowUserInteraction(false);
+	            httpURLConnection.connect();
+				return true;
+			} else if (ipOrHostname.toLowerCase().trim().startsWith("https://")) {
+				URL url = new URL("https://" + getHostnameFromRequestString(ipOrHostname));
+				HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+	            httpURLConnection.setConnectTimeout(2000);
+	            httpURLConnection.setReadTimeout(2000);
+	            httpURLConnection.setAllowUserInteraction(false);
+	            httpURLConnection.connect();
 				return true;
 			} else {
 				return InetAddress.getByName(getHostnameFromRequestString(ipOrHostname)).isReachable(5000);

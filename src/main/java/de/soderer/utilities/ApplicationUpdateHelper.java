@@ -26,6 +26,8 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	private String updateFileMd5Checksum = null;
 	private String restartParameter;
 	private String trustedCaCertificateFileName = null;
+	private String username;
+	private char[] password;
 
 	/**
 	 * @param versionIndexFileLocation
@@ -51,7 +53,8 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	}
 
 	public void executeUpdate() {
-		if (askForUpdate(checkForNewVersionAvailable())) {
+		String newVersionAvailable = checkForNewVersionAvailable();
+		if (newVersionAvailable != null && askForUpdate(newVersionAvailable)) {
 			updateApplication();
 		}
 	}
@@ -194,6 +197,18 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			boolean retryDownload = true;
 			while (retryDownload) {
 				String downloadUrlWithCredentials = updateFileLocation;
+				
+				if (username != null) {
+					downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", username);
+					// Only use preconfigured username in first try
+					username = null;
+				}
+				if (password != null) {
+					downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", new String(password));
+					// Only use preconfigured password in first try
+					password = null;
+				}
+				
 				if (downloadUrlWithCredentials.contains("<username>") && downloadUrlWithCredentials.contains("<password>")) {
 					if (updateParent != null) {
 						Credentials credentials = updateParent.aquireCredentials("Please enter update credentials", true, true);
@@ -476,5 +491,13 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			System.err.println("");
 			System.err.println(errorMessage);
 		}
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public void setPassword(char[] password) {
+		this.password = password;
 	}
 }
