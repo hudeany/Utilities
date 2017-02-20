@@ -27,7 +27,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
 
@@ -156,7 +155,7 @@ public class DbUtilities {
 		} else if (dbVendor == DbVendor.HSQL) {
 			dbPath = Utilities.replaceHomeTilde(dbPath);
 			if (dbPath.startsWith("/")) {
-				if (getFilesByPattern(new File(dbPath.substring(0, dbPath.lastIndexOf("/"))), dbPath.substring(dbPath.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() > 0) {
+				if (FileUtilities.getFilesByPattern(new File(dbPath.substring(0, dbPath.lastIndexOf("/"))), dbPath.substring(dbPath.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() > 0) {
 					throw new Exception("HSQL db '" + dbPath + "' already exists");
 				}
 			}
@@ -241,7 +240,7 @@ public class DbUtilities {
 			} else if (dbVendor == DbVendor.HSQL) {
 				dbName = Utilities.replaceHomeTilde(dbName);
 				if (dbName.startsWith("/")) {
-					if (getFilesByPattern(new File(dbName.substring(0, dbName.lastIndexOf("/"))), dbName.substring(dbName.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() <= 0) {
+					if (FileUtilities.getFilesByPattern(new File(dbName.substring(0, dbName.lastIndexOf("/"))), dbName.substring(dbName.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() <= 0) {
 						throw new DbNotExistsException("HSQL db '" + dbName + "' is not available");
 					}
 				}
@@ -639,12 +638,11 @@ public class DbUtilities {
 		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnNames");
 		} else {
-			DbVendor dbVendor = getDbVendor(connection);
 			try (Statement statement = connection.createStatement();
 					ResultSet resultSet = statement.executeQuery("SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0")) {
 				CaseInsensitiveSet columnNamesList = new CaseInsensitiveSet();
 				for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
-					columnNamesList.add(replaceVendorReservedNames(dbVendor, resultSet.getMetaData().getColumnName(i)));
+					columnNamesList.add(resultSet.getMetaData().getColumnName(i));
 				}
 				return columnNamesList;
 			}
@@ -718,7 +716,7 @@ public class DbUtilities {
 							boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
 							boolean isAutoIncrement = resultSet.getString("extra").equalsIgnoreCase("auto_increment");
 	
-							returnMap.put(replaceVendorReservedNames(DbVendor.MySQL, resultSet.getString("column_name")), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
+							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
 					}
 				}
@@ -1401,26 +1399,6 @@ public class DbUtilities {
 		}
 	}
 	
-	private static List<File> getFilesByPattern(File startDirectory, String patternString, boolean traverseCompletely) {
-		return getFilesByPattern(startDirectory, Pattern.compile(patternString), traverseCompletely);
-	}
-
-	private static List<File> getFilesByPattern(File startDirectory, Pattern pattern, boolean traverseCompletely) {
-		List<File> files = new ArrayList<File>();
-		if (startDirectory.isDirectory()) {
-			for (File file : startDirectory.listFiles()) {
-				if (file.isDirectory()) {
-					if (traverseCompletely) {
-						files.addAll(getFilesByPattern(file, pattern, traverseCompletely));
-					}
-				} else if (file.isFile() && pattern.matcher(file.getName()).matches()) {
-					files.add(file);
-				}
-			}
-		}
-		return files;
-	}
-
 	public static void createTable(Connection connection, String tablename, Map<String, DbColumnType> columnsAndTypes, Collection<String> keyColumns) throws Exception {
 		if  (keyColumns != null) {
 			for (String keyColumn : keyColumns) {
@@ -1619,11 +1597,15 @@ public class DbUtilities {
 	 */
 	public static void markDuplicates(Connection connection, String tableName, Collection<String> keyColumnsWithFunctions, String itemIndexColumn, String duplicateIndexColumn) throws Exception {
 		if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
+			DbVendor dbVendor = getDbVendor(connection);
+			itemIndexColumn = replaceVendorReservedNames(dbVendor, itemIndexColumn);
+			duplicateIndexColumn = replaceVendorReservedNames(dbVendor, duplicateIndexColumn);
+			
 			StringBuilder selectPart = new StringBuilder();
 			StringBuilder wherePart = new StringBuilder();
 			int columnIndex = 0;
 			for (String columnWithFunction : keyColumnsWithFunctions) {
-				columnWithFunction = columnWithFunction.trim();
+				columnWithFunction = replaceVendorReservedNames(dbVendor, columnWithFunction.trim());
 				
 				if (selectPart.length() > 0) {
 					selectPart.append(", ");
@@ -1648,7 +1630,7 @@ public class DbUtilities {
 			try (Statement statement = connection.createStatement()) {
 				// The indirection with a subselect is needed for MySQL (You can't specify target table for update in FROM clause)
 				String setDuplicateReferences = "UPDATE " + tableName + " SET " + duplicateIndexColumn + " = (SELECT subselect." + itemIndexColumn + " FROM"
-					+ " (SELECT " + selectPart.toString() + ", MIN(" + itemIndexColumn + ") AS " + itemIndexColumn + " FROM " + tableName + " GROUP BY " + Utilities.join(keyColumnsWithFunctions, ", ") + ") subselect"
+					+ " (SELECT " + selectPart.toString() + ", MIN(" + itemIndexColumn + ") AS " + itemIndexColumn + " FROM " + tableName + " GROUP BY " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ") subselect"
 					+ " WHERE " + wherePart.toString() + ")";
 				statement.executeUpdate(setDuplicateReferences);
 				connection.commit();
@@ -1661,10 +1643,10 @@ public class DbUtilities {
 		}
 	}
 	
-	public static String getKeyColumnEquationList(Collection<String> columnNamesWithFunctions, String tableAlias1, String tableAlias2) {
+	public static String getKeyColumnEquationList(DbVendor dbVendor, Collection<String> columnNamesWithFunctions, String tableAlias1, String tableAlias2) {
 		StringBuilder returnValue = new StringBuilder();
 		for (String columnName : columnNamesWithFunctions) {
-			columnName = columnName.trim();
+			columnName = replaceVendorReservedNames(dbVendor, columnName.trim());
 			
 			if (returnValue.length() > 0) {
 				returnValue.append(", ");
@@ -1697,7 +1679,7 @@ public class DbUtilities {
 
 	public static int detectDuplicates(Connection connection, String tableName, Collection<String> keyColumnsWithFunctions) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			String countDuplicatesStatement = "SELECT COUNT(*) FROM (SELECT COUNT(*) FROM " + tableName + " GROUP BY " + Utilities.join(keyColumnsWithFunctions, ", ") + " HAVING COUNT(*) > 1) subsel";
+			String countDuplicatesStatement = "SELECT COUNT(*) FROM (SELECT COUNT(*) FROM " + tableName + " GROUP BY " + joinColumnVendorEscaped(getDbVendor(connection), keyColumnsWithFunctions) + " HAVING COUNT(*) > 1) subsel";
 			try (ResultSet resultSet = statement.executeQuery(countDuplicatesStatement)) {
 				if (resultSet.next()) {
 					return resultSet.getInt(1);
@@ -1712,7 +1694,7 @@ public class DbUtilities {
 
 	public static int detectDuplicatesCrossTables(Connection connection, String detectTableName, String fromTableName, List<String> keyColumnsWithFunctions) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			String selectDuplicatesNumber = "SELECT COUNT(*) FROM " + detectTableName + " a WHERE EXISTS (SELECT 1 FROM " + fromTableName + " b WHERE " + getKeyColumnEquationList(keyColumnsWithFunctions, "a", "b") + ")";
+			String selectDuplicatesNumber = "SELECT COUNT(*) FROM " + detectTableName + " a WHERE EXISTS (SELECT 1 FROM " + fromTableName + " b WHERE " + getKeyColumnEquationList(getDbVendor(connection), keyColumnsWithFunctions, "a", "b") + ")";
 			try (ResultSet resultSet = statement.executeQuery(selectDuplicatesNumber)) {
 				resultSet.next();
 				return resultSet.getInt(1);
@@ -1749,8 +1731,9 @@ public class DbUtilities {
 
 	public static int dropDuplicatesCrossTable(Connection connection, String keepInTableName, String deleteInTableName, List<String> keyColumnsWithFunctions) throws Exception {
 		if (Utilities.isEmpty(keyColumnsWithFunctions)) {
+			DbVendor dbVendor = getDbVendor(connection);
 			try (Statement statement = connection.createStatement()) {
-				String deleteDuplicates = "DELETE FROM " + deleteInTableName + " WHERE " + Utilities.join(keyColumnsWithFunctions,  ", ") + " IN (SELECT " + Utilities.join(keyColumnsWithFunctions,  ", ") + " FROM " + keepInTableName + ")";
+				String deleteDuplicates = "DELETE FROM " + deleteInTableName + " WHERE " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + " IN (SELECT " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + " FROM " + keepInTableName + ")";
 				int numberOfDeletedDuplicates = statement.executeUpdate(deleteDuplicates);
 				connection.commit();
 				return numberOfDeletedDuplicates;
@@ -1765,7 +1748,7 @@ public class DbUtilities {
 
 	public static int dropDuplicates(Connection connection, String tableName, Collection<String> keyColumns) throws Exception {
 		if (detectDuplicates(connection, tableName, keyColumns) > 0) {
-		String originalItemIndexColumn = null;
+			String originalItemIndexColumn = null;
 			String originalDuplicateIndexColumn = null;
 			try (Statement statement = connection.createStatement()) {
 				originalItemIndexColumn = createLineNumberIndexColumn(connection, tableName, "drop_idx");
@@ -1775,7 +1758,7 @@ public class DbUtilities {
 				if (Utilities.isNotEmpty(keyColumns)) {
 					try {
 						String dateSuffix = DateUtilities.YYYYMMDDHHMMSS.format(new Date());
-						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + Utilities.join(keyColumns, ", ") + ")");
+						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), keyColumns) + ")");
 					} catch (Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
 					}
@@ -1811,7 +1794,7 @@ public class DbUtilities {
 				// Create additional index columns
 				if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
 					try {
-						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + Utilities.join(keyColumnsWithFunctions, ", ") + ")");
+						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ")");
 						connection.commit();
 					} catch (Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
@@ -1976,26 +1959,26 @@ public class DbUtilities {
 		return false;
 	}
 	
-	public static void copyTableStructure(Connection connection, String sourceTableName, List<String> columnNames, List<String> keyColmns, String destinationTableName) throws Exception {
+	public static void copyTableStructure(Connection connection, String sourceTableName, List<String> columnNames, List<String> keyColumns, String destinationTableName) throws Exception {
 		try (Statement statement = connection.createStatement()) {
 			DbVendor dbVendor = getDbVendor(connection);
 			if (dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
-				statement.execute("CREATE TABLE " + destinationTableName + " AS (SELECT " + Utilities.join(columnNames, ", ") + " FROM " + sourceTableName + ") WITH NO DATA");
+				statement.execute("CREATE TABLE " + destinationTableName + " AS (SELECT " + joinColumnVendorEscaped(dbVendor, columnNames) + " FROM " + sourceTableName + ") WITH NO DATA");
 			} else if (dbVendor == DbVendor.PostgreSQL) {
 				// Close a maybe open transaction to allow DDL-statement
 				connection.rollback();
-				statement.execute("CREATE TABLE " + destinationTableName + " AS SELECT " + Utilities.join(columnNames, ", ") + " FROM " + sourceTableName + " WHERE 1 = 0");
+				statement.execute("CREATE TABLE " + destinationTableName + " AS SELECT " + joinColumnVendorEscaped(dbVendor, columnNames) + " FROM " + sourceTableName + " WHERE 1 = 0");
 			} else if (dbVendor == DbVendor.Firebird) {
 				// There is no "create table as select"-statmenet in firebird
 				createTable(connection, destinationTableName, getColumnDataTypes(connection, sourceTableName), null);
 			} else {
-				statement.execute("CREATE TABLE " + destinationTableName + " AS SELECT " + Utilities.join(columnNames, ", ") + " FROM " + sourceTableName + " WHERE 1 = 0");
+				statement.execute("CREATE TABLE " + destinationTableName + " AS SELECT " + joinColumnVendorEscaped(dbVendor, columnNames) + " FROM " + sourceTableName + " WHERE 1 = 0");
 			}
 			
 			// Make all columns nullable
 			CaseInsensitiveMap<DbColumnType> columnDataTypes = getColumnDataTypes(connection, destinationTableName);
 			for (Entry<String, DbColumnType> columnDataType : columnDataTypes.entrySet()) {
-				if (!columnDataType.getValue().isNullable() && (keyColmns == null || !keyColmns.contains(columnDataType.getKey()))) {
+				if (!columnDataType.getValue().isNullable() && (keyColumns == null || !keyColumns.contains(columnDataType.getKey()))) {
 					String typeString = columnDataType.getValue().getTypeName();
 					if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.String) {
 						typeString += "(" + (Long.toString(columnDataType.getValue().getCharacterLength())) + ")";
@@ -2018,7 +2001,7 @@ public class DbUtilities {
 		try (Statement statement = connection.createStatement()) {
 			String indexNameSuffix = "_" + DateUtilities.YYYYMMDDHHMMSS.format(new Date()) + "_ix";
 			String indexName = Utilities.shortenStringToMaxLengthCutRight(tableName, 30 - indexNameSuffix.length(), "") + indexNameSuffix;
-			statement.execute("CREATE INDEX " + indexName + " ON " + tableName + " (" + Utilities.join(columns, ", ") + ")");
+			statement.execute("CREATE INDEX " + indexName + " ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), columns) + ")");
 			return indexName;
 		} catch (Exception e) {
 			throw new Exception("Cannot create index: " + e.getMessage(), e);
@@ -2046,9 +2029,9 @@ public class DbUtilities {
 				}
 			}
 			
-			String insertDataStatement = "INSERT INTO " + destinationTableName + " (" + additionalInsertValuesSqlColumns + Utilities.join(insertColumns, ", ") + ") SELECT " + additionalInsertValuesSqlValues + Utilities.join(insertColumns, ", ") + " FROM " + sourceTableName + " a";
+			String insertDataStatement = "INSERT INTO " + destinationTableName + " (" + additionalInsertValuesSqlColumns + joinColumnVendorEscaped(getDbVendor(connection), insertColumns) + ") SELECT " + additionalInsertValuesSqlValues + joinColumnVendorEscaped(getDbVendor(connection), insertColumns) + " FROM " + sourceTableName + " a";
 			if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
-				insertDataStatement += " WHERE NOT EXISTS (SELECT 1 FROM " + destinationTableName + " b WHERE " + getKeyColumnEquationList(keyColumnsWithFunctions, "a", "b") + ")";
+				insertDataStatement += " WHERE NOT EXISTS (SELECT 1 FROM " + destinationTableName + " b WHERE " + getKeyColumnEquationList(getDbVendor(connection), keyColumnsWithFunctions, "a", "b") + ")";
 			}
 			int numberOfInserts = statement.executeUpdate(insertDataStatement);
 			connection.commit();
@@ -2088,27 +2071,31 @@ public class DbUtilities {
 				updateColumns = new ArrayList<String>(updateColumns);
 				updateColumns.removeAll(keyColumns);
 				if (updateColumns.size() > 0 || additionalUpdateValuesSql.length() > 0) {
+					DbVendor dbVendor = getDbVendor(connection);
+					itemIndexColumn = replaceVendorReservedNames(dbVendor, itemIndexColumn);
 					String updatedIndexColumn = null;
 					try {
 						if (updateWithNullValues) {
 							String updateSetPart = "";
 							for (String updateColumn : updateColumns) {
+								updateColumn = replaceVendorReservedNames(dbVendor, updateColumn);
 								if (updateSetPart.length() > 0) {
 									updateSetPart += ", ";
 								}
 								updateSetPart += updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
-									+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + getKeyColumnEquationList(keyColumns, destinationTableName, "c") + "))";
+									+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))";
 							}
 							String updateAllAtOnce = "UPDATE " + destinationTableName + " SET " + additionalUpdateValuesSql + updateSetPart
-								+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + getKeyColumnEquationList(keyColumns, destinationTableName, "b") + ")";
+								+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "b") + ")";
 							updatedItems = statement.executeUpdate(updateAllAtOnce);
 						} else {
 							updatedIndexColumn = addIndexedIntegerColumn(connection, destinationTableName, "updatedindex");
 							for (String updateColumn : updateColumns) {
+								updateColumn = replaceVendorReservedNames(dbVendor, updateColumn);
 								String updateSingleColumn = "UPDATE " + destinationTableName
 									+ " SET " + additionalUpdateValuesSql + updatedIndexColumn + " = 1, " + updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
-										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(keyColumns, destinationTableName, "c") + "))"
-									+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(keyColumns, destinationTableName, "b") + ")";
+										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))"
+									+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "b") + ")";
 								statement.executeUpdate(updateSingleColumn);
 							}
 
@@ -2161,6 +2148,7 @@ public class DbUtilities {
 					String originalItemIndexColumn = null;
 					String updatedIndexColumn = null;
 					try {
+						DbVendor dbVendor = getDbVendor(connection);
 						originalItemIndexColumn = createLineNumberIndexColumn(connection, destinationTableName, "itemindex");
 						
 						// Mark duplicates in temp table
@@ -2176,11 +2164,12 @@ public class DbUtilities {
 						if (updateWithNullValues) {
 							String updateSetPart = "";
 							for (String updateColumn : updateColumns) {
+								updateColumn = replaceVendorReservedNames(dbVendor, updateColumn);
 								if (updateSetPart.length() > 0) {
 									updateSetPart += ", ";
 								}
 								updateSetPart += updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
-									+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + getKeyColumnEquationList(keyColumns, destinationTableName, "c") + "))";
+									+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))";
 							}
 							String updateAllAtOnce = "UPDATE " + destinationTableName + " SET " + additionalUpdateValuesSql + updateSetPart
 								+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + originalItemIndexColumn + " = b." + itemIndexColumn + ")";
@@ -2188,9 +2177,10 @@ public class DbUtilities {
 						} else {
 							updatedIndexColumn = addIndexedIntegerColumn(connection, destinationTableName, "updatedindex");
 							for (String updateColumn : updateColumns) {
+								updateColumn = replaceVendorReservedNames(dbVendor, updateColumn);
 								String updateSingleColumn = "UPDATE " + destinationTableName
 									+ " SET " + additionalUpdateValuesSql + updatedIndexColumn + " = 1, " + updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
-										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(keyColumns, destinationTableName, "c") + "))"
+										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))"
 									+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + originalItemIndexColumn + " = b." + itemIndexColumn + ")";
 								statement.executeUpdate(updateSingleColumn);
 							}
@@ -2232,6 +2222,7 @@ public class DbUtilities {
 		if (dbVendor == DbVendor.Oracle) {
 			try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM user_ind_columns WHERE LOWER(table_name) = ? AND LOWER(column_name) = ?")) {
 	        	for (String keyColumn : keyColumns) {
+	        		keyColumn = replaceVendorReservedNames(dbVendor, keyColumn);
 	        		statement.setString(1, tableName.toLowerCase());
 	        		statement.setString(2, keyColumn.toLowerCase());
 	        		try (ResultSet resultSet = statement.executeQuery()) {
@@ -2245,6 +2236,7 @@ public class DbUtilities {
         } else if (dbVendor == DbVendor.MySQL) {
 			try (PreparedStatement statement = connection.prepareStatement("SHOW INDEX FROM " + tableName.toLowerCase() + " WHERE column_name = ?")) {
 	        	for (String keyColumn : keyColumns) {
+	        		keyColumn = replaceVendorReservedNames(dbVendor, keyColumn);
 	        		statement.setString(1, keyColumn.toLowerCase());
 	        		try (ResultSet resultSet = statement.executeQuery()) {
 			            if (!resultSet.next()) {
@@ -3376,5 +3368,16 @@ public class DbUtilities {
 		} else {
 			return value;
 		}
+	}
+	
+	public static String joinColumnVendorEscaped(DbVendor dbVendor, Collection<String> columnNames) {
+		StringBuilder returnValue = new StringBuilder();
+		for (String columnName : columnNames) {
+			if (returnValue.length() > 0) {
+				returnValue.append(", ");
+			}
+			returnValue.append(replaceVendorReservedNames(dbVendor, columnName));
+		}
+		return returnValue.toString();
 	}
 }
