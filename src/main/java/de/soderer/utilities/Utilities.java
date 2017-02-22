@@ -42,6 +42,7 @@ import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
 
 /**
@@ -950,6 +951,27 @@ public class Utilities {
 			try {
 				closeable.close();
 			} catch (IOException e) {
+				// Do nothing
+			}
+		}
+	}
+
+	/**
+	 * XMLStreamReader.close() doesn't close the underlying stream.
+	 * So it must be closed separately.
+	 */
+	public static void closeQuietly(XMLStreamReader closeable, InputStream inputStream) {
+		if (closeable != null) {
+			try {
+				closeable.close();
+			} catch (Exception e) {
+				// Do nothing
+			}
+		}
+		if (inputStream != null) {
+			try {
+				inputStream.close();
+			} catch (Exception e) {
 				// Do nothing
 			}
 		}

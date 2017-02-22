@@ -77,4 +77,9 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> imple
 	public void cancel() {
 		// Do nothing
 	}
+	
+	@Override
+	public void changeTitle(String newTitle) {
+		// Do nothing
+	}
 }

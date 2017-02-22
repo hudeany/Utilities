@@ -13,16 +13,36 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NetworkUtilities {
-	/**
-	 *
-	 *
-	 * @param hostname
-	 * @param port
-	 * @return
-	 * @throws Exception
+	private static final String SPECIAL_CHARS_REGEXP = "\\p{Cntrl}\\(\\)<>@,;:'\\\\\\\"\\.\\[\\]";
+	private static final String VALID_CHARS_REGEXP = "[^\\s" + SPECIAL_CHARS_REGEXP + "]";
+	private static final String QUOTED_USER_REGEXP = "(\"[^\"]*\")";
+	private static final String WORD_REGEXP = "((" + VALID_CHARS_REGEXP + "|')+|" + QUOTED_USER_REGEXP + ")";
+	
+	private static final String DOMAIN_PART_REGEX = "\\p{Alnum}(?>[\\p{Alnum}-]*\\p{Alnum})*";
+	private static final String TOP_DOMAIN_PART_REGEX = "\\p{Alpha}{2,}";
+	private static final String DOMAIN_NAME_REGEX = "^(?:" + DOMAIN_PART_REGEX + "\\.)+" + "(" + TOP_DOMAIN_PART_REGEX + ")$";
+	
+	/** 
+	 * Regular expression for parsing email addresses. 
+	 * 
+	 * Taken from Apache Commons Validator. 
+	 * If this is not working, shame on Apache ;) 
 	 */
+    private static final String EMAIL_REGEX = "^\\s*?(.+)@(.+?)\\s*$";
+    
+    private static final String USER_REGEX = "^\\s*" + WORD_REGEXP + "(\\." + WORD_REGEXP + ")*$";
+    
+    /** Regular expression pattern for parsing email addresses. */
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
+
+    private static final Pattern USER_PATTERN = Pattern.compile(USER_REGEX);
+    
+    private static final Pattern DOMAIN_NAME_PATTERN = Pattern.compile(DOMAIN_NAME_REGEX);
+    
 	public static boolean testConnection(String hostname, int port) throws Exception {
 		Socket socket = null;
 		try {
@@ -157,4 +177,46 @@ public class NetworkUtilities {
 			return "unbekannter Rechnername";
 		}
 	}
+    
+    public static boolean isValidDomain(String domain) {
+    	String asciiDomainName;
+		try {
+			asciiDomainName = java.net.IDN.toASCII(domain);
+		} catch (Exception e) {
+			// invalid domain name like abc@.ch
+			return false;
+		}
+
+    	// Do not allow ".local" top level domain
+    	if (asciiDomainName.toLowerCase().endsWith(".local")) {
+    		return false;
+    	}
+    	
+    	return DOMAIN_NAME_PATTERN.matcher(asciiDomainName).matches();
+    }
+    
+    public static boolean isValidEmail(String emailAddress) {
+		Matcher m = EMAIL_PATTERN.matcher(emailAddress);
+				
+		// Check, if email address matches outline structure
+		if (!m.matches()) {
+			return false;
+		}
+		
+		// Check if user-part is valid
+		if (!isValidUser(m.group(1))) {
+			return false;
+		}
+		
+		// Check if domain-part is valid
+		if (!isValidDomain(m.group(2))) {
+			return false;
+		}
+		
+		return true;
+	}
+    
+    public static boolean isValidUser(String user) {
+    	return USER_PATTERN.matcher(user).matches();
+    }
 }

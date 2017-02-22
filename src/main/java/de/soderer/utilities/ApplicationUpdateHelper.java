@@ -500,4 +500,9 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	public void setPassword(char[] password) {
 		this.password = password;
 	}
+
+	@Override
+	public void changeTitle(String text) {
+		// do nothing	
+	}
 }
