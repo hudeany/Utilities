@@ -54,7 +54,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 
 	public void executeUpdate() {
 		String newVersionAvailable = checkForNewVersionAvailable();
-		if (newVersionAvailable != null && askForUpdate(newVersionAvailable)) {
+		if (askForUpdate(newVersionAvailable)) {
 			updateApplication();
 		}
 	}
