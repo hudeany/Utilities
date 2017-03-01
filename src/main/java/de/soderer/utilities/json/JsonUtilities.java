@@ -154,4 +154,34 @@ public class JsonUtilities {
 
 		return list;
 	}
+	
+	/**
+	 * JsonPath syntax:<br />
+	 *	$ : root<br />
+	 *	. or / : child separator<br />
+	 *	[n] : array operator<br />
+	 *<br />
+	 * JsonPath example:<br />
+	 * 	"$.list.customer[0].name"<br />
+	 * 
+	 * @param jsonReader
+	 * @param jsonPath
+	 * @throws Exception
+	 */
+	public static void readUpToJsonPath(JsonReader jsonReader, String jsonPath) throws Exception {
+		if (jsonPath.startsWith("/") || jsonPath.startsWith("$")) {
+			jsonPath = jsonPath.substring(1);
+		}
+		if (jsonPath.endsWith("/")) {
+			jsonPath = jsonPath.substring(0, jsonPath.length() - 1);
+		}
+		jsonPath = "$" + jsonPath.replace("/", ".");
+		
+		while (jsonReader.readNextToken() != null && !jsonReader.getCurrentJsonPath().equals(jsonPath)) {
+		}
+
+		if (!jsonReader.getCurrentJsonPath().equals(jsonPath)) {
+			throw new Exception("Path '" + jsonPath + "' is not part of the JSON data");
+		}
+	}
 }

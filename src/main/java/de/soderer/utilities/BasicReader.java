@@ -108,7 +108,9 @@ public abstract class BasicReader implements Closeable {
 		boolean escapeNextCharacter = false;
 		while (true) {
 			readNextCharacter();
-			if (!escapeNextCharacter) {
+			if (currentChar == null) {
+				return returnValue.toString();
+			} else if (!escapeNextCharacter) {
 				if (escapeCharacter != null && escapeCharacter == currentChar) {
 					escapeNextCharacter = true;
 				} else {

@@ -1035,11 +1035,9 @@ public class Utilities {
 		}
 	}
 
-	public static String join(Collection<?> list, String glue) {
-		if (list == null) {
+	public static String join(Iterable<?> iterableObject, String glue) {
+		if (iterableObject == null) {
 			return null;
-		} else if (list.size() == 0) {
-			return "";
 		} else {
 			if (glue == null) {
 				glue = "";
@@ -1047,7 +1045,7 @@ public class Utilities {
 
 			StringBuilder returnValue = new StringBuilder();
 			boolean isFirst = true;
-			for (Object object : list) {
+			for (Object object : iterableObject) {
 				if (!isFirst) {
 					returnValue.append(glue);
 				}

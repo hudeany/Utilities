@@ -243,11 +243,10 @@ public class JsonWriter implements Closeable {
 		}
 	}
 	
-	public void add(JsonItem jsonItem) throws Exception {
-		if (jsonItem == null) {
+	public void add(JsonObject jsonObject) throws Exception {
+		if (jsonObject == null) {
 			throw new Exception("Invalid null value added via 'add'. If done by intention use 'addSimpleJsonArrayValue' or 'addSimpleJsonObjectPropertyValue'");
-		} else if (jsonItem.isJsonObject()) {
-			JsonObject jsonObject = (JsonObject) jsonItem;
+		} else {
 			openJsonObject();
 			for (Entry<String, Object> property : jsonObject) {
 				openJsonObjectProperty(property.getKey());
@@ -261,8 +260,13 @@ public class JsonWriter implements Closeable {
 				}
 			}
 			closeJsonObject();
+		}
+	}
+	
+	public void add(JsonArray jsonArray) throws Exception {
+		if (jsonArray == null) {
+			throw new Exception("Invalid null value added via 'add'. If done by intention use 'addSimpleJsonArrayValue' or 'addSimpleJsonObjectPropertyValue'");
 		} else {
-			JsonArray jsonArray = (JsonArray) jsonItem;
 			openJsonArray();
 			for (Object arrayValue : jsonArray) {
 				if (arrayValue instanceof JsonObject) {
@@ -375,10 +379,10 @@ public class JsonWriter implements Closeable {
 	 * @return
 	 * @throws Exception
 	 */
-	public static String getJsonItemString(JsonItem jsonItem) throws Exception {
+	public static String getJsonItemString(JsonObject jsonObject) throws Exception {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (JsonWriter jsonWriter = new JsonWriter(outputStream, "UTF-8")) {
-			jsonWriter.add(jsonItem);
+			jsonWriter.add(jsonObject);
 			jsonWriter.close();
 		}
 		
@@ -392,13 +396,50 @@ public class JsonWriter implements Closeable {
 	 * @return
 	 * @throws Exception
 	 */
-	public static String getJsonItemString(JsonItem jsonItem, String linebreak, String indentation, String separator) throws Exception {
+	public static String getJsonItemString(JsonArray jsonArray) throws Exception {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		try (JsonWriter jsonWriter = new JsonWriter(outputStream, "UTF-8")) {
+			jsonWriter.add(jsonArray);
+			jsonWriter.close();
+		}
+		
+		return outputStream.toString("UTF-8");
+	}
+	
+	/**
+	 * This method should only be used to read small Json items
+	 * 
+	 * @param jsonItem
+	 * @return
+	 * @throws Exception
+	 */
+	public static String getJsonItemString(JsonObject jsonObject, String linebreak, String indentation, String separator) throws Exception {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (JsonWriter jsonWriter = new JsonWriter(outputStream, "UTF-8")) {
 			jsonWriter.setLinebreak(linebreak);
 			jsonWriter.setIndentation(indentation);
 			jsonWriter.setSeparator(separator);
-			jsonWriter.add(jsonItem);
+			jsonWriter.add(jsonObject);
+			jsonWriter.close();
+		}
+		
+		return outputStream.toString("UTF-8");
+	}
+	
+	/**
+	 * This method should only be used to read small Json items
+	 * 
+	 * @param jsonItem
+	 * @return
+	 * @throws Exception
+	 */
+	public static String getJsonItemString(JsonArray jsonArray, String linebreak, String indentation, String separator) throws Exception {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		try (JsonWriter jsonWriter = new JsonWriter(outputStream, "UTF-8")) {
+			jsonWriter.setLinebreak(linebreak);
+			jsonWriter.setIndentation(indentation);
+			jsonWriter.setSeparator(separator);
+			jsonWriter.add(jsonArray);
 			jsonWriter.close();
 		}
 		

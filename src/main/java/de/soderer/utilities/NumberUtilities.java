@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 
 public class NumberUtilities {
@@ -17,4 +18,18 @@ public class NumberUtilities {
 		}
 		return true;
 	}
+	
+	/**
+	 * Compare Number objects
+	 * 
+	 * @param a
+	 * @param b
+	 * @return
+	 * 	 1 if a > b
+	 * 	 0 if a = b
+	 * 	-1 if a < b
+	 */
+	public static int compare(Number a, Number b){
+        return new BigDecimal(a.toString()).compareTo(new BigDecimal(b.toString()));
+    }
 }

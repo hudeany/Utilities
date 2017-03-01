@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import sun.net.util.IPAddressUtil;
+
 public class NetworkUtilities {
 	private static final String SPECIAL_CHARS_REGEXP = "\\p{Cntrl}\\(\\)<>@,;:'\\\\\\\"\\.\\[\\]";
 	private static final String VALID_CHARS_REGEXP = "[^\\s" + SPECIAL_CHARS_REGEXP + "]";
@@ -219,4 +221,30 @@ public class NetworkUtilities {
     public static boolean isValidUser(String user) {
     	return USER_PATTERN.matcher(user).matches();
     }
+
+	public static boolean isValidHostname(String value) {
+		try {
+			InetAddress.getByName(value);
+			return true;
+		} catch (UnknownHostException e) {
+			return false;
+		}
+	}
+
+	public static boolean isValidIpV4(String ipv4) {
+		return IPAddressUtil.isIPv4LiteralAddress(ipv4);
+	}
+
+	public static boolean isValidIpV6(String ipv6) {
+		return IPAddressUtil.isIPv6LiteralAddress(ipv6);
+	}
+
+	public static boolean isValidUri(String uri) {
+		try {
+			new URL(uri).toURI();
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
 }

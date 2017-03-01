@@ -41,41 +41,52 @@ public class Json5Reader extends JsonReader {
 	public Json5Reader(InputStream inputStream, Charset encodingCharset) throws Exception {
 		super(inputStream, encodingCharset);
 	}
-	
+
 	@Override
-	public JsonToken readNextToken() throws Exception {
+	protected JsonToken readNextTokenInternal() throws Exception {
 		currentObject = null;
 		Character currentChar = readNextNonWhitespace();
 		if (currentChar == null) {
-			throw new Exception("Premature end of data");
+			if (openJsonItems.size() > 0) {
+				throw new Exception("Premature end of data");
+			} else {
+				return null;
+			}
 		}
+		
+		JsonToken jsonToken;
 		switch (currentChar) {
 			case '{': // Open JsonObject
 				if (openJsonItems.size() > 0 && openJsonItems.peek() == JsonToken.JsonObject_PropertyKey) {
 					openJsonItems.pop();
 				}
 				openJsonItems.push(JsonToken.JsonObject_Open);
-				return JsonToken.JsonObject_Open;
+				jsonToken = JsonToken.JsonObject_Open;
+				break;
 			case '}': // Close JsonObject
 				if (openJsonItems.pop() != JsonToken.JsonObject_Open) {
 					throw new Exception("Invalid json data '" + currentChar + "' at index " + getReadCharacters());
 				} else {
-					return JsonToken.JsonObject_Close;
+					jsonToken = JsonToken.JsonObject_Close;
 				}
+				break;
 			case '[': // Open JsonArray
 				if (openJsonItems.size() > 0 && openJsonItems.peek() == JsonToken.JsonObject_PropertyKey) {
 					openJsonItems.pop();
 				}
 				openJsonItems.push(JsonToken.JsonArray_Open);
-				return JsonToken.JsonArray_Open;
+				jsonToken = JsonToken.JsonArray_Open;
+				break;
 			case ']': // Close JsonArray
 				if (openJsonItems.pop() != JsonToken.JsonArray_Open) {
 					throw new Exception("Invalid json data '" + currentChar + "' at index " + getReadCharacters());
 				} else {
-					return JsonToken.JsonArray_Close;
+					jsonToken = JsonToken.JsonArray_Close;
 				}
+				break;
 			case ',': // Separator of JsonObject properties or JsonArray items
-				return readNextToken();
+				jsonToken = readNextTokenInternal();
+				break;
 			case '/': // Start comment
 				currentChar = readNextCharacter();
 				if (currentChar == '/') {
@@ -89,12 +100,16 @@ public class Json5Reader extends JsonReader {
 				} else {
 					throw new Exception("Invalid json data '" + currentChar + "' at index " + getReadCharacters());
 				}
-				return readNextToken();
+				jsonToken = readNextTokenInternal();
+				break;
 			case '"':
 			case '\'': // Start JsonObject propertykey or propertyvalue or JsonArray item
-				if (openJsonItems.peek() == JsonToken.JsonArray_Open) {
+				if (openJsonItems.size() == 0) {
 					currentObject = readQuotedText(currentChar, '\\');
-					return JsonToken.JsonSimpleValue;
+					jsonToken = JsonToken.JsonSimpleValue;
+				} else if (openJsonItems.peek() == JsonToken.JsonArray_Open) {
+					currentObject = readQuotedText(currentChar, '\\');
+					jsonToken = JsonToken.JsonSimpleValue;
 				} else if (openJsonItems.peek() == JsonToken.JsonObject_Open) {
 					currentObject = readQuotedText(currentChar, '\\');
 					currentChar = readNextNonWhitespace();
@@ -102,7 +117,7 @@ public class Json5Reader extends JsonReader {
 						throw new Exception("Invalid json data '" + currentChar + "' at index " + getReadCharacters());
 					}
 					openJsonItems.push(JsonToken.JsonObject_PropertyKey);
-					return JsonToken.JsonObject_PropertyKey;
+					jsonToken = JsonToken.JsonObject_PropertyKey;
 				} else if (openJsonItems.peek() == JsonToken.JsonObject_PropertyKey) {
 					currentObject = readQuotedText(currentChar, '\\');
 					openJsonItems.pop();
@@ -112,16 +127,20 @@ public class Json5Reader extends JsonReader {
 					} else if (currentChar != ',') {
 						throw new Exception("Invalid json data '" + currentChar + "' at index " + getReadCharacters());
 					}
-					return JsonToken.JsonSimpleValue;
+					jsonToken = JsonToken.JsonSimpleValue;
 				} else {
 					throw new Exception("Invalid json data '" + currentChar + "' at index " + getReadCharacters());
 				}
+				break;
 			default: // Start JsonObject propertykey or propertyvalue or JsonArray item
-				if (openJsonItems.peek() == JsonToken.JsonObject_Open) {
+				if (openJsonItems.size() == 0) {
+					currentObject = readSimpleJsonValue(readUpToNext(false, null).trim());
+					jsonToken = JsonToken.JsonSimpleValue;
+				} else if (openJsonItems.peek() == JsonToken.JsonObject_Open) {
 					currentObject = readJsonIdentifier(readUpToNext(false, null, ':').trim());
 					readNextCharacter();
 					openJsonItems.push(JsonToken.JsonObject_PropertyKey);
-					return JsonToken.JsonObject_PropertyKey;
+					jsonToken = JsonToken.JsonObject_PropertyKey;
 				} else if (openJsonItems.peek() == JsonToken.JsonObject_PropertyKey) {
 					openJsonItems.pop();
 					currentObject = readSimpleJsonValue(readUpToNext(false, null, ',', '}').trim());
@@ -129,18 +148,21 @@ public class Json5Reader extends JsonReader {
 					if (nextCharAfterSimpleValue == '}') {
 						reuseCurrentChar();
 					}
-					return JsonToken.JsonSimpleValue;
+					jsonToken = JsonToken.JsonSimpleValue;
 				} else if (openJsonItems.peek() == JsonToken.JsonArray_Open) {
 					currentObject = readSimpleJsonValue(readUpToNext(false, null, ',', ']').trim());
 					char nextCharAfterSimpleValue = readNextNonWhitespace();
 					if (nextCharAfterSimpleValue == ']') {
 						reuseCurrentChar();
 					}
-					return JsonToken.JsonSimpleValue;
+					jsonToken = JsonToken.JsonSimpleValue;
 				} else {
 					throw new Exception("Invalid json data '" + currentChar + "' at index " + getReadCharacters());
 				}
+				break;
 		}
+		
+		return jsonToken;
 	}
 
 	private Object readSimpleJsonValue(String valueString) throws Exception {
@@ -206,7 +228,7 @@ public class Json5Reader extends JsonReader {
 	 * @throws IOException 
 	 * @throws UnsupportedEncodingException 
 	 */
-	public static JsonItem readJsonItemString(String data) throws Exception {
+	public static JsonNode readJsonItemString(String data) throws Exception {
 		try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data.getBytes("UTF-8"))) {
 			try (Json5Reader jsonReader = new Json5Reader(inputStream)) {
 				return jsonReader.read();
