@@ -2794,11 +2794,11 @@ public class JsonValidationTest {
 					+ "type: \"object\",\n"
 					+ "properties: {\n"
 						+ "item1: { $ref: \"#/definitions/predefType1\" }\n"
-					+ "}\n"
+					+ "},\n"
 					+ "definitions: {\n"
-					+ "predefType1: { $ref: \"#/definitions/predefType2\" },\n"
-					+ "predefType2: { $ref: \"#/definitions/predefType1\" }\n"
-				+ "}\n"
+						+ "predefType1: { $ref: \"#/definitions/predefType2\" },\n"
+						+ "predefType2: { $ref: \"#/definitions/predefType1\" }\n"
+					+ "}\n"
 				+ "}\n";
 			schemaInputStream = new ByteArrayInputStream(schema.getBytes("UTF-8"));
 			JsonSchema jsonSchema = new JsonSchema(schemaInputStream);
