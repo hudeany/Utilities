@@ -911,8 +911,8 @@ public class Json5Test {
 			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonArray());
 			Assert.assertEquals(2, ((JsonArray) jsonNode.getValue()).size());
-			Assert.assertEquals(123.0, ((JsonArray) jsonNode.getValue()).get(0));
-			Assert.assertEquals(0.123, ((JsonArray) jsonNode.getValue()).get(1));
+			Assert.assertEquals(123.0f, ((JsonArray) jsonNode.getValue()).get(0));
+			Assert.assertEquals(0.123f, ((JsonArray) jsonNode.getValue()).get(1));
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
