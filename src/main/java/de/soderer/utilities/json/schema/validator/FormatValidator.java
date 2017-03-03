@@ -1,6 +1,7 @@
 package de.soderer.utilities.json.schema.validator;
 
 import java.text.ParseException;
+import java.util.regex.Pattern;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.NetworkUtilities;
@@ -23,9 +24,9 @@ public class FormatValidator extends BaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!jsonNode.isString()) {
-			throw new JsonSchemaDataValidationError("Expected a string value for formatcheck but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			throw new JsonSchemaDataValidationError("Expected a 'string' value for formatcheck but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
 		} else if ("email".equalsIgnoreCase((String) validatorData)) {
-			if (!jsonNode.isString() || !NetworkUtilities.isValidEmail((String) jsonNode.getValue())) {
+			if (!NetworkUtilities.isValidEmail((String) jsonNode.getValue())) {
 				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + jsonNode.getValue() + "'", jsonPath);
 			}
 		} else if ("date-time".equalsIgnoreCase((String) validatorData)) {
@@ -35,19 +36,25 @@ public class FormatValidator extends BaseJsonSchemaValidator {
 				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + jsonNode.getValue() + "'", jsonPath);
 			}
 		} else if ("hostname".equalsIgnoreCase((String) validatorData)) {
-			if (!jsonNode.isString() || !NetworkUtilities.isValidHostname((String) jsonNode.getValue())) {
+			if (!NetworkUtilities.isValidHostname((String) jsonNode.getValue())) {
 				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + jsonNode.getValue() + "'", jsonPath);
 			}
 		} else if ("ipv4".equalsIgnoreCase((String) validatorData)) {
-			if (!jsonNode.isString() || !NetworkUtilities.isValidIpV4((String) jsonNode.getValue())) {
+			if (!NetworkUtilities.isValidIpV4((String) jsonNode.getValue())) {
 				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + jsonNode.getValue() + "'", jsonPath);
 			}
 		} else if ("ipv6".equalsIgnoreCase((String) validatorData)) {
-			if (!jsonNode.isString() || !NetworkUtilities.isValidIpV6((String) jsonNode.getValue())) {
+			if (!NetworkUtilities.isValidIpV6((String) jsonNode.getValue())) {
 				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + jsonNode.getValue() + "'", jsonPath);
 			}
 		} else if ("uri".equalsIgnoreCase((String) validatorData)) {
-			if (!jsonNode.isString() || !NetworkUtilities.isValidUri((String) jsonNode.getValue())) {
+			if (!NetworkUtilities.isValidUri((String) jsonNode.getValue())) {
+				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + jsonNode.getValue() + "'", jsonPath);
+			}
+		} else if ("regex".equalsIgnoreCase((String) validatorData)) {
+			try {
+				Pattern.compile((String) jsonNode.getValue());
+			} catch (Exception e) {
 				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + jsonNode.getValue() + "'", jsonPath);
 			}
 		} else {

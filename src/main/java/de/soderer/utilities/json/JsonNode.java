@@ -1,5 +1,7 @@
 package de.soderer.utilities.json;
 
+import java.math.BigDecimal;
+
 public class JsonNode {
 	private Object value;
 	private JsonDataType jsonDataType;
@@ -10,7 +12,7 @@ public class JsonNode {
 			jsonDataType = JsonDataType.NULL;
 		} else if (value instanceof Boolean) {
 			jsonDataType = JsonDataType.BOOLEAN;
-		} else if (value instanceof Integer) {
+		} else if (value instanceof Integer || value instanceof Long || (value instanceof BigDecimal && ((BigDecimal) value).scale() == 0)) {
 			jsonDataType = JsonDataType.INTEGER;
 		} else if (value instanceof Number) {
 			jsonDataType = JsonDataType.NUMBER;

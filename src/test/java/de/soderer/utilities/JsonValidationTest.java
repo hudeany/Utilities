@@ -7,6 +7,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import de.soderer.utilities.json.Json5Reader;
+import de.soderer.utilities.json.JsonArray;
+import de.soderer.utilities.json.JsonNode;
+import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
 import de.soderer.utilities.json.JsonReader.JsonToken;
 import de.soderer.utilities.json.JsonUtilities;
@@ -51,6 +54,34 @@ public class JsonValidationTest {
 			String schema =
 				"{\n"
 					+ "type: \"string\"\n"
+				+ "}\n";
+			schemaInputStream = new ByteArrayInputStream(schema.getBytes("UTF-8"));
+			JsonSchema jsonSchema = new JsonSchema(schemaInputStream);
+			
+			String data =
+				"\"Text\"\n";
+			dataInputStream = new ByteArrayInputStream(data.getBytes("UTF-8"));
+			jsonSchema.validate(dataInputStream);
+		} catch (JsonSchemaDataValidationError e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(dataInputStream);
+			Utilities.closeQuietly(schemaInputStream);
+		}
+	}
+	
+	@Test
+	public void testSimpleStringOrInteger() {
+		InputStream dataInputStream = null;
+		InputStream schemaInputStream = null;
+		try {
+			String schema =
+				"{\n"
+					+ "type: [ \"string\", \"integer\" ]\n"
 				+ "}\n";
 			schemaInputStream = new ByteArrayInputStream(schema.getBytes("UTF-8"));
 			JsonSchema jsonSchema = new JsonSchema(schemaInputStream);
@@ -2826,10 +2857,10 @@ public class JsonValidationTest {
 		InputStream dataInputStream = null;
 		InputStream schemaInputStream = null;
 		try {
-			schemaInputStream = this.getClass().getResourceAsStream("JsonSchemaForJsonSchemas.json");
+			schemaInputStream = this.getClass().getResourceAsStream("JsonSchemaForJsonSchemasDraftV4.json");
 			JsonSchema jsonSchema = new JsonSchema(schemaInputStream);
 			
-			dataInputStream = this.getClass().getResourceAsStream("JsonSchemaForJsonSchemas.json");
+			dataInputStream = this.getClass().getResourceAsStream("JsonSchemaForJsonSchemasDraftV4.json");
 			jsonSchema.validate(dataInputStream);
 		} catch (JsonSchemaDataValidationError e) {
 			e.printStackTrace();
@@ -2840,6 +2871,41 @@ public class JsonValidationTest {
 		} finally {
 			Utilities.closeQuietly(dataInputStream);
 			Utilities.closeQuietly(schemaInputStream);
+		}
+	}
+	
+	@Test
+	public void testSuite() {
+		try (JsonReader testsuiteReader = new Json5Reader(this.getClass().getResourceAsStream("testsuite.json"))) {
+			int testCount = 0;
+			JsonNode testsuiteNode = testsuiteReader.read();
+			for (Object item : ((JsonArray) testsuiteNode.getValue())) {
+				testCount++;
+				JsonObject testItem = (JsonObject) item;
+				String description = (String) testItem.get("desc");
+				JsonObject schema = (JsonObject) testItem.get("schema");
+				Object data = testItem.get("data");
+				Boolean valid = (Boolean) testItem.get("valid");
+				
+				try {
+					JsonSchema jsonSchema = new JsonSchema(schema);
+					jsonSchema.validate(data);
+					if (!valid) {
+						Assert.fail("(Test#: " + testCount + ") Error in test '" + description + "': Missing expected error");
+					}
+				} catch (JsonSchemaDataValidationError e) {
+					if (valid) {
+						e.printStackTrace();
+						Assert.fail("(Test#: " + testCount + ") Error '" + e.getClass().getSimpleName() + "' in test '" + description + "': " + e.getMessage());
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					Assert.fail("(Test#: " + testCount + ") Error '" + e.getClass().getSimpleName() + "' in test '" + description + "': " + e.getMessage());
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
 		}
 	}
 }

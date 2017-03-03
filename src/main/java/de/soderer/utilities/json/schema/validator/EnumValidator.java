@@ -11,7 +11,9 @@ public class EnumValidator extends BaseJsonSchemaValidator {
     public EnumValidator(JsonSchemaDependencyResolver jsonSchemaDependencyResolver, String jsonSchemaPath, Object validatorData, JsonNode jsonNode, String jsonPath) throws JsonSchemaDefinitionError {
     	super(jsonSchemaDependencyResolver, jsonSchemaPath, validatorData, jsonNode, jsonPath);
     	
-    	if (!(validatorData instanceof JsonArray)) {
+    	if (validatorData == null) {
+    		throw new JsonSchemaDefinitionError("Enum data is 'null'", jsonSchemaPath);
+    	} else if (!(validatorData instanceof JsonArray)) {
     		throw new JsonSchemaDefinitionError("Enum contains a non-JsonArray", jsonSchemaPath);
     	} else if (((JsonArray) validatorData).size() == 0) {
     		throw new JsonSchemaDefinitionError("Enum contains an empty JsonArray", jsonSchemaPath);
@@ -27,6 +29,6 @@ public class EnumValidator extends BaseJsonSchemaValidator {
 				return;
 			}
 		}
-		throw new JsonSchemaDataValidationError("Enumeration expected one of '" + Utilities.join((JsonArray) validatorData, "', '") + "' but was '" + jsonNode.getValue().toString() + "'", jsonPath);
+		throw new JsonSchemaDataValidationError("Enumeration expected one of '" + Utilities.join((JsonArray) validatorData, "', '") + "' but was " + (jsonNode.isSimpleValue() ? "'" + jsonNode.getValue() + "'" : "'" + jsonNode.getJsonDataType() + "'"), jsonPath);
     }
 }

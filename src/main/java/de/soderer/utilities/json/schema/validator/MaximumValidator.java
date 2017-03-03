@@ -34,7 +34,7 @@ public class MaximumValidator extends ExtendedBaseJsonSchemaValidator {
 		Number maximumValue = ((Number) validatorData).doubleValue();
 		
 		if (NumberUtilities.compare(dataValue, maximumValue) > 0) {
-			throw new JsonSchemaDataValidationError("Maximum number is '" + ((Integer) validatorData) + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
+			throw new JsonSchemaDataValidationError("Maximum number is '" + ((Number) validatorData) + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
 		}
 		
 		if (parentValidatorData.containsPropertyKey("exclusiveMaximum")) {
@@ -44,7 +44,7 @@ public class MaximumValidator extends ExtendedBaseJsonSchemaValidator {
 			} else if (exclusiveMaximumRaw instanceof Boolean) {
 				if ((Boolean) exclusiveMaximumRaw) {
 					if (NumberUtilities.compare(dataValue, maximumValue) == 0) {
-						throw new JsonSchemaDataValidationError("Exclusive maximum number is '" + ((Integer) validatorData) + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
+						throw new JsonSchemaDataValidationError("Exclusive maximum number is '" + ((Number) validatorData) + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
 					}
 				}
 			} else {

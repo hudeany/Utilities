@@ -36,10 +36,20 @@ import de.soderer.utilities.json.schema.validator.RequiredValidator;
 import de.soderer.utilities.json.schema.validator.TypeValidator;
 import de.soderer.utilities.json.schema.validator.UniqueItemsValidator;
 
+/**
+ * JSON Schema Validator vor Draft Version v4<br/>
+ * http://json-schema.org/draft-04/schema#<br/>
+ * <br/>
+ * For standard definition see:<br/>
+ * http://json-schema.org<br/>
+ * <br/>
+ * For examples and help see:<br/>
+ * https://spacetelescope.github.io<br/>
+ */
 public class JsonSchema {
 	/**
-	 * Url describing the JSON schema standard and version a JSON schema was written for in compliance
-	 * Example: "http://json-schema.org/schema#" 
+	 * Url describing the JSON schema standard and version a JSON schema was written for in compliance<br/>
+	 * Example: "http://json-schema.org/schema#"
 	 */
 	private String schemaVersionUrl;
 
@@ -59,53 +69,65 @@ public class JsonSchema {
 		
 		if (jsonNode == null) {
 			throw new JsonSchemaDefinitionError("Contains null data", null);
-		} if (jsonNode.isJsonObject()) {
-			jsonSchemaDefinition = (JsonObject) jsonNode.getValue();
-
-			if (jsonSchemaDefinition.containsPropertyKey("id")) {
-				if (jsonSchemaDefinition.get("id") == null) {
-					throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'id'", "$");
-				} else if (!(jsonSchemaDefinition.get("id") instanceof String)) {
-					throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("id").getClass().getSimpleName() + "' for key 'id'", "$");
-				} else {
-					id = (String) jsonSchemaDefinition.get("id");
-				}
-			}
-			
-			if (jsonSchemaDefinition.containsPropertyKey("$schema")) {
-				if (jsonSchemaDefinition.get("$schema") == null) {
-					throw new JsonSchemaDefinitionError("Invalid data type 'null' for key '$schema'", "$");
-				} else if (!(jsonSchemaDefinition.get("$schema") instanceof String)) {
-					throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("$schema").getClass().getSimpleName() + "' for key '$schema'", "$");
-				} else {
-					schemaVersionUrl = (String) jsonSchemaDefinition.get("$schema");
-				}
-			}
-			
-			if (jsonSchemaDefinition.containsPropertyKey("title")) {
-				if (jsonSchemaDefinition.get("title") == null) {
-					throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'title'", "$");
-				} else if (!(jsonSchemaDefinition.get("title") instanceof String)) {
-					throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("title").getClass().getSimpleName() + "' for key 'title'", "$");
-				} else {
-					title = (String) jsonSchemaDefinition.get("title");
-				}
-			}
-			
-			if (jsonSchemaDefinition.containsPropertyKey("description")) {
-				if (jsonSchemaDefinition.get("description") == null) {
-					throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'description'", "$");
-				} else if (!(jsonSchemaDefinition.get("description") instanceof String)) {
-					throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("title").getClass().getSimpleName() + "' for key 'description'", "$");
-				} else {
-					description = (String) jsonSchemaDefinition.get("description");
-				}
-			}
-			
-			jsonSchemaDependencyResolver = new JsonSchemaDependencyResolver(jsonSchemaDefinition);
+		} else if (jsonNode.isJsonObject()) {
+			readSchemaData((JsonObject)jsonNode.getValue());
 		} else {
 			throw new JsonSchemaDefinitionError("Does not contain JsonObject", "$");
 		}
+	}
+
+	public JsonSchema(JsonObject jsonSchemaDefinition) throws JsonSchemaDefinitionError  {
+		readSchemaData(jsonSchemaDefinition);
+	}
+	
+	private void readSchemaData(JsonObject jsonSchemaDefinition) throws JsonSchemaDefinitionError {
+		if (jsonSchemaDefinition == null) {
+			throw new JsonSchemaDefinitionError("Contains null data", null);
+		} else {
+			this.jsonSchemaDefinition = jsonSchemaDefinition;
+		}
+
+		if (jsonSchemaDefinition.containsPropertyKey("id")) {
+			if (jsonSchemaDefinition.get("id") == null) {
+				throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'id'", "$");
+			} else if (!(jsonSchemaDefinition.get("id") instanceof String)) {
+				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("id").getClass().getSimpleName() + "' for key 'id'", "$");
+			} else {
+				id = (String) jsonSchemaDefinition.get("id");
+			}
+		}
+		
+		if (jsonSchemaDefinition.containsPropertyKey("$schema")) {
+			if (jsonSchemaDefinition.get("$schema") == null) {
+				throw new JsonSchemaDefinitionError("Invalid data type 'null' for key '$schema'", "$");
+			} else if (!(jsonSchemaDefinition.get("$schema") instanceof String)) {
+				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("$schema").getClass().getSimpleName() + "' for key '$schema'", "$");
+			} else {
+				schemaVersionUrl = (String) jsonSchemaDefinition.get("$schema");
+			}
+		}
+		
+		if (jsonSchemaDefinition.containsPropertyKey("title")) {
+			if (jsonSchemaDefinition.get("title") == null) {
+				throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'title'", "$");
+			} else if (!(jsonSchemaDefinition.get("title") instanceof String)) {
+				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("title").getClass().getSimpleName() + "' for key 'title'", "$");
+			} else {
+				title = (String) jsonSchemaDefinition.get("title");
+			}
+		}
+		
+		if (jsonSchemaDefinition.containsPropertyKey("description")) {
+			if (jsonSchemaDefinition.get("description") == null) {
+				throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'description'", "$");
+			} else if (!(jsonSchemaDefinition.get("description") instanceof String)) {
+				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("title").getClass().getSimpleName() + "' for key 'description'", "$");
+			} else {
+				description = (String) jsonSchemaDefinition.get("description");
+			}
+		}
+		
+		jsonSchemaDependencyResolver = new JsonSchemaDependencyResolver(jsonSchemaDefinition);
 	}
 	
 	/**
@@ -149,15 +171,18 @@ public class JsonSchema {
 			validator.validate();
 		}
 	}
+
+	public void validate(Object jsonData) throws Exception {
+		JsonNode jsonDataNode = new JsonNode(jsonData);
+		
+		List<BaseJsonSchemaValidator> validators = createValidators(jsonSchemaDefinition, jsonSchemaDependencyResolver, "$", jsonDataNode, "$");
+		for (BaseJsonSchemaValidator validator : validators) {
+			validator.validate();
+		}
+	}
 	
 	public static List<BaseJsonSchemaValidator> createValidators(JsonObject jsonSchemaDefinitionObject, JsonSchemaDependencyResolver jsonSchemaDependencyResolver, String currentJsonSchemaPath, JsonNode jsonNode, String currentJsonPath) throws JsonSchemaDefinitionError {
 		List<BaseJsonSchemaValidator> validators = new ArrayList<BaseJsonSchemaValidator>();
-		boolean hasMinimumValidator = false;
-		boolean hasItemsValidator = false;
-		boolean hasExclusiveMinimum = false;
-		boolean hasMaximumValidator = false;
-		boolean hasExclusiveMaximum = false;
-		boolean hasAdditionalItems = false;
 		for (Entry<String, Object> entry : jsonSchemaDefinitionObject.entrySet()) {
 			switch (entry.getKey()) {
 				case "type":
@@ -183,7 +208,6 @@ public class JsonSchema {
 					break;
 				case "items":
 					validators.add(new ItemsValidator(jsonSchemaDefinitionObject, jsonSchemaDependencyResolver, currentJsonSchemaPath + "." + entry.getKey(), entry.getValue(), jsonNode, currentJsonPath));
-					hasItemsValidator = true;
 					break;
 				case "minItems":
 					validators.add(new MinItemsValidator(jsonSchemaDependencyResolver, currentJsonSchemaPath + "." + entry.getKey(), entry.getValue(), jsonNode, currentJsonPath));
@@ -202,15 +226,12 @@ public class JsonSchema {
 					break;
 				case "minimum":
 					validators.add(new MinimumValidator(jsonSchemaDefinitionObject, jsonSchemaDependencyResolver, currentJsonSchemaPath + "." + entry.getKey(), entry.getValue(), jsonNode, currentJsonPath));
-					hasMinimumValidator = true;
 					break;
 				case "maximum":
 					validators.add(new MaximumValidator(jsonSchemaDefinitionObject, jsonSchemaDependencyResolver, currentJsonSchemaPath + "." + entry.getKey(), entry.getValue(), jsonNode, currentJsonPath));
-					hasMaximumValidator = true;
 					break;
 				case "multipleOf":
 					validators.add(new MultipleOfValidator(jsonSchemaDependencyResolver, currentJsonSchemaPath + "." + entry.getKey(), entry.getValue(), jsonNode, currentJsonPath));
-					hasMaximumValidator = true;
 					break;
 				case "anyOf":
 					validators.add(new AnyOfValidator(jsonSchemaDependencyResolver, currentJsonSchemaPath + "." + entry.getKey(), entry.getValue(), jsonNode, currentJsonPath));
@@ -240,15 +261,21 @@ public class JsonSchema {
 					
 				case "exclusiveMinimum":
 					// Do nothing, because this is validated by MinimumValidator, too
-					hasExclusiveMinimum = true;
+					if (!jsonSchemaDefinitionObject.containsPropertyKey("minimum")) {
+						throw new JsonSchemaDefinitionError("Missing 'minimum' rule for 'exclusiveMinimum'", currentJsonSchemaPath);
+					}
 					break;
 				case "exclusiveMaximum":
 					// Do nothing, because this is validated by MaximumValidator, too
-					hasExclusiveMaximum = true;
+					if (!jsonSchemaDefinitionObject.containsPropertyKey("maximum")) {
+						throw new JsonSchemaDefinitionError("Missing 'maximum' rule for 'exclusiveMaximum'", currentJsonSchemaPath);
+					}
 					break;
 				case "additionalItems":
 					// Do nothing, because this is validated by ItemsValidator, too
-					hasAdditionalItems = true;
+					if (!jsonSchemaDefinitionObject.containsPropertyKey("items")) {
+						throw new JsonSchemaDefinitionError("Missing 'items' rule for 'additionalItems'", currentJsonSchemaPath);
+					}
 					break;
 					
 				case "$ref":
@@ -291,15 +318,6 @@ public class JsonSchema {
 					break;
 				default:
 					throw new JsonSchemaDefinitionError("Unexpected data key '" + entry.getKey() + "'", currentJsonSchemaPath);
-			}
-			if (hasExclusiveMinimum && !hasMinimumValidator) {
-				throw new JsonSchemaDefinitionError("Missing 'minimum' rule for 'exclusiveMinimum'", currentJsonSchemaPath);
-			}
-			if (hasExclusiveMaximum && !hasMaximumValidator) {
-				throw new JsonSchemaDefinitionError("Missing 'maximum' rule for 'exclusiveMaximum'", currentJsonSchemaPath);
-			}
-			if (hasAdditionalItems && !hasItemsValidator) {
-				throw new JsonSchemaDefinitionError("Missing 'items' rule for 'additionalItems'", currentJsonSchemaPath);
 			}
 		}
 		return validators;
