@@ -26,7 +26,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 			System.out.println();
 			return false;
 		} else {
-			System.out.println(getI18NString("newVersion", applicationName, availableNewVersion, applicationVersion.toString()));
+			System.out.println(getI18NString("newVersion", availableNewVersion, applicationName, applicationVersion.toString()));
 			String input = console.readLine(getI18NString("installUpdate") + ": ");
 			System.out.println();
 			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j"));
@@ -92,7 +92,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 			String pattern;
 			switch(resourceKey) {
 				case "noNewerVersion": pattern = "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}."; break;
-				case "newVersion": pattern = "Es ist die eine neuere Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
+				case "newVersion": pattern = "Es ist die eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
 				case "installUpdate": pattern = "Update installieren? (jN)"; break;
 				case "enterUsername": pattern = "Bitte Usernamen eingeben"; break;
 				case "enterPassword": pattern = "Bitte Passwort eingeben"; break;

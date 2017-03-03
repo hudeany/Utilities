@@ -70,7 +70,7 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 			textDialog.setVisible(true);
 			return false;
 		} else {
-			QuestionDialog questionDialog = new QuestionDialog(this, "Update", getI18NString("newVersion", applicationName, availableNewVersion, applicationVersion.toString()) + "\n" + getI18NString("installUpdate"), getI18NString("Yes"), getI18NString("No"));
+			QuestionDialog questionDialog = new QuestionDialog(this, "Update", getI18NString("newVersion", availableNewVersion, applicationName, applicationVersion.toString()) + "\n" + getI18NString("installUpdate"), getI18NString("Yes"), getI18NString("No"));
 			questionDialog.setVisible(true);
 			return questionDialog.getAnswerButtonIndex() == 0;
 		}
@@ -97,7 +97,7 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 			String pattern;
 			switch(resourceKey) {
 				case "noNewerVersion": pattern = "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}."; break;
-				case "newVersion": pattern = "Es ist die eine neuere Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
+				case "newVersion": pattern = "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
 				case "installUpdate": pattern = "Update installieren? (jN)"; break;
 				case "enterUsername": pattern = "Bitte Usernamen eingeben"; break;
 				case "enterPassword": pattern = "Bitte Passwort eingeben"; break;
