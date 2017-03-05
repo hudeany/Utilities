@@ -17,7 +17,9 @@ public class OneOfValidator extends BaseJsonSchemaValidator {
     public OneOfValidator(JsonSchemaDependencyResolver jsonSchemaDependencyResolver, String jsonSchemaPath, Object validatorData, JsonNode jsonNode, String jsonPath) throws JsonSchemaDefinitionError {
     	super(jsonSchemaDependencyResolver, jsonSchemaPath, validatorData, jsonNode, jsonPath);
     	
-    	if (validatorData instanceof JsonArray) {
+    	if (validatorData == null) {
+    		throw new JsonSchemaDefinitionError("OneOf array is 'null'", jsonSchemaPath);
+    	} else if (validatorData instanceof JsonArray) {
     		subValidatorPackages = new ArrayList<List<BaseJsonSchemaValidator>>();
     		for (Object subValidationData : ((JsonArray) validatorData)) {
     			if (subValidationData instanceof JsonObject) {

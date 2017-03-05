@@ -15,7 +15,9 @@ public class NotValidator extends BaseJsonSchemaValidator {
     public NotValidator(JsonSchemaDependencyResolver jsonSchemaDependencyResolver, String jsonSchemaPath, Object validatorData, JsonNode jsonNode, String jsonPath) throws JsonSchemaDefinitionError {
     	super(jsonSchemaDependencyResolver, jsonSchemaPath, validatorData, jsonNode, jsonPath);
     	
-    	if (validatorData instanceof JsonObject) {
+    	if (validatorData == null) {
+    		throw new JsonSchemaDefinitionError("Not-validation data is 'null'", jsonSchemaPath);
+    	} else if (validatorData instanceof JsonObject) {
     		subValidators = JsonSchema.createValidators((JsonObject) validatorData, jsonSchemaDependencyResolver, jsonSchemaPath, jsonNode, jsonPath);
     		if (subValidators == null || subValidators.size() == 0) {
     			throw new JsonSchemaDefinitionError("Not-validation JsonObject is empty", jsonSchemaPath);

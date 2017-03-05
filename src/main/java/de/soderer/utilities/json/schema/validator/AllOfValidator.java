@@ -17,7 +17,9 @@ public class AllOfValidator extends BaseJsonSchemaValidator {
     public AllOfValidator(JsonSchemaDependencyResolver jsonSchemaDependencyResolver, String jsonSchemaPath, Object validatorData, JsonNode jsonNode, String jsonPath) throws JsonSchemaDefinitionError {
     	super(jsonSchemaDependencyResolver, jsonSchemaPath, validatorData, jsonNode, jsonPath);
     	
-    	if (validatorData instanceof JsonArray) {
+    	if (validatorData == null) {
+    		throw new JsonSchemaDefinitionError("AllOf array is 'null'", jsonSchemaPath);
+    	} else if (validatorData instanceof JsonArray) {
     		subValidatorPackages = new ArrayList<List<BaseJsonSchemaValidator>>();
     		for (int i = 0; i < ((JsonArray) validatorData).size(); i++) {
     			Object subValidationData = ((JsonArray) validatorData).get(i);
