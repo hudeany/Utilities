@@ -25,32 +25,34 @@ public class DependenciesValidator extends BaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!jsonNode.isJsonObject()) {
-			throw new JsonSchemaDataValidationError("Expected a 'object' value for dependency but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
-		}
-
-		for (Entry<String, Object> entry : ((JsonObject) validatorData).entrySet()) {
-			if (((JsonObject) jsonNode.getValue()).containsPropertyKey(entry.getKey())) {
-				if (entry.getValue() == null) {
-					throw new JsonSchemaDefinitionError("Dependencies value is 'null'", jsonSchemaPath);
-				} else if (entry.getValue() instanceof JsonArray) {
-					for (Object item : ((JsonArray) entry.getValue())) {
-						if (item == null || !(item instanceof String)) {
-							throw new JsonSchemaDefinitionError("Dependencies value for key '" + entry.getKey() + "' contains invalid data that is no 'string'", jsonSchemaPath);
-						} else if (!((JsonObject) jsonNode.getValue()).containsPropertyKey((String) item)) {
-							throw new JsonSchemaDataValidationError("Dependent property key '" + (String) item + "' for existing parent key '" + entry.getKey() + "' is missing", jsonSchemaPath);
+			if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+				throw new JsonSchemaDataValidationError("Expected a 'object' value for dependency but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			}
+		} else {
+			for (Entry<String, Object> entry : ((JsonObject) validatorData).entrySet()) {
+				if (((JsonObject) jsonNode.getValue()).containsPropertyKey(entry.getKey())) {
+					if (entry.getValue() == null) {
+						throw new JsonSchemaDefinitionError("Dependencies value is 'null'", jsonSchemaPath);
+					} else if (entry.getValue() instanceof JsonArray) {
+						for (Object item : ((JsonArray) entry.getValue())) {
+							if (item == null || !(item instanceof String)) {
+								throw new JsonSchemaDefinitionError("Dependencies value for key '" + entry.getKey() + "' contains invalid data that is no 'string'", jsonSchemaPath);
+							} else if (!((JsonObject) jsonNode.getValue()).containsPropertyKey((String) item)) {
+								throw new JsonSchemaDataValidationError("Dependent property key '" + (String) item + "' for existing parent key '" + entry.getKey() + "' is missing", jsonSchemaPath);
+							}
 						}
+					} else if (entry.getValue() instanceof JsonObject) {
+						List<BaseJsonSchemaValidator> subValidators = JsonSchema.createValidators((JsonObject) entry.getValue(), jsonSchemaDependencyResolver, jsonSchemaPath, jsonNode, jsonPath);
+						for (BaseJsonSchemaValidator validator : subValidators) {
+							validator.validate();
+						}
+					} else if (entry.getValue() instanceof String) {
+						if (!((JsonObject) jsonNode.getValue()).containsPropertyKey((String) entry.getValue())) {
+							throw new JsonSchemaDataValidationError("Dependent property key '" + (String) entry.getValue() + "' for existing parent key '" + entry.getKey() + "' is missing", jsonSchemaPath);
+						}
+					} else {
+						throw new JsonSchemaDefinitionError("Dependencies value for key '" + entry.getKey() + "' is not an 'object' or 'array' or 'string'", jsonSchemaPath);
 					}
-				} else if (entry.getValue() instanceof JsonObject) {
-					List<BaseJsonSchemaValidator> subValidators = JsonSchema.createValidators((JsonObject) entry.getValue(), jsonSchemaDependencyResolver, jsonSchemaPath, jsonNode, jsonPath);
-					for (BaseJsonSchemaValidator validator : subValidators) {
-						validator.validate();
-					}
-				} else if (entry.getValue() instanceof String) {
-					if (!((JsonObject) jsonNode.getValue()).containsPropertyKey((String) entry.getValue())) {
-						throw new JsonSchemaDataValidationError("Dependent property key '" + (String) entry.getValue() + "' for existing parent key '" + entry.getKey() + "' is missing", jsonSchemaPath);
-					}
-				} else {
-					throw new JsonSchemaDefinitionError("Dependencies value for key '" + entry.getKey() + "' is not an 'object' or 'array' or 'string'", jsonSchemaPath);
 				}
 			}
 		}

@@ -38,7 +38,7 @@ public class ReferenceValidator extends BaseJsonSchemaValidator {
 		} catch (JsonSchemaDefinitionError e) {
 			throw e;
 		} catch (Exception e) {
-			throw new JsonSchemaDefinitionError("Error while resolving JSON schema reference: " + e.getMessage(), jsonSchemaPath);
+			throw new JsonSchemaDefinitionError("Error '" + e.getClass().getSimpleName() + "' while resolving JSON schema reference '" + validatorData + "': " + e.getMessage(), jsonSchemaPath);
 		}
     }
 	

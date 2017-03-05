@@ -28,11 +28,13 @@ public class MaxItemsValidator extends BaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!(jsonNode.isJsonArray())) {
-			throw new JsonSchemaDataValidationError("Expected data type 'array' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
-		}
-		
-		if (((JsonArray) jsonNode.getValue()).size() > ((Integer) validatorData)) {
-			throw new JsonSchemaDataValidationError("Required maximum number of items is '" + ((Integer) validatorData) + "' but was '" + ((JsonArray) jsonNode.getValue()).size()  + "'", jsonPath);
+			if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+				throw new JsonSchemaDataValidationError("Expected data type 'array' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			}
+		} else {
+			if (((JsonArray) jsonNode.getValue()).size() > ((Integer) validatorData)) {
+				throw new JsonSchemaDataValidationError("Required maximum number of items is '" + ((Integer) validatorData) + "' but was '" + ((JsonArray) jsonNode.getValue()).size()  + "'", jsonPath);
+			}
 		}
     }
 }

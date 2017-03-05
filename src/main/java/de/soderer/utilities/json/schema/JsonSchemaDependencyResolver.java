@@ -1,6 +1,8 @@
 package de.soderer.utilities.json.schema;
 
 import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,6 +20,17 @@ import de.soderer.utilities.json.JsonObject;
 public class JsonSchemaDependencyResolver {
 	private JsonObject schemaDocumentNode = null;
 	private Map<String, JsonObject> additionalSchemaDocumentNodes = new HashMap<String, JsonObject>();
+	
+	/**
+	 * Draft V4 mode is NOT default mode<br />
+	 * <br />
+	 * The default mode uses a slightly more strict JSON schema definition.<br />
+	 * This is useful in detection of schema definition errors.<br />
+	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
+	 */
+	private boolean useDraftV4Mode = false;
+	
+	private boolean downloadReferencedSchemas = false;
 
 	private String latestJsonPath = null;
 	private Set<String> latestDependencies;
@@ -64,6 +77,14 @@ public class JsonSchemaDependencyResolver {
 			} else {
 				// Dereference other document reference
 				String packageName = reference.substring(0, reference.lastIndexOf("#"));
+				
+				if (!additionalSchemaDocumentNodes.containsKey(packageName) && packageName != null && packageName.toLowerCase().startsWith("http") && downloadReferencedSchemas) {
+					URLConnection urlConnection = new URL(packageName).openConnection();
+					try (InputStream jsonSchemaInputStream = urlConnection.getInputStream()) {
+						addJsonSchemaDefinition(packageName, jsonSchemaInputStream);
+					}
+				}
+						
 				if (!additionalSchemaDocumentNodes.containsKey(packageName)) {
 					throw new Exception("Unknown JSON schema reference package name '" + packageName + "'");
 				} else if (additionalSchemaDocumentNodes.get(packageName) == null) {
@@ -143,5 +164,17 @@ public class JsonSchemaDependencyResolver {
 		} else{
 			latestDependencies.add((String) validatorData);
 		}
+	}
+	
+	public void setUseDraftV4Mode(boolean useDraftV4Mode) {
+		this.useDraftV4Mode = useDraftV4Mode;
+	}
+
+	public boolean isUseDraftV4Mode() {
+		return useDraftV4Mode;
+	}
+
+	public void setDownloadReferencedSchemas(boolean downloadReferencedSchemas) {
+		this.downloadReferencedSchemas = downloadReferencedSchemas;
 	}
 }

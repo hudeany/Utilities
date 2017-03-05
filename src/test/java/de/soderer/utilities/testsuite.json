@@ -162,7 +162,7 @@
         "data": {
             "foo": false
         },
-        "valid": false
+        "valid": true
     },
     {
         "desc": "description : root pointer ref; test: recursive match",
@@ -179,7 +179,7 @@
                 "foo": false
             }
         },
-        "valid": false
+        "valid": true
     },
     {
         "desc": "description : root pointer ref; test: mismatch",

@@ -2888,7 +2888,43 @@ public class JsonValidationTest {
 				Boolean valid = (Boolean) testItem.get("valid");
 				
 				try {
-					JsonSchema jsonSchema = new JsonSchema(schema);
+					JsonSchema jsonSchema = new JsonSchema(schema, true);
+					jsonSchema.validate(data);
+					if (!valid) {
+						Assert.fail("(Test#: " + testCount + ") Error in test '" + description + "': Missing expected error");
+					}
+				} catch (JsonSchemaDataValidationError e) {
+					if (valid) {
+						e.printStackTrace();
+						Assert.fail("(Test#: " + testCount + ") Error '" + e.getClass().getSimpleName() + "' in test '" + description + "': " + e.getMessage());
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					Assert.fail("(Test#: " + testCount + ") Error '" + e.getClass().getSimpleName() + "' in test '" + description + "': " + e.getMessage());
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testSuiteV4() {
+		try (JsonReader testsuiteReader = new Json5Reader(this.getClass().getResourceAsStream("draftv4.json"))) {
+			int testCount = 0;
+			JsonNode testsuiteNode = testsuiteReader.read();
+			for (Object item : ((JsonArray) testsuiteNode.getValue())) {
+				testCount++;
+				JsonObject testItem = (JsonObject) item;
+				String description = (String) testItem.get("description");
+				JsonObject schema = (JsonObject) testItem.get("schema");
+				Object data = testItem.get("data");
+				Boolean valid = (Boolean) testItem.get("valid");
+				
+				try {
+					JsonSchema jsonSchema = new JsonSchema(schema, true);
+					jsonSchema.setDownloadReferencedSchemas(true);
 					jsonSchema.validate(data);
 					if (!valid) {
 						Assert.fail("(Test#: " + testCount + ") Error in test '" + description + "': Missing expected error");

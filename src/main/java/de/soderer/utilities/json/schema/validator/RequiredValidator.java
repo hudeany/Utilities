@@ -19,16 +19,18 @@ public class RequiredValidator extends BaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!(jsonNode.isJsonObject())) {
-			throw new JsonSchemaDataValidationError("Expected data type 'object' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
-		}
-		
-		for (Object propertyKey : (JsonArray) validatorData) {
-			if (propertyKey == null) {
-				throw new JsonSchemaDefinitionError("Data entry for required property key name must be 'string' but was 'null'", jsonSchemaPath);
-			} else if (!(propertyKey instanceof String)) {
-				throw new JsonSchemaDefinitionError("Data entry for required property key name must be 'string' but was '" + propertyKey.getClass().getSimpleName() + "'", jsonSchemaPath);
-			} else if (!((JsonObject) jsonNode.getValue()).containsPropertyKey((String) propertyKey)) {
-				throw new JsonSchemaDataValidationError("Invalid property key. Missing required property '" + propertyKey + "'", jsonPath);
+			if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+				throw new JsonSchemaDataValidationError("Expected data type 'object' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			}
+		} else {
+			for (Object propertyKey : (JsonArray) validatorData) {
+				if (propertyKey == null) {
+					throw new JsonSchemaDefinitionError("Data entry for required property key name must be 'string' but was 'null'", jsonSchemaPath);
+				} else if (!(propertyKey instanceof String)) {
+					throw new JsonSchemaDefinitionError("Data entry for required property key name must be 'string' but was '" + propertyKey.getClass().getSimpleName() + "'", jsonSchemaPath);
+				} else if (!((JsonObject) jsonNode.getValue()).containsPropertyKey((String) propertyKey)) {
+					throw new JsonSchemaDataValidationError("Invalid property key. Missing required property '" + propertyKey + "'", jsonPath);
+				}
 			}
 		}
     }

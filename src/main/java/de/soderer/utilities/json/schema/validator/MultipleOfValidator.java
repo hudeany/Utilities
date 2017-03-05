@@ -27,11 +27,13 @@ public class MultipleOfValidator extends BaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!(jsonNode.isNumber())) {
-			throw new JsonSchemaDataValidationError("Expected data type 'number' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
-		}
-		
-		if (new BigDecimal(jsonNode.getValue().toString()).remainder(new BigDecimal(validatorData.toString())).compareTo(BigDecimal.ZERO) != 0) {
-			throw new JsonSchemaDataValidationError("Number must be multiple of '" + ((Number) validatorData).toString() + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
+			if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+				throw new JsonSchemaDataValidationError("Expected data type 'number' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			}
+		} else {
+			if (new BigDecimal(jsonNode.getValue().toString()).remainder(new BigDecimal(validatorData.toString())).compareTo(BigDecimal.ZERO) != 0) {
+				throw new JsonSchemaDataValidationError("Number must be multiple of '" + ((Number) validatorData).toString() + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
+			}
 		}
     }
 }

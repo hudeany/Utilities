@@ -27,28 +27,30 @@ public class MaximumValidator extends ExtendedBaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!(jsonNode.isNumber())) {
-			throw new JsonSchemaDataValidationError("Expected data type 'number' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
-		}
-		
-		Number dataValue = ((Number) jsonNode.getValue()).doubleValue();
-		Number maximumValue = ((Number) validatorData).doubleValue();
-		
-		if (NumberUtilities.compare(dataValue, maximumValue) > 0) {
-			throw new JsonSchemaDataValidationError("Maximum number is '" + ((Number) validatorData) + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
-		}
-		
-		if (parentValidatorData.containsPropertyKey("exclusiveMaximum")) {
-			Object exclusiveMaximumRaw = parentValidatorData.get("exclusiveMaximum");
-			if (exclusiveMaximumRaw == null) {
-				throw new JsonSchemaDefinitionError("Property 'exclusiveMaximum' is 'null'", jsonSchemaPath);
-			} else if (exclusiveMaximumRaw instanceof Boolean) {
-				if ((Boolean) exclusiveMaximumRaw) {
-					if (NumberUtilities.compare(dataValue, maximumValue) == 0) {
-						throw new JsonSchemaDataValidationError("Exclusive maximum number is '" + ((Number) validatorData) + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
+			if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+				throw new JsonSchemaDataValidationError("Expected data type 'number' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			}
+		} else {
+			Number dataValue = ((Number) jsonNode.getValue()).doubleValue();
+			Number maximumValue = ((Number) validatorData).doubleValue();
+			
+			if (NumberUtilities.compare(dataValue, maximumValue) > 0) {
+				throw new JsonSchemaDataValidationError("Maximum number is '" + ((Number) validatorData) + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
+			}
+			
+			if (parentValidatorData.containsPropertyKey("exclusiveMaximum")) {
+				Object exclusiveMaximumRaw = parentValidatorData.get("exclusiveMaximum");
+				if (exclusiveMaximumRaw == null) {
+					throw new JsonSchemaDefinitionError("Property 'exclusiveMaximum' is 'null'", jsonSchemaPath);
+				} else if (exclusiveMaximumRaw instanceof Boolean) {
+					if ((Boolean) exclusiveMaximumRaw) {
+						if (NumberUtilities.compare(dataValue, maximumValue) == 0) {
+							throw new JsonSchemaDataValidationError("Exclusive maximum number is '" + ((Number) validatorData) + "' but value was '" + ((Number) jsonNode.getValue())  + "'", jsonPath);
+						}
 					}
+				} else {
+					throw new JsonSchemaDefinitionError("ExclusiveMaximum data is not 'boolean'", jsonSchemaPath);
 				}
-			} else {
-				throw new JsonSchemaDefinitionError("ExclusiveMaximum data is not 'boolean'", jsonSchemaPath);
 			}
 		}
     }

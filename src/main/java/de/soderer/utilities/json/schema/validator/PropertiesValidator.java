@@ -22,26 +22,28 @@ public class PropertiesValidator extends BaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!(jsonNode.isJsonObject())) {
-			throw new JsonSchemaDataValidationError("Expected data type 'object' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
-		}
-		
-		for (Entry<String, Object> entry : ((JsonObject) validatorData).entrySet()) {
-			if (!(entry.getValue() instanceof JsonObject)) {
-				throw new JsonSchemaDefinitionError("Properties data is not a JsonObject", jsonSchemaPath);
-	    	} else {
-	    		if (((JsonObject) jsonNode.getValue()).containsPropertyKey(entry.getKey())) {
-					JsonNode newJsonNode;
-					try {
-						newJsonNode = new JsonNode(((JsonObject) jsonNode.getValue()).get(entry.getKey()));
-					} catch (Exception e) {
-						throw new JsonSchemaDataValidationError("Invalid data type '" + ((JsonObject) jsonNode.getValue()).get(entry.getKey()).getClass().getSimpleName() + "'", jsonPath + "." + entry.getKey());
+			if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+				throw new JsonSchemaDataValidationError("Expected data type 'object' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			}
+		} else {
+			for (Entry<String, Object> entry : ((JsonObject) validatorData).entrySet()) {
+				if (!(entry.getValue() instanceof JsonObject)) {
+					throw new JsonSchemaDefinitionError("Properties data is not a JsonObject", jsonSchemaPath);
+		    	} else {
+		    		if (((JsonObject) jsonNode.getValue()).containsPropertyKey(entry.getKey())) {
+						JsonNode newJsonNode;
+						try {
+							newJsonNode = new JsonNode(((JsonObject) jsonNode.getValue()).get(entry.getKey()));
+						} catch (Exception e) {
+							throw new JsonSchemaDataValidationError("Invalid data type '" + ((JsonObject) jsonNode.getValue()).get(entry.getKey()).getClass().getSimpleName() + "'", jsonPath + "." + entry.getKey());
+						}
+						List<BaseJsonSchemaValidator> subValidators = JsonSchema.createValidators(((JsonObject) entry.getValue()), jsonSchemaDependencyResolver, jsonSchemaPath, newJsonNode, jsonPath + "." + entry.getKey());
+						for (BaseJsonSchemaValidator subValidator : subValidators) {
+							subValidator.validate();
+						}
 					}
-					List<BaseJsonSchemaValidator> subValidators = JsonSchema.createValidators(((JsonObject) entry.getValue()), jsonSchemaDependencyResolver, jsonSchemaPath, newJsonNode, jsonPath + "." + entry.getKey());
-					for (BaseJsonSchemaValidator subValidator : subValidators) {
-						subValidator.validate();
-					}
-				}
-	    	}
+		    	}
+			}
 		}
     }
 }

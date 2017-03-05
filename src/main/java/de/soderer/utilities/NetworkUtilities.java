@@ -223,6 +223,10 @@ public class NetworkUtilities {
     }
 
 	public static boolean isValidHostname(String value) {
+		return isValidDomain(value);
+	}
+
+	public static boolean isValidHostnameOnline(String value) {
 		try {
 			InetAddress.getByName(value);
 			return true;

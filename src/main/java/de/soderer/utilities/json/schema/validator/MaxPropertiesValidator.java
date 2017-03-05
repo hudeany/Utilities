@@ -26,11 +26,13 @@ public class MaxPropertiesValidator extends BaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!(jsonNode.isJsonObject())) {
-			throw new JsonSchemaDataValidationError("Expected data type 'object' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
-		}
-		
-		if (((JsonObject) jsonNode.getValue()).keySet().size() > ((Integer) validatorData)) {
-			throw new JsonSchemaDataValidationError("Required maximum number of properties is '" + ((Integer) validatorData) + "' but was '" + ((JsonObject) jsonNode.getValue()).keySet().size()  + "'", jsonPath);
+			if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+				throw new JsonSchemaDataValidationError("Expected data type 'object' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			}
+		} else {
+			if (((JsonObject) jsonNode.getValue()).keySet().size() > ((Integer) validatorData)) {
+				throw new JsonSchemaDataValidationError("Required maximum number of properties is '" + ((Integer) validatorData) + "' but was '" + ((JsonObject) jsonNode.getValue()).keySet().size()  + "'", jsonPath);
+			}
 		}
     }
 }

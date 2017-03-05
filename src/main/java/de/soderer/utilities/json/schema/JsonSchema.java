@@ -58,8 +58,26 @@ public class JsonSchema {
 	private String description;
 	private JsonObject jsonSchemaDefinition;
 	private JsonSchemaDependencyResolver jsonSchemaDependencyResolver;
-	
+
+	/**
+	 * Draft V4 mode is NOT default mode<br />
+	 * <br />
+	 * The default mode uses a slightly more strict JSON schema definition.<br />
+	 * This is useful in detection of schema definition errors.<br />
+	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
+	 */
 	public JsonSchema(InputStream jsonSchemaInputStream) throws JsonSchemaDefinitionError  {
+		this(jsonSchemaInputStream, false);
+	}
+
+	/**
+	 * Draft V4 mode is NOT default mode<br />
+	 * <br />
+	 * The default mode uses a slightly more strict JSON schema definition.<br />
+	 * This is useful in detection of schema definition errors.<br />
+	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
+	 */
+	public JsonSchema(InputStream jsonSchemaInputStream, boolean useDraftV4Mode) throws JsonSchemaDefinitionError  {
 		JsonNode jsonNode;
 		try (JsonReader jsonReader = new Json5Reader(jsonSchemaInputStream)) {
 			jsonNode = jsonReader.read();
@@ -71,13 +89,33 @@ public class JsonSchema {
 			throw new JsonSchemaDefinitionError("Contains null data", null);
 		} else if (jsonNode.isJsonObject()) {
 			readSchemaData((JsonObject)jsonNode.getValue());
+			jsonSchemaDependencyResolver.setUseDraftV4Mode(useDraftV4Mode);
 		} else {
 			throw new JsonSchemaDefinitionError("Does not contain JsonObject", "$");
 		}
 	}
 
+	/**
+	 * Draft V4 mode is NOT default mode<br />
+	 * <br />
+	 * The default mode uses a slightly more strict JSON schema definition.<br />
+	 * This is useful in detection of schema definition errors.<br />
+	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
+	 */
 	public JsonSchema(JsonObject jsonSchemaDefinition) throws JsonSchemaDefinitionError  {
+		this(jsonSchemaDefinition, false);
+	}
+
+	/**
+	 * Draft V4 mode is NOT default mode<br />
+	 * <br />
+	 * The default mode uses a slightly more strict JSON schema definition.<br />
+	 * This is useful in detection of schema definition errors.<br />
+	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
+	 */
+	public JsonSchema(JsonObject jsonSchemaDefinition, boolean useDraftV4Mode) throws JsonSchemaDefinitionError  {
 		readSchemaData(jsonSchemaDefinition);
+		jsonSchemaDependencyResolver.setUseDraftV4Mode(useDraftV4Mode);
 	}
 	
 	private void readSchemaData(JsonObject jsonSchemaDefinition) throws JsonSchemaDefinitionError {
@@ -128,6 +166,14 @@ public class JsonSchema {
 		}
 		
 		jsonSchemaDependencyResolver = new JsonSchemaDependencyResolver(jsonSchemaDefinition);
+	}
+	
+	/**
+	 * Download of any additional data is prevented by default.<br />
+	 * Especially because there is no check for internet connection in forehand.<br />
+	 */
+	public void setDownloadReferencedSchemas(boolean downloadReferencedSchemas) {
+		jsonSchemaDependencyResolver.setDownloadReferencedSchemas(downloadReferencedSchemas);
 	}
 	
 	/**
@@ -254,7 +300,6 @@ public class JsonSchema {
 				case "pattern":
 					validators.add(new PatternValidator(jsonSchemaDependencyResolver, currentJsonSchemaPath + "." + entry.getKey(), entry.getValue(), jsonNode, currentJsonPath));
 					break;
-					
 				case "dependencies":
 					validators.add(new DependenciesValidator(jsonSchemaDependencyResolver, currentJsonSchemaPath + "." + entry.getKey(), entry.getValue(), jsonNode, currentJsonPath));
 					break;
@@ -273,7 +318,7 @@ public class JsonSchema {
 					break;
 				case "additionalItems":
 					// Do nothing, because this is validated by ItemsValidator, too
-					if (!jsonSchemaDefinitionObject.containsPropertyKey("items")) {
+					if (!jsonSchemaDefinitionObject.containsPropertyKey("items") && !jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
 						throw new JsonSchemaDefinitionError("Missing 'items' rule for 'additionalItems'", currentJsonSchemaPath);
 					}
 					break;
@@ -317,7 +362,9 @@ public class JsonSchema {
 					// Default value for processing the given JSON data, which is irrelevant for validation
 					break;
 				default:
-					throw new JsonSchemaDefinitionError("Unexpected data key '" + entry.getKey() + "'", currentJsonSchemaPath);
+					if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+						throw new JsonSchemaDefinitionError("Unexpected data key '" + entry.getKey() + "'", currentJsonSchemaPath);
+					}
 			}
 		}
 		return validators;

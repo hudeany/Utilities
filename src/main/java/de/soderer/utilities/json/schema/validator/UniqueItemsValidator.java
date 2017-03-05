@@ -28,16 +28,18 @@ public class UniqueItemsValidator extends BaseJsonSchemaValidator {
 	@Override
 	public void validate() throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		if (!(jsonNode.isJsonArray())) {
-			throw new JsonSchemaDataValidationError("Expected data type 'array' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
-		}
-		
-		if ((Boolean) validatorData) {
-			JsonArray jsonArray = (JsonArray) jsonNode.getValue();
-			for (int i = 0; i < jsonArray.size(); i++) {
-				for (int j = i + 1; j < jsonArray.size(); j++) {
-					if ((jsonArray.get(i) == jsonArray.get(j))
-						|| (jsonArray.get(i) != null && jsonArray.get(i).equals(jsonArray.get(j)))) {
-						throw new JsonSchemaDataValidationError("Item '" + jsonArray.get(i) + "' of array is not unique", jsonPath);
+			if (!jsonSchemaDependencyResolver.isUseDraftV4Mode()) {
+				throw new JsonSchemaDataValidationError("Expected data type 'array' but was '" + jsonNode.getJsonDataType().getName() + "'", jsonPath);
+			}
+		} else {
+			if ((Boolean) validatorData) {
+				JsonArray jsonArray = (JsonArray) jsonNode.getValue();
+				for (int i = 0; i < jsonArray.size(); i++) {
+					for (int j = i + 1; j < jsonArray.size(); j++) {
+						if ((jsonArray.get(i) == jsonArray.get(j))
+							|| (jsonArray.get(i) != null && jsonArray.get(i).equals(jsonArray.get(j)))) {
+							throw new JsonSchemaDataValidationError("Item '" + jsonArray.get(i) + "' of array is not unique", jsonPath);
+						}
 					}
 				}
 			}
