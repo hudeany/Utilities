@@ -15,7 +15,7 @@ public class MinimumValidator extends ExtendedBaseJsonSchemaValidator {
 			throw new JsonSchemaDefinitionError("Data for minimum is null", jsonSchemaPath);
     	} else if (validatorData instanceof String) {
     		try {
-				this.validatorData = Double.parseDouble((String) validatorData);
+    			this.validatorData = NumberUtilities.parseNumber((String) validatorData);
 			} catch (NumberFormatException e) {
 				throw new JsonSchemaDefinitionError("Data for minimum '" + validatorData + "' is not a number", jsonSchemaPath);
 			}

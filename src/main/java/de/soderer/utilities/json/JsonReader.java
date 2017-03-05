@@ -4,12 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.util.Stack;
-import java.util.regex.Pattern;
 
 import de.soderer.utilities.BasicReader;
+import de.soderer.utilities.NumberUtilities;
 import de.soderer.utilities.Utilities;
 
 public class JsonReader extends BasicReader {
@@ -282,42 +281,8 @@ public class JsonReader extends BasicReader {
 			return true;
 		} else if (valueString.equalsIgnoreCase("false")) {
 			return false;
-		} else if (Pattern.matches("[+|-]?[0-9]*(\\.[0-9]*)?([e|E][+|-]?[0-9]*)?", valueString)) {
-			if (valueString.contains(".")) {
-				if (valueString.length() < 10) {
-					return new Float(valueString);
-				} else {
-					BigDecimal value = new BigDecimal(valueString);
-					boolean isFloat = new BigDecimal(Float.MIN_VALUE).compareTo(value) == -1 && value.compareTo(new BigDecimal(Float.MAX_VALUE)) == -1;
-					if (isFloat) {
-						return new Float(valueString);
-					} else {
-						boolean isDouble = new BigDecimal(Double.MIN_VALUE).compareTo(value) == -1 && value.compareTo(new BigDecimal(Double.MAX_VALUE)) == -1;
-						if (isDouble) {
-							return new Double(valueString);
-						} else {
-							return value;
-						}
-					}
-				}
-			} else {
-				if (valueString.length() < 10) {
-					return new Integer(valueString);
-				} else {
-					BigDecimal value = new BigDecimal(valueString);
-					boolean isInteger = new BigDecimal(Integer.MIN_VALUE).compareTo(value) == -1 && value.compareTo(new BigDecimal(Integer.MAX_VALUE)) == -1;
-					if (isInteger) {
-						return new Integer(valueString);
-					} else {
-						boolean isLong = new BigDecimal(Long.MIN_VALUE).compareTo(value) == -1 && value.compareTo(new BigDecimal(Long.MAX_VALUE)) == -1;
-						if (isLong) {
-							return new Long(valueString);
-						} else {
-							return value;
-						}
-					}
-				}
-			}
+		} else if (NumberUtilities.isNumber(valueString)) {
+			return NumberUtilities.parseNumber(valueString);
 		} else {
 			throw new Exception("Invalid json data at index " + getReadCharacters());
 		}

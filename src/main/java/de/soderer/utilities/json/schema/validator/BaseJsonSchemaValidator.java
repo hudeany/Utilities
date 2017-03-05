@@ -12,7 +12,11 @@ public abstract class BaseJsonSchemaValidator {
 	protected JsonNode jsonNode;
 	protected String jsonPath;
 	
-	protected BaseJsonSchemaValidator(JsonSchemaDependencyResolver jsonSchemaDependencyResolver, String jsonSchemaPath, Object validatorData, JsonNode jsonNode, String jsonPath) {
+	protected BaseJsonSchemaValidator(JsonSchemaDependencyResolver jsonSchemaDependencyResolver, String jsonSchemaPath, Object validatorData, JsonNode jsonNode, String jsonPath) throws JsonSchemaDefinitionError {
+		if (validatorData == null) {
+			throw new JsonSchemaDefinitionError("ValidatorData is 'null'", jsonSchemaPath);
+		}
+		
 		this.jsonSchemaDependencyResolver = jsonSchemaDependencyResolver;
 		this.jsonSchemaPath = jsonSchemaPath;
 		this.validatorData = validatorData;

@@ -259,36 +259,6 @@ public class Utilities {
 		return null;
 	}
 
-	/**
-	 * Check for a number without decimals
-	 *
-	 * @param value
-	 * @return
-	 */
-	public static boolean isInteger(String value) {
-		try {
-			Integer.parseInt(value);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
-		}
-	}
-
-	/**
-	 * Check for a number with optional decimals after a dot(.) and exponent
-	 *
-	 * @param value
-	 * @return
-	 */
-	public static boolean isDouble(String value) {
-		try {
-			Double.parseDouble(value);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
-		}
-	}
-
 	/***
 	 * Split a list into smaller lists to a maximum chunkSize
 	 *

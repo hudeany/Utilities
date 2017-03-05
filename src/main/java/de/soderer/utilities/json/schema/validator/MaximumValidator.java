@@ -15,7 +15,7 @@ public class MaximumValidator extends ExtendedBaseJsonSchemaValidator {
 			throw new JsonSchemaDefinitionError("Data for maximum is null", jsonSchemaPath);
     	} else if (validatorData instanceof String) {
     		try {
-    			this.validatorData = Double.parseDouble((String) validatorData);
+    			this.validatorData = NumberUtilities.parseNumber((String) validatorData);
 			} catch (NumberFormatException e) {
 				throw new JsonSchemaDefinitionError("Data for maximum '" + validatorData + "' is not a number", jsonSchemaPath);
 			}
