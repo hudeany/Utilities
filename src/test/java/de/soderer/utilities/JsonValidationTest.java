@@ -205,6 +205,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -261,6 +262,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -290,6 +292,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -319,6 +322,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -375,6 +379,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -503,6 +508,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$.item2");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -610,6 +616,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$.item3");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -651,6 +658,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -690,6 +698,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$.item4");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -803,6 +812,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -843,6 +853,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -883,6 +894,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -979,6 +991,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1011,6 +1024,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1095,6 +1109,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1123,6 +1138,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1235,6 +1251,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1299,6 +1316,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1363,6 +1381,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1427,6 +1446,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1483,6 +1503,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1539,6 +1560,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1567,6 +1589,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1595,6 +1618,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1623,6 +1647,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1651,6 +1676,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1707,6 +1733,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1763,6 +1790,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1819,6 +1847,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1875,6 +1904,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1931,6 +1961,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$[1]");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1947,7 +1978,7 @@ public class JsonValidationTest {
 		try {
 			String schema =
 				"{\n"
-					+ "items: { type: \"number\" }\n"
+					+ "items: { type: \"number\" },\n"
 					+ "additionalItems: false\n"
 				+ "}\n";
 			schemaInputStream = new ByteArrayInputStream(schema.getBytes("UTF-8"));
@@ -1960,6 +1991,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDefinitionError e) {
 			// Expected exception
+			assertJsonSchemaDefinitionErrorJsonSchemaPath(e, "$.items");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -1968,7 +2000,7 @@ public class JsonValidationTest {
 			Utilities.closeQuietly(schemaInputStream);
 		}
 	}
-	
+
 	@Test
 	public void testItemsArray() {
 		InputStream dataInputStream = null;
@@ -2016,6 +2048,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$[1]");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2045,6 +2078,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2119,6 +2153,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$.StringProp");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2156,6 +2191,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2212,6 +2248,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDefinitionError e) {
 			// Expected exception
+			assertJsonSchemaDefinitionErrorJsonSchemaPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2472,6 +2509,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDefinitionError e) {
 			// Expected exception
+			assertJsonSchemaDefinitionErrorJsonSchemaPath(e, "$.properties.item1.$ref");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2506,6 +2544,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDefinitionError e) {
 			// Expected exception
+			assertJsonSchemaDefinitionErrorJsonSchemaPath(e, "$.properties.item1.$ref");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2542,6 +2581,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$.item1");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2576,6 +2616,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDefinitionError e) {
 			// Expected exception
+			assertJsonSchemaDefinitionErrorJsonSchemaPath(e, "$.properties.item1.$ref");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2620,6 +2661,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDefinitionError e) {
 			// Expected exception
+			assertJsonSchemaDefinitionErrorJsonSchemaPath(e, "$.properties.item1.$ref");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2664,6 +2706,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDefinitionError e) {
 			// Expected exception
+			assertJsonSchemaDefinitionErrorJsonSchemaPath(e, "$.properties.item1.$ref");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2730,6 +2773,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2805,6 +2849,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDataValidationError e) {
 			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2843,6 +2888,7 @@ public class JsonValidationTest {
 			Assert.fail("Missing expected exception");
 		} catch (JsonSchemaDefinitionError e) {
 			// Expected exception
+			assertJsonSchemaDefinitionErrorJsonSchemaPath(e, "#/definitions/predefType2.$ref");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -2852,6 +2898,7 @@ public class JsonValidationTest {
 			Utilities.closeQuietly(indirectSchemaInputStream);
 		}
 	}
+	
 	@Test
 	public void testJsonSchemaForJsonSchemas() {
 		InputStream dataInputStream = null;
@@ -2942,6 +2989,34 @@ public class JsonValidationTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
+		}
+	}
+	
+	private void assertJsonSchemaDataValidationErrorJsonPath(JsonSchemaDataValidationError e, String jsonPath) {
+		if (e == null || e.getMessage() == null) {
+			Assert.fail("JsonSchemaDataValidationError json path expected '" + jsonPath + "' but exception was null");
+		} else {
+			if (e.getJsonDataPath() == null) {
+				e.printStackTrace();
+				Assert.fail("JsonSchemaDataValidationError json path expected '" + jsonPath + "' but exception json path was null");
+			} else if (!e.getJsonDataPath().equals(jsonPath)) {
+				e.printStackTrace();
+				Assert.fail("JsonSchemaDataValidationError json path expected '" + jsonPath + "' but exception json path was '" + e.getJsonDataPath() + "'");
+			}
+		}
+	}
+	
+	private void assertJsonSchemaDefinitionErrorJsonSchemaPath(JsonSchemaDefinitionError e, String jsonPath) {
+		if (e == null || e.getMessage() == null) {
+			Assert.fail("JsonSchemaDefinitionError json path expected '" + jsonPath + "' but exception was null");
+		} else {
+			if (e.getJsonSchemaPath() == null) {
+				e.printStackTrace();
+				Assert.fail("JsonSchemaDefinitionError json schema path expected '" + jsonPath + "' but exception json schema path was null");
+			} else if (!e.getJsonSchemaPath().equals(jsonPath)) {
+				e.printStackTrace();
+				Assert.fail("JsonSchemaDefinitionError json schema path expected '" + jsonPath + "' but exception json schema path was '" + e.getJsonSchemaPath() + "'");
+			}
 		}
 	}
 }

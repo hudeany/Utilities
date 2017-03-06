@@ -25,11 +25,11 @@ public class ReferenceValidator extends BaseJsonSchemaValidator {
 			} else {
 				jsonSchemaDependencyResolver.checkCyclicDependency(jsonPath, (String) validatorData, jsonSchemaPath);
 				
-				Object dereferencedValue = jsonSchemaDependencyResolver.getDependencyByReference((String) validatorData);
+				Object dereferencedValue = jsonSchemaDependencyResolver.getDependencyByReference((String) validatorData, jsonSchemaPath);
 				if (dereferencedValue == null) {
 					throw new JsonSchemaDefinitionError("Invalid JSON schema reference data type for key '" + validatorData + "'. Expected 'object' but was 'null'", jsonSchemaPath);
 				} else if (!(dereferencedValue instanceof JsonObject)) {
-					throw new JsonSchemaDefinitionError("Invalid JSON schema reference data type for key '" + validatorData + "'. Expected 'object' but was '" + jsonSchemaDependencyResolver.getDependencyByReference((String) validatorData).getClass().getSimpleName() + "'", jsonSchemaPath);
+					throw new JsonSchemaDefinitionError("Invalid JSON schema reference data type for key '" + validatorData + "'. Expected 'object' but was '" + (dereferencedValue == null ? "null" : dereferencedValue.getClass().getSimpleName()) + "'", jsonSchemaPath);
 				} else {
 					dereferencedSchemaObject = (JsonObject) dereferencedValue;
 					this.jsonSchemaPath = ((String) validatorData);

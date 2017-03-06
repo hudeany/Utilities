@@ -42,7 +42,7 @@ public class JsonSchemaDependencyResolver {
 		this.schemaDocumentNode = schemaDocumentNode;
 	}
 
-	public Object getDependencyByReference(String reference) throws Exception {
+	public Object getDependencyByReference(String reference, String jsonSchemaPath) throws Exception {
 		if (reference != null) {
 			if (!reference.contains("#")) {
 				// Dereference simple reference without '#'
@@ -64,11 +64,11 @@ public class JsonSchemaDependencyResolver {
 				for (String referencePathPart : referencePathParts) {
 					referencePathPart = referencePathPart.replace("~0", "~").replace("~1", "/").replace("%25", "%");
 					if (!referencedObject.containsPropertyKey(referencePathPart)) {
-						throw new JsonSchemaDefinitionError("JsonSchema does not contain the reference path '" + reference + "'", "$");
+						throw new JsonSchemaDefinitionError("JsonSchema does not contain the reference path '" + reference + "'", jsonSchemaPath);
 					} else if (referencedObject.get(referencePathPart) == null) {
-						throw new JsonSchemaDefinitionError("Invalid data type 'null' for reference path '" + reference + "'", "$");
+						throw new JsonSchemaDefinitionError("Invalid data type 'null' for reference path '" + reference + "'", jsonSchemaPath);
 					} else if (!(referencedObject.get(referencePathPart) instanceof JsonObject)) {
-						throw new JsonSchemaDefinitionError("Invalid data type '" + schemaDocumentNode.get("definitions").getClass().getSimpleName() + "' for reference path '" + reference + "'", "$");
+						throw new JsonSchemaDefinitionError("Invalid data type '" + schemaDocumentNode.get("definitions").getClass().getSimpleName() + "' for reference path '" + reference + "'", jsonSchemaPath);
 					} else {
 						referencedObject = (JsonObject) referencedObject.get(referencePathPart);
 					}
@@ -96,11 +96,11 @@ public class JsonSchemaDependencyResolver {
 					for (String referencePathPart : referencePathParts) {
 						referencePathPart = referencePathPart.replace("~0", "~").replace("~1", "/").replace("%25", "%");
 						if (!referencedObject.containsPropertyKey(referencePathPart)) {
-							throw new JsonSchemaDefinitionError("Referenced JsonSchema does not contain the reference path '" + reference + "'", "$");
+							throw new JsonSchemaDefinitionError("Referenced JsonSchema does not contain the reference path '" + reference + "'", jsonSchemaPath);
 						} else if (referencedObject.get(referencePathPart) == null) {
-							throw new JsonSchemaDefinitionError("Invalid data type 'null' for reference path '" + reference + "'", "$");
+							throw new JsonSchemaDefinitionError("Invalid data type 'null' for reference path '" + reference + "'", jsonSchemaPath);
 						} else if (!(referencedObject.get(referencePathPart) instanceof JsonObject)) {
-							throw new JsonSchemaDefinitionError("Invalid data type '" + schemaDocumentNode.get("definitions").getClass().getSimpleName() + "' for reference path '" + reference + "'", "$");
+							throw new JsonSchemaDefinitionError("Invalid data type '" + schemaDocumentNode.get("definitions").getClass().getSimpleName() + "' for reference path '" + reference + "'", jsonSchemaPath);
 						} else {
 							referencedObject = (JsonObject) referencedObject.get(referencePathPart);
 						}

@@ -48,7 +48,7 @@ public class PatternPropertiesValidator extends BaseJsonSchemaValidator {
 							} catch (Exception e) {
 								throw new JsonSchemaDataValidationError("Invalid property data type was '" + propertyEntry.getValue().getClass().getSimpleName() + "'", jsonPath + "." + propertyEntry.getKey());
 							}
-							List<BaseJsonSchemaValidator> subValidators = JsonSchema.createValidators(((JsonObject) entry.getValue()), jsonSchemaDependencyResolver, jsonSchemaPath, jsonNode, jsonPath + "." + propertyEntry.getKey());
+							List<BaseJsonSchemaValidator> subValidators = JsonSchema.createValidators(((JsonObject) entry.getValue()), jsonSchemaDependencyResolver, jsonSchemaPath + "." + propertyEntry.getKey(), jsonNode, jsonPath + "." + propertyEntry.getKey());
 							for (BaseJsonSchemaValidator subValidator : subValidators) {
 								subValidator.validate();
 							}
