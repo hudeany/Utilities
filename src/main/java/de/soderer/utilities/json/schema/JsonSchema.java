@@ -37,18 +37,21 @@ import de.soderer.utilities.json.schema.validator.TypeValidator;
 import de.soderer.utilities.json.schema.validator.UniqueItemsValidator;
 
 /**
- * JSON Schema Validator vor Draft Version v4<br/>
- * http://json-schema.org/draft-04/schema#<br/>
- * <br/>
- * For standard definition see:<br/>
- * http://json-schema.org<br/>
- * <br/>
- * For examples and help see:<br/>
- * https://spacetelescope.github.io<br/>
+ * JSON Schema Validator vor Draft Version v4<br />
+ * http://json-schema.org/draft-04/schema#<br />
+ * <br />
+ * For Validation of JSON schemas you may use the included file resource "JsonSchemaDescriptionDraftV4.json":<br />
+ * JsonSchema.class.getClassLoader().getResourceAsStream("json/JsonSchemaDescriptionDraftV4.json")<br />
+ * <br />
+ * For the JSON schema standard definition see:<br />
+ * http://json-schema.org<br />
+ * <br />
+ * For examples and help an JSON schema creation see:<br />
+ * https://spacetelescope.github.io<br />
  */
 public class JsonSchema {
 	/**
-	 * Url describing the JSON schema standard and version a JSON schema was written for in compliance<br/>
+	 * Url describing the JSON schema standard and version a JSON schema was written for in compliance<br />
 	 * Example: "http://json-schema.org/schema#"
 	 */
 	private String schemaVersionUrl;

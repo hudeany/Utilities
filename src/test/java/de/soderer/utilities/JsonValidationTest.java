@@ -2904,10 +2904,10 @@ public class JsonValidationTest {
 		InputStream dataInputStream = null;
 		InputStream schemaInputStream = null;
 		try {
-			schemaInputStream = this.getClass().getResourceAsStream("JsonSchemaForJsonSchemasDraftV4.json");
+			schemaInputStream = JsonSchema.class.getClassLoader().getResourceAsStream("json/JsonSchemaDescriptionDraftV4.json");
 			JsonSchema jsonSchema = new JsonSchema(schemaInputStream);
 			
-			dataInputStream = this.getClass().getResourceAsStream("JsonSchemaForJsonSchemasDraftV4.json");
+			dataInputStream = getClass().getClassLoader().getResourceAsStream("json/JsonSchemaDescriptionDraftV4.json");
 			jsonSchema.validate(dataInputStream);
 		} catch (JsonSchemaDataValidationError e) {
 			e.printStackTrace();
@@ -2923,7 +2923,7 @@ public class JsonValidationTest {
 	
 	@Test
 	public void testSuite() {
-		try (JsonReader testsuiteReader = new Json5Reader(this.getClass().getResourceAsStream("testsuite.json"))) {
+		try (JsonReader testsuiteReader = new Json5Reader(getClass().getClassLoader().getResourceAsStream("json/testsuite.json"))) {
 			int testCount = 0;
 			JsonNode testsuiteNode = testsuiteReader.read();
 			for (Object item : ((JsonArray) testsuiteNode.getValue())) {
@@ -2958,7 +2958,7 @@ public class JsonValidationTest {
 	
 	@Test
 	public void testSuiteV4() {
-		try (JsonReader testsuiteReader = new Json5Reader(this.getClass().getResourceAsStream("draftv4.json"))) {
+		try (JsonReader testsuiteReader = new Json5Reader(getClass().getClassLoader().getResourceAsStream("json/draftv4.json"))) {
 			int testCount = 0;
 			JsonNode testsuiteNode = testsuiteReader.read();
 			for (Object item : ((JsonArray) testsuiteNode.getValue())) {

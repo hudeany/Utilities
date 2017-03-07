@@ -1071,7 +1071,7 @@ public class Json5Test {
 	public void testKomplexExampleJson() {
 		JsonReader jsonReader = null;
 		try {
-			jsonReader = new Json5Reader(this.getClass().getResourceAsStream("KomplexExample.json"));
+			jsonReader = new Json5Reader(getClass().getClassLoader().getResourceAsStream("json/KomplexExample.json"));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 		} catch (Exception e) {
@@ -1086,7 +1086,7 @@ public class Json5Test {
 	public void testKomplexExampleJsonV5() {
 		JsonReader jsonReader = null;
 		try {
-			jsonReader = new Json5Reader(this.getClass().getResourceAsStream("KomplexExampleV5.json"));
+			jsonReader = new Json5Reader(getClass().getClassLoader().getResourceAsStream("json/KomplexExampleV5.json"));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 		} catch (Exception e) {

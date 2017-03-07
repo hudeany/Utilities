@@ -986,7 +986,7 @@ public class JsonTest {
 	public void testKomplexExampleJson() {
 		JsonReader jsonReader = null;
 		try {
-			jsonReader = new JsonReader(this.getClass().getResourceAsStream("KomplexExample.json"));
+			jsonReader = new JsonReader(getClass().getClassLoader().getResourceAsStream("json/KomplexExample.json"));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 		} catch (Exception e) {
