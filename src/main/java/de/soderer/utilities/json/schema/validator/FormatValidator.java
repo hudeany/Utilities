@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.NetworkUtilities;
+import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.json.JsonNode;
 import de.soderer.utilities.json.schema.JsonSchemaDataValidationError;
 import de.soderer.utilities.json.schema.JsonSchemaDefinitionError;
@@ -56,6 +57,10 @@ public class FormatValidator extends BaseJsonSchemaValidator {
 				Pattern.compile((String) jsonNode.getValue());
 			} catch (Exception e) {
 				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + jsonNode.getValue() + "'", jsonPath);
+			}
+		} else if ("base64".equalsIgnoreCase((String) validatorData)) {
+			if (!TextUtilities.isValidBase64((String) jsonNode.getValue())) {
+				throw new JsonSchemaDataValidationError("Invalid data for format '" + ((String) validatorData) + "' was '" + TextUtilities.trimStringToMaximumLength((String) jsonNode.getValue(), 20, " ...") + "'", jsonPath);
 			}
 		} else {
 			throw new JsonSchemaDefinitionError("Unknown format name '" + validatorData + "'", jsonSchemaPath);

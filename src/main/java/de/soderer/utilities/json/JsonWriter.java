@@ -373,7 +373,7 @@ public class JsonWriter implements Closeable {
 	}
 	
 	/**
-	 * This method should only be used to read small Json items
+	 * This method should only be used to write small Json items
 	 * 
 	 * @param jsonItem
 	 * @return
@@ -390,7 +390,7 @@ public class JsonWriter implements Closeable {
 	}
 	
 	/**
-	 * This method should only be used to read small Json items
+	 * This method should only be used to write small Json items
 	 * 
 	 * @param jsonItem
 	 * @return
@@ -407,7 +407,7 @@ public class JsonWriter implements Closeable {
 	}
 	
 	/**
-	 * This method should only be used to read small Json items
+	 * This method should only be used to write small Json items
 	 * 
 	 * @param jsonItem
 	 * @return
@@ -427,7 +427,7 @@ public class JsonWriter implements Closeable {
 	}
 	
 	/**
-	 * This method should only be used to read small Json items
+	 * This method should only be used to write small Json items
 	 * 
 	 * @param jsonItem
 	 * @return
@@ -444,5 +444,24 @@ public class JsonWriter implements Closeable {
 		}
 		
 		return outputStream.toString("UTF-8");
+	}
+	
+	/**
+	 * This method should only be used to write small Json items
+	 * 
+	 * @param jsonItem
+	 * @return
+	 * @throws Exception
+	 */
+	public static String getJsonItemString(JsonNode jsonNode, String linebreak, String indentation, String separator) throws Exception {
+		if (jsonNode.isJsonObject()) {
+			return getJsonItemString((JsonObject) jsonNode.getValue(), linebreak, indentation, separator);
+		} else if (jsonNode.isJsonArray()) {
+			return getJsonItemString((JsonArray) jsonNode.getValue(), linebreak, indentation, separator);
+		} else if (jsonNode.isNull()) {
+			return "null";
+		} else {
+			return jsonNode.getValue().toString();
+		}
 	}
 }

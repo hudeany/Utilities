@@ -70,7 +70,29 @@ public class JsonSchema {
 	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
 	 */
 	public JsonSchema(InputStream jsonSchemaInputStream) throws JsonSchemaDefinitionError  {
-		this(jsonSchemaInputStream, false);
+		this(jsonSchemaInputStream, "UTF-8", false);
+	}
+	
+	/**
+	 * Draft V4 mode is NOT default mode<br />
+	 * <br />
+	 * The default mode uses a slightly more strict JSON schema definition.<br />
+	 * This is useful in detection of schema definition errors.<br />
+	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
+	 */
+	public JsonSchema(InputStream jsonSchemaInputStream, String encoding) throws JsonSchemaDefinitionError  {
+		this(jsonSchemaInputStream, encoding, false);
+	}
+	
+	/**
+	 * Draft V4 mode is NOT default mode<br />
+	 * <br />
+	 * The default mode uses a slightly more strict JSON schema definition.<br />
+	 * This is useful in detection of schema definition errors.<br />
+	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
+	 */
+	public JsonSchema(InputStream jsonSchemaInputStream, boolean useDraftV4Mode) throws JsonSchemaDefinitionError  {
+		this(jsonSchemaInputStream, "UTF-8", useDraftV4Mode);
 	}
 
 	/**
@@ -80,9 +102,9 @@ public class JsonSchema {
 	 * This is useful in detection of schema definition errors.<br />
 	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
 	 */
-	public JsonSchema(InputStream jsonSchemaInputStream, boolean useDraftV4Mode) throws JsonSchemaDefinitionError  {
+	public JsonSchema(InputStream jsonSchemaInputStream, String encoding, boolean useDraftV4Mode) throws JsonSchemaDefinitionError  {
 		JsonNode jsonNode;
-		try (JsonReader jsonReader = new Json5Reader(jsonSchemaInputStream)) {
+		try (JsonReader jsonReader = new Json5Reader(jsonSchemaInputStream, encoding)) {
 			jsonNode = jsonReader.read();
 		} catch (Exception e) {
 			throw new JsonSchemaDefinitionError("Cannot read JSON-Schema: " + e.getMessage(), null);
@@ -206,12 +228,11 @@ public class JsonSchema {
 		return description;
 	}
 
-	public void validate(InputStream jsonDataInputStream) throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
+	public JsonNode validate(InputStream jsonDataInputStream, String encoding) throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		JsonNode jsonDataNode;
-		try (JsonReader jsonReader = new Json5Reader(jsonDataInputStream)) {
+		try (JsonReader jsonReader = new Json5Reader(jsonDataInputStream, encoding)) {
 			jsonDataNode = jsonReader.read();
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new JsonSchemaDataValidationError("Cannot read JSON data: " + e.getMessage(), "");
 		}
 		
@@ -219,6 +240,22 @@ public class JsonSchema {
 		for (BaseJsonSchemaValidator validator : validators) {
 			validator.validate();
 		}
+		return jsonDataNode;
+	}
+
+	public JsonNode validate(InputStream jsonDataInputStream) throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
+		JsonNode jsonDataNode;
+		try (JsonReader jsonReader = new Json5Reader(jsonDataInputStream)) {
+			jsonDataNode = jsonReader.read();
+		} catch (Exception e) {
+			throw new JsonSchemaDataValidationError("Cannot read JSON data: " + e.getMessage(), "");
+		}
+		
+		List<BaseJsonSchemaValidator> validators = createValidators(jsonSchemaDefinition, jsonSchemaDependencyResolver, "$", jsonDataNode, "$");
+		for (BaseJsonSchemaValidator validator : validators) {
+			validator.validate();
+		}
+		return jsonDataNode;
 	}
 
 	public void validate(Object jsonData) throws Exception {

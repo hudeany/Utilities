@@ -3,10 +3,8 @@ package de.soderer.utilities.json.schema;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -16,6 +14,7 @@ import de.soderer.utilities.json.Json5Reader;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonNode;
 import de.soderer.utilities.json.JsonObject;
+import de.soderer.utilities.json.JsonPath;
 
 public class JsonSchemaDependencyResolver {
 	private JsonObject schemaDocumentNode = null;
@@ -58,11 +57,13 @@ public class JsonSchemaDependencyResolver {
 				}
 			} else if (reference.startsWith("#")) {
 				// Dereference local document reference
-				List<String> referencePathParts = Utilities.splitAndTrimList(reference.substring(1), '/');
-				referencePathParts.removeAll(Collections.singleton(""));
+				JsonPath jsonPath = new JsonPath(reference);
 				JsonObject referencedObject = schemaDocumentNode;
-				for (String referencePathPart : referencePathParts) {
-					referencePathPart = referencePathPart.replace("~0", "~").replace("~1", "/").replace("%25", "%");
+				for (Object referencePathPartObject : jsonPath.getPathParts()) {
+					if (!(referencePathPartObject instanceof String)) {
+						throw new JsonSchemaDefinitionError("Invalid JSON reference path contains array index'" + reference + "'", jsonSchemaPath);
+					}
+					String referencePathPart = (String) referencePathPartObject;
 					if (!referencedObject.containsPropertyKey(referencePathPart)) {
 						throw new JsonSchemaDefinitionError("JsonSchema does not contain the reference path '" + reference + "'", jsonSchemaPath);
 					} else if (referencedObject.get(referencePathPart) == null) {
@@ -90,11 +91,13 @@ public class JsonSchemaDependencyResolver {
 				} else if (additionalSchemaDocumentNodes.get(packageName) == null) {
 					throw new Exception("Invalid empty JSON schema reference for package name '" + packageName + "'");
 				} else {
-					List<String> referencePathParts = Utilities.splitAndTrimList(reference.substring(reference.lastIndexOf("#") + 1), '/');
-					referencePathParts.removeAll(Collections.singleton(""));
 					JsonObject referencedObject = additionalSchemaDocumentNodes.get(packageName);
-					for (String referencePathPart : referencePathParts) {
-						referencePathPart = referencePathPart.replace("~0", "~").replace("~1", "/").replace("%25", "%");
+					JsonPath jsonPath = new JsonPath(reference.substring(reference.lastIndexOf("#")));
+					for (Object referencePathPartObject : jsonPath.getPathParts()) {
+						if (!(referencePathPartObject instanceof String)) {
+							throw new JsonSchemaDefinitionError("Invalid JSON reference path contains array index'" + reference + "'", jsonSchemaPath);
+						}
+						String referencePathPart = (String) referencePathPartObject;
 						if (!referencedObject.containsPropertyKey(referencePathPart)) {
 							throw new JsonSchemaDefinitionError("Referenced JsonSchema does not contain the reference path '" + reference + "'", jsonSchemaPath);
 						} else if (referencedObject.get(referencePathPart) == null) {

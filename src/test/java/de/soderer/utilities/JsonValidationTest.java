@@ -1915,6 +1915,63 @@ public class JsonValidationTest {
 	}
 	
 	@Test
+	public void testFormatBase64() {
+		InputStream dataInputStream = null;
+		InputStream schemaInputStream = null;
+		try {
+			String schema =
+				"{\n"
+					+ "format: \"base64\"\n"
+				+ "}\n";
+			schemaInputStream = new ByteArrayInputStream(schema.getBytes("UTF-8"));
+			JsonSchema jsonSchema = new JsonSchema(schemaInputStream);
+			
+			String data =
+				"\"" + Utilities.encodeBase64("Text".getBytes("UTF-8")) + "\"\n";
+			dataInputStream = new ByteArrayInputStream(data.getBytes("UTF-8"));
+			jsonSchema.validate(dataInputStream);
+		} catch (JsonSchemaDataValidationError e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(dataInputStream);
+			Utilities.closeQuietly(schemaInputStream);
+		}
+	}
+	
+	@Test
+	public void testFormatBase64Error() {
+		InputStream dataInputStream = null;
+		InputStream schemaInputStream = null;
+		try {
+			String schema =
+				"{\n"
+					+ "format: \"base64\"\n"
+				+ "}\n";
+			schemaInputStream = new ByteArrayInputStream(schema.getBytes("UTF-8"));
+			JsonSchema jsonSchema = new JsonSchema(schemaInputStream);
+			
+			String data =
+				"\"" + Utilities.encodeBase64("Text".getBytes("UTF-8")) + "x\"\n";
+			dataInputStream = new ByteArrayInputStream(data.getBytes("UTF-8"));
+			jsonSchema.validate(dataInputStream);
+			Assert.fail("Missing expected exception");
+		} catch (JsonSchemaDataValidationError e) {
+			// Expected exception
+			assertJsonSchemaDataValidationErrorJsonPath(e, "$");
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(dataInputStream);
+			Utilities.closeQuietly(schemaInputStream);
+		}
+	}
+	
+	@Test
 	public void testItems() {
 		InputStream dataInputStream = null;
 		InputStream schemaInputStream = null;
