@@ -12,14 +12,20 @@ import de.soderer.utilities.json.JsonWriter;
 
 public class JsonSerializerTest {
 	@Test
-	public void test1() throws Exception {
-		JsonNode dataNode = JsonSerializer.serialize(new TestObject(), true, true, true);
+	public void testSimple() throws Exception {
+		JsonNode dataNode = JsonSerializer.serialize(new TestObject());
 		JsonWriter.getJsonItemString(dataNode);
 	}
 	
 	@Test
-	public void test2() throws Exception {
-		JsonNode dataNode = JsonSerializer.serialize(new TestObject(), true, true, true);
+	public void testAllFields() throws Exception {
+		JsonNode dataNode = JsonSerializer.serialize(new TestObject(), true, true, true, true);
+		JsonWriter.getJsonItemString(dataNode);
+	}
+	
+	@Test
+	public void testWIthTypeData() throws Exception {
+		JsonNode dataNode = JsonSerializer.serialize(new TestObject(), false, false, false, true);
 		JsonWriter.getJsonItemString(dataNode);
 	}
 	
@@ -36,13 +42,14 @@ public class JsonSerializerTest {
 			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
 			// Expected Exception
+			Assert.assertTrue(e.getMessage().contains("Cyclic reference detected"));
 		}
 	}
 	
 	@Test
 	public void testCylic2() throws Exception {
 		try {
-			Object someObject = new Object();
+			TestObject someObject = new TestObject();
 			
 			List<Object> list1 = new ArrayList<Object>();
 			List<Object> list2 = new ArrayList<Object>();
@@ -50,7 +57,7 @@ public class JsonSerializerTest {
 			list1.add(1);
 			list1.add(2);
 			list1.add(someObject);
-			list1.add(list1);
+			list1.add(list2);
 			list1.add(someObject);
 
 			list2.add(1);
@@ -62,12 +69,13 @@ public class JsonSerializerTest {
 			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
 			// Expected Exception
+			Assert.assertTrue(e.getMessage().contains("Cyclic reference detected"));
 		}
 	}
 	
 	@Test
 	public void testNonCylic() throws Exception {
-		Object someObject = new Object();
+		TestObject someObject = new TestObject();
 		
 		List<Object> list = new ArrayList<Object>();
 		list.add(1);
@@ -76,5 +84,26 @@ public class JsonSerializerTest {
 		list.add(someObject);
 		list.add(4);
 		JsonSerializer.serialize(list);
+	}
+	
+	@Test
+	public void testNonCylic2() throws Exception {
+		TestObject someObject = new TestObject();
+		
+		List<Object> list1 = new ArrayList<Object>();
+		List<Object> list2 = new ArrayList<Object>();
+		
+		list1.add(1);
+		list1.add(2);
+		list1.add(someObject);
+		list1.add(list2);
+		list1.add(someObject);
+
+		list2.add(1);
+		list2.add(2);
+		list2.add(someObject);
+		list2.add(someObject);
+		list2.add(someObject);
+		JsonSerializer.serialize(list1);
 	}
 }

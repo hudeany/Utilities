@@ -1451,4 +1451,20 @@ public class Utilities {
 	public static String replaceHomeTilde(String filePath) {
 		return filePath.replace("~", System.getProperty("user.home"));
 	}
+	
+	/**
+	 * Check whether an iterable collection collects a special object
+	 * 
+	 * @param iterable
+	 * @param dataObject
+	 * @return
+	 */
+	public static boolean containsObject(Iterable<?> iterable, Object dataObject) {
+		for (Object item : iterable) {
+			if (item == dataObject) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
