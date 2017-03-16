@@ -22,14 +22,14 @@ public class JsonSerializer {
 	 * @throws Exception
 	 */
 	public static JsonNode serialize(Object dataObject) throws Exception {
-		return serializeInternal(dataObject, false, false, false, false, null);
+		return serializeInternal(dataObject, false, false, false, false, new ArrayList<Object>());
 	}
 	
 	/**
 	 * Serialize an object in json data
 	 * 
 	 * @param dataObject
-	 * @param excludeNull Do not serialize null values except for the dataObject itself
+	 * @param excludeNull Do not serialize null values
 	 * @param includeStatic Serialize fields with a "static" modifier
 	 * @param includeTransient Serialize fields with a "transient" modifier
 	 * @param addObjectTypeInfo Add object type info
@@ -37,16 +37,15 @@ public class JsonSerializer {
 	 * @throws Exception
 	 */
 	public static JsonNode serialize(Object dataObject, boolean excludeNull, boolean includeStatic, boolean includeTransient, boolean addObjectTypeInfo) throws Exception {
-		return serializeInternal(dataObject, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, null);
+		return serializeInternal(dataObject, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, new ArrayList<Object>());
 	}
 		
 	private static JsonNode serializeInternal(Object dataObject, boolean excludeNull, boolean includeStatic, boolean includeTransient, boolean addObjectTypeInfo, List<Object> alreadyVisitedObjects) throws Exception {
-		if (alreadyVisitedObjects == null) {
-			alreadyVisitedObjects = new ArrayList<Object>();
-		}
-		
 		if (dataObject == null) {
-			if (addObjectTypeInfo) {
+			if (excludeNull) {
+				// This may only occur on top level of data
+				return null;
+			} else if (addObjectTypeInfo) {
 		    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
 		    	jsonObjectWithTypeInfo.add("class", null);
 		    	jsonObjectWithTypeInfo.add("value", null);
