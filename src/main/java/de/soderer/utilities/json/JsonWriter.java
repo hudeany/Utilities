@@ -446,6 +446,10 @@ public class JsonWriter implements Closeable {
 		return outputStream.toString("UTF-8");
 	}
 	
+	public static String getJsonItemString(JsonNode jsonNode) throws Exception {
+		return getJsonItemString(jsonNode, "\n", "\t", " ");
+	}
+	
 	/**
 	 * This method should only be used to write small Json items
 	 * 
