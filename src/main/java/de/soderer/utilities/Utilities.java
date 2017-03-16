@@ -1453,15 +1453,15 @@ public class Utilities {
 	}
 	
 	/**
-	 * Check whether an iterable collection collects a special object
+	 * Check whether an iterable collection contains a special object
 	 * 
-	 * @param iterable
-	 * @param dataObject
+	 * @param hayshack
+	 * @param needle
 	 * @return
 	 */
-	public static boolean containsObject(Iterable<?> iterable, Object dataObject) {
-		for (Object item : iterable) {
-			if (item == dataObject) {
+	public static boolean containsObject(Iterable<?> hayshack, Object needle) {
+		for (Object item : hayshack) {
+			if (item == needle) {
 				return true;
 			}
 		}
