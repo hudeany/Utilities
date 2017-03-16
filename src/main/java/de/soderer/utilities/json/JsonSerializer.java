@@ -30,9 +30,9 @@ public class JsonSerializer {
 	 * 
 	 * @param dataObject
 	 * @param excludeNull Do not serialize null values except for the dataObject itself
-	 * @param includeStatic Serialize values with a "static" modifier
-	 * @param includeTransient Serialize values with a "transient" modifier
-	 * @param addObjectTypeInfo Add object type info for non-simple objects
+	 * @param includeStatic Serialize fields with a "static" modifier
+	 * @param includeTransient Serialize fields with a "transient" modifier
+	 * @param addObjectTypeInfo Add object type info
 	 * @return
 	 * @throws Exception
 	 */
