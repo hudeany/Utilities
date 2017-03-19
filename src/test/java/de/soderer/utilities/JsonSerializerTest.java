@@ -13,20 +13,37 @@ import de.soderer.utilities.json.JsonWriter;
 public class JsonSerializerTest {
 	@Test
 	public void testSimple() throws Exception {
-		JsonNode dataNode = JsonSerializer.serialize(new TestObject());
+		JsonNode dataNode = JsonSerializer.serialize(new TestObjectSimple());
 		JsonWriter.getJsonItemString(dataNode);
+	}
+	
+	@Test
+	public void testSimpleWithTypeData() throws Exception {
+		JsonNode dataNodeOriginal = JsonSerializer.serialize(new TestObjectSimple(), false, false, false, true);
+		String jsonStringOriginal = JsonWriter.getJsonItemString(dataNodeOriginal);
+		TestObjectSimple deserializedObject = (TestObjectSimple) JsonSerializer.deserialize(dataNodeOriginal);
+		JsonNode dataNodeDeserialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
+		String jsonStringDeserialized = JsonWriter.getJsonItemString(dataNodeDeserialized);
+		Assert.assertEquals(jsonStringOriginal, jsonStringDeserialized);
 	}
 	
 	@Test
 	public void testAllFields() throws Exception {
-		JsonNode dataNode = JsonSerializer.serialize(new TestObject(), true, true, true, true);
+		JsonNode dataNode = JsonSerializer.serialize(new TestObjectComplex(), true, true, true, true);
 		JsonWriter.getJsonItemString(dataNode);
 	}
 	
 	@Test
-	public void testWIthTypeData() throws Exception {
-		JsonNode dataNode = JsonSerializer.serialize(new TestObject(), false, false, false, true);
-		JsonWriter.getJsonItemString(dataNode);
+	public void testComplexWithTypeData() throws Exception {
+		JsonNode dataNodeOriginal = JsonSerializer.serialize(new TestObjectComplex(), false, false, false, true);
+		@SuppressWarnings("unused")
+		String jsonStringOriginal = JsonWriter.getJsonItemString(dataNodeOriginal);
+		TestObjectComplex deserializedObject = (TestObjectComplex) JsonSerializer.deserialize(dataNodeOriginal);
+		JsonNode dataNodeDeserialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
+		@SuppressWarnings("unused")
+		String jsonStringDeserialized = JsonWriter.getJsonItemString(dataNodeDeserialized);
+		// Hashset item order may have changed
+		//Assert.assertEquals(jsonStringOriginal, jsonStringDeserialized);
 	}
 	
 	@Test
@@ -49,7 +66,7 @@ public class JsonSerializerTest {
 	@Test
 	public void testCylic2() throws Exception {
 		try {
-			TestObject someObject = new TestObject();
+			TestObjectComplex someObject = new TestObjectComplex();
 			
 			List<Object> list1 = new ArrayList<Object>();
 			List<Object> list2 = new ArrayList<Object>();
@@ -75,7 +92,7 @@ public class JsonSerializerTest {
 	
 	@Test
 	public void testNonCylic() throws Exception {
-		TestObject someObject = new TestObject();
+		TestObjectComplex someObject = new TestObjectComplex();
 		
 		List<Object> list = new ArrayList<Object>();
 		list.add(1);
@@ -88,7 +105,7 @@ public class JsonSerializerTest {
 	
 	@Test
 	public void testNonCylic2() throws Exception {
-		TestObject someObject = new TestObject();
+		TestObjectComplex someObject = new TestObjectComplex();
 		
 		List<Object> list1 = new ArrayList<Object>();
 		List<Object> list2 = new ArrayList<Object>();

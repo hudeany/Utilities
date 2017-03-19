@@ -16,7 +16,7 @@ public class JsonNode {
 			jsonDataType = JsonDataType.INTEGER;
 		} else if (value instanceof Number) {
 			jsonDataType = JsonDataType.NUMBER;
-		} else if (value instanceof String) {
+		} else if (value instanceof String || value instanceof Character) {
 			jsonDataType = JsonDataType.STRING;
 		} else if (value instanceof JsonObject) {
 			jsonDataType = JsonDataType.OBJECT;
