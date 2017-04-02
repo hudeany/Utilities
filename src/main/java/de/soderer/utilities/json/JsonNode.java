@@ -76,4 +76,13 @@ public class JsonNode {
 		return jsonDataType == JsonDataType.OBJECT
 			|| jsonDataType == JsonDataType.ARRAY;
 	}
+
+	@Override
+	public String toString() {
+		if (isNull()) {
+			return "null";
+		} else {
+			return getValue().toString();
+		}
+	}
 }
