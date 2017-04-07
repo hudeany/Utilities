@@ -44,6 +44,13 @@ public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_HSQL = "http://hsqldb.org/download";
 	
 	/**
+	 * DvNull used to prevent creation of file "derby.log"
+	 */
+	public static final OutputStream DEV_NULL = new OutputStream() {
+        public void write(int b) {}
+    };
+	
+	/**
 	 * In an Oracle DB the statement "SELECT CURRENT_TIMESTAMP FROM DUAL" return this special Oracle type "oracle.sql.TIMESTAMPTZ",
 	 * which is not listed in java.sql.Types, but can be read via ResultSet.getTimestamp(i) into a normal java.sql.Timestamp object
 	 */
@@ -56,8 +63,9 @@ public class DbUtilities {
 		Firebird("org.firebirdsql.jdbc.FBDriver", 3050),
 		SQLite("org.sqlite.JDBC", 0),
 		Derby("org.apache.derby.jdbc.EmbeddedDriver", 0),
-		HSQL("org.hsqldb.jdbc.JDBCDriver", 0),
-		Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000);
+		HSQL("org.hsqldb.jdbc.JDBCDriver", 0)
+		//Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000)
+		;
 		
 		public static DbVendor getDbVendorByName(String dbVendorName) throws Exception {
 			for (DbVendor dbVendor : DbVendor.values()) {
@@ -126,8 +134,8 @@ public class DbUtilities {
 			} else {
 				return "jdbc:hsqldb:mem:" + dbName;
 			}
-		} else if (DbVendor.Cassandra == dbVendor) {
-			return "jdbc:cassandra://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?primarydc=DC1&backupdc=DC2&consistency=QUORUM";
+//		} else if (DbVendor.Cassandra == dbVendor) {
+//			return "jdbc:cassandra://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?primarydc=DC1&backupdc=DC2&consistency=QUORUM";
 		} else {
 			throw new Exception("Unknown db vendor");
 		}
@@ -136,6 +144,11 @@ public class DbUtilities {
 	public static Connection createNewDatabase(DbVendor dbVendor, String dbPath) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
+		}
+		
+		if (dbVendor == DbVendor.Derby) {
+			// Prevent creation of file "derby.log"
+			System.setProperty("derby.stream.error.field", "de.soderer.utilities.DbUtilities.DEV_NULL");
 		}
 		
 		Class.forName(dbVendor.getDriverClassName());
@@ -215,6 +228,11 @@ public class DbUtilities {
 		}
 		
 		try {
+			if (dbVendor == DbVendor.Derby) {
+				// Prevent creation of file "derby.log"
+				System.setProperty("derby.stream.error.field", "de.soderer.utilities.DbUtilities.DEV_NULL");
+			}
+			
 			Class.forName(dbVendor.getDriverClassName());
 		} catch (Exception e) {
 			throw new Exception("Cannot create db connection, caused by unknown DriverClassName: " + e.getMessage());
@@ -464,8 +482,8 @@ public class DbUtilities {
 					return DbVendor.HSQL;
 				} else if (productName != null && productName.toLowerCase().contains("firebird")) {
 					return DbVendor.Firebird;
-				} else if (productName != null && productName.toLowerCase().contains("cassandra")) {
-					return DbVendor.Cassandra;
+//				} else if (productName != null && productName.toLowerCase().contains("cassandra")) {
+//					return DbVendor.Cassandra;
 				} else {
 					throw new Exception("Unknown db vendor: " + productName);
 				}
