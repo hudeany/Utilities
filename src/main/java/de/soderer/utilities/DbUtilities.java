@@ -63,9 +63,8 @@ public class DbUtilities {
 		Firebird("org.firebirdsql.jdbc.FBDriver", 3050),
 		SQLite("org.sqlite.JDBC", 0),
 		Derby("org.apache.derby.jdbc.EmbeddedDriver", 0),
-		HSQL("org.hsqldb.jdbc.JDBCDriver", 0)
-		//Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000)
-		;
+		HSQL("org.hsqldb.jdbc.JDBCDriver", 0),
+		Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000);
 		
 		public static DbVendor getDbVendorByName(String dbVendorName) throws Exception {
 			for (DbVendor dbVendor : DbVendor.values()) {
@@ -134,8 +133,8 @@ public class DbUtilities {
 			} else {
 				return "jdbc:hsqldb:mem:" + dbName;
 			}
-//		} else if (DbVendor.Cassandra == dbVendor) {
-//			return "jdbc:cassandra://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?primarydc=DC1&backupdc=DC2&consistency=QUORUM";
+		} else if (DbVendor.Cassandra == dbVendor) {
+			return "jdbc:cassandra://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?primarydc=DC1&backupdc=DC2&consistency=QUORUM";
 		} else {
 			throw new Exception("Unknown db vendor");
 		}
@@ -482,8 +481,8 @@ public class DbUtilities {
 					return DbVendor.HSQL;
 				} else if (productName != null && productName.toLowerCase().contains("firebird")) {
 					return DbVendor.Firebird;
-//				} else if (productName != null && productName.toLowerCase().contains("cassandra")) {
-//					return DbVendor.Cassandra;
+				} else if (productName != null && productName.toLowerCase().contains("cassandra")) {
+					return DbVendor.Cassandra;
 				} else {
 					throw new Exception("Unknown db vendor: " + productName);
 				}
