@@ -145,6 +145,11 @@ public class DbUtilities {
 			throw new Exception("Unknown db vendor");
 		}
 		
+		if (dbVendor == DbVendor.Derby) {
+			// Prevent creation of file "derby.log"
+			System.setProperty("derby.stream.error.field", "de.soderer.utilities.DbUtilities.DEV_NULL");
+		}
+		
 		Class.forName(dbVendor.getDriverClassName());
 	
 		if (dbVendor == DbVendor.SQLite) {
@@ -222,6 +227,11 @@ public class DbUtilities {
 		}
 		
 		try {
+			if (dbVendor == DbVendor.Derby) {
+				// Prevent creation of file "derby.log"
+				System.setProperty("derby.stream.error.field", "de.soderer.utilities.DbUtilities.DEV_NULL");
+			}
+			
 			Class.forName(dbVendor.getDriverClassName());
 		} catch (Exception e) {
 			throw new Exception("Cannot create db connection, caused by unknown DriverClassName: " + e.getMessage());
