@@ -142,6 +142,8 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			result = work();
 		} catch (Exception e) {
 			error = e;
+		} catch (Throwable e) {
+			error = new Exception("Fatal error occurred: " + e.getMessage(), e);
 		}
 		
 		if (endTime == null) {

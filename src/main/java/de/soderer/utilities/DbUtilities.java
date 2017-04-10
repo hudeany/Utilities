@@ -44,6 +44,13 @@ public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_HSQL = "http://hsqldb.org/download";
 	
 	/**
+	 * DevNull used to prevent creation of file "derby.log"
+	 */
+	public static final OutputStream DEV_NULL = new OutputStream() {
+        public void write(int b) {}
+    };
+	
+	/**
 	 * In an Oracle DB the statement "SELECT CURRENT_TIMESTAMP FROM DUAL" return this special Oracle type "oracle.sql.TIMESTAMPTZ",
 	 * which is not listed in java.sql.Types, but can be read via ResultSet.getTimestamp(i) into a normal java.sql.Timestamp object
 	 */
@@ -1421,10 +1428,10 @@ public class DbUtilities {
 				if (columnType != null) {
 					String dataType = getDataType(dbVendor, columnType.getSimpleDataType());
 					int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterLength() : 0;
-					columnPart += replaceVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
+					columnPart += escapeVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
 				} else {
 					String dataType = getDataType(dbVendor, SimpleDataType.String);
-					columnPart += replaceVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + "(1)";
+					columnPart += escapeVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + "(1)";
 				}
 			}
 			
@@ -1432,7 +1439,7 @@ public class DbUtilities {
 			if (Utilities.isNotEmpty(keyColumns)) {
 				List<String> escapedKeyColumns = new ArrayList<String>();
 				for (String keyColumn : keyColumns) {
-					escapedKeyColumns.add(replaceVendorReservedNames(dbVendor, keyColumn));
+					escapedKeyColumns.add(escapeVendorReservedNames(dbVendor, keyColumn));
 				}
 				primaryKeyPart = ", PRIMARY KEY (" + Utilities.join(escapedKeyColumns, ", ") + ")";
 			}
@@ -1598,14 +1605,14 @@ public class DbUtilities {
 	public static void markDuplicates(Connection connection, String tableName, Collection<String> keyColumnsWithFunctions, String itemIndexColumn, String duplicateIndexColumn) throws Exception {
 		if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
 			DbVendor dbVendor = getDbVendor(connection);
-			itemIndexColumn = replaceVendorReservedNames(dbVendor, itemIndexColumn);
-			duplicateIndexColumn = replaceVendorReservedNames(dbVendor, duplicateIndexColumn);
+			itemIndexColumn = escapeVendorReservedNames(dbVendor, itemIndexColumn);
+			duplicateIndexColumn = escapeVendorReservedNames(dbVendor, duplicateIndexColumn);
 			
 			StringBuilder selectPart = new StringBuilder();
 			StringBuilder wherePart = new StringBuilder();
 			int columnIndex = 0;
 			for (String columnWithFunction : keyColumnsWithFunctions) {
-				columnWithFunction = replaceVendorReservedNames(dbVendor, columnWithFunction.trim());
+				columnWithFunction = escapeVendorReservedNames(dbVendor, columnWithFunction.trim());
 				
 				if (selectPart.length() > 0) {
 					selectPart.append(", ");
@@ -1646,7 +1653,7 @@ public class DbUtilities {
 	public static String getKeyColumnEquationList(DbVendor dbVendor, Collection<String> columnNamesWithFunctions, String tableAlias1, String tableAlias2) {
 		StringBuilder returnValue = new StringBuilder();
 		for (String columnName : columnNamesWithFunctions) {
-			columnName = replaceVendorReservedNames(dbVendor, columnName.trim());
+			columnName = escapeVendorReservedNames(dbVendor, columnName.trim());
 			
 			if (returnValue.length() > 0) {
 				returnValue.append(", ");
@@ -2072,13 +2079,13 @@ public class DbUtilities {
 				updateColumns.removeAll(keyColumns);
 				if (updateColumns.size() > 0 || additionalUpdateValuesSql.length() > 0) {
 					DbVendor dbVendor = getDbVendor(connection);
-					itemIndexColumn = replaceVendorReservedNames(dbVendor, itemIndexColumn);
+					itemIndexColumn = escapeVendorReservedNames(dbVendor, itemIndexColumn);
 					String updatedIndexColumn = null;
 					try {
 						if (updateWithNullValues) {
 							String updateSetPart = "";
 							for (String updateColumn : updateColumns) {
-								updateColumn = replaceVendorReservedNames(dbVendor, updateColumn);
+								updateColumn = escapeVendorReservedNames(dbVendor, updateColumn);
 								if (updateSetPart.length() > 0) {
 									updateSetPart += ", ";
 								}
@@ -2091,7 +2098,7 @@ public class DbUtilities {
 						} else {
 							updatedIndexColumn = addIndexedIntegerColumn(connection, destinationTableName, "updatedindex");
 							for (String updateColumn : updateColumns) {
-								updateColumn = replaceVendorReservedNames(dbVendor, updateColumn);
+								updateColumn = escapeVendorReservedNames(dbVendor, updateColumn);
 								String updateSingleColumn = "UPDATE " + destinationTableName
 									+ " SET " + additionalUpdateValuesSql + updatedIndexColumn + " = 1, " + updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
 										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))"
@@ -2164,7 +2171,7 @@ public class DbUtilities {
 						if (updateWithNullValues) {
 							String updateSetPart = "";
 							for (String updateColumn : updateColumns) {
-								updateColumn = replaceVendorReservedNames(dbVendor, updateColumn);
+								updateColumn = escapeVendorReservedNames(dbVendor, updateColumn);
 								if (updateSetPart.length() > 0) {
 									updateSetPart += ", ";
 								}
@@ -2177,7 +2184,7 @@ public class DbUtilities {
 						} else {
 							updatedIndexColumn = addIndexedIntegerColumn(connection, destinationTableName, "updatedindex");
 							for (String updateColumn : updateColumns) {
-								updateColumn = replaceVendorReservedNames(dbVendor, updateColumn);
+								updateColumn = escapeVendorReservedNames(dbVendor, updateColumn);
 								String updateSingleColumn = "UPDATE " + destinationTableName
 									+ " SET " + additionalUpdateValuesSql + updatedIndexColumn + " = 1, " + updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
 										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))"
@@ -2222,7 +2229,7 @@ public class DbUtilities {
 		if (dbVendor == DbVendor.Oracle) {
 			try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM user_ind_columns WHERE LOWER(table_name) = ? AND LOWER(column_name) = ?")) {
 	        	for (String keyColumn : keyColumns) {
-	        		keyColumn = replaceVendorReservedNames(dbVendor, keyColumn);
+	        		keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
 	        		statement.setString(1, tableName.toLowerCase());
 	        		statement.setString(2, keyColumn.toLowerCase());
 	        		try (ResultSet resultSet = statement.executeQuery()) {
@@ -2236,7 +2243,7 @@ public class DbUtilities {
         } else if (dbVendor == DbVendor.MySQL) {
 			try (PreparedStatement statement = connection.prepareStatement("SHOW INDEX FROM " + tableName.toLowerCase() + " WHERE column_name = ?")) {
 	        	for (String keyColumn : keyColumns) {
-	        		keyColumn = replaceVendorReservedNames(dbVendor, keyColumn);
+	        		keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
 	        		statement.setString(1, keyColumn.toLowerCase());
 	        		try (ResultSet resultSet = statement.executeQuery()) {
 			            if (!resultSet.next()) {
@@ -2251,7 +2258,17 @@ public class DbUtilities {
         }
 	}
 	
-	public static String replaceVendorReservedNames(DbVendor dbVendor, String value) {
+	public static String unescapeVendorReservedNames(DbVendor dbVendor, String value) {
+		if (dbVendor == DbVendor.MySQL) {
+			return Utilities.trimSimultaneously(value, "`");
+		} else if (dbVendor == DbVendor.Oracle) {
+			return Utilities.trimSimultaneously(value, "\"");
+		} else {
+			return value;
+		}
+	}
+	
+	public static String escapeVendorReservedNames(DbVendor dbVendor, String value) {
 		if (dbVendor == DbVendor.MySQL) {
 			switch (value.toLowerCase()) {
 				case "accessible":
@@ -3376,7 +3393,7 @@ public class DbUtilities {
 			if (returnValue.length() > 0) {
 				returnValue.append(", ");
 			}
-			returnValue.append(replaceVendorReservedNames(dbVendor, columnName));
+			returnValue.append(escapeVendorReservedNames(dbVendor, columnName));
 		}
 		return returnValue.toString();
 	}
