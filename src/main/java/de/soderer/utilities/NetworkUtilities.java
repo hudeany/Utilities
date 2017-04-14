@@ -27,6 +27,8 @@ public class NetworkUtilities {
 	private static final String DOMAIN_PART_REGEX = "\\p{Alnum}(?>[\\p{Alnum}-]*\\p{Alnum})*";
 	private static final String TOP_DOMAIN_PART_REGEX = "\\p{Alpha}{2,}";
 	private static final String DOMAIN_NAME_REGEX = "^(?:" + DOMAIN_PART_REGEX + "\\.)+" + "(" + TOP_DOMAIN_PART_REGEX + ")$";
+
+	private static final Pattern IPV4_PATTERN = Pattern.compile("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
 	
 	/** 
 	 * Regular expression for parsing email addresses. 
@@ -236,7 +238,7 @@ public class NetworkUtilities {
 	}
 
 	public static boolean isValidIpV4(String ipv4) {
-		return IPAddressUtil.isIPv4LiteralAddress(ipv4);
+		return IPV4_PATTERN.matcher(ipv4).matches();
 	}
 
 	public static boolean isValidIpV6(String ipv6) {
