@@ -35,7 +35,8 @@ import de.soderer.utilities.collection.CaseInsensitiveMap;
 import de.soderer.utilities.collection.CaseInsensitiveSet;
 
 public class DbUtilities {
-	public static final String DOWNLOAD_LOCATION_MYSQL = "https://dev.mysql.com/downloads/connector/j/";
+	public static final String DOWNLOAD_LOCATION_MYSQL = "https://dev.mysql.com/downloads/connector/j";
+	public static final String DOWNLOAD_LOCATION_MARIADB = "https://downloads.mariadb.org/connector-java";
 	public static final String DOWNLOAD_LOCATION_ORACLE = "http://www.oracle.com/technetwork/apps-tech/jdbc-112010-090769.html";
 	public static final String DOWNLOAD_LOCATION_POSTGRESQL = "https://jdbc.postgresql.org/download.html";
 	public static final String DOWNLOAD_LOCATION_FIREBIRD = "http://www.firebirdsql.org/en/jdbc-driver";
@@ -59,6 +60,7 @@ public class DbUtilities {
 	public enum DbVendor {
 		Oracle("oracle.jdbc.OracleDriver", 1521),
 		MySQL("com.mysql.jdbc.Driver", 3306),
+		MariaDB("org.mariadb.jdbc.Driver", 3306),
 		PostgreSQL("org.postgresql.Driver", 5432),
 		Firebird("org.firebirdsql.jdbc.FBDriver", 3050),
 		SQLite("org.sqlite.JDBC", 0),
@@ -108,6 +110,8 @@ public class DbUtilities {
 			}
 		} else if (DbVendor.MySQL == dbVendor) {
 			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+		} else if (DbVendor.MariaDB == dbVendor) {
+			return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
 		} else if (DbVendor.PostgreSQL == dbVendor) {
 			return "jdbc:postgresql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName;
 		} else if (DbVendor.SQLite == dbVendor) {
@@ -469,8 +473,10 @@ public class DbUtilities {
 				String productName = databaseMetaData.getDatabaseProductName();
 				if (productName != null && productName.toLowerCase().contains("oracle")) {
 					return DbVendor.Oracle;
-				} else if (productName != null && (productName.toLowerCase().contains("mysql") || productName.toLowerCase().contains("maria"))) {
+				} else if (productName != null && productName.toLowerCase().contains("mysql")) {
 					return DbVendor.MySQL;
+				} else if (productName != null && productName.toLowerCase().contains("maria")) {
+					return DbVendor.MariaDB;
 				} else if (productName != null && productName.toLowerCase().contains("postgres")) {
 					return DbVendor.PostgreSQL;
 				} else if (productName != null && productName.toLowerCase().contains("sqlite")) {
@@ -713,6 +719,31 @@ public class DbUtilities {
 					}
 				}
 			} else if (DbVendor.MySQL == dbVendor) {
+				String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setString(1, tableName);
+					try (ResultSet resultSet = preparedStatement.executeQuery() ) {
+						while (resultSet.next()) {
+							long characterLength = resultSet.getLong("character_maximum_length");
+							if (resultSet.wasNull()) {
+								characterLength = -1;
+							}
+							int numericPrecision = resultSet.getInt("numeric_precision");
+							if (resultSet.wasNull()) {
+								numericPrecision = -1;
+							}
+							int numericScale = resultSet.getInt("numeric_scale");
+							if (resultSet.wasNull()) {
+								numericScale = -1;
+							}
+							boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+							boolean isAutoIncrement = resultSet.getString("extra").equalsIgnoreCase("auto_increment");
+	
+							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
+						}
+					}
+				}
+			} else if (DbVendor.MariaDB == dbVendor) {
 				String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
@@ -1023,15 +1054,15 @@ public class DbUtilities {
 		if (fieldDefault.equalsIgnoreCase("sysdate") || fieldDefault.equalsIgnoreCase("sysdate()") || fieldDefault.equalsIgnoreCase("current_timestamp")) {
 			if (dbVendor == DbVendor.Oracle) {
 				return "current_timestamp";
-			} else if (dbVendor == DbVendor.MySQL) {
-				return "sysdate()";
+			} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
+				return "current_timestamp";
 			} else {
 				throw new Exception("Unsupported db vendor");
 			}
 		} else {
 			if (dbVendor == DbVendor.Oracle) {
 				return "to_date('" + fieldDefault + "', 'DD.MM.YYYY')";
-			} else if (dbVendor == DbVendor.MySQL) {
+			} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 				return "'" + fieldDefault + "'";
 			} else {
 				throw new Exception("Unsupported db vendor");
@@ -1136,6 +1167,8 @@ public class DbUtilities {
 			if (DbVendor.Oracle == dbVendor) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY (" + changeColumnStatementPart + ")";
 			} else if (DbVendor.MySQL == dbVendor) {
+				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY " + changeColumnStatementPart;
+			} else if (DbVendor.MariaDB == dbVendor) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY " + changeColumnStatementPart;
 			} else {
 				throw new Exception("Unsupported db vendor");
@@ -1285,6 +1318,27 @@ public class DbUtilities {
 					return tableNamesToExport;
 				}
 			} else if (DbVendor.MySQL == dbVendor) {
+				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema')";
+				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
+					if (Utilities.isNotBlank(tablePattern)) {
+						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						if (tablePattern.startsWith("!")) {
+							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "'";
+						} else {
+							tableQuery += " AND table_name LIKE '" + tablePattern + "'";
+						}
+					}
+				}
+				tableQuery += " ORDER BY table_name";
+
+				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
+					List<String> tableNamesToExport = new ArrayList<String>();
+					while (resultSet.next()) {
+						tableNamesToExport.add(resultSet.getString("table_name"));
+					}
+					return tableNamesToExport;
+				}
+			} else if (DbVendor.MariaDB == dbVendor) {
 				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema')";
 				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
 					if (Utilities.isNotBlank(tablePattern)) {
@@ -1481,6 +1535,16 @@ public class DbUtilities {
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
 			}
+		} else if (dbVendor == DbVendor.MariaDB) {
+			switch (simpleDataType) {
+				case Blob: return "LONGBLOB";
+				case Clob: return "LONGTEXT";
+				case Date: return "TIMESTAMP NULL";
+				case Integer: return "INT";
+				case Double: return "DOUBLE";
+				case String: return "VARCHAR";
+				default: return "VARCHAR";
+			}
 		} else if (dbVendor == DbVendor.HSQL) {
 			switch (simpleDataType) {
 				case Blob: return "BLOB";
@@ -1584,6 +1648,8 @@ public class DbUtilities {
 	public static String getDownloadUrl(DbVendor dbVendor) throws Exception {
 		if (dbVendor == DbVendor.MySQL) {
 			return DOWNLOAD_LOCATION_MYSQL;
+		} else if (dbVendor == DbVendor.MariaDB) {
+			return DOWNLOAD_LOCATION_MARIADB;
 		} else if (dbVendor == DbVendor.Oracle) {
 			return DOWNLOAD_LOCATION_ORACLE;
 		} else if (dbVendor == DbVendor.PostgreSQL) {
@@ -1870,6 +1936,9 @@ public class DbUtilities {
 
 		try (Statement statement = connection.createStatement()) {
 			if (dbVendor == DbVendor.MySQL) {
+				statement.execute("SELECT @n := 0");
+				statement.execute("UPDATE " + tableName + " SET " + indexColumnName + " = @n := @n + 1");
+			} else if (dbVendor == DbVendor.MariaDB) {
 				statement.execute("SELECT @n := 0");
 				statement.execute("UPDATE " + tableName + " SET " + indexColumnName + " = @n := @n + 1");
 			} else if (dbVendor == DbVendor.Oracle) {
@@ -2263,13 +2332,26 @@ public class DbUtilities {
 	        	}
 	            return true;
 			}
+        } else if (dbVendor == DbVendor.MariaDB) {
+			try (PreparedStatement statement = connection.prepareStatement("SHOW INDEX FROM " + tableName.toLowerCase() + " WHERE column_name = ?")) {
+	        	for (String keyColumn : keyColumns) {
+	        		keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
+	        		statement.setString(1, keyColumn.toLowerCase());
+	        		try (ResultSet resultSet = statement.executeQuery()) {
+			            if (!resultSet.next()) {
+			            	return false;
+			            }
+	        		}
+	        	}
+	            return true;
+			}
         } else {
         	return null;
         }
 	}
 	
 	public static String unescapeVendorReservedNames(DbVendor dbVendor, String value) {
-		if (dbVendor == DbVendor.MySQL) {
+		if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 			return Utilities.trimSimultaneously(value, "`");
 		} else if (dbVendor == DbVendor.Oracle) {
 			return Utilities.trimSimultaneously(value, "\"");
@@ -2279,7 +2361,7 @@ public class DbUtilities {
 	}
 	
 	public static String escapeVendorReservedNames(DbVendor dbVendor, String value) {
-		if (dbVendor == DbVendor.MySQL) {
+		if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 			switch (value.toLowerCase()) {
 				case "accessible":
 				case "account":
