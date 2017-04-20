@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.csv;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 @SuppressWarnings("unused")
-public class TestObjectComplex {
+public class TestObjectSimple {
 	public static String STATICFIELD = "textField1 value";
 	
 	private transient String transientField = "textField1 value";
@@ -17,8 +17,6 @@ public class TestObjectComplex {
 	private String privateTextField = "privateTextField value";
 	protected String protectedTextField = "protectedTextField value";
 	public String publicTextField = "publicTextField value";
-
-	private int id = 0;
 	
 	private int intField = 1;
 	private char charField = 'a';
@@ -32,11 +30,10 @@ public class TestObjectComplex {
 	private Object[] arrayField;
 	private List<Object> listField;
 	private Set<Object> setField;
-	private TestObjectComplex otherObjectField = null;
 	
-	public TestObjectComplex() {
-		arrayField = new Object[] { 1, 2, 3, "Text Value", true, null, new TestObjectComplex(1) };		
-
+	public TestObjectSimple() {
+		arrayField = new Object[] { 1, 2, 3, "Text Value", true, null };
+		
 		listField = new ArrayList<Object>();
 		listField.add(1);
 		listField.add(2);
@@ -44,7 +41,6 @@ public class TestObjectComplex {
 		listField.add("Text Value");
 		listField.add(true);
 		listField.add(null);
-		listField.add(new TestObjectComplex(2));
 		
 		setField = new HashSet<Object>();
 		setField.add(1);
@@ -53,12 +49,5 @@ public class TestObjectComplex {
 		setField.add("Text Value");
 		setField.add(true);
 		setField.add(null);
-		setField.add(new TestObjectComplex(3));
-		
-		otherObjectField = new TestObjectComplex(4);
-	}
-	
-	private TestObjectComplex(int id) {
-		this.id = id;
 	}
 }

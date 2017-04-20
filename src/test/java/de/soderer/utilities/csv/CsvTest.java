@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.csv;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -6,6 +6,10 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import de.soderer.utilities.csv.CsvFormat;
+import de.soderer.utilities.csv.CsvReader;
+import de.soderer.utilities.csv.CsvWriter;
 
 public class CsvTest {
 

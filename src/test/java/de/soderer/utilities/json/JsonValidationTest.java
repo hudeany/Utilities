@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.json;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -6,6 +6,7 @@ import java.io.InputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.json.Json5Reader;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonNode;

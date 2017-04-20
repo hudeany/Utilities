@@ -14,6 +14,9 @@ import java.util.Properties;
 import java.util.Set;
 
 import de.soderer.utilities.collection.UniqueFifoQueuedList;
+import de.soderer.utilities.csv.CsvFormat;
+import de.soderer.utilities.csv.CsvReader;
+import de.soderer.utilities.csv.CsvWriter;
 
 public class ConfigurationProperties {
 	public static String MAXSIZE_EXTENSION = ".maxSize";

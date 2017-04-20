@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.json;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,6 +6,8 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.csv.TestObjectComplex;
+import de.soderer.utilities.csv.TestObjectSimple;
 import de.soderer.utilities.json.JsonNode;
 import de.soderer.utilities.json.JsonSerializer;
 import de.soderer.utilities.json.JsonWriter;

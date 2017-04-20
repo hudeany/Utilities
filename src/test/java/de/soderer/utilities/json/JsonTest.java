@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.json;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -7,21 +7,24 @@ import java.util.Date;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.TextUtilities;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.json.Json5Reader;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonNode;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
-import de.soderer.utilities.json.JsonReader.JsonToken;
 import de.soderer.utilities.json.JsonUtilities;
 import de.soderer.utilities.json.JsonWriter;
+import de.soderer.utilities.json.JsonReader.JsonToken;
 
-public class Json5Test {
+public class JsonTest {
 	@Test
 	public void testEmptyArray() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			writer = new JsonWriter(output, "UTF-8");
@@ -31,7 +34,7 @@ public class Json5Test {
 			output.close();
 			String result = new String(output.toByteArray(), "UTF-8");
 			Assert.assertEquals("[]\n", result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			Assert.assertNotNull(jsonReader.read());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -47,7 +50,7 @@ public class Json5Test {
 	public void testEmptyArray2() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			writer = new JsonWriter(output, "UTF-8");
@@ -56,7 +59,7 @@ public class Json5Test {
 			output.close();
 			String result = new String(output.toByteArray(), "UTF-8");
 			Assert.assertEquals("[]\n", result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			Assert.assertNotNull(jsonReader.read());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -72,7 +75,7 @@ public class Json5Test {
 	public void testArray() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			Date testDate = new Date();
 			output = new ByteArrayOutputStream();
@@ -106,7 +109,7 @@ public class Json5Test {
 					+ "\t\"" + DateUtilities.ISO_8601_DATETIME_FORMAT.format(testDate) + "\"\n"
 				+ "]\n",
 				result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			Assert.assertNotNull(jsonReader.read());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -131,7 +134,7 @@ public class Json5Test {
 				+ "]\r";
 			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode.getValue());
+			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonArray());
 			Assert.assertEquals(1, ((JsonArray) jsonNode.getValue()).get(0));
 			Assert.assertEquals(2, ((JsonArray) jsonNode.getValue()).get(1));
@@ -176,7 +179,7 @@ public class Json5Test {
 	public void testArray2() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			Date testDate = new Date();
 			output = new ByteArrayOutputStream();
@@ -213,7 +216,7 @@ public class Json5Test {
 					+ "\t\"" + DateUtilities.ISO_8601_DATETIME_FORMAT.format(testDate) + "\"\n"
 				+ "]\n",
 				result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			Assert.assertNotNull(jsonReader.read());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -229,7 +232,7 @@ public class Json5Test {
 	public void testEmptyObject() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			writer = new JsonWriter(output, "UTF-8");
@@ -239,7 +242,7 @@ public class Json5Test {
 			output.close();
 			String result = new String(output.toByteArray(), "UTF-8");
 			Assert.assertEquals("{}\n", result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			Assert.assertNotNull(jsonReader.read());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -255,7 +258,7 @@ public class Json5Test {
 	public void testEmptyObject2() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			writer = new JsonWriter(output, "UTF-8");
@@ -264,7 +267,7 @@ public class Json5Test {
 			output.close();
 			String result = new String(output.toByteArray(), "UTF-8");
 			Assert.assertEquals("{}\n", result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			Assert.assertNotNull(jsonReader.read());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -280,7 +283,7 @@ public class Json5Test {
 	public void testObject() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			Date testDate = new Date();
 			output = new ByteArrayOutputStream();
@@ -324,7 +327,7 @@ public class Json5Test {
 					+ "\t\"test_date\": \"" + DateUtilities.ISO_8601_DATETIME_FORMAT.format(testDate) + "\"\n"
 				+ "}\n",
 				result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonObject());
@@ -342,7 +345,7 @@ public class Json5Test {
 	public void testObject2() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			Date testDate = new Date();
 			output = new ByteArrayOutputStream();
@@ -384,7 +387,7 @@ public class Json5Test {
 					+ "\t\"maxInteger\": " + Integer.MAX_VALUE + "\n"
 				+ "}\n",
 				result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonObject());
@@ -402,7 +405,7 @@ public class Json5Test {
 	public void testBigDataReader() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			
@@ -424,8 +427,8 @@ public class Json5Test {
 			output.close();
 
 			String result = new String(output.toByteArray(), "UTF-8");
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
-			Assert.assertEquals(Json5Reader.JsonToken.JsonArray_Open, jsonReader.readNextToken());
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			Assert.assertEquals(JsonReader.JsonToken.JsonArray_Open, jsonReader.readNextToken());
 			
 			for (int i = 0; i < 5; i++) {
 				Assert.assertTrue(jsonReader.readNextJsonNode());
@@ -444,7 +447,7 @@ public class Json5Test {
 			Assert.assertEquals(false, jsonReader.getCurrentObject());
 			Assert.assertFalse(jsonReader.readNextJsonNode());
 			
-			Assert.assertEquals(Json5Reader.JsonToken.JsonArray_Close, jsonReader.readNextToken());
+			Assert.assertEquals(JsonReader.JsonToken.JsonArray_Close, jsonReader.readNextToken());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -459,7 +462,7 @@ public class Json5Test {
 	public void testUglified() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			
@@ -482,7 +485,7 @@ public class Json5Test {
 
 			String result = new String(output.toByteArray(), "UTF-8");
 			Assert.assertEquals("{\"Number\":2,\"Text\":\"Abc2\",\"Array\":[1,\"Abc\"]}", result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonObject());
@@ -502,7 +505,7 @@ public class Json5Test {
 	public void testUglified2() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			
@@ -525,7 +528,7 @@ public class Json5Test {
 
 			String result = new String(output.toByteArray(), "UTF-8");
 			Assert.assertEquals("[1,{\"Number\":2,\"Text\":\"Abc2\"},\"Abc\"]", result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonArray());
@@ -543,9 +546,9 @@ public class Json5Test {
 	
 	@Test
 	public void testReadToken() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
-			jsonReader = new Json5Reader(new ByteArrayInputStream("{\"Number\":1,\"Text\":\"Abc2\",\"Array\":[1,\"Abc\"],\"Number2\":2}".getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream("{\"Number\":1,\"Text\":\"Abc2\",\"Array\":[1,\"Abc\"],\"Number2\":2}".getBytes("UTF-8")));
 			
 			String[] tokenValues = new String[]{
 				"JsonObject_Open: null",
@@ -574,9 +577,9 @@ public class Json5Test {
 	
 	@Test
 	public void testInvalidData() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
-			jsonReader = new Json5Reader(new ByteArrayInputStream("{".getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream("{".getBytes("UTF-8")));
 			jsonReader.read();
 			Assert.fail("Missing an expected exception");
 		} catch (Exception e) {
@@ -591,7 +594,7 @@ public class Json5Test {
 	public void testObjectOfObjects() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			
@@ -618,7 +621,7 @@ public class Json5Test {
 
 			String result = new String(output.toByteArray(), "UTF-8");
 			Assert.assertEquals("{\"Text\":\"Abc\",\"Object1\":{\"Number\":1,\"Text\":\"Abc1\"},\"Object2\":{\"Number\":2,\"Text\":\"Abc2\"}}", result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonObject());
@@ -638,7 +641,7 @@ public class Json5Test {
 	public void testArrayOfArrays() {
 		JsonWriter writer = null;
 		ByteArrayOutputStream output = null;
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			output = new ByteArrayOutputStream();
 			
@@ -665,7 +668,7 @@ public class Json5Test {
 
 			String result = new String(output.toByteArray(), "UTF-8");
 			Assert.assertEquals("[\"Abc\",[1,\"Abc1\"],[2,\"Abc2\"]]", result);
-			jsonReader = new Json5Reader(new ByteArrayInputStream(result.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(result.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonArray());
@@ -683,57 +686,13 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5ObjectUnquotedKey() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"{\n"
-					+ "\ttest1 : 1,\n"
-					+ "\t$test2 : 2,\n"
-					+ "\t_test3 : 3\n"
+					+ "\ttest : 1\n"
 				+ "}\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonObject());
-			Assert.assertEquals(3, ((JsonObject) jsonNode.getValue()).size());
-			Assert.assertEquals(1, ((JsonObject) jsonNode.getValue()).get("test1"));
-			Assert.assertEquals(2, ((JsonObject) jsonNode.getValue()).get("$test2"));
-			Assert.assertEquals(3, ((JsonObject) jsonNode.getValue()).get("_test3"));
-		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
-		} finally {
-			Utilities.closeQuietly(jsonReader);
-		}
-	}
-	
-	@Test
-	public void testJson5ObjectUnquotedKeyError1() {
-		Json5Reader jsonReader = null;
-		try {
-			String data =
-				"{\n"
-					+ "\t1test : 1\n"
-				+ "}\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			jsonReader.read();
-			Assert.fail("Missing expected Exception");
-		} catch (Exception e) {
-			// Expected Exception
-		} finally {
-			Utilities.closeQuietly(jsonReader);
-		}
-	}
-	
-	@Test
-	public void testJson5ObjectUnquotedKeyError2() {
-		Json5Reader jsonReader = null;
-		try {
-			String data =
-				"{\n"
-					+ "\tte st : 1\n"
-				+ "}\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
 			jsonReader.read();
 			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
@@ -745,21 +704,17 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5ObjectSingleQuotedKey() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"{\n"
 					+ "\t'test': 1\n"
 				+ "}\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonObject());
-			Assert.assertEquals(1, ((JsonObject) jsonNode.getValue()).size());
-			Assert.assertEquals(1, ((JsonObject) jsonNode.getValue()).get("test"));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -767,21 +722,17 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5ObjectTrailingComma() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"{\n"
 					+ "\t\"test\": 1,\n"
 				+ "}\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonObject());
-			Assert.assertEquals(1, ((JsonObject) jsonNode.getValue()).size());
-			Assert.assertEquals(1, ((JsonObject) jsonNode.getValue()).get("test"));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -789,21 +740,17 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5ArraySingleQuotedStrings() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"[\n"
 					+ "'Abc'"
 				+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonArray());
-			Assert.assertEquals(1, ((JsonArray) jsonNode.getValue()).size());
-			Assert.assertEquals("Abc", ((JsonArray) jsonNode.getValue()).get(0));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -811,21 +758,17 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5ArrayTrailingComma() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"[\n"
 					+ "\"Abc\","
 				+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonArray());
-			Assert.assertEquals(1, ((JsonArray) jsonNode.getValue()).size());
-			Assert.assertEquals("Abc", ((JsonArray) jsonNode.getValue()).get(0));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -833,13 +776,13 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5MultilineStringDoubleQuoted() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"[\n"
 					+ "\t\"Abc \\\n Abc\"\n"
 				+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 			Assert.assertTrue(jsonNode.isJsonArray());
@@ -855,21 +798,17 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5MultilineStringSingleQuoted() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"[\n"
 					+ "\t'Abc \\\n Abc'\n"
 				+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonArray());
-			Assert.assertEquals(1, ((JsonArray) jsonNode.getValue()).size());
-			Assert.assertEquals("Abc \n Abc", ((JsonArray) jsonNode.getValue()).get(0));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -877,21 +816,17 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5HexadecimalNumberValue() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"[\n"
 					+ "0x1a2B3c4D5e6F\n"
 				+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonArray());
-			Assert.assertEquals(1, ((JsonArray) jsonNode.getValue()).size());
-			Assert.assertEquals(28772997619311l, ((JsonArray) jsonNode.getValue()).get(0));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -923,7 +858,7 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5ExtremeNumber() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"[\n"
@@ -932,18 +867,11 @@ public class Json5Test {
 					+ "NaN,\n"
 					+ "-NaN\n"
 				+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonArray());
-			Assert.assertEquals(4, ((JsonArray) jsonNode.getValue()).size());
-			Assert.assertEquals(Double.POSITIVE_INFINITY, ((JsonArray) jsonNode.getValue()).get(0));
-			Assert.assertEquals(Double.NEGATIVE_INFINITY, ((JsonArray) jsonNode.getValue()).get(1));
-			Assert.assertEquals(Double.NaN, ((JsonArray) jsonNode.getValue()).get(2));
-			Assert.assertEquals(Double.NaN, ((JsonArray) jsonNode.getValue()).get(3));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -973,22 +901,18 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5InlineComment() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"[\n"
 					+ "// comment in single line\n"
 					+ "123\n"
 				+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonArray());
-			Assert.assertEquals(1, ((JsonArray) jsonNode.getValue()).size());
-			Assert.assertEquals(123, ((JsonArray) jsonNode.getValue()).get(0));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -996,7 +920,7 @@ public class Json5Test {
 	
 	@Test
 	public void testJson5BlockComment() {
-		Json5Reader jsonReader = null;
+		JsonReader jsonReader = null;
 		try {
 			String data =
 				"[\n"
@@ -1004,15 +928,11 @@ public class Json5Test {
 					+ " multiline*/\n"
 					+ "123\n"
 				+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-			Assert.assertTrue(jsonNode.isJsonArray());
-			Assert.assertEquals(1, ((JsonArray) jsonNode.getValue()).size());
-			Assert.assertEquals(123, ((JsonArray) jsonNode.getValue()).get(0));
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes("UTF-8")));
+			jsonReader.read();
+			Assert.fail("Missing expected Exception");
 		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			// Expected Exception
 		} finally {
 			Utilities.closeQuietly(jsonReader);
 		}
@@ -1024,8 +944,6 @@ public class Json5Test {
 		try {
 			String data =
 				"[\n"
-					+ "/* comment in \n"
-					+ " multiline*/\n"
 					+ "{\n"
 						+ "item1:\n"
 							+ "{\n"
@@ -1071,22 +989,7 @@ public class Json5Test {
 	public void testKomplexExampleJson() {
 		JsonReader jsonReader = null;
 		try {
-			jsonReader = new Json5Reader(getClass().getClassLoader().getResourceAsStream("json/KomplexExample.json"));
-			JsonNode jsonNode = jsonReader.read();
-			Assert.assertNotNull(jsonNode);
-		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
-		} finally {
-			Utilities.closeQuietly(jsonReader);
-		}
-	}
-	
-	@Test
-	public void testKomplexExampleJsonV5() {
-		JsonReader jsonReader = null;
-		try {
-			jsonReader = new Json5Reader(getClass().getClassLoader().getResourceAsStream("json/KomplexExampleV5.json"));
+			jsonReader = new JsonReader(getClass().getClassLoader().getResourceAsStream("json/KomplexExample.json"));
 			JsonNode jsonNode = jsonReader.read();
 			Assert.assertNotNull(jsonNode);
 		} catch (Exception e) {

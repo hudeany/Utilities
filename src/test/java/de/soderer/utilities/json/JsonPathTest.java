@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.json;
 
 import org.junit.Assert;
 import org.junit.Test;
