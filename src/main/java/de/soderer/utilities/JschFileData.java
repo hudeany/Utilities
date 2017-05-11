@@ -1,6 +1,8 @@
 package de.soderer.utilities;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class JschFileData {
 	private boolean isFile;
@@ -54,10 +56,10 @@ public class JschFileData {
 			// change date
 			String changeDateString = dataStringParts[5] + " " + dataStringParts[6] + " " + dataStringParts[7];
 			try {
-				changeDate = DateUtilities.MMM_D_HHMM.parse(changeDateString);
+				changeDate = new SimpleDateFormat("MMM d HH:mm", Locale.ENGLISH).parse(changeDateString);
 			} catch (Exception e) {
 				try {
-					changeDate = DateUtilities.MMM_D_YYYY.parse(changeDateString);
+					changeDate = new SimpleDateFormat("MMM d yyyy", Locale.ENGLISH).parse(changeDateString);
 				} catch (Exception e1) {
 					throw new Exception("Invalid changeDate");
 				}

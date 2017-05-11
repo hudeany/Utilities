@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.sql.SQLRecoverableException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -1802,7 +1803,7 @@ public class DbUtilities {
 		
 		try (Statement statement = connection.createStatement()) {
 			statement.execute("ALTER TABLE " + tableName + " ADD " + columnName + " INTEGER");
-			String dateSuffix = DateUtilities.YYYYMMDDHHMMSSSSS.format(new Date());
+			String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSSSSS).format(new Date());
 			try {
 				statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + columnName + ")");
 			} catch (Exception e) {
@@ -1842,7 +1843,7 @@ public class DbUtilities {
 				// Try to create an additional index columns
 				if (Utilities.isNotEmpty(keyColumns)) {
 					try {
-						String dateSuffix = DateUtilities.YYYYMMDDHHMMSS.format(new Date());
+						String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
 						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), keyColumns) + ")");
 					} catch (Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
@@ -1869,7 +1870,7 @@ public class DbUtilities {
 	public static int joinDuplicates(Connection connection, String tableName, Collection<String> keyColumnsWithFunctions, boolean updateWithNullValues) throws Exception {
 		if (detectDuplicates(connection, tableName, keyColumnsWithFunctions) > 0) {
 			DbVendor dbVendor = getDbVendor(connection);
-			String dateSuffix = DateUtilities.YYYYMMDDHHMMSS.format(new Date());
+			String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
 			String interimTableName = "tmp_join_" + dateSuffix;
 			String originalItemIndexColumn = null;
 			String originalDuplicateIndexColumn = null;
@@ -1999,7 +2000,7 @@ public class DbUtilities {
 			if (dbVendor == DbVendor.SQLite) {
 				// SQLite cannot drop colmns
 				try (Statement statement = connection.createStatement()) {
-					String dateSuffix = DateUtilities.YYYYMMDDHHMMSS.format(new Date());
+					String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
 					
 					String createTableStatement = null;
 					try (ResultSet resultSet = statement.executeQuery("SELECT sql FROM sqlite_master WHERE type = 'table' AND LOWER(name) = LOWER('" + tableName + "')")) {
@@ -2087,7 +2088,7 @@ public class DbUtilities {
 	
 	public static String createIndex(Connection connection, String tableName, List<String> columns) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			String indexNameSuffix = "_" + DateUtilities.YYYYMMDDHHMMSS.format(new Date()) + "_ix";
+			String indexNameSuffix = "_" + new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date()) + "_ix";
 			String indexName = Utilities.shortenStringToMaxLengthCutRight(tableName, 30 - indexNameSuffix.length(), "") + indexNameSuffix;
 			statement.execute("CREATE INDEX " + indexName + " ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), columns) + ")");
 			return indexName;
