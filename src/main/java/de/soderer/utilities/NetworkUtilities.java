@@ -283,8 +283,6 @@ public class NetworkUtilities {
 			throw new Exception("Invalid urlString for https connection: " + urlString);
 		}
 		
-		SSLContext context;
-		
 		X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new BufferedInputStream(pemCertificateInputStream));
 		KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 		keyStore.load(null, null);
@@ -292,7 +290,7 @@ public class NetworkUtilities {
 
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		tmf.init(keyStore);
-		context = SSLContext.getInstance("TLS");
+		SSLContext context = SSLContext.getInstance("TLS");
 		context.init(null, tmf.getTrustManagers(), null);
 
 		URL url = new URL(urlString);

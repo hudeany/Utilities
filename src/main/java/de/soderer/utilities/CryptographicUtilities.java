@@ -695,15 +695,12 @@ public class CryptographicUtilities {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	public static boolean verifyJarSignature(File jarFile, X509Certificate[] trustedCerts) throws Exception {
 		if (trustedCerts == null || trustedCerts.length == 0) {
 			return false;
 		}
 
-		JarFile jar = null;
-		try {
-			jar = new JarFile(jarFile);
+		try (JarFile jar = new JarFile(jarFile)) {
 			Manifest manifest = jar.getManifest();
 			if (manifest == null) {
 				throw new SecurityException("The jar file has no manifest, which contains the file signatures");
@@ -756,8 +753,6 @@ public class CryptographicUtilities {
 			return true;
 		} catch (Exception e) {
 			return false;
-		} finally {
-			Utilities.closeQuietly(jar);
 		}
 	}
 
