@@ -1,6 +1,5 @@
 package de.soderer.utilities;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.DatagramPacket;
@@ -14,9 +13,10 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -283,10 +283,13 @@ public class NetworkUtilities {
 			throw new Exception("Invalid urlString for https connection: " + urlString);
 		}
 		
-		X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new BufferedInputStream(pemCertificateInputStream));
+		Collection<? extends Certificate> certificates = CertificateFactory.getInstance("X.509").generateCertificates(pemCertificateInputStream);
 		KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 		keyStore.load(null, null);
-		keyStore.setCertificateEntry(Integer.toString(1), certificate);
+		int aliasId = 1;
+		for (Certificate certificate : certificates) {
+			keyStore.setCertificateEntry(Integer.toString(aliasId++), certificate);
+		}
 
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		tmf.init(keyStore);

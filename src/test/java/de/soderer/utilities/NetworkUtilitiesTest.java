@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -80,6 +81,8 @@ public class NetworkUtilitiesTest {
 			
 			try (InputStream dataStream = NetworkUtilities.openHttpsDataInputStreamWithPemCertificate("https://www.google.de", new ByteArrayInputStream(geoTrustGlobalCAPemString.getBytes("UTF-8")))) {
 				Assert.assertTrue(dataStream != null);
+				String data = IOUtils.toString(dataStream);
+				Assert.assertTrue(data != null && data.length() > 10);
 			}
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());

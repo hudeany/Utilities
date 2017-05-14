@@ -1,9 +1,9 @@
 package de.soderer.utilities;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -20,6 +20,7 @@ import java.security.Signature;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
@@ -30,6 +31,7 @@ import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -55,7 +57,6 @@ import org.apache.commons.io.FileUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
-import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -807,23 +808,26 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static X509Certificate[] loadCertificatesFromPemStream(InputStream pemInputStream) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
+	@SuppressWarnings("unchecked")
+	public static Collection<X509Certificate> loadCertificatesFromPemStream(InputStream pemInputStream) throws Exception {
+		return (Collection<X509Certificate>) CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(pemInputStream));
 		
-		try (PEMParser pemReader = new PEMParser(new InputStreamReader(pemInputStream))) {
-			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
-			Object pemReaderObject;
-			while ((pemReaderObject = pemReader.readObject()) != null) {
-				if (pemReaderObject instanceof X509Certificate) {
-					// Old BouncyCastle API
-					certificateList.add((X509Certificate) pemReaderObject);
-				} else if (pemReaderObject instanceof X509CertificateHolder) {
-					X509Certificate certificate = new JcaX509CertificateConverter().setProvider("BC").getCertificate((X509CertificateHolder) pemReaderObject);
-					certificateList.add(certificate);
-				}
-			}
-			return certificateList.toArray(new X509Certificate[0]);
-		}
+//		Security.addProvider(new BouncyCastleProvider());
+//		
+//		try (PEMParser pemReader = new PEMParser(new InputStreamReader(pemInputStream))) {
+//			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
+//			Object pemReaderObject;
+//			while ((pemReaderObject = pemReader.readObject()) != null) {
+//				if (pemReaderObject instanceof X509Certificate) {
+//					// Old BouncyCastle API
+//					certificateList.add((X509Certificate) pemReaderObject);
+//				} else if (pemReaderObject instanceof X509CertificateHolder) {
+//					X509Certificate certificate = new JcaX509CertificateConverter().setProvider("BC").getCertificate((X509CertificateHolder) pemReaderObject);
+//					certificateList.add(certificate);
+//				}
+//			}
+//			return certificateList.toArray(new X509Certificate[0]);
+//		}
 	}
 
 	public static String getCnFromCertificate(X509Certificate certificate) throws InvalidNameException {
