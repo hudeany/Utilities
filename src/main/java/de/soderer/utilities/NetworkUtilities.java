@@ -1,6 +1,8 @@
 package de.soderer.utilities;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
@@ -11,10 +13,17 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 public class NetworkUtilities {
 	private static final String SPECIAL_CHARS_REGEXP = "\\p{Cntrl}\\(\\)<>@,;:'\\\\\\\"\\.\\[\\]";
@@ -267,5 +276,30 @@ public class NetworkUtilities {
 		} catch (Exception e) {
 			return false;
 		}
+	}
+
+	public static InputStream openHttpsDataInputStreamWithPemCertificate(String urlString, InputStream pemCertificateInputStream) throws Exception {
+		if (urlString == null || !urlString.toLowerCase().startsWith("https://")) {
+			throw new Exception("Invalid urlString for https connection: " + urlString);
+		}
+		
+		SSLContext context;
+		
+		X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new BufferedInputStream(pemCertificateInputStream));
+		KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		keyStore.load(null, null);
+		keyStore.setCertificateEntry(Integer.toString(1), certificate);
+
+		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		tmf.init(keyStore);
+		context = SSLContext.getInstance("TLS");
+		context.init(null, tmf.getTrustManagers(), null);
+
+		URL url = new URL(urlString);
+
+		HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+		connection.setSSLSocketFactory(context.getSocketFactory());
+		connection.connect();
+		return (InputStream) connection.getContent();
 	}
 }
