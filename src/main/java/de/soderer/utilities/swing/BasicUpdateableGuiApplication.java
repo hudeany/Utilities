@@ -114,7 +114,7 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 			switch(resourceKey) {
 				case "noNewerVersion": pattern = "There is no newer version available for {0}.\nThe current local version is {1}."; break;
 				case "newVersion": pattern = "New version {0} is available for {1}.\nThe current local version is {2}."; break;
-				case "installUpdate": pattern = "Install update? (yN)"; break;
+				case "installUpdate": pattern = "Install update?"; break;
 				case "enterUsername": pattern = "Please enter username"; break;
 				case "enterPassword": pattern = "Please enter password"; break;
 				case "yes": pattern = "Yes"; break;
