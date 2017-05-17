@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLNonTransientConnectionException;
 import java.sql.SQLRecoverableException;
 import java.sql.Statement;
 import java.sql.Types;
@@ -329,16 +330,18 @@ public class DbUtilities {
 		} catch (Exception e) {
 			try {
 				int port;
-				if (hostname.contains(":")) {
-					try {
-						port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
-					} catch (Exception e1) {
-						throw new Exception("Invalid port: " + hostname.substring(hostname.indexOf(":") + 1));
+				if (Utilities.isNotEmpty(hostname)) {
+					if (hostname.contains(":")) {
+						try {
+							port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
+						} catch (Exception e1) {
+							throw new Exception("Invalid port: " + hostname.substring(hostname.indexOf(":") + 1));
+						}
+						NetworkUtilities.testConnection(hostname.substring(0, hostname.indexOf(":")), port);
+					} else {
+						port = dbVendor.getDefaultPort();
+						NetworkUtilities.testConnection(hostname, port);
 					}
-					NetworkUtilities.testConnection(hostname.substring(0, hostname.indexOf(":")), port);
-				} else {
-					port = dbVendor.getDefaultPort();
-					NetworkUtilities.testConnection(hostname, port);
 				}
 				
 				// No Exception from testConnection, so it must be some other problem
@@ -442,6 +445,7 @@ public class DbUtilities {
 		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnNames");
 		} else {
+			DbVendor dbVendor = getDbVendor(connection);
 			List<String> columnNames = new ArrayList<String>(getColumnNames(connection, tableName));
 			Collections.sort(columnNames);
 			List<String> keyColumnNames = new ArrayList<String>(getPrimaryKeyColumns(connection, tableName));
@@ -455,9 +459,9 @@ public class DbUtilities {
 			}
 			String orderPart = "";
 			if (!keyColumnNames.isEmpty()) {
-				orderPart = " ORDER BY " + Utilities.join(keyColumnNames, ", ");
+				orderPart = " ORDER BY " + joinColumnVendorEscaped(dbVendor, keyColumnNames);
 			}
-			return readout(connection, "SELECT " + Utilities.join(readoutColumns, ", ") + " FROM " + tableName + orderPart, separator, stringQuote);
+			return readout(connection, "SELECT " + joinColumnVendorEscaped(dbVendor, readoutColumns) + " FROM " + tableName + orderPart, separator, stringQuote);
 		}
 	}
 
@@ -533,10 +537,11 @@ public class DbUtilities {
 	}
 
 	public static boolean checkTableAndColumnsExist(Connection connection, String tableName, boolean throwExceptionOnError, String... columns) throws Exception {
+		DbVendor dbVendor = getDbVendor(connection);
 		CaseInsensitiveSet dbTableColumns = getColumnNames(connection, tableName);
 		if (columns != null) {
 			for (String column : columns) {
-				if (column != null && !dbTableColumns.contains(column)) {
+				if (column != null && !dbTableColumns.contains(unescapeVendorReservedNames(dbVendor, column))) {
 					if (throwExceptionOnError) {
 						throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
 					} else {
@@ -591,7 +596,7 @@ public class DbUtilities {
 
 		StringBuffer dbmsOutput;
 		try (CallableStatement callableStatement = connection.prepareCall(
-				"declare "
+	"declare "
 				+ "    l_line varchar2(255); "
 				+ "    l_done number; "
 				+ "    l_buffer long; "
@@ -1504,11 +1509,7 @@ public class DbUtilities {
 			
 			String primaryKeyPart = "";
 			if (Utilities.isNotEmpty(keyColumns)) {
-				List<String> escapedKeyColumns = new ArrayList<String>();
-				for (String keyColumn : keyColumns) {
-					escapedKeyColumns.add(escapeVendorReservedNames(dbVendor, keyColumn));
-				}
-				primaryKeyPart = ", PRIMARY KEY (" + Utilities.join(escapedKeyColumns, ", ") + ")";
+				primaryKeyPart = ", PRIMARY KEY (" + joinColumnVendorEscaped(dbVendor, keyColumns) + ")";
 			}
 			statement.execute("CREATE TABLE " + tablename + " (" + columnPart + primaryKeyPart + ")");
 			if (getDbVendor(connection) == DbVendor.Derby) {
@@ -1964,7 +1965,7 @@ public class DbUtilities {
 				if (autoIncrementColumn != null) {
 					statement.executeUpdate("UPDATE " + tableName + " SET " + indexColumnName + " = " + autoIncrementColumn);
 				} else {
-					statement.executeUpdate("INSERT INTO " + tableName + " (" + Utilities.join(columnsWithoutAutoIncrement, ", ") + ", " + indexColumnName + ") (SELECT " + Utilities.join(columnsWithoutAutoIncrement, ", ") + ", ROW_NUMBER() OVER() FROM " + tableName + ")");
+					statement.executeUpdate("INSERT INTO " + tableName + " (" + joinColumnVendorEscaped(dbVendor, columnsWithoutAutoIncrement) + ", " + indexColumnName + ") (SELECT " + joinColumnVendorEscaped(dbVendor, columnsWithoutAutoIncrement) + ", ROW_NUMBER() OVER() FROM " + tableName + ")");
 					statement.executeUpdate("DELETE FROM " + tableName + " WHERE " + indexColumnName + " IS NULL");
 				}
 			} else if (dbVendor == DbVendor.PostgreSQL) {
@@ -1981,7 +1982,7 @@ public class DbUtilities {
 				if (autoIncrementColumn != null) {
 					statement.executeUpdate("UPDATE " + tableName + " SET " + indexColumnName + " = " + autoIncrementColumn);
 				} else {
-					statement.executeUpdate("INSERT INTO " + tableName + " (" + Utilities.join(columnsWithoutAutoIncrement, ", ") + ", " + indexColumnName + ") (SELECT " + Utilities.join(columnsWithoutAutoIncrement, ", ") + ", ROW_NUMBER() OVER() FROM " + tableName + ")");
+					statement.executeUpdate("INSERT INTO " + tableName + " (" + joinColumnVendorEscaped(dbVendor, columnsWithoutAutoIncrement) + ", " + indexColumnName + ") (SELECT " + joinColumnVendorEscaped(dbVendor, columnsWithoutAutoIncrement) + ", ROW_NUMBER() OVER() FROM " + tableName + ")");
 					statement.executeUpdate("DELETE FROM " + tableName + " WHERE " + indexColumnName + " IS NULL");
 				}
 			} else {
@@ -2015,7 +2016,7 @@ public class DbUtilities {
 					statement.execute(createTableStatement);
 					Set<String> columns = getColumnNames(connection, tableName);
 					columns.remove(columnName);
-					statement.execute("INSERT INTO " + tableName + " (" + Utilities.join(columns, ", ") + ") SELECT " + Utilities.join(columns, ", ") + " FROM tmp" + dateSuffix + "_old");
+					statement.execute("INSERT INTO " + tableName + " (" + joinColumnVendorEscaped(dbVendor, columns) + ") SELECT " + joinColumnVendorEscaped(dbVendor, columns) + " FROM tmp" + dateSuffix + "_old");
 					statement.execute("DROP TABLE tmp" + dateSuffix + "_old");
 					connection.commit();
 					return true;
@@ -2243,7 +2244,7 @@ public class DbUtilities {
 						// Mark duplicates in temp table
 						List<String> keycolumnParts = new ArrayList<String>();
 						for (String keyColumn : keyColumns) {
-							keycolumnParts.add("src." + keyColumn + " = " + sourceTableName + "." + keyColumn + " AND src." + keyColumn + " IS NOT NULL");
+							keycolumnParts.add("src." + escapeVendorReservedNames(dbVendor, keyColumn) + " = " + sourceTableName + "." + escapeVendorReservedNames(dbVendor, keyColumn) + " AND src." + escapeVendorReservedNames(dbVendor, keyColumn) + " IS NOT NULL");
 						}
 						String updateStatement = "UPDATE " + sourceTableName + " SET " + itemIndexColumn + " = COALESCE((SELECT MIN(src." + originalItemIndexColumn + ") FROM " + destinationTableName + " src WHERE " + Utilities.join(keycolumnParts, " AND ") + "), 0)";
 						statement.executeUpdate(updateStatement);
@@ -2357,6 +2358,8 @@ public class DbUtilities {
 		if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 			return Utilities.trimSimultaneously(value, "`");
 		} else if (dbVendor == DbVendor.Oracle) {
+			return Utilities.trimSimultaneously(value, "\"");
+		} else if (dbVendor == DbVendor.Derby) {
 			return Utilities.trimSimultaneously(value, "\"");
 		} else {
 			return value;
@@ -3477,6 +3480,219 @@ public class DbUtilities {
 				default:
 					return value;
 			}
+		} else if (dbVendor == DbVendor.Derby) {
+			switch (value.toLowerCase()) {
+				case "add":
+				case "all":
+				case "allocate":
+				case "alter":
+				case "and":
+				case "any":
+				case "are":
+				case "as":
+				case "asc":
+				case "assertion":
+				case "at":
+				case "authorization":
+				case "avg":
+				case "begin":
+				case "between":
+				case "bit":
+				case "boolean":
+				case "both":
+				case "by":
+				case "call":
+				case "cascade":
+				case "cascaded":
+				case "case":
+				case "cast":
+				case "char":
+				case "character":
+				case "check":
+				case "close":
+				case "collate":
+				case "collation":
+				case "column":
+				case "commit":
+				case "connect":
+				case "connection":
+				case "constraint":
+				case "constraints":
+				case "continue":
+				case "convert":
+				case "corresponding":
+				case "count":
+				case "create":
+				case "current":
+				case "current_date":
+				case "current_time":
+				case "current_timestamp":
+				case "current_user":
+				case "cursor":
+				case "deallocate":
+				case "dec":
+				case "decimal":
+				case "declare":
+				case "deferrable":
+				case "deferred":
+				case "delete":
+				case "desc":
+				case "describe":
+				case "diagnostics":
+				case "disconnect":
+				case "distinct":
+				case "double":
+				case "drop":
+				case "else":
+				case "end":
+				case "endexec":
+				case "escape":
+				case "except":
+				case "exception":
+				case "exec":
+				case "execute":
+				case "exists":
+				case "explain":
+				case "external":
+				case "false":
+				case "fetch":
+				case "first":
+				case "float":
+				case "for":
+				case "foreign":
+				case "found":
+				case "from":
+				case "full":
+				case "function":
+				case "get":
+				case "get_current_connection":
+				case "global":
+				case "go":
+				case "goto":
+				case "grant":
+				case "group":
+				case "having":
+				case "hour":
+				case "identity":
+				case "immediate":
+				case "in":
+				case "indicator":
+				case "initially":
+				case "inner":
+				case "inout":
+				case "input":
+				case "insensitive":
+				case "insert":
+				case "int":
+				case "integer":
+				case "intersect":
+				case "into":
+				case "is":
+				case "isolation":
+				case "join":
+				case "key":
+				case "last":
+				case "left":
+				case "like":
+				case "longint":
+				case "lower":
+				case "ltrim":
+				case "match":
+				case "max":
+				case "min":
+				case "minute":
+				case "national":
+				case "natural":
+				case "nchar":
+				case "nvarchar":
+				case "next":
+				case "no":
+				case "not":
+				case "null":
+				case "nullif":
+				case "numeric":
+				case "of":
+				case "on":
+				case "only":
+				case "open":
+				case "option":
+				case "or":
+				case "order":
+				case "out":
+				case "outer":
+				case "output":
+				case "overlaps":
+				case "pad":
+				case "partial":
+				case "prepare":
+				case "preserve":
+				case "primary":
+				case "prior":
+				case "privileges":
+				case "procedure":
+				case "public":
+				case "read":
+				case "real":
+				case "references":
+				case "relative":
+				case "restrict":
+				case "revoke":
+				case "right":
+				case "rollback":
+				case "rows":
+				case "rtrim":
+				case "schema":
+				case "scroll":
+				case "second":
+				case "select":
+				case "session_user":
+				case "set":
+				case "smallint":
+				case "some":
+				case "space":
+				case "sql":
+				case "sqlcode":
+				case "sqlerror":
+				case "sqlstate":
+				case "substr":
+				case "substring":
+				case "sum":
+				case "system_user":
+				case "table":
+				case "temporary":
+				case "timezone_hour":
+				case "timezone_minute":
+				case "to":
+				case "trailing":
+				case "transaction":
+				case "translate":
+				case "translation":
+				case "true":
+				case "union":
+				case "unique":
+				case "unknown":
+				case "update":
+				case "upper":
+				case "user":
+				case "using":
+				case "values":
+				case "varchar":
+				case "varying":
+				case "view":
+				case "whenever":
+				case "where":
+				case "with":
+				case "work":
+				case "write":
+				case "xml":
+				case "xmlexists":
+				case "xmlparse":
+				case "xmlserialize":
+				case "year":
+					return "\"" + value + "\"";
+				default:
+					return value;
+			}
 		} else {
 			return value;
 		}
@@ -3491,5 +3707,25 @@ public class DbUtilities {
 			returnValue.append(escapeVendorReservedNames(dbVendor, columnName));
 		}
 		return returnValue.toString();
+	}
+
+	/**
+	 * Special shutdown command to free single user derby db for next connection maybe of another thread
+	 * 
+	 * @param dbName
+	 * @throws Exception
+	 */
+	public static void shutDownDerbyDb(String dbName) throws Exception {
+		dbName = Utilities.replaceHomeTilde(dbName);
+		if (!new File(dbName).exists()) {
+			throw new DbNotExistsException("Derby db directory '" + dbName + "' is not available");
+		} else if (!new File(dbName).isDirectory()) {
+			throw new Exception("Derby db directory '" + dbName + "' is not a directory");
+		}
+		try {
+			DriverManager.getConnection("jdbc:derby:" + Utilities.replaceHomeTilde(dbName) + ";shutdown=true");
+		} catch (SQLNonTransientConnectionException e) {
+			// Derby shutdown ALWAYS throws a SQLNonTransientConnectionException by intention (see also: http://db.apache.org/derby/docs/10.3/devguide/tdevdvlp20349.html)
+		}
 	}
 }

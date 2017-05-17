@@ -61,4 +61,14 @@ public class DbColumnType {
 			return SimpleDataType.Double;
 		}
 	}
+	
+	@Override
+	public String toString() {
+		SimpleDataType simpleDataType = getSimpleDataType();
+		return typeName
+				+ (simpleDataType == SimpleDataType.String ? "(" + characterLength + ")" : "")
+				+ (simpleDataType == SimpleDataType.Integer || simpleDataType == SimpleDataType.Double ? "(" + numericPrecision + ", " + numericScale + ")" : "")
+				+ (nullable ? " nullable": " not nullable")
+				+ (autoIncrement ? " autoIncrement": "");
+	}
 }
