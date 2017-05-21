@@ -47,6 +47,7 @@ public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_DERBY = "https://db.apache.org/derby/derby_downloads.html";
 	public static final String DOWNLOAD_LOCATION_SQLITE = "https://bitbucket.org/xerial/sqlite-jdbc/downloads";
 	public static final String DOWNLOAD_LOCATION_HSQL = "http://hsqldb.org/download";
+	public static final String DOWNLOAD_LOCATION_MSSQL = "https://msdn.microsoft.com/de-de/library/mt683464(v=sql.110).aspx";
 	
 	/**
 	 * DevNull used to prevent creation of file "derby.log"
@@ -70,7 +71,8 @@ public class DbUtilities {
 		SQLite("org.sqlite.JDBC", 0, "SELECT 1"),
 		Derby("org.apache.derby.jdbc.EmbeddedDriver", 0, "SELECT 1 FROM SYSIBM.SYSDUMMY1"),
 		HSQL("org.hsqldb.jdbc.JDBCDriver", 0, "SELECT 1 FROM SYSIBM.SYSDUMMY1"),
-		Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000, "");
+		Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000, ""),
+		MsSQL("com.microsoft.sqlserver.jdbc.SQLServerDriver", 1433, "SELECT 1");
 		
 		public static DbVendor getDbVendorByName(String dbVendorName) throws Exception {
 			for (DbVendor dbVendor : DbVendor.values()) {
@@ -1672,6 +1674,8 @@ public class DbUtilities {
 			return DOWNLOAD_LOCATION_SQLITE;
 		} else if (dbVendor == DbVendor.HSQL) {
 			return DOWNLOAD_LOCATION_HSQL;
+		} else if (dbVendor == DbVendor.MsSQL) {
+			return DOWNLOAD_LOCATION_MSSQL;
 		} else {
 			throw new Exception("Invalid db vendor");
 		}
