@@ -341,10 +341,6 @@ public class JsonWriter implements Closeable {
 	 */
 	@Override
 	public void close() throws IOException {
-		if (outputWriter != null) {
-			outputWriter.write(linebreak);
-		}
-		
 		closeQuietly(outputWriter);
 		outputWriter = null;
 		closeQuietly(outputStream);
@@ -497,6 +493,14 @@ public class JsonWriter implements Closeable {
 	}
 	
 	public String formatStringOutput(String value) {
-		return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r\n", "\n").replace("\r", "\n").replace("\n", "\\n").replace("\t", "\\t");
+		return value
+			.replace("\\", "\\\\")
+			.replace("\"", "\\\"")
+			.replace("/", "\\/")
+			.replace("\b", "\\b")
+			.replace("\f", "\\f")
+			.replace("\r", "\\r")
+			.replace("\n", "\\n")
+			.replace("\t", "\\t");
 	}
 }

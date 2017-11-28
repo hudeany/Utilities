@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import de.soderer.utilities.BasicReader;
 import de.soderer.utilities.csv.CsvFormat.QuoteMode;
@@ -354,5 +356,30 @@ public class CsvReader extends BasicReader {
 				reader.close();
 			}
 		}
+	}
+
+	/**
+	 * Returns the first duplicate csv file header or null if there is no duplicate.
+	 * Leading and trailing whitespaces in csv file headers are omitted.
+	 * Csv file headers are case-sensitive.
+	 * 
+	 * @param csvFileHeaders
+	 * @return
+	 */
+	public static String checkForDuplicateCsvHeader(List<String> csvFileHeaders) {
+		Set<String> foundHeaders = new HashSet<String>();
+		for (String nextHeader : csvFileHeaders) {
+			if (nextHeader != null) {
+				nextHeader = nextHeader.trim();
+				if (nextHeader.length() > 0) {
+					if (foundHeaders.contains(nextHeader)) {
+						return nextHeader;
+					} else {
+						foundHeaders.add(nextHeader);
+					}
+				}
+			}
+		}
+		return null;
 	}
 }
