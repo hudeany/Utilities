@@ -127,25 +127,23 @@ public abstract class BasicReader implements Closeable {
 					returnValue.append(currentChar);
 				}
 			} else {
-				if (escapeCharacter == currentChar) {
-					returnValue.append(escapeCharacter);
-				} else if ('\n' == currentChar) {
-					returnValue.append('\n');
-				} else if ('\r' == currentChar) {
-					returnValue.append(currentChar);
-					if ('\n' == readNextCharacter()) {
-						returnValue.append(currentChar);
-					} else {
-						reuseCurrentChar();
-					}
-				} else {
-					for (char endChar : endChars) {
-						if (endChar == currentChar) {
-							returnValue.append(endChar);
-						}
-					}
-				}
 				escapeNextCharacter = false;
+				if (escapeCharacter == currentChar) {
+					currentChar = escapeCharacter;
+				} else if ('n' == currentChar) {
+					currentChar = '\n';
+				} else if ('r' == currentChar) {
+					currentChar = '\r';
+				} else if ('t' == currentChar) {
+					currentChar = '\t';
+				} else if ('"' == currentChar) {
+					currentChar = '"';
+				} else if ('\'' == currentChar) {
+					currentChar = '\'';
+				} else {
+					throw new Exception("Invalid escape sequence at character: " + getReadCharacters());
+				}
+				returnValue.append(currentChar);
 			}
 		}
 	}

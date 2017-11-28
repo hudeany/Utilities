@@ -497,6 +497,6 @@ public class JsonWriter implements Closeable {
 	}
 	
 	public String formatStringOutput(String value) {
-		return value.replace("\"", "\\\"").replace("\r\n", "\n").replace("\r", "\n").replace("\n", "\\n").replace("\t", "\\t");
+		return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r\n", "\n").replace("\r", "\n").replace("\n", "\\n").replace("\t", "\\t");
 	}
 }

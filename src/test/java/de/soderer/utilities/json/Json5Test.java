@@ -106,7 +106,7 @@ public class Json5Test {
 					+ "\t2.0E-6,\n"
 					+ "\t1.3,\n"
 					+ "\t3.0E-6,\n"
-					+ "\t\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
+					+ "\t\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
 					+ "\t\"" + new SimpleDateFormat(DateUtilities.ISO_8601_DATETIME_FORMAT).format(testDate) + "\"\n"
 				+ "]\n",
 				result);
@@ -213,7 +213,7 @@ public class Json5Test {
 					+ "\t2.0E-6,\n"
 					+ "\t1.3,\n"
 					+ "\t3.0E-6,\n"
-					+ "\t\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
+					+ "\t\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
 					+ "\t\"" + new SimpleDateFormat(DateUtilities.ISO_8601_DATETIME_FORMAT).format(testDate) + "\"\n"
 				+ "]\n",
 				result);
@@ -308,6 +308,8 @@ public class Json5Test {
 			writer.addSimpleJsonObjectPropertyValue(0.000003d);
 			writer.openJsonObjectProperty("test_äÄ");
 			writer.addSimpleJsonObjectPropertyValue(TextUtilities.GERMAN_TEST_STRING);
+			writer.openJsonObjectProperty("test_multiline");
+			writer.addSimpleJsonObjectPropertyValue("abc\ndef");
 			writer.openJsonObjectProperty("test_date");
 			writer.addSimpleJsonObjectPropertyValue(testDate);
 			writer.closeJsonObject();
@@ -324,7 +326,8 @@ public class Json5Test {
 					+ "\t\"test_floatE\": 2.0E-6,\n"
 					+ "\t\"test_double\": 1.3,\n"
 					+ "\t\"test_doubleE\": 3.0E-6,\n"
-					+ "\t\"test_äÄ\": \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
+					+ "\t\"test_äÄ\": \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
+					+ "\t\"test_multiline\": \"abc\\ndef\",\n"
 					+ "\t\"test_date\": \"" + new SimpleDateFormat(DateUtilities.ISO_8601_DATETIME_FORMAT).format(testDate) + "\"\n"
 				+ "}\n",
 				result);
@@ -382,7 +385,7 @@ public class Json5Test {
 					+ "\t\"test_floatE\": 2.0E-6,\n"
 					+ "\t\"test_double\": 1.3,\n"
 					+ "\t\"test_doubleE\": 3.0E-6,\n"
-					+ "\t\"test_äÄ\": \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
+					+ "\t\"test_äÄ\": \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\\\<>(){}[]'\\\"´`^°¹²³*#.,;:=+-~_|½¼¬\",\n"
 					+ "\t\"test_date\": \"" + new SimpleDateFormat(DateUtilities.ISO_8601_DATETIME_FORMAT).format(testDate) + "\",\n"
 					+ "\t\"minInteger\": " + Integer.MIN_VALUE + ",\n"
 					+ "\t\"maxInteger\": " + Integer.MAX_VALUE + "\n"
@@ -841,7 +844,7 @@ public class Json5Test {
 		try {
 			String data =
 				"[\n"
-					+ "\t\"Abc \\\n Abc\"\n"
+					+ "\t\"Abc \\n Abc\"\n"
 				+ "]\n";
 			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
@@ -863,7 +866,7 @@ public class Json5Test {
 		try {
 			String data =
 				"[\n"
-					+ "\t'Abc \\\n Abc'\n"
+					+ "\t'Abc \\n Abc'\n"
 				+ "]\n";
 			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes("UTF-8")));
 			JsonNode jsonNode = jsonReader.read();
