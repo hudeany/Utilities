@@ -1507,7 +1507,7 @@ public class DbUtilities {
 				DbColumnType columnType = columnAndType.getValue();
 				if (columnType != null) {
 					String dataType = getDataType(dbVendor, columnType.getSimpleDataType());
-					int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterLength() : 0;
+					int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterByteSize() : 0;
 					columnPart += escapeVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
 				} else {
 					String dataType = getDataType(dbVendor, SimpleDataType.String);
@@ -2081,7 +2081,7 @@ public class DbUtilities {
 				if (!columnDataType.getValue().isNullable() && (keyColumns == null || !keyColumns.contains(columnDataType.getKey()))) {
 					String typeString = columnDataType.getValue().getTypeName();
 					if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.String) {
-						typeString += "(" + (Long.toString(columnDataType.getValue().getCharacterLength())) + ")";
+						typeString += "(" + (Long.toString(columnDataType.getValue().getCharacterByteSize())) + ")";
 					} else if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.Integer) {
 						typeString += "(" + (Integer.toString(columnDataType.getValue().getNumericPrecision())) + ")";
 					} else if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.Double) {
@@ -3736,6 +3736,22 @@ public class DbUtilities {
 			DriverManager.getConnection("jdbc:derby:" + Utilities.replaceHomeTilde(dbName) + ";shutdown=true");
 		} catch (SQLNonTransientConnectionException e) {
 			// Derby shutdown ALWAYS throws a SQLNonTransientConnectionException by intention (see also: http://db.apache.org/derby/docs/10.3/devguide/tdevdvlp20349.html)
+		}
+	}
+	
+	public static int getMysqlMaxAllowedPacketSize(Connection connection) throws Exception {
+		try (PreparedStatement preparedStatement = connection.prepareStatement("SHOW VARIABLES like 'max_allowed_packet'");
+				ResultSet resultSet = preparedStatement.executeQuery()) {
+			if (resultSet.next()) {
+				Object value = resultSet.getObject("value");
+				if (value != null) {
+					return Integer.parseInt(value.toString());
+				} else {
+					return 0;
+				}
+			} else {
+				return 0;
+			}
 		}
 	}
 }
