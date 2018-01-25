@@ -7,7 +7,7 @@
 
 	<groupId>de.soderer</groupId>
 	<artifactId>soderer-utilities</artifactId>
-	<version>17.1.10</version>
+	<version>17.1.11</version>
 	<packaging>jar</packaging>
 
 	<name>soderer-utilities</name>
@@ -141,7 +141,7 @@
 						<configuration>
 							<target>
 								<!-- Some alternative tsa: http://timestamp.digicert.com -->
-								<signjar destDir="target" alias="soderer-de-java-2017" keystore="../soderer-de-java-2017_keystore.jks" storepass="+u1F}&lt;}D(Kf_NvFrFX706574780T?LP'" preservelastmodified="true" tsaurl="https://freetsa.org/tsr">
+								<signjar destDir="target" alias="soderer-de-java-2017" keystore="../soderer-de-java-2017_keystore.jks" storepass="+u1F}&lt;}D(Kf_NvFrFX706574780T?LP'" preservelastmodified="true" tsaurl="http://timestamp.comodoca.com?td=sha256">
 									<path>
 										<fileset dir="target" includes="soderer-utilities-*.jar" />
 									</path>
