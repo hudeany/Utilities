@@ -1055,4 +1055,13 @@ public class TextUtilities {
 	public static boolean isValidBase64(String value) {
 		return Pattern.matches("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$", value);
 	}
+
+	public static String getLineStartingWith(String text, String starter) throws Exception {
+		for (String line : TextUtilities.getLines(text)) {
+			if (line.startsWith(starter)) {
+				return line;
+			}
+		}
+		return null;
+	}
 }

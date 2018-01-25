@@ -24,7 +24,7 @@ public class CsvReader extends BasicReader {
 	private int numberOfColumns = -1;
 
 	/** Number of lines read until now. */
-	private int readLines = 0;
+	private int readCsvLines = 0;
 
 	/**
 	 * CSV Reader derived constructor.
@@ -126,8 +126,8 @@ public class CsvReader extends BasicReader {
 	 *
 	 * @return the read lines
 	 */
-	public int getReadLines() {
-		return readLines;
+	public int getReadCsvLines() {
+		return readCsvLines;
 	}
 
 	/**
@@ -140,7 +140,7 @@ public class CsvReader extends BasicReader {
 	 *             the csv data exception
 	 */
 	public List<String> readNextCsvLine() throws IOException, CsvDataException {
-		readLines++;
+		readCsvLines++;
 		singleReadStarted = true;
 		List<String> returnList = new ArrayList<String>();
 		StringBuilder nextValue = new StringBuilder();
@@ -174,7 +174,7 @@ public class CsvReader extends BasicReader {
 									returnList.add(null);
 								}
 							} else {
-								throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readLines);
+								throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readCsvLines);
 							}
 						}
 						numberOfColumns = returnList.size();
@@ -186,14 +186,14 @@ public class CsvReader extends BasicReader {
 					isQuotedString = false;
 				} else if (isQuotedString) {
 					if (!Character.isWhitespace(nextChar)) {
-						throw new CsvDataException("Not allowed textdata '" + nextChar + "' after quoted text in data in line " + readLines, readLines);
+						throw new CsvDataException("Not allowed textdata '" + nextChar + "' after quoted text in data in line " + readCsvLines, readCsvLines);
 					}
 				} else {
 					nextValue.append(nextChar);
 				}
 			} else { // insideString
 				if ((nextChar == '\r' || nextChar == '\n') && !csvFormat.isLineBreakInDataAllowed()) {
-					throw new CsvDataException("Not allowed linebreak in data in line " + readLines, readLines);
+					throw new CsvDataException("Not allowed linebreak in data in line " + readCsvLines, readCsvLines);
 				} else {
 					nextValue.append(nextChar);
 				}
@@ -204,7 +204,7 @@ public class CsvReader extends BasicReader {
 
 		if (insideString) {
 			close();
-			throw new IOException("Unexpected end of data after quoted csv-value was started in line " + readLines);
+			throw new IOException("Unexpected end of data after quoted csv-value was started in line " + readCsvLines);
 		} else {
 			if (nextValue.length() > 0 || previousCharacter == csvFormat.getSeparator()) {
 				returnList.add(parseValue(nextValue.toString()));
@@ -217,7 +217,7 @@ public class CsvReader extends BasicReader {
 							returnList.add(null);
 						}
 					} else {
-						throw new CsvDataException("Inconsistent number of values in line " + readLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readLines);
+						throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readCsvLines);
 					}
 				}
 				numberOfColumns = returnList.size();
@@ -281,7 +281,7 @@ public class CsvReader extends BasicReader {
 			returnValue = returnValue.replace("\r\n", "\n").replace('\r', '\n');
 
 			if (!csvFormat.isEscapedStringQuoteInDataAllowed() && returnValue.indexOf(csvFormat.getStringQuote()) >= 0) {
-				throw new CsvDataException("Not allowed stringquote in data in line " + readLines, readLines);
+				throw new CsvDataException("Not allowed stringquote in data in line " + readCsvLines, readCsvLines);
 			}
 			
 			if (csvFormat.isAlwaysTrim()) {
