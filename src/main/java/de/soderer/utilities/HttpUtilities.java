@@ -79,30 +79,53 @@ public class HttpUtilities {
 		String url = httpRequest.getUrl();
 		if (httpRequest.getUrlParameters() != null && httpRequest.getUrlParameters().size() > 0) {
 			for (Entry<String, Object> urlParameter : httpRequest.getUrlParameters().entrySet()) {
+				StringBuilder urlParameterPart = new StringBuilder();
+				urlParameterPart.append(URLEncoder.encode(urlParameter.getKey(), "UTF-8"));
+				urlParameterPart.append("=");
 				if (urlParameter.getValue() instanceof char[]) {
-					url = addUrlParameter(url, urlParameter.getKey(), new String((char[]) urlParameter.getValue()), "UTF-8");
-				} else {
-					url = addUrlParameter(url, urlParameter.getKey(), urlParameter.getValue(), "UTF-8");
+	            	urlParameterPart.append(URLEncoder.encode(new String((char[]) urlParameter.getValue()), "UTF-8"));
+				} else if (urlParameter.getValue() instanceof Object[]) {
+	            	boolean isFirstValue = true;
+	            	for (Object value : (Object[]) urlParameter.getValue()) {
+	            		if (!isFirstValue) {
+	            			urlParameterPart.append(",");
+	            		}
+	            		urlParameterPart.append(URLEncoder.encode(String.valueOf(value), "UTF-8"));
+	            		isFirstValue = false;
+	            	}
+	            } else {
+	            	urlParameterPart.append(URLEncoder.encode(String.valueOf(urlParameter.getValue()), "UTF-8"));
 				}
-			}
+				
+				if (urlParameterPart.length() > 0) {
+					url = addUrlParameter(url, urlParameterPart.toString());
+				}
+            }
 		}
 		
-		if (httpRequest.getSessionData() != null && httpRequest.getSessionData().size() > 0) {
-			StringBuilder sessionDataPart = new StringBuilder();
-			for (Entry<String, Object> sessionDataEntry : httpRequest.getSessionData().entrySet()) {
-				if (sessionDataPart.length() > 0) {
-					sessionDataPart.append("&");
+		if (httpRequest.getPathParameterData() != null && httpRequest.getPathParameterData().size() > 0) {
+			for (Entry<String, Object> pathParameterDataEntry : httpRequest.getPathParameterData().entrySet()) {
+				StringBuilder pathParameterPart = new StringBuilder();
+				pathParameterPart.append(URLEncoder.encode(pathParameterDataEntry.getKey(), "UTF-8"));
+				pathParameterPart.append("=");
+				if (pathParameterDataEntry.getValue() instanceof char[]) {
+					pathParameterPart.append(URLEncoder.encode(new String((char[]) pathParameterDataEntry.getValue()), "UTF-8"));
+				} else if (pathParameterDataEntry.getValue() instanceof Object[]) {
+	            	boolean isFirstValue = true;
+	            	for (Object value : (Object[]) pathParameterDataEntry.getValue()) {
+	            		if (!isFirstValue) {
+	            			pathParameterPart.append(",");
+	            		}
+	            		pathParameterPart.append(URLEncoder.encode(String.valueOf(value), "UTF-8"));
+	            		isFirstValue = false;
+	            	}
+	            } else {
+					pathParameterPart.append(URLEncoder.encode(String.valueOf(pathParameterDataEntry.getValue()), "UTF-8"));
 				}
-				sessionDataPart.append(URLEncoder.encode(sessionDataEntry.getKey(), "UTF-8"));
-				sessionDataPart.append("=");
-				if (sessionDataEntry.getValue() instanceof char[]) {
-					sessionDataPart.append(URLEncoder.encode(new String((char[]) sessionDataEntry.getValue()), "UTF-8"));
-				} else {
-					sessionDataPart.append(URLEncoder.encode(String.valueOf(sessionDataEntry.getValue()), "UTF-8"));
+				
+				if (pathParameterPart.length() > 0) {
+					url = addPathParameter(url, pathParameterPart.toString());
 				}
-			}
-			if (sessionDataPart.length() > 0) {
-				url += ";" + sessionDataPart.toString();
 			}
 		}
 		
@@ -136,6 +159,8 @@ public class HttpUtilities {
 					((HttpsURLConnection) connection).setSSLSocketFactory(sslSocketFactory);
 				}
 			}
+
+	        connection.setRequestMethod(httpRequest.getRequestMethod().name());
 			
 			if (httpRequest.getCookieData() != null && httpRequest.getCookieData().size() > 0) {
 				StringBuilder cookieDataString = new StringBuilder();
@@ -160,20 +185,27 @@ public class HttpUtilities {
 		            postData.append('=');
 		            if (param.getValue() instanceof char[]) {
 		            	postData.append(URLEncoder.encode(new String((char[]) param.getValue()), "UTF-8"));
+		            } else if (param.getValue() instanceof Object[]) {
+		            	boolean isFirstValue = true;
+		            	for (Object value : (Object[]) param.getValue()) {
+		            		if (!isFirstValue) {
+		            			postData.append(",");
+		            		}
+		            		postData.append(URLEncoder.encode(String.valueOf(value), "UTF-8"));
+		            		isFirstValue = false;
+		            	}
 		            } else {
 		            	postData.append(URLEncoder.encode(String.valueOf(param.getValue()), "UTF-8"));
 		            }
 		        }
 		        byte[] postParametersData = postData.toString().getBytes("UTF-8");
 
-		        connection.setRequestMethod(httpRequest.getRequestMethod());
 				connection.setDoInput(true);
 		        connection.setDoOutput(true);
 		        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 		        connection.setRequestProperty("Content-Length", String.valueOf(postParametersData.length));
 		        connection.getOutputStream().write(postParametersData);
 			} else {
-				connection.setRequestMethod("GET");
 				connection.setDoInput(true);
 				connection.setDoOutput(false);
 			}
@@ -205,31 +237,71 @@ public class HttpUtilities {
 
 		escapedParameterNameAndValue.append('=');
 
-		if (Utilities.isEmpty(encodingCharSet)) {
-			escapedParameterNameAndValue.append(String.valueOf(parameterValue));
+		if (parameterValue instanceof char[]) {
+			if (Utilities.isEmpty(encodingCharSet)) {
+				escapedParameterNameAndValue.append(new String((char[]) parameterValue));
+			} else {
+				escapedParameterNameAndValue.append(URLEncoder.encode(new String((char[]) parameterValue), encodingCharSet));
+			}
+		} else if (parameterValue instanceof Object[]) {
+        	boolean isFirstValue = true;
+        	for (Object value : (Object[]) parameterValue) {
+        		if (!isFirstValue) {
+        			escapedParameterNameAndValue.append(",");
+        		}
+        		if (Utilities.isEmpty(encodingCharSet)) {
+    				escapedParameterNameAndValue.append(String.valueOf(value));
+    			} else {
+    				escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(value), encodingCharSet));
+    			}
+        		isFirstValue = false;
+        	}
 		} else {
-			escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(parameterValue), encodingCharSet));
+			if (Utilities.isEmpty(encodingCharSet)) {
+				escapedParameterNameAndValue.append(String.valueOf(parameterValue));
+			} else {
+				escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(parameterValue), encodingCharSet));
+			}
 		}
 		return addUrlParameter(url, escapedParameterNameAndValue.toString());
 	}
 
+	public static String addPathParameter(String url, String escapedParameterNameAndValue) throws UnsupportedEncodingException {
+		StringBuilder newUrl = new StringBuilder();
+		int insertPosition = url.indexOf('?');
+		if (insertPosition < 0) {
+			insertPosition = url.indexOf('#');
+		}
+		
+		if (insertPosition < 0) {
+			newUrl.append(url);
+			newUrl.append(";");
+			newUrl.append(escapedParameterNameAndValue);
+		} else {
+			newUrl.append(url.substring(0, insertPosition));
+			newUrl.append(";");
+			newUrl.append(escapedParameterNameAndValue);
+			newUrl.append(url.substring(insertPosition));
+		}
+		
+		return newUrl.toString();
+	}
+
 	public static String addUrlParameter(String url, String escapedParameterNameAndValue) throws UnsupportedEncodingException {
 		StringBuilder newUrl = new StringBuilder();
-
-		int hpos = url.indexOf('#');
-		if (hpos > -1) {
-			newUrl.append(url.substring(0, hpos));
-		} else {
+		int insertPosition = url.indexOf('#');
+		
+		if (insertPosition < 0) {
 			newUrl.append(url);
+			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
+			newUrl.append(escapedParameterNameAndValue);
+		} else {
+			newUrl.append(url.substring(0, insertPosition));
+			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
+			newUrl.append(escapedParameterNameAndValue);
+			newUrl.append(url.substring(insertPosition));
 		}
-
-		newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
-
-		newUrl.append(escapedParameterNameAndValue);
-
-		if (hpos > -1) {
-			newUrl.append(url.substring(hpos));
-		}
+		
 		return newUrl.toString();
 	}
 	

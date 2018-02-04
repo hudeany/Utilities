@@ -4,18 +4,46 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class HttpRequest {
-	private String requestMethod;
+	public enum HttpMethod {
+		GET,
+		HEAD,
+		POST,
+		PUT,
+		DELETE,
+		CONNECT,
+		OPTIONS,
+		TRACE,
+		PATCH
+	}
+	
+	private HttpMethod requestMethod;
 	private String url;
 	
 	private Map<String, Object> urlParameters = new HashMap<String, Object>();
 	private Map<String, Object> postParameters= new HashMap<String, Object>();
 	private Map<String, byte[]> fileAttachments= new HashMap<String, byte[]>();
-	private Map<String, Object> sessionData= new HashMap<String, Object>();
+	private Map<String, Object> pathParameterData= new HashMap<String, Object>();
 	private Map<String, String> cookieData= new HashMap<String, String>();
 	
 	private boolean checkSslCertificates = true;
 	
-	public HttpRequest(String requestMethod, String url) {
+	/**
+	 * Http POST Request
+	 * 
+	 * @param url
+	 * @throws Exception
+	 */
+	public HttpRequest(String url) throws Exception {
+		this(HttpMethod.POST, url);
+	}
+	
+	public HttpRequest(HttpMethod requestMethod, String url) throws Exception {
+		if (requestMethod == null) {
+			throw new Exception("Invalid empty HttpMethod parameter");
+		}
+		if (Utilities.isBlank(url)) {
+			throw new Exception("Invalid empty url");
+		}
 		this.requestMethod = requestMethod;
 		this.url = url;
 	}
@@ -28,7 +56,7 @@ public class HttpRequest {
 		this.checkSslCertificates = checkSslCertificates;
 	}
 
-	public String getRequestMethod() {
+	public HttpMethod getRequestMethod() {
 		return requestMethod;
 	}
 
@@ -48,7 +76,7 @@ public class HttpRequest {
 		return postParameters;
 	}
 	
-	public void addPostParameter(String key, Object value) {
+	public void addPostParameter(String key, Object value) throws Exception {
 		postParameters.put(key, value);
 	}
 
@@ -60,12 +88,12 @@ public class HttpRequest {
 		urlParameters.put(name, data);
 	}
 
-	public Map<String, Object> getSessionData() {
-		return sessionData;
+	public Map<String, Object> getPathParameterData() {
+		return pathParameterData;
 	}
 	
-	public void addSessionParameter(String key, Object value) {
-		sessionData.put(key, value);
+	public void addPathParameter(String key, Object value) {
+		pathParameterData.put(key, value);
 	}
 
 	public Map<String, String> getCookieData() {

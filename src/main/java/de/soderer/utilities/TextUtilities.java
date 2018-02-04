@@ -1069,4 +1069,18 @@ public class TextUtilities {
 		}
 		return null;
 	}
+
+	public static String getProsaParameter(String text, String parameterName) throws Exception {
+		if (Utilities.isBlank(text)) {
+			return null;
+		} else {
+			Pattern parameterPattern = Pattern.compile("^\\s*" + parameterName + "\\s*:(.*)$", Pattern.MULTILINE);
+			Matcher parameterMatcher = parameterPattern.matcher(text);
+			if (parameterMatcher.find()) {
+				return parameterMatcher.group(1).trim();
+			} else {
+				return null;
+			}
+		}
+	}
 }
