@@ -17,10 +17,14 @@ public class PasswordGenerator {
 		}
 		return PasswordGenerator.generatePassword(groups, size, size);
 	}
+	
+	public static char[] generatePassword(List<PasswordGeneratorCharacterGroup> characterGroups, int length) throws Exception {
+		return generatePassword(characterGroups, length, length);
+	}
 
-	public static char[] generatePassword(List<PasswordGeneratorCharacterGroup> characterGroups, int minimumLength, int maximumLength) throws Exception {
-		minimumLength = Math.min(minimumLength, minimumLength);
-		maximumLength = Math.max(minimumLength, maximumLength);
+	public static char[] generatePassword(List<PasswordGeneratorCharacterGroup> characterGroups, int minimumLengthParam, int maximumLengthParam) throws Exception {
+		int minimumLength = Math.min(minimumLengthParam, minimumLengthParam);
+		int maximumLength = Math.max(minimumLengthParam, maximumLengthParam);
 
 		List<Character> passwordLetters = new ArrayList<Character>();
 		Map<PasswordGeneratorCharacterGroup, Integer> groupsLeftToUse = new HashMap<PasswordGeneratorCharacterGroup, Integer>();

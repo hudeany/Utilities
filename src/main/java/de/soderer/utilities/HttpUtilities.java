@@ -19,6 +19,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -36,22 +38,24 @@ public class HttpUtilities {
 			if (pingUrl.startsWith("https")) {
 				// Deactivate SSL-Certificates check
 				SSLContext sslContext = SSLContext.getInstance("TLS");
-				TrustManager[] tms = new TrustManager[] { new X509TrustManager() {
-					@Override
-					public X509Certificate[] getAcceptedIssuers() {
-						return null;
+				TrustManager[] tms = new TrustManager[] {
+					new X509TrustManager() {
+						@Override
+						public X509Certificate[] getAcceptedIssuers() {
+							return null;
+						}
+	
+						@Override
+						public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+							// nothing to do
+						}
+	
+						@Override
+						public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+							// nothing to do
+						}
 					}
-
-					@Override
-					public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-						// nothing to do
-					}
-
-					@Override
-					public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-						// nothing to do
-					}
-				} };
+				};
 				sslContext.init(null, tms, null);
 				SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 				HttpsURLConnection connection = (HttpsURLConnection) new URL(pingUrl).openConnection();
@@ -376,6 +380,225 @@ public class HttpUtilities {
 			return null;
 		}
 		return netUrl.getHost();
+	}
+	
+	public static String addUrlParameter(String url, String parameterName, Object parameterValue, String encodingCharSet) throws UnsupportedEncodingException {
+		StringBuilder escapedParameterNameAndValue = new StringBuilder();
+
+		if (Utilities.isEmpty(encodingCharSet)) {
+			escapedParameterNameAndValue.append(parameterName);
+		} else {
+			escapedParameterNameAndValue.append(URLEncoder.encode(parameterName, encodingCharSet));
+		}
+
+		escapedParameterNameAndValue.append('=');
+
+		if (parameterValue instanceof char[]) {
+			if (Utilities.isEmpty(encodingCharSet)) {
+				escapedParameterNameAndValue.append(new String((char[]) parameterValue));
+			} else {
+				escapedParameterNameAndValue.append(URLEncoder.encode(new String((char[]) parameterValue), encodingCharSet));
+			}
+		} else if (parameterValue instanceof Object[]) {
+        	boolean isFirstValue = true;
+        	for (Object value : (Object[]) parameterValue) {
+        		if (!isFirstValue) {
+        			escapedParameterNameAndValue.append(",");
+        		}
+        		if (Utilities.isEmpty(encodingCharSet)) {
+    				escapedParameterNameAndValue.append(String.valueOf(value));
+    			} else {
+    				escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(value), encodingCharSet));
+    			}
+        		isFirstValue = false;
+        	}
+		} else {
+			if (Utilities.isEmpty(encodingCharSet)) {
+				escapedParameterNameAndValue.append(String.valueOf(parameterValue));
+			} else {
+				escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(parameterValue), encodingCharSet));
+			}
+		}
+		return addUrlParameter(url, escapedParameterNameAndValue.toString());
+	}
+
+	public static String addPathParameter(String url, String escapedParameterNameAndValue) throws UnsupportedEncodingException {
+		StringBuilder newUrl = new StringBuilder();
+		int insertPosition = url.indexOf('?');
+		if (insertPosition < 0) {
+			insertPosition = url.indexOf('#');
+		}
+		
+		if (insertPosition < 0) {
+			newUrl.append(url);
+			newUrl.append(";");
+			newUrl.append(escapedParameterNameAndValue);
+		} else {
+			newUrl.append(url.substring(0, insertPosition));
+			newUrl.append(";");
+			newUrl.append(escapedParameterNameAndValue);
+			newUrl.append(url.substring(insertPosition));
+		}
+		
+		return newUrl.toString();
+	}
+
+	public static String addUrlParameter(String url, String escapedParameterNameAndValue) throws UnsupportedEncodingException {
+		StringBuilder newUrl = new StringBuilder();
+		int insertPosition = url.indexOf('#');
+		
+		if (insertPosition < 0) {
+			newUrl.append(url);
+			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
+			newUrl.append(escapedParameterNameAndValue);
+		} else {
+			newUrl.append(url.substring(0, insertPosition));
+			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
+			newUrl.append(escapedParameterNameAndValue);
+			newUrl.append(url.substring(insertPosition));
+		}
+		
+		return newUrl.toString();
+	}
+	
+	public static String getPlainParameterFromHtml(String htmlText, String parameterName) throws Exception {
+		if (Utilities.isBlank(htmlText)) {
+			return null;
+		} else {
+			Pattern parameterPattern = Pattern.compile("\\W" + parameterName + "\\s*=(\\w*)\\W", Pattern.MULTILINE);
+			Matcher parameterMatcher = parameterPattern.matcher(htmlText);
+			if (parameterMatcher.find()) {
+				return parameterMatcher.group(1).trim();
+			} else {
+				return null;
+			}
+		}
+	}
+	
+	public static String getQuotedParameterFromHtml(String htmlText, String parameterName) throws Exception {
+		if (Utilities.isBlank(htmlText)) {
+			return null;
+		} else {
+			Pattern parameterPattern = Pattern.compile("\\W" + parameterName + "\\s*=\\s\"(\\w*)\"\\W", Pattern.MULTILINE);
+			Matcher parameterMatcher = parameterPattern.matcher(htmlText);
+			if (parameterMatcher.find()) {
+				return parameterMatcher.group(1).trim();
+			} else {
+				return null;
+			}
+		}
+	}
+	
+	public static String getHttpStatusText(int httpStatusCode) {
+		switch (httpStatusCode) {
+			case HttpURLConnection.HTTP_OK:
+				// 200
+				return "OK";
+			case HttpURLConnection.HTTP_CREATED:
+				// 201
+				return "Created";
+			case HttpURLConnection.HTTP_ACCEPTED:
+				// 202
+				return "Accepted";
+			case HttpURLConnection.HTTP_NOT_AUTHORITATIVE:
+				// 203
+				return "Non-Authoritative Information";
+			case HttpURLConnection.HTTP_NO_CONTENT:
+				// 204
+				return "No Content";
+			case HttpURLConnection.HTTP_RESET:
+				// 205
+				return "Reset Content";
+			case HttpURLConnection.HTTP_PARTIAL:
+				// 206
+				return "Partial Content";
+			case HttpURLConnection.HTTP_MULT_CHOICE:
+				// 300
+				return "Multiple Choices";
+			case HttpURLConnection.HTTP_MOVED_PERM:
+				// 301
+				return "Moved Permanently";
+			case HttpURLConnection.HTTP_MOVED_TEMP:
+				// 302
+				return "Temporary Redirect";
+			case HttpURLConnection.HTTP_SEE_OTHER:
+				// 303
+				return "See Other";
+			case HttpURLConnection.HTTP_NOT_MODIFIED:
+				// 304
+				return "Not Modified";
+			case HttpURLConnection.HTTP_USE_PROXY:
+				// 305
+				return "Use Proxy";
+			case HttpURLConnection.HTTP_BAD_REQUEST:
+				// 400
+				return "Bad Request";
+			case HttpURLConnection.HTTP_UNAUTHORIZED:
+				// 401
+				return "Unauthorized";
+			case HttpURLConnection.HTTP_PAYMENT_REQUIRED:
+				// 402
+				return "Payment Required";
+			case HttpURLConnection.HTTP_FORBIDDEN:
+				// 403
+				return "Forbidden";
+			case HttpURLConnection.HTTP_NOT_FOUND:
+				// 404
+				return "Not Found";
+			case HttpURLConnection.HTTP_BAD_METHOD:
+				// 405
+				return "Method Not Allowed";
+			case HttpURLConnection.HTTP_NOT_ACCEPTABLE:
+				// 406
+				return "Not Acceptable";
+			case HttpURLConnection.HTTP_PROXY_AUTH:
+				// 407
+				return "Proxy Authentication Required";
+			case HttpURLConnection.HTTP_CLIENT_TIMEOUT:
+				// 408
+				return "Request Time-Out";
+			case HttpURLConnection.HTTP_CONFLICT:
+				// 409
+				return "Conflict";
+			case HttpURLConnection.HTTP_GONE:
+				// 410
+				return "Gone";
+			case HttpURLConnection.HTTP_LENGTH_REQUIRED:
+				// 411
+				return "Length Required";
+			case HttpURLConnection.HTTP_PRECON_FAILED:
+				// 412
+				return "Precondition Failed";
+			case HttpURLConnection.HTTP_ENTITY_TOO_LARGE:
+				// 413
+				return "Request Entity Too Large";
+			case HttpURLConnection.HTTP_REQ_TOO_LONG:
+				// 414
+				return "Request-URI Too Large";
+			case HttpURLConnection.HTTP_UNSUPPORTED_TYPE:
+				// 415
+				return "Unsupported Media Type";
+			case HttpURLConnection.HTTP_INTERNAL_ERROR:
+				// 500
+				return "Internal Server Error";
+			case HttpURLConnection.HTTP_NOT_IMPLEMENTED:
+				// 501
+				return "Not Implemented";
+			case HttpURLConnection.HTTP_BAD_GATEWAY:
+				// 502
+				return "Bad Gateway";
+			case HttpURLConnection.HTTP_UNAVAILABLE:
+				// 503
+				return "Service Unavailable";
+			case HttpURLConnection.HTTP_GATEWAY_TIMEOUT:
+				// 504
+				return "Gateway Timeout";
+			case HttpURLConnection.HTTP_VERSION:
+				// 505
+				return "HTTP Version Not Supported";
+			default:
+				return "Unknown Http Status Code (" + httpStatusCode + ")";
+		}
 	}
 }
 
