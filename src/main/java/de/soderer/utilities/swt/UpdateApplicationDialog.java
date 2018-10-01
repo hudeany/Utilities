@@ -2,6 +2,7 @@ package de.soderer.utilities.swt;
 
 import java.io.File;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutionException;
 
@@ -20,7 +21,7 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.CryptographicUtilities;
 import de.soderer.utilities.FileDownloadWorker;
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.SecureDataKeyStore;
+import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.SimpleCredentialsData;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.UserError;
@@ -34,8 +35,9 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private String downloadUrl;
 	private boolean dailyUpdateCheck;
 	private X509Certificate[] trustedCertificates;
-	private SecureDataKeyStore secureDataKeyStore = null;
+	private SecureDataStore secureDataStore = null;
 	private File keystoreFile = null;
+	private static final byte[] keystoreFileSalt = "q34;kUGh@78".getBytes(Charset.forName("UTF-8"));
 	private SimpleCredentialsData storedDownloadCredentials = null;
 	private char[] keyStorePassword = null;
 	private boolean storedCredentialsChanged = false;
@@ -60,11 +62,11 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		this.keystoreFile = keystoreFile;
 
 		if (keystoreFile != null) {
-			secureDataKeyStore = openKeyStore(shell, keystoreFile, keystorePassword);
+			secureDataStore = openKeyStore(shell, keystoreFile, keystorePassword);
 		}
 
-		if (secureDataKeyStore != null) {
-			storedDownloadCredentials = secureDataKeyStore.getEntry(SimpleCredentialsData.class,
+		if (secureDataStore != null) {
+			storedDownloadCredentials = secureDataStore.getEntry(SimpleCredentialsData.class,
 					Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
 		}
 	}
@@ -219,7 +221,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 						downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(credentialsDialog.getUsername(), "UTF-8"));
 						downloadUrl = downloadUrl.replace("<password>", URLEncoder.encode(new String(credentialsDialog.getPassword()), "UTF-8"));
 						if (credentialsDialog.keepInMemory()) {
-							storedDownloadCredentials = new SimpleCredentialsData("", credentialsDialog.getUsername(), credentialsDialog.getPassword());
+							storedDownloadCredentials = new SimpleCredentialsData(credentialsDialog.getUsername(), credentialsDialog.getPassword());
 						} else {
 							storedDownloadCredentials = null;
 						}
@@ -282,27 +284,22 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 
 			if (worker.get()) {
 				if (storedCredentialsChanged) {
-					if (secureDataKeyStore != null) {
+					if (secureDataStore != null) {
 						if (storedDownloadCredentials != null) {
-							storedDownloadCredentials.setEntryName(
-									Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
-							secureDataKeyStore.addEntry(storedDownloadCredentials);
+							secureDataStore.addEntry(Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials", storedDownloadCredentials);
 						} else {
-							secureDataKeyStore.remove(SimpleCredentialsData.class,
-									Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
+							secureDataStore.removeEntry(SimpleCredentialsData.class, Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
 						}
 						keyStorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
-						secureDataKeyStore.saveKeyStore(keyStorePassword);
+						secureDataStore.save(keystoreFile, keyStorePassword, keystoreFileSalt);
 					} else {
 						if (storedDownloadCredentials != null) {
-							secureDataKeyStore = new SecureDataKeyStore(keystoreFile);
-
-							storedDownloadCredentials.setEntryName(
-									Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
-							secureDataKeyStore.addEntry(storedDownloadCredentials);
+							secureDataStore = new SecureDataStore();
+							
+							secureDataStore.addEntry(Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials", storedDownloadCredentials);
 
 							keyStorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
-							secureDataKeyStore.saveKeyStore(keyStorePassword);
+							secureDataStore.save(keystoreFile, keyStorePassword, keystoreFileSalt);
 						}
 					}
 				}
@@ -319,16 +316,16 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		}
 	}
 
-	public SecureDataKeyStore openKeyStore(Shell shell, File keystoreFile, char[] password) {
+	public SecureDataStore openKeyStore(Shell shell, File keystoreFile, char[] password) {
 		if (keystoreFile.exists()) {
-			SecureDataKeyStore keyStore = null;
+			SecureDataStore keyStore = null;
 
 			if (password == null) {
 				// try to use empty password
 				try {
 					password = "".toCharArray();
-					keyStore = new SecureDataKeyStore(keystoreFile);
-					keyStore.loadKeyStore(password);
+					keyStore = new SecureDataStore();
+					keyStore.load(keystoreFile, password, keystoreFileSalt);
 				} catch (Exception e1) {
 					password = null;
 					keyStore = null;
@@ -346,9 +343,10 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 
 			if (password != null && keyStore == null) {
 				try {
-					keyStore = new SecureDataKeyStore(keystoreFile);
-					keyStore.loadKeyStore(password);
+					keyStore = new SecureDataStore();
+					keyStore.load(keystoreFile, password, keystoreFileSalt);
 				} catch (Exception e) {
+					e.printStackTrace();
 					new QuestionDialog(shell, getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).open();
 					keyStore = null;
 				}

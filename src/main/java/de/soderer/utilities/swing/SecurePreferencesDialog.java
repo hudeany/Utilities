@@ -25,16 +25,16 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.SecureDataEntry;
-import de.soderer.utilities.SecureDataKeyStore;
+import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.Utilities;
 
 public class SecurePreferencesDialog extends JDialog {
 	private static final long serialVersionUID = -2855354859482098916L;
 	
 	private File securePreferencesFile;
-	private SecureDataKeyStore secureDataKeyStore;
-	private SecureDataEntry currentSecureDataEntry;
+	private byte[] salt;
+	private SecureDataStore secureDataStore;
+	private Object currentSecureDataEntry;
 	
 	// I18N texts for CredentialsDialog 
 	private String text_Username;
@@ -56,13 +56,13 @@ public class SecurePreferencesDialog extends JDialog {
 	private JTextField newNameField;
 	private JTable preferencesTable;
 
-	public SecurePreferencesDialog(Window parent, String title, String text, File securePreferencesFile) {
-		this(parent, title, text, securePreferencesFile,
+	public SecurePreferencesDialog(Window parent, String title, String text, File securePreferencesFile, byte[] salt) {
+		this(parent, title, text, securePreferencesFile, salt,
 			"Load", "Create", "Update", "Delete", "Save with new password", "Cancel", "Please enter password for secured preferences",
 			"Username", "Password", "OK", "Cancel");
 	}
 	
-	public SecurePreferencesDialog(Window parent, String title, String text, File securePreferencesFile,
+	public SecurePreferencesDialog(Window parent, String title, String text, final File securePreferencesFile, byte[] salt,
 			String textButton_Load, String textButton_Create, String textButton_Update, String textButton_Delete, String textButton_Save, String textButton_Cancel, final String text_PasswordText,
 			final String text_Username, final String text_Password, final String text_OK, final String text_Cancel) {
 		super(parent, title, Dialog.ModalityType.DOCUMENT_MODAL);
@@ -74,6 +74,7 @@ public class SecurePreferencesDialog extends JDialog {
 		this.text_Cancel = text_Cancel;
 		
 		this.securePreferencesFile = securePreferencesFile;
+		this.salt = salt;
 
 		setResizable(false);
 
@@ -129,7 +130,7 @@ public class SecurePreferencesDialog extends JDialog {
 			        if (rowIndex >= 0) {
 			        	DefaultTableModel tableModel = (DefaultTableModel) preferencesTable.getModel();
 						String entryName = (String) tableModel.getValueAt(rowIndex, 0);
-						currentSecureDataEntry = secureDataKeyStore.getEntry(currentSecureDataEntry.getClass(), entryName);
+						currentSecureDataEntry = secureDataStore.getEntry(currentSecureDataEntry.getClass(), entryName);
 						dispose();
 			        }
 				}
@@ -159,7 +160,7 @@ public class SecurePreferencesDialog extends JDialog {
 				if (preferencesTable.getSelectedRows().length == 1) {
 					DefaultTableModel tableModel = (DefaultTableModel) preferencesTable.getModel();
 					String entryName = (String) tableModel.getValueAt(preferencesTable.getSelectedRows()[0], 0);
-					currentSecureDataEntry = secureDataKeyStore.getEntry(currentSecureDataEntry.getClass(), entryName);
+					currentSecureDataEntry = secureDataStore.getEntry(currentSecureDataEntry.getClass(), entryName);
 					dispose();
 				}
 			}
@@ -173,9 +174,12 @@ public class SecurePreferencesDialog extends JDialog {
 		createButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
+				if (secureDataStore == null) {
+					secureDataStore = new SecureDataStore();
+				}
+				
 				if (Utilities.isNotBlank(newNameField.getText())) {
-					currentSecureDataEntry.setEntryName(newNameField.getText());
-					secureDataKeyStore.addEntry(currentSecureDataEntry);
+					secureDataStore.addEntry(newNameField.getText(), currentSecureDataEntry);
 					if (getPassword() == null) {
 						CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
 						credentialsDialog.setVisible(true);
@@ -186,7 +190,12 @@ public class SecurePreferencesDialog extends JDialog {
 						}
 					}
 					if (getPassword() != null) {
-						secureDataKeyStore.saveKeyStore(getPassword());
+						try {
+							secureDataStore.save(securePreferencesFile, getPassword(), salt);
+						} catch (Exception e) {
+							e.printStackTrace();
+							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setVisible(true);
+						}
 						currentSecureDataEntry = null;
 						dispose();
 					}
@@ -206,8 +215,7 @@ public class SecurePreferencesDialog extends JDialog {
 					DefaultTableModel tableModel = (DefaultTableModel) preferencesTable.getModel();
 					for (int rowNum : preferencesTable.getSelectedRows()) {
 						String entryName = (String) tableModel.getValueAt(rowNum, 0);
-						currentSecureDataEntry.setEntryName(entryName);
-						secureDataKeyStore.addEntry(currentSecureDataEntry);
+						secureDataStore.addEntry(entryName, currentSecureDataEntry);
 						if (getPassword() == null) {
 							CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
 							credentialsDialog.setVisible(true);
@@ -218,7 +226,12 @@ public class SecurePreferencesDialog extends JDialog {
 							}
 						}
 						if (getPassword() != null) {
-							secureDataKeyStore.saveKeyStore(getPassword());
+							try {
+								secureDataStore.save(securePreferencesFile, getPassword(), salt);
+							} catch (Exception e) {
+								e.printStackTrace();
+								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setVisible(true);
+							}
 							currentSecureDataEntry = null;
 							dispose();
 						}
@@ -240,7 +253,7 @@ public class SecurePreferencesDialog extends JDialog {
 					for (int i = preferencesTable.getSelectedRows().length - 1; i >= 0; i--) {
 						int rowNum = preferencesTable.getSelectedRows()[i];
 						String entryName = (String) tableModel.getValueAt(rowNum, 0);
-						secureDataKeyStore.remove(currentSecureDataEntry.getClass(), entryName);
+						secureDataStore.removeEntry(currentSecureDataEntry.getClass(), entryName);
 						tableModel.removeRow(rowNum);
 					}
 					if (getPassword() == null) {
@@ -253,7 +266,12 @@ public class SecurePreferencesDialog extends JDialog {
 						}
 					}
 					if (getPassword() != null) {
-						secureDataKeyStore.saveKeyStore(getPassword());
+						try {
+							secureDataStore.save(securePreferencesFile, getPassword(), salt);
+						} catch (Exception e) {
+							e.printStackTrace();
+							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setVisible(true);
+						}
 						currentSecureDataEntry = null;
 						dispose();
 					}
@@ -273,15 +291,17 @@ public class SecurePreferencesDialog extends JDialog {
 		saveButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
+				if (secureDataStore == null) {
+					secureDataStore = new SecureDataStore();
+				}
+					
 				if (Utilities.isNotBlank(newNameField.getText())) {
-					currentSecureDataEntry.setEntryName(newNameField.getText());
-					secureDataKeyStore.addEntry(currentSecureDataEntry);
+					secureDataStore.addEntry(newNameField.getText(), currentSecureDataEntry);
 				} else if (preferencesTable.getSelectedRows().length == 1) {
 					DefaultTableModel tableModel = (DefaultTableModel) preferencesTable.getModel();
 					for (int rowNum : preferencesTable.getSelectedRows()) {
 						String entryName = (String) tableModel.getValueAt(rowNum, 0);
-						currentSecureDataEntry.setEntryName(entryName);
-						secureDataKeyStore.addEntry(currentSecureDataEntry);
+						secureDataStore.addEntry(entryName, currentSecureDataEntry);
 						if (getPassword() == null) {
 							CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
 							credentialsDialog.setVisible(true);
@@ -292,7 +312,12 @@ public class SecurePreferencesDialog extends JDialog {
 							}
 						}
 						if (getPassword() != null) {
-							secureDataKeyStore.saveKeyStore(getPassword());
+							try {
+								secureDataStore.save(securePreferencesFile, getPassword(), salt);
+							} catch (Exception e) {
+								e.printStackTrace();
+								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setVisible(true);
+							}
 							currentSecureDataEntry = null;
 							dispose();
 						}
@@ -303,7 +328,12 @@ public class SecurePreferencesDialog extends JDialog {
 				credentialsDialog.setVisible(true);
 				if (credentialsDialog.getCredentials() != null) {
 					setPassword(credentialsDialog.getCredentials().getPassword());
-					secureDataKeyStore.saveKeyStore(getPassword());
+					try {
+						secureDataStore.save(securePreferencesFile, getPassword(), salt);
+					} catch (Exception e) {
+						e.printStackTrace();
+						new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setVisible(true);
+					}
 					currentSecureDataEntry = null;
 					dispose();
 				}
@@ -342,11 +372,11 @@ public class SecurePreferencesDialog extends JDialog {
 		newNameField.requestFocus();
 	}
 	
-	public void setCurrentSecureDataEntry(SecureDataEntry secureDataEntry) {
+	public void setCurrentSecureDataEntry(Object secureDataEntry) {
 		this.currentSecureDataEntry = secureDataEntry;
 	}
 	
-	public SecureDataEntry getCurrentSecureDataEntry() {
+	public Object getCurrentSecureDataEntry() {
 		return currentSecureDataEntry;
 	}
 	
@@ -360,16 +390,17 @@ public class SecurePreferencesDialog extends JDialog {
 	
 	public void showDialog() {
 		try {
-			secureDataKeyStore = new SecureDataKeyStore(securePreferencesFile);
-			
 			if (securePreferencesFile.exists()) {
 				if (getPassword() == null) {
 					try {
-						// Try with insecure empty password
-						secureDataKeyStore.loadKeyStore("".toCharArray());
+						secureDataStore = new SecureDataStore();
 						setPassword("".toCharArray());
+						// Try with insecure empty password
+						secureDataStore.load(securePreferencesFile, getPassword(), salt);
 					} catch (Exception e) {
 						// Do nothing
+						secureDataStore = null;
+						setPassword(null);
 					}
 					
 					if (getPassword() == null) {
@@ -384,9 +415,17 @@ public class SecurePreferencesDialog extends JDialog {
 				}
 				
 				if (getPassword() != null) {
-					secureDataKeyStore.loadKeyStore(getPassword());
+					try {
+						secureDataStore = new SecureDataStore();
+						secureDataStore.load(securePreferencesFile, getPassword(), salt);
+					} catch (Exception e) {
+						e.printStackTrace();
+						new QuestionDialog(this, getTitle(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).setVisible(true);
+						secureDataStore = null;
+						setPassword(null);
+					}
 					DefaultTableModel tableModel = (DefaultTableModel) preferencesTable.getModel();
-					for (String entryName : secureDataKeyStore.getEntryNames(currentSecureDataEntry.getClass())) {
+					for (String entryName : secureDataStore.getEntryNames(currentSecureDataEntry.getClass())) {
 						tableModel.addRow(new Object[] { entryName });
 					}
 					

@@ -1,6 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -28,7 +29,7 @@ import com.jcraft.jsch.Session;
 
 import de.soderer.utilities.JschWrapper;
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.SecureDataKeyStore;
+import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
@@ -59,7 +60,8 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private Button actionButton;
 	private char[] inMemoryPassword;
 	private File keystoreFile;
-	private SecureDataKeyStore keyStore = null;
+	private static final byte[] keystoreFileSalt = "wR&54sH,tz2".getBytes(Charset.forName("UTF-8"));
+	private SecureDataStore keyStore = null;
 
 	private Mode dialogMode;
 	private Text fileNameField;
@@ -131,7 +133,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
 					if (keyStore != null) {
-						keyStore.remove(ServerAccessData.class, serverEntriesCombo.getText());
+						keyStore.removeEntry(ServerAccessData.class, serverEntriesCombo.getText());
 						serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 						serverEntriesCombo.clearSelection();
 						serverEntriesCombo.setText("");
@@ -141,7 +143,11 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 
 					char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 					if (password != null) {
-						keyStore.saveKeyStore(password);
+						try {
+							keyStore.save(keystoreFile, password, keystoreFileSalt);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					}
 
 					checkButtonStatus();
@@ -154,13 +160,17 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				@Override
 				public void widgetSelected(SelectionEvent event) {
 					if (keyStore == null) {
-						keyStore = new SecureDataKeyStore(keystoreFile);
+						keyStore = new SecureDataStore();
 					}
 					String newEntryName = serverEntriesCombo.getText();
-					keyStore.addEntry(new ServerAccessData(serverEntriesCombo.getText(), hostnameOrIp, username, keyFile, password));
+					keyStore.addEntry(serverEntriesCombo.getText(), new ServerAccessData(hostnameOrIp, username, keyFile, password));
 					char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 					if (password != null) {
-						keyStore.saveKeyStore(password);
+						try {
+							keyStore.save(keystoreFile, password, keystoreFileSalt);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					}
 					serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 					serverEntriesCombo.setText(newEntryName);
@@ -486,7 +496,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	}
 
 	public ServerAccessData getServerEntry() {
-		return new ServerAccessData(serverEntriesCombo.getText(), hostnameOrIp, username, keyFile, password);
+		return new ServerAccessData(hostnameOrIp, username, keyFile, password);
 	}
 
 	public String getSelectedFile() {
@@ -505,8 +515,8 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				// try to use empty password
 				try {
 					password = "".toCharArray();
-					keyStore = new SecureDataKeyStore(keystoreFile);
-					keyStore.loadKeyStore(password);
+					keyStore = new SecureDataStore();
+					keyStore.load(keystoreFile, password, keystoreFileSalt);
 				} catch (Exception e1) {
 					password = null;
 					keyStore = null;
@@ -524,9 +534,10 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 
 			if (password != null && keyStore == null) {
 				try {
-					keyStore = new SecureDataKeyStore(keystoreFile);
-					keyStore.loadKeyStore(password);
+					keyStore = new SecureDataStore();
+					keyStore.load(keystoreFile, password, keystoreFileSalt);
 				} catch (Exception e) {
+					e.printStackTrace();
 					new QuestionDialog(getParent(), getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).open();
 					keyStore = null;
 				}

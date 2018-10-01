@@ -3,12 +3,14 @@ package de.soderer.utilities.json;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 
 public class JsonSerializer {
@@ -58,7 +60,6 @@ public class JsonSerializer {
 		} else if (dataObject instanceof Number
 				|| dataObject instanceof String
 				|| dataObject instanceof Character
-				|| dataObject instanceof Date
 				|| dataObject instanceof Boolean) {
 			if (addObjectTypeInfo) {
 		    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
@@ -68,6 +69,17 @@ public class JsonSerializer {
 		    } else {
 		    	return new JsonNode(dataObject);
 		    }
+		} else if (dataObject instanceof Date) {
+			if (addObjectTypeInfo) {
+		    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
+		    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
+		    	jsonObjectWithTypeInfo.add("value", dataObject);
+		    	return new JsonNode(jsonObjectWithTypeInfo);
+		    } else {
+		    	return new JsonNode(new SimpleDateFormat(DateUtilities.ISO_8601_DATETIME_FORMAT).format((Date) dataObject));
+		    }
+		} else if (dataObject instanceof Enum) {
+			return new JsonNode(dataObject.toString());
 		} else if (dataObject.getClass().isArray()) {
 			if (Utilities.containsObject(alreadyVisitedObjects, dataObject)) {
 				throw new Exception("Cyclic reference detected. Cannot serialize object: " + dataObject.getClass() + " (Hashcode " + System.identityHashCode(dataObject) + ")");
@@ -243,8 +255,85 @@ public class JsonSerializer {
 					}
 				}
 			} else {
-				throw new Exception("");
+				throw new Exception("Invalid value type");
 			}
+		}
+	}
+	
+	public static Object deserialize(Class<?> classType, JsonObject jsonObject) throws Exception {
+		if (classType == null) {
+			throw new Exception("Invalid class type serialization value");
+		} else if (jsonObject == null) {
+			return null;
+		} else {
+			Object object = classType.newInstance();
+			for (Entry<String, Object> entry : ((JsonObject) jsonObject).entrySet()) {
+				Field field;
+				try {
+					field = classType.getDeclaredField(entry.getKey());
+				} catch (Exception e) {
+					throw new Exception("Invalid field name serialization value");
+				}
+		        field.setAccessible(true);
+		        Object value = entry.getValue();
+		        if (value == null || value instanceof Character || value instanceof Boolean || value instanceof Number) {
+					field.set(object, value);
+				} else if (field.getType().isEnum()) {
+					if (value != null) {
+						String enumName = ((String) value);
+						for (Object enumConstant : field.getType().getEnumConstants()) {
+							if (enumName.equals(enumConstant.toString())) {
+								field.set(object, enumConstant);
+								break;
+							}
+						}
+					}
+				} else if (Character.TYPE.isAssignableFrom(field.getType())) {
+					field.set(object, ((String) value).charAt(0));
+				} else if (Character.class.isAssignableFrom(field.getType())) {
+					field.set(object, ((String) value).charAt(0));
+				} else if (value instanceof String) {
+					if (Date.class.isAssignableFrom(field.getType())) {
+						field.set(object, DateUtilities.parseIso8601DateTimeString((String) value));
+					} else {
+						field.set(object, value);
+					}
+				} else if (field.getType().isArray()) {
+					List<Object> listOfItems = new ArrayList<Object>();
+					for (Object item : (JsonArray) value) {
+						if (item instanceof String) {
+							listOfItems.add(item);
+						} else {
+							listOfItems.add(deserialize(field.getType().getComponentType(), (JsonObject) item));
+						}
+					}
+					if (Character.TYPE.isAssignableFrom(field.getType().getComponentType())) {
+						char[] array = new char[listOfItems.size()];
+						for (int i = 0; i < listOfItems.size(); i++) {
+							array[i] = (char) ((String) listOfItems.get(i)).charAt(0);
+						}
+						field.set(object, array);
+					} else {
+						Object[] array = (Object[]) Array.newInstance(field.getType().getComponentType(), listOfItems.size());
+						field.set(object, listOfItems.toArray(array));
+					}
+				} else if (List.class.isAssignableFrom(field.getType())) {
+					List<Object> listOfItems = new ArrayList<Object>();
+					for (Object item : (JsonArray) value) {
+						if (item instanceof String) {
+							listOfItems.add(item);
+						} else {
+							listOfItems.add(deserialize(Object.class, (JsonObject) item));
+						}
+					}
+					field.set(object, listOfItems);
+				} else if (value instanceof JsonObject) {
+					field.set(object, deserialize(field.getType(), (JsonObject) value));
+				} else {
+					throw new Exception("Invalid value type for field " + entry.getKey() + " in class " + classType.toString());
+				}
+			}
+			return object;
 		}
 	}
 }
