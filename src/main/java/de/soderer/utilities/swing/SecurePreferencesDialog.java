@@ -9,6 +9,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.Arrays;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -27,13 +28,14 @@ import javax.swing.table.DefaultTableModel;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.WrongPasswordException;
 
 public class SecurePreferencesDialog extends JDialog {
 	private static final long serialVersionUID = -2855354859482098916L;
 	
 	private File securePreferencesFile;
 	private byte[] salt;
-	private SecureDataStore secureDataStore;
+	private SecureDataStore secureDataStore = null;
 	private Object currentSecureDataEntry;
 	
 	// I18N texts for CredentialsDialog 
@@ -51,7 +53,7 @@ public class SecurePreferencesDialog extends JDialog {
 	/**
 	 * Store latestPassword as String instead of char[], so it may be used even after the Credentialdialogs JTextField password cleanup
 	 */
-	private String latestPassword = null;
+	private char[] latestPassword = null;
 	
 	private JTextField newNameField;
 	private JTable preferencesTable;
@@ -381,49 +383,39 @@ public class SecurePreferencesDialog extends JDialog {
 	}
 	
 	public char[] getPassword() {
-		return latestPassword == null ? null : latestPassword.toCharArray();
+		if (latestPassword == null) {
+			return null;
+		} else {
+			return Arrays.copyOf(latestPassword, latestPassword.length);
+		}
 	}
 	
 	public void setPassword(char[] password) {
-		this.latestPassword = password == null ? null : new String(password);
+		this.latestPassword = password;
 	}
 	
 	public void showDialog() {
 		try {
 			if (securePreferencesFile.exists()) {
-				if (getPassword() == null) {
+				boolean retry = true;
+				while (secureDataStore == null && retry) {
 					try {
 						secureDataStore = new SecureDataStore();
-						setPassword("".toCharArray());
-						// Try with insecure empty password
 						secureDataStore.load(securePreferencesFile, getPassword(), salt);
-					} catch (Exception e) {
-						// Do nothing
+					} catch (WrongPasswordException e) {
 						secureDataStore = null;
-						setPassword(null);
-					}
-					
-					if (getPassword() == null) {
 						CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
 						credentialsDialog.setVisible(true);
 						if (credentialsDialog.getCredentials() != null) {
 							setPassword(credentialsDialog.getCredentials().getPassword());
 						} else {
 							setPassword(null);
+							retry = false;
 						}
 					}
 				}
 				
-				if (getPassword() != null) {
-					try {
-						secureDataStore = new SecureDataStore();
-						secureDataStore.load(securePreferencesFile, getPassword(), salt);
-					} catch (Exception e) {
-						e.printStackTrace();
-						new QuestionDialog(this, getTitle(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).setVisible(true);
-						secureDataStore = null;
-						setPassword(null);
-					}
+				if (secureDataStore != null) {
 					DefaultTableModel tableModel = (DefaultTableModel) preferencesTable.getModel();
 					for (String entryName : secureDataStore.getEntryNames(currentSecureDataEntry.getClass())) {
 						tableModel.addRow(new Object[] { entryName });

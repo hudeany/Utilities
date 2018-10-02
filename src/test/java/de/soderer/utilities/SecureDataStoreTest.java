@@ -42,6 +42,15 @@ public class SecureDataStoreTest {
 			Assert.assertEquals(5, loadedSecureDataEntry.valueInt);
 			Assert.assertEquals(now, loadedSecureDataEntry.valueDate);
 			Assert.assertEquals(true, loadedSecureDataEntry.valueBoolean);
+		
+			try {
+				new SecureDataStore().load(testStoreFile, "abc".toCharArray(), TEST_SALT.getBytes("UTF-8"));
+				Assert.fail("Missing expected exception");
+			} catch (WrongPasswordException e) {
+				Assert.assertNull(e.getMessage());
+			} catch (Exception e) {
+				Assert.fail("Other than expected exception");
+			}
 		} finally {
 			if (testStoreFile.exists()) {
 				testStoreFile.delete();

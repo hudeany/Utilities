@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
@@ -30,7 +32,6 @@ import de.soderer.utilities.json.JsonWriter;
 
 public class SecureDataStore {
 	private static final String SYMMETRIC_ENCRYPTION_METHOD = "AES";
-	public static byte[] SYMMETRIC_INITALIZATION_VECTOR = new byte[] { 51, 55, 73, 107, 99, 102, 114, 113, 110, 64, 108, 57, 48, 57, 56, 107 };
 	
 	/**
 	 * First key is class name of entries grouped by their class name, second key is the entry name
@@ -42,6 +43,9 @@ public class SecureDataStore {
 			if (storeFile == null) {
 				throw new Exception("SecureDataStore file is undefined");
 			} else {
+				if (password == null) {
+					password = "".toCharArray();
+				}
 				try (FileOutputStream fos = new FileOutputStream(storeFile)) {
 					byte[] keyBytes = stretchPassword(password, salt);
 					SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
@@ -76,6 +80,9 @@ public class SecureDataStore {
 			} else if (!storeFile.exists()) {
 				throw new Exception("SecureDataStore file does not exist: " + storeFile.getAbsolutePath());
 			} else {
+				if (password == null) {
+					password = "".toCharArray();
+				}
 				dataEntries = new HashMap<String, Map<String, Object>>();
 				try (FileInputStream fis = new FileInputStream(storeFile)) {
 					byte[] keyBytes = stretchPassword(password, salt);
@@ -102,6 +109,12 @@ public class SecureDataStore {
 									}
 								}
 							}
+						}
+					} catch (IOException e) {
+						if (e.getCause() != null && e.getCause() instanceof BadPaddingException) {
+							throw new WrongPasswordException();
+						} else {
+							throw e;
 						}
 					}
 				}
