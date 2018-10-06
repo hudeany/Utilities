@@ -78,6 +78,19 @@ public class NumberUtilities {
 	public static Number parseNumber(String numberString) throws NumberFormatException {
 		if (!isNumber(numberString)) {
 			throw new NumberFormatException("Not a number: '" + numberString + "'");
+		} else if (numberString.contains("e") || numberString.contains("E")) {
+			String exponentString = numberString.substring(numberString.toLowerCase().indexOf("e") + 1);
+			int exponent;
+			if (exponentString.length() == 0) {
+				exponent = 0;
+			} else {
+				exponent = Integer.parseInt(exponentString);
+			}
+			if (Float.MIN_EXPONENT < exponent && exponent < Float.MAX_EXPONENT) {
+				return new Float(numberString);
+			} else {
+				return new Double(numberString);
+			}
 		} else if (numberString.contains(".")) {
 			if (numberString.length() < 10) {
 				return new Float(numberString);

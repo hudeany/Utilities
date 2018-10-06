@@ -59,7 +59,7 @@ public class SecureDataStore {
 									JsonObject entryObject = new JsonObject();
 									entryObject.add("class", entryMap.getKey());
 									entryObject.add("name", entry.getKey());
-									entryObject.add("value", JsonSerializer.serialize(entry.getValue()).getValue());
+									entryObject.add("value", JsonSerializer.serialize(entry.getValue(), false, false, false, true).getValue());
 									jsonWriter.add(entryObject);
 								}
 							}
@@ -105,7 +105,7 @@ public class SecureDataStore {
 											dataEntries.put(className, new HashMap<String, Object>());
 										}
 										String entryName = (String) entryObject.get("name");
-										dataEntries.get(className).put(entryName, JsonSerializer.deserialize(Class.forName(className), (JsonObject) entryObject.get("value")));
+										dataEntries.get(className).put(entryName, JsonSerializer.deserialize((JsonObject) entryObject.get("value")));
 									}
 								}
 							}
