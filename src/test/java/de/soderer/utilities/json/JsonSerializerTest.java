@@ -24,9 +24,13 @@ public class JsonSerializerTest {
 		JsonNode dataNodeOriginal = JsonSerializer.serialize(new TestObjectSimple(), false, false, false, true);
 		String jsonStringOriginal = JsonWriter.getJsonItemString(dataNodeOriginal);
 		TestObjectSimple deserializedObject = (TestObjectSimple) JsonSerializer.deserialize(dataNodeOriginal);
-		JsonNode dataNodeDeserialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
-		String jsonStringDeserialized = JsonWriter.getJsonItemString(dataNodeDeserialized);
-		Assert.assertEquals(jsonStringOriginal, jsonStringDeserialized);
+		JsonNode dataNodeSerialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
+		String jsonStringSerialized = JsonWriter.getJsonItemString(dataNodeSerialized);
+		Assert.assertEquals(jsonStringOriginal, jsonStringSerialized);
+		TestObjectSimple deserializedObject2 = (TestObjectSimple) JsonSerializer.deserialize((JsonObject) JsonReader.readJsonItemString(jsonStringOriginal).getValue());
+		JsonNode dataNodeSerialized2 = JsonSerializer.serialize(deserializedObject2, false, false, false, true);
+		String jsonStringSerialized2 = JsonWriter.getJsonItemString(dataNodeSerialized2);
+		Assert.assertEquals(jsonStringOriginal, jsonStringSerialized2);
 	}
 	
 	@Test
@@ -38,12 +42,11 @@ public class JsonSerializerTest {
 	@Test
 	public void testComplexWithTypeData() throws Exception {
 		JsonNode dataNodeOriginal = JsonSerializer.serialize(new TestObjectComplex(), false, false, false, true);
-		@SuppressWarnings("unused")
 		String jsonStringOriginal = JsonWriter.getJsonItemString(dataNodeOriginal);
-		TestObjectComplex deserializedObject = (TestObjectComplex) JsonSerializer.deserialize(dataNodeOriginal);
-		JsonNode dataNodeDeserialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
+		TestObjectComplex deserializedObject = (TestObjectComplex) JsonSerializer.deserialize(JsonReader.readJsonItemString(jsonStringOriginal));
+		JsonNode dataNodeSerialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
 		@SuppressWarnings("unused")
-		String jsonStringDeserialized = JsonWriter.getJsonItemString(dataNodeDeserialized);
+		String jsonStringDeserialized = JsonWriter.getJsonItemString(dataNodeSerialized);
 		// Hashset item order may have changed
 		//Assert.assertEquals(jsonStringOriginal, jsonStringDeserialized);
 	}

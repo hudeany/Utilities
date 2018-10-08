@@ -3,6 +3,7 @@ package de.soderer.utilities.json;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,7 +31,7 @@ public class JsonSerializer {
 	 * @throws Exception
 	 */
 	public static JsonNode serialize(Object dataObject) throws Exception {
-		return serializeInternal(dataObject, false, false, false, false, new HashSet<>());
+		return serializeInternal(dataObject, false, false, false, false, new ArrayList<>());
 	}
 	
 	/**
@@ -45,10 +46,10 @@ public class JsonSerializer {
 	 * @throws Exception
 	 */
 	public static JsonNode serialize(Object dataObject, boolean excludeNull, boolean includeStatic, boolean includeTransient, boolean addObjectTypeInfo) throws Exception {
-		return serializeInternal(dataObject, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, new HashSet<>());
+		return serializeInternal(dataObject, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, new ArrayList<>());
 	}
 		
-	private static JsonNode serializeInternal(Object dataObject, boolean excludeNull, boolean includeStatic, boolean includeTransient, boolean addObjectTypeInfo, Set<Object> alreadyVisitedObjects) throws Exception {
+	private static JsonNode serializeInternal(Object dataObject, boolean excludeNull, boolean includeStatic, boolean includeTransient, boolean addObjectTypeInfo, List<Object> alreadyVisitedObjects) throws Exception {
 		if (dataObject == null) {
 			if (excludeNull) {
 				// This may only occur on top level of data
@@ -95,124 +96,140 @@ public class JsonSerializer {
 			if (Utilities.containsObject(alreadyVisitedObjects, dataObject)) {
 				throw new Exception("Cyclic reference detected. Cannot serialize object: " + dataObject.getClass() + " (Hashcode " + System.identityHashCode(dataObject) + ")");
 			} else {
+				// the same object may be included multiple times in parent objects, but not in child objects
 				alreadyVisitedObjects.add(dataObject);
-			}
 		
-			JsonArray jsonArray = new JsonArray();
-			int length = Array.getLength(dataObject);
-		    for (int i = 0; i < length; i ++) {
-		        Object item = Array.get(dataObject, i);
-		        if (item != null || !excludeNull) {
-		        	jsonArray.add(serializeInternal(item, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
-		        }
-		    }
-		    
-		    if (addObjectTypeInfo) {
-		    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
-		    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
-		    	jsonObjectWithTypeInfo.add("value", jsonArray);
-		    	return new JsonNode(jsonObjectWithTypeInfo);
-		    } else {
-		    	return new JsonNode(jsonArray);
-		    }
+				JsonArray jsonArray = new JsonArray();
+				int length = Array.getLength(dataObject);
+			    for (int i = 0; i < length; i ++) {
+			        Object item = Array.get(dataObject, i);
+			        if (item != null || !excludeNull) {
+			        	jsonArray.add(serializeInternal(item, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
+			        }
+			    }
+			    
+			    // the same object may be included multiple times in parent objects
+			    alreadyVisitedObjects.remove(dataObject);
+			    
+			    if (addObjectTypeInfo) {
+			    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
+			    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
+			    	jsonObjectWithTypeInfo.add("value", jsonArray);
+			    	return new JsonNode(jsonObjectWithTypeInfo);
+			    } else {
+			    	return new JsonNode(jsonArray);
+			    }
+			}
 		} else if (dataObject instanceof Iterable<?>) {
 			if (Utilities.containsObject(alreadyVisitedObjects, dataObject)) {
 				throw new Exception("Cyclic reference detected. Cannot serialize object: " + dataObject.getClass() + " (Hashcode " + System.identityHashCode(dataObject) + ")");
 			} else {
+				// the same object may be included multiple times in parent objects, but not in child objects
 				alreadyVisitedObjects.add(dataObject);
-			}
 			
-			JsonArray jsonArray = new JsonArray();
-			for (Object item : (Iterable<?>) dataObject) {
-				if (item != null || !excludeNull) {
-					jsonArray.add(serializeInternal(item, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
+				JsonArray jsonArray = new JsonArray();
+				for (Object item : (Iterable<?>) dataObject) {
+					if (item != null || !excludeNull) {
+						jsonArray.add(serializeInternal(item, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
+					}
 				}
+				
+			    // the same object may be included multiple times in parent objects
+			    alreadyVisitedObjects.remove(dataObject);
+			    
+			    if (addObjectTypeInfo) {
+			    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
+			    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
+			    	jsonObjectWithTypeInfo.add("value", jsonArray);
+			    	return new JsonNode(jsonObjectWithTypeInfo);
+			    } else {
+			    	return new JsonNode(jsonArray);
+			    }
 			}
-		    
-		    if (addObjectTypeInfo) {
-		    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
-		    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
-		    	jsonObjectWithTypeInfo.add("value", jsonArray);
-		    	return new JsonNode(jsonObjectWithTypeInfo);
-		    } else {
-		    	return new JsonNode(jsonArray);
-		    }
 		} else if (dataObject instanceof Map<?, ?>) {
 			if (Utilities.containsObject(alreadyVisitedObjects, dataObject)) {
 				throw new Exception("Cyclic reference detected. Cannot serialize object: " + dataObject.getClass() + " (Hashcode " + System.identityHashCode(dataObject) + ")");
 			} else {
+				// the same object may be included multiple times in parent objects, but not in child objects
 				alreadyVisitedObjects.add(dataObject);
-			}
 			
-			JsonArray jsonArray = new JsonArray();
-			for (Entry<?, ?> entry : ((Map<?, ?>) dataObject).entrySet()) {
-				JsonObject jsonObject = new JsonObject();
-				
-				if (entry.getKey() == null) {
-					jsonObject.add("key", null);
-				} else {
-					jsonObject.add("key", serializeInternal(entry.getKey(), excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
+				JsonArray jsonArray = new JsonArray();
+				for (Entry<?, ?> entry : ((Map<?, ?>) dataObject).entrySet()) {
+					JsonObject jsonObject = new JsonObject();
+					
+					if (entry.getKey() == null) {
+						jsonObject.add("key", null);
+					} else {
+						jsonObject.add("key", serializeInternal(entry.getKey(), excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
+					}
+					
+					if (entry.getValue() == null) {
+						jsonObject.add("value", null);
+					} else {
+						jsonObject.add("value", serializeInternal(entry.getValue(), excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
+					}
+					
+					jsonArray.add(jsonObject);
 				}
 				
-				if (entry.getValue() == null) {
-					jsonObject.add("value", null);
-				} else {
-					jsonObject.add("value", serializeInternal(entry.getValue(), excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
-				}
-				
-				jsonArray.add(jsonObject);
+			    // the same object may be included multiple times in parent objects
+			    alreadyVisitedObjects.remove(dataObject);
+			    
+			    if (addObjectTypeInfo) {
+			    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
+			    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
+			    	jsonObjectWithTypeInfo.add("value", jsonArray);
+			    	return new JsonNode(jsonObjectWithTypeInfo);
+			    } else {
+			    	return new JsonNode(jsonArray);
+			    }
 			}
-		    
-		    if (addObjectTypeInfo) {
-		    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
-		    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
-		    	jsonObjectWithTypeInfo.add("value", jsonArray);
-		    	return new JsonNode(jsonObjectWithTypeInfo);
-		    } else {
-		    	return new JsonNode(jsonArray);
-		    }
 		} else {
 			if (Utilities.containsObject(alreadyVisitedObjects, dataObject)) {
 				throw new Exception("Cyclic reference detected. Cannot serialize object: " + dataObject.getClass() + " (Hashcode " + System.identityHashCode(dataObject) + ")");
 			} else {
+				// the same object may be included multiple times in parent objects, but not in child objects
 				alreadyVisitedObjects.add(dataObject);
-			}
 			
-			JsonObject dataJsonObject = new JsonObject();
-			Class<?> dataClass = dataObject.getClass();
-			for (Field dataField : dataClass.getDeclaredFields()) {
-				boolean serializeField = true;
-				if ((dataField.getModifiers() & Modifier.TRANSIENT) == Modifier.TRANSIENT && !includeTransient) {
-					serializeField = false;
-				} else if ((dataField.getModifiers() & Modifier.STATIC) == Modifier.STATIC && !includeStatic) {
-					serializeField = false;
-				}
-				
-				if (serializeField) {
-					dataField.setAccessible(true);
-					String fieldName = dataField.getName();
-					Object fieldData = dataField.get(dataObject);
-					if (fieldData != null || !excludeNull) {
-						if (fieldData == null && addObjectTypeInfo) {
-							JsonObject jsonObjectWithTypeInfo = new JsonObject();
-					    	jsonObjectWithTypeInfo.add("class", dataField.getType().getName());
-					    	jsonObjectWithTypeInfo.add("value", null);
-							dataJsonObject.add(fieldName, jsonObjectWithTypeInfo);
-						} else {
-							dataJsonObject.add(fieldName, serializeInternal(fieldData, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
+				JsonObject dataJsonObject = new JsonObject();
+				Class<?> dataClass = dataObject.getClass();
+				for (Field dataField : dataClass.getDeclaredFields()) {
+					boolean serializeField = true;
+					if ((dataField.getModifiers() & Modifier.TRANSIENT) == Modifier.TRANSIENT && !includeTransient) {
+						serializeField = false;
+					} else if ((dataField.getModifiers() & Modifier.STATIC) == Modifier.STATIC && !includeStatic) {
+						serializeField = false;
+					}
+					
+					if (serializeField) {
+						dataField.setAccessible(true);
+						String fieldName = dataField.getName();
+						Object fieldData = dataField.get(dataObject);
+						if (fieldData != null || !excludeNull) {
+							if (fieldData == null && addObjectTypeInfo) {
+								JsonObject jsonObjectWithTypeInfo = new JsonObject();
+						    	jsonObjectWithTypeInfo.add("class", dataField.getType().getName());
+						    	jsonObjectWithTypeInfo.add("value", null);
+								dataJsonObject.add(fieldName, jsonObjectWithTypeInfo);
+							} else {
+								dataJsonObject.add(fieldName, serializeInternal(fieldData, excludeNull, includeStatic, includeTransient, addObjectTypeInfo, alreadyVisitedObjects).getValue());
+							}
 						}
 					}
 				}
+				
+			    // the same object may be included multiple times in parent objects
+			    alreadyVisitedObjects.remove(dataObject);
+			    
+			    if (addObjectTypeInfo) {
+			    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
+			    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
+			    	jsonObjectWithTypeInfo.add("value", dataJsonObject);
+			    	return new JsonNode(jsonObjectWithTypeInfo);
+			    } else {
+			    	return new JsonNode(dataJsonObject);
+			    }
 			}
-		    
-		    if (addObjectTypeInfo) {
-		    	JsonObject jsonObjectWithTypeInfo = new JsonObject();
-		    	jsonObjectWithTypeInfo.add("class", dataObject.getClass().getName());
-		    	jsonObjectWithTypeInfo.add("value", dataJsonObject);
-		    	return new JsonNode(jsonObjectWithTypeInfo);
-		    } else {
-		    	return new JsonNode(dataJsonObject);
-		    }
 		}
 	}
 	
@@ -263,8 +280,14 @@ public class JsonSerializer {
 	        	} else {
 	        		return ((Number) value).doubleValue();
 	        	}
+	        } else if (clazz == BigDecimal.class) {
+	        	return value;
 	        } else if (clazz == Character.TYPE || clazz == Character.class) {
-	        	return ((String) value).charAt(0);
+	        	if (value instanceof Character) {
+	        		return value;
+	        	} else {
+	        		return ((String) value).charAt(0);
+	        	}
 	        } else if (clazz == String.class) {
 	        	return (String) value;
 	        } else if (clazz.isEnum()) {
@@ -484,6 +507,8 @@ public class JsonSerializer {
 			        	} else {
 			        		field.set(object, ((Number) value).doubleValue());
 			        	}
+			        } else if (clazz == BigDecimal.class) {
+			        	field.set(object, value);
 			        } else if (clazz == Character.TYPE || clazz == Character.class) {
 			        	field.set(object, ((String) value).charAt(0));
 			        } else if (clazz == String.class) {
