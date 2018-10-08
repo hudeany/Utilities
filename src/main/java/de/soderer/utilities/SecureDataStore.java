@@ -22,8 +22,6 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.commons.lang3.StringUtils;
-
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
 import de.soderer.utilities.json.JsonReader.JsonToken;
@@ -153,7 +151,7 @@ public class SecureDataStore {
 	public Object getEntry(String entryName) {
 		for (Entry<String, Map<String, Object>> classEntry : dataEntries.entrySet()) {
 			for (Entry<String, Object> entry : classEntry.getValue().entrySet()) {
-				if (StringUtils.equals(entryName, entry.getKey())) {
+				if (StringUtilities.equals(entryName, entry.getKey())) {
 					return entry.getValue();
 				}
 			}
