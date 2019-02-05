@@ -91,16 +91,16 @@ public class HttpUtilities {
 		DELETE
 	}
 
+	public static final String CONTENT_ENCODING = "UTF-8";
+	
 	public static final String CONTENT_TYPE_JAVASCRIPT = "application/javascript";
+	public static final String CONTENT_TYPE_JSON = "application/json";
+	public static final String APPLICATION_JSON_UTF8 = CONTENT_TYPE_JSON + ";charset=" + CONTENT_ENCODING;
+	public static final String IMAGE_CONTENT_TYPE = "image";
+	
 	public static final String SECURE_HTTP_PROTOCOL_SIGN = "https://";
 	public static final String HTTP_PROTOCOL_SIGN = "http://";
 
-	public static final String IMAGE_CONTENT_TYPE = "image";
-	public static final String IMAGE_PATH_NO_PREVIEW = "/assets/core/images/facelift/no_preview.png";
-
-	public static final String CONTENT_TYPE_JSON = "application/json";
-	public static final String CONTENT_ENCODING = "UTF-8";
-	public static final String APPLICATION_JSON_UTF8 = CONTENT_TYPE_JSON + ";charset=" + CONTENT_ENCODING;
 
 	private static TrustManager TRUSTALLCERTS_TRUSTMANAGER = new X509TrustManager() {
 		@Override
