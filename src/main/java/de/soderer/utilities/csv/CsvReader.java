@@ -167,20 +167,26 @@ public class CsvReader extends BasicReader {
 				if (nextChar == '\r' || nextChar == '\n') {
 					if (nextValue.length() > 0 || previousCharacter == csvFormat.getSeparator()) {
 						returnList.add(parseValue(nextValue.toString()));
+						nextValue = new StringBuilder();
+						isQuotedString = false;
 					}
-
-					if (returnList.size() > 0) {
-						if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-							if (numberOfColumns > returnList.size() && csvFormat.isFillMissingTrailingColumnsWithNull()) {
-								while (returnList.size() < numberOfColumns) {
-									returnList.add(null);
-								}
-							} else {
-								throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readCsvLines);
+					
+					if (csvFormat.isIgnoreEmptyLines() && isBlank(returnList)) {
+						returnList = new ArrayList<>();
+					} else if (returnList.size() > 0) {
+						if (numberOfColumns == -1) {
+							numberOfColumns = returnList.size();
+							return returnList;
+						} else if (numberOfColumns == returnList.size()) {
+							return returnList;
+						} else if (numberOfColumns > returnList.size() && csvFormat.isFillMissingTrailingColumnsWithNull()) {
+							while (returnList.size() < numberOfColumns) {
+								returnList.add(null);
 							}
+							return returnList;
+						} else {
+							throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readCsvLines);
 						}
-						numberOfColumns = returnList.size();
-						return returnList;
 					}
 				} else if (nextChar == csvFormat.getSeparator()) {
 					returnList.add(parseValue(nextValue.toString()));
@@ -211,19 +217,23 @@ public class CsvReader extends BasicReader {
 			if (nextValue.length() > 0 || previousCharacter == csvFormat.getSeparator()) {
 				returnList.add(parseValue(nextValue.toString()));
 			}
-
-			if (returnList.size() > 0) {
-				if (numberOfColumns != -1 && numberOfColumns != returnList.size()) {
-					if (numberOfColumns > returnList.size() && csvFormat.isFillMissingTrailingColumnsWithNull()) {
-						while (returnList.size() < numberOfColumns) {
-							returnList.add(null);
-						}
-					} else {
-						throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readCsvLines);
+			
+			if (csvFormat.isIgnoreEmptyLines() && isBlank(returnList)) {
+				return null;
+			} else if (returnList.size() > 0) {
+				if (numberOfColumns == -1) {
+					numberOfColumns = returnList.size();
+					return returnList;
+				} else if (numberOfColumns == returnList.size()) {
+					return returnList;
+				} else if (numberOfColumns > returnList.size() && csvFormat.isFillMissingTrailingColumnsWithNull()) {
+					while (returnList.size() < numberOfColumns) {
+						returnList.add(null);
 					}
+					return returnList;
+				} else {
+					throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readCsvLines);
 				}
-				numberOfColumns = returnList.size();
-				return returnList;
 			} else {
 				close();
 				return null;
@@ -292,6 +302,17 @@ public class CsvReader extends BasicReader {
 		}
 
 		return returnValue;
+	}
+
+	private boolean isBlank(List<String> list) {
+		if (list != null) {
+			for (String item : list) {
+				if (item != null && item.length() > 0 && item.trim().length() > 0) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	/**

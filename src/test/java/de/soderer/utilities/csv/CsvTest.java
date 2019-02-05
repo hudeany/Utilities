@@ -7,10 +7,6 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.soderer.utilities.csv.CsvFormat;
-import de.soderer.utilities.csv.CsvReader;
-import de.soderer.utilities.csv.CsvWriter;
-
 public class CsvTest {
 
 	@Test
@@ -434,6 +430,69 @@ public class CsvTest {
 			Assert.fail("Missing expected exception");
 		} catch (Exception e) {
 			Assert.assertTrue(e.getMessage().contains("line 1"));
+		}
+	}
+
+	@Test
+	public void testIgnoreEmptyRows() {
+		CsvReader reader = null;
+		try {
+			String csvData = "abc;def;1\nabc;def;2\n\n;;\nabc;def;3\n \nabc;def;4\n";
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), new CsvFormat().setSeparator(';').setIgnoreEmptyLines(true));
+			List<List<String>> dataLines = reader.readAll();
+			Assert.assertEquals(dataLines.size(), 4);
+			Assert.assertEquals("abc", dataLines.get(0).get(0));
+			Assert.assertEquals("def", dataLines.get(0).get(1));
+			Assert.assertEquals("1", dataLines.get(0).get(2));
+			Assert.assertEquals("abc", dataLines.get(1).get(0));
+			Assert.assertEquals("def", dataLines.get(1).get(1));
+			Assert.assertEquals("2", dataLines.get(1).get(2));
+			Assert.assertEquals("abc", dataLines.get(2).get(0));
+			Assert.assertEquals("def", dataLines.get(2).get(1));
+			Assert.assertEquals("3", dataLines.get(2).get(2));
+			Assert.assertEquals("abc", dataLines.get(3).get(0));
+			Assert.assertEquals("def", dataLines.get(3).get(1));
+			Assert.assertEquals("4", dataLines.get(3).get(2));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+		}
+	}
+
+	@Test
+	public void testDontIgnoreEmptyRows() {
+		CsvReader reader = null;
+		try {
+			String csvData = "abc;def;1\nabc;def;2\n;;\nabc;def;3\nabc;def;4\n";
+			reader = new CsvReader(new ByteArrayInputStream(csvData.getBytes("UTF-8")), new CsvFormat().setSeparator(';').setIgnoreEmptyLines(false));
+			List<List<String>> dataLines = reader.readAll();
+			Assert.assertEquals(dataLines.size(), 5);
+			Assert.assertEquals("abc", dataLines.get(0).get(0));
+			Assert.assertEquals("def", dataLines.get(0).get(1));
+			Assert.assertEquals("1", dataLines.get(0).get(2));
+			Assert.assertEquals("abc", dataLines.get(1).get(0));
+			Assert.assertEquals("def", dataLines.get(1).get(1));
+			Assert.assertEquals("2", dataLines.get(1).get(2));
+			Assert.assertEquals("", dataLines.get(2).get(0));
+			Assert.assertEquals("", dataLines.get(2).get(1));
+			Assert.assertEquals("", dataLines.get(2).get(2));
+			Assert.assertEquals("abc", dataLines.get(3).get(0));
+			Assert.assertEquals("def", dataLines.get(3).get(1));
+			Assert.assertEquals("3", dataLines.get(3).get(2));
+			Assert.assertEquals("abc", dataLines.get(4).get(0));
+			Assert.assertEquals("def", dataLines.get(4).get(1));
+			Assert.assertEquals("4", dataLines.get(4).get(2));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
 		}
 	}
 }

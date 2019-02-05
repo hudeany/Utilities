@@ -41,6 +41,9 @@ public class CsvFormat {
 	
 	/** Linebreak for output only. */
 	private String lineBreak = DEFAULT_LINEBREAK;
+	
+	/** Ignore empty lines */
+	private boolean ignoreEmptyLines = false;
 
 	/**
 	 * The Enum QuoteMode.
@@ -181,6 +184,15 @@ public class CsvFormat {
 
 	public CsvFormat setAlwaysTrim(boolean alwaysTrim) {
 		this.alwaysTrim = alwaysTrim;
+		return this;
+	}
+
+	public boolean isIgnoreEmptyLines() {
+		return ignoreEmptyLines;
+	}
+
+	public CsvFormat setIgnoreEmptyLines(boolean ignoreEmptyLines) {
+		this.ignoreEmptyLines = ignoreEmptyLines;
 		return this;
 	}
 
