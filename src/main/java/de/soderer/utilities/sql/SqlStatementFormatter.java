@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
-import org.apache.commons.lang3.StringUtils;
-
 import de.soderer.utilities.DbUtilities;
 import de.soderer.utilities.DbUtilities.DbVendor;
 
@@ -42,7 +40,7 @@ public class SqlStatementFormatter {
 	}
 
 	public String format(String selectStatement) {
-		if (StringUtils.isBlank(selectStatement)) {
+		if (isBlank(selectStatement)) {
 			return null;
 		} else {
 			selectStatement = selectStatement.replace("\r\n", "\n").replace("\r", "\n").trim();
@@ -56,7 +54,7 @@ public class SqlStatementFormatter {
 			joinTrailingCommas(lines);
 			joinOperators(lines);
 			joinFunctionBrakets(lines);
-			if (StringUtils.isEmpty(indentation) && StringUtils.isEmpty(lineBreak)) {
+			if (isEmpty(indentation) && isEmpty(lineBreak)) {
 				return joinLines(lines);
 			} else {
 				return indentAndJoinLines(lines, indentation, lineBreak);
@@ -64,8 +62,25 @@ public class SqlStatementFormatter {
 		}
 	}
 
+	private boolean isEmpty(final String value) {
+		return value == null || value.length() == 0;
+	}
+
+	private boolean isBlank(final String value) {
+		if (value == null || value.length() == 0) {
+			return true;
+		} else {
+			for (int i = 0; i < value.length(); i++) {
+				if (!Character.isWhitespace(value.charAt(i))) {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
 	private List<String> splitLines(final String selectStatement) {
-		if (StringUtils.isBlank(selectStatement)) {
+		if (isBlank(selectStatement)) {
 			return null;
 		} else {
 			final List<String> lines = new ArrayList<>();
@@ -323,10 +338,10 @@ public class SqlStatementFormatter {
 	}
 
 	private String indentAndJoinLines(final List<String> lines, String indentation, String lineBreak) {
-		if (StringUtils.isEmpty(indentation)) {
+		if (isEmpty(indentation)) {
 			indentation = "";
 		}
-		if (StringUtils.isEmpty(lineBreak)) {
+		if (isEmpty(lineBreak)) {
 			lineBreak = "";
 		}
 
@@ -368,115 +383,5 @@ public class SqlStatementFormatter {
 			}
 		}
 		return builder.toString();
-	}
-
-	public String format(final SelectStatement selectStatement) {
-		if (StringUtils.isEmpty(indentation) && StringUtils.isEmpty(lineBreak)) {
-			final StringBuilder returnValue = new StringBuilder();
-			if (selectStatement.getWithClauses() != null && selectStatement.getWithClauses().size() > 0) {
-				returnValue.append("WITH ");
-				returnValue.append(StringUtils.join(selectStatement.getWithClauses(), ","));
-				returnValue.append(" ");
-			}
-			returnValue.append("SELECT ");
-			boolean isFirstNamedExpression = true;
-			for (final NamedExpression namedFieldDefinition : selectStatement.getFields()) {
-				if (!isFirstNamedExpression) {
-					returnValue.append(",");
-				}
-				returnValue.append(format(namedFieldDefinition));
-				isFirstNamedExpression = false;
-			}
-			returnValue.append(" FROM ");
-			returnValue.append(StringUtils.join(selectStatement.getFromTables(), ","));
-			if (selectStatement.getJoinClauses() != null && selectStatement.getJoinClauses().size() > 0) {
-				returnValue.append(StringUtils.join(selectStatement.getJoinClauses(), " "));
-			}
-			if (StringUtils.isNotBlank(selectStatement.getWhereClause())) {
-				returnValue.append(" WHERE ");
-				returnValue.append(selectStatement.getWhereClause());
-			}
-			if (selectStatement.getGroupBy() != null && selectStatement.getGroupBy().size() > 0) {
-				returnValue.append(" GROUP BY ");
-				returnValue.append(StringUtils.join(selectStatement.getGroupBy(), ", "));
-			}
-			if (StringUtils.isNotBlank(selectStatement.getHavingClause())) {
-				returnValue.append(" HAVING ");
-				returnValue.append(selectStatement.getHavingClause());
-			}
-			if (selectStatement.getOrderBy() != null && selectStatement.getOrderBy().size() > 0) {
-				returnValue.append(" SORT BY ");
-				returnValue.append(StringUtils.join(selectStatement.getOrderBy(), ", "));
-			}
-			return returnValue.toString();
-		} else {
-			final StringBuilder returnValue = new StringBuilder();
-			if (selectStatement.getWithClauses() != null && selectStatement.getWithClauses().size() > 0) {
-				returnValue.append("WITH");
-				returnValue.append(lineBreak);
-				returnValue.append(indentation);
-				returnValue.append(StringUtils.join(selectStatement.getWithClauses(), ",\n" + indentation));
-				returnValue.append(lineBreak);
-			}
-			returnValue.append("SELECT");
-			returnValue.append(lineBreak);
-			returnValue.append(indentation);
-			boolean isFirstNamedExpression = true;
-			for (final NamedExpression namedFieldDefinition : selectStatement.getFields()) {
-				if (!isFirstNamedExpression) {
-					returnValue.append("," + lineBreak + indentation);
-				}
-				returnValue.append(format(namedFieldDefinition));
-				isFirstNamedExpression = false;
-			}
-			returnValue.append(lineBreak);
-			returnValue.append("FROM");
-			returnValue.append(lineBreak);
-			returnValue.append(indentation);
-			returnValue.append(StringUtils.join(selectStatement.getFromTables(), "," + lineBreak + indentation));
-			if (selectStatement.getJoinClauses() != null && selectStatement.getJoinClauses().size() > 0) {
-				returnValue.append(lineBreak);
-				returnValue.append(StringUtils.join(selectStatement.getJoinClauses(), lineBreak));
-			}
-			if (StringUtils.isNotBlank(selectStatement.getWhereClause())) {
-				returnValue.append(lineBreak);
-				returnValue.append("WHERE ");
-				returnValue.append(selectStatement.getWhereClause());
-			}
-			if (selectStatement.getGroupBy() != null && selectStatement.getGroupBy().size() > 0) {
-				returnValue.append(lineBreak);
-				returnValue.append("GROUP BY");
-				returnValue.append(lineBreak);
-				returnValue.append(indentation);
-				returnValue.append(StringUtils.join(selectStatement.getGroupBy(), "," + lineBreak + indentation));
-			}
-			if (StringUtils.isNotBlank(selectStatement.getHavingClause())) {
-				returnValue.append(lineBreak);
-				returnValue.append("HAVING ");
-				returnValue.append(selectStatement.getHavingClause());
-			}
-			if (selectStatement.getOrderBy() != null && selectStatement.getOrderBy().size() > 0) {
-				returnValue.append(lineBreak);
-				returnValue.append("SORT BY");
-				returnValue.append(lineBreak);
-				returnValue.append(indentation);
-				returnValue.append(StringUtils.join(selectStatement.getOrderBy(), "," + lineBreak + indentation));
-			}
-			return returnValue.toString();
-		}
-	}
-
-	private String format(final NamedExpression namedFieldDefinition) {
-		String expressionString;
-		if (namedFieldDefinition.getExpression() instanceof SelectStatement) {
-			expressionString = format((SelectStatement) namedFieldDefinition.getExpression());
-		} else {
-			expressionString = (String) namedFieldDefinition.getExpression();
-		}
-		final StringBuilder returnValue = new StringBuilder(expressionString);
-		if (StringUtils.isNotBlank(namedFieldDefinition.getName())) {
-			returnValue.append(" AS \"").append(namedFieldDefinition.getName()).append("\"");
-		}
-		return returnValue.toString();
 	}
 }
