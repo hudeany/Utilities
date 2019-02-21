@@ -12,22 +12,22 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 	@SuppressWarnings("unused")
 	private static final transient Logger logger = Logger.getLogger(DualProgressShowingModalDialog.class);
 
-	public DualProgressShowingModalDialog(Shell parentShell, String title) {
+	public DualProgressShowingModalDialog(final Shell parentShell, final String title) {
 		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 
-	public DualProgressShowingModalDialog(Shell parentShell, int style, String title) {
+	public DualProgressShowingModalDialog(final Shell parentShell, final int style, final String title) {
 		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 
-	public void showSubItemProgress(long subItemsToDo, long subItemsDone) {
+	public void showSubItemProgress(final long subItemsToDo, final long subItemsDone) {
 		final long subItemToDoParam = subItemsToDo;
 		final long subItemDoneParam = subItemsDone;
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				if (progressDialog instanceof DualProgressDialog) {
-					DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
 						if (subItemToDoParam > 0) {
 							dualProgressDialog.setSubProgress(subItemToDoParam, subItemDoneParam);
@@ -45,7 +45,7 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 			@Override
 			public void run() {
 				if (progressDialog instanceof DualProgressDialog) {
-					DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
 						dualProgressDialog.setSubItemTitle(subItemTitle);
 					}
@@ -56,25 +56,17 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 
 	@Override
 	public void showUnlimitedSubProgress() {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
-	public void showItemStart(String itemName) {
-		// TODO Auto-generated method stub
-
+	public void showItemStart(final String itemName) {
 	}
 
 	@Override
-	public void showItemProgress(Date itemStart, long subItemToDo, long subItemDone) {
-		// TODO Auto-generated method stub
-
+	public void showItemProgress(final Date itemStart, final long subItemToDo, final long subItemDone) {
 	}
 
 	@Override
-	public void showItemDone(Date itemStart, Date itemEnd, long subItemsDone) {
-		// TODO Auto-generated method stub
-
+	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
 	}
 }

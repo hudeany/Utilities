@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.io.FileUtils;
@@ -31,10 +32,10 @@ import de.soderer.utilities.Utilities;
 public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {
 	private static final transient Logger logger = Logger.getLogger(UpdateApplicationDialog.class);
 
-	private String text;
-	private String downloadUrl;
+	private final String text;
+	private final String downloadUrl;
 	private boolean dailyUpdateCheck;
-	private X509Certificate[] trustedCertificates;
+	private final Collection<X509Certificate> trustedCertificates;
 	private SecureDataStore secureDataStore = null;
 	private File keystoreFile = null;
 	private static final byte[] keystoreFileSalt = "q34;kUGh@78".getBytes(Charset.forName("UTF-8"));
@@ -42,7 +43,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private char[] keyStorePassword = null;
 	private boolean storedCredentialsChanged = false;
 
-	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl, boolean dailyUpdateCheck, X509Certificate[] trustedCertificates) {
+	public UpdateApplicationDialog(final Shell shell, final String title, final String text, final String downloadUrl, final boolean dailyUpdateCheck, final Collection<X509Certificate> trustedCertificates) {
 		super(shell, title);
 
 		this.text = text;
@@ -51,8 +52,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		this.trustedCertificates = trustedCertificates;
 	}
 
-	public UpdateApplicationDialog(Shell shell, String title, String text, String downloadUrl, boolean dailyUpdateCheck, X509Certificate[] trustedCertificates, File keystoreFile,
-			char[] keystorePassword) throws Exception {
+	public UpdateApplicationDialog(final Shell shell, final String title, final String text, final String downloadUrl, final boolean dailyUpdateCheck, final Collection<X509Certificate> trustedCertificates, final File keystoreFile,
+			final char[] keystorePassword) throws Exception {
 		super(shell, title);
 
 		this.text = text;
@@ -77,46 +78,46 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	}
 
 	@Override
-	protected void createComponents(Shell shell) throws Exception {
+	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, false));
 
-		Composite composite = new Composite(shell, SWT.NONE);
+		final Composite composite = new Composite(shell, SWT.NONE);
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 
-		Label label = new Label(composite, SWT.FILL);
+		final Label label = new Label(composite, SWT.FILL);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
 
-		Button dailyUpdateCheckCheckBox = new Button(composite, SWT.CHECK);
+		final Button dailyUpdateCheckCheckBox = new Button(composite, SWT.CHECK);
 		dailyUpdateCheckCheckBox.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, true, 2, 1));
 		dailyUpdateCheckCheckBox.setSelection(dailyUpdateCheck);
 		dailyUpdateCheckCheckBox.setText(LangResources.get("dailyUpdateCheck"));
 		dailyUpdateCheckCheckBox.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				dailyUpdateCheck = ((Button) e.widget).getSelection();
 			}
 		});
 
-		Button updateButton = new Button(composite, SWT.PUSH);
+		final Button updateButton = new Button(composite, SWT.PUSH);
 		updateButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		updateButton.setText(LangResources.get("update"));
 		updateButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				updateApplication();
 				setReturnValue(true);
 				getParent().close();
 			}
 		});
 
-		Button cancelButton = new Button(composite, SWT.PUSH);
+		final Button cancelButton = new Button(composite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				setReturnValue(false);
 				getParent().close();
 			}
@@ -127,27 +128,27 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 
 	private void updateApplication() {
 		try {
-			String jarFilePath = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
-			File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
+			final String jarFilePath = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+			final File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 
 			if (Utilities.isNotBlank(jarFilePath)) {
 				boolean tryDownloadAgain = true;
 				while (tryDownloadAgain) {
 					tryDownloadAgain = false;
 					try {
-						boolean success = downloadUpdateFile(downloadTempFile, downloadUrl);
+						final boolean success = downloadUpdateFile(downloadTempFile, downloadUrl);
 						if (!success) {
 							// download stopped by user
 							return;
 						} else if (trustedCertificates != null) {
-							boolean isVerifiedJar = CryptographicUtilities.verifyJarSignature(downloadTempFile, trustedCertificates);
+							final boolean isVerifiedJar = CryptographicUtilities.verifyJarSignature(downloadTempFile, trustedCertificates);
 							if (!isVerifiedJar) {
 								if (!showQuestion(LangResources.get("error.invalidOrNotTrustedFileSignature"), "yes", "no")) {
 									return;
 								}
 							}
 						}
-					} catch (UserError e) {
+					} catch (final UserError e) {
 						showMessage(LangResources.get("menu.updateFileDownload"), e.getMessage());
 						if (e.getReason() == Reason.UnauthenticatedOrUnauthorized) {
 							tryDownloadAgain = true;
@@ -155,7 +156,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 						} else {
 							return;
 						}
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
 							showMessage(LangResources.get("menu.updateFileDownload"), ((UserError) e.getCause()).getMessage());
 							if (((UserError) e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
@@ -172,7 +173,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				}
 
 				if (SystemUtilities.isWindowsSystem()) {
-					File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
+					final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
 
 					// Create Batchfile
 					FileUtils.write(batchFile,
@@ -185,14 +186,14 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					Runtime.getRuntime().exec("cmd /c start /B " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
 				} else if (SystemUtilities.isLinuxSystem()) {
-					File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".sh");
+					final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".sh");
 
 					// Create Batchfile
 					FileUtils.write(batchFile,
 							"#!/bin/bash\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath
-									+ "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n"
-									+ "fi\n" + "fi\n" + "fi\n" + "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n" + "if ! [ -f \"" + downloadTempFile.getAbsolutePath()
-									+ "\" ]; then\n" + "java -jar \"" + jarFilePath + "\"\n" + "rm \"" + batchFile.getAbsolutePath() + "\"\n" + "fi\n");
+							+ "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n"
+							+ "fi\n" + "fi\n" + "fi\n" + "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n" + "if ! [ -f \"" + downloadTempFile.getAbsolutePath()
+							+ "\" ]; then\n" + "java -jar \"" + jarFilePath + "\"\n" + "rm \"" + batchFile.getAbsolutePath() + "\"\n" + "fi\n");
 
 					Runtime.getRuntime().exec("sh " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
@@ -200,12 +201,12 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			} else {
 				new QuestionDialog(getParent(), getText(), LangResources.get("cannotUpdate", "Jar file not found")).open();
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			logger.error(LangResources.get("cannotUpdate", e.getMessage()), e);
 		}
 	}
 
-	public boolean downloadUpdateFile(File downloadTempFile, String downloadUrl) throws Exception {
+	public boolean downloadUpdateFile(final File downloadTempFile, String downloadUrl) throws Exception {
 		try {
 			downloadTempFile.delete();
 			if (downloadUrl.contains("<username>") && downloadUrl.contains("<password>")) {
@@ -213,9 +214,9 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(storedDownloadCredentials.getUserName(), "UTF-8"));
 					downloadUrl = downloadUrl.replace("<password>", URLEncoder.encode(new String(storedDownloadCredentials.getPassword()), "UTF-8"));
 				} else {
-					CredentialsDialog credentialsDialog = new CredentialsDialog(getParent(), getText(), LangResources.get("enterDownloadCredentials"));
+					final CredentialsDialog credentialsDialog = new CredentialsDialog(getParent(), getText(), LangResources.get("enterDownloadCredentials"));
 					credentialsDialog.setKeepInMemoryText(LangResources.get("storeUpdateAccount"));
-					Boolean success = credentialsDialog.open();
+					final Boolean success = credentialsDialog.open();
 					if (success) {
 						storedCredentialsChanged = true;
 						downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(credentialsDialog.getUsername(), "UTF-8"));
@@ -235,8 +236,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					if (storedDownloadCredentials != null) {
 						downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(storedDownloadCredentials.getUserName(), "UTF-8"));
 					} else {
-						SimpleInputDialog usernameDialog = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterDownloadUserName"));
-						String username = usernameDialog.open();
+						final SimpleInputDialog usernameDialog = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterDownloadUserName"));
+						final String username = usernameDialog.open();
 						if (Utilities.isNotBlank(username)) {
 							downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(username, "UTF-8"));
 						} else {
@@ -248,8 +249,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					if (storedDownloadCredentials != null) {
 						downloadUrl = downloadUrl.replace("<password>", URLEncoder.encode(new String(storedDownloadCredentials.getPassword()), "UTF-8"));
 					} else {
-						PasswordDialog passwordDialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterDownloadPassword"));
-						char[] password = passwordDialog.open();
+						final PasswordDialog passwordDialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterDownloadPassword"));
+						final char[] password = passwordDialog.open();
 						if (password != null) {
 							downloadUrl = downloadUrl.replace("<password>", URLEncoder.encode(new String(password), "UTF-8"));
 						} else {
@@ -273,7 +274,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				}
 			}
 
-			FileDownloadWorker worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile);
+			final FileDownloadWorker worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile);
 			progressDialog = new ProgressDialog(getParent(), LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"));
 			new Thread(worker).start();
 			if (progressDialog.open()) {
@@ -295,7 +296,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					} else {
 						if (storedDownloadCredentials != null) {
 							secureDataStore = new SecureDataStore();
-							
+
 							secureDataStore.addEntry(Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials", storedDownloadCredentials);
 
 							keyStorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
@@ -307,7 +308,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			} else {
 				return false;
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
 				throw (UserError) e.getCause();
 			} else {
@@ -316,7 +317,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		}
 	}
 
-	public SecureDataStore openKeyStore(Shell shell, File keystoreFile, char[] password) {
+	public SecureDataStore openKeyStore(final Shell shell, final File keystoreFile, char[] password) {
 		if (keystoreFile.exists()) {
 			SecureDataStore keyStore = null;
 
@@ -326,14 +327,14 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					password = "".toCharArray();
 					keyStore = new SecureDataStore();
 					keyStore.load(keystoreFile, password, keystoreFileSalt);
-				} catch (Exception e1) {
+				} catch (final Exception e1) {
 					password = null;
 					keyStore = null;
 				}
 			}
 
 			if (password == null && keyStore == null) {
-				PasswordDialog dialog = new PasswordDialog(shell, LangResources.get("window_title"), LangResources.get("enterKeystorePassword"));
+				final PasswordDialog dialog = new PasswordDialog(shell, LangResources.get("window_title"), LangResources.get("enterKeystorePassword"));
 				dialog.setKeepInMemoryText(LangResources.get("keepPasswordInMemory"));
 				password = dialog.open();
 				if (dialog.keepInMemory()) {
@@ -345,7 +346,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				try {
 					keyStore = new SecureDataStore();
 					keyStore.load(keystoreFile, password, keystoreFileSalt);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					e.printStackTrace();
 					new QuestionDialog(shell, getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).open();
 					keyStore = null;

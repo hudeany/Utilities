@@ -19,6 +19,7 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,8 +30,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
+
+import org.apache.commons.lang3.StringUtils;
 
 import de.soderer.utilities.DbColumnType.SimpleDataType;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
@@ -48,20 +52,174 @@ public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_SQLITE = "https://bitbucket.org/xerial/sqlite-jdbc/downloads";
 	public static final String DOWNLOAD_LOCATION_HSQL = "http://hsqldb.org/download";
 	public static final String DOWNLOAD_LOCATION_MSSQL = "https://msdn.microsoft.com/de-de/library/mt683464(v=sql.110).aspx";
-	
+
+	public static final List<String> SQL_OPERATORS = Arrays.asList(new String[] { "+", "-", "*", "/", "%", "&", "|",
+			"^", "=", ">", "<", ">=", "<=", "<>", "+=", "-=", "*=", "/=", "%=", "&=", "||", "^-=", "|*=" });
+
+	public static final List<String> RESERVED_WORDS_ORACLE = Arrays.asList(new String[] { "access", "account",
+			"activate", "add", "admin", "advise", "after", "all", "all_rows", "allocate", "alter", "analyze", "and",
+			"any", "archive", "archivelog", "array", "as", "asc", "at", "audit", "authenticated", "authorization",
+			"autoextend", "automatic", "backup", "become", "before", "begin", "between", "bfile", "bitmap", "blob",
+			"block", "body", "by", "cache", "cache_instances", "cancel", "cascade", "cast", "cfile", "chained",
+			"change", "char", "char_cs", "character", "check", "checkpoint", "choose", "chunk", "clear", "clob",
+			"clone", "close", "close_cached_open_cursors", "cluster", "coalesce", "column", "columns", "comment",
+			"commit", "committed", "compatibility", "compile", "complete", "composite_limit", "compress", "compute",
+			"connect", "connect_time", "constraint", "constraints", "contents", "continue", "controlfile", "convert",
+			"cost", "cpu_per_call", "cpu_per_session", "create", "current", "current_schema", "curren_user", "cursor",
+			"cycle", "dangling", "database", "datafile", "datafiles", "dataobjno", "date", "dba", "dbhigh", "dblow",
+			"dbmac", "deallocate", "debug", "dec", "decimal", "declare", "default", "deferrable", "deferred", "degree",
+			"delete", "deref", "desc", "directory", "disable", "disconnect", "dismount", "distinct", "distributed",
+			"dml", "double", "drop", "dump", "each", "else", "enable", "end", "enforce", "entry", "escape", "except",
+			"exceptions", "exchange", "excluding", "exclusive", "execute", "exists", "expire", "explain", "extent",
+			"extents", "externally", "failed_login_attempts", "false", "fast", "file", "first_rows", "flagger", "float",
+			"flob", "flush", "for", "force", "foreign", "freelist", "freelists", "from", "full", "function", "global",
+			"globally", "global_name", "grant", "group", "groups", "hash", "hashkeys", "having", "header", "heap",
+			"identified", "idgenerators", "idle_time", "if", "immediate", "in", "including", "increment", "index",
+			"indexed", "indexes", "indicator", "ind_partition", "initial", "initially", "initrans", "insert",
+			"instance", "instances", "instead", "int", "integer", "intermediate", "intersect", "into", "is",
+			"isolation", "isolation_level", "keep", "key", "kill", "label", "layer", "less", "level", "library", "like",
+			"limit", "link", "list", "lob", "local", "lock", "locked", "log", "logfile", "logging",
+			"logical_reads_per_call", "logical_reads_per_session", "long", "manage", "master", "max", "maxarchlogs",
+			"maxdatafiles", "maxextents", "maxinstances", "maxlogfiles", "maxloghistory", "maxlogmembers", "maxsize",
+			"maxtrans", "maxvalue", "min", "member", "minimum", "minextents", "minus", "minvalue", "mlslabel",
+			"mls_label_format", "mode", "modify", "mount", "move", "mts_dispatchers", "multiset", "national", "nchar",
+			"nchar_cs", "nclob", "needed", "nested", "network", "new", "next", "noarchivelog", "noaudit", "nocache",
+			"nocompress", "nocycle", "noforce", "nologging", "nomaxvalue", "nominvalue", "none", "noorder",
+			"nooverride", "noparallel", "noreverse", "normal", "nosort", "not", "nothing", "nowait", "null", "number",
+			"numeric", "nvarchar2", "object", "objno", "objno_reuse", "of", "off", "offline", "oid", "oidindex", "old",
+			"on", "online", "only", "opcode", "open", "optimal", "optimizer_goal", "option", "or", "order",
+			"organization", "oslabel", "overflow", "own", "package", "parallel", "partition", "password",
+			"password_grace_time", "password_life_time", "password_lock_time", "password_reuse_max",
+			"password_reuse_time", "password_verify_function", "pctfree", "pctincrease", "pctthreshold", "pctused",
+			"pctversion", "percent", "permanent", "plan", "plsql_debug", "post_transaction", "precision", "preserve",
+			"primary", "prior", "private", "private_sga", "privilege", "privileges", "procedure", "profile", "public",
+			"purge", "queue", "quota", "range", "raw", "rba", "read", "readup", "real", "rebuild", "recover",
+			"recoverable", "recovery", "ref", "references", "referencing", "refresh", "rename", "replace", "reset",
+			"resetlogs", "resize", "resource", "restricted", "return", "returning", "reuse", "reverse", "revoke",
+			"role", "roles", "rollback", "row", "rowid", "rownum", "rows", "rule", "sample", "savepoint", "sb4",
+			"scan_instances", "schema", "scn", "scope", "sd_all", "sd_inhibit", "sd_show", "segment", "seg_block",
+			"seg_file", "select", "sequence", "serializable", "session", "session_cached_cursors", "sessions_per_user",
+			"set", "share", "shared", "shared_pool", "shrink", "size", "skip", "skip_unusable_indexes", "smallint",
+			"snapshot", "some", "sort", "specification", "split", "sql_trace", "standby", "start", "statement_id",
+			"statistics", "stop", "storage", "store", "structure", "successful", "switch", "sys_op_enforce_not_null$",
+			"sys_op_ntcimg$", "synonym", "sysdate", "sysdba", "sysoper", "system", "table", "tables", "tablespace",
+			"tablespace_no", "tabno", "temporary", "than", "the", "then", "thread", "timestamp", "time", "to",
+			"toplevel", "trace", "tracing", "transaction", "transitional", "trigger", "triggers", "true", "truncate",
+			"tx", "type", "ub2", "uba", "uid", "unarchived", "undo", "union", "unique", "unlimited", "unlock",
+			"unrecoverable", "until", "unusable", "unused", "updatable", "update", "usage", "use", "user", "using",
+			"validate", "validation", "value", "values", "varchar", "varchar2", "varying", "view", "when", "whenever",
+			"where", "with", "without", "work", "write", "writedown", "writeup", "xid", "year", "zone" });
+
+	public static final List<String> RESERVED_WORDS_MYSSQL_MARIADB = Arrays.asList(new String[] { "accessible",
+			"account", "action", "add", "after", "against", "aggregate", "algorithm", "all", "alter", "always",
+			"analyse", "analyze", "and", "any", "as", "asc", "ascii", "asensitive", "at", "autoextend_size",
+			"auto_increment", "avg", "avg_row_length", "backup", "before", "begin", "between", "bigint", "binary",
+			"binlog", "bit", "blob", "block", "bool", "boolean", "both", "btree", "by", "byte", "cache", "call",
+			"cascade", "cascaded", "case", "catalog_name", "chain", "change", "changed", "channel", "char", "character",
+			"charset", "check", "checksum", "cipher", "class_origin", "client", "close", "coalesce", "code", "collate",
+			"collation", "column", "columns", "column_format", "column_name", "comment", "commit", "committed",
+			"compact", "completion", "compressed", "compression", "concurrent", "condition", "connection", "consistent",
+			"constraint", "constraint_catalog", "constraint_name", "constraint_schema", "contains", "context",
+			"continue", "convert", "cpu", "create", "cross", "cube", "current", "current_date", "current_time",
+			"current_timestamp", "current_user", "cursor", "cursor_name", "data", "database", "databases", "datafile",
+			"date", "datetime", "day", "day_hour", "day_microsecond", "day_minute", "day_second", "deallocate", "dec",
+			"decimal", "declare", "default", "default_auth", "definer", "delayed", "delay_key_write", "delete", "desc",
+			"describe", "des_key_file", "deterministic", "diagnostics", "directory", "disable", "discard", "disk",
+			"distinct", "distinctrow", "div", "do", "double", "drop", "dual", "dumpfile", "duplicate", "dynamic",
+			"each", "else", "elseif", "enable", "enclosed", "encryption", "end", "ends", "engine", "engines", "enum",
+			"error", "errors", "escape", "escaped", "event", "events", "every", "exchange", "execute", "exists", "exit",
+			"expansion", "expire", "explain", "export", "extended", "extent_size", "false", "fast", "faults", "fetch",
+			"fields", "file", "file_block_size", "filter", "first", "fixed", "float", "float4", "float8", "flush",
+			"follows", "for", "force", "foreign", "format", "found", "from", "full", "fulltext", "function", "general",
+			"generated", "geometry", "geometrycollection", "get", "get_format", "global", "grant", "grants", "group",
+			"group_replication", "handler", "hash", "having", "help", "high_priority", "host", "hosts", "hour",
+			"hour_microsecond", "hour_minute", "hour_second", "identified", "if", "ignore", "ignore_server_ids",
+			"import", "in", "index", "indexes", "infile", "initial_size", "inner", "inout", "insensitive", "insert",
+			"insert_method", "install", "instance", "int", "int1", "int2", "int3", "int4", "int8", "integer",
+			"interval", "into", "invoker", "io", "io_after_gtids", "io_before_gtids", "io_thread", "ipc", "is",
+			"isolation", "issuer", "iterate", "join", "json", "key", "keys", "key_block_size", "kill", "language",
+			"last", "leading", "leave", "leaves", "left", "less", "level", "like", "limit", "linear", "lines",
+			"linestring", "list", "load", "local", "localtime", "localtimestamp", "lock", "locks", "logfile", "logs",
+			"long", "longblob", "longtext", "loop", "low_priority", "master", "master_auto_position", "master_bind",
+			"master_connect_retry", "master_delay", "master_heartbeat_period", "master_host", "master_log_file",
+			"master_log_pos", "master_password", "master_port", "master_retry_count", "master_server_id", "master_ssl",
+			"master_ssl_ca", "master_ssl_capath", "master_ssl_cert", "master_ssl_cipher", "master_ssl_crl",
+			"master_ssl_crlpath", "master_ssl_key", "master_ssl_verify_server_cert", "master_tls_version",
+			"master_user", "match", "maxvalue", "max_connections_per_hour", "max_queries_per_hour", "max_rows",
+			"max_size", "max_statement_time", "max_updates_per_hour", "max_user_connections", "medium", "mediumblob",
+			"mediumint", "mediumtext", "memory", "merge", "message_text", "microsecond", "middleint", "migrate",
+			"minute", "minute_microsecond", "minute_second", "min_rows", "mod", "mode", "modifies", "modify", "month",
+			"multilinestring", "multipoint", "multipolygon", "mutex", "mysql_errno", "name", "names", "national",
+			"natural", "nchar", "ndb", "ndbcluster", "never", "new", "next", "no", "nodegroup", "nonblocking", "none",
+			"not", "no_wait", "no_write_to_binlog", "null", "number", "numeric", "nvarchar", "offset", "old_password",
+			"on", "one", "only", "open", "optimize", "optimizer_costs", "option", "optionally", "options", "or",
+			"order", "out", "outer", "outfile", "owner", "pack_keys", "page", "parser", "parse_gcol_expr", "partial",
+			"partition", "partitioning", "partitions", "password", "phase", "plugin", "plugins", "plugin_dir", "point",
+			"polygon", "port", "precedes", "precision", "prepare", "preserve", "prev", "primary", "privileges",
+			"procedure", "processlist", "profile", "profiles", "proxy", "purge", "quarter", "query", "quick", "range",
+			"read", "reads", "read_only", "read_write", "real", "rebuild", "recover", "redofile", "redo_buffer_size",
+			"redundant", "references", "regexp", "relay", "relaylog", "relay_log_file", "relay_log_pos", "relay_thread",
+			"release", "reload", "remove", "rename", "reorganize", "repair", "repeat", "repeatable", "replace",
+			"replicate_do_db", "replicate_do_table", "replicate_ignore_db", "replicate_ignore_table",
+			"replicate_rewrite_db", "replicate_wild_do_table", "replicate_wild_ignore_table", "replication", "require",
+			"reset", "resignal", "restore", "restrict", "resume", "return", "returned_sqlstate", "returns", "reverse",
+			"revoke", "right", "rlike", "rollback", "rollup", "rotate", "routine", "row", "rows", "row_count",
+			"row_format", "rtree", "savepoint", "schedule", "schema", "schemas", "schema_name", "second",
+			"second_microsecond", "security", "select", "sensitive", "separator", "serial", "serializable", "server",
+			"session", "set", "share", "show", "shutdown", "signal", "signed", "simple", "slave", "slow", "smallint",
+			"snapshot", "socket", "some", "soname", "sounds", "source", "spatial", "specific", "sql", "sqlexception",
+			"sqlstate", "sqlwarning", "sql_after_gtids", "sql_after_mts_gaps", "sql_before_gtids", "sql_big_result",
+			"sql_buffer_result", "sql_cache", "sql_calc_found_rows", "sql_no_cache", "sql_small_result", "sql_thread",
+			"sql_tsi_day", "sql_tsi_hour", "sql_tsi_minute", "sql_tsi_month", "sql_tsi_quarter", "sql_tsi_second",
+			"sql_tsi_week", "sql_tsi_year", "ssl", "stacked", "start", "starting", "starts", "stats_auto_recalc",
+			"stats_persistent", "stats_sample_pages", "status", "stop", "storage", "stored", "straight_join", "string",
+			"subclass_origin", "subject", "subpartition", "subpartitions", "super", "suspend", "swaps", "switches",
+			"table", "tables", "tablespace", "table_checksum", "table_name", "temporary", "temptable", "terminated",
+			"text", "than", "then", "time", "timestamp", "timestampadd", "timestampdiff", "tinyblob", "tinyint",
+			"tinytext", "to", "trailing", "transaction", "trigger", "triggers", "true", "truncate", "type", "types",
+			"uncommitted", "undefined", "undo", "undofile", "undo_buffer_size", "unicode", "uninstall", "union",
+			"unique", "unknown", "unlock", "unsigned", "until", "update", "upgrade", "usage", "use", "user",
+			"user_resources", "use_frm", "using", "utc_date", "utc_time", "utc_timestamp", "validation", "value",
+			"values", "varbinary", "varchar", "varcharacter", "variables", "varying", "view", "virtual", "wait",
+			"warnings", "week", "weight_string", "when", "where", "while", "with", "without", "work", "wrapper",
+			"write", "x509", "xa", "xid", "xml", "xor", "year", "year_month", "zerofill" });
+
+	public static final List<String> RESERVED_WORDS_DERBY = Arrays.asList(new String[] { "add", "all", "allocate",
+			"alter", "and", "any", "are", "as", "asc", "assertion", "at", "authorization", "avg", "begin", "between",
+			"bit", "boolean", "both", "by", "call", "cascade", "cascaded", "case", "cast", "char", "character", "check",
+			"close", "collate", "collation", "column", "commit", "connect", "connection", "constraint", "constraints",
+			"continue", "convert", "corresponding", "count", "create", "current", "current_date", "current_time",
+			"current_timestamp", "current_user", "cursor", "deallocate", "dec", "decimal", "declare", "deferrable",
+			"deferred", "delete", "desc", "describe", "diagnostics", "disconnect", "distinct", "double", "drop", "else",
+			"end", "endexec", "escape", "except", "exception", "exec", "execute", "exists", "explain", "external",
+			"false", "fetch", "first", "float", "for", "foreign", "found", "from", "full", "function", "get",
+			"get_current_connection", "global", "go", "goto", "grant", "group", "having", "hour", "identity",
+			"immediate", "in", "indicator", "initially", "inner", "inout", "input", "insensitive", "insert", "int",
+			"integer", "intersect", "into", "is", "isolation", "join", "key", "last", "left", "like", "longint",
+			"lower", "ltrim", "match", "max", "min", "minute", "national", "natural", "nchar", "nvarchar", "next", "no",
+			"not", "null", "nullif", "numeric", "of", "on", "only", "open", "option", "or", "order", "out", "outer",
+			"output", "overlaps", "pad", "partial", "prepare", "preserve", "primary", "prior", "privileges",
+			"procedure", "public", "read", "real", "references", "relative", "restrict", "revoke", "right", "rollback",
+			"rows", "rtrim", "schema", "scroll", "second", "select", "session_user", "set", "smallint", "some", "space",
+			"sql", "sqlcode", "sqlerror", "sqlstate", "substr", "substring", "sum", "system_user", "table", "temporary",
+			"timezone_hour", "timezone_minute", "to", "trailing", "transaction", "translate", "translation", "true",
+			"union", "unique", "unknown", "update", "upper", "user", "using", "values", "varchar", "varying", "view",
+			"whenever", "where", "with", "work", "write", "xml", "xmlexists", "xmlparse", "xmlserialize", "year" });
+
 	/**
 	 * DevNull used to prevent creation of file "derby.log"
 	 */
 	public static final OutputStream DEV_NULL = new OutputStream() {
-        public void write(int b) {}
-    };
-	
+		@Override
+		public void write(final int b) {}
+	};
+
 	/**
 	 * In an Oracle DB the statement "SELECT CURRENT_TIMESTAMP FROM DUAL" return this special Oracle type "oracle.sql.TIMESTAMPTZ",
 	 * which is not listed in java.sql.Types, but can be read via ResultSet.getTimestamp(i) into a normal java.sql.Timestamp object
 	 */
 	public static final int ORACLE_TIMESTAMPTZ_TYPECODE = -101;
-	
+
 	public enum DbVendor {
 		Oracle("oracle.jdbc.OracleDriver", 1521, "SELECT 1 FROM DUAL"),
 		MySQL("com.mysql.jdbc.Driver", 3306, "SELECT 1"),
@@ -73,9 +231,9 @@ public class DbUtilities {
 		HSQL("org.hsqldb.jdbc.JDBCDriver", 0, "SELECT 1 FROM SYSIBM.SYSDUMMY1"),
 		Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000, ""),
 		MsSQL("com.microsoft.sqlserver.jdbc.SQLServerDriver", 1433, "SELECT 1");
-		
-		public static DbVendor getDbVendorByName(String dbVendorName) throws Exception {
-			for (DbVendor dbVendor : DbVendor.values()) {
+
+		public static DbVendor getDbVendorByName(final String dbVendorName) throws Exception {
+			for (final DbVendor dbVendor : DbVendor.values()) {
 				if (dbVendor.toString().equalsIgnoreCase(dbVendorName)) {
 					return dbVendor;
 				}
@@ -88,31 +246,31 @@ public class DbUtilities {
 				throw new Exception("Invalid db vendor: " + dbVendorName);
 			}
 		}
-		
-		private String driverClassName;
-		private int defaultPort;
-		private String testStatement;
-		
-		private DbVendor(String driverClassName, int defaultPort, String testStatement) {
+
+		private final String driverClassName;
+		private final int defaultPort;
+		private final String testStatement;
+
+		private DbVendor(final String driverClassName, final int defaultPort, final String testStatement) {
 			this.driverClassName = driverClassName;
 			this.defaultPort = defaultPort;
 			this.testStatement = testStatement;
 		}
-		
+
 		public String getDriverClassName() {
 			return driverClassName;
 		}
-		
+
 		public int getDefaultPort() {
 			return defaultPort;
 		}
-		
+
 		public String getTestStatement() {
 			return testStatement;
 		}
 	}
 
-	public static String generateUrlConnectionString(DbVendor dbVendor, String dbServerHostname, int dbServerPort, String dbName) throws Exception {
+	public static String generateUrlConnectionString(final DbVendor dbVendor, String dbServerHostname, int dbServerPort, String dbName) throws Exception {
 		if (DbVendor.Oracle == dbVendor) {
 			if (dbName.startsWith("/")) {
 				// Some Oracle databases only accept the SID separated by a "/"
@@ -155,19 +313,19 @@ public class DbUtilities {
 			throw new Exception("Unknown db vendor");
 		}
 	}
-	
-	public static Connection createNewDatabase(DbVendor dbVendor, String dbPath) throws Exception {
+
+	public static Connection createNewDatabase(final DbVendor dbVendor, String dbPath) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
 		}
-		
+
 		if (dbVendor == DbVendor.Derby) {
 			// Prevent creation of file "derby.log"
 			System.setProperty("derby.stream.error.field", "de.soderer.utilities.DbUtilities.DEV_NULL");
 		}
-		
+
 		Class.forName(dbVendor.getDriverClassName());
-	
+
 		if (dbVendor == DbVendor.SQLite) {
 			dbPath = Utilities.replaceHomeTilde(dbPath);
 			if (new File(dbPath).exists()) {
@@ -187,22 +345,22 @@ public class DbUtilities {
 					throw new Exception("HSQL db '" + dbPath + "' already exists");
 				}
 			}
-			
+
 			// Logger must be kept in a local variable for making it work
-			Logger dbLogger = Logger.getLogger("hsqldb.db");
+			final Logger dbLogger = Logger.getLogger("hsqldb.db");
 			dbLogger.setLevel(Level.WARNING);
-			
+
 			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath));
 		} else {
 			throw new Exception("Invalid db vendor '" + dbVendor.toString() + "'. Only SQLite, HSQL or Derby db can be created this way.");
 		}
 	}
-	
-	public static void deleteDatabase(DbVendor dbVendor, String dbPath) throws Exception {
+
+	public static void deleteDatabase(final DbVendor dbVendor, String dbPath) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
 		}
-	
+
 		if (dbVendor == DbVendor.SQLite) {
 			dbPath = Utilities.replaceHomeTilde(dbPath);
 			if (new File(dbPath).exists()) {
@@ -216,9 +374,9 @@ public class DbUtilities {
 		} else if (dbVendor == DbVendor.HSQL) {
 			dbPath = Utilities.replaceHomeTilde(dbPath);
 			if (dbPath.startsWith("/")) {
-				File baseDirectory = new File(dbPath.substring(0, dbPath.lastIndexOf("/")));
-				String basename = dbPath.substring(dbPath.lastIndexOf("/") + 1);
-				for (File fileToDelete : baseDirectory.listFiles()) {
+				final File baseDirectory = new File(dbPath.substring(0, dbPath.lastIndexOf("/")));
+				final String basename = dbPath.substring(dbPath.lastIndexOf("/") + 1);
+				for (final File fileToDelete : baseDirectory.listFiles()) {
 					if (fileToDelete.getName().startsWith(basename)) {
 						Utilities.delete(fileToDelete);
 					}
@@ -229,11 +387,11 @@ public class DbUtilities {
 		}
 	}
 
-	public static Connection createConnection(DbVendor dbVendor, String hostname, String dbName, String userName, char[] password) throws Exception {
+	public static Connection createConnection(final DbVendor dbVendor, final String hostname, final String dbName, final String userName, final char[] password) throws Exception {
 		return createConnection(dbVendor, hostname, dbName, userName, password, false);
 	}
-	
-	public static Connection createConnection(DbVendor dbVendor, String hostname, String dbName, String userName, char[] password, boolean retryOnError) throws Exception {
+
+	public static Connection createConnection(final DbVendor dbVendor, final String hostname, String dbName, final String userName, final char[] password, final boolean retryOnError) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
 		} else if (Utilities.isEmpty(hostname) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby){
@@ -241,18 +399,18 @@ public class DbUtilities {
 		} else if (Utilities.isEmpty(dbName)){
 			throw new Exception("Cannot create db connection: Missing dbName");
 		}
-		
+
 		try {
 			if (dbVendor == DbVendor.Derby) {
 				// Prevent creation of file "derby.log"
 				System.setProperty("derby.stream.error.field", "de.soderer.utilities.DbUtilities.DEV_NULL");
 			}
-			
+
 			Class.forName(dbVendor.getDriverClassName());
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot create db connection, caused by unknown DriverClassName: " + e.getMessage());
 		}
-	
+
 		try {
 			if (dbVendor == DbVendor.SQLite) {
 				dbName = Utilities.replaceHomeTilde(dbName);
@@ -278,47 +436,47 @@ public class DbUtilities {
 					}
 				}
 				int port;
-				String[] hostParts = hostname.split(":");
+				final String[] hostParts = hostname.split(":");
 				if (hostParts.length == 2) {
 					try {
 						port = Integer.parseInt(hostParts[1]);
-					} catch (Exception e) {
-						throw new Exception("Invalid port: " + hostParts[1]);
-					}
-				} else {
-					port = dbVendor.getDefaultPort();
-				}
-				
-				// Logger must be kept in a local variable for making it work
-				Logger dbLogger = Logger.getLogger("hsqldb.db");
-				dbLogger.setLevel(Level.WARNING);
-				
-				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
-			} else {
-				int port;
-				String[] hostParts = hostname.split(":");
-				if (hostParts.length == 2) {
-					try {
-						port = Integer.parseInt(hostParts[1]);
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						throw new Exception("Invalid port: " + hostParts[1]);
 					}
 				} else {
 					port = dbVendor.getDefaultPort();
 				}
 
-//				if (dbVendor == DbVendor.Oracle && new File("/dev/urandom").exists()) {
-//					// Set the alternative random generator to improve the connection creation speed, which may even cause a "I/O-Fehler: Connection reset"-error on low performance systems
-//					System.setProperty("java.security.egd", "file:///dev/./urandom");
-//					
-//					// Alternatively you can change the file $JAVA_HOME/jre/lib/security/java.security and add following line:
-//					// securerandom.source=file:/dev/./urandom
-//				}
-				
+				// Logger must be kept in a local variable for making it work
+				final Logger dbLogger = Logger.getLogger("hsqldb.db");
+				dbLogger.setLevel(Level.WARNING);
+
+				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
+			} else {
+				int port;
+				final String[] hostParts = hostname.split(":");
+				if (hostParts.length == 2) {
+					try {
+						port = Integer.parseInt(hostParts[1]);
+					} catch (final Exception e) {
+						throw new Exception("Invalid port: " + hostParts[1]);
+					}
+				} else {
+					port = dbVendor.getDefaultPort();
+				}
+
+				//				if (dbVendor == DbVendor.Oracle && new File("/dev/urandom").exists()) {
+				//					// Set the alternative random generator to improve the connection creation speed, which may even cause a "I/O-Fehler: Connection reset"-error on low performance systems
+				//					System.setProperty("java.security.egd", "file:///dev/./urandom");
+				//
+				//					// Alternatively you can change the file $JAVA_HOME/jre/lib/security/java.security and add following line:
+				//					// securerandom.source=file:/dev/./urandom
+				//				}
+
 				Connection connection;
 				try {
 					connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					if (retryOnError && e.getCause() != null && e.getCause() instanceof SQLRecoverableException) {
 						connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
 					} else {
@@ -326,23 +484,23 @@ public class DbUtilities {
 					}
 				}
 
-//				if (dbVendor == DbVendor.Oracle && new File("/dev/random").exists()) {
-//					// Reset the alternative random generator
-//					System.clearProperty("java.security.egd");
-//				}
-				
+				//				if (dbVendor == DbVendor.Oracle && new File("/dev/random").exists()) {
+				//					// Reset the alternative random generator
+				//					System.clearProperty("java.security.egd");
+				//				}
+
 				return connection;
 			}
-		} catch (DbNotExistsException e) {
+		} catch (final DbNotExistsException e) {
 			throw e;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			try {
 				int port;
 				if (Utilities.isNotEmpty(hostname)) {
 					if (hostname.contains(":")) {
 						try {
 							port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
-						} catch (Exception e1) {
+						} catch (final Exception e1) {
 							throw new Exception("Invalid port: " + hostname.substring(hostname.indexOf(":") + 1));
 						}
 						NetworkUtilities.testConnection(hostname.substring(0, hostname.indexOf(":")), port);
@@ -351,36 +509,36 @@ public class DbUtilities {
 						NetworkUtilities.testConnection(hostname, port);
 					}
 				}
-				
+
 				// No Exception from testConnection, so it must be some other problem
 				throw new Exception("Cannot create db connection: " + e.getMessage(), e);
-			} catch (Exception e1) {
+			} catch (final Exception e1) {
 				throw new Exception("Cannot create db connection, caused by Url (" + hostname + "): " + e1.getMessage(), e1);
 			}
 		}
 	}
-	
-	public static int readoutInOutputStream(DataSource dataSource, String statementString, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
+
+	public static int readoutInOutputStream(final DataSource dataSource, final String statementString, final OutputStream outputStream, final String encoding, final char separator, final Character stringQuote) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			return readoutInOutputStream(connection, statementString, outputStream, encoding, separator, stringQuote);
 		}
 	}
-	
-	public static int readoutInOutputStream(Connection connection, String statementString, OutputStream outputStream, String encoding, char separator, Character stringQuote) throws Exception {
-		DbVendor dbVendor = getDbVendor(connection);
+
+	public static int readoutInOutputStream(final Connection connection, final String statementString, final OutputStream outputStream, final String encoding, final char separator, final Character stringQuote) throws Exception {
+		final DbVendor dbVendor = getDbVendor(connection);
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery(statementString);
 				CsvWriter csvWriter = new CsvWriter(outputStream, encoding, new CsvFormat().setSeparator(separator).setStringQuote(stringQuote))) {
-			ResultSetMetaData metaData = resultSet.getMetaData();
+			final ResultSetMetaData metaData = resultSet.getMetaData();
 
-			List<String> headers = new ArrayList<>();
+			final List<String> headers = new ArrayList<>();
 			for (int i = 1; i <= metaData.getColumnCount(); i++) {
 				headers.add(metaData.getColumnLabel(i));
 			}
 			csvWriter.writeValues(headers);
 
 			while (resultSet.next()) {
-				List<String> values = new ArrayList<String>();
+				final List<String> values = new ArrayList<>();
 				for (int i = 1; i <= metaData.getColumnCount(); i++) {
 					if (metaData.getColumnType(i) == Types.BLOB
 							|| metaData.getColumnType(i) == Types.BINARY
@@ -392,24 +550,24 @@ public class DbUtilities {
 							try {
 								input = resultSet.getBinaryStream(metaData.getColumnName(i));
 								if (input != null) {
-									byte[] data = Utilities.toByteArray(input);
+									final byte[] data = Utilities.toByteArray(input);
 									values.add(Base64.getEncoder().encodeToString(data));
 								} else {
 									values.add("");
 								}
-							} catch (Exception e) {
+							} catch (final Exception e) {
 								// NULL blobs throw a NullpointerException in SQLite
 								values.add("");
 							} finally {
 								Utilities.closeQuietly(input);
 							}
 						} else {
-							Blob blob = resultSet.getBlob(i);
+							final Blob blob = resultSet.getBlob(i);
 							if (resultSet.wasNull()) {
 								values.add("");
 							} else {
 								try (InputStream input = blob.getBinaryStream()) {
-									byte[] data = Utilities.toByteArray(input);
+									final byte[] data = Utilities.toByteArray(input);
 									values.add(Base64.getEncoder().encodeToString(data));
 								}
 							}
@@ -425,42 +583,42 @@ public class DbUtilities {
 		}
 	}
 
-	public static String readout(DataSource dataSource, String statementString, char separator, Character stringQuote) throws Exception {
+	public static String readout(final DataSource dataSource, final String statementString, final char separator, final Character stringQuote) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			return readout(connection, statementString, separator, stringQuote);
 		}
 	}
-    
-    public static String readout(Connection connection, String statementString, char separator, Character stringQuote) throws Exception {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+	public static String readout(final Connection connection, final String statementString, final char separator, final Character stringQuote) throws Exception {
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		readoutInOutputStream(connection, statementString, outputStream, "UTF-8", separator, stringQuote);
 		return new String(outputStream.toByteArray(), "UTF-8");
 	}
-    
-    public static String readoutTable(DataSource dataSource, String tableName, char separator, Character stringQuote) throws Exception {
+
+	public static String readoutTable(final DataSource dataSource, final String tableName, final char separator, final Character stringQuote) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			return readoutTable(connection, tableName, separator, stringQuote);
 		}
-    }
-    
-    public static String readoutTable(Connection connection, String tableName) throws Exception {
-		return readoutTable(connection, tableName, ';', '"');
-    }
+	}
 
-	public static String readoutTable(Connection connection, String tableName, char separator, Character stringQuote) throws Exception {
+	public static String readoutTable(final Connection connection, final String tableName) throws Exception {
+		return readoutTable(connection, tableName, ';', '"');
+	}
+
+	public static String readoutTable(final Connection connection, final String tableName, final char separator, final Character stringQuote) throws Exception {
 		if (connection == null) {
 			throw new Exception("Invalid empty connection for getColumnNames");
 		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnNames");
 		} else {
-			DbVendor dbVendor = getDbVendor(connection);
-			List<String> columnNames = new ArrayList<String>(getColumnNames(connection, tableName));
+			final DbVendor dbVendor = getDbVendor(connection);
+			final List<String> columnNames = new ArrayList<>(getColumnNames(connection, tableName));
 			Collections.sort(columnNames);
-			List<String> keyColumnNames = new ArrayList<String>(getPrimaryKeyColumns(connection, tableName));
+			final List<String> keyColumnNames = new ArrayList<>(getPrimaryKeyColumns(connection, tableName));
 			Collections.sort(keyColumnNames);
-			List<String> readoutColumns = new ArrayList<String>();
+			final List<String> readoutColumns = new ArrayList<>();
 			readoutColumns.addAll(keyColumnNames);
-			for (String columnName : columnNames) {
+			for (final String columnName : columnNames) {
 				if (!Utilities.containsIgnoreCase(readoutColumns, columnName)) {
 					readoutColumns.add(columnName);
 				}
@@ -473,19 +631,19 @@ public class DbUtilities {
 		}
 	}
 
-	public static DbVendor getDbVendor(DataSource dataSource) throws Exception {
+	public static DbVendor getDbVendor(final DataSource dataSource) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			return getDbVendor(connection);
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			throw new RuntimeException("Cannot check db vendor: " + e.getMessage(), e);
 		}
 	}
 
-	public static DbVendor getDbVendor(Connection connection) throws Exception {
+	public static DbVendor getDbVendor(final Connection connection) throws Exception {
 		try {
-			DatabaseMetaData databaseMetaData = connection.getMetaData();
+			final DatabaseMetaData databaseMetaData = connection.getMetaData();
 			if (databaseMetaData != null) {
-				String productName = databaseMetaData.getDatabaseProductName();
+				final String productName = databaseMetaData.getDatabaseProductName();
 				if (productName != null && productName.toLowerCase().contains("oracle")) {
 					return DbVendor.Oracle;
 				} else if (productName != null && productName.toLowerCase().contains("mysql")) {
@@ -510,45 +668,45 @@ public class DbUtilities {
 			} else {
 				throw new Exception("Undetectable db vendor");
 			}
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			throw new Exception("Error while detecting db vendor: " + e.getMessage(), e);
 		}
 	}
 
-	public static String getDbUrl(DataSource dataSource) throws SQLException {
+	public static String getDbUrl(final DataSource dataSource) throws SQLException {
 		try (Connection connection = dataSource.getConnection()) {
 			return getDbUrl(connection);
 		}
 	}
 
-	public static String getDbUrl(Connection connection) {
+	public static String getDbUrl(final Connection connection) {
 		try {
-			DatabaseMetaData databaseMetaData = connection.getMetaData();
+			final DatabaseMetaData databaseMetaData = connection.getMetaData();
 			if (databaseMetaData != null) {
 				return databaseMetaData.getURL();
 			} else {
 				return null;
 			}
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			return null;
 		}
 	}
 
-	public static boolean checkTableAndColumnsExist(Connection connection, String tableName, String... columns) throws Exception {
+	public static boolean checkTableAndColumnsExist(final Connection connection, final String tableName, final String... columns) throws Exception {
 		return checkTableAndColumnsExist(connection, tableName, false, columns);
 	}
 
-	public static boolean checkTableAndColumnsExist(DataSource dataSource, String tableName, boolean throwExceptionOnError, String... columns) throws Exception {
+	public static boolean checkTableAndColumnsExist(final DataSource dataSource, final String tableName, final boolean throwExceptionOnError, final String... columns) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			return checkTableAndColumnsExist(connection, tableName, throwExceptionOnError, columns);
 		}
 	}
 
-	public static boolean checkTableAndColumnsExist(Connection connection, String tableName, boolean throwExceptionOnError, String... columns) throws Exception {
-		DbVendor dbVendor = getDbVendor(connection);
-		CaseInsensitiveSet dbTableColumns = getColumnNames(connection, tableName);
+	public static boolean checkTableAndColumnsExist(final Connection connection, final String tableName, final boolean throwExceptionOnError, final String... columns) throws Exception {
+		final DbVendor dbVendor = getDbVendor(connection);
+		final CaseInsensitiveSet dbTableColumns = getColumnNames(connection, tableName);
 		if (columns != null) {
-			for (String column : columns) {
+			for (final String column : columns) {
 				if (column != null && !dbTableColumns.contains(unescapeVendorReservedNames(dbVendor, column))) {
 					if (throwExceptionOnError) {
 						throw new Exception("Column '" + column + "' does not exist in table '" + tableName + "'");
@@ -560,16 +718,16 @@ public class DbUtilities {
 		}
 		return true;
 	}
-	
-	public static boolean checkTableExist(Connection connection, String tableName) throws Exception {
+
+	public static boolean checkTableExist(final Connection connection, final String tableName) throws Exception {
 		return checkTableExist(connection, tableName, false);
 	}
 
-	public static boolean checkTableExist(Connection connection, String tableName, boolean throwExceptionOnError) throws Exception {
+	public static boolean checkTableExist(final Connection connection, final String tableName, final boolean throwExceptionOnError) throws Exception {
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0")) {
 			return true;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			if (throwExceptionOnError) {
 				throw new Exception("Table '" + tableName + "' does not exist");
 			} else {
@@ -578,7 +736,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static String callStoredProcedureWithDbmsOutput(Connection connection, String procedureName, Object... parameters) throws SQLException {
+	public static String callStoredProcedureWithDbmsOutput(final Connection connection, final String procedureName, final Object... parameters) throws SQLException {
 		try (CallableStatement callableStatement = connection.prepareCall("begin dbms_output.enable(:1); end;")) {
 			callableStatement.setLong(1, 10000);
 			callableStatement.executeUpdate();
@@ -604,19 +762,19 @@ public class DbUtilities {
 
 		StringBuffer dbmsOutput;
 		try (CallableStatement callableStatement = connection.prepareCall(
-	"declare "
-				+ "    l_line varchar2(255); "
-				+ "    l_done number; "
-				+ "    l_buffer long; "
-				+ "begin "
-				+ "  loop "
-				+ "    exit when length(l_buffer)+255 > :maxbytes OR l_done = 1; "
-				+ "    dbms_output.get_line( l_line, l_done ); "
-				+ "    l_buffer := l_buffer || l_line || chr(10); "
-				+ "  end loop; "
-				+ " :done := l_done; "
-				+ " :buffer := l_buffer; "
-				+ "end;")) {
+				"declare "
+						+ "    l_line varchar2(255); "
+						+ "    l_done number; "
+						+ "    l_buffer long; "
+						+ "begin "
+						+ "  loop "
+						+ "    exit when length(l_buffer)+255 > :maxbytes OR l_done = 1; "
+						+ "    dbms_output.get_line( l_line, l_done ); "
+						+ "    l_buffer := l_buffer || l_line || chr(10); "
+						+ "  end loop; "
+						+ " :done := l_done; "
+						+ " :buffer := l_buffer; "
+						+ "end;")) {
 			callableStatement.registerOutParameter(2, Types.INTEGER);
 			callableStatement.registerOutParameter(3, Types.VARCHAR);
 			dbmsOutput = new StringBuffer(1024);
@@ -629,19 +787,19 @@ public class DbUtilities {
 				}
 			}
 		}
-	
+
 		try (CallableStatement callableStatement = connection.prepareCall("begin dbms_output.disable; end;")) {
 			callableStatement.executeUpdate();
 		}
-		
+
 		return dbmsOutput == null ? null : dbmsOutput.toString();
 	}
 
-	public static String getResultAsTextTable(DataSource datasource, String selectString) throws Exception {
+	public static String getResultAsTextTable(final DataSource datasource, final String selectString) throws Exception {
 		try (Connection connection = datasource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(selectString);
 				ResultSet resultSet = preparedStatement.executeQuery()) {
-			TextTable textTable = new TextTable();
+			final TextTable textTable = new TextTable();
 			for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
 				textTable.addColumn(resultSet.getMetaData().getColumnLabel(columnIndex));
 			}
@@ -658,20 +816,20 @@ public class DbUtilities {
 			return textTable.toString();
 		}
 	}
-	
-	public static CaseInsensitiveSet getColumnNames(DataSource dataSource, String tableName) throws Exception {
+
+	public static CaseInsensitiveSet getColumnNames(final DataSource dataSource, final String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnNames");
 		}
-		
+
 		try (Connection connection = dataSource.getConnection()) {
 			return getColumnNames(connection, tableName);
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			throw new RuntimeException("Cannot read columns for table " + tableName + ": " + e.getMessage(), e);
 		}
 	}
 
-	public static CaseInsensitiveSet getColumnNames(Connection connection, String tableName) throws Exception {
+	public static CaseInsensitiveSet getColumnNames(final Connection connection, final String tableName) throws Exception {
 		if (connection == null) {
 			throw new Exception("Invalid empty connection for getColumnNames");
 		} else if (Utilities.isBlank(tableName)) {
@@ -679,7 +837,7 @@ public class DbUtilities {
 		} else {
 			try (Statement statement = connection.createStatement();
 					ResultSet resultSet = statement.executeQuery("SELECT * FROM " + getSQLSafeString(tableName) + " WHERE 1 = 0")) {
-				CaseInsensitiveSet columnNamesList = new CaseInsensitiveSet();
+				final CaseInsensitiveSet columnNamesList = new CaseInsensitiveSet();
 				for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
 					columnNamesList.add(resultSet.getMetaData().getColumnName(i));
 				}
@@ -687,8 +845,8 @@ public class DbUtilities {
 			}
 		}
 	}
-	
-	public static CaseInsensitiveMap<DbColumnType> getColumnDataTypes(DataSource dataSource, String tableName) throws Exception {
+
+	public static CaseInsensitiveMap<DbColumnType> getColumnDataTypes(final DataSource dataSource, final String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnDataTypes");
 		} else if (Utilities.isBlank(tableName)) {
@@ -700,17 +858,17 @@ public class DbUtilities {
 		}
 	}
 
-	public static CaseInsensitiveMap<DbColumnType> getColumnDataTypes(Connection connection, String tableName) throws Exception {
+	public static CaseInsensitiveMap<DbColumnType> getColumnDataTypes(final Connection connection, final String tableName) throws Exception {
 		if (connection == null) {
 			throw new Exception("Invalid empty connection for getColumnDataTypes");
 		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnDataTypes");
 		} else {
-			CaseInsensitiveMap<DbColumnType> returnMap = new CaseInsensitiveMap<DbColumnType>();
-			DbVendor dbVendor = getDbVendor(connection);
+			final CaseInsensitiveMap<DbColumnType> returnMap = new CaseInsensitiveMap<>();
+			final DbVendor dbVendor = getDbVendor(connection);
 			if (DbVendor.Oracle == dbVendor) {
 				// Watchout: Oracle's timestamp datatype is "TIMESTAMP(6)", so remove the bracket value
-				String sql = "SELECT column_name, NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) as data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE LOWER(table_name) = LOWER(?)";
+				final String sql = "SELECT column_name, NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) as data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -727,15 +885,15 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							boolean isNullable = resultSet.getString("nullable").equalsIgnoreCase("y");
-	
+							final boolean isNullable = resultSet.getString("nullable").equalsIgnoreCase("y");
+
 							// TODO AutoIncrements will be introduced with Oracle 12
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, false));
 						}
 					}
 				}
 			} else if (DbVendor.MySQL == dbVendor) {
-				String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
+				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery() ) {
@@ -752,15 +910,15 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
-							boolean isAutoIncrement = resultSet.getString("extra").equalsIgnoreCase("auto_increment");
-	
+							final boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+							final boolean isAutoIncrement = resultSet.getString("extra").equalsIgnoreCase("auto_increment");
+
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
 					}
 				}
 			} else if (DbVendor.MariaDB == dbVendor) {
-				String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
+				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery() ) {
@@ -777,15 +935,15 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
-							boolean isAutoIncrement = resultSet.getString("extra").equalsIgnoreCase("auto_increment");
-	
+							final boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+							final boolean isAutoIncrement = resultSet.getString("extra").equalsIgnoreCase("auto_increment");
+
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
 					}
 				}
 			} else if (DbVendor.HSQL == dbVendor) {
-				String sql = "SELECT column_name, type_name, column_size, decimal_digits, is_nullable, is_autoincrement FROM information_schema.system_columns WHERE LOWER(table_name) = LOWER(?)";
+				final String sql = "SELECT column_name, type_name, column_size, decimal_digits, is_nullable, is_autoincrement FROM information_schema.system_columns WHERE LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -802,25 +960,25 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
-							boolean isAutoIncrement = resultSet.getString("is_autoincrement").equalsIgnoreCase("yes");
-	
+							final boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+							final boolean isAutoIncrement = resultSet.getString("is_autoincrement").equalsIgnoreCase("yes");
+
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("type_name"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
 					}
 				}
 			} else if (DbVendor.Derby == dbVendor) {
-				String sql = "SELECT columnname, columndatatype, autoincrementvalue FROM sys.systables, sys.syscolumns WHERE tableid = referenceid AND LOWER(tablename) = LOWER(?)";
+				final String sql = "SELECT columnname, columndatatype, autoincrementvalue FROM sys.systables, sys.syscolumns WHERE tableid = referenceid AND LOWER(tablename) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							String type = resultSet.getString("columndatatype");
-							
+
 							long characterLength = -1;
-							int numericPrecision = -1;
-							int numericScale = -1;
-							
+							final int numericPrecision = -1;
+							final int numericScale = -1;
+
 							boolean isNullable;
 							if (type.toLowerCase().endsWith("not null")) {
 								isNullable = false;
@@ -828,21 +986,21 @@ public class DbUtilities {
 							} else {
 								isNullable = true;
 							}
-	
-							boolean autoincrement = !Utilities.isBlank(resultSet.getString("autoincrementvalue"));
-							
+
+							final boolean autoincrement = !Utilities.isBlank(resultSet.getString("autoincrementvalue"));
+
 							if (type.contains("(")) {
 								characterLength = Long.parseLong(type.substring(type.indexOf("(") + 1, type.indexOf(")")));
 								type = type.substring(0, type.indexOf("("));
 							}
-	
+
 							returnMap.put(resultSet.getString("columnname"), new DbColumnType(type, characterLength, numericPrecision, numericScale, isNullable, autoincrement));
 						}
 					}
 				}
 			} else if (DbVendor.Firebird == dbVendor) {
-				String sql = "SELECT rf.rdb$field_name, f.rdb$field_type, f.rdb$field_sub_type, f.rdb$field_length, f.rdb$field_scale, f.rdb$null_flag"
-					+ " FROM rdb$fields f JOIN rdb$relation_fields rf ON rf.rdb$field_source = f.rdb$field_name WHERE rf.rdb$relation_name = ?";
+				final String sql = "SELECT rf.rdb$field_name, f.rdb$field_type, f.rdb$field_sub_type, f.rdb$field_length, f.rdb$field_scale, f.rdb$null_flag"
+						+ " FROM rdb$fields f JOIN rdb$relation_fields rf ON rf.rdb$field_source = f.rdb$field_name WHERE rf.rdb$relation_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName.toUpperCase());
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -859,30 +1017,30 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							boolean isNullable = resultSet.getObject("rdb$null_flag") == null;
-							
+							final boolean isNullable = resultSet.getObject("rdb$null_flag") == null;
+
 							String dataType;
 							switch (resultSet.getInt("rdb$field_type")) {
 								case 7: dataType = "SMALLINT";
-									break;
+								break;
 								case 8: dataType = "INTEGER";
-									break;
+								break;
 								case 10: dataType = "FLOAT";
-									break;
+								break;
 								case 12: dataType = "DATE";
-									break;
+								break;
 								case 13: dataType = "TIME";
-									break;
+								break;
 								case 14: dataType = "CHAR";
-									break;
+								break;
 								case 16: dataType = "BIGINT";
-									break;
+								break;
 								case 27: dataType = "DOUBLE PRECISION";
-									break;
+								break;
 								case 35: dataType = "TIMESTAMP";
-									break;
+								break;
 								case 37: dataType = "VARCHAR";
-									break;
+								break;
 								case 261:
 									if (resultSet.getInt("rdb$field_sub_type") == 1) {
 										dataType = "CLOB";
@@ -892,7 +1050,7 @@ public class DbUtilities {
 									break;
 								default: dataType = getTypeNameById(resultSet.getInt("rdb$field_type"));
 							}
-	
+
 							// TODO check autoincrement
 							returnMap.put(resultSet.getString("rdb$field_name").trim(), new DbColumnType(dataType, characterLength, numericPrecision, numericScale, isNullable, false));
 						}
@@ -911,20 +1069,20 @@ public class DbUtilities {
 						}
 					}
 				}
-				
-				String sql = "PRAGMA table_info(" + tableName + ")";
+
+				final String sql = "PRAGMA table_info(" + tableName + ")";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
 						ResultSet resultSet = preparedStatement.executeQuery()) {
 					while (resultSet.next()) {
 						long characterLength = -1;
-						int numericPrecision = -1;
-						int numericScale = -1;
-						boolean isNullable = resultSet.getInt("notnull") == 0;
+						final int numericPrecision = -1;
+						final int numericScale = -1;
+						final boolean isNullable = resultSet.getInt("notnull") == 0;
 						// Only the primary key can be auto incremented in SQLite
-						boolean isAutoIncrement = hasAutoIncrement && resultSet.getInt("pk") > 0;
-						
+						final boolean isAutoIncrement = hasAutoIncrement && resultSet.getInt("pk") > 0;
+
 						String type = resultSet.getString("type");
-						
+
 						if (type.contains("(")) {
 							characterLength = Long.parseLong(type.substring(type.indexOf("(") + 1, type.indexOf(")")));
 							type = type.substring(0, type.indexOf("("));
@@ -934,7 +1092,7 @@ public class DbUtilities {
 					}
 				}
 			} else if (DbVendor.PostgreSQL == dbVendor) {
-				String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND LOWER(table_name) = LOWER(?)";
+				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -951,14 +1109,14 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
-							
-							String defaultValue = resultSet.getString("column_default");
+							final boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+
+							final String defaultValue = resultSet.getString("column_default");
 							boolean isAutoIncrement = false;
 							if (defaultValue!= null && defaultValue.toLowerCase().startsWith("nextval(")) {
 								isAutoIncrement = true;
 							}
-	
+
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
 					}
@@ -970,7 +1128,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static int getTableEntriesCount(Connection connection, String tableName) throws Exception {
+	public static int getTableEntriesCount(final Connection connection, final String tableName) throws Exception {
 		if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getTableEntriesNumber");
 		} else {
@@ -985,7 +1143,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static boolean containsColumnName(DataSource dataSource, String tableName, String columnName) throws Exception {
+	public static boolean containsColumnName(final DataSource dataSource, final String tableName, final String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for containsColumnName");
 		} else if (Utilities.isBlank(tableName)) {
@@ -1006,7 +1164,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static String getColumnDefaultValue(DataSource dataSource, String tableName, String columnName) throws Exception {
+	public static String getColumnDefaultValue(final DataSource dataSource, final String tableName, final String columnName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getDefaultValueOf");
 		} else if (Utilities.isBlank(tableName)) {
@@ -1015,15 +1173,15 @@ public class DbUtilities {
 			throw new Exception("Invalid empty columnName for getDefaultValueOf");
 		} else {
 			try (Connection connection = dataSource.getConnection()) {
-				DbVendor dbVendor = getDbVendor(connection);
+				final DbVendor dbVendor = getDbVendor(connection);
 				if (DbVendor.Oracle == dbVendor) {
-					String sql = "SELECT data_default FROM user_tab_cols WHERE table_name = ? AND column_name = ?";
+					final String sql = "SELECT data_default FROM user_tab_cols WHERE table_name = ? AND column_name = ?";
 					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 						preparedStatement.setString(1, tableName.toUpperCase());
 						preparedStatement.setString(2, columnName.toUpperCase());
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
 							if (resultSet.next()) {
-								String defaultvalue = resultSet.getString(1);
+								final String defaultvalue = resultSet.getString(1);
 								String returnValue;
 								if (defaultvalue == null || "null".equalsIgnoreCase(defaultvalue)) {
 									returnValue = null;
@@ -1043,13 +1201,13 @@ public class DbUtilities {
 						}
 					}
 				} else {
-					String sql = "SELECT column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ? AND column_name = ?";
+					final String sql = "SELECT column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ? AND column_name = ?";
 					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 						preparedStatement.setString(1, tableName);
 						preparedStatement.setString(2, columnName);
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
 							if (resultSet.next()) {
-								String returnValue = resultSet.getString(1);
+								final String returnValue = resultSet.getString(1);
 								if (resultSet.next()) {
 									throw new Exception("Cannot retrieve column datatype");
 								} else {
@@ -1065,8 +1223,8 @@ public class DbUtilities {
 		}
 	}
 
-	public static String getDateDefaultValue(DataSource dataSource, String fieldDefault) throws Exception {
-		DbVendor dbVendor = getDbVendor(dataSource);
+	public static String getDateDefaultValue(final DataSource dataSource, final String fieldDefault) throws Exception {
+		final DbVendor dbVendor = getDbVendor(dataSource);
 		if (fieldDefault.equalsIgnoreCase("sysdate") || fieldDefault.equalsIgnoreCase("sysdate()") || fieldDefault.equalsIgnoreCase("current_timestamp")) {
 			if (dbVendor == DbVendor.Oracle) {
 				return "current_timestamp";
@@ -1086,7 +1244,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static boolean addColumnToDbTable(DataSource dataSource, String tablename, String fieldname, String fieldType, int length, String fieldDefault, boolean notNull) throws Exception {
+	public static boolean addColumnToDbTable(final DataSource dataSource, final String tablename, final String fieldname, String fieldType, int length, final String fieldDefault, final boolean notNull) throws Exception {
 		if (Utilities.isBlank(fieldname)) {
 			return false;
 		} else if (!tablename.equalsIgnoreCase(getSQLSafeString(tablename))) {
@@ -1132,13 +1290,13 @@ public class DbUtilities {
 					Statement statement = connection.createStatement()) {
 				statement.executeUpdate(addColumnStatement);
 				return true;
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				return false;
 			}
 		}
 	}
 
-	public static boolean alterColumnTypeInDbTable(DataSource dataSource, String tablename, String fieldname, String fieldType, int length, String fieldDefault, boolean notNull) throws Exception {
+	public static boolean alterColumnTypeInDbTable(final DataSource dataSource, final String tablename, final String fieldname, String fieldType, int length, final String fieldDefault, final boolean notNull) throws Exception {
 		if (Utilities.isBlank(fieldname)) {
 			return false;
 		} else if (!tablename.equalsIgnoreCase(getSQLSafeString(tablename))) {
@@ -1179,7 +1337,7 @@ public class DbUtilities {
 			}
 
 			String changeColumnStatement;
-			DbVendor dbVendor = getDbVendor(dataSource);
+			final DbVendor dbVendor = getDbVendor(dataSource);
 			if (DbVendor.Oracle == dbVendor) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY (" + changeColumnStatementPart + ")";
 			} else if (DbVendor.MySQL == dbVendor) {
@@ -1194,13 +1352,13 @@ public class DbUtilities {
 					Statement statement = connection.createStatement()) {
 				statement.executeUpdate(changeColumnStatement);
 				return true;
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				return false;
 			}
 		}
 	}
 
-	private static String getSQLSafeString(String value) {
+	private static String getSQLSafeString(final String value) {
 		if (value == null) {
 			return null;
 		} else {
@@ -1208,10 +1366,10 @@ public class DbUtilities {
 		}
 	}
 
-	public static boolean checkOracleTablespaceExists(DataSource dataSource, String tablespaceName) throws Exception {
+	public static boolean checkOracleTablespaceExists(final DataSource dataSource, final String tablespaceName) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			return checkOracleTablespaceExists(connection, tablespaceName);
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			throw new Exception("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
 		}
 	}
@@ -1222,17 +1380,17 @@ public class DbUtilities {
 	 * @param connection
 	 * @param tablespaceName
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public static boolean checkOracleTablespaceExists(Connection connection, String tablespaceName) throws Exception {
-		DbVendor dbVendor = getDbVendor(connection);
+	public static boolean checkOracleTablespaceExists(final Connection connection, final String tablespaceName) throws Exception {
+		final DbVendor dbVendor = getDbVendor(connection);
 		if (dbVendor == DbVendor.Oracle && tablespaceName != null) {
 			try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM dba_tablespaces WHERE LOWER(tablespace_name) = ?")) {
 				statement.setString(1, tablespaceName.toLowerCase());
 				try (ResultSet resultSet = statement.executeQuery()) {
 					return resultSet.getInt(1) > 0;
 				}
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				throw new RuntimeException("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
 			}
 		} else {
@@ -1240,15 +1398,15 @@ public class DbUtilities {
 		}
 	}
 
-	public static CaseInsensitiveSet getPrimaryKeyColumns(DataSource dataSource, String tableName) throws Exception {
+	public static CaseInsensitiveSet getPrimaryKeyColumns(final DataSource dataSource, final String tableName) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			return getPrimaryKeyColumns(connection, tableName);
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			throw new Exception("Cannot read primarykey columns for table " + tableName + ": " + e.getMessage(), e);
 		}
 	}
 
-	public static CaseInsensitiveSet getPrimaryKeyColumns(Connection connection, String tableName) {
+	public static CaseInsensitiveSet getPrimaryKeyColumns(final Connection connection, String tableName) {
 		if (Utilities.isBlank(tableName)) {
 			return null;
 		} else {
@@ -1256,22 +1414,22 @@ public class DbUtilities {
 				if (getDbVendor(connection) == DbVendor.Oracle || getDbVendor(connection) == DbVendor.HSQL || getDbVendor(connection) == DbVendor.Derby) {
 					tableName = tableName.toUpperCase();
 				}
-				
-				DatabaseMetaData metaData = connection.getMetaData();
+
+				final DatabaseMetaData metaData = connection.getMetaData();
 				try (ResultSet resultSet = metaData.getPrimaryKeys(connection.getCatalog(), null, tableName)) {
-					CaseInsensitiveSet returnList = new CaseInsensitiveSet();
+					final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
 					while (resultSet.next()) {
 						returnList.add(resultSet.getString("COLUMN_NAME"));
 					}
 					return returnList;
 				}
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				throw new RuntimeException("Cannot read primarykey columns for table " + tableName + ": " + e.getMessage(), e);
 			}
 		}
 	}
 
-	public static List<List<String>> getForeignKeys(Connection connection, String tableName) {
+	public static List<List<String>> getForeignKeys(final Connection connection, String tableName) {
 		if (Utilities.isBlank(tableName)) {
 			return null;
 		} else {
@@ -1279,12 +1437,12 @@ public class DbUtilities {
 				if (getDbVendor(connection) == DbVendor.Oracle || getDbVendor(connection) == DbVendor.HSQL || getDbVendor(connection) == DbVendor.Derby) {
 					tableName = tableName.toUpperCase();
 				}
-				
-				DatabaseMetaData metaData = connection.getMetaData();
+
+				final DatabaseMetaData metaData = connection.getMetaData();
 				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
-					List<List<String>> returnList = new ArrayList<List<String>>();
+					final List<List<String>> returnList = new ArrayList<>();
 					while (resultSet.next()) {
-						List<String> nextForeignKey = new ArrayList<String>();
+						final List<String> nextForeignKey = new ArrayList<>();
 						nextForeignKey.add(resultSet.getString("FKTABLE_NAME"));
 						nextForeignKey.add(resultSet.getString("FKCOLUMN_NAME"));
 						nextForeignKey.add(resultSet.getString("PKTABLE_NAME"));
@@ -1293,23 +1451,23 @@ public class DbUtilities {
 					}
 					return returnList;
 				}
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				throw new RuntimeException("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
 			}
 		}
 	}
-	
+
 	/**
 	 * tablePatternExpression contains a comma-separated list of tablenames with wildcards *? and !(not, before tablename)
-	 * 
+	 *
 	 * @param connection
 	 * @param tablePatternExpression
 	 * @return
 	 * @throws Exception
 	 */
-	public static List<String> getAvailableTables(Connection connection, String tablePatternExpression) throws Exception {
+	public static List<String> getAvailableTables(final Connection connection, final String tablePatternExpression) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			DbVendor dbVendor = getDbVendor(connection);
+			final DbVendor dbVendor = getDbVendor(connection);
 
 			String tableQuery;
 			if (DbVendor.Oracle == dbVendor) {
@@ -1327,7 +1485,7 @@ public class DbUtilities {
 				tableQuery += " ORDER BY table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
-					List<String> tableNamesToExport = new ArrayList<String>();
+					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
 					}
@@ -1348,7 +1506,7 @@ public class DbUtilities {
 				tableQuery += " ORDER BY table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
-					List<String> tableNamesToExport = new ArrayList<String>();
+					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
 					}
@@ -1369,7 +1527,7 @@ public class DbUtilities {
 				tableQuery += " ORDER BY table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
-					List<String> tableNamesToExport = new ArrayList<String>();
+					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
 					}
@@ -1390,7 +1548,7 @@ public class DbUtilities {
 				tableQuery += " ORDER BY table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
-					List<String> tableNamesToExport = new ArrayList<String>();
+					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
 					}
@@ -1409,9 +1567,9 @@ public class DbUtilities {
 					}
 				}
 				tableQuery += " ORDER BY name";
-				
+
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
-					List<String> tableNamesToExport = new ArrayList<String>();
+					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("name"));
 					}
@@ -1430,9 +1588,9 @@ public class DbUtilities {
 					}
 				}
 				tableQuery += " ORDER BY tablename";
-				
+
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
-					List<String> tableNamesToExport = new ArrayList<String>();
+					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("tablename"));
 					}
@@ -1451,9 +1609,9 @@ public class DbUtilities {
 					}
 				}
 				tableQuery += " ORDER BY rdb$relation_name";
-				
+
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
-					List<String> tableNamesToExport = new ArrayList<String>();
+					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
 					}
@@ -1472,9 +1630,9 @@ public class DbUtilities {
 					}
 				}
 				tableQuery += " ORDER BY table_name";
-				
+
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
-					List<String> tableNamesToExport = new ArrayList<String>();
+					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
 					}
@@ -1485,8 +1643,8 @@ public class DbUtilities {
 			}
 		}
 	}
-	
-	public static void createTable(Connection connection, String tablename, Map<String, DbColumnType> columnsAndTypes, Collection<String> keyColumns) throws Exception {
+
+	public static void createTable(final Connection connection, final String tablename, final Map<String, DbColumnType> columnsAndTypes, final Collection<String> keyColumns) throws Exception {
 		if  (keyColumns != null) {
 			for (String keyColumn : keyColumns) {
 				keyColumn = Utilities.trimSimultaneously(Utilities.trimSimultaneously(keyColumn, "\""), "`");
@@ -1495,26 +1653,26 @@ public class DbUtilities {
 				}
 			}
 		}
-		
+
 		try (Statement statement = connection.createStatement()) {
-			DbVendor dbVendor = getDbVendor(connection);
-			
+			final DbVendor dbVendor = getDbVendor(connection);
+
 			String columnPart = "";
-			for (Entry<String, DbColumnType> columnAndType : columnsAndTypes.entrySet()) {
+			for (final Entry<String, DbColumnType> columnAndType : columnsAndTypes.entrySet()) {
 				if (columnPart.length() > 0) {
 					columnPart += ", ";
 				}
-				DbColumnType columnType = columnAndType.getValue();
+				final DbColumnType columnType = columnAndType.getValue();
 				if (columnType != null) {
-					String dataType = getDataType(dbVendor, columnType.getSimpleDataType());
-					int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterByteSize() : 0;
+					final String dataType = getDataType(dbVendor, columnType.getSimpleDataType());
+					final int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterByteSize() : 0;
 					columnPart += escapeVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
 				} else {
-					String dataType = getDataType(dbVendor, SimpleDataType.String);
+					final String dataType = getDataType(dbVendor, SimpleDataType.String);
 					columnPart += escapeVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + "(1)";
 				}
 			}
-			
+
 			String primaryKeyPart = "";
 			if (Utilities.isNotEmpty(keyColumns)) {
 				primaryKeyPart = ", PRIMARY KEY (" + joinColumnVendorEscaped(dbVendor, keyColumns) + ")";
@@ -1526,7 +1684,7 @@ public class DbUtilities {
 		}
 	}
 
-	private static String getDataType(DbVendor dbVendor, SimpleDataType simpleDataType) throws Exception {
+	private static String getDataType(final DbVendor dbVendor, final SimpleDataType simpleDataType) throws Exception {
 		if (dbVendor == DbVendor.Oracle) {
 			switch (simpleDataType) {
 				case Blob: return "BLOB";
@@ -1611,8 +1769,8 @@ public class DbUtilities {
 			throw new Exception("Cannot get datatype: " + dbVendor + "/" + simpleDataType);
 		}
 	}
-	
-	public static String getTypeNameById(int typeId) throws Exception {
+
+	public static String getTypeNameById(final int typeId) throws Exception {
 		switch (typeId) {
 			case Types.BIT: return "BIT";
 			case Types.TINYINT: return "TINYINT";
@@ -1657,7 +1815,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static String getDownloadUrl(DbVendor dbVendor) throws Exception {
+	public static String getDownloadUrl(final DbVendor dbVendor) throws Exception {
 		if (dbVendor == DbVendor.MySQL) {
 			return DOWNLOAD_LOCATION_MYSQL;
 		} else if (dbVendor == DbVendor.MariaDB) {
@@ -1683,7 +1841,7 @@ public class DbUtilities {
 
 	/**
 	 * Update the duplicateIndexColumn column of all entries of a table with the minimum index value from itemIndexColumn of other duplicates.
-	 * 
+	 *
 	 * @param connection
 	 * @param tableName
 	 * @param keyColumns
@@ -1692,27 +1850,27 @@ public class DbUtilities {
 	 * @param duplicateIndexColumn
 	 * @throws Exception
 	 */
-	public static void markDuplicates(Connection connection, String tableName, Collection<String> keyColumnsWithFunctions, String itemIndexColumn, String duplicateIndexColumn) throws Exception {
+	public static void markDuplicates(final Connection connection, final String tableName, final Collection<String> keyColumnsWithFunctions, String itemIndexColumn, String duplicateIndexColumn) throws Exception {
 		if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
-			DbVendor dbVendor = getDbVendor(connection);
+			final DbVendor dbVendor = getDbVendor(connection);
 			itemIndexColumn = escapeVendorReservedNames(dbVendor, itemIndexColumn);
 			duplicateIndexColumn = escapeVendorReservedNames(dbVendor, duplicateIndexColumn);
-			
-			StringBuilder selectPart = new StringBuilder();
-			StringBuilder wherePart = new StringBuilder();
+
+			final StringBuilder selectPart = new StringBuilder();
+			final StringBuilder wherePart = new StringBuilder();
 			int columnIndex = 0;
 			for (String columnWithFunction : keyColumnsWithFunctions) {
 				columnWithFunction = escapeVendorReservedNames(dbVendor, columnWithFunction.trim());
-				
+
 				if (selectPart.length() > 0) {
 					selectPart.append(", ");
 					wherePart.append(", ");
 				}
-				
+
 				selectPart.append(columnWithFunction + " AS col" + columnIndex);
-				
+
 				wherePart.append("subselect.col" + columnIndex);
-				
+
 				wherePart.append(" = ");
 
 				if (columnWithFunction.contains("(")) {
@@ -1720,18 +1878,18 @@ public class DbUtilities {
 				} else {
 					wherePart.append(tableName + "." + columnWithFunction);
 				}
-				
+
 				columnIndex++;
 			}
-			
+
 			try (Statement statement = connection.createStatement()) {
 				// The indirection with a subselect is needed for MySQL (You can't specify target table for update in FROM clause)
-				String setDuplicateReferences = "UPDATE " + tableName + " SET " + duplicateIndexColumn + " = (SELECT subselect." + itemIndexColumn + " FROM"
-					+ " (SELECT " + selectPart.toString() + ", MIN(" + itemIndexColumn + ") AS " + itemIndexColumn + " FROM " + tableName + " GROUP BY " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ") subselect"
-					+ " WHERE " + wherePart.toString() + ")";
+				final String setDuplicateReferences = "UPDATE " + tableName + " SET " + duplicateIndexColumn + " = (SELECT subselect." + itemIndexColumn + " FROM"
+						+ " (SELECT " + selectPart.toString() + ", MIN(" + itemIndexColumn + ") AS " + itemIndexColumn + " FROM " + tableName + " GROUP BY " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ") subselect"
+						+ " WHERE " + wherePart.toString() + ")";
 				statement.executeUpdate(setDuplicateReferences);
 				connection.commit();
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				connection.rollback();
 				throw new Exception("Cannot markTrailingDuplicates: " + e.getMessage(), e);
 			}
@@ -1739,16 +1897,16 @@ public class DbUtilities {
 			throw new Exception("Cannot markDuplicates: Missing keycolumns");
 		}
 	}
-	
-	public static String getKeyColumnEquationList(DbVendor dbVendor, Collection<String> columnNamesWithFunctions, String tableAlias1, String tableAlias2) {
-		StringBuilder returnValue = new StringBuilder();
+
+	public static String getKeyColumnEquationList(final DbVendor dbVendor, final Collection<String> columnNamesWithFunctions, final String tableAlias1, final String tableAlias2) {
+		final StringBuilder returnValue = new StringBuilder();
 		for (String columnName : columnNamesWithFunctions) {
 			columnName = escapeVendorReservedNames(dbVendor, columnName.trim());
-			
+
 			if (returnValue.length() > 0) {
 				returnValue.append(", ");
 			}
-			
+
 			if (Utilities.isNotBlank(tableAlias1)) {
 				if (columnName.contains("(")) {
 					returnValue.append(columnName.replace("(", "(" + tableAlias1 + "."));
@@ -1758,7 +1916,7 @@ public class DbUtilities {
 			} else {
 				returnValue.append(columnName);
 			}
-			
+
 			returnValue.append(" = ");
 
 			if (Utilities.isNotBlank(tableAlias2)) {
@@ -1774,9 +1932,9 @@ public class DbUtilities {
 		return returnValue.toString();
 	}
 
-	public static int detectDuplicates(Connection connection, String tableName, Collection<String> keyColumnsWithFunctions) throws Exception {
+	public static int detectDuplicates(final Connection connection, final String tableName, final Collection<String> keyColumnsWithFunctions) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			String countDuplicatesStatement = "SELECT COUNT(*) FROM (SELECT COUNT(*) FROM " + tableName + " GROUP BY " + joinColumnVendorEscaped(getDbVendor(connection), keyColumnsWithFunctions) + " HAVING COUNT(*) > 1) subsel";
+			final String countDuplicatesStatement = "SELECT COUNT(*) FROM (SELECT COUNT(*) FROM " + tableName + " GROUP BY " + joinColumnVendorEscaped(getDbVendor(connection), keyColumnsWithFunctions) + " HAVING COUNT(*) > 1) subsel";
 			try (ResultSet resultSet = statement.executeQuery(countDuplicatesStatement)) {
 				if (resultSet.next()) {
 					return resultSet.getInt(1);
@@ -1784,24 +1942,24 @@ public class DbUtilities {
 					return 0;
 				}
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot detectDuplicates: " + e.getMessage(), e);
 		}
 	}
 
-	public static int detectDuplicatesCrossTables(Connection connection, String detectTableName, String fromTableName, List<String> keyColumnsWithFunctions) throws Exception {
+	public static int detectDuplicatesCrossTables(final Connection connection, final String detectTableName, final String fromTableName, final List<String> keyColumnsWithFunctions) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			String selectDuplicatesNumber = "SELECT COUNT(*) FROM " + detectTableName + " a WHERE EXISTS (SELECT 1 FROM " + fromTableName + " b WHERE " + getKeyColumnEquationList(getDbVendor(connection), keyColumnsWithFunctions, "a", "b") + ")";
+			final String selectDuplicatesNumber = "SELECT COUNT(*) FROM " + detectTableName + " a WHERE EXISTS (SELECT 1 FROM " + fromTableName + " b WHERE " + getKeyColumnEquationList(getDbVendor(connection), keyColumnsWithFunctions, "a", "b") + ")";
 			try (ResultSet resultSet = statement.executeQuery(selectDuplicatesNumber)) {
 				resultSet.next();
 				return resultSet.getInt(1);
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot detectDuplicatesCrossTables: " + e.getMessage(), e);
 		}
 	}
 
-	public static String addIndexedIntegerColumn(Connection connection, String tableName, String columnBaseName) throws Exception {
+	public static String addIndexedIntegerColumn(final Connection connection, final String tableName, final String columnBaseName) throws Exception {
 		String columnName = columnBaseName;
 		int i = 0;
 		while (checkTableAndColumnsExist(connection, tableName, columnName) && i < 10) {
@@ -1811,30 +1969,30 @@ public class DbUtilities {
 		if (i >= 10) {
 			throw new Exception("Cannot create columnBaseName " + columnBaseName + " in table " + tableName);
 		}
-		
+
 		try (Statement statement = connection.createStatement()) {
 			statement.execute("ALTER TABLE " + tableName + " ADD " + columnName + " INTEGER");
-			String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSSSSS).format(new Date());
+			final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSSSSS).format(new Date());
 			try {
 				statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + columnName + ")");
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 				// Work without index. Maybe it already exists or it is a not allowed function based index
 			}
 		}
-		
+
 		return columnName;
 	}
 
-	public static int dropDuplicatesCrossTable(Connection connection, String keepInTableName, String deleteInTableName, List<String> keyColumnsWithFunctions) throws Exception {
+	public static int dropDuplicatesCrossTable(final Connection connection, final String keepInTableName, final String deleteInTableName, final List<String> keyColumnsWithFunctions) throws Exception {
 		if (Utilities.isEmpty(keyColumnsWithFunctions)) {
-			DbVendor dbVendor = getDbVendor(connection);
+			final DbVendor dbVendor = getDbVendor(connection);
 			try (Statement statement = connection.createStatement()) {
-				String deleteDuplicates = "DELETE FROM " + deleteInTableName + " WHERE " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + " IN (SELECT " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + " FROM " + keepInTableName + ")";
-				int numberOfDeletedDuplicates = statement.executeUpdate(deleteDuplicates);
+				final String deleteDuplicates = "DELETE FROM " + deleteInTableName + " WHERE " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + " IN (SELECT " + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + " FROM " + keepInTableName + ")";
+				final int numberOfDeletedDuplicates = statement.executeUpdate(deleteDuplicates);
 				connection.commit();
 				return numberOfDeletedDuplicates;
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				connection.rollback();
 				throw new Exception("Cannot deleteTableCrossDuplicates: " + e.getMessage(), e);
 			}
@@ -1843,30 +2001,30 @@ public class DbUtilities {
 		}
 	}
 
-	public static int dropDuplicates(Connection connection, String tableName, Collection<String> keyColumns) throws Exception {
+	public static int dropDuplicates(final Connection connection, final String tableName, final Collection<String> keyColumns) throws Exception {
 		if (detectDuplicates(connection, tableName, keyColumns) > 0) {
 			String originalItemIndexColumn = null;
 			String originalDuplicateIndexColumn = null;
 			try (Statement statement = connection.createStatement()) {
 				originalItemIndexColumn = createLineNumberIndexColumn(connection, tableName, "drop_idx");
 				originalDuplicateIndexColumn = addIndexedIntegerColumn(connection, tableName, "drop_dpl");
-				
+
 				// Try to create an additional index columns
 				if (Utilities.isNotEmpty(keyColumns)) {
 					try {
-						String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
+						final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
 						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), keyColumns) + ")");
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
 					}
 				}
-				
+
 				markDuplicates(connection, tableName, keyColumns, originalItemIndexColumn, originalDuplicateIndexColumn);
-				
-				int numberOfDeletedDuplicates = statement.executeUpdate("DELETE FROM " + tableName + " WHERE " + originalItemIndexColumn + " != " + originalDuplicateIndexColumn);
+
+				final int numberOfDeletedDuplicates = statement.executeUpdate("DELETE FROM " + tableName + " WHERE " + originalItemIndexColumn + " != " + originalDuplicateIndexColumn);
 				connection.commit();
 				return numberOfDeletedDuplicates;
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				connection.rollback();
 				throw new Exception("Cannot dropDuplicates: " + e.getMessage(), e);
 			} finally {
@@ -1877,15 +2035,15 @@ public class DbUtilities {
 			return 0;
 		}
 	}
-	
-	public static int joinDuplicates(Connection connection, String tableName, Collection<String> keyColumnsWithFunctions, boolean updateWithNullValues) throws Exception {
+
+	public static int joinDuplicates(final Connection connection, final String tableName, final Collection<String> keyColumnsWithFunctions, final boolean updateWithNullValues) throws Exception {
 		if (detectDuplicates(connection, tableName, keyColumnsWithFunctions) > 0) {
-			DbVendor dbVendor = getDbVendor(connection);
-			String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
-			String interimTableName = "tmp_join_" + dateSuffix;
+			final DbVendor dbVendor = getDbVendor(connection);
+			final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
+			final String interimTableName = "tmp_join_" + dateSuffix;
 			String originalItemIndexColumn = null;
 			String originalDuplicateIndexColumn = null;
-			
+
 			// Join all duplicates in destination table
 			try (Statement statement = connection.createStatement()) {
 				// Create additional index columns
@@ -1893,17 +2051,17 @@ public class DbUtilities {
 					try {
 						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ")");
 						connection.commit();
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
 					}
 				}
-				
+
 				originalItemIndexColumn = createLineNumberIndexColumn(connection, tableName, "join_idx");
 				originalDuplicateIndexColumn = addIndexedIntegerColumn(connection, tableName, "join_dpl");
-				
+
 				markDuplicates(connection, tableName, keyColumnsWithFunctions, originalItemIndexColumn, originalDuplicateIndexColumn);
 				connection.commit();
-				
+
 				// Create temp table
 				if (dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
 					statement.execute("CREATE TABLE " + interimTableName + " AS (SELECT * FROM " + tableName + ") WITH NO DATA");
@@ -1919,20 +2077,20 @@ public class DbUtilities {
 					statement.execute("CREATE TABLE " + interimTableName + " AS SELECT * FROM " + tableName + " WHERE " + originalItemIndexColumn + " != " + originalDuplicateIndexColumn);
 				}
 				connection.commit();
-				
-				int deletedDuplicatesInDB = dropDuplicates(connection, tableName, keyColumnsWithFunctions);
 
-				List<String> columnsWithoutAutoIncrement = new ArrayList<String>();
-				for (Entry<String, DbColumnType> column : getColumnDataTypes(connection, tableName).entrySet()) {
+				final int deletedDuplicatesInDB = dropDuplicates(connection, tableName, keyColumnsWithFunctions);
+
+				final List<String> columnsWithoutAutoIncrement = new ArrayList<>();
+				for (final Entry<String, DbColumnType> column : getColumnDataTypes(connection, tableName).entrySet()) {
 					if (!column.getValue().isAutoIncrement()) {
 						columnsWithoutAutoIncrement.add(column.getKey());
 					}
 				}
-				
+
 				updateAllExistingItems(connection, interimTableName, tableName, columnsWithoutAutoIncrement, keyColumnsWithFunctions, originalItemIndexColumn, updateWithNullValues, null);
 				connection.commit();
 				return deletedDuplicatesInDB;
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				throw new Exception("Cannot joinDuplicates: " + e.getMessage(), e);
 			} finally {
 				dropTableIfExists(connection, interimTableName);
@@ -1944,9 +2102,9 @@ public class DbUtilities {
 		}
 	}
 
-	private static String createLineNumberIndexColumn(Connection connection, String tableName, String indexColumnNameBaseName) throws Exception {
-		DbVendor dbVendor = getDbVendor(connection);
-		String indexColumnName = addIndexedIntegerColumn(connection, tableName, indexColumnNameBaseName);
+	private static String createLineNumberIndexColumn(final Connection connection, final String tableName, final String indexColumnNameBaseName) throws Exception {
+		final DbVendor dbVendor = getDbVendor(connection);
+		final String indexColumnName = addIndexedIntegerColumn(connection, tableName, indexColumnNameBaseName);
 
 		try (Statement statement = connection.createStatement()) {
 			if (dbVendor == DbVendor.MySQL) {
@@ -1963,8 +2121,8 @@ public class DbUtilities {
 				statement.executeUpdate("UPDATE " + tableName + " SET " + indexColumnName + " = ROWNUM()");
 			} else if (dbVendor == DbVendor.Derby) {
 				String autoIncrementColumn = null;
-				List<String> columnsWithoutAutoIncrement = new ArrayList<String>();
-				for (Entry<String, DbColumnType> column : getColumnDataTypes(connection, tableName).entrySet()) {
+				final List<String> columnsWithoutAutoIncrement = new ArrayList<>();
+				for (final Entry<String, DbColumnType> column : getColumnDataTypes(connection, tableName).entrySet()) {
 					if (!column.getValue().isAutoIncrement()) {
 						columnsWithoutAutoIncrement.add(column.getKey());
 					} else {
@@ -1980,8 +2138,8 @@ public class DbUtilities {
 				}
 			} else if (dbVendor == DbVendor.PostgreSQL) {
 				String autoIncrementColumn = null;
-				List<String> columnsWithoutAutoIncrement = new ArrayList<String>();
-				for (Entry<String, DbColumnType> column : getColumnDataTypes(connection, tableName).entrySet()) {
+				final List<String> columnsWithoutAutoIncrement = new ArrayList<>();
+				for (final Entry<String, DbColumnType> column : getColumnDataTypes(connection, tableName).entrySet()) {
 					if (!column.getValue().isAutoIncrement()) {
 						columnsWithoutAutoIncrement.add(column.getKey());
 					} else {
@@ -1999,38 +2157,38 @@ public class DbUtilities {
 				throw new Exception("Unsupported db vendor");
 			}
 			connection.commit();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot create lineNumberIndexColumn: " + e.getMessage(), e);
 		}
 		return indexColumnName;
 	}
 
-	public static boolean dropColumnIfExists(Connection connection, String tableName, String columnName) throws Exception {
+	public static boolean dropColumnIfExists(final Connection connection, final String tableName, final String columnName) throws Exception {
 		if (connection != null && tableName != null && columnName != null && checkTableAndColumnsExist(connection, tableName, columnName)) {
-			DbVendor dbVendor = getDbVendor(connection);
+			final DbVendor dbVendor = getDbVendor(connection);
 			if (dbVendor == DbVendor.SQLite) {
 				// SQLite cannot drop colmns
 				try (Statement statement = connection.createStatement()) {
-					String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
-					
+					final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
+
 					String createTableStatement = null;
 					try (ResultSet resultSet = statement.executeQuery("SELECT sql FROM sqlite_master WHERE type = 'table' AND LOWER(name) = LOWER('" + tableName + "')")) {
 						if (resultSet.next()) {
 							createTableStatement = resultSet.getString("sql");
 						}
 					}
-					
+
 					createTableStatement = createTableStatement.replaceAll(", " + columnName + " [a-zA-Z0-9()]+\\)", ")").replaceAll(", " + columnName + " [a-zA-Z0-9()]+,", ",");
-					
+
 					statement.execute("ALTER TABLE " + tableName + " RENAME TO tmp" + dateSuffix + "_old");
 					statement.execute(createTableStatement);
-					Set<String> columns = getColumnNames(connection, tableName);
+					final Set<String> columns = getColumnNames(connection, tableName);
 					columns.remove(columnName);
 					statement.execute("INSERT INTO " + tableName + " (" + joinColumnVendorEscaped(dbVendor, columns) + ") SELECT " + joinColumnVendorEscaped(dbVendor, columns) + " FROM tmp" + dateSuffix + "_old");
 					statement.execute("DROP TABLE tmp" + dateSuffix + "_old");
 					connection.commit();
 					return true;
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					connection.rollback();
 					throw e;
 				}
@@ -2039,7 +2197,7 @@ public class DbUtilities {
 					statement.execute("ALTER TABLE " + tableName + " DROP COLUMN " + columnName);
 					connection.commit();
 					return true;
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					connection.rollback();
 					throw e;
 				}
@@ -2047,8 +2205,8 @@ public class DbUtilities {
 		}
 		return false;
 	}
-	
-	public static boolean dropTableIfExists(Connection connection, String tableName) throws Exception {
+
+	public static boolean dropTableIfExists(final Connection connection, final String tableName) throws Exception {
 		if (connection != null && tableName != null && checkTableExist(connection, tableName)) {
 			try (Statement statement = connection.createStatement()) {
 				statement.execute("DROP TABLE " + tableName);
@@ -2058,10 +2216,10 @@ public class DbUtilities {
 		}
 		return false;
 	}
-	
-	public static void copyTableStructure(Connection connection, String sourceTableName, List<String> columnNames, List<String> keyColumns, String destinationTableName) throws Exception {
+
+	public static void copyTableStructure(final Connection connection, final String sourceTableName, final List<String> columnNames, final List<String> keyColumns, final String destinationTableName) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			DbVendor dbVendor = getDbVendor(connection);
+			final DbVendor dbVendor = getDbVendor(connection);
 			if (dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
 				statement.execute("CREATE TABLE " + destinationTableName + " AS (SELECT " + joinColumnVendorEscaped(dbVendor, columnNames) + " FROM " + sourceTableName + ") WITH NO DATA");
 			} else if (dbVendor == DbVendor.PostgreSQL) {
@@ -2074,10 +2232,10 @@ public class DbUtilities {
 			} else {
 				statement.execute("CREATE TABLE " + destinationTableName + " AS SELECT " + joinColumnVendorEscaped(dbVendor, columnNames) + " FROM " + sourceTableName + " WHERE 1 = 0");
 			}
-			
+
 			// Make all columns nullable
-			CaseInsensitiveMap<DbColumnType> columnDataTypes = getColumnDataTypes(connection, destinationTableName);
-			for (Entry<String, DbColumnType> columnDataType : columnDataTypes.entrySet()) {
+			final CaseInsensitiveMap<DbColumnType> columnDataTypes = getColumnDataTypes(connection, destinationTableName);
+			for (final Entry<String, DbColumnType> columnDataType : columnDataTypes.entrySet()) {
 				if (!columnDataType.getValue().isNullable() && (keyColumns == null || !keyColumns.contains(columnDataType.getKey()))) {
 					String typeString = columnDataType.getValue().getTypeName();
 					if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.String) {
@@ -2090,88 +2248,88 @@ public class DbUtilities {
 					statement.execute("ALTER TABLE " + destinationTableName + " MODIFY " + columnDataType.getKey() + " " + typeString + " NULL");
 				}
 			}
-			
+
 			if (dbVendor == DbVendor.PostgreSQL || dbVendor == DbVendor.Firebird) {
 				connection.commit();
 			}
 		}
 	}
-	
-	public static String createIndex(Connection connection, String tableName, List<String> columns) throws Exception {
+
+	public static String createIndex(final Connection connection, final String tableName, final List<String> columns) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			String indexNameSuffix = "_" + new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date()) + "_ix";
-			String indexName = Utilities.shortenStringToMaxLengthCutRight(tableName, 30 - indexNameSuffix.length(), "") + indexNameSuffix;
+			final String indexNameSuffix = "_" + new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date()) + "_ix";
+			final String indexName = Utilities.shortenStringToMaxLengthCutRight(tableName, 30 - indexNameSuffix.length(), "") + indexNameSuffix;
 			statement.execute("CREATE INDEX " + indexName + " ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), columns) + ")");
 			return indexName;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot create index: " + e.getMessage(), e);
 		}
 	}
-	
-	public static int clearTable(Connection connection, String tableName) throws Exception {
+
+	public static int clearTable(final Connection connection, final String tableName) throws Exception {
 		try (Statement statement = connection.createStatement()) {
 			return statement.executeUpdate("DELETE FROM " + tableName);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot clear table: " + e.getMessage(), e);
 		}
 	}
-	
-	public static int insertNotExistingItems(Connection connection, String sourceTableName, String destinationTableName, List<String> insertColumns, List<String> keyColumnsWithFunctions, String additionalInsertValues) throws Exception {
+
+	public static int insertNotExistingItems(final Connection connection, final String sourceTableName, final String destinationTableName, final List<String> insertColumns, final List<String> keyColumnsWithFunctions, final String additionalInsertValues) throws Exception {
 		try (Statement statement = connection.createStatement()) {
 			String additionalInsertValuesSqlColumns = "";
 			String additionalInsertValuesSqlValues = "";
 			if (Utilities.isNotBlank(additionalInsertValues)) {
-				for (String line : Utilities.splitAndTrimListQuoted(additionalInsertValues, '\n', '\r', ';')) {
-					String columnName = line.substring(0, line.indexOf("=")).trim();
-					String columnvalue = line.substring(line.indexOf("=") + 1).trim();
+				for (final String line : Utilities.splitAndTrimListQuoted(additionalInsertValues, '\n', '\r', ';')) {
+					final String columnName = line.substring(0, line.indexOf("=")).trim();
+					final String columnvalue = line.substring(line.indexOf("=") + 1).trim();
 					additionalInsertValuesSqlColumns += columnName + ", ";
 					additionalInsertValuesSqlValues += columnvalue + ", ";
 				}
 			}
-			
+
 			String insertDataStatement = "INSERT INTO " + destinationTableName + " (" + additionalInsertValuesSqlColumns + joinColumnVendorEscaped(getDbVendor(connection), insertColumns) + ") SELECT " + additionalInsertValuesSqlValues + joinColumnVendorEscaped(getDbVendor(connection), insertColumns) + " FROM " + sourceTableName + " a";
 			if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
 				insertDataStatement += " WHERE NOT EXISTS (SELECT 1 FROM " + destinationTableName + " b WHERE " + getKeyColumnEquationList(getDbVendor(connection), keyColumnsWithFunctions, "a", "b") + ")";
 			}
-			int numberOfInserts = statement.executeUpdate(insertDataStatement);
+			final int numberOfInserts = statement.executeUpdate(insertDataStatement);
 			connection.commit();
 			return numberOfInserts;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			connection.rollback();
 			throw new Exception("Cannot insert: " + e.getMessage(), e);
 		}
 	}
 
-	public static int insertAllItems(Connection connection, String sourceTableName, String destinationTableName, List<String> insertColumns, String additionalInsertValues) throws Exception {
+	public static int insertAllItems(final Connection connection, final String sourceTableName, final String destinationTableName, final List<String> insertColumns, final String additionalInsertValues) throws Exception {
 		return insertNotExistingItems(connection, sourceTableName, destinationTableName, insertColumns, null, additionalInsertValues);
 	}
 
-	public static int updateAllExistingItems(Connection connection, String sourceTableName, String destinationTableName, Collection<String> updateColumns, Collection<String> keyColumns, String itemIndexColumn, boolean updateWithNullValues, String additionalUpdateValues) throws Exception {
+	public static int updateAllExistingItems(final Connection connection, final String sourceTableName, final String destinationTableName, Collection<String> updateColumns, final Collection<String> keyColumns, String itemIndexColumn, final boolean updateWithNullValues, final String additionalUpdateValues) throws Exception {
 		if (keyColumns == null || keyColumns.isEmpty()) {
 			throw new Exception("Missing keycolumns");
 		}
-		
+
 		// Do not update the keycolumns
-		updateColumns = new ArrayList<String>(updateColumns);
+		updateColumns = new ArrayList<>(updateColumns);
 		updateColumns.removeAll(keyColumns);
 
 		int updatedItems = 0;
-		
+
 		if (!updateColumns.isEmpty()) {
 			try (Statement statement = connection.createStatement()) {
 				String additionalUpdateValuesSql = "";
 				if (Utilities.isNotBlank(additionalUpdateValues)) {
-					for (String line : Utilities.splitAndTrimListQuoted(additionalUpdateValues, '\n', '\r', ';')) {
-						String columnName = line.substring(0, line.indexOf("=")).trim();
-						String columnvalue = line.substring(line.indexOf("=") + 1).trim();
+					for (final String line : Utilities.splitAndTrimListQuoted(additionalUpdateValues, '\n', '\r', ';')) {
+						final String columnName = line.substring(0, line.indexOf("=")).trim();
+						final String columnvalue = line.substring(line.indexOf("=") + 1).trim();
 						additionalUpdateValuesSql += columnName + " = " + columnvalue + ", ";
 					}
 				}
-				
-				updateColumns = new ArrayList<String>(updateColumns);
+
+				updateColumns = new ArrayList<>(updateColumns);
 				updateColumns.removeAll(keyColumns);
 				if (updateColumns.size() > 0 || additionalUpdateValuesSql.length() > 0) {
-					DbVendor dbVendor = getDbVendor(connection);
+					final DbVendor dbVendor = getDbVendor(connection);
 					itemIndexColumn = escapeVendorReservedNames(dbVendor, itemIndexColumn);
 					String updatedIndexColumn = null;
 					try {
@@ -2183,19 +2341,19 @@ public class DbUtilities {
 									updateSetPart += ", ";
 								}
 								updateSetPart += updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
-									+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))";
+										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))";
 							}
-							String updateAllAtOnce = "UPDATE " + destinationTableName + " SET " + additionalUpdateValuesSql + updateSetPart
-								+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "b") + ")";
+							final String updateAllAtOnce = "UPDATE " + destinationTableName + " SET " + additionalUpdateValuesSql + updateSetPart
+									+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "b") + ")";
 							updatedItems = statement.executeUpdate(updateAllAtOnce);
 						} else {
 							updatedIndexColumn = addIndexedIntegerColumn(connection, destinationTableName, "updatedindex");
 							for (String updateColumn : updateColumns) {
 								updateColumn = escapeVendorReservedNames(dbVendor, updateColumn);
-								String updateSingleColumn = "UPDATE " + destinationTableName
-									+ " SET " + additionalUpdateValuesSql + updatedIndexColumn + " = 1, " + updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
+								final String updateSingleColumn = "UPDATE " + destinationTableName
+										+ " SET " + additionalUpdateValuesSql + updatedIndexColumn + " = 1, " + updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
 										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))"
-									+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "b") + ")";
+										+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "b") + ")";
 								statement.executeUpdate(updateSingleColumn);
 							}
 
@@ -2205,61 +2363,61 @@ public class DbUtilities {
 							}
 						}
 						connection.commit();
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						connection.rollback();
 						throw e;
 					} finally {
 						dropColumnIfExists(connection, destinationTableName, updatedIndexColumn);
 					}
 				}
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				throw new Exception("Cannot update: " + e.getMessage(), e);
 			}
 		}
-		
+
 		return updatedItems;
 	}
-	
-	public static int updateFirstExistingItems(Connection connection, String sourceTableName, String destinationTableName, Collection<String> updateColumns, Collection<String> keyColumns, String itemIndexColumn, boolean updateWithNullValues, String additionalUpdateValues) throws Exception {
+
+	public static int updateFirstExistingItems(final Connection connection, final String sourceTableName, final String destinationTableName, Collection<String> updateColumns, final Collection<String> keyColumns, final String itemIndexColumn, final boolean updateWithNullValues, final String additionalUpdateValues) throws Exception {
 		if (keyColumns == null || keyColumns.isEmpty()) {
 			throw new Exception("Missing keycolumns");
 		}
-		
+
 		// Do not update the keycolumns
-		updateColumns = new ArrayList<String>(updateColumns);
+		updateColumns = new ArrayList<>(updateColumns);
 		updateColumns.removeAll(keyColumns);
-		
+
 		int updatedItems = 0;
-		
+
 		if (!updateColumns.isEmpty()) {
 			try (Statement statement = connection.createStatement()) {
 				String additionalUpdateValuesSql = "";
 				if (Utilities.isNotBlank(additionalUpdateValues)) {
-					for (String line : Utilities.splitAndTrimListQuoted(additionalUpdateValues, '\n', '\r', ';')) {
-						String columnName = line.substring(0, line.indexOf("=")).trim();
-						String columnvalue = line.substring(line.indexOf("=") + 1).trim();
+					for (final String line : Utilities.splitAndTrimListQuoted(additionalUpdateValues, '\n', '\r', ';')) {
+						final String columnName = line.substring(0, line.indexOf("=")).trim();
+						final String columnvalue = line.substring(line.indexOf("=") + 1).trim();
 						additionalUpdateValuesSql += columnName + " = " + columnvalue + ", ";
 					}
 				}
-				
-				updateColumns = new ArrayList<String>(updateColumns);
+
+				updateColumns = new ArrayList<>(updateColumns);
 				updateColumns.removeAll(keyColumns);
 				if (updateColumns.size() > 0 || additionalUpdateValuesSql.length() > 0) {
 					String originalItemIndexColumn = null;
 					String updatedIndexColumn = null;
 					try {
-						DbVendor dbVendor = getDbVendor(connection);
+						final DbVendor dbVendor = getDbVendor(connection);
 						originalItemIndexColumn = createLineNumberIndexColumn(connection, destinationTableName, "itemindex");
-						
+
 						// Mark duplicates in temp table
-						List<String> keycolumnParts = new ArrayList<String>();
-						for (String keyColumn : keyColumns) {
+						final List<String> keycolumnParts = new ArrayList<>();
+						for (final String keyColumn : keyColumns) {
 							keycolumnParts.add("src." + escapeVendorReservedNames(dbVendor, keyColumn) + " = " + sourceTableName + "." + escapeVendorReservedNames(dbVendor, keyColumn) + " AND src." + escapeVendorReservedNames(dbVendor, keyColumn) + " IS NOT NULL");
 						}
-						String updateStatement = "UPDATE " + sourceTableName + " SET " + itemIndexColumn + " = COALESCE((SELECT MIN(src." + originalItemIndexColumn + ") FROM " + destinationTableName + " src WHERE " + Utilities.join(keycolumnParts, " AND ") + "), 0)";
+						final String updateStatement = "UPDATE " + sourceTableName + " SET " + itemIndexColumn + " = COALESCE((SELECT MIN(src." + originalItemIndexColumn + ") FROM " + destinationTableName + " src WHERE " + Utilities.join(keycolumnParts, " AND ") + "), 0)";
 						statement.executeUpdate(updateStatement);
 						connection.commit();
-						
+
 						// Update with marked items
 						if (updateWithNullValues) {
 							String updateSetPart = "";
@@ -2269,29 +2427,29 @@ public class DbUtilities {
 									updateSetPart += ", ";
 								}
 								updateSetPart += updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
-									+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))";
+										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))";
 							}
-							String updateAllAtOnce = "UPDATE " + destinationTableName + " SET " + additionalUpdateValuesSql + updateSetPart
-								+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + originalItemIndexColumn + " = b." + itemIndexColumn + ")";
+							final String updateAllAtOnce = "UPDATE " + destinationTableName + " SET " + additionalUpdateValuesSql + updateSetPart
+									+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + originalItemIndexColumn + " = b." + itemIndexColumn + ")";
 							updatedItems = statement.executeUpdate(updateAllAtOnce);
 						} else {
 							updatedIndexColumn = addIndexedIntegerColumn(connection, destinationTableName, "updatedindex");
 							for (String updateColumn : updateColumns) {
 								updateColumn = escapeVendorReservedNames(dbVendor, updateColumn);
-								String updateSingleColumn = "UPDATE " + destinationTableName
-									+ " SET " + additionalUpdateValuesSql + updatedIndexColumn + " = 1, " + updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
+								final String updateSingleColumn = "UPDATE " + destinationTableName
+										+ " SET " + additionalUpdateValuesSql + updatedIndexColumn + " = 1, " + updateColumn + " = (SELECT " + updateColumn + " FROM " + sourceTableName + " WHERE " + itemIndexColumn + " ="
 										+ " (SELECT MAX(" + itemIndexColumn + ") FROM " + sourceTableName + " c WHERE " + updateColumn + " IS NOT NULL AND " + getKeyColumnEquationList(dbVendor, keyColumns, destinationTableName, "c") + "))"
-									+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + originalItemIndexColumn + " = b." + itemIndexColumn + ")";
+										+ " WHERE EXISTS (SELECT 1 FROM " + sourceTableName + " b WHERE " + originalItemIndexColumn + " = b." + itemIndexColumn + ")";
 								statement.executeUpdate(updateSingleColumn);
 							}
-							
+
 							try (ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM " + destinationTableName + " WHERE " + updatedIndexColumn + " = 1")) {
 								resultSet.next();
 								updatedItems = resultSet.getInt(1);
 							}
 						}
 						connection.commit();
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						connection.rollback();
 						throw e;
 					} finally {
@@ -2299,72 +2457,72 @@ public class DbUtilities {
 						dropColumnIfExists(connection, destinationTableName, updatedIndexColumn);
 					}
 				}
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				throw new Exception("Cannot update first entries: " + e.getMessage(), e);
 			}
 		}
-		
+
 		return updatedItems;
 	}
 
 	/**
 	 * Check for existing index
 	 * Returns null, if check cannot be executed (happens on some db vendors)
-	 * 
+	 *
 	 * @param connection
 	 * @param tableName
 	 * @param keyColumns
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public static Boolean checkForIndex(Connection connection, String tableName, List<String> keyColumns) throws Exception {
-		DbVendor dbVendor = getDbVendor(connection);
+	public static Boolean checkForIndex(final Connection connection, final String tableName, final List<String> keyColumns) throws Exception {
+		final DbVendor dbVendor = getDbVendor(connection);
 		if (dbVendor == DbVendor.Oracle) {
 			try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM user_ind_columns WHERE LOWER(table_name) = ? AND LOWER(column_name) = ?")) {
-	        	for (String keyColumn : keyColumns) {
-	        		keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
-	        		statement.setString(1, tableName.toLowerCase());
-	        		statement.setString(2, keyColumn.toLowerCase());
-	        		try (ResultSet resultSet = statement.executeQuery()) {
-			            if (!resultSet.next() || resultSet.getInt(1) <= 0) {
-			            	return false;
-			            }
-	        		}
-	        	}
-	            return true;
+				for (String keyColumn : keyColumns) {
+					keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
+					statement.setString(1, tableName.toLowerCase());
+					statement.setString(2, keyColumn.toLowerCase());
+					try (ResultSet resultSet = statement.executeQuery()) {
+						if (!resultSet.next() || resultSet.getInt(1) <= 0) {
+							return false;
+						}
+					}
+				}
+				return true;
 			}
-        } else if (dbVendor == DbVendor.MySQL) {
+		} else if (dbVendor == DbVendor.MySQL) {
 			try (PreparedStatement statement = connection.prepareStatement("SHOW INDEX FROM " + tableName.toLowerCase() + " WHERE column_name = ?")) {
-	        	for (String keyColumn : keyColumns) {
-	        		keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
-	        		statement.setString(1, keyColumn.toLowerCase());
-	        		try (ResultSet resultSet = statement.executeQuery()) {
-			            if (!resultSet.next()) {
-			            	return false;
-			            }
-	        		}
-	        	}
-	            return true;
+				for (String keyColumn : keyColumns) {
+					keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
+					statement.setString(1, keyColumn.toLowerCase());
+					try (ResultSet resultSet = statement.executeQuery()) {
+						if (!resultSet.next()) {
+							return false;
+						}
+					}
+				}
+				return true;
 			}
-        } else if (dbVendor == DbVendor.MariaDB) {
+		} else if (dbVendor == DbVendor.MariaDB) {
 			try (PreparedStatement statement = connection.prepareStatement("SHOW INDEX FROM " + tableName.toLowerCase() + " WHERE column_name = ?")) {
-	        	for (String keyColumn : keyColumns) {
-	        		keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
-	        		statement.setString(1, keyColumn.toLowerCase());
-	        		try (ResultSet resultSet = statement.executeQuery()) {
-			            if (!resultSet.next()) {
-			            	return false;
-			            }
-	        		}
-	        	}
-	            return true;
+				for (String keyColumn : keyColumns) {
+					keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
+					statement.setString(1, keyColumn.toLowerCase());
+					try (ResultSet resultSet = statement.executeQuery()) {
+						if (!resultSet.next()) {
+							return false;
+						}
+					}
+				}
+				return true;
 			}
-        } else {
-        	return null;
-        }
+		} else {
+			return null;
+		}
 	}
-	
-	public static String unescapeVendorReservedNames(DbVendor dbVendor, String value) {
+
+	public static String unescapeVendorReservedNames(final DbVendor dbVendor, final String value) {
 		if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 			return Utilities.trimSimultaneously(value, "`");
 		} else if (dbVendor == DbVendor.Oracle) {
@@ -2375,1342 +2533,24 @@ public class DbUtilities {
 			return value;
 		}
 	}
-	
-	public static String escapeVendorReservedNames(DbVendor dbVendor, String value) {
-		if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
-			switch (value.toLowerCase()) {
-				case "accessible":
-				case "account":
-				case "action":
-				case "add":
-				case "after":
-				case "against":
-				case "aggregate":
-				case "algorithm":
-				case "all":
-				case "alter":
-				case "always":
-				case "analyse":
-				case "analyze":
-				case "and":
-				case "any":
-				case "as":
-				case "asc":
-				case "ascii":
-				case "asensitive":
-				case "at":
-				case "autoextend_size":
-				case "auto_increment":
-				case "avg":
-				case "avg_row_length":
-				case "backup":
-				case "before":
-				case "begin":
-				case "between":
-				case "bigint":
-				case "binary":
-				case "binlog":
-				case "bit":
-				case "blob":
-				case "block":
-				case "bool":
-				case "boolean":
-				case "both":
-				case "btree":
-				case "by":
-				case "byte":
-				case "cache":
-				case "call":
-				case "cascade":
-				case "cascaded":
-				case "case":
-				case "catalog_name":
-				case "chain":
-				case "change":
-				case "changed":
-				case "channel":
-				case "char":
-				case "character":
-				case "charset":
-				case "check":
-				case "checksum":
-				case "cipher":
-				case "class_origin":
-				case "client":
-				case "close":
-				case "coalesce":
-				case "code":
-				case "collate":
-				case "collation":
-				case "column":
-				case "columns":
-				case "column_format":
-				case "column_name":
-				case "comment":
-				case "commit":
-				case "committed":
-				case "compact":
-				case "completion":
-				case "compressed":
-				case "compression":
-				case "concurrent":
-				case "condition":
-				case "connection":
-				case "consistent":
-				case "constraint":
-				case "constraint_catalog":
-				case "constraint_name":
-				case "constraint_schema":
-				case "contains":
-				case "context":
-				case "continue":
-				case "convert":
-				case "cpu":
-				case "create":
-				case "cross":
-				case "cube":
-				case "current":
-				case "current_date":
-				case "current_time":
-				case "current_timestamp":
-				case "current_user":
-				case "cursor":
-				case "cursor_name":
-				case "data":
-				case "database":
-				case "databases":
-				case "datafile":
-				case "date":
-				case "datetime":
-				case "day":
-				case "day_hour":
-				case "day_microsecond":
-				case "day_minute":
-				case "day_second":
-				case "deallocate":
-				case "dec":
-				case "decimal":
-				case "declare":
-				case "default":
-				case "default_auth":
-				case "definer":
-				case "delayed":
-				case "delay_key_write":
-				case "delete":
-				case "desc":
-				case "describe":
-				case "des_key_file":
-				case "deterministic":
-				case "diagnostics":
-				case "directory":
-				case "disable":
-				case "discard":
-				case "disk":
-				case "distinct":
-				case "distinctrow":
-				case "div":
-				case "do":
-				case "double":
-				case "drop":
-				case "dual":
-				case "dumpfile":
-				case "duplicate":
-				case "dynamic":
-				case "each":
-				case "else":
-				case "elseif":
-				case "enable":
-				case "enclosed":
-				case "encryption":
-				case "end":
-				case "ends":
-				case "engine":
-				case "engines":
-				case "enum":
-				case "error":
-				case "errors":
-				case "escape":
-				case "escaped":
-				case "event":
-				case "events":
-				case "every":
-				case "exchange":
-				case "execute":
-				case "exists":
-				case "exit":
-				case "expansion":
-				case "expire":
-				case "explain":
-				case "export":
-				case "extended":
-				case "extent_size":
-				case "false":
-				case "fast":
-				case "faults":
-				case "fetch":
-				case "fields":
-				case "file":
-				case "file_block_size":
-				case "filter":
-				case "first":
-				case "fixed":
-				case "float":
-				case "float4":
-				case "float8":
-				case "flush":
-				case "follows":
-				case "for":
-				case "force":
-				case "foreign":
-				case "format":
-				case "found":
-				case "from":
-				case "full":
-				case "fulltext":
-				case "function":
-				case "general":
-				case "generated":
-				case "geometry":
-				case "geometrycollection":
-				case "get":
-				case "get_format":
-				case "global":
-				case "grant":
-				case "grants":
-				case "group":
-				case "group_replication":
-				case "handler":
-				case "hash":
-				case "having":
-				case "help":
-				case "high_priority":
-				case "host":
-				case "hosts":
-				case "hour":
-				case "hour_microsecond":
-				case "hour_minute":
-				case "hour_second":
-				case "identified":
-				case "if":
-				case "ignore":
-				case "ignore_server_ids":
-				case "import":
-				case "in":
-				case "index":
-				case "indexes":
-				case "infile":
-				case "initial_size":
-				case "inner":
-				case "inout":
-				case "insensitive":
-				case "insert":
-				case "insert_method":
-				case "install":
-				case "instance":
-				case "int":
-				case "int1":
-				case "int2":
-				case "int3":
-				case "int4":
-				case "int8":
-				case "integer":
-				case "interval":
-				case "into":
-				case "invoker":
-				case "io":
-				case "io_after_gtids":
-				case "io_before_gtids":
-				case "io_thread":
-				case "ipc":
-				case "is":
-				case "isolation":
-				case "issuer":
-				case "iterate":
-				case "join":
-				case "json":
-				case "key":
-				case "keys":
-				case "key_block_size":
-				case "kill":
-				case "language":
-				case "last":
-				case "leading":
-				case "leave":
-				case "leaves":
-				case "left":
-				case "less":
-				case "level":
-				case "like":
-				case "limit":
-				case "linear":
-				case "lines":
-				case "linestring":
-				case "list":
-				case "load":
-				case "local":
-				case "localtime":
-				case "localtimestamp":
-				case "lock":
-				case "locks":
-				case "logfile":
-				case "logs":
-				case "long":
-				case "longblob":
-				case "longtext":
-				case "loop":
-				case "low_priority":
-				case "master":
-				case "master_auto_position":
-				case "master_bind":
-				case "master_connect_retry":
-				case "master_delay":
-				case "master_heartbeat_period":
-				case "master_host":
-				case "master_log_file":
-				case "master_log_pos":
-				case "master_password":
-				case "master_port":
-				case "master_retry_count":
-				case "master_server_id":
-				case "master_ssl":
-				case "master_ssl_ca":
-				case "master_ssl_capath":
-				case "master_ssl_cert":
-				case "master_ssl_cipher":
-				case "master_ssl_crl":
-				case "master_ssl_crlpath":
-				case "master_ssl_key":
-				case "master_ssl_verify_server_cert":
-				case "master_tls_version":
-				case "master_user":
-				case "match":
-				case "maxvalue":
-				case "max_connections_per_hour":
-				case "max_queries_per_hour":
-				case "max_rows":
-				case "max_size":
-				case "max_statement_time":
-				case "max_updates_per_hour":
-				case "max_user_connections":
-				case "medium":
-				case "mediumblob":
-				case "mediumint":
-				case "mediumtext":
-				case "memory":
-				case "merge":
-				case "message_text":
-				case "microsecond":
-				case "middleint":
-				case "migrate":
-				case "minute":
-				case "minute_microsecond":
-				case "minute_second":
-				case "min_rows":
-				case "mod":
-				case "mode":
-				case "modifies":
-				case "modify":
-				case "month":
-				case "multilinestring":
-				case "multipoint":
-				case "multipolygon":
-				case "mutex":
-				case "mysql_errno":
-				case "name":
-				case "names":
-				case "national":
-				case "natural":
-				case "nchar":
-				case "ndb":
-				case "ndbcluster":
-				case "never":
-				case "new":
-				case "next":
-				case "no":
-				case "nodegroup":
-				case "nonblocking":
-				case "none":
-				case "not":
-				case "no_wait":
-				case "no_write_to_binlog":
-				case "null":
-				case "number":
-				case "numeric":
-				case "nvarchar":
-				case "offset":
-				case "old_password":
-				case "on":
-				case "one":
-				case "only":
-				case "open":
-				case "optimize":
-				case "optimizer_costs":
-				case "option":
-				case "optionally":
-				case "options":
-				case "or":
-				case "order":
-				case "out":
-				case "outer":
-				case "outfile":
-				case "owner":
-				case "pack_keys":
-				case "page":
-				case "parser":
-				case "parse_gcol_expr":
-				case "partial":
-				case "partition":
-				case "partitioning":
-				case "partitions":
-				case "password":
-				case "phase":
-				case "plugin":
-				case "plugins":
-				case "plugin_dir":
-				case "point":
-				case "polygon":
-				case "port":
-				case "precedes":
-				case "precision":
-				case "prepare":
-				case "preserve":
-				case "prev":
-				case "primary":
-				case "privileges":
-				case "procedure":
-				case "processlist":
-				case "profile":
-				case "profiles":
-				case "proxy":
-				case "purge":
-				case "quarter":
-				case "query":
-				case "quick":
-				case "range":
-				case "read":
-				case "reads":
-				case "read_only":
-				case "read_write":
-				case "real":
-				case "rebuild":
-				case "recover":
-				case "redofile":
-				case "redo_buffer_size":
-				case "redundant":
-				case "references":
-				case "regexp":
-				case "relay":
-				case "relaylog":
-				case "relay_log_file":
-				case "relay_log_pos":
-				case "relay_thread":
-				case "release":
-				case "reload":
-				case "remove":
-				case "rename":
-				case "reorganize":
-				case "repair":
-				case "repeat":
-				case "repeatable":
-				case "replace":
-				case "replicate_do_db":
-				case "replicate_do_table":
-				case "replicate_ignore_db":
-				case "replicate_ignore_table":
-				case "replicate_rewrite_db":
-				case "replicate_wild_do_table":
-				case "replicate_wild_ignore_table":
-				case "replication":
-				case "require":
-				case "reset":
-				case "resignal":
-				case "restore":
-				case "restrict":
-				case "resume":
-				case "return":
-				case "returned_sqlstate":
-				case "returns":
-				case "reverse":
-				case "revoke":
-				case "right":
-				case "rlike":
-				case "rollback":
-				case "rollup":
-				case "rotate":
-				case "routine":
-				case "row":
-				case "rows":
-				case "row_count":
-				case "row_format":
-				case "rtree":
-				case "savepoint":
-				case "schedule":
-				case "schema":
-				case "schemas":
-				case "schema_name":
-				case "second":
-				case "second_microsecond":
-				case "security":
-				case "select":
-				case "sensitive":
-				case "separator":
-				case "serial":
-				case "serializable":
-				case "server":
-				case "session":
-				case "set":
-				case "share":
-				case "show":
-				case "shutdown":
-				case "signal":
-				case "signed":
-				case "simple":
-				case "slave":
-				case "slow":
-				case "smallint":
-				case "snapshot":
-				case "socket":
-				case "some":
-				case "soname":
-				case "sounds":
-				case "source":
-				case "spatial":
-				case "specific":
-				case "sql":
-				case "sqlexception":
-				case "sqlstate":
-				case "sqlwarning":
-				case "sql_after_gtids":
-				case "sql_after_mts_gaps":
-				case "sql_before_gtids":
-				case "sql_big_result":
-				case "sql_buffer_result":
-				case "sql_cache":
-				case "sql_calc_found_rows":
-				case "sql_no_cache":
-				case "sql_small_result":
-				case "sql_thread":
-				case "sql_tsi_day":
-				case "sql_tsi_hour":
-				case "sql_tsi_minute":
-				case "sql_tsi_month":
-				case "sql_tsi_quarter":
-				case "sql_tsi_second":
-				case "sql_tsi_week":
-				case "sql_tsi_year":
-				case "ssl":
-				case "stacked":
-				case "start":
-				case "starting":
-				case "starts":
-				case "stats_auto_recalc":
-				case "stats_persistent":
-				case "stats_sample_pages":
-				case "status":
-				case "stop":
-				case "storage":
-				case "stored":
-				case "straight_join":
-				case "string":
-				case "subclass_origin":
-				case "subject":
-				case "subpartition":
-				case "subpartitions":
-				case "super":
-				case "suspend":
-				case "swaps":
-				case "switches":
-				case "table":
-				case "tables":
-				case "tablespace":
-				case "table_checksum":
-				case "table_name":
-				case "temporary":
-				case "temptable":
-				case "terminated":
-				case "text":
-				case "than":
-				case "then":
-				case "time":
-				case "timestamp":
-				case "timestampadd":
-				case "timestampdiff":
-				case "tinyblob":
-				case "tinyint":
-				case "tinytext":
-				case "to":
-				case "trailing":
-				case "transaction":
-				case "trigger":
-				case "triggers":
-				case "true":
-				case "truncate":
-				case "type":
-				case "types":
-				case "uncommitted":
-				case "undefined":
-				case "undo":
-				case "undofile":
-				case "undo_buffer_size":
-				case "unicode":
-				case "uninstall":
-				case "union":
-				case "unique":
-				case "unknown":
-				case "unlock":
-				case "unsigned":
-				case "until":
-				case "update":
-				case "upgrade":
-				case "usage":
-				case "use":
-				case "user":
-				case "user_resources":
-				case "use_frm":
-				case "using":
-				case "utc_date":
-				case "utc_time":
-				case "utc_timestamp":
-				case "validation":
-				case "value":
-				case "values":
-				case "varbinary":
-				case "varchar":
-				case "varcharacter":
-				case "variables":
-				case "varying":
-				case "view":
-				case "virtual":
-				case "wait":
-				case "warnings":
-				case "week":
-				case "weight_string":
-				case "when":
-				case "where":
-				case "while":
-				case "with":
-				case "without":
-				case "work":
-				case "wrapper":
-				case "write":
-				case "x509":
-				case "xa":
-				case "xid":
-				case "xml":
-				case "xor":
-				case "year":
-				case "year_month":
-				case "zerofill":
-					return "`" + value + "`";
-				default:
-					return value;
-			}
-		} else if (dbVendor == DbVendor.Oracle) {
-			switch (value.toLowerCase()) {
-				case "access":
-				case "account":
-				case "activate":
-				case "add":
-				case "admin":
-				case "advise":
-				case "after":
-				case "all":
-				case "all_rows":
-				case "allocate":
-				case "alter":
-				case "analyze":
-				case "and":
-				case "any":
-				case "archive":
-				case "archivelog":
-				case "array":
-				case "as":
-				case "asc":
-				case "at":
-				case "audit":
-				case "authenticated":
-				case "authorization":
-				case "autoextend":
-				case "automatic":
-				case "backup":
-				case "become":
-				case "before":
-				case "begin":
-				case "between":
-				case "bfile":
-				case "bitmap":
-				case "blob":
-				case "block":
-				case "body":
-				case "by":
-				case "cache":
-				case "cache_instances":
-				case "cancel":
-				case "cascade":
-				case "cast":
-				case "cfile":
-				case "chained":
-				case "change":
-				case "char":
-				case "char_cs":
-				case "character":
-				case "check":
-				case "checkpoint":
-				case "choose":
-				case "chunk":
-				case "clear":
-				case "clob":
-				case "clone":
-				case "close":
-				case "close_cached_open_cursors":
-				case "cluster":
-				case "coalesce":
-				case "column":
-				case "columns":
-				case "comment":
-				case "commit":
-				case "committed":
-				case "compatibility":
-				case "compile":
-				case "complete":
-				case "composite_limit":
-				case "compress":
-				case "compute":
-				case "connect":
-				case "connect_time":
-				case "constraint":
-				case "constraints":
-				case "contents":
-				case "continue":
-				case "controlfile":
-				case "convert":
-				case "cost":
-				case "cpu_per_call":
-				case "cpu_per_session":
-				case "create":
-				case "current":
-				case "current_schema":
-				case "curren_user":
-				case "cursor":
-				case "cycle":
-				case "dangling":
-				case "database":
-				case "datafile":
-				case "datafiles":
-				case "dataobjno":
-				case "date":
-				case "dba":
-				case "dbhigh":
-				case "dblow":
-				case "dbmac":
-				case "deallocate":
-				case "debug":
-				case "dec":
-				case "decimal":
-				case "declare":
-				case "default":
-				case "deferrable":
-				case "deferred":
-				case "degree":
-				case "delete":
-				case "deref":
-				case "desc":
-				case "directory":
-				case "disable":
-				case "disconnect":
-				case "dismount":
-				case "distinct":
-				case "distributed":
-				case "dml":
-				case "double":
-				case "drop":
-				case "dump":
-				case "each":
-				case "else":
-				case "enable":
-				case "end":
-				case "enforce":
-				case "entry":
-				case "escape":
-				case "except":
-				case "exceptions":
-				case "exchange":
-				case "excluding":
-				case "exclusive":
-				case "execute":
-				case "exists":
-				case "expire":
-				case "explain":
-				case "extent":
-				case "extents":
-				case "externally":
-				case "failed_login_attempts":
-				case "false":
-				case "fast":
-				case "file":
-				case "first_rows":
-				case "flagger":
-				case "float":
-				case "flob":
-				case "flush":
-				case "for":
-				case "force":
-				case "foreign":
-				case "freelist":
-				case "freelists":
-				case "from":
-				case "full":
-				case "function":
-				case "global":
-				case "globally":
-				case "global_name":
-				case "grant":
-				case "group":
-				case "groups":
-				case "hash":
-				case "hashkeys":
-				case "having":
-				case "header":
-				case "heap":
-				case "identified":
-				case "idgenerators":
-				case "idle_time":
-				case "if":
-				case "immediate":
-				case "in":
-				case "including":
-				case "increment":
-				case "index":
-				case "indexed":
-				case "indexes":
-				case "indicator":
-				case "ind_partition":
-				case "initial":
-				case "initially":
-				case "initrans":
-				case "insert":
-				case "instance":
-				case "instances":
-				case "instead":
-				case "int":
-				case "integer":
-				case "intermediate":
-				case "intersect":
-				case "into":
-				case "is":
-				case "isolation":
-				case "isolation_level":
-				case "keep":
-				case "key":
-				case "kill":
-				case "label":
-				case "layer":
-				case "less":
-				case "level":
-				case "library":
-				case "like":
-				case "limit":
-				case "link":
-				case "list":
-				case "lob":
-				case "local":
-				case "lock":
-				case "locked":
-				case "log":
-				case "logfile":
-				case "logging":
-				case "logical_reads_per_call":
-				case "logical_reads_per_session":
-				case "long":
-				case "manage":
-				case "master":
-				case "max":
-				case "maxarchlogs":
-				case "maxdatafiles":
-				case "maxextents":
-				case "maxinstances":
-				case "maxlogfiles":
-				case "maxloghistory":
-				case "maxlogmembers":
-				case "maxsize":
-				case "maxtrans":
-				case "maxvalue":
-				case "min":
-				case "member":
-				case "minimum":
-				case "minextents":
-				case "minus":
-				case "minvalue":
-				case "mlslabel":
-				case "mls_label_format":
-				case "mode":
-				case "modify":
-				case "mount":
-				case "move":
-				case "mts_dispatchers":
-				case "multiset":
-				case "national":
-				case "nchar":
-				case "nchar_cs":
-				case "nclob":
-				case "needed":
-				case "nested":
-				case "network":
-				case "new":
-				case "next":
-				case "noarchivelog":
-				case "noaudit":
-				case "nocache":
-				case "nocompress":
-				case "nocycle":
-				case "noforce":
-				case "nologging":
-				case "nomaxvalue":
-				case "nominvalue":
-				case "none":
-				case "noorder":
-				case "nooverride":
-				case "noparallel":
-				case "noreverse":
-				case "normal":
-				case "nosort":
-				case "not":
-				case "nothing":
-				case "nowait":
-				case "null":
-				case "number":
-				case "numeric":
-				case "nvarchar2":
-				case "object":
-				case "objno":
-				case "objno_reuse":
-				case "of":
-				case "off":
-				case "offline":
-				case "oid":
-				case "oidindex":
-				case "old":
-				case "on":
-				case "online":
-				case "only":
-				case "opcode":
-				case "open":
-				case "optimal":
-				case "optimizer_goal":
-				case "option":
-				case "or":
-				case "order":
-				case "organization":
-				case "oslabel":
-				case "overflow":
-				case "own":
-				case "package":
-				case "parallel":
-				case "partition":
-				case "password":
-				case "password_grace_time":
-				case "password_life_time":
-				case "password_lock_time":
-				case "password_reuse_max":
-				case "password_reuse_time":
-				case "password_verify_function":
-				case "pctfree":
-				case "pctincrease":
-				case "pctthreshold":
-				case "pctused":
-				case "pctversion":
-				case "percent":
-				case "permanent":
-				case "plan":
-				case "plsql_debug":
-				case "post_transaction":
-				case "precision":
-				case "preserve":
-				case "primary":
-				case "prior":
-				case "private":
-				case "private_sga":
-				case "privilege":
-				case "privileges":
-				case "procedure":
-				case "profile":
-				case "public":
-				case "purge":
-				case "queue":
-				case "quota":
-				case "range":
-				case "raw":
-				case "rba":
-				case "read":
-				case "readup":
-				case "real":
-				case "rebuild":
-				case "recover":
-				case "recoverable":
-				case "recovery":
-				case "ref":
-				case "references":
-				case "referencing":
-				case "refresh":
-				case "rename":
-				case "replace":
-				case "reset":
-				case "resetlogs":
-				case "resize":
-				case "resource":
-				case "restricted":
-				case "return":
-				case "returning":
-				case "reuse":
-				case "reverse":
-				case "revoke":
-				case "role":
-				case "roles":
-				case "rollback":
-				case "row":
-				case "rowid":
-				case "rownum":
-				case "rows":
-				case "rule":
-				case "sample":
-				case "savepoint":
-				case "sb4":
-				case "scan_instances":
-				case "schema":
-				case "scn":
-				case "scope":
-				case "sd_all":
-				case "sd_inhibit":
-				case "sd_show":
-				case "segment":
-				case "seg_block":
-				case "seg_file":
-				case "select":
-				case "sequence":
-				case "serializable":
-				case "session":
-				case "session_cached_cursors":
-				case "sessions_per_user":
-				case "set":
-				case "share":
-				case "shared":
-				case "shared_pool":
-				case "shrink":
-				case "size":
-				case "skip":
-				case "skip_unusable_indexes":
-				case "smallint":
-				case "snapshot":
-				case "some":
-				case "sort":
-				case "specification":
-				case "split":
-				case "sql_trace":
-				case "standby":
-				case "start":
-				case "statement_id":
-				case "statistics":
-				case "stop":
-				case "storage":
-				case "store":
-				case "structure":
-				case "successful":
-				case "switch":
-				case "sys_op_enforce_not_null$":
-				case "sys_op_ntcimg$":
-				case "synonym":
-				case "sysdate":
-				case "sysdba":
-				case "sysoper":
-				case "system":
-				case "table":
-				case "tables":
-				case "tablespace":
-				case "tablespace_no":
-				case "tabno":
-				case "temporary":
-				case "than":
-				case "the":
-				case "then":
-				case "thread":
-				case "timestamp":
-				case "time":
-				case "to":
-				case "toplevel":
-				case "trace":
-				case "tracing":
-				case "transaction":
-				case "transitional":
-				case "trigger":
-				case "triggers":
-				case "true":
-				case "truncate":
-				case "tx":
-				case "type":
-				case "ub2":
-				case "uba":
-				case "uid":
-				case "unarchived":
-				case "undo":
-				case "union":
-				case "unique":
-				case "unlimited":
-				case "unlock":
-				case "unrecoverable":
-				case "until":
-				case "unusable":
-				case "unused":
-				case "updatable":
-				case "update":
-				case "usage":
-				case "use":
-				case "user":
-				case "using":
-				case "validate":
-				case "validation":
-				case "value":
-				case "values":
-				case "varchar":
-				case "varchar2":
-				case "varying":
-				case "view":
-				case "when":
-				case "whenever":
-				case "where":
-				case "with":
-				case "without":
-				case "work":
-				case "write":
-				case "writedown":
-				case "writeup":
-				case "xid":
-				case "year":
-				case "zone":
-					return "\"" + value + "\"";
-				default:
-					return value;
-			}
-		} else if (dbVendor == DbVendor.Derby) {
-			switch (value.toLowerCase()) {
-				case "add":
-				case "all":
-				case "allocate":
-				case "alter":
-				case "and":
-				case "any":
-				case "are":
-				case "as":
-				case "asc":
-				case "assertion":
-				case "at":
-				case "authorization":
-				case "avg":
-				case "begin":
-				case "between":
-				case "bit":
-				case "boolean":
-				case "both":
-				case "by":
-				case "call":
-				case "cascade":
-				case "cascaded":
-				case "case":
-				case "cast":
-				case "char":
-				case "character":
-				case "check":
-				case "close":
-				case "collate":
-				case "collation":
-				case "column":
-				case "commit":
-				case "connect":
-				case "connection":
-				case "constraint":
-				case "constraints":
-				case "continue":
-				case "convert":
-				case "corresponding":
-				case "count":
-				case "create":
-				case "current":
-				case "current_date":
-				case "current_time":
-				case "current_timestamp":
-				case "current_user":
-				case "cursor":
-				case "deallocate":
-				case "dec":
-				case "decimal":
-				case "declare":
-				case "deferrable":
-				case "deferred":
-				case "delete":
-				case "desc":
-				case "describe":
-				case "diagnostics":
-				case "disconnect":
-				case "distinct":
-				case "double":
-				case "drop":
-				case "else":
-				case "end":
-				case "endexec":
-				case "escape":
-				case "except":
-				case "exception":
-				case "exec":
-				case "execute":
-				case "exists":
-				case "explain":
-				case "external":
-				case "false":
-				case "fetch":
-				case "first":
-				case "float":
-				case "for":
-				case "foreign":
-				case "found":
-				case "from":
-				case "full":
-				case "function":
-				case "get":
-				case "get_current_connection":
-				case "global":
-				case "go":
-				case "goto":
-				case "grant":
-				case "group":
-				case "having":
-				case "hour":
-				case "identity":
-				case "immediate":
-				case "in":
-				case "indicator":
-				case "initially":
-				case "inner":
-				case "inout":
-				case "input":
-				case "insensitive":
-				case "insert":
-				case "int":
-				case "integer":
-				case "intersect":
-				case "into":
-				case "is":
-				case "isolation":
-				case "join":
-				case "key":
-				case "last":
-				case "left":
-				case "like":
-				case "longint":
-				case "lower":
-				case "ltrim":
-				case "match":
-				case "max":
-				case "min":
-				case "minute":
-				case "national":
-				case "natural":
-				case "nchar":
-				case "nvarchar":
-				case "next":
-				case "no":
-				case "not":
-				case "null":
-				case "nullif":
-				case "numeric":
-				case "of":
-				case "on":
-				case "only":
-				case "open":
-				case "option":
-				case "or":
-				case "order":
-				case "out":
-				case "outer":
-				case "output":
-				case "overlaps":
-				case "pad":
-				case "partial":
-				case "prepare":
-				case "preserve":
-				case "primary":
-				case "prior":
-				case "privileges":
-				case "procedure":
-				case "public":
-				case "read":
-				case "real":
-				case "references":
-				case "relative":
-				case "restrict":
-				case "revoke":
-				case "right":
-				case "rollback":
-				case "rows":
-				case "rtrim":
-				case "schema":
-				case "scroll":
-				case "second":
-				case "select":
-				case "session_user":
-				case "set":
-				case "smallint":
-				case "some":
-				case "space":
-				case "sql":
-				case "sqlcode":
-				case "sqlerror":
-				case "sqlstate":
-				case "substr":
-				case "substring":
-				case "sum":
-				case "system_user":
-				case "table":
-				case "temporary":
-				case "timezone_hour":
-				case "timezone_minute":
-				case "to":
-				case "trailing":
-				case "transaction":
-				case "translate":
-				case "translation":
-				case "true":
-				case "union":
-				case "unique":
-				case "unknown":
-				case "update":
-				case "upper":
-				case "user":
-				case "using":
-				case "values":
-				case "varchar":
-				case "varying":
-				case "view":
-				case "whenever":
-				case "where":
-				case "with":
-				case "work":
-				case "write":
-				case "xml":
-				case "xmlexists":
-				case "xmlparse":
-				case "xmlserialize":
-				case "year":
-					return "\"" + value + "\"";
-				default:
-					return value;
-			}
+
+	public static String escapeVendorReservedNames(final DbVendor dbVendor, final String value) {
+		if (StringUtils.isBlank(value)) {
+			return value;
+		} else if ((dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) && RESERVED_WORDS_MYSSQL_MARIADB.contains(value.toLowerCase())) {
+			return "`" + value + "`";
+		} else if (dbVendor == DbVendor.Oracle && RESERVED_WORDS_ORACLE.contains(value.toLowerCase())) {
+			return "\"" + value + "\"";
+		} else if (dbVendor == DbVendor.Derby && RESERVED_WORDS_DERBY.contains(value.toLowerCase())) {
+			return "\"" + value + "\"";
 		} else {
 			return value;
 		}
 	}
-	
-	public static String joinColumnVendorEscaped(DbVendor dbVendor, Collection<String> columnNames) {
-		StringBuilder returnValue = new StringBuilder();
-		for (String columnName : columnNames) {
+
+	public static String joinColumnVendorEscaped(final DbVendor dbVendor, final Collection<String> columnNames) {
+		final StringBuilder returnValue = new StringBuilder();
+		for (final String columnName : columnNames) {
 			if (returnValue.length() > 0) {
 				returnValue.append(", ");
 			}
@@ -3721,7 +2561,7 @@ public class DbUtilities {
 
 	/**
 	 * Special shutdown command to free single user derby db for next connection maybe of another thread
-	 * 
+	 *
 	 * @param dbName
 	 * @throws Exception
 	 */
@@ -3734,16 +2574,16 @@ public class DbUtilities {
 		}
 		try {
 			DriverManager.getConnection("jdbc:derby:" + Utilities.replaceHomeTilde(dbName) + ";shutdown=true");
-		} catch (SQLNonTransientConnectionException e) {
+		} catch (final SQLNonTransientConnectionException e) {
 			// Derby shutdown ALWAYS throws a SQLNonTransientConnectionException by intention (see also: http://db.apache.org/derby/docs/10.3/devguide/tdevdvlp20349.html)
 		}
 	}
-	
-	public static int getMysqlMaxAllowedPacketSize(Connection connection) throws Exception {
+
+	public static int getMysqlMaxAllowedPacketSize(final Connection connection) throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement("SHOW VARIABLES like 'max_allowed_packet'");
 				ResultSet resultSet = preparedStatement.executeQuery()) {
 			if (resultSet.next()) {
-				Object value = resultSet.getObject("value");
+				final Object value = resultSet.getObject("value");
 				if (value != null) {
 					return Integer.parseInt(value.toString());
 				} else {
@@ -3753,5 +2593,15 @@ public class DbUtilities {
 				return 0;
 			}
 		}
+	}
+
+	public static boolean isValidIdentifier(final String identifier) {
+		final Pattern pattern = Pattern.compile("[0-9A-Za-z_]{1,30}");
+		return pattern.matcher(identifier).matches();
+	}
+
+	public static boolean isValidAlias(final String alias) {
+		final Pattern pattern = Pattern.compile("[0-9A-Za-z_]{1,30}");
+		return pattern.matcher(alias).matches();
 	}
 }
