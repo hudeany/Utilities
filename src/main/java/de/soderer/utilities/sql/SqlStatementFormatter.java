@@ -8,9 +8,6 @@ import java.util.Stack;
 import de.soderer.utilities.DbUtilities;
 import de.soderer.utilities.DbUtilities.DbVendor;
 
-/**
- * TODO: INSERT, DELETE, UPDATE
- */
 public class SqlStatementFormatter {
 	/**
 	 * Oracle misses "dual" as preserved word
@@ -57,6 +54,7 @@ public class SqlStatementFormatter {
 			joinTrailingCommas(lines);
 			joinOperators(lines);
 			joinFunctionBrakets(lines);
+			joinSpecialCombinations(lines);
 			if (isEmpty(indentation) && isEmpty(lineBreak)) {
 				return joinLines(lines);
 			} else {
@@ -64,7 +62,6 @@ public class SqlStatementFormatter {
 			}
 		}
 	}
-
 	private boolean isEmpty(final String value) {
 		return value == null || value.length() == 0;
 	}
@@ -214,20 +211,32 @@ public class SqlStatementFormatter {
 	private void joinTableAliases(final List<String> lines) {
 		boolean isWithinFromClause = false;
 		boolean isWithinJoinClause = false;
+		boolean isWithinUpdateClause = false;
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
 			if ("FROM".equals(line)) {
 				isWithinFromClause = true;
+				isWithinJoinClause = false;
+				isWithinUpdateClause = false;
 			} else if (isWithinFromClause && (isOneOf(line, "WHERE", "GROUP BY", "SORT BY", "ORDER BY", "HAVING", ")") || startsWithOneOf(line, "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN"))) {
 				isWithinFromClause = false;
 			} else if (isOneOf(line, "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN")) {
 				isWithinFromClause = false;
 				isWithinJoinClause = true;
+				isWithinUpdateClause = false;
 			} else if (isWithinJoinClause && "ON".equals(line)) {
 				isWithinJoinClause = false;
+			} else if (isOneOf(line, "UPDATE")) {
+				isWithinFromClause = false;
+				isWithinJoinClause = false;
+				isWithinUpdateClause = true;
+			} else if (isWithinUpdateClause && "SET".equals(line)) {
+				isWithinUpdateClause = false;
 			} else if (isWithinFromClause && (i + 1) < lines.size() && !isOneOf(lines.get(i + 1), "WHERE", "GROUP BY", "SORT BY", "ORDER BY", "HAVING") && DbUtilities.isValidIdentifier(line) && i > 0 && DbUtilities.isValidAlias(lines.get(i + 1))) {
 				joinWithNextLine(lines, i, " ");
 			} else if (isWithinJoinClause && (i + 1) < lines.size() && !"ON".equals(lines.get(i + 1)) && DbUtilities.isValidIdentifier(line) && i > 0 && DbUtilities.isValidAlias(lines.get(i + 1))) {
+				joinWithNextLine(lines, i, " ");
+			} else if (isWithinUpdateClause && (i + 1) < lines.size() && !"SET".equals(lines.get(i + 1)) && DbUtilities.isValidIdentifier(line) && i > 0 && DbUtilities.isValidAlias(lines.get(i + 1))) {
 				joinWithNextLine(lines, i, " ");
 			}
 		}
@@ -254,16 +263,22 @@ public class SqlStatementFormatter {
 	}
 
 	private void joinFunctionBrakets(final List<String> lines) {
+		boolean nextIsInsertTableDefinition = false;
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
-			if ("(".equals(line) && i > 0 && DbUtilities.isValidIdentifier(lines.get(i - 1))) {
+			if ("INTO".equals(line)) {
+				nextIsInsertTableDefinition = true;
+			} else if ("(".equals(line) && i > 0 && DbUtilities.isValidIdentifier(lines.get(i - 1))) {
 				if ("IN".equals(lines.get(i - 1))) {
 					i = joinWithPreviousLine(lines, i, " ");
 					if (i > 0) {
 						i = joinWithPreviousLine(lines, i, " ");
 					}
-				} else if (isOneOf(lines.get(i - 1), "WHERE", "FROM", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
+				} else if (isOneOf(lines.get(i - 1), "VALUES", "WHERE", "FROM", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
 					// do nothing for this is no function
+				} else if (nextIsInsertTableDefinition){
+					nextIsInsertTableDefinition = false;
+					i = joinWithPreviousLine(lines, i, " ");
 				} else {
 					i = joinWithPreviousLine(lines, i, "");
 				}
@@ -286,6 +301,17 @@ public class SqlStatementFormatter {
 					lines.remove(i + 2);
 					lines.remove(i + 1);
 				}
+			}
+		}
+	}
+
+	private void joinSpecialCombinations(final List<String> lines) {
+		for (int i = 0; i < lines.size(); i++) {
+			final String line = lines.get(i);
+			if ("DELETE".equals(line) && (i + 1) < lines.size() && "FROM".equals(lines.get(i + 1))) {
+				joinWithNextLine(lines, i, " ");
+			} else if ("INSERT".equals(line) && (i + 1) < lines.size() && "INTO".equals(lines.get(i + 1))) {
+				joinWithNextLine(lines, i, " ");
 			}
 		}
 	}
@@ -355,7 +381,7 @@ public class SqlStatementFormatter {
 				builder.append(lineBreak);
 			}
 
-			if (line.startsWith(")") || startsWithOneOf(line, "WHERE", "FROM", "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
+			if (line.startsWith(")") || startsWithOneOf(line, "VALUES", "SET", "WHERE", "FROM", "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
 				if (indentationLevel.size() > 0) {
 					indentationLevel.pop();
 					if (line.startsWith(")") && indentationLevel.size() > 0 && indentationLevel.peek() == IndentationType.Select) {
@@ -371,7 +397,7 @@ public class SqlStatementFormatter {
 			}
 			builder.append(line);
 
-			if (line.endsWith("(") || startsWithOneOf(line, "WHERE", "FROM", "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
+			if (line.endsWith("(") || startsWithOneOf(line, "VALUES", "UPDATE", "DELETE", "DELETE FROM", "INSERT INTO", "SET", "WHERE", "FROM", "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
 				indentationLevel.push(IndentationType.Normal);
 			} else if ("SELECT".equals(line)) {
 				if (indentationLevel.size() > 0) {
