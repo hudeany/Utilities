@@ -21,12 +21,12 @@ public class SqlStatementFormatter {
 		With
 	}
 
-	private final DbVendor dbVendor;
-	private final String indentation;
-	private final String lineBreak;
+	private DbVendor dbVendor;
+	private String indentation;
+	private String lineBreak;
 
 	public SqlStatementFormatter() {
-		this(DbVendor.MariaDB, "\t", "\n");
+		this(DbVendor.Oracle, "\t", "\n");
 	}
 
 	public SqlStatementFormatter(final DbVendor dbVendor, final String indentation, final String lineBreak) {
@@ -37,6 +37,24 @@ public class SqlStatementFormatter {
 		}
 		this.indentation = indentation;
 		this.lineBreak = lineBreak;
+	}
+
+	public SqlStatementFormatter setDbVendor(final DbVendor dbVendor) {
+		if (dbVendor == null) {
+			throw new IllegalArgumentException("Invalid empty DbVendor");
+		}
+		this.dbVendor = dbVendor;
+		return this;
+	}
+
+	public SqlStatementFormatter setIndentation(final String indentation) {
+		this.indentation = indentation;
+		return this;
+	}
+
+	public SqlStatementFormatter setLineBreak(final String lineBreak) {
+		this.lineBreak = lineBreak;
+		return this;
 	}
 
 	public String format(String selectStatement) {
