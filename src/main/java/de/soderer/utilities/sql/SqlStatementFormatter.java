@@ -8,6 +8,9 @@ import java.util.Stack;
 import de.soderer.utilities.DbUtilities;
 import de.soderer.utilities.DbUtilities.DbVendor;
 
+/**
+ * TODO: INSERT, DELETE, UPDATE
+ */
 public class SqlStatementFormatter {
 	/**
 	 * Oracle misses "dual" as preserved word
@@ -222,9 +225,9 @@ public class SqlStatementFormatter {
 				isWithinJoinClause = true;
 			} else if (isWithinJoinClause && "ON".equals(line)) {
 				isWithinJoinClause = false;
-			} else if (isWithinFromClause && !isOneOf(lines.get(i + 1), "WHERE", "GROUP BY", "SORT BY", "ORDER BY", "HAVING") && DbUtilities.isValidIdentifier(line) && i > 0 && (i + 1) < lines.size() && DbUtilities.isValidAlias(lines.get(i + 1))) {
+			} else if (isWithinFromClause && (i + 1) < lines.size() && !isOneOf(lines.get(i + 1), "WHERE", "GROUP BY", "SORT BY", "ORDER BY", "HAVING") && DbUtilities.isValidIdentifier(line) && i > 0 && DbUtilities.isValidAlias(lines.get(i + 1))) {
 				joinWithNextLine(lines, i, " ");
-			} else if (isWithinJoinClause && !"ON".equals(lines.get(i + 1)) && DbUtilities.isValidIdentifier(line) && i > 0 && (i + 1) < lines.size() && DbUtilities.isValidAlias(lines.get(i + 1))) {
+			} else if (isWithinJoinClause && (i + 1) < lines.size() && !"ON".equals(lines.get(i + 1)) && DbUtilities.isValidIdentifier(line) && i > 0 && DbUtilities.isValidAlias(lines.get(i + 1))) {
 				joinWithNextLine(lines, i, " ");
 			}
 		}
