@@ -66,7 +66,7 @@ public class SqlStatementFormatter {
 				selectStatement = selectStatement.substring(0, selectStatement.length() - 1).trim();
 			}
 			final List<String> lines = splitLines(selectStatement);
-			formatAndJoinReservedWords(lines);
+			formatAndJoinReservedWords(lines, dbVendor);
 			joinAliasPrefixes(lines);
 			joinTableAliases(lines);
 			joinTrailingCommas(lines);
@@ -80,11 +80,11 @@ public class SqlStatementFormatter {
 			}
 		}
 	}
-	private boolean isEmpty(final String value) {
+	private static boolean isEmpty(final String value) {
 		return value == null || value.length() == 0;
 	}
 
-	private boolean isBlank(final String value) {
+	private static boolean isBlank(final String value) {
 		if (value == null || value.length() == 0) {
 			return true;
 		} else {
@@ -97,7 +97,7 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private List<String> splitLines(final String selectStatement) {
+	private static List<String> splitLines(final String selectStatement) {
 		if (isBlank(selectStatement)) {
 			return null;
 		} else {
@@ -181,7 +181,7 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private void formatAndJoinReservedWords(final List<String> lines) {
+	private static void formatAndJoinReservedWords(final List<String> lines, final DbVendor dbVendor) {
 		final List<String> reservedWords;
 		if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 			reservedWords = DbUtilities.RESERVED_WORDS_MYSSQL_MARIADB;
@@ -217,7 +217,7 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private void joinAliasPrefixes(final List<String> lines) {
+	private static void joinAliasPrefixes(final List<String> lines) {
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
 			if (".".equals(line) && i > 0 && (i + 1) < lines.size()) {
@@ -226,7 +226,7 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private void joinTableAliases(final List<String> lines) {
+	private static void joinTableAliases(final List<String> lines) {
 		boolean isWithinFromClause = false;
 		boolean isWithinJoinClause = false;
 		boolean isWithinUpdateClause = false;
@@ -260,7 +260,7 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private void joinTrailingCommas(final List<String> lines) {
+	private static void joinTrailingCommas(final List<String> lines) {
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
 			if (",".equals(line) && i > 0) {
@@ -269,7 +269,7 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private void joinOperators(final List<String> lines) {
+	private static void joinOperators(final List<String> lines) {
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
 			if ("*".equals(line) && i > 0 && ("SELECT".equals(lines.get(i - 1)) || "(".equals(lines.get(i - 1)))) {
@@ -280,7 +280,7 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private void joinFunctionBrakets(final List<String> lines) {
+	private static void joinFunctionBrakets(final List<String> lines) {
 		boolean nextIsInsertTableDefinition = false;
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
@@ -323,7 +323,7 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private void joinSpecialCombinations(final List<String> lines) {
+	private static void joinSpecialCombinations(final List<String> lines) {
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
 			if ("DELETE".equals(line) && (i + 1) < lines.size() && "FROM".equals(lines.get(i + 1))) {
@@ -336,25 +336,25 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private void joinWithNextLine(final List<String> lines, final int lineIndex, final String glue) {
+	private static void joinWithNextLine(final List<String> lines, final int lineIndex, final String glue) {
 		lines.set(lineIndex, new StringBuilder(lines.get(lineIndex)).append(glue).append(lines.get(lineIndex + 1)).toString());
 		lines.remove(lineIndex + 1);
 	}
 
-	private int joinWithPreviousLine(final List<String> lines, final int lineIndex, final String glue) {
+	private static int joinWithPreviousLine(final List<String> lines, final int lineIndex, final String glue) {
 		lines.set(lineIndex - 1, new StringBuilder(lines.get(lineIndex - 1)).append(glue).append(lines.get(lineIndex)).toString());
 		lines.remove(lineIndex);
 		return lineIndex - 1;
 	}
 
-	private int joinWithEnclosingLines(final List<String> lines, final int lineIndex, final String prefixGlue, final String suffixGlue) {
+	private static int joinWithEnclosingLines(final List<String> lines, final int lineIndex, final String prefixGlue, final String suffixGlue) {
 		lines.set(lineIndex - 1, new StringBuilder(lines.get(lineIndex - 1)).append(prefixGlue).append(lines.get(lineIndex)).append(suffixGlue).append(lines.get(lineIndex + 1)).toString());
 		lines.remove(lineIndex + 1);
 		lines.remove(lineIndex);
 		return lineIndex - 1;
 	}
 
-	private boolean isOneOf(final String item, final String... searchItems) {
+	private static boolean isOneOf(final String item, final String... searchItems) {
 		for (final String searchItem : searchItems) {
 			if (searchItems != null && searchItem.equals(item)) {
 				return true;
@@ -363,7 +363,7 @@ public class SqlStatementFormatter {
 		return false;
 	}
 
-	private boolean startsWithOneOf(final String item, final String... searchItems) {
+	private static boolean startsWithOneOf(final String item, final String... searchItems) {
 		for (final String searchItem : searchItems) {
 			if (item != null && item.startsWith(searchItem)) {
 				return true;
@@ -372,7 +372,7 @@ public class SqlStatementFormatter {
 		return false;
 	}
 
-	private String joinLines(final List<String> lines) {
+	private static String joinLines(final List<String> lines) {
 		final StringBuilder builder = new StringBuilder();
 		String previousLine = null;
 		for (final String line : lines) {
@@ -386,7 +386,7 @@ public class SqlStatementFormatter {
 		return builder.toString();
 	}
 
-	private String indentAndJoinLines(final List<String> lines, String indentation, String lineBreak) {
+	private static String indentAndJoinLines(final List<String> lines, String indentation, String lineBreak) {
 		if (isEmpty(indentation)) {
 			indentation = "";
 		}
