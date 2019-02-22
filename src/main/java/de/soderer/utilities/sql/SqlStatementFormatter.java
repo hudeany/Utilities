@@ -13,12 +13,13 @@ public class SqlStatementFormatter {
 	 * Oracle misses "dual" as preserved word
 	 * MySQL and MariaDB miss "max" and "min" as preserved words
 	 */
-	public static final List<String> ADDITIONALLY_RESERVED_WORDS_FOR_FORMATING = Arrays.asList(new String[] { "dual", "max", "min", "count" });
+	public static final List<String> ADDITIONALLY_RESERVED_WORDS_FOR_FORMATING = Arrays.asList(new String[] { "dual", "max", "min", "count", "case" });
 
 	private enum IndentationType {
 		Normal,
 		Select,
-		With
+		With,
+		Case
 	}
 
 	private DbVendor dbVendor;
@@ -401,7 +402,7 @@ public class SqlStatementFormatter {
 				builder.append(lineBreak);
 			}
 
-			if (line.startsWith(")") || startsWithOneOf(line, "UNION", "VALUES", "SET", "WHERE", "FROM", "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
+			if (line.startsWith(")") || startsWithOneOf(line, "THEN", "ELSE", "UNION", "VALUES", "SET", "WHERE", "FROM", "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
 				if (indentationLevel.size() > 0) {
 					indentationLevel.pop();
 					if (line.startsWith(")") && indentationLevel.size() > 0 && indentationLevel.peek() == IndentationType.Select) {
@@ -410,6 +411,17 @@ public class SqlStatementFormatter {
 				}
 			} else if (line.equals("SELECT") && indentationLevel.size() > 0 && indentationLevel.peek() == IndentationType.With) {
 				indentationLevel.pop();
+			} else if (line.equals("WHEN")) {
+				while (indentationLevel.peek() != IndentationType.Case) {
+					indentationLevel.pop();
+				}
+			} else if (line.startsWith("END")) {
+				while (indentationLevel.peek() != IndentationType.Case) {
+					indentationLevel.pop();
+				}
+				if (indentationLevel.peek() == IndentationType.Case) {
+					indentationLevel.pop();
+				}
 			}
 
 			for (int i = 0; i < indentationLevel.size(); i++) {
@@ -417,7 +429,7 @@ public class SqlStatementFormatter {
 			}
 			builder.append(line);
 
-			if (line.endsWith("(") || startsWithOneOf(line, "VALUES", "UPDATE", "DELETE", "DELETE FROM", "INSERT INTO", "SET", "WHERE", "FROM", "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
+			if (line.endsWith("(") || startsWithOneOf(line, "ELSE", "WHEN", "THEN", "VALUES", "UPDATE", "DELETE", "DELETE FROM", "INSERT INTO", "SET", "WHERE", "FROM", "JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN", "RIGHT JOIN", "RIGHT OUTER JOIN", "FULL JOIN", "FULL OUTER JOIN", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
 				indentationLevel.push(IndentationType.Normal);
 			} else if ("SELECT".equals(line)) {
 				if (indentationLevel.size() > 0) {
@@ -429,6 +441,8 @@ public class SqlStatementFormatter {
 				}
 			} else if ("WITH".equals(line)) {
 				indentationLevel.push(IndentationType.With);
+			} else if ("CASE".equals(line)) {
+				indentationLevel.push(IndentationType.Case);
 			}
 		}
 		return builder.toString();
