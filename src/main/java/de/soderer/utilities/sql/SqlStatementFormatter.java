@@ -63,14 +63,11 @@ public class SqlStatementFormatter {
 			return null;
 		} else {
 			selectStatement = selectStatement.replace("\r\n", "\n").replace("\r", "\n").trim();
-			if (selectStatement.endsWith(";")) {
-				selectStatement = selectStatement.substring(0, selectStatement.length() - 1).trim();
-			}
 			final List<String> lines = splitLines(selectStatement);
 			formatAndJoinReservedWords(lines, dbVendor);
 			joinAliasPrefixes(lines);
 			joinTableAliases(lines);
-			joinTrailingCommas(lines);
+			joinTrailingCommasAndSemicolons(lines);
 			joinOperators(lines);
 			joinFunctionBrakets(lines);
 			joinSpecialCombinations(lines);
@@ -160,7 +157,7 @@ public class SqlStatementFormatter {
 						}
 						lines.add(Character.toString(data[i]));
 					}
-				} else if (nextChar == '(' || nextChar == ')' || nextChar == ',' || nextChar == '.') {
+				} else if (nextChar == '(' || nextChar == ')' || nextChar == ';' || nextChar == ',' || nextChar == '.') {
 					if (nextLine.length() > 0) {
 						lines.add(nextLine.toString());
 						nextLine = new StringBuilder();
@@ -233,7 +230,11 @@ public class SqlStatementFormatter {
 		boolean isWithinUpdateClause = false;
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
-			if ("FROM".equals(line)) {
+			if (line.endsWith(";")) {
+				isWithinFromClause = false;
+				isWithinJoinClause = false;
+				isWithinUpdateClause = false;
+			} else if ("FROM".equals(line)) {
 				isWithinFromClause = true;
 				isWithinJoinClause = false;
 				isWithinUpdateClause = false;
@@ -261,10 +262,10 @@ public class SqlStatementFormatter {
 		}
 	}
 
-	private static void joinTrailingCommas(final List<String> lines) {
+	private static void joinTrailingCommasAndSemicolons(final List<String> lines) {
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
-			if (",".equals(line) && i > 0) {
+			if (isOneOf(line, ",", ";") && i > 0) {
 				i = joinWithPreviousLine(lines, i, "");
 			}
 		}
@@ -443,6 +444,10 @@ public class SqlStatementFormatter {
 				indentationLevel.push(IndentationType.With);
 			} else if ("CASE".equals(line)) {
 				indentationLevel.push(IndentationType.Case);
+			}
+
+			if (line.endsWith(";") ) {
+				indentationLevel.clear();
 			}
 		}
 		return builder.toString();
