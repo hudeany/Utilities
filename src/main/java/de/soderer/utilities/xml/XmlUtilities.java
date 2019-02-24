@@ -81,19 +81,20 @@ public class XmlUtilities {
 		BufferedInputStream inputStream = null;
 		try {
 			final URL documentUrl = new URL(url);
-
-			final HttpURLConnection connection = (HttpURLConnection) documentUrl.openConnection();
-			connection.connect();
-			final int httpCode = connection.getResponseCode();
-			if (httpCode != 200) {
-				throw new Exception("Cannot retrieve xml document from Url '" + url + "'. HTTP code was: " + httpCode);
-			}
-
 			inputStream = new BufferedInputStream(documentUrl.openStream());
 			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
+		} catch (final Exception e) {
+			final HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+			connection.connect();
+			final int httpCode = connection.getResponseCode();
+			if (httpCode != 200) {
+				throw new Exception("Cannot retrieve xml document from Url '" + url + "'. HTTP code was: " + httpCode);
+			} else {
+				throw e;
+			}
 		} finally {
 			if (inputStream != null) {
 				inputStream.close();
