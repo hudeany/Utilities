@@ -60,14 +60,15 @@ public class XmlUtilities {
 	 *             the parser configuration exception
 	 */
 	public static Document getEmptyDocument() throws ParserConfigurationException {
-		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-		Document document = documentBuilder.newDocument();
+		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+		final Document document = documentBuilder.newDocument();
 		return document;
 	}
 
 	/**
 	 * Download and parse xml file.
+	 * Does not follow redirection (HTTP Code 302 and others)
 	 *
 	 * @param url
 	 *            the url
@@ -75,15 +76,15 @@ public class XmlUtilities {
 	 * @throws IOException
 	 *             the IO exception
 	 */
-	public static Document downloadAndParseXmlFile(String url) throws IOException {
+	public static Document downloadAndParseXmlFile(final String url) throws IOException {
 		BufferedInputStream inputStream = null;
 		try {
 			inputStream = new BufferedInputStream(new URL(url).openStream());
-			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-			Document document = documentBuilder.parse(new InputSource(inputStream));
+			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			return null;
 		} finally {
 			if (inputStream != null) {
@@ -101,15 +102,15 @@ public class XmlUtilities {
 	 * @throws IOException
 	 *             the IO exception
 	 */
-	public static Document parseXmlFile(File file) throws IOException {
+	public static Document parseXmlFile(final File file) throws IOException {
 		BufferedInputStream inputStream = null;
 		try {
 			inputStream = new BufferedInputStream(new FileInputStream(file));
-			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-			Document document = documentBuilder.parse(new InputSource(inputStream));
+			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			return null;
 		} finally {
 			if (inputStream != null) {
@@ -127,20 +128,20 @@ public class XmlUtilities {
 	 *            the xpath expression
 	 * @return the single x path node
 	 */
-	public static Node getSingleXPathNode(Document document, String xpathExpression) {
+	public static Node getSingleXPathNode(final Document document, final String xpathExpression) {
 		if (document == null) {
 			return null;
 		} else if (Utilities.isBlank(xpathExpression)) {
 			return null;
 		} else {
 			try {
-				NodeList nodeList = (NodeList) XPathFactory.newInstance().newXPath().evaluate(xpathExpression, document, XPathConstants.NODESET);
+				final NodeList nodeList = (NodeList) XPathFactory.newInstance().newXPath().evaluate(xpathExpression, document, XPathConstants.NODESET);
 				if (nodeList != null && nodeList.getLength() > 0) {
 					return nodeList.item(0);
 				} else {
 					return null;
 				}
-			} catch (XPathExpressionException e) {
+			} catch (final XPathExpressionException e) {
 				return null;
 			}
 		}
@@ -155,14 +156,14 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static Document parseXmlString(String xmlInput) throws Exception {
-		boolean validation = false;
-		boolean ignoreWhitespace = true;
-		boolean ignoreComments = true;
-		boolean putCDATAIntoText = true;
-		boolean createEntityRefs = false;
+	public static Document parseXmlString(final String xmlInput) throws Exception {
+		final boolean validation = false;
+		final boolean ignoreWhitespace = true;
+		final boolean ignoreComments = true;
+		final boolean putCDATAIntoText = true;
+		final boolean createEntityRefs = false;
 
-		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
 		// set the configuration options
 		dbf.setValidating(validation);
@@ -179,7 +180,7 @@ public class XmlUtilities {
 			doc = db.parse(new InputSource(new StringReader(xmlInput)));
 			return doc;
 
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error while parsing xml", e);
 		}
 	}
@@ -193,20 +194,20 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static Document parseXmlStringIngoringDtd(String xmlInput) throws Exception {
+	public static Document parseXmlStringIngoringDtd(final String xmlInput) throws Exception {
 		if (xmlInput == null) {
 			throw new Exception("XML-Data is null");
 		} else if (Utilities.isBlank(xmlInput)) {
 			throw new Exception("XML-Data is empty");
 		}
 
-		boolean validation = false;
-		boolean ignoreWhitespace = true;
-		boolean ignoreComments = true;
-		boolean putCDATAIntoText = true;
-		boolean createEntityRefs = false;
+		final boolean validation = false;
+		final boolean ignoreWhitespace = true;
+		final boolean ignoreComments = true;
+		final boolean putCDATAIntoText = true;
+		final boolean createEntityRefs = false;
 
-		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
 		// set the configuration options
 		dbf.setValidating(validation);
@@ -223,14 +224,14 @@ public class XmlUtilities {
 
 			db.setEntityResolver(new EntityResolver() {
 				@Override
-				public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
+				public InputSource resolveEntity(final String publicId, final String systemId) throws SAXException, IOException {
 					return new InputSource(new StringReader(""));
 				}
 			});
 
 			doc = db.parse(new InputSource(new StringReader(xmlInput)));
 			return doc;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error while parsing xml", e);
 		}
 	}
@@ -242,7 +243,7 @@ public class XmlUtilities {
 	 *            the node
 	 * @return the simple text value from node
 	 */
-	public static String getSimpleTextValueFromNode(Node node) {
+	public static String getSimpleTextValueFromNode(final Node node) {
 		if (node != null && node.getChildNodes().getLength() == 1 && node.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
 			return node.getChildNodes().item(0).getTextContent();
 		} else {
@@ -259,10 +260,10 @@ public class XmlUtilities {
 	 *            the p attribute name
 	 * @return the attribute value
 	 */
-	public static String getAttributeValue(Node pNode, String pAttributeName) {
+	public static String getAttributeValue(final Node pNode, final String pAttributeName) {
 		String returnString = null;
 
-		NamedNodeMap attributes = pNode.getAttributes();
+		final NamedNodeMap attributes = pNode.getAttributes();
 		if (attributes != null) {
 			for (int i = 0; i < attributes.getLength(); i++) {
 				if (attributes.item(i).getNodeName().equalsIgnoreCase(pAttributeName)) {
@@ -282,7 +283,7 @@ public class XmlUtilities {
 	 *            the p node
 	 * @return the node value
 	 */
-	public static String getNodeValue(Node pNode) {
+	public static String getNodeValue(final Node pNode) {
 		if (pNode.getNodeValue() != null) {
 			return pNode.getNodeValue();
 		} else if (pNode.getFirstChild() != null) {
@@ -305,9 +306,9 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static String getNodeAsString(Node pNode, String encoding, boolean pRemoveXmlLine) throws Exception {
-		StringWriter writer = new StringWriter();
-		StreamResult result = new StreamResult(writer);
+	public static String getNodeAsString(final Node pNode, final String encoding, final boolean pRemoveXmlLine) throws Exception {
+		final StringWriter writer = new StringWriter();
+		final StreamResult result = new StreamResult(writer);
 		transformNode(pNode, encoding, pRemoveXmlLine, result);
 		return writer.toString();
 	}
@@ -325,9 +326,9 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static byte[] getNodeAsRaw(Node pNode, String encoding, boolean pRemoveXmlLine) throws Exception {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		StreamResult result = new StreamResult(outputStream);
+	public static byte[] getNodeAsRaw(final Node pNode, final String encoding, final boolean pRemoveXmlLine) throws Exception {
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		final StreamResult result = new StreamResult(outputStream);
 		transformNode(pNode, encoding, pRemoveXmlLine, result);
 		return outputStream.toByteArray();
 	}
@@ -344,11 +345,11 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static void writeDocumentToFile(Document document, String encoding, File file) throws Exception {
+	public static void writeDocumentToFile(final Document document, final String encoding, final File file) throws Exception {
 		OutputStream outputStream = null;
 		try {
 			outputStream = new FileOutputStream(file);
-			StreamResult result = new StreamResult(outputStream);
+			final StreamResult result = new StreamResult(outputStream);
 			transformNode(document, encoding, false, result);
 		} finally {
 			Utilities.closeQuietly(outputStream);
@@ -369,7 +370,7 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	private static void transformNode(Node node, String encoding, boolean removeXmlHeader, StreamResult result) throws Exception {
+	private static void transformNode(final Node node, final String encoding, final boolean removeXmlHeader, final StreamResult result) throws Exception {
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource source = null;
@@ -395,11 +396,11 @@ public class XmlUtilities {
 			source = new DOMSource(node);
 
 			transformer.transform(source, result);
-		} catch (TransformerFactoryConfigurationError e) {
+		} catch (final TransformerFactoryConfigurationError e) {
 			throw new Exception("TransformerFactoryConfigurationError", e);
-		} catch (TransformerConfigurationException e) {
+		} catch (final TransformerConfigurationException e) {
 			throw new Exception("TransformerConfigurationException", e);
-		} catch (TransformerException e) {
+		} catch (final TransformerException e) {
 			throw new Exception("TransformerException", e);
 		}
 	}
@@ -419,7 +420,7 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static Document parseXMLDataAndXSDVerifyByDOM(byte[] pData, String byteEncoding, String xsdFileName) throws Exception, Exception {
+	public static Document parseXMLDataAndXSDVerifyByDOM(byte[] pData, final String byteEncoding, final String xsdFileName) throws Exception, Exception {
 		try {
 			if (pData == null) {
 				return null;
@@ -429,43 +430,43 @@ public class XmlUtilities {
 				pData = new String(pData, "UTF-8").trim().getBytes("UTF-8");
 			}
 
-			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 			if (docBuilderFactory == null) {
 				throw new Exception("DocumentBuilderFactory error");
 			}
 			docBuilderFactory.setNamespaceAware(true);
 
 			if (xsdFileName != null) {
-				String schemaURI = xsdFileName;
+				final String schemaURI = xsdFileName;
 				docBuilderFactory.setValidating(true);
 				docBuilderFactory.setAttribute("http://java.sun.com/xml/jaxp/properties/schemaLanguage", "http://www.w3.org/2001/XMLSchema");
 				docBuilderFactory.setAttribute("http://java.sun.com/xml/jaxp/properties/schemaSource", schemaURI);
 			}
 
-			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+			final DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 			if (docBuilder == null) {
 				throw new Exception("DocumentBuilder error");
 			}
 
-			InputSource inputSource = new InputSource(new ByteArrayInputStream(pData));
+			final InputSource inputSource = new InputSource(new ByteArrayInputStream(pData));
 			if (byteEncoding != null) {
 				inputSource.setEncoding(byteEncoding);
 			}
-			ParseErrorHandler errorHandler = new ParseErrorHandler();
+			final ParseErrorHandler errorHandler = new ParseErrorHandler();
 			docBuilder.setErrorHandler(errorHandler);
 
-			Document xmlDocument = docBuilder.parse(inputSource);
+			final Document xmlDocument = docBuilder.parse(inputSource);
 
 			if (errorHandler.problemsOccurred()) {
 				throw new Exception("ErrorConstGlobals.XML_SCHEMA_ERROR " + xsdFileName + " " + errorHandler.getMessage());
 			} else {
 				return xmlDocument;
 			}
-		} catch (ParserConfigurationException e) {
+		} catch (final ParserConfigurationException e) {
 			throw new Exception("ErrorConstException.XML_PROCESSING " + e.getClass().getSimpleName() + " " + e.getMessage(), e);
-		} catch (SAXException e) {
+		} catch (final SAXException e) {
 			throw new Exception("ErrorConstException.XML_PROCESSING " + e.getClass().getSimpleName() + " " + e.getMessage(), e);
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			throw new Exception("ErrorConstException.XML_PROCESSING " + e.getClass().getSimpleName() + " " + e.getMessage(), e);
 		}
 	}
@@ -498,42 +499,42 @@ public class XmlUtilities {
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
 		 */
 		@Override
-		public void warning(SAXParseException exception) throws SAXException {
+		public void warning(final SAXParseException exception) throws SAXException {
 			problems = true;
 			if (warnings == null) {
-				warnings = new ArrayList<SAXParseException>();
+				warnings = new ArrayList<>();
 			}
 			warnings.add(exception);
 		}
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
 		 */
 		@Override
-		public void error(SAXParseException exception) throws SAXException {
+		public void error(final SAXParseException exception) throws SAXException {
 			problems = true;
 			if (errors == null) {
-				errors = new ArrayList<SAXParseException>();
+				errors = new ArrayList<>();
 			}
 			errors.add(exception);
 		}
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
 		 */
 		@Override
-		public void fatalError(SAXParseException exception) throws SAXException {
+		public void fatalError(final SAXParseException exception) throws SAXException {
 			problems = true;
 			if (fatalErrors == null) {
-				fatalErrors = new ArrayList<SAXParseException>();
+				fatalErrors = new ArrayList<>();
 			}
 			fatalErrors.add(exception);
 		}
@@ -567,11 +568,11 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static String convertXML2String(Document pDocument, String encoding) throws Exception {
+	public static String convertXML2String(final Document pDocument, final String encoding) throws Exception {
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource domSource = null;
-		StringWriter writer = new java.io.StringWriter();
+		final StringWriter writer = new java.io.StringWriter();
 		StreamResult result = null;
 
 		try {
@@ -597,18 +598,18 @@ public class XmlUtilities {
 			transformer.transform(domSource, result);
 
 			return writer.toString();
-		} catch (TransformerFactoryConfigurationError e) {
+		} catch (final TransformerFactoryConfigurationError e) {
 			throw new Exception("TransformerFactoryConfigurationError", e);
-		} catch (TransformerConfigurationException e) {
+		} catch (final TransformerConfigurationException e) {
 			throw new Exception("TransformerConfigurationException", e);
-		} catch (TransformerException e) {
+		} catch (final TransformerException e) {
 			throw new Exception("TransformerException", e);
 		} finally {
 			try {
 				if (writer != null) {
 					writer.close();
 				}
-			} catch (IOException ex) {
+			} catch (final IOException ex) {
 				throw new Exception("IO error", ex);
 			}
 		}
@@ -625,11 +626,11 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static byte[] convertXML2ByteArray(Node pDocument, String encoding) throws Exception {
+	public static byte[] convertXML2ByteArray(final Node pDocument, final String encoding) throws Exception {
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource domSource = null;
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		StreamResult result = null;
 
 		try {
@@ -655,18 +656,18 @@ public class XmlUtilities {
 			transformer.transform(domSource, result);
 
 			return outputStream.toByteArray();
-		} catch (TransformerFactoryConfigurationError e) {
+		} catch (final TransformerFactoryConfigurationError e) {
 			throw new Exception("TransformerFactoryConfigurationError", e);
-		} catch (TransformerConfigurationException e) {
+		} catch (final TransformerConfigurationException e) {
 			throw new Exception("TransformerConfigurationException", e);
-		} catch (TransformerException e) {
+		} catch (final TransformerException e) {
 			throw new Exception("TransformerException", e);
 		} finally {
 			try {
 				if (outputStream != null) {
 					outputStream.close();
 				}
-			} catch (IOException ex) {
+			} catch (final IOException ex) {
 				throw new Exception("IO error", ex);
 			}
 		}
@@ -737,8 +738,8 @@ public class XmlUtilities {
 	 *            the root tag name
 	 * @return the element
 	 */
-	public static Element createRootTagNode(Document baseDocument, String rootTagName) {
-		Element newNode = baseDocument.createElement(rootTagName);
+	public static Element createRootTagNode(final Document baseDocument, final String rootTagName) {
+		final Element newNode = baseDocument.createElement(rootTagName);
 		baseDocument.appendChild(newNode);
 		return newNode;
 	}
@@ -752,8 +753,8 @@ public class XmlUtilities {
 	 *            the tag name
 	 * @return the element
 	 */
-	public static Element appendNode(Node baseNode, String tagName) {
-		Element newNode = baseNode.getOwnerDocument().createElement(tagName);
+	public static Element appendNode(final Node baseNode, final String tagName) {
+		final Element newNode = baseNode.getOwnerDocument().createElement(tagName);
 		baseNode.appendChild(newNode);
 		return newNode;
 	}
@@ -769,7 +770,7 @@ public class XmlUtilities {
 	 *            the tag value
 	 * @return the element
 	 */
-	public static Element appendTextValueNode(Node baseNode, String tagName, int tagValue) {
+	public static Element appendTextValueNode(final Node baseNode, final String tagName, final int tagValue) {
 		return appendTextValueNode(baseNode, tagName, Integer.toString(tagValue));
 	}
 
@@ -784,7 +785,7 @@ public class XmlUtilities {
 	 *            the tag value
 	 * @return the element
 	 */
-	public static Element appendTextValueNode(Node baseNode, String tagName, double tagValue) {
+	public static Element appendTextValueNode(final Node baseNode, final String tagName, final double tagValue) {
 		return appendTextValueNode(baseNode, tagName, Double.toString(tagValue));
 	}
 
@@ -799,8 +800,8 @@ public class XmlUtilities {
 	 *            the tag value
 	 * @return the element
 	 */
-	public static Element appendTextValueNode(Node baseNode, String tagName, String tagValue) {
-		Element newNode = appendNode(baseNode, tagName);
+	public static Element appendTextValueNode(final Node baseNode, final String tagName, final String tagValue) {
+		final Element newNode = appendNode(baseNode, tagName);
 		if (tagValue == null) {
 			newNode.appendChild(baseNode.getOwnerDocument().createTextNode("<null>"));
 		} else {
@@ -819,7 +820,7 @@ public class XmlUtilities {
 	 * @param attributeValue
 	 *            the attribute value
 	 */
-	public static void appendAttribute(Element baseNode, String attributeName, boolean attributeValue) {
+	public static void appendAttribute(final Element baseNode, final String attributeName, final boolean attributeValue) {
 		appendAttribute(baseNode, attributeName, attributeValue ? "true" : "false");
 	}
 
@@ -833,7 +834,7 @@ public class XmlUtilities {
 	 * @param attributeValue
 	 *            the attribute value
 	 */
-	public static void appendAttribute(Element baseNode, String attributeName, int attributeValue) {
+	public static void appendAttribute(final Element baseNode, final String attributeName, final int attributeValue) {
 		appendAttribute(baseNode, attributeName, Integer.toString(attributeValue));
 	}
 
@@ -847,8 +848,8 @@ public class XmlUtilities {
 	 * @param attributeValue
 	 *            the attribute value
 	 */
-	public static void appendAttribute(Element baseNode, String attributeName, String attributeValue) {
-		Attr typeAttribute = baseNode.getOwnerDocument().createAttribute(attributeName);
+	public static void appendAttribute(final Element baseNode, final String attributeName, final String attributeValue) {
+		final Attr typeAttribute = baseNode.getOwnerDocument().createAttribute(attributeName);
 		if (attributeValue == null) {
 			typeAttribute.setNodeValue("<null>");
 		} else {
@@ -865,7 +866,7 @@ public class XmlUtilities {
 	 * @param attributeName
 	 *            the attribute name
 	 */
-	public static void removeAttribute(Element baseNode, String attributeName) {
+	public static void removeAttribute(final Element baseNode, final String attributeName) {
 		baseNode.getAttributes().removeNamedItem(attributeName);
 	}
 
@@ -878,7 +879,7 @@ public class XmlUtilities {
 	 *            the p comment
 	 * @return the document
 	 */
-	public static Document addCommentToDocument(Document pDocument, String pComment) {
+	public static Document addCommentToDocument(final Document pDocument, final String pComment) {
 		pDocument.getFirstChild().appendChild(pDocument.createComment(pComment));
 		return pDocument;
 	}
@@ -892,15 +893,15 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static String getEncodingOfXmlByteArray(byte[] xmlData) throws Exception {
-		String encodingAttributeName = "ENCODING";
+	public static String getEncodingOfXmlByteArray(final byte[] xmlData) throws Exception {
+		final String encodingAttributeName = "ENCODING";
 		try {
-			String first50CharactersInUtf8UpperCase = new String(xmlData, "UTF-8").substring(0, 50).toUpperCase();
+			final String first50CharactersInUtf8UpperCase = new String(xmlData, "UTF-8").substring(0, 50).toUpperCase();
 			if (first50CharactersInUtf8UpperCase.contains(encodingAttributeName)) {
-				int encodingstart = first50CharactersInUtf8UpperCase.indexOf(encodingAttributeName) + encodingAttributeName.length();
+				final int encodingstart = first50CharactersInUtf8UpperCase.indexOf(encodingAttributeName) + encodingAttributeName.length();
 
-				int contentStartEinfach = first50CharactersInUtf8UpperCase.indexOf("'", encodingstart);
-				int contentStartDoppelt = first50CharactersInUtf8UpperCase.indexOf("\"", encodingstart);
+				final int contentStartEinfach = first50CharactersInUtf8UpperCase.indexOf("'", encodingstart);
+				final int contentStartDoppelt = first50CharactersInUtf8UpperCase.indexOf("\"", encodingstart);
 				int contentStart = Math.min(contentStartEinfach, contentStartDoppelt);
 				if (contentStartEinfach < 0) {
 					contentStart = contentStartDoppelt;
@@ -910,8 +911,8 @@ public class XmlUtilities {
 				}
 				contentStart = contentStart + 1;
 
-				int contentEndSingle = first50CharactersInUtf8UpperCase.indexOf("'", contentStart);
-				int contentEndDouble = first50CharactersInUtf8UpperCase.indexOf("\"", contentStart);
+				final int contentEndSingle = first50CharactersInUtf8UpperCase.indexOf("'", contentStart);
+				final int contentEndDouble = first50CharactersInUtf8UpperCase.indexOf("\"", contentStart);
 				int contentEnd = Math.min(contentEndSingle, contentEndDouble);
 				if (contentEndSingle < 0) {
 					contentEnd = contentEndDouble;
@@ -920,12 +921,12 @@ public class XmlUtilities {
 					throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 				}
 
-				String encodingString = first50CharactersInUtf8UpperCase.substring(contentStart, contentEnd);
+				final String encodingString = first50CharactersInUtf8UpperCase.substring(contentStart, contentEnd);
 				return encodingString;
 			} else {
 				throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 			}
-		} catch (UnsupportedEncodingException e) {
+		} catch (final UnsupportedEncodingException e) {
 			throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 		}
 	}
@@ -939,12 +940,12 @@ public class XmlUtilities {
 	 *            the data node
 	 * @return the simple values of node
 	 */
-	public static Map<String, String> getSimpleValuesOfNode(Node dataNode) {
-		Map<String, String> returnMap = new HashMap<String, String>();
+	public static Map<String, String> getSimpleValuesOfNode(final Node dataNode) {
+		final Map<String, String> returnMap = new HashMap<>();
 
-		NodeList list = dataNode.getChildNodes();
+		final NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
-			Node node = list.item(i);
+			final Node node = list.item(i);
 			if (node.getFirstChild() != null && node.getFirstChild().getNodeType() == Node.TEXT_NODE && node.getChildNodes().getLength() == 1) {
 				returnMap.put(node.getNodeName(), node.getFirstChild().getNodeValue());
 			}
@@ -960,12 +961,12 @@ public class XmlUtilities {
 	 *            the data node
 	 * @return the sub nodes
 	 */
-	public static List<Node> getSubNodes(Node dataNode) {
-		List<Node> returnList = new ArrayList<Node>();
+	public static List<Node> getSubNodes(final Node dataNode) {
+		final List<Node> returnList = new ArrayList<>();
 
-		NodeList list = dataNode.getChildNodes();
+		final NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
-			Node node = list.item(i);
+			final Node node = list.item(i);
 			returnList.add(node);
 		}
 
@@ -979,12 +980,12 @@ public class XmlUtilities {
 	 *            the data node
 	 * @return the nodenames of childs
 	 */
-	public static List<String> getNodenamesOfChilds(Node dataNode) {
-		List<String> returnList = new ArrayList<String>();
+	public static List<String> getNodenamesOfChilds(final Node dataNode) {
+		final List<String> returnList = new ArrayList<>();
 
-		NodeList list = dataNode.getChildNodes();
+		final NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
-			Node node = list.item(i);
+			final Node node = list.item(i);
 			if (node.getNodeType() != Node.TEXT_NODE) {
 				returnList.add(node.getNodeName());
 			}
@@ -993,15 +994,15 @@ public class XmlUtilities {
 		return returnList;
 	}
 
-	public static String removeFrameTag(String data) throws Exception {
+	public static String removeFrameTag(final String data) throws Exception {
 		if (Utilities.isEmpty(data)) {
 			return data;
 		} else {
-			String changedData = data.trim();
+			final String changedData = data.trim();
 			if (changedData.startsWith("<") && changedData.endsWith(">")) {
-				Document xmlDocument = parseXmlString(changedData);
-				Node rootNode = getRootNodeFromDocument(xmlDocument);
-				List<Node> childNodes = getChildNodes(rootNode);
+				final Document xmlDocument = parseXmlString(changedData);
+				final Node rootNode = getRootNodeFromDocument(xmlDocument);
+				final List<Node> childNodes = getChildNodes(rootNode);
 				if (childNodes.size() > 0) {
 					return getNodeAsString(childNodes.get(0), "UTF-8", true);
 				} else {
@@ -1013,16 +1014,16 @@ public class XmlUtilities {
 		}
 	}
 
-	public static Node getRootNodeFromDocument(Document document) {
+	public static Node getRootNodeFromDocument(final Document document) {
 		return document.getDocumentElement();
 	}
 
-	public static List<Node> getChildNodes(Node dataNode) {
-		List<Node> returnList = new ArrayList<Node>();
+	public static List<Node> getChildNodes(final Node dataNode) {
+		final List<Node> returnList = new ArrayList<>();
 
-		NodeList list = dataNode.getChildNodes();
+		final NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
-			Node node = list.item(i);
+			final Node node = list.item(i);
 			if (node.getNodeType() != Node.TEXT_NODE) {
 				returnList.add(node);
 			}
@@ -1031,9 +1032,9 @@ public class XmlUtilities {
 		return returnList;
 	}
 
-	public static String formatXmlDocument(Document xmlDocument, String encoding, boolean throwExceptionOnError) throws Exception {
+	public static String formatXmlDocument(final Document xmlDocument, final String encoding, final boolean throwExceptionOnError) throws Exception {
 		try {
-			StringBuilder result = new StringBuilder();
+			final StringBuilder result = new StringBuilder();
 			result.append("<?xml version=\"");
 			result.append(xmlDocument.getXmlVersion());
 			result.append("\" encoding=\"");
@@ -1043,11 +1044,11 @@ public class XmlUtilities {
 			result.append("\"?>\n");
 
 			for (int i = 0; i < xmlDocument.getChildNodes().getLength(); i++) {
-				Node xmlNode = xmlDocument.getChildNodes().item(i);
+				final Node xmlNode = xmlDocument.getChildNodes().item(i);
 				result.append(formatXmlNode(xmlNode, 0));
 			}
 			return result.toString();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			if (throwExceptionOnError) {
 				throw e;
 			} else {
@@ -1056,9 +1057,9 @@ public class XmlUtilities {
 		}
 	}
 
-	public static String formatXmlDocument(Document xmlDocument, boolean throwExceptionOnError) throws Exception {
+	public static String formatXmlDocument(final Document xmlDocument, final boolean throwExceptionOnError) throws Exception {
 		try {
-			StringBuilder result = new StringBuilder();
+			final StringBuilder result = new StringBuilder();
 			result.append("<?xml version=\"");
 			result.append(xmlDocument.getXmlVersion());
 			result.append("\" encoding=\"");
@@ -1068,11 +1069,11 @@ public class XmlUtilities {
 			result.append("\"?>\n");
 
 			for (int i = 0; i < xmlDocument.getChildNodes().getLength(); i++) {
-				Node xmlNode = xmlDocument.getChildNodes().item(i);
+				final Node xmlNode = xmlDocument.getChildNodes().item(i);
 				result.append(formatXmlNode(xmlNode, 0));
 			}
 			return result.toString();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			if (throwExceptionOnError) {
 				throw e;
 			} else {
@@ -1081,7 +1082,7 @@ public class XmlUtilities {
 		}
 	}
 
-	public static String formatXmlNode(Node xmlNode, int indentationLevel) {
+	public static String formatXmlNode(final Node xmlNode, final int indentationLevel) {
 		if (xmlNode.getNodeType() == Node.TEXT_NODE) {
 			if (Utilities.isBlank(xmlNode.getNodeValue())) {
 				return "";
@@ -1092,7 +1093,7 @@ public class XmlUtilities {
 			if (Utilities.isBlank(xmlNode.getNodeValue())) {
 				return "";
 			} else {
-				StringBuilder result = new StringBuilder();
+				final StringBuilder result = new StringBuilder();
 				result.append(TextUtilities.repeatString("\t", indentationLevel));
 				result.append("<!--");
 				result.append(xmlNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
@@ -1100,7 +1101,7 @@ public class XmlUtilities {
 				return result.toString();
 			}
 		} else if (xmlNode.getNodeType() == Node.DOCUMENT_TYPE_NODE) {
-			StringBuilder result = new StringBuilder();
+			final StringBuilder result = new StringBuilder();
 			result.append(TextUtilities.repeatString("\t", indentationLevel));
 			result.append("<!DOCTYPE ");
 			result.append(((DocumentType) xmlNode).getName());
@@ -1112,7 +1113,7 @@ public class XmlUtilities {
 			return result.toString();
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
 			if (Utilities.isBlank(xmlNode.getChildNodes().item(0).getNodeValue())) {
-				StringBuilder result = new StringBuilder();
+				final StringBuilder result = new StringBuilder();
 				result.append(TextUtilities.repeatString("\t", indentationLevel));
 				result.append("<");
 				result.append(xmlNode.getNodeName());
@@ -1120,7 +1121,7 @@ public class XmlUtilities {
 				result.append(" />\n");
 				return result.toString();
 			} else {
-				StringBuilder result = new StringBuilder();
+				final StringBuilder result = new StringBuilder();
 				result.append(TextUtilities.repeatString("\t", indentationLevel));
 				result.append("<");
 				result.append(xmlNode.getNodeName());
@@ -1133,10 +1134,10 @@ public class XmlUtilities {
 				return result.toString();
 			}
 		} else {
-			StringBuilder innerXml = new StringBuilder();
+			final StringBuilder innerXml = new StringBuilder();
 			if (xmlNode.getChildNodes() != null && xmlNode.getChildNodes().getLength() > 0) {
 				for (int nodeIndex = 0; nodeIndex < xmlNode.getChildNodes().getLength(); nodeIndex++) {
-					Node xmlSubNode = xmlNode.getChildNodes().item(nodeIndex);
+					final Node xmlSubNode = xmlNode.getChildNodes().item(nodeIndex);
 					if (xmlSubNode.getNodeType() == Node.TEXT_NODE) {
 						if (Utilities.isNotBlank(xmlSubNode.getNodeValue())) {
 							innerXml.append(xmlSubNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
@@ -1147,7 +1148,7 @@ public class XmlUtilities {
 				}
 			}
 
-			StringBuilder result = new StringBuilder();
+			final StringBuilder result = new StringBuilder();
 			result.append(TextUtilities.repeatString("\t", indentationLevel));
 			result.append("<");
 			result.append(xmlNode.getNodeName());
@@ -1166,12 +1167,12 @@ public class XmlUtilities {
 		}
 	}
 
-	private static String formatAttributes(Node xmlNode, int indentationLevel) {
-		StringBuilder result = new StringBuilder();
+	private static String formatAttributes(final Node xmlNode, final int indentationLevel) {
+		final StringBuilder result = new StringBuilder();
 		if (xmlNode.getAttributes() != null && xmlNode.getAttributes().getLength() > 0) {
 			if (xmlNode.getAttributes().getLength() <= 5) {
 				for (int attributeIndex = 0; attributeIndex < xmlNode.getAttributes().getLength(); attributeIndex++) {
-					Node attributeNode = xmlNode.getAttributes().item(attributeIndex);
+					final Node attributeNode = xmlNode.getAttributes().item(attributeIndex);
 					result.append(" ");
 					result.append(attributeNode.getNodeName());
 					result.append("=\"");
@@ -1184,7 +1185,7 @@ public class XmlUtilities {
 					if (attributeIndex > 0) {
 						result.append("\n");
 					}
-					Node attributeNode = xmlNode.getAttributes().item(attributeIndex);
+					final Node attributeNode = xmlNode.getAttributes().item(attributeIndex);
 					result.append(TextUtilities.repeatString("\t", indentationLevel + 1));
 					result.append(attributeNode.getNodeName());
 					result.append("=\"");
