@@ -87,19 +87,19 @@
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on -->
 		    <groupId>org.bouncycastle</groupId>
 		    <artifactId>bcprov-jdk15on</artifactId>
-		    <version>1.55</version>
+		    <version>1.61</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on -->
 		    <groupId>org.bouncycastle</groupId>
 		    <artifactId>bcpg-jdk15on</artifactId>
-		    <version>1.55</version>
+		    <version>1.61</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
 		    <groupId>org.bouncycastle</groupId>
 		    <artifactId>bcpkix-jdk15on</artifactId>
-		    <version>1.55</version>
+		    <version>1.61</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>
