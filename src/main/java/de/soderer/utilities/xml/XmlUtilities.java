@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -76,16 +77,23 @@ public class XmlUtilities {
 	 * @throws IOException
 	 *             the IO exception
 	 */
-	public static Document downloadAndParseXmlFile(final String url) throws IOException {
+	public static Document downloadAndParseXmlFile(final String url) throws Exception {
 		BufferedInputStream inputStream = null;
 		try {
-			inputStream = new BufferedInputStream(new URL(url).openStream());
+			final URL documentUrl = new URL(url);
+
+			final HttpURLConnection connection = (HttpURLConnection) documentUrl.openConnection();
+			connection.connect();
+			final int httpCode = connection.getResponseCode();
+			if (httpCode != 200) {
+				throw new Exception("Cannot retrieve xml document from Url '" + url + "'. HTTP code was: " + httpCode);
+			}
+
+			inputStream = new BufferedInputStream(documentUrl.openStream());
 			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
-		} catch (final Exception e) {
-			return null;
 		} finally {
 			if (inputStream != null) {
 				inputStream.close();
