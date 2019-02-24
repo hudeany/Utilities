@@ -69,7 +69,7 @@ public class XmlUtilities {
 
 	/**
 	 * Download and parse xml file.
-	 * Does not follow redirection (HTTP Code 302 and others)
+	 * Does not follow redirection (HTTP Code 302, 301 and others)
 	 *
 	 * @param url
 	 *            the url
