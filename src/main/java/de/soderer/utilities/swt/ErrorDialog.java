@@ -46,7 +46,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	@Override
 	protected void createComponents(final Shell shell) throws Exception {
 		try {
-			final InputStream errorImageStream = getClass().getResourceAsStream("exclamation.png");
+			final InputStream errorImageStream = getClass().getClassLoader().getResourceAsStream("images/icons/exclamation.png");
 			if (errorImageStream == null) {
 				throw new Exception("Missing image file: " + "exclamation.png");
 			}
