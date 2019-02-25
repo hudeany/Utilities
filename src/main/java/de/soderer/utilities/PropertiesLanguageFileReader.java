@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
 
@@ -17,16 +17,16 @@ public class PropertiesLanguageFileReader {
 	private static final String COMMENT_INDICATOR = "#";
 
 	private Map<String, String> entries;
-	private Set<String> multipleKeys = new HashSet<String>();
+	private final Set<String> multipleKeys = new HashSet<>();
 
-	public void load(InputStream inputStream, boolean readKeysCaseInsensitive) throws Exception {
+	public void load(final InputStream inputStream, final boolean readKeysCaseInsensitive) throws Exception {
 		if (readKeysCaseInsensitive) {
-			entries = new CaseInsensitiveOrderedMap<String>();
+			entries = new CaseInsensitiveOrderedMap<>();
 		} else {
-			entries = new LinkedHashMap<String, String>();
+			entries = new LinkedHashMap<>();
 		}
 
-		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 		String line = null;
 		int lineCount = 0;
 		while ((line = reader.readLine()) != null) {
@@ -38,7 +38,7 @@ public class PropertiesLanguageFileReader {
 				int posSeparator = -1;
 				boolean blankSeparatorFound = false;
 				for (int i = 0; i < line.length(); i++) {
-					char letter = line.charAt(i);
+					final char letter = line.charAt(i);
 					if (letter == '=' || letter == ':') {
 						posSeparator = i;
 						break;
@@ -91,9 +91,9 @@ public class PropertiesLanguageFileReader {
 	 * @param key
 	 * @return
 	 */
-	public static String getSectionOfKey(String key) {
+	public static String getSectionOfKey(final String key) {
 		String section = "";
-		int sectionEnd = key.lastIndexOf(".");
+		final int sectionEnd = key.lastIndexOf(".");
 		if (sectionEnd >= 0) {
 			section = key.substring(0, sectionEnd);
 		}
@@ -106,17 +106,17 @@ public class PropertiesLanguageFileReader {
 	 * @param fileName
 	 * @return
 	 */
-	public static String getLanguageSignOfFilename(String fileName) {
+	public static String getLanguageSignOfFilename(final String fileName) {
 		String fileNamePart = fileName.replace("\\", "/");
-		int lastFileSeparator = fileNamePart.lastIndexOf("/");
+		final int lastFileSeparator = fileNamePart.lastIndexOf("/");
 		if (lastFileSeparator >= 0) {
 			fileNamePart = fileNamePart.substring(lastFileSeparator + 1);
 		}
-		int lastPoint = fileNamePart.lastIndexOf(".");
+		final int lastPoint = fileNamePart.lastIndexOf(".");
 		if (lastPoint >= 0) {
 			fileNamePart = fileNamePart.substring(0, lastPoint);
 		}
-		String[] fileNameParts = fileNamePart.split("_");
+		final String[] fileNameParts = fileNamePart.split("_");
 		if (fileNameParts.length == 2) {
 			return fileNameParts[1];
 		} else if (fileNameParts.length >= 3) {

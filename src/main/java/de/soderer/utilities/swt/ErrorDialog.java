@@ -1,5 +1,6 @@
 package de.soderer.utilities.swt;
 
+import java.io.InputStream;
 import java.util.Locale;
 
 import org.eclipse.swt.SWT;
@@ -25,17 +26,17 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 
 public class ErrorDialog extends ModalDialog<Boolean> {
-	private String applicationName;
-	private String emailRecipient;
-	private Throwable throwable;
+	private final String applicationName;
+	private final String emailRecipient;
+	private final Throwable throwable;
 	private Button detailButton;
 	private Composite detailPart;
 
-	public ErrorDialog(Shell shell, String applicationName, Throwable throwable) {
+	public ErrorDialog(final Shell shell, final String applicationName, final Throwable throwable) {
 		this(shell, applicationName, "", throwable);
 	}
 
-	public ErrorDialog(Shell shell, String applicationName, String emailRecipient, Throwable throwable) {
+	public ErrorDialog(final Shell shell, final String applicationName, final String emailRecipient, final Throwable throwable) {
 		super(shell, applicationName + " " + getText("ERROR"));
 		this.throwable = throwable;
 		this.applicationName = applicationName;
@@ -43,10 +44,14 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	}
 
 	@Override
-	protected void createComponents(Shell shell) throws Exception {
+	protected void createComponents(final Shell shell) throws Exception {
 		try {
-			shell.setImage(new Image(shell.getDisplay(), getClass().getResourceAsStream("exclamation.png")));
-		} catch (Exception e) {
+			final InputStream errorImageStream = getClass().getResourceAsStream("exclamation.png");
+			if (errorImageStream == null) {
+				throw new Exception("Missing image file: " + "exclamation.png");
+			}
+			shell.setImage(new Image(shell.getDisplay(), errorImageStream));
+		} catch (final Exception e) {
 			e.printStackTrace();
 		}
 		shell.setLayout(new GridLayout(1, false));
@@ -56,23 +61,23 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			text1 = ((VisibleException) throwable).getVisibleMessage();
 		}
 
-		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
+		final GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
 		gridData.widthHint = 500;
 
-		Text keyTextfield1 = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY | SWT.V_SCROLL);
+		final Text keyTextfield1 = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY | SWT.V_SCROLL);
 		keyTextfield1.setLayoutData(gridData);
 		keyTextfield1.setText(text1);
 
-		Composite buttonComposite = new Composite(shell, SWT.NONE);
+		final Composite buttonComposite = new Composite(shell, SWT.NONE);
 		buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 		buttonComposite.setLayout(new FillLayout());
 
-		Button sendMailButton = new Button(buttonComposite, SWT.PUSH);
+		final Button sendMailButton = new Button(buttonComposite, SWT.PUSH);
 		sendMailButton.setText(getText("OPEN_MAIL"));
 		sendMailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
-				boolean success = EmailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, ExceptionUtilities.throwableToString(throwable));
+			public void widgetSelected(final SelectionEvent e) {
+				final boolean success = EmailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, ExceptionUtilities.throwableToString(throwable));
 				if (!success) {
 					new QuestionDialog(getParent(), getText(), getText("CANNOT_OPEN_MAIL"), "OK").open();
 				}
@@ -83,13 +88,13 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		detailButton.setText(getText("DETAILS_MORE"));
 		detailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				if (detailButton.getText().equals(getText("DETAILS_MORE"))) {
 					detailButton.setText(getText("DETAILS_LESS"));
 				} else {
 					detailButton.setText(getText("DETAILS_MORE"));
 				}
-				Point currentLocation = getParent().getLocation();
+				final Point currentLocation = getParent().getLocation();
 				setupDetailPart();
 				getParent().setLocation(currentLocation);
 			}
@@ -101,12 +106,12 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 
 		setupDetailPart();
 
-		Button closeButton = new Button(shell, SWT.PUSH);
+		final Button closeButton = new Button(shell, SWT.PUSH);
 		closeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		closeButton.setText(getText("CLOSE"));
 		closeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				setReturnValue(false);
 				getParent().close();
 			}
@@ -116,28 +121,28 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	}
 
 	private void setupDetailPart() {
-		for (Control item : detailPart.getChildren()) {
+		for (final Control item : detailPart.getChildren()) {
 			item.dispose();
 		}
 
 		if (detailButton.getText().equals(getText("DETAILS_LESS"))) {
-			String text2 = throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
+			final String text2 = throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
 
-			String text3 = ExceptionUtilities.throwableToString(throwable);
+			final String text3 = ExceptionUtilities.throwableToString(throwable);
 
-			Text keyTextfield2 = new Text(detailPart, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
-			GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
+			final Text keyTextfield2 = new Text(detailPart, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
+			final GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
 			gridData.widthHint = 500;
 			keyTextfield2.setLayoutData(gridData);
 			keyTextfield2.setText(text2);
 			if (Utilities.isNotEmpty(text3)) {
-				StyledText keyTextfield3 = new StyledText(detailPart, SWT.BORDER | SWT.MULTI | SWT.READ_ONLY | SWT.H_SCROLL | SWT.V_SCROLL);
-				GridData gridData2 = new GridData(SWT.FILL, SWT.FILL, true, false);
+				final StyledText keyTextfield3 = new StyledText(detailPart, SWT.BORDER | SWT.MULTI | SWT.READ_ONLY | SWT.H_SCROLL | SWT.V_SCROLL);
+				final GridData gridData2 = new GridData(SWT.FILL, SWT.FILL, true, false);
 				gridData2.widthHint = 500;
 				gridData2.heightHint = 400;
 				keyTextfield3.setLayoutData(gridData2);
 				keyTextfield3.setText(text3);
-				FontData[] fontData = keyTextfield3.getFont().getFontData();
+				final FontData[] fontData = keyTextfield3.getFont().getFontData();
 				fontData[0].setHeight(7);
 				keyTextfield3.setFont(new Font(getParent().getDisplay(), fontData[0]));
 			}
@@ -149,7 +154,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		setPosition(getParent());
 	}
 
-	private static String getText(String key) {
+	private static String getText(final String key) {
 		if ("DETAILS_MORE".equalsIgnoreCase(key)) {
 			return "Details >>>";
 		} else if ("DETAILS_LESS".equalsIgnoreCase(key)) {

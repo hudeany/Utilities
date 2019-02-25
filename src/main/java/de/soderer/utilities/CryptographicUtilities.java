@@ -478,7 +478,7 @@ public class CryptographicUtilities {
 	 * Read a certificate file
 	 */
 	public static X509Certificate getCertificateFromFile(final File certificateFile) throws Exception {
-		final String certificateFileString = FileUtils.readFileToString(certificateFile);
+		final String certificateFileString = FileUtils.readFileToString(certificateFile, "UTF-8");
 		return getCertificateFromString(certificateFileString);
 	}
 

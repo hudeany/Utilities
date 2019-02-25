@@ -129,9 +129,9 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private void updateApplication() {
 		try {
 			final String jarFilePath = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
-			final File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 
 			if (Utilities.isNotBlank(jarFilePath)) {
+				final File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 				boolean tryDownloadAgain = true;
 				while (tryDownloadAgain) {
 					tryDownloadAgain = false;
@@ -181,7 +181,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 									+ "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n"
 									+ "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + ")\r\n" + ")\r\n" + ")\r\n" + "ren \"" + downloadTempFile.getAbsolutePath() + "\" \""
 									+ new File(jarFilePath).getName() + "\"\r\n" + "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n" + "java -jar \"" + jarFilePath + "\"\r\n"
-									+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n" + ")\r\n");
+									+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n" + ")\r\n", "ISO-8859-1");
 
 					Runtime.getRuntime().exec("cmd /c start /B " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
@@ -193,16 +193,17 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 							"#!/bin/bash\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath
 							+ "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n"
 							+ "fi\n" + "fi\n" + "fi\n" + "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n" + "if ! [ -f \"" + downloadTempFile.getAbsolutePath()
-							+ "\" ]; then\n" + "java -jar \"" + jarFilePath + "\"\n" + "rm \"" + batchFile.getAbsolutePath() + "\"\n" + "fi\n");
+							+ "\" ]; then\n" + "java -jar \"" + jarFilePath + "\"\n" + "rm \"" + batchFile.getAbsolutePath() + "\"\n" + "fi\n", "ISO-8859-1");
 
 					Runtime.getRuntime().exec("sh " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
 				}
 			} else {
-				new QuestionDialog(getParent(), getText(), LangResources.get("cannotUpdate", "Jar file not found")).open();
+				new QuestionDialog(getParent(), getText(), LangResources.get("cannotUpdate", "Currenty running Jar file not found")).open();
 			}
 		} catch (final Exception e) {
 			logger.error(LangResources.get("cannotUpdate", e.getMessage()), e);
+			new QuestionDialog(getParent(), getText(), LangResources.get("cannotUpdate", "Error: " + e.getMessage())).open();
 		}
 	}
 
@@ -318,7 +319,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	}
 
 	public SecureDataStore openKeyStore(final Shell shell, final File keystoreFile, char[] password) {
-		if (keystoreFile.exists()) {
+		if (keystoreFile != null && keystoreFile.exists()) {
 			SecureDataStore keyStore = null;
 
 			if (password == null) {
