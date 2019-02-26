@@ -12,12 +12,12 @@ public abstract class ModalDialog<T> extends Dialog {
 	private Point location = null;
 	private T returnValue;
 
-	public ModalDialog(Shell parentShell, String title) {
+	public ModalDialog(final Shell parentShell, final String title) {
 		super(new Shell(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
 		getParent().setText(title);
 	}
 
-	public ModalDialog(Shell parentShell, int style, String title) {
+	public ModalDialog(final Shell parentShell, final int style, final String title) {
 		super(new Shell(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
 		getParent().setText(title);
 	}
@@ -25,14 +25,14 @@ public abstract class ModalDialog<T> extends Dialog {
 	public T open() {
 		try {
 			createComponents(getParent());
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new RuntimeException("Cannot create dialog components", e);
 		}
 
 		setPosition(getParent());
 
 		getParent().open();
-		Display display = getParent().getDisplay();
+		final Display display = getParent().getDisplay();
 		while (!getParent().isDisposed()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();
@@ -54,7 +54,7 @@ public abstract class ModalDialog<T> extends Dialog {
 		getParent().setVisible(true);
 	}
 
-	public void setLocation(Point value) {
+	public void setLocation(final Point value) {
 		location = value;
 	}
 
@@ -62,11 +62,11 @@ public abstract class ModalDialog<T> extends Dialog {
 		return getParent().isDisposed();
 	}
 
-	protected void setReturnValue(T value) {
+	protected void setReturnValue(final T value) {
 		returnValue = value;
 	}
 
-	protected void setPosition(Shell shell) {
+	protected void setPosition(final Shell shell) {
 		int xPosition;
 		int yPosition;
 		if (location == null) {
@@ -86,15 +86,15 @@ public abstract class ModalDialog<T> extends Dialog {
 		return null;
 	}
 
-	protected void showMessage(String title, String text) {
+	protected void showMessage(final String title, final String text) {
 		new QuestionDialog(getParent(), title, text, LangResources.get("ok")).open();
 	}
 
-	protected boolean showQuestion(String text, String... buttonTextProperties) {
+	protected boolean showQuestion(final String text, final String... buttonTextProperties) {
 		if (buttonTextProperties == null) {
 			return new QuestionDialog(getParent(), getText(), text, LangResources.get("ok"), LangResources.get("cancel")).open() == 0;
 		} else {
-			String[] buttonTexts = new String[buttonTextProperties.length];
+			final String[] buttonTexts = new String[buttonTextProperties.length];
 			for (int i = 0; i < buttonTextProperties.length; i++) {
 				buttonTexts[i] = LangResources.get(buttonTextProperties[i]);
 			}

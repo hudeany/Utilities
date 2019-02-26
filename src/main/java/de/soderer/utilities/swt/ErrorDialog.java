@@ -37,7 +37,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	}
 
 	public ErrorDialog(final Shell shell, final String applicationName, final String emailRecipient, final Throwable throwable) {
-		super(shell, applicationName + " " + getText("ERROR"));
+		super(shell, SWT.CLOSE, applicationName + " " + getText("ERROR"));
 		this.throwable = throwable;
 		this.applicationName = applicationName;
 		this.emailRecipient = emailRecipient;
