@@ -1,13 +1,17 @@
 package de.soderer.utilities;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -27,9 +31,11 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -57,6 +63,7 @@ import org.apache.commons.io.FileUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -81,12 +88,18 @@ import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.jcajce.util.DefaultJcaJceHelper;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMEncryptor;
+import org.bouncycastle.openssl.PEMException;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.util.io.pem.PemObject;
 
 /**
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
@@ -859,5 +872,72 @@ public class CryptographicUtilities {
 	public static int getKeySize(final X509Certificate certificate) {
 		final RSAKey rsaKey = (RSAKey) certificate.getPublicKey();
 		return rsaKey.getModulus().bitLength();
+	}
+
+	public static KeyPair convertPEMKeyPairToKeyPair(final PEMKeyPair keyPair) throws PEMException {
+		try {
+			String algorithm = keyPair.getPrivateKeyInfo().getPrivateKeyAlgorithm().getAlgorithm().getId();
+			if (X9ObjectIdentifiers.id_ecPublicKey.getId().equals(algorithm)) {
+				algorithm = "ECDSA";
+			}
+
+			final KeyFactory keyFactory = new DefaultJcaJceHelper().createKeyFactory(algorithm);
+
+			return new KeyPair(
+					keyFactory.generatePublic(new X509EncodedKeySpec(keyPair.getPublicKeyInfo().getEncoded())),
+					keyFactory.generatePrivate(new PKCS8EncodedKeySpec(keyPair.getPrivateKeyInfo().getEncoded())));
+		} catch (final Exception e) {
+			throw new PEMException("Unable to convert key pair: " + e.getMessage(), e);
+		}
+	}
+
+	public static PEMKeyPair getPemKeyPairFromPuttyKey(final PuttyKey puttyKey) throws Exception {
+		final ByteArrayOutputStream out = new ByteArrayOutputStream();
+		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(out)) {
+			puttyKeyWriter.writeUnprotectedPemFormat(puttyKey);
+		}
+
+		/**
+		 * Generates Private Key from BASE64 encoded string
+		 */
+		Security.addProvider(new BouncyCastleProvider());
+
+		try (PEMParser pemReader = new PEMParser(new StringReader(new String(out.toByteArray())))) {
+			final Object readObject = pemReader.readObject();
+			if (readObject instanceof PEMKeyPair) {
+				final PEMKeyPair keyPair = (PEMKeyPair) readObject;
+				return keyPair;
+			} else {
+				return null;
+			}
+		} catch (final Exception e) {
+			throw new Exception("Cannot read private key", e);
+		}
+	}
+
+	public static String convertPuttyKeyToPublicOpenSshKey(final PuttyKey puttyKey) throws Exception {
+		final KeyPair keyPair = convertPEMKeyPairToKeyPair(getPemKeyPairFromPuttyKey(puttyKey));
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		try (JcaPEMWriter writer = new JcaPEMWriter(new PrintWriter(outputStream))) {
+			writer.writeObject(new PemObject(puttyKey.getKeyComment() + " public key", keyPair.getPublic().getEncoded()));
+		}
+		return new String(outputStream.toByteArray(), "UTF-8");
+	}
+
+	public static String convertPuttyKeyToProtectedPrivateOpenSshKey(final PuttyKey puttyKey, final String exportedKeyPassword) throws Exception {
+		final KeyPair keyPair = convertPEMKeyPairToKeyPair(getPemKeyPairFromPuttyKey(puttyKey));
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		try (final JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.US_ASCII))) {
+			if (exportedKeyPassword != null) {
+				final PEMEncryptor pemEncryptor = new JcePEMEncryptorBuilder("AES-128-CBC").build(exportedKeyPassword.toCharArray());
+				final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(keyPair.getPrivate(), pemEncryptor);
+				jcaPEMWriter.writeObject(pemGenerator);
+			} else {
+				jcaPEMWriter.writeObject(keyPair.getPrivate());
+			}
+
+			jcaPEMWriter.flush();
+		}
+		return new String(outputStream.toByteArray(), "UTF-8");
 	}
 }
