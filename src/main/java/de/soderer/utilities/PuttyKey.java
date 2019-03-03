@@ -83,7 +83,7 @@ public class PuttyKey {
 
 			final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 			final PublicKey publicKey = keyFactory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
-			final PrivateKey privateKey = keyFactory.generatePrivate(new RSAPrivateCrtKeySpec(modulus, publicExponent, privateExponent, dmp1, dmq1, p, q, iqmp));
+			final PrivateKey privateKey = keyFactory.generatePrivate(new RSAPrivateCrtKeySpec(modulus, publicExponent, privateExponent, p, q, dmp1, dmq1, iqmp));
 			return new KeyPair(publicKey, privateKey);
 		} else if ("ssh-dss".equalsIgnoreCase(cipherName)) {
 			final BigInteger p = publicKeyReader.readBigInt();
