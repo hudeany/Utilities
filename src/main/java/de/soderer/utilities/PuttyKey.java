@@ -74,10 +74,6 @@ public class PuttyKey {
 		}
 	}
 
-	public Map<String, String> getHeaders() {
-		return headers;
-	}
-
 	/**
 	 * Key type. Either "ssh-rsa" for RSA key, or "ssh-dss" for DSA key.
 	 */
@@ -85,15 +81,17 @@ public class PuttyKey {
 		return headers.get("PuTTY-User-Key-File-2").trim();
 	}
 
-	public int getRsaKeyStrength() throws Exception {
-		if (keyPair.getPublic().getAlgorithm().toLowerCase().contains("rsa")) {
+	public int getKeyStrength() throws Exception {
+		if ("ssh-rsa".equalsIgnoreCase(getAlgorithm())) {
 			return ((RSAPublicKey) keyPair.getPublic()).getModulus().bitLength();
+		} else if ("ssh-dss".equalsIgnoreCase(getAlgorithm())) {
+			return 1024;
 		} else {
-			return -1;
+			throw new Exception("Unsupported cipher: " + getAlgorithm());
 		}
 	}
 
-	public String getKeyComment() {
+	public String getComment() {
 		return headers.get("Comment").trim();
 	}
 
@@ -159,7 +157,7 @@ public class PuttyKey {
 		}
 
 		public String readString() throws Exception {
-			return new String(readData(), "UTF-8");
+			return new String(readData(), "ISO-8859-1");
 		}
 
 		private byte[] readData() throws IOException, Exception {

@@ -894,7 +894,7 @@ public class CryptographicUtilities {
 		final KeyPair keyPair = puttyKey.getKeyPair();
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (JcaPEMWriter writer = new JcaPEMWriter(new PrintWriter(outputStream))) {
-			writer.writeObject(new PemObject(puttyKey.getKeyComment() + " public key", keyPair.getPublic().getEncoded()));
+			writer.writeObject(new PemObject(puttyKey.getComment() + " public key", keyPair.getPublic().getEncoded()));
 		}
 		return new String(outputStream.toByteArray(), "UTF-8");
 	}

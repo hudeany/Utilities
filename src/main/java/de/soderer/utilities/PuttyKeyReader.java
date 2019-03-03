@@ -204,17 +204,7 @@ public class PuttyKeyReader implements Closeable {
 		data.writeInt(privateKey.length);
 		data.write(privateKey);
 
-		final String macHash = toHexString(mac.doFinal(out.toByteArray())).toLowerCase();
-
-		System.out.println("MAC gen reader");
-		System.out.println(Arrays.toString(passwordBytes));
-		System.out.println(keyType);
-		System.out.println(encryptionType);
-		System.out.println(comment);
-		System.out.println(Arrays.toString(publicKey));
-		System.out.println(Arrays.toString(privateKey));
-		System.out.println(macHash);
-		return macHash;
+		return toHexString(mac.doFinal(out.toByteArray())).toLowerCase();
 	}
 
 	private String toHexString(final byte[] data) {

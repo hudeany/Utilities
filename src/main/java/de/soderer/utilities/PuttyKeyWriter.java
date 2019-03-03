@@ -15,7 +15,6 @@ import java.security.SecureRandom;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
-import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -66,7 +65,7 @@ public class PuttyKeyWriter implements Closeable {
 			privateKeyBytes = privateKeyBytesPadded;
 		}
 
-		final String macHash = calculateMacChecksum(passwordBytes, puttyKey.getAlgorithm(), password == null ? "none" : "aes256-cbc", puttyKey.getKeyComment(), publicKeyBytes, privateKeyBytes);
+		final String macHash = calculateMacChecksum(passwordBytes, puttyKey.getAlgorithm(), password == null ? "none" : "aes256-cbc", puttyKey.getComment(), publicKeyBytes, privateKeyBytes);
 
 		if (passwordBytes != null) {
 			final byte[] puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKey(passwordBytes);
@@ -83,7 +82,7 @@ public class PuttyKeyWriter implements Closeable {
 		final StringBuilder content = new StringBuilder();
 		content.append("PuTTY-User-Key-File-2: ").append(puttyKey.getAlgorithm()).append("\r\n");
 		content.append("Encryption: ").append(password == null ? "none" : "aes256-cbc").append("\r\n");
-		content.append("Comment: ").append(puttyKey.getKeyComment()).append("\r\n");
+		content.append("Comment: ").append(puttyKey.getComment()).append("\r\n");
 		content.append("Public-Lines: ").append(getLineCount(publicKeyBase64)).append("\r\n");
 		content.append(publicKeyBase64).append("\r\n");
 		content.append("Private-Lines: ").append(getLineCount(privateKeyBase64)).append("\r\n");
@@ -132,15 +131,15 @@ public class PuttyKeyWriter implements Closeable {
 	 */
 	public void writeUnprotectedPemFormat(final PuttyKey puttyKey) throws Exception {
 		if ("ssh-rsa".equalsIgnoreCase(puttyKey.getAlgorithm())) {
-			outputStream.write("-----BEGIN RSA PRIVATE KEY-----\n".getBytes("UTF-8"));
-			outputStream.write(toWrappedBase64(createRsaBinaryKey(puttyKey), "\n").getBytes("UTF-8"));
-			outputStream.write("\n".getBytes("UTF-8"));
-			outputStream.write("-----END RSA PRIVATE KEY-----\n".getBytes("UTF-8"));
+			outputStream.write("-----BEGIN RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+			outputStream.write(toWrappedBase64(createRsaBinaryKey(puttyKey), "\n").getBytes("ISO-8859-1"));
+			outputStream.write("\n".getBytes("ISO-8859-1"));
+			outputStream.write("-----END RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 		} else if ("ssh-dss".equalsIgnoreCase(puttyKey.getAlgorithm())) {
-			outputStream.write("-----BEGIN DSA PRIVATE KEY-----\n".getBytes("UTF-8"));
-			outputStream.write(toWrappedBase64(createDssBinaryKey(puttyKey), "\n").getBytes("UTF-8"));
-			outputStream.write("\n".getBytes("UTF-8"));
-			outputStream.write("-----END DSA PRIVATE KEY-----\n".getBytes("UTF-8"));
+			outputStream.write("-----BEGIN DSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+			outputStream.write(toWrappedBase64(createDssBinaryKey(puttyKey), "\n").getBytes("ISO-8859-1"));
+			outputStream.write("\n".getBytes("ISO-8859-1"));
+			outputStream.write("-----END DSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 		} else {
 			throw new IllegalArgumentException("Unsupported cipher: " + puttyKey.getAlgorithm());
 		}
@@ -180,7 +179,7 @@ public class PuttyKeyWriter implements Closeable {
 	 * Converts byte array to base64 with 64 chars per line
 	 */
 	private static String toWrappedBase64(final byte[] byteArray, final String lineBreak) {
-		return Base64.getMimeEncoder(64, lineBreak.getBytes(Charset.forName("UTF-8"))).encodeToString(byteArray);
+		return Base64.getMimeEncoder(64, lineBreak.getBytes(Charset.forName("ISO-8859-1"))).encodeToString(byteArray);
 	}
 
 	private static byte[] createByteSequence(final byte[] data) throws IOException {
@@ -254,17 +253,7 @@ public class PuttyKeyWriter implements Closeable {
 		data.writeInt(privateKey.length);
 		data.write(privateKey);
 
-		final String macHash = toHexString(mac.doFinal(out.toByteArray())).toLowerCase();
-
-		System.out.println("MAC gen writer");
-		System.out.println(Arrays.toString(passwordBytes));
-		System.out.println(keyType);
-		System.out.println(encryptionType);
-		System.out.println(comment);
-		System.out.println(Arrays.toString(publicKey));
-		System.out.println(Arrays.toString(privateKey));
-		System.out.println(macHash);
-		return macHash;
+		return toHexString(mac.doFinal(out.toByteArray())).toLowerCase();
 	}
 
 	private static String toHexString(final byte[] data) {
