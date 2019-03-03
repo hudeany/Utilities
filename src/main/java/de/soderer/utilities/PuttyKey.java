@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.DSAPrivateKey;
@@ -20,25 +21,43 @@ import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
-import java.util.Map;
+import java.util.Base64;
 
 /**
  * Container for PuTTY key data
  */
 public class PuttyKey {
-	private final Map<String, String> headers;
+	public static String SSH_CIPHER_NAME_RSA = "ssh-rsa";
+	public static String SSH_CIPHER_NAME_DSA = "ssh-dss";
+
+	private final String comment;
 	private final KeyPair keyPair;
 
-	public PuttyKey(final Map<String, String> headers, final byte[] privateKeyBytes, final byte[] publicKeyBytes) throws Exception {
-		this.headers = headers;
+	public PuttyKey(final String comment, final int keyStrength) throws Exception {
+		this.comment = comment;
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+		keyPairGenerator.initialize(keyStrength);
+		keyPair = keyPairGenerator.generateKeyPair();
+	}
+
+	public PuttyKey(final String comment, final KeyPair keyPair) throws Exception {
+		this.comment = comment;
+		if (!keyPair.getPublic().getAlgorithm().equals("RSA") && !keyPair.getPublic().getAlgorithm().equals("DSA")) {
+			throw new IllegalArgumentException("Unknown public key encoding: " + keyPair.getPublic().getAlgorithm());
+		}
+		this.keyPair = keyPair;
+	}
+
+	public PuttyKey(final String comment, final String algorithmName, final byte[] privateKeyBytes, final byte[] publicKeyBytes) throws Exception {
+		this.comment = comment;
 		final BlockDataReader publicKeyReader = new BlockDataReader(publicKeyBytes);
 		final String cipherName = publicKeyReader.readString();
-		if (cipherName == null || !cipherName.equalsIgnoreCase(getAlgorithm())) {
+		if (cipherName == null || !cipherName.equalsIgnoreCase(algorithmName)) {
 			throw new Exception("Corrupt public key data: Cipher name in data differs from defined cipher name. Expected \"" +  getAlgorithm()+ "\", but was \"" + cipherName + "\"");
 		}
 		final BlockDataReader privateKeyReader = new BlockDataReader(privateKeyBytes);
 
-		if ("ssh-rsa".equalsIgnoreCase(cipherName)) {
+		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
 			final BigInteger publicExponent = publicKeyReader.readBigInt();
 			final BigInteger modulus = publicKeyReader.readBigInt();
 
@@ -54,7 +73,7 @@ public class PuttyKey {
 			final PublicKey publicKey = keyFactory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
 			final PrivateKey privateKey = keyFactory.generatePrivate(new RSAPrivateCrtKeySpec(modulus, publicExponent, privateExponent, p, q, dmp1, dmq1, iqmp));
 			keyPair = new KeyPair(publicKey, privateKey);
-		} else if ("ssh-dss".equalsIgnoreCase(cipherName)) {
+		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
 			final BigInteger p = publicKeyReader.readBigInt();
 			final BigInteger q = publicKeyReader.readBigInt();
 			final BigInteger g = publicKeyReader.readBigInt();
@@ -70,7 +89,7 @@ public class PuttyKey {
 			final PrivateKey privateKey = keyFactory.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
 			keyPair = new KeyPair(publicKey, privateKey);
 		} else {
-			throw new IllegalArgumentException("Unsupported cipher: " + cipherName);
+			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
 		}
 	}
 
@@ -78,13 +97,19 @@ public class PuttyKey {
 	 * Key type. Either "ssh-rsa" for RSA key, or "ssh-dss" for DSA key.
 	 */
 	public String getAlgorithm() {
-		return headers.get("PuTTY-User-Key-File-2").trim();
+		if (keyPair.getPublic().getAlgorithm().equals("RSA")){
+			return SSH_CIPHER_NAME_RSA;
+		} else if(keyPair.getPublic().getAlgorithm().equals("DSA")){
+			return SSH_CIPHER_NAME_DSA;
+		} else{
+			throw new IllegalArgumentException("Unknown public key encoding: " + keyPair.getPublic().getAlgorithm());
+		}
 	}
 
 	public int getKeyStrength() throws Exception {
-		if ("ssh-rsa".equalsIgnoreCase(getAlgorithm())) {
+		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(getAlgorithm())) {
 			return ((RSAPublicKey) keyPair.getPublic()).getModulus().bitLength();
-		} else if ("ssh-dss".equalsIgnoreCase(getAlgorithm())) {
+		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(getAlgorithm())) {
 			return 1024;
 		} else {
 			throw new Exception("Unsupported cipher: " + getAlgorithm());
@@ -92,7 +117,7 @@ public class PuttyKey {
 	}
 
 	public String getComment() {
-		return headers.get("Comment").trim();
+		return comment;
 	}
 
 	/**
@@ -105,17 +130,17 @@ public class PuttyKey {
 	}
 
 	public byte[] getPublicKeyBytes() throws Exception {
-		if ("ssh-rsa".equalsIgnoreCase(getAlgorithm())) {
+		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(getAlgorithm())) {
 			final RSAPublicKey publicKey = ((RSAPublicKey) keyPair.getPublic());
 			final BlockDataWriter publicKeyWriter = new BlockDataWriter();
-			publicKeyWriter.writeString("ssh-rsa");
+			publicKeyWriter.writeString(SSH_CIPHER_NAME_RSA);
 			publicKeyWriter.writeBigInt(publicKey.getPublicExponent());
 			publicKeyWriter.writeBigInt(publicKey.getModulus());
 			return publicKeyWriter.toByteArray();
-		} else if ("ssh-dss".equalsIgnoreCase(getAlgorithm())) {
+		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(getAlgorithm())) {
 			final DSAPublicKey publicKey = ((DSAPublicKey) keyPair.getPublic());
 			final BlockDataWriter publicKeyWriter = new BlockDataWriter();
-			publicKeyWriter.writeString("ssh-dss");
+			publicKeyWriter.writeString(SSH_CIPHER_NAME_DSA);
 			publicKeyWriter.writeBigInt(publicKey.getParams().getP());
 			publicKeyWriter.writeBigInt(publicKey.getParams().getQ());
 			publicKeyWriter.writeBigInt(publicKey.getParams().getG());
@@ -127,7 +152,7 @@ public class PuttyKey {
 	}
 
 	public byte[] getPrivateKeyBytes() throws Exception {
-		if ("ssh-rsa".equalsIgnoreCase(getAlgorithm())) {
+		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(getAlgorithm())) {
 			final RSAPrivateCrtKey privateKey = ((RSAPrivateCrtKey) keyPair.getPrivate());
 			final BlockDataWriter privateKeyWriter = new BlockDataWriter();
 			privateKeyWriter.writeBigInt(privateKey.getPrivateExponent());
@@ -135,7 +160,7 @@ public class PuttyKey {
 			privateKeyWriter.writeBigInt(privateKey.getPrimeQ());
 			privateKeyWriter.writeBigInt(privateKey.getCrtCoefficient());
 			return privateKeyWriter.toByteArray();
-		} else if ("ssh-dss".equalsIgnoreCase(getAlgorithm())) {
+		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(getAlgorithm())) {
 			final DSAPrivateKey privateKey = ((DSAPrivateKey) keyPair.getPrivate());
 			final BlockDataWriter privateKeyWriter = new BlockDataWriter();
 			privateKeyWriter.writeBigInt(privateKey.getX());
@@ -143,6 +168,10 @@ public class PuttyKey {
 		} else {
 			throw new IllegalArgumentException("Unsupported cipher: " + getAlgorithm());
 		}
+	}
+
+	public String encodePublicKeyForAuthorizedKeys() throws Exception {
+		return getAlgorithm() + " " + new String(Base64.getEncoder().encode(getPublicKeyBytes()));
 	}
 
 	public class BlockDataReader {

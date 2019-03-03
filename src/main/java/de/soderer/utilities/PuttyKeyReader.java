@@ -107,9 +107,9 @@ public class PuttyKeyReader implements Closeable {
 		}
 		final String chipherName = headers.get("PuTTY-User-Key-File-2");
 		if (chipherName == null || "".equals(chipherName)) {
-			throw new Exception("Missing chipher name");
+			throw new Exception("Missing cipher name");
 		}
-		if (!"ssh-rsa".equalsIgnoreCase(chipherName) && !"ssh-dss".equalsIgnoreCase(chipherName)) {
+		if (!PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(chipherName) && !PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(chipherName)) {
 			throw new Exception("Unsupported chipher: " + chipherName);
 		}
 
@@ -120,7 +120,7 @@ public class PuttyKeyReader implements Closeable {
 		final String encryptionMethod = headers.get("Encryption");
 		if (encryptionMethod == null || "".equals(encryptionMethod) || "none".equalsIgnoreCase(encryptionMethod)) {
 			validateKeyData(headers, publicKey, privateKey);
-			return new PuttyKey(headers, privateKey, publicKey);
+			return new PuttyKey(headers.get("Comment"), chipherName, privateKey, publicKey);
 		} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
 			try {
 				final byte[] puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKey(passwordByteArray);
@@ -132,7 +132,7 @@ public class PuttyKeyReader implements Closeable {
 
 				validateKeyData(headers, publicKey, privateKey);
 
-				return new PuttyKey(headers, privateKey, publicKey);
+				return new PuttyKey(headers.get("Comment"), chipherName, privateKey, publicKey);
 			} catch (final Exception e) {
 				throw new Exception("Cannot decrypt PuTTY private key data", e);
 			}
@@ -167,7 +167,7 @@ public class PuttyKeyReader implements Closeable {
 			}
 
 			final String cipherAlgorithm = headers.get("PuTTY-User-Key-File-2").trim();
-			if (!"ssh-rsa".equalsIgnoreCase(cipherAlgorithm) && !"ssh-dss".equalsIgnoreCase(cipherAlgorithm)) {
+			if (!PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(cipherAlgorithm) && !PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(cipherAlgorithm)) {
 				throw new IllegalArgumentException("Unsupported cipher: " + cipherAlgorithm);
 			}
 		} catch (final Exception e) {

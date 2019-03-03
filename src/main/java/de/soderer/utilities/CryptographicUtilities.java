@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -168,6 +169,17 @@ public class CryptographicUtilities {
 			final ElGamalKeyPairGenerator generator = new ElGamalKeyPairGenerator();
 			generator.init(new ElGamalKeyGenerationParameters(new SecureRandom(), elGamalParameters));
 			final AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
+			return keyPair;
+		} catch (final Exception e) {
+			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
+
+	public static KeyPair generatePlainRsaKeyPair(final int keyStrength) throws Exception {
+		try {
+			final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+			keyPairGenerator.initialize(2048);
+			final KeyPair keyPair = keyPairGenerator.generateKeyPair();
 			return keyPair;
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);

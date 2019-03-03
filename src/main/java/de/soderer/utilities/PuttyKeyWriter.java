@@ -115,9 +115,9 @@ public class PuttyKeyWriter implements Closeable {
 	 * <b>Use with caution, because this key format is not protected by any password</>
 	 */
 	public void writeUnprotectedDerFormat(final PuttyKey puttyKey) throws Exception {
-		if ("ssh-rsa".equalsIgnoreCase(puttyKey.getAlgorithm())) {
+		if (PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(puttyKey.getAlgorithm())) {
 			outputStream.write(createRsaBinaryKey(puttyKey));
-		} else if ("ssh-dss".equalsIgnoreCase(puttyKey.getAlgorithm())) {
+		} else if (PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(puttyKey.getAlgorithm())) {
 			outputStream.write(createDssBinaryKey(puttyKey));
 		} else {
 			throw new IllegalArgumentException("Unsupported cipher: " + puttyKey.getAlgorithm());
@@ -130,12 +130,12 @@ public class PuttyKeyWriter implements Closeable {
 	 * <b>Use with caution, because this key format is not protected by any password</>
 	 */
 	public void writeUnprotectedPemFormat(final PuttyKey puttyKey) throws Exception {
-		if ("ssh-rsa".equalsIgnoreCase(puttyKey.getAlgorithm())) {
+		if (PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(puttyKey.getAlgorithm())) {
 			outputStream.write("-----BEGIN RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createRsaBinaryKey(puttyKey), "\n").getBytes("ISO-8859-1"));
 			outputStream.write("\n".getBytes("ISO-8859-1"));
 			outputStream.write("-----END RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
-		} else if ("ssh-dss".equalsIgnoreCase(puttyKey.getAlgorithm())) {
+		} else if (PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(puttyKey.getAlgorithm())) {
 			outputStream.write("-----BEGIN DSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createDssBinaryKey(puttyKey), "\n").getBytes("ISO-8859-1"));
 			outputStream.write("\n".getBytes("ISO-8859-1"));
