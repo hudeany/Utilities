@@ -1,14 +1,14 @@
 package de.soderer.utilities;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.util.Base64;
 
 import javax.xml.ws.WebServiceException;
@@ -57,88 +57,32 @@ public class PuttyKeyWriter implements Closeable {
 	}
 
 	private byte[] createRsaBinaryKey(final PuttyKey puttyKey) throws Exception, IOException {
-		String cipherName;
-		BigInteger e;
-		BigInteger n;
-		try {
-			final BlockDataReader publicKeyReader = new BlockDataReader(puttyKey.getPublicKey());
-			cipherName = publicKeyReader.readString();
-			e = publicKeyReader.readBigInt();
-			n = publicKeyReader.readBigInt();
-		} catch (final Exception e1) {
-			throw new Exception("Invalid public key. Maybe the public key was tampered.");
-		}
-		if (!"ssh-rsa".equalsIgnoreCase(cipherName)) {
-			throw new Exception("Corrupt public key data: Cipher name in data differs from defined cipher name. Expected \"ssh-rsa\", but was \"" + cipherName + "\"");
-		}
-
-		BigInteger d;
-		BigInteger p;
-		BigInteger q;
-		BigInteger iqmp;
-		BigInteger dmp1;
-		BigInteger dmq1;
-		try {
-			final BlockDataReader privateKeyReader = new BlockDataReader(puttyKey.getPrivateKey());
-			d = privateKeyReader.readBigInt();
-			p = privateKeyReader.readBigInt();
-			q = privateKeyReader.readBigInt();
-			iqmp = privateKeyReader.readBigInt();
-
-			dmp1 = d.mod(p.subtract(BigInteger.ONE));
-			dmq1 = d.mod(q.subtract(BigInteger.ONE));
-		} catch (final Exception e1) {
-			throw new Exception("Invalid private key. Maybe the key encryption password was wrong or the private key was tampered.");
-		}
+		final RSAPrivateCrtKey privateKey = ((RSAPrivateCrtKey) puttyKey.getKeyPair().getPrivate());
 
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		writeBigIntegerToStream(out, BigInteger.ZERO);
-		writeBigIntegerToStream(out, n);
-		writeBigIntegerToStream(out, e);
-		writeBigIntegerToStream(out, d);
-		writeBigIntegerToStream(out, p);
-		writeBigIntegerToStream(out, q);
-		writeBigIntegerToStream(out, dmp1);
-		writeBigIntegerToStream(out, dmq1);
-		writeBigIntegerToStream(out, iqmp);
+		writeBigIntegerToStream(out, privateKey.getModulus());
+		writeBigIntegerToStream(out, privateKey.getPublicExponent());
+		writeBigIntegerToStream(out, privateKey.getPrivateExponent());
+		writeBigIntegerToStream(out, privateKey.getPrimeP());
+		writeBigIntegerToStream(out, privateKey.getPrimeQ());
+		writeBigIntegerToStream(out, privateKey.getPrimeExponentP());
+		writeBigIntegerToStream(out, privateKey.getPrimeExponentQ());
+		writeBigIntegerToStream(out, privateKey.getCrtCoefficient());
 		return createByteSequence(out.toByteArray());
 	}
 
 	private byte[] createDssBinaryKey(final PuttyKey puttyKey) throws Exception, IOException {
-		String cipherName;
-		BigInteger p;
-		BigInteger q;
-		BigInteger g;
-		BigInteger y;
-		try {
-			final BlockDataReader publicKeyReader = new BlockDataReader(puttyKey.getPublicKey());
-			cipherName = publicKeyReader.readString();
-			p = publicKeyReader.readBigInt();
-			q = publicKeyReader.readBigInt();
-			g = publicKeyReader.readBigInt();
-			y = publicKeyReader.readBigInt();
-		} catch (final Exception e) {
-			throw new Exception("Invalid public key. Maybe the public key was tampered.");
-		}
-		if (!"ssh-dss".equalsIgnoreCase(cipherName)) {
-			throw new Exception("Corrupt public key data: Cipher name in data differs from defined cipher name. Expected \"ssh-dss\", but was \"" + cipherName + "\"");
-		}
-
-		BigInteger x;
-		try {
-			final BlockDataReader privateKeyReader = new BlockDataReader(puttyKey.getPrivateKey());
-			x = privateKeyReader.readBigInt();
-		} catch (final Exception e) {
-			throw new Exception("Invalid private key. Maybe the key encryption password was wrong or the private key was tampered.");
-		}
+		final DSAPublicKey publicKey = ((DSAPublicKey) puttyKey.getKeyPair().getPublic());
+		final DSAPrivateKey privateKey = ((DSAPrivateKey) puttyKey.getKeyPair().getPrivate());
 
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		writeBigIntegerToStream(out, BigInteger.ZERO);
-		writeBigIntegerToStream(out, p);
-		writeBigIntegerToStream(out, q);
-		writeBigIntegerToStream(out, g);
-		writeBigIntegerToStream(out, y);
-		writeBigIntegerToStream(out, x);
+		writeBigIntegerToStream(out, privateKey.getParams().getP());
+		writeBigIntegerToStream(out, privateKey.getParams().getQ());
+		writeBigIntegerToStream(out, privateKey.getParams().getG());
+		writeBigIntegerToStream(out, publicKey.getY());
+		writeBigIntegerToStream(out, privateKey.getX());
 		return createByteSequence(out.toByteArray());
 	}
 
@@ -197,51 +141,6 @@ public class PuttyKeyWriter implements Closeable {
 			outputStream.close();
 		} catch (final Exception e) {
 			e.printStackTrace();
-		}
-	}
-
-	public class BlockDataReader {
-		private final DataInput keyDataInput;
-
-		public BlockDataReader(final byte[] key) {
-			keyDataInput = new DataInputStream(new ByteArrayInputStream(key));
-		}
-
-		public void skipNextBlock() throws Exception {
-			try {
-				final int bytesToSkip = keyDataInput.readInt();
-				keyDataInput.skipBytes(bytesToSkip);
-			} catch (final IOException e) {
-				throw new Exception("Skip data error", e);
-			}
-		}
-
-		public BigInteger readBigInt() throws Exception {
-			try {
-				final int nextBlockSize = keyDataInput.readInt();
-				if (nextBlockSize <= 0 || nextBlockSize > 513) {
-					throw new Exception("Key blocksize error. Maybe the key encrytion password was wrong");
-				}
-				final byte[] nextBlock = new byte[nextBlockSize];
-				keyDataInput.readFully(nextBlock);
-				return new BigInteger(nextBlock);
-			} catch (final IOException e) {
-				throw new Exception("Key block read error", e);
-			}
-		}
-
-		public String readString() throws Exception {
-			try {
-				final int nextBlockSize = keyDataInput.readInt();
-				if (nextBlockSize <= 0 || nextBlockSize > 513) {
-					throw new Exception("Key blocksize error");
-				}
-				final byte[] nextBlock = new byte[nextBlockSize];
-				keyDataInput.readFully(nextBlock);
-				return new String(nextBlock, "UTF-8");
-			} catch (final IOException e) {
-				throw new Exception("Key block read error", e);
-			}
 		}
 	}
 }

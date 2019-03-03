@@ -1,11 +1,8 @@
 package de.soderer.utilities;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileReader;
@@ -13,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -161,67 +157,11 @@ public class PuttyKeyReader implements Closeable {
 			final String calculatedMacChecksum = calculateMacChecksum(passwordByteArray, headers.get("PuTTY-User-Key-File-2"), headers.get("Encryption"), headers.get("Comment"), publicKey, privateKey);
 			final String foundMacChecksum = headers.get("Private-MAC");
 			if (foundMacChecksum == null || !foundMacChecksum.equalsIgnoreCase(calculatedMacChecksum)) {
-				throw new Exception("PuTTY key was tampered: Private-MAC hash is invalid");
+				throw new Exception("PuTTY key was tampered or password is wrong: Private-MAC hash is invalid");
 			}
 
 			final String cipherAlgorithm = headers.get("PuTTY-User-Key-File-2").trim();
-			if ("ssh-rsa".equalsIgnoreCase(cipherAlgorithm)) {
-				String cipherName;
-				try {
-					final BlockDataReader publicKeyReader = new BlockDataReader(publicKey);
-					cipherName = publicKeyReader.readString();
-					@SuppressWarnings("unused")
-					final BigInteger e = publicKeyReader.readBigInt();
-					@SuppressWarnings("unused")
-					final BigInteger n = publicKeyReader.readBigInt();
-				} catch (final Exception e) {
-					throw new Exception("Invalid public key. Maybe the public key was tampered.");
-				}
-				if (!"ssh-rsa".equalsIgnoreCase(cipherName)) {
-					throw new Exception("Corrupt public key data: Cipher name in data differs from defined cipher name. Expected \"ssh-rsa\", but was \"" + cipherName + "\"");
-				}
-
-				try {
-					final BlockDataReader privateKeyReader = new BlockDataReader(privateKey);
-					@SuppressWarnings("unused")
-					final BigInteger d = privateKeyReader.readBigInt();
-					@SuppressWarnings("unused")
-					final BigInteger p = privateKeyReader.readBigInt();
-					@SuppressWarnings("unused")
-					final BigInteger q = privateKeyReader.readBigInt();
-					@SuppressWarnings("unused")
-					final BigInteger iqmp = privateKeyReader.readBigInt();
-				} catch (final Exception e) {
-					throw new Exception("Invalid private key. Maybe the key encryption password was wrong or the private key was tampered.");
-				}
-			} else if ("ssh-dss".equalsIgnoreCase(cipherAlgorithm)) {
-				String cipherName;
-				try {
-					final BlockDataReader publicKeyReader = new BlockDataReader(publicKey);
-					cipherName = publicKeyReader.readString();
-					@SuppressWarnings("unused")
-					final BigInteger p = publicKeyReader.readBigInt();
-					@SuppressWarnings("unused")
-					final BigInteger q = publicKeyReader.readBigInt();
-					@SuppressWarnings("unused")
-					final BigInteger g = publicKeyReader.readBigInt();
-					@SuppressWarnings("unused")
-					final BigInteger y = publicKeyReader.readBigInt();
-				} catch (final Exception e) {
-					throw new Exception("Invalid public key. Maybe the public key was tampered.");
-				}
-				if (!"ssh-dss".equalsIgnoreCase(cipherName)) {
-					throw new Exception("Corrupt public key data: Cipher name in data differs from defined cipher name. Expected \"ssh-dss\", but was \"" + cipherName + "\"");
-				}
-
-				try {
-					final BlockDataReader privateKeyReader = new BlockDataReader(privateKey);
-					@SuppressWarnings("unused")
-					final BigInteger x = privateKeyReader.readBigInt();
-				} catch (final Exception e) {
-					throw new Exception("Invalid private key. Maybe the key encryption password was wrong or the private key was tampered.");
-				}
-			} else {
+			if (!"ssh-rsa".equalsIgnoreCase(cipherAlgorithm) && !"ssh-dss".equalsIgnoreCase(cipherAlgorithm)) {
 				throw new IllegalArgumentException("Unsupported cipher: " + cipherAlgorithm);
 			}
 		} catch (final Exception e) {
@@ -276,51 +216,6 @@ public class PuttyKeyReader implements Closeable {
 			dataReader.close();
 		} catch (final Exception e) {
 			e.printStackTrace();
-		}
-	}
-
-	public class BlockDataReader {
-		private final DataInput keyDataInput;
-
-		public BlockDataReader(final byte[] key) {
-			keyDataInput = new DataInputStream(new ByteArrayInputStream(key));
-		}
-
-		public void skipNextBlock() throws Exception {
-			try {
-				final int bytesToSkip = keyDataInput.readInt();
-				keyDataInput.skipBytes(bytesToSkip);
-			} catch (final IOException e) {
-				throw new Exception("Skip data error", e);
-			}
-		}
-
-		public BigInteger readBigInt() throws Exception {
-			try {
-				final int nextBlockSize = keyDataInput.readInt();
-				if (nextBlockSize <= 0 || nextBlockSize > 513) {
-					throw new Exception("Key blocksize error. Maybe the key encrytion password was wrong");
-				}
-				final byte[] nextBlock = new byte[nextBlockSize];
-				keyDataInput.readFully(nextBlock);
-				return new BigInteger(nextBlock);
-			} catch (final IOException e) {
-				throw new Exception("Key block read error", e);
-			}
-		}
-
-		public String readString() throws Exception {
-			try {
-				final int nextBlockSize = keyDataInput.readInt();
-				if (nextBlockSize <= 0 || nextBlockSize > 513) {
-					throw new Exception("Key blocksize error");
-				}
-				final byte[] nextBlock = new byte[nextBlockSize];
-				keyDataInput.readFully(nextBlock);
-				return new String(nextBlock, "UTF-8");
-			} catch (final IOException e) {
-				throw new Exception("Key block read error", e);
-			}
 		}
 	}
 }
