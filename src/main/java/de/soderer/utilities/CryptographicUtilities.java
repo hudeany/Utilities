@@ -891,7 +891,7 @@ public class CryptographicUtilities {
 	public static String convertPuttyKeyToPublicOpenSshKey(final PuttyKey puttyKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final KeyPair keyPair = convertPEMKeyPairToKeyPair(getPemKeyPairFromPuttyKey(puttyKey));
+		final KeyPair keyPair = puttyKey.getKeyPair();
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (JcaPEMWriter writer = new JcaPEMWriter(new PrintWriter(outputStream))) {
 			writer.writeObject(new PemObject(puttyKey.getKeyComment() + " public key", keyPair.getPublic().getEncoded()));
@@ -902,7 +902,7 @@ public class CryptographicUtilities {
 	public static String convertPuttyKeyToProtectedPrivateOpenSshKey(final PuttyKey puttyKey, final String exportedKeyPassword) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final KeyPair keyPair = convertPEMKeyPairToKeyPair(getPemKeyPairFromPuttyKey(puttyKey));
+		final KeyPair keyPair = puttyKey.getKeyPair();
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (final JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.US_ASCII))) {
 			if (exportedKeyPassword != null) {
