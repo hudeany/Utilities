@@ -31,12 +31,14 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -57,9 +59,9 @@ import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -212,19 +214,13 @@ public class CryptographicUtilities {
 	public static String getStringFromX509Certificate(final X509Certificate certificate) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		StringWriter stringWriter = null;
-		JcaPEMWriter pemWriter = null;
-		try {
-			stringWriter = new StringWriter();
-			pemWriter = new JcaPEMWriter(stringWriter);
+		try (StringWriter stringWriter = new StringWriter();
+				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
 			pemWriter.writeObject(certificate);
 			pemWriter.close();
 			return stringWriter.toString();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create certificate string: " + e.getMessage(), e);
-		} finally {
-			Utilities.closeQuietly(stringWriter);
-			Utilities.closeQuietly(pemWriter);
 		}
 	}
 
@@ -236,7 +232,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			if (Utilities.isBlank(encryptionMethod)) {
+			if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
 				throw new Exception("Empty asymmetric encryption method");
 			}
 			encryptionMethod = encryptionMethod.toLowerCase();
@@ -277,7 +273,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			if (Utilities.isBlank(encryptionMethod)) {
+			if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
 				throw new Exception("Empty asymmetric encryption method");
 			}
 			encryptionMethod = encryptionMethod.toLowerCase();
@@ -315,7 +311,7 @@ public class CryptographicUtilities {
 	 * Convert a Key to string encoded as BASE64
 	 */
 	public static String getStringFromKey(final Key key) {
-		return Base64.encodeBase64String(key.getEncoded());
+		return Base64.getEncoder().encodeToString(key.getEncoded());
 	}
 
 	public static String getStringFromKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
@@ -328,27 +324,38 @@ public class CryptographicUtilities {
 	public static String getStringFromKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		StringWriter stringWriter = null;
-		JcaPEMWriter pemWriter = null;
-		try {
-			stringWriter = new StringWriter();
-			pemWriter = new JcaPEMWriter(stringWriter);
+		try (StringWriter stringWriter = new StringWriter();
+				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
 			pemWriter.writeObject(privateKey);
 			pemWriter.writeObject(publicKey);
 			pemWriter.close();
 			return stringWriter.toString();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create key string: " + e.getMessage(), e);
-		} finally {
-			Utilities.closeQuietly(stringWriter);
-			Utilities.closeQuietly(pemWriter);
+		}
+	}
+
+	public static String getStringFromKeyPair(final PrivateKey privateKey, final PublicKey publicKey, final char[] password) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try (StringWriter stringWriter = new StringWriter();
+				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
+			final PEMEncryptor pemEncryptor = new JcePEMEncryptorBuilder("AES-128-CBC").build(password);
+			final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(privateKey, pemEncryptor);
+			pemWriter.writeObject(pemGenerator);
+			pemWriter.writeObject(publicKey);
+			pemWriter.flush();
+			pemWriter.close();
+			return stringWriter.toString();
+		} catch (final Exception e) {
+			throw new Exception("Cannot create key string: " + e.getMessage(), e);
 		}
 	}
 
 	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(final InputStream inputStream) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final PEMKeyPair keyPair = getPEMKeyPairFromString(new String(Utilities.readStreamToByteArray(inputStream), "UTF-8"));
+		final PEMKeyPair keyPair = getPEMKeyPairFromString(IOUtils.toString(inputStream, "UTF-8"));
 		final AsymmetricKeyParameter privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
 		final AsymmetricKeyParameter publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
 
@@ -387,8 +394,7 @@ public class CryptographicUtilities {
 	public static PEMKeyPair getPEMKeyPairFromString(final String keyString) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try {
-			final PEMParser pemReader = new PEMParser(new StringReader(keyString));
+		try (PEMParser pemReader = new PEMParser(new StringReader(keyString))) {
 			final Object readObject = pemReader.readObject();
 			pemReader.close();
 			//			if (readObject instanceof PEMEncryptedKeyPair) {
@@ -413,8 +419,7 @@ public class CryptographicUtilities {
 	public static PrivateKey getPrivateKeyFromString(final String keyString) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try {
-			final PEMParser pemReader = new PEMParser(new StringReader(keyString));
+		try (PEMParser pemReader = new PEMParser(new StringReader(keyString))) {
 			final Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof KeyPair) {
@@ -436,8 +441,7 @@ public class CryptographicUtilities {
 	public static PublicKey getPublicKeyFromString(final String keyString) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try {
-			final PEMParser pemReader = new PEMParser(new StringReader(keyString));
+		try (PEMParser pemReader = new PEMParser(new StringReader(keyString))) {
 			final Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof KeyPair) {
@@ -459,8 +463,7 @@ public class CryptographicUtilities {
 	public static X509Certificate getCertificateFromString(final String certificateString) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try {
-			final PEMParser pemReader = new PEMParser(new StringReader(certificateString));
+		try (PEMParser pemReader = new PEMParser(new StringReader(certificateString))) {
 			final Object readObject = pemReader.readObject();
 			pemReader.close();
 			if (readObject instanceof X509Certificate) {
@@ -477,14 +480,14 @@ public class CryptographicUtilities {
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PublicKey readRSAPublicKey(final InputStream inputStream) throws Exception {
-		return getPublicKeyFromString(Utilities.toString(inputStream, "UTF-8"));
+		return getPublicKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
 	}
 
 	/**
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PrivateKey readRSAPrivateKey(final InputStream inputStream) throws Exception {
-		return getPrivateKeyFromString(Utilities.toString(inputStream, "UTF-8"));
+		return getPrivateKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
 	}
 
 	/**
@@ -509,7 +512,7 @@ public class CryptographicUtilities {
 			final Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher);
-			Utilities.copy(dataStream, cipherOutputStream);
+			IOUtils.copy(dataStream, cipherOutputStream);
 		} catch (final Exception e) {
 			throw new Exception("Error while encrypting: " + e.getMessage(), e);
 		} finally {
@@ -533,7 +536,7 @@ public class CryptographicUtilities {
 			final Cipher decryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher);
-			Utilities.copy(cipherInputStream, dataOutputStream);
+			IOUtils.copy(cipherInputStream, dataOutputStream);
 		} catch (final Exception e) {
 			throw new Exception("Error while decrypting: " + e.getMessage(), e);
 		} finally {
@@ -648,9 +651,7 @@ public class CryptographicUtilities {
 
 	public static Set<String> getJarSignatureNames(final File jarFile) throws Exception {
 		final Set<String> returnData = new HashSet<>();
-		JarFile jar = null;
-		try {
-			jar = new JarFile(jarFile);
+		try (JarFile jar = new JarFile(jarFile)) {
 			final Manifest manifest = jar.getManifest();
 			if (manifest == null) {
 				returnData.add("Has no MANIFEST.MF file");
@@ -665,14 +666,11 @@ public class CryptographicUtilities {
 				final JarEntry jarEntry = jarEntriesEnumerator.nextElement();
 				jarEntries.add(jarEntry);
 
-				InputStream jarEntryInputStream = null;
-				try {
-					jarEntryInputStream = jar.getInputStream(jarEntry);
+				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
 					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+						// just read it
 					}
-				} finally {
-					Utilities.closeQuietly(jarEntryInputStream);
 				}
 			}
 
@@ -704,8 +702,6 @@ public class CryptographicUtilities {
 			}
 
 			return returnData;
-		} finally {
-			Utilities.closeQuietly(jar);
 		}
 	}
 
@@ -728,14 +724,11 @@ public class CryptographicUtilities {
 				final JarEntry jarEntry = jarEntriesEnumerator.nextElement();
 				jarEntries.add(jarEntry);
 
-				InputStream jarEntryInputStream = null;
-				try {
-					jarEntryInputStream = jar.getInputStream(jarEntry);
+				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
 					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+						// just read it
 					}
-				} finally {
-					Utilities.closeQuietly(jarEntryInputStream);
 				}
 			}
 
@@ -805,10 +798,8 @@ public class CryptographicUtilities {
 	}
 
 	public static X509Certificate[] loadCertificatesFromPemFile(final File pemFile) throws Exception {
-		PEMParser pemReader = null;
-		try {
+		try (PEMParser pemReader = new PEMParser(new FileReader(pemFile))) {
 			final List<X509Certificate> certificateList = new ArrayList<>();
-			pemReader = new PEMParser(new FileReader(pemFile));
 			Object nextCertificate;
 			while ((nextCertificate = pemReader.readObject()) != null) {
 				if (nextCertificate instanceof X509Certificate) {
@@ -816,8 +807,6 @@ public class CryptographicUtilities {
 				}
 			}
 			return certificateList.toArray(new X509Certificate[0]);
-		} finally {
-			Utilities.closeQuietly(pemReader);
 		}
 	}
 
@@ -896,23 +885,7 @@ public class CryptographicUtilities {
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(out)) {
 			puttyKeyWriter.writeUnprotectedPemFormat(puttyKey);
 		}
-
-		/**
-		 * Generates Private Key from BASE64 encoded string
-		 */
-		Security.addProvider(new BouncyCastleProvider());
-
-		try (PEMParser pemReader = new PEMParser(new StringReader(new String(out.toByteArray())))) {
-			final Object readObject = pemReader.readObject();
-			if (readObject instanceof PEMKeyPair) {
-				final PEMKeyPair keyPair = (PEMKeyPair) readObject;
-				return keyPair;
-			} else {
-				return null;
-			}
-		} catch (final Exception e) {
-			throw new Exception("Cannot read private key", e);
-		}
+		return getPEMKeyPairFromString(new String(out.toByteArray()));
 	}
 
 	public static String convertPuttyKeyToPublicOpenSshKey(final PuttyKey puttyKey) throws Exception {
@@ -925,7 +898,9 @@ public class CryptographicUtilities {
 	}
 
 	public static String convertPuttyKeyToProtectedPrivateOpenSshKey(final PuttyKey puttyKey, final String exportedKeyPassword) throws Exception {
-		final KeyPair keyPair = convertPEMKeyPairToKeyPair(getPemKeyPairFromPuttyKey(puttyKey));
+		Security.addProvider(new BouncyCastleProvider());
+
+		final KeyPair keyPair = puttyKey.getKeyPair();
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (final JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.US_ASCII))) {
 			if (exportedKeyPassword != null) {
@@ -939,5 +914,19 @@ public class CryptographicUtilities {
 			jcaPEMWriter.flush();
 		}
 		return new String(outputStream.toByteArray(), "UTF-8");
+	}
+
+	public static String toString(final KeyPair keyPair) {
+		final StringBuilder builder = new StringBuilder();
+		builder.append("Algorithm: " + keyPair.getPublic().getAlgorithm());
+		builder.append("\n");
+		if (keyPair.getPublic().getAlgorithm().toLowerCase().contains("rsa")) {
+			builder.append("Key strength: " + ((RSAPublicKey) keyPair.getPublic()).getModulus().bitLength());
+			builder.append("\n");
+		}
+		builder.append("Private key (" + keyPair.getPrivate().getClass().getSimpleName() + "):\n" + keyPair.getPrivate());
+		builder.append("\n");
+		builder.append("Public key (" + keyPair.getPublic().getClass().getSimpleName() + "):\n" + keyPair.getPublic());
+		return builder.toString();
 	}
 }
