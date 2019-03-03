@@ -2,8 +2,10 @@ package de.soderer.utilities;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -30,6 +32,7 @@ import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -918,17 +921,38 @@ public class CryptographicUtilities {
 		return new String(outputStream.toByteArray(), "UTF-8");
 	}
 
-	public static String toString(final KeyPair keyPair) {
-		final StringBuilder builder = new StringBuilder();
-		builder.append("Algorithm: " + keyPair.getPublic().getAlgorithm());
-		builder.append("\n");
-		if (keyPair.getPublic().getAlgorithm().toLowerCase().contains("rsa")) {
-			builder.append("Key strength: " + ((RSAPublicKey) keyPair.getPublic()).getModulus().bitLength());
-			builder.append("\n");
+	public static String encodePublicKeyForAuthorizedKeys(final KeyPair keyPair) throws IOException {
+		String publicKeyEncoded;
+		if (keyPair.getPublic().getAlgorithm().equals("RSA")){
+			final RSAPublicKey publicKey = ((RSAPublicKey) keyPair.getPublic());
+			final ByteArrayOutputStream byteOs = new ByteArrayOutputStream();
+			final DataOutputStream dos = new DataOutputStream(byteOs);
+			dos.writeInt("ssh-rsa".getBytes().length);
+			dos.write("ssh-rsa".getBytes());
+			dos.writeInt(publicKey.getPublicExponent().toByteArray().length);
+			dos.write(publicKey.getPublicExponent().toByteArray());
+			dos.writeInt(publicKey.getModulus().toByteArray().length);
+			dos.write(publicKey.getModulus().toByteArray());
+			publicKeyEncoded = new String(Base64.getEncoder().encode(byteOs.toByteArray()));
+			return "ssh-rsa " + publicKeyEncoded;
+		} else if(keyPair.getPublic().getAlgorithm().equals("DSA")){
+			final DSAPublicKey publicKey = ((DSAPublicKey) keyPair.getPublic());
+			final ByteArrayOutputStream byteOs = new ByteArrayOutputStream();
+			final DataOutputStream dos = new DataOutputStream(byteOs);
+			dos.writeInt("ssh-dss".getBytes().length);
+			dos.write("ssh-dss".getBytes());
+			dos.writeInt(publicKey.getParams().getP().toByteArray().length);
+			dos.write(publicKey.getParams().getP().toByteArray());
+			dos.writeInt(publicKey.getParams().getQ().toByteArray().length);
+			dos.write(publicKey.getParams().getQ().toByteArray());
+			dos.writeInt(publicKey.getParams().getG().toByteArray().length);
+			dos.write(publicKey.getParams().getG().toByteArray());
+			dos.writeInt(publicKey.getY().toByteArray().length);
+			dos.write(publicKey.getY().toByteArray());
+			publicKeyEncoded = new String(Base64.getEncoder().encode(byteOs.toByteArray()));
+			return "ssh-dss " + publicKeyEncoded;
+		} else{
+			throw new IllegalArgumentException("Unknown public key encoding: " + keyPair.getPublic().getAlgorithm());
 		}
-		builder.append("Private key (" + keyPair.getPrivate().getClass().getSimpleName() + "):\n" + keyPair.getPrivate());
-		builder.append("\n");
-		builder.append("Public key (" + keyPair.getPublic().getClass().getSimpleName() + "):\n" + keyPair.getPublic());
-		return builder.toString();
 	}
 }
