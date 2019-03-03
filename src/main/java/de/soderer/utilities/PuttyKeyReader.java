@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Decoder;
@@ -122,19 +123,7 @@ public class PuttyKeyReader implements Closeable {
 			return new PuttyKey(headers, privateKey, publicKey);
 		} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
 			try {
-				final byte[] puttyKeyEncryptionKey = new byte[32];
-				final MessageDigest digest = MessageDigest.getInstance("SHA-1");
-
-				digest.update(new byte[] { 0, 0, 0, 0 });
-				digest.update(passwordByteArray);
-				final byte[] key1 = digest.digest();
-
-				digest.update(new byte[] { 0, 0, 0, 1 });
-				digest.update(passwordByteArray);
-				final byte[] key2 = digest.digest();
-
-				System.arraycopy(key1, 0, puttyKeyEncryptionKey, 0, 20);
-				System.arraycopy(key2, 0, puttyKeyEncryptionKey, 20, 12);
+				final byte[] puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKey(passwordByteArray);
 
 				final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 				cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(puttyKeyEncryptionKey, 0, 32, "AES"), new IvParameterSpec(new byte[16])); // initial vector=0
@@ -150,6 +139,23 @@ public class PuttyKeyReader implements Closeable {
 		} else {
 			throw new Exception("Unsupported key encryption method: " + headers.get("Encryption"));
 		}
+	}
+
+	private static byte[] getPuttyPrivateKeyEncryptionKey(final byte[] passwordByteArray) throws NoSuchAlgorithmException {
+		final byte[] puttyKeyEncryptionKey = new byte[32];
+		final MessageDigest digest = MessageDigest.getInstance("SHA-1");
+
+		digest.update(new byte[] { 0, 0, 0, 0 });
+		digest.update(passwordByteArray);
+		final byte[] key1 = digest.digest();
+
+		digest.update(new byte[] { 0, 0, 0, 1 });
+		digest.update(passwordByteArray);
+		final byte[] key2 = digest.digest();
+
+		System.arraycopy(key1, 0, puttyKeyEncryptionKey, 0, 20);
+		System.arraycopy(key2, 0, puttyKeyEncryptionKey, 20, 12);
+		return puttyKeyEncryptionKey;
 	}
 
 	private void validateKeyData(final Map<String, String> headers, final byte[] publicKey, final byte[] privateKey) throws Exception {
@@ -199,6 +205,15 @@ public class PuttyKeyReader implements Closeable {
 		data.write(privateKey);
 
 		final String macHash = toHexString(mac.doFinal(out.toByteArray())).toLowerCase();
+
+		System.out.println("MAC gen reader");
+		System.out.println(Arrays.toString(passwordBytes));
+		System.out.println(keyType);
+		System.out.println(encryptionType);
+		System.out.println(comment);
+		System.out.println(Arrays.toString(publicKey));
+		System.out.println(Arrays.toString(privateKey));
+		System.out.println(macHash);
 		return macHash;
 	}
 
