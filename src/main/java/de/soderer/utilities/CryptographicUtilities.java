@@ -922,35 +922,32 @@ public class CryptographicUtilities {
 	}
 
 	public static String encodePublicKeyForAuthorizedKeys(final KeyPair keyPair) throws IOException {
-		String publicKeyEncoded;
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
 		if (keyPair.getPublic().getAlgorithm().equals("RSA")){
+			final String algorithmName = "ssh-rsa";
 			final RSAPublicKey publicKey = ((RSAPublicKey) keyPair.getPublic());
-			final ByteArrayOutputStream byteOs = new ByteArrayOutputStream();
-			final DataOutputStream dos = new DataOutputStream(byteOs);
-			dos.writeInt("ssh-rsa".getBytes().length);
-			dos.write("ssh-rsa".getBytes());
-			dos.writeInt(publicKey.getPublicExponent().toByteArray().length);
-			dos.write(publicKey.getPublicExponent().toByteArray());
-			dos.writeInt(publicKey.getModulus().toByteArray().length);
-			dos.write(publicKey.getModulus().toByteArray());
-			publicKeyEncoded = new String(Base64.getEncoder().encode(byteOs.toByteArray()));
-			return "ssh-rsa " + publicKeyEncoded;
+			dataOutputStream.writeInt(algorithmName.getBytes().length);
+			dataOutputStream.write(algorithmName.getBytes());
+			dataOutputStream.writeInt(publicKey.getPublicExponent().toByteArray().length);
+			dataOutputStream.write(publicKey.getPublicExponent().toByteArray());
+			dataOutputStream.writeInt(publicKey.getModulus().toByteArray().length);
+			dataOutputStream.write(publicKey.getModulus().toByteArray());
+			return algorithmName + " " + new String(Base64.getEncoder().encode(outputStream.toByteArray()));
 		} else if(keyPair.getPublic().getAlgorithm().equals("DSA")){
+			final String algorithmName = "ssh-dss";
 			final DSAPublicKey publicKey = ((DSAPublicKey) keyPair.getPublic());
-			final ByteArrayOutputStream byteOs = new ByteArrayOutputStream();
-			final DataOutputStream dos = new DataOutputStream(byteOs);
-			dos.writeInt("ssh-dss".getBytes().length);
-			dos.write("ssh-dss".getBytes());
-			dos.writeInt(publicKey.getParams().getP().toByteArray().length);
-			dos.write(publicKey.getParams().getP().toByteArray());
-			dos.writeInt(publicKey.getParams().getQ().toByteArray().length);
-			dos.write(publicKey.getParams().getQ().toByteArray());
-			dos.writeInt(publicKey.getParams().getG().toByteArray().length);
-			dos.write(publicKey.getParams().getG().toByteArray());
-			dos.writeInt(publicKey.getY().toByteArray().length);
-			dos.write(publicKey.getY().toByteArray());
-			publicKeyEncoded = new String(Base64.getEncoder().encode(byteOs.toByteArray()));
-			return "ssh-dss " + publicKeyEncoded;
+			dataOutputStream.writeInt(algorithmName.getBytes().length);
+			dataOutputStream.write(algorithmName.getBytes());
+			dataOutputStream.writeInt(publicKey.getParams().getP().toByteArray().length);
+			dataOutputStream.write(publicKey.getParams().getP().toByteArray());
+			dataOutputStream.writeInt(publicKey.getParams().getQ().toByteArray().length);
+			dataOutputStream.write(publicKey.getParams().getQ().toByteArray());
+			dataOutputStream.writeInt(publicKey.getParams().getG().toByteArray().length);
+			dataOutputStream.write(publicKey.getParams().getG().toByteArray());
+			dataOutputStream.writeInt(publicKey.getY().toByteArray().length);
+			dataOutputStream.write(publicKey.getY().toByteArray());
+			return algorithmName + " " + new String(Base64.getEncoder().encode(outputStream.toByteArray()));
 		} else{
 			throw new IllegalArgumentException("Unknown public key encoding: " + keyPair.getPublic().getAlgorithm());
 		}
