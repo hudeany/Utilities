@@ -8,14 +8,15 @@ import org.junit.Test;
 public class PuttyKeyTest {
 	@Test
 	public void test() throws Exception {
-		final PuttyKey puttyKey = new PuttyKey("TestKey", 2048);
+		final PuttyKey puttyKey = new PuttyKey("TestKey (Ä)", 2048);
+		puttyKey.setComment("TestKey (Ä)");
 
 		final ByteArrayOutputStream output = new ByteArrayOutputStream();
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(output)) {
 			puttyKeyWriter.writePuttyKeyFormat(puttyKey, "passwörd");
 		}
 
-		final PuttyKey puttyKey2;
+		PuttyKey puttyKey2;
 		try (PuttyKeyReader puttyKeyReader = new PuttyKeyReader(new ByteArrayInputStream(output.toByteArray()))) {
 			puttyKeyReader.setPassword("passwörd".toCharArray());
 			puttyKey2 = puttyKeyReader.readKey();

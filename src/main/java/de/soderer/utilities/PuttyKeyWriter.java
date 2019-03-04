@@ -238,14 +238,17 @@ public class PuttyKeyWriter implements Closeable {
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		final DataOutputStream data = new DataOutputStream(out);
 
-		data.writeInt(keyType.length());
-		data.writeBytes(keyType);
+		final byte[] keyTypeBytes = comment.getBytes("ISO-8859-1");
+		data.writeInt(keyTypeBytes.length);
+		data.write(keyTypeBytes);
 
-		data.writeInt(encryptionType.length());
-		data.writeBytes(encryptionType);
+		final byte[] encryptionTypeBytes = comment.getBytes("ISO-8859-1");
+		data.writeInt(encryptionTypeBytes.length);
+		data.write(encryptionTypeBytes);
 
-		data.writeInt(comment.length());
-		data.writeBytes(comment);
+		final byte[] commentBytes = comment.getBytes("ISO-8859-1");
+		data.writeInt(commentBytes.length);
+		data.write(commentBytes);
 
 		data.writeInt(publicKey.length);
 		data.write(publicKey);

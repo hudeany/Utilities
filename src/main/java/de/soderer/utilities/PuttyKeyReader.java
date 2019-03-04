@@ -9,7 +9,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -58,11 +57,7 @@ public class PuttyKeyReader implements Closeable {
 	}
 
 	public PuttyKeyReader(final InputStream inputStream) throws IOException {
-		this(new InputStreamReader(inputStream));
-	}
-
-	public PuttyKeyReader(final Reader reader) throws IOException {
-		dataReader = new BufferedReader(reader);
+		dataReader = new BufferedReader(new InputStreamReader(inputStream, "ISO-8859-1"));
 	}
 
 	public PuttyKeyReader setPassword(final char[] passwordCharArray) {
@@ -189,14 +184,17 @@ public class PuttyKeyReader implements Closeable {
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		final DataOutputStream data = new DataOutputStream(out);
 
-		data.writeInt(keyType.length());
-		data.writeBytes(keyType);
+		final byte[] keyTypeBytes = comment.getBytes("ISO-8859-1");
+		data.writeInt(keyTypeBytes.length);
+		data.write(keyTypeBytes);
 
-		data.writeInt(encryptionType.length());
-		data.writeBytes(encryptionType);
+		final byte[] encryptionTypeBytes = comment.getBytes("ISO-8859-1");
+		data.writeInt(encryptionTypeBytes.length);
+		data.write(encryptionTypeBytes);
 
-		data.writeInt(comment.length());
-		data.writeBytes(comment);
+		final byte[] commentBytes = comment.getBytes("ISO-8859-1");
+		data.writeInt(commentBytes.length);
+		data.write(commentBytes);
 
 		data.writeInt(publicKey.length);
 		data.write(publicKey);

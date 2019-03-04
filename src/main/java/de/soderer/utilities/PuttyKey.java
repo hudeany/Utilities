@@ -30,7 +30,7 @@ public class PuttyKey {
 	public static String SSH_CIPHER_NAME_RSA = "ssh-rsa";
 	public static String SSH_CIPHER_NAME_DSA = "ssh-dss";
 
-	private final String comment;
+	private String comment;
 	private final KeyPair keyPair;
 
 	public PuttyKey(final String comment, final int keyStrength) throws Exception {
@@ -118,6 +118,10 @@ public class PuttyKey {
 
 	public String getComment() {
 		return comment;
+	}
+
+	public void setComment(final String comment) {
+		this.comment = comment;
 	}
 
 	/**
