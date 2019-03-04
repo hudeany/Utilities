@@ -135,7 +135,7 @@ public class SqlStatementFormatter {
 				} else if (nextChar == '"' || nextChar == '\'' ||nextChar == '´' || nextChar == '`') {
 					textStarter = nextChar;
 					nextLine.append(nextChar);
-				} else if (nextChar == '+' || nextChar == '-' || nextChar == '/' || nextChar == '*' || nextChar == '%' || nextChar == '=' || nextChar == '&' || nextChar == '|' || nextChar == '^' || nextChar == '<' || nextChar == '>') {
+				} else if (nextChar == '+' || nextChar == '-' || nextChar == '/' || nextChar == '*' || nextChar == '%' || nextChar == '=' || nextChar == '&' || nextChar == '|' || nextChar == '^' || nextChar == '<' || nextChar == '>' || nextChar == '!') {
 					if (i + 2 < data.length && DbUtilities.SQL_OPERATORS.contains(new StringBuilder(data[i]).append(data[i + 1]).append(data[i + 2]).toString())) {
 						if (nextLine.length() > 0) {
 							lines.add(nextLine.toString());
@@ -278,6 +278,13 @@ public class SqlStatementFormatter {
 				// do nothing for this is no operator here
 			} else if (DbUtilities.SQL_OPERATORS.contains(line) && i > 0 && (i + 1) < lines.size()) {
 				i = joinWithEnclosingLines(lines, i, " ", " ");
+			} else if ("IS".equals(line) && i > 0 && (i + 2) < lines.size() && "NOT".equals(lines.get(i + 1)) && "NULL".equals(lines.get(i + 2))) {
+				joinWithNextLine(lines, i, " ");
+				joinWithNextLine(lines, i, " ");
+				i = joinWithPreviousLine(lines, i, " ");
+			} else if ("IS".equals(line) && i > 0 && (i + 1) < lines.size() && "NULL".equals(lines.get(i + 1))) {
+				joinWithNextLine(lines, i, " ");
+				i = joinWithPreviousLine(lines, i, " ");
 			}
 		}
 	}
@@ -294,7 +301,7 @@ public class SqlStatementFormatter {
 					if (i > 0) {
 						i = joinWithPreviousLine(lines, i, " ");
 					}
-				} else if (isOneOf(lines.get(i - 1), "VALUES", "WHERE", "FROM", "GROUP BY", "SORT BY", "ORDER BY", "HAVING")) {
+				} else if (isOneOf(lines.get(i - 1), "VALUES", "WHERE", "FROM", "GROUP BY", "SORT BY", "ORDER BY", "HAVING", "AND", "OR")) {
 					// do nothing for this is no function
 				} else if (nextIsInsertTableDefinition){
 					nextIsInsertTableDefinition = false;
@@ -334,6 +341,16 @@ public class SqlStatementFormatter {
 				joinWithNextLine(lines, i, " ");
 			} else if ("UNION".equals(line) && (i + 1) < lines.size() && "ALL".equals(lines.get(i + 1))) {
 				joinWithNextLine(lines, i, " ");
+			} else if ("INTERVAL".equalsIgnoreCase(line) && (i + 2) < lines.size() && isOneOf(lines.get(i + 2), "SECOND", "MINUTE", "HOUR", "DAY", "MONTH", "YEAR")) {
+				joinWithNextLine(lines, i, " ");
+				joinWithNextLine(lines, i, " ");
+				i = joinWithPreviousLine(lines, i, " ");
+
+				if (i > 2 && "(".equals(lines.get(i - 1)) && (i + 1) < lines.size() && ")".equals(lines.get(i + 1))) {
+					i = joinWithPreviousLine(lines, i, "");
+					i = joinWithPreviousLine(lines, i, "");
+					joinWithNextLine(lines, i, "");
+				}
 			}
 		}
 	}

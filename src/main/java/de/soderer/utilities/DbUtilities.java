@@ -54,7 +54,7 @@ public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_MSSQL = "https://msdn.microsoft.com/de-de/library/mt683464(v=sql.110).aspx";
 
 	public static final List<String> SQL_OPERATORS = Arrays.asList(new String[] { "+", "-", "*", "/", "%", "&", "|",
-			"^", "=", ">", "<", ">=", "<=", "<>", "+=", "-=", "*=", "/=", "%=", "&=", "||", "^-=", "|*=" });
+			"^", "=", "!=", ">", "<", ">=", "<=", "<>", "+=", "-=", "*=", "/=", "%=", "&=", "||", "^-=", "|*=" });
 
 	public static final List<String> RESERVED_WORDS_ORACLE = Arrays.asList(new String[] { "access", "account",
 			"activate", "add", "admin", "advise", "after", "all", "all_rows", "allocate", "alter", "analyze", "and",
