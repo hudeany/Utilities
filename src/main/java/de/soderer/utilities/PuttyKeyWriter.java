@@ -14,6 +14,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.util.Base64;
 
@@ -46,6 +48,7 @@ public class PuttyKeyWriter implements Closeable {
 	}
 
 	public void writePuttyKeyFormat(final PuttyKey puttyKey, final String password) throws Exception {
+		final String algorithmName = puttyKey.getAlgorithm();
 		final byte[] passwordBytes = password == null ? null : password.getBytes("ISO-8859-1");
 
 		final byte[] publicKeyBytes = puttyKey.getPublicKeyBytes();
@@ -65,7 +68,7 @@ public class PuttyKeyWriter implements Closeable {
 			privateKeyBytes = privateKeyBytesPadded;
 		}
 
-		final String macHash = calculateMacChecksum(passwordBytes, puttyKey.getAlgorithm(), password == null ? "none" : "aes256-cbc", puttyKey.getComment(), publicKeyBytes, privateKeyBytes);
+		final String macHash = calculateMacChecksum(passwordBytes, algorithmName, password == null ? "none" : "aes256-cbc", puttyKey.getComment(), publicKeyBytes, privateKeyBytes);
 
 		if (passwordBytes != null) {
 			final byte[] puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKey(passwordBytes);
@@ -80,7 +83,7 @@ public class PuttyKeyWriter implements Closeable {
 		final String privateKeyBase64 = toWrappedBase64(privateKeyBytes, "\r\n");
 
 		final StringBuilder content = new StringBuilder();
-		content.append("PuTTY-User-Key-File-2: ").append(puttyKey.getAlgorithm()).append("\r\n");
+		content.append("PuTTY-User-Key-File-2: ").append(algorithmName).append("\r\n");
 		content.append("Encryption: ").append(password == null ? "none" : "aes256-cbc").append("\r\n");
 		content.append("Comment: ").append(puttyKey.getComment()).append("\r\n");
 		content.append("Public-Lines: ").append(getLineCount(publicKeyBase64)).append("\r\n");
@@ -115,12 +118,17 @@ public class PuttyKeyWriter implements Closeable {
 	 * <b>Use with caution, because this key format is not protected by any password</>
 	 */
 	public void writeUnprotectedDerFormat(final PuttyKey puttyKey) throws Exception {
-		if (PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(puttyKey.getAlgorithm())) {
+		final String algorithmName = puttyKey.getAlgorithm();
+		if (PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createRsaBinaryKey(puttyKey));
-		} else if (PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(puttyKey.getAlgorithm())) {
+		} else if (PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createDssBinaryKey(puttyKey));
+		} else if (PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)
+				|| PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)
+				|| PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
+			outputStream.write(createEcdsaBinaryKey(puttyKey));
 		} else {
-			throw new IllegalArgumentException("Unsupported cipher: " + puttyKey.getAlgorithm());
+			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
 		}
 	}
 
@@ -130,48 +138,67 @@ public class PuttyKeyWriter implements Closeable {
 	 * <b>Use with caution, because this key format is not protected by any password</>
 	 */
 	public void writeUnprotectedPemFormat(final PuttyKey puttyKey) throws Exception {
-		if (PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(puttyKey.getAlgorithm())) {
+		final String algorithmName = puttyKey.getAlgorithm();
+		if (PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write("-----BEGIN RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createRsaBinaryKey(puttyKey), "\n").getBytes("ISO-8859-1"));
 			outputStream.write("\n".getBytes("ISO-8859-1"));
 			outputStream.write("-----END RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
-		} else if (PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(puttyKey.getAlgorithm())) {
+		} else if (PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write("-----BEGIN DSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createDssBinaryKey(puttyKey), "\n").getBytes("ISO-8859-1"));
 			outputStream.write("\n".getBytes("ISO-8859-1"));
 			outputStream.write("-----END DSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+		} else if (PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)
+				|| PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)
+				|| PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
+			outputStream.write("-----BEGIN EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+			outputStream.write(toWrappedBase64(createEcdsaBinaryKey(puttyKey), "\n").getBytes("ISO-8859-1"));
+			outputStream.write("\n".getBytes("ISO-8859-1"));
+			outputStream.write("-----END EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 		} else {
-			throw new IllegalArgumentException("Unsupported cipher: " + puttyKey.getAlgorithm());
+			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
 		}
 	}
 
-	private byte[] createRsaBinaryKey(final PuttyKey puttyKey) throws Exception, IOException {
+	private byte[] createRsaBinaryKey(final PuttyKey puttyKey) throws Exception {
 		final RSAPrivateCrtKey privateKey = ((RSAPrivateCrtKey) puttyKey.getKeyPair().getPrivate());
 
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
-		writeBigIntegerToStream(out, BigInteger.ZERO);
-		writeBigIntegerToStream(out, privateKey.getModulus());
-		writeBigIntegerToStream(out, privateKey.getPublicExponent());
-		writeBigIntegerToStream(out, privateKey.getPrivateExponent());
-		writeBigIntegerToStream(out, privateKey.getPrimeP());
-		writeBigIntegerToStream(out, privateKey.getPrimeQ());
-		writeBigIntegerToStream(out, privateKey.getPrimeExponentP());
-		writeBigIntegerToStream(out, privateKey.getPrimeExponentQ());
-		writeBigIntegerToStream(out, privateKey.getCrtCoefficient());
+		writeBytesToStream(out, BigInteger.ZERO.toByteArray());
+		writeBytesToStream(out, privateKey.getModulus().toByteArray());
+		writeBytesToStream(out, privateKey.getPublicExponent().toByteArray());
+		writeBytesToStream(out, privateKey.getPrivateExponent().toByteArray());
+		writeBytesToStream(out, privateKey.getPrimeP().toByteArray());
+		writeBytesToStream(out, privateKey.getPrimeQ().toByteArray());
+		writeBytesToStream(out, privateKey.getPrimeExponentP().toByteArray());
+		writeBytesToStream(out, privateKey.getPrimeExponentQ().toByteArray());
+		writeBytesToStream(out, privateKey.getCrtCoefficient().toByteArray());
 		return createByteSequence(out.toByteArray());
 	}
 
-	private byte[] createDssBinaryKey(final PuttyKey puttyKey) throws Exception, IOException {
+	private byte[] createDssBinaryKey(final PuttyKey puttyKey) throws Exception {
 		final DSAPublicKey publicKey = ((DSAPublicKey) puttyKey.getKeyPair().getPublic());
 		final DSAPrivateKey privateKey = ((DSAPrivateKey) puttyKey.getKeyPair().getPrivate());
 
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
-		writeBigIntegerToStream(out, BigInteger.ZERO);
-		writeBigIntegerToStream(out, privateKey.getParams().getP());
-		writeBigIntegerToStream(out, privateKey.getParams().getQ());
-		writeBigIntegerToStream(out, privateKey.getParams().getG());
-		writeBigIntegerToStream(out, publicKey.getY());
-		writeBigIntegerToStream(out, privateKey.getX());
+		writeBytesToStream(out, BigInteger.ZERO.toByteArray());
+		writeBytesToStream(out, privateKey.getParams().getP().toByteArray());
+		writeBytesToStream(out, privateKey.getParams().getQ().toByteArray());
+		writeBytesToStream(out, privateKey.getParams().getG().toByteArray());
+		writeBytesToStream(out, publicKey.getY().toByteArray());
+		writeBytesToStream(out, privateKey.getX().toByteArray());
+		return createByteSequence(out.toByteArray());
+	}
+
+	private byte[] createEcdsaBinaryKey(final PuttyKey puttyKey) throws Exception {
+		final ECPrivateKey privateKey = ((ECPrivateKey) puttyKey.getKeyPair().getPrivate());
+		final ECPublicKey publicKey = ((ECPublicKey) puttyKey.getKeyPair().getPublic());
+
+		final ByteArrayOutputStream out = new ByteArrayOutputStream();
+		writeBytesToStream(out, BigInteger.ZERO.toByteArray());
+		//		writeBytesToStream(out, privateKey.getS().toByteArray());
+		//		writeBytesToStream(out, "prime256v1".getBytes("UTF-8"));
 		return createByteSequence(out.toByteArray());
 	}
 
@@ -208,10 +235,9 @@ public class PuttyKeyWriter implements Closeable {
 		return lengthInBytes;
 	}
 
-	private static void writeBigIntegerToStream(final ByteArrayOutputStream out, final BigInteger bigIntegerValue) throws IOException {
+	private static void writeBytesToStream(final ByteArrayOutputStream out, final byte[] data) throws IOException {
 		out.write(0x02);
-		final byte[] bytes = bigIntegerValue.toByteArray();
-		final int len = bytes.length;
+		final int len = data.length;
 		if (len < 0x80) {
 			out.write(len);
 		} else {
@@ -221,7 +247,7 @@ public class PuttyKeyWriter implements Closeable {
 				out.write((len >> (8 * i1)) & 0xFF);
 			}
 		}
-		out.write(bytes);
+		out.write(data);
 	}
 
 	private static String calculateMacChecksum(final byte[] passwordBytes, final String keyType, final String encryptionType, final String comment, final byte[] publicKey, final byte[] privateKey) throws Exception {
@@ -238,11 +264,11 @@ public class PuttyKeyWriter implements Closeable {
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		final DataOutputStream data = new DataOutputStream(out);
 
-		final byte[] keyTypeBytes = comment.getBytes("ISO-8859-1");
+		final byte[] keyTypeBytes = keyType.getBytes("ISO-8859-1");
 		data.writeInt(keyTypeBytes.length);
 		data.write(keyTypeBytes);
 
-		final byte[] encryptionTypeBytes = comment.getBytes("ISO-8859-1");
+		final byte[] encryptionTypeBytes = encryptionType.getBytes("ISO-8859-1");
 		data.writeInt(encryptionTypeBytes.length);
 		data.write(encryptionTypeBytes);
 

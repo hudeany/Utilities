@@ -104,7 +104,11 @@ public class PuttyKeyReader implements Closeable {
 		if (chipherName == null || "".equals(chipherName)) {
 			throw new Exception("Missing cipher name");
 		}
-		if (!PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(chipherName) && !PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(chipherName)) {
+		if (!PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(chipherName)
+				&& !PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(chipherName)
+				&& !PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(chipherName)
+				&& !PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(chipherName)
+				&& !PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(chipherName)) {
 			throw new Exception("Unsupported chipher: " + chipherName);
 		}
 
@@ -113,27 +117,35 @@ public class PuttyKeyReader implements Closeable {
 		byte[] privateKey = base64Decoder.decode(data.get("Private-Lines").toString());
 
 		final String encryptionMethod = headers.get("Encryption");
-		if (encryptionMethod == null || "".equals(encryptionMethod) || "none".equalsIgnoreCase(encryptionMethod)) {
-			validateKeyData(headers, publicKey, privateKey);
-			return new PuttyKey(headers.get("Comment"), chipherName, privateKey, publicKey);
-		} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
+		if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
 			try {
+				if (passwordByteArray == null) {
+					throw new Exception("Key decryption password is needed");
+				}
 				final byte[] puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKey(passwordByteArray);
 
 				final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 				cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(puttyKeyEncryptionKey, 0, 32, "AES"), new IvParameterSpec(new byte[16])); // initial vector=0
 
 				privateKey = cipher.doFinal(privateKey);
-
-				validateKeyData(headers, publicKey, privateKey);
-
-				return new PuttyKey(headers.get("Comment"), chipherName, privateKey, publicKey);
 			} catch (final Exception e) {
 				throw new Exception("Cannot decrypt PuTTY private key data", e);
 			}
-		} else {
+		} else if (encryptionMethod != null && !"".equals(encryptionMethod) && !"none".equalsIgnoreCase(encryptionMethod)) {
 			throw new Exception("Unsupported key encryption method: " + headers.get("Encryption"));
 		}
+
+		try {
+			final String calculatedMacChecksum = calculateMacChecksum(passwordByteArray, headers.get("PuTTY-User-Key-File-2"), headers.get("Encryption"), headers.get("Comment"), publicKey, privateKey);
+			final String foundMacChecksum = headers.get("Private-MAC");
+			if (foundMacChecksum == null || !foundMacChecksum.equalsIgnoreCase(calculatedMacChecksum)) {
+				throw new Exception("PuTTY key was tampered or password is wrong: Private-MAC hash is invalid");
+			}
+		} catch (final Exception e) {
+			throw new Exception("Invalid PuTTY key data: " + e.getMessage(), e);
+		}
+
+		return new PuttyKey(headers.get("Comment"), chipherName, privateKey, publicKey);
 	}
 
 	private static byte[] getPuttyPrivateKeyEncryptionKey(final byte[] passwordByteArray) throws NoSuchAlgorithmException {
@@ -153,23 +165,6 @@ public class PuttyKeyReader implements Closeable {
 		return puttyKeyEncryptionKey;
 	}
 
-	private void validateKeyData(final Map<String, String> headers, final byte[] publicKey, final byte[] privateKey) throws Exception {
-		try {
-			final String calculatedMacChecksum = calculateMacChecksum(passwordByteArray, headers.get("PuTTY-User-Key-File-2"), headers.get("Encryption"), headers.get("Comment"), publicKey, privateKey);
-			final String foundMacChecksum = headers.get("Private-MAC");
-			if (foundMacChecksum == null || !foundMacChecksum.equalsIgnoreCase(calculatedMacChecksum)) {
-				throw new Exception("PuTTY key was tampered or password is wrong: Private-MAC hash is invalid");
-			}
-
-			final String cipherAlgorithm = headers.get("PuTTY-User-Key-File-2").trim();
-			if (!PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(cipherAlgorithm) && !PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(cipherAlgorithm)) {
-				throw new IllegalArgumentException("Unsupported cipher: " + cipherAlgorithm);
-			}
-		} catch (final Exception e) {
-			throw new Exception("Invalid PuTTY key data: " + e.getMessage(), e);
-		}
-	}
-
 	private String calculateMacChecksum(final byte[] passwordBytes, final String keyType, final String encryptionType, final String comment, final byte[] publicKey, final byte[] privateKey) throws Exception {
 		final MessageDigest digest = MessageDigest.getInstance("SHA-1");
 		digest.update("putty-private-key-file-mac-key".getBytes());
@@ -184,11 +179,11 @@ public class PuttyKeyReader implements Closeable {
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		final DataOutputStream data = new DataOutputStream(out);
 
-		final byte[] keyTypeBytes = comment.getBytes("ISO-8859-1");
+		final byte[] keyTypeBytes = keyType.getBytes("ISO-8859-1");
 		data.writeInt(keyTypeBytes.length);
 		data.write(keyTypeBytes);
 
-		final byte[] encryptionTypeBytes = comment.getBytes("ISO-8859-1");
+		final byte[] encryptionTypeBytes = encryptionType.getBytes("ISO-8859-1");
 		data.writeInt(encryptionTypeBytes.length);
 		data.write(encryptionTypeBytes);
 
