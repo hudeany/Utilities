@@ -177,7 +177,10 @@ public class PuttyKey {
 	}
 
 	/**
-	 * Key type. Either "ssh-rsa" for RSA key, or "ssh-dss" for DSA key.
+	 * Key type<br />
+	 * "ssh-rsa" for RSA key<br />
+	 * "ssh-dss" for DSA key<br />
+	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br />
 	 */
 	public String getAlgorithm() throws Exception {
 		if (keyPair.getPublic().getAlgorithm().equals("RSA")){

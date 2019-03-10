@@ -51,7 +51,7 @@ public class PuttyKeyTest {
 			throw new Exception();
 		}
 
-		final String pemString = CryptographicUtilities.convertPuttyKeyToProtectedPrivateOpenSshKey(puttyKey, "passwörd");
+		final String pemString = CryptographicUtilities.writeKeyPairToProtectedPrivateOpenSshKey(puttyKey.getKeyPair(), null, "passwörd");
 		if (pemString == null || pemString.length() == 0) {
 			throw new Exception();
 		}
