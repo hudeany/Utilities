@@ -930,12 +930,15 @@ public class CryptographicUtilities {
 
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (final JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.US_ASCII))) {
-			if (exportedKeyPassword != null) {
+			if (exportedKeyPassword != null && !"".equals(exportedKeyPassword)) {
 				final PEMEncryptor pemEncryptor = new JcePEMEncryptorBuilder(keyEncryptionCipherName).build(exportedKeyPassword.toCharArray());
 				final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(keyPair.getPrivate(), pemEncryptor);
 				jcaPEMWriter.writeObject(pemGenerator);
 			} else {
-				jcaPEMWriter.writeObject(keyPair.getPrivate());
+				final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(keyPair.getPrivate(), null);
+				jcaPEMWriter.writeObject(pemGenerator);
+				if (includePublicKeyData) {
+				}
 			}
 
 			jcaPEMWriter.flush();
