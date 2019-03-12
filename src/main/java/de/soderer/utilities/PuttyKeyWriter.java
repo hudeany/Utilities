@@ -262,16 +262,12 @@ public class PuttyKeyWriter implements Closeable {
 		final Map<String, String> headers = new LinkedHashMap<>();
 
 		final SecureRandom rnd = new SecureRandom();
-		final char[] HEX_CHARS = "0123456789ABCDEF".toCharArray();
 		final Cipher cipher;
-		final StringBuilder ivString = new StringBuilder();
+		final String ivString;
 		if ("DES-EDE3-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
 			final byte[] iv = new byte[8];
 			rnd.nextBytes(iv);
-			for (int i = 0; i < iv.length; i++) {
-				ivString.append(HEX_CHARS[(iv[i] & 0xFF) >> 4]);
-				ivString.append(HEX_CHARS[iv[i] & 0x0F]);
-			}
+			ivString = toHexString(iv);
 			cipher = Cipher.getInstance("DESede/CBC/NoPadding");
 			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKeyFromPassphrase(passphraseBytes, iv, 24), "DESede"), new IvParameterSpec(iv));
 			keyData = addSecurePadding(keyData, 16);
@@ -279,10 +275,7 @@ public class PuttyKeyWriter implements Closeable {
 			//		} else if ("AES-128-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
 			//				final byte[] iv = new byte[16];
 			//				rnd.nextBytes(iv);
-			//				for (int i = 0; i < iv.length; i++) {
-			//					ivString.append(HEX_CHARS[(iv[i] & 0xFF) >> 4]);
-			//					ivString.append(HEX_CHARS[iv[i] & 0x0F]);
-			//				}
+			//				ivString = toHexString(iv);
 			//				cipher = Cipher.getInstance("AES/CBC/NoPadding");
 			//				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKeyFromPassphrase(passphraseBytes, iv, 16), "AES"), new IvParameterSpec(iv));
 			//				keyData = addSecurePadding(keyData, 16);
