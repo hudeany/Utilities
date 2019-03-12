@@ -265,17 +265,7 @@ public class PuttyKeyWriter implements Closeable {
 		final char[] HEX_CHARS = "0123456789ABCDEF".toCharArray();
 		final Cipher cipher;
 		final StringBuilder ivString = new StringBuilder();
-		if ("AES-128-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
-			final byte[] iv = new byte[16];
-			rnd.nextBytes(iv);
-			for (int i = 0; i < iv.length; i++) {
-				ivString.append(HEX_CHARS[(iv[i] & 0xFF) >> 4]);
-				ivString.append(HEX_CHARS[iv[i] & 0x0F]);
-			}
-			cipher = Cipher.getInstance("AES/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKeyFromPassphrase(passphraseBytes, iv, 32), "AES"), new IvParameterSpec(iv));
-			keyData = addSecurePadding(keyData, 16);
-		} else if ("DES-EDE3-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
+		if ("DES-EDE3-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
 			final byte[] iv = new byte[8];
 			rnd.nextBytes(iv);
 			for (int i = 0; i < iv.length; i++) {
@@ -285,6 +275,17 @@ public class PuttyKeyWriter implements Closeable {
 			cipher = Cipher.getInstance("DESede/CBC/NoPadding");
 			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKeyFromPassphrase(passphraseBytes, iv, 24), "DESede"), new IvParameterSpec(iv));
 			keyData = addSecurePadding(keyData, 16);
+			// TODO AES-128-CBC is not working yet
+			//		} else if ("AES-128-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
+			//				final byte[] iv = new byte[16];
+			//				rnd.nextBytes(iv);
+			//				for (int i = 0; i < iv.length; i++) {
+			//					ivString.append(HEX_CHARS[(iv[i] & 0xFF) >> 4]);
+			//					ivString.append(HEX_CHARS[iv[i] & 0x0F]);
+			//				}
+			//				cipher = Cipher.getInstance("AES/CBC/NoPadding");
+			//				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKeyFromPassphrase(passphraseBytes, iv, 16), "AES"), new IvParameterSpec(iv));
+			//				keyData = addSecurePadding(keyData, 16);
 		} else {
 			throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
 		}
