@@ -257,8 +257,6 @@ public class PuttyKeyWriter implements Closeable {
 			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
 		}
 
-		final byte[] passphraseBytes = exportedKeyPassword.getBytes("UTF-8");
-
 		final Map<String, String> headers = new LinkedHashMap<>();
 
 		final SecureRandom rnd = new SecureRandom();
@@ -269,24 +267,22 @@ public class PuttyKeyWriter implements Closeable {
 			rnd.nextBytes(iv);
 			ivString = toHexString(iv);
 			cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKeyFromPassphrase(passphraseBytes, iv, 24), "DESede"), new IvParameterSpec(iv));
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(exportedKeyPassword, iv, 8, 24), "DESede"), new IvParameterSpec(iv));
 			keyData = addSecurePadding(keyData, 16);
-			// TODO AES-128-CBC is not working yet
-			//		} else if ("AES-128-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
-			//				final byte[] iv = new byte[16];
-			//				rnd.nextBytes(iv);
-			//				ivString = toHexString(iv);
-			//				cipher = Cipher.getInstance("AES/CBC/NoPadding");
-			//				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKeyFromPassphrase(passphraseBytes, iv, 16), "AES"), new IvParameterSpec(iv));
-			//				keyData = addSecurePadding(keyData, 16);
+		} else if ("AES-128-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
+			final byte[] iv = new byte[16];
+			rnd.nextBytes(iv);
+			ivString = toHexString(iv);
+			cipher = Cipher.getInstance("AES/CBC/NoPadding");
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(exportedKeyPassword, iv, 8, 16), "AES"), new IvParameterSpec(iv));
+			keyData = addSecurePadding(keyData, 16);
 		} else {
 			throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
 		}
 		headers.put("Proc-Type", "4,ENCRYPTED");
 		headers.put("DEK-Info", keyEncryptionCipherName.toUpperCase() + "," + ivString);
 
-		final byte[] encryptedKeyData = new byte[keyData.length];
-		cipher.update(keyData, 0, keyData.length, encryptedKeyData, 0);
+		final byte[] encryptedKeyData = cipher.doFinal(keyData);
 
 		outputStream.write(("-----BEGIN " + keyTypeName + "-----\n").getBytes("UTF-8"));
 
@@ -325,12 +321,13 @@ public class PuttyKeyWriter implements Closeable {
 		return headerBuilder.toString();
 	}
 
-	protected static byte[] getKeyFromPassphrase(final byte[] passphraseBytes, final byte[] iv, final int keySize) throws Exception {
+	protected static byte[] stretchPasswordForOpenSsl(final String password, final byte[] iv, final int usingIvSize, final int keySize) throws Exception {
+		final byte[] passphraseBytes = password.getBytes("UTF-8");
 		final MessageDigest hash = MessageDigest.getInstance("MD5");
 		final byte[] key = new byte[keySize];
-		int hashesSize = keySize & 0xfffffff0;
+		int hashesSize = keySize & 0XFFFFFFF0;
 
-		if ((keySize & 0xf) != 0) {
+		if ((keySize & 0XF) != 0) {
 			hashesSize += 0x10;
 		}
 
@@ -338,7 +335,7 @@ public class PuttyKeyWriter implements Closeable {
 		byte[] previous;
 		for (int index = 0; (index + 0x10) <= hashes.length; hash.update(previous, 0, previous.length)) {
 			hash.update(passphraseBytes, 0, passphraseBytes.length);
-			hash.update(iv, 0, iv.length);
+			hash.update(iv, 0, usingIvSize);
 			previous = hash.digest();
 			System.arraycopy(previous, 0, hashes, index, previous.length);
 			index += previous.length;
