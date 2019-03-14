@@ -237,7 +237,7 @@ public class PuttyKey {
 		}
 	}
 
-	private String toHexString(final byte[] data, final String separator) {
+	private static String toHexString(final byte[] data, final String separator) {
 		final StringBuilder returnString = new StringBuilder();
 		for (final byte dataByte : data) {
 			if (returnString.length() > 0) {
