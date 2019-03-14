@@ -60,5 +60,13 @@ public class PuttyKeyTest {
 		if (sha256Fingerprint == null || sha256Fingerprint.length() == 0) {
 			throw new Exception();
 		}
+
+		final ByteArrayOutputStream output3 = new ByteArrayOutputStream();
+		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(output3)) {
+			puttyKeyWriter.writeProtectedPemFormat(puttyKey, "DES-EDE3-CBC", "passwörd");
+		}
+		if (output3.toByteArray() == null || output3.toByteArray().length == 0) {
+			throw new Exception();
+		}
 	}
 }
