@@ -44,6 +44,9 @@ import javax.xml.ws.WebServiceException;
  * </pre>
  */
 public class PuttyKeyWriter implements Closeable {
+	private static final String AES128_PemEncryptionMethodName = "AES-128-CBC";
+	private static final String TripleDES_PemEncryptionMethodName = "DES-EDE3-CBC";
+
 	/**
 	 * ASN.1 "INTEGER" (0x02 = 2)
 	 */
@@ -187,31 +190,35 @@ public class PuttyKeyWriter implements Closeable {
 		if (PuttyKey.SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write("-----BEGIN RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createRsaBinaryKey(puttyKey), 64, "\n").getBytes("ISO-8859-1"));
-			outputStream.write("\n".getBytes("ISO-8859-1"));
-			outputStream.write("-----END RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+			outputStream.write("\n-----END RSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 		} else if (PuttyKey.SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write("-----BEGIN DSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createDssBinaryKey(puttyKey), 64, "\n").getBytes("ISO-8859-1"));
-			outputStream.write("\n".getBytes("ISO-8859-1"));
-			outputStream.write("-----END DSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+			outputStream.write("\n-----END DSA PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 		} else if (PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)) {
 			outputStream.write("-----BEGIN EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createEcdsaBinaryKey(puttyKey, OID.SECP256R1_ARRAY), 64, "\n").getBytes("ISO-8859-1"));
-			outputStream.write("\n".getBytes("ISO-8859-1"));
-			outputStream.write("-----END EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+			outputStream.write("\n-----END EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 		} else if (PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)) {
 			outputStream.write("-----BEGIN EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createEcdsaBinaryKey(puttyKey, OID.SECP384R1_ARRAY), 64, "\n").getBytes("ISO-8859-1"));
-			outputStream.write("\n".getBytes("ISO-8859-1"));
-			outputStream.write("-----END EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+			outputStream.write("\n-----END EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 		} else if (PuttyKey.SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
 			outputStream.write("-----BEGIN EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 			outputStream.write(toWrappedBase64(createEcdsaBinaryKey(puttyKey, OID.SECP521R1_ARRAY), 64, "\n").getBytes("ISO-8859-1"));
-			outputStream.write("\n".getBytes("ISO-8859-1"));
-			outputStream.write("-----END EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
+			outputStream.write("\n-----END EC PRIVATE KEY-----\n".getBytes("ISO-8859-1"));
 		} else {
 			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
 		}
+	}
+
+	/**
+	 * Converts this key into protected PEM format (PKCS#8) for OpenSSH keys<br />
+	 * Using default encryption method "AES-128-CBC"<br />
+	 * This format includes private and public key data and is accepted by PuTTY's key import<br />
+	 */
+	public void writeProtectedPemFormat(final PuttyKey puttyKey, final String exportedKeyPassword) throws Exception {
+		writeProtectedPemFormat(puttyKey, null, exportedKeyPassword);
 	}
 
 	/**
@@ -224,10 +231,10 @@ public class PuttyKeyWriter implements Closeable {
 	 */
 	public void writeProtectedPemFormat(final PuttyKey puttyKey, String keyEncryptionCipherName, final String exportedKeyPassword) throws Exception {
 		if (keyEncryptionCipherName == null || "".equals(keyEncryptionCipherName.trim())) {
-			keyEncryptionCipherName = "AES-128-CBC";
+			keyEncryptionCipherName = AES128_PemEncryptionMethodName;
 		}
 
-		if (!"AES-128-CBC".equalsIgnoreCase(keyEncryptionCipherName) && !"DES-EDE3-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
+		if (!AES128_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName) && !TripleDES_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
 			throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
 		}
 
@@ -262,14 +269,14 @@ public class PuttyKeyWriter implements Closeable {
 		final SecureRandom rnd = new SecureRandom();
 		final Cipher cipher;
 		final String ivString;
-		if ("DES-EDE3-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
+		if (TripleDES_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
 			final byte[] iv = new byte[8];
 			rnd.nextBytes(iv);
 			ivString = toHexString(iv);
 			cipher = Cipher.getInstance("DESede/CBC/NoPadding");
 			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(exportedKeyPassword, iv, 8, 24), "DESede"), new IvParameterSpec(iv));
 			keyData = addSecurePadding(keyData, 16);
-		} else if ("AES-128-CBC".equalsIgnoreCase(keyEncryptionCipherName)) {
+		} else if (AES128_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
 			final byte[] iv = new byte[16];
 			rnd.nextBytes(iv);
 			ivString = toHexString(iv);
@@ -285,15 +292,9 @@ public class PuttyKeyWriter implements Closeable {
 		final byte[] encryptedKeyData = cipher.doFinal(keyData);
 
 		outputStream.write(("-----BEGIN " + keyTypeName + "-----\n").getBytes("UTF-8"));
-
-		final String headerLines = getPemHeaderLines(headers, 76);
-
-		outputStream.write(headerLines.getBytes("UTF-8"));
-
+		outputStream.write(getPemHeaderLines(headers, 76).getBytes("UTF-8"));
 		outputStream.write(toWrappedBase64(encryptedKeyData, 76, "\n").getBytes("UTF-8"));
-		outputStream.write("\n".getBytes("UTF-8"));
-
-		outputStream.write(("-----END " + keyTypeName + "-----\n").getBytes("UTF-8"));
+		outputStream.write(("\n-----END " + keyTypeName + "-----\n").getBytes("UTF-8"));
 	}
 
 	private String getPemHeaderLines(final Map<String, String> headers, final int maxLineLimit) {
@@ -393,7 +394,7 @@ public class PuttyKeyWriter implements Closeable {
 	}
 
 	/**
-	 * Converts byte array to base64 with 64 chars per line
+	 * Converts byte array to base64 with linebreaks
 	 */
 	private static String toWrappedBase64(final byte[] byteArray, final int maxLineLength, final String lineBreak) {
 		return Base64.getMimeEncoder(maxLineLength, lineBreak.getBytes(Charset.forName("ISO-8859-1"))).encodeToString(byteArray);
