@@ -8,8 +8,8 @@ public class AsnCodecTest {
 	public void test1() {
 		try {
 			for (int i = 0; i < 2049; i++) {
-				final String resultInt = BitUtilities.getBitString(AsnCodec.getAsnEncodedInteger(i));
-				final String resultLong = BitUtilities.getBitString(AsnCodec.getAsnEncodedInteger((long) i));
+				final String resultInt = BitUtilities.getBitString(Asn1Codec.getAsnEncodedInteger(i));
+				final String resultLong = BitUtilities.getBitString(Asn1Codec.getAsnEncodedInteger((long) i));
 				Assert.assertEquals(i + ": ", resultInt, resultLong);
 			}
 		} catch (final Exception e) {
