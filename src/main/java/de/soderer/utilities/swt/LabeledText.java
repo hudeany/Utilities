@@ -4,7 +4,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
@@ -19,15 +18,15 @@ public class LabeledText extends Composite {
 		Vertical, Horizontal
 	}
 
-	protected LabeledText(Composite parent, int style) throws Exception {
+	protected LabeledText(final Composite parent, final int style) throws Exception {
 		super(parent, style);
 	}
 
-	public LabeledText(Composite parent, int style, String labelText) throws Exception {
+	public LabeledText(final Composite parent, final int style, final String labelText) throws Exception {
 		this(parent, style, labelText, null);
 	}
 
-	public LabeledText(Composite parent, int style, String labelText, ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledText(final Composite parent, final int style, final String labelText, ArrangementStyle arrangementStyle) throws Exception {
 		super(parent, style);
 
 		final LabeledText labeledText = this;
@@ -36,12 +35,10 @@ public class LabeledText extends Composite {
 			arrangementStyle = ArrangementStyle.Vertical;
 		}
 
-		GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : 2, false);
-		gridLayout.marginWidth = 0;
-		gridLayout.marginHeight = 0;
-		setLayout(gridLayout);
+		setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1));
+		setLayout(SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : 2, false));
 
-		Label label = new Label(this, SWT.NONE);
+		final Label label = new Label(this, SWT.NONE);
 		label.setText(labelText);
 
 		if (style != SWT.PASSWORD) {
@@ -50,8 +47,8 @@ public class LabeledText extends Composite {
 			textField.setText("");
 			textField.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(ModifyEvent arg0) {
-					Event event = new Event();
+				public void modifyText(final ModifyEvent arg0) {
+					final Event event = new Event();
 					event.widget = labeledText;
 					labeledText.notifyListeners(SWT.Modify, event);
 				}
@@ -62,8 +59,8 @@ public class LabeledText extends Composite {
 			passwordTextField.setText("");
 			passwordTextField.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(ModifyEvent arg0) {
-					Event event = new Event();
+				public void modifyText(final ModifyEvent arg0) {
+					final Event event = new Event();
 					event.widget = labeledText;
 					labeledText.notifyListeners(SWT.Modify, event);
 				}
@@ -71,12 +68,12 @@ public class LabeledText extends Composite {
 		}
 	}
 
-	public void addModifyListener(ModifyListener listener) {
+	public void addModifyListener(final ModifyListener listener) {
 		checkWidget();
 		if (listener == null) {
 			throw new RuntimeException("Missing listener");
 		} else {
-			TypedListener typedListener = new TypedListener(listener);
+			final TypedListener typedListener = new TypedListener(listener);
 			addListener(SWT.Modify, typedListener);
 		}
 	}
@@ -102,11 +99,19 @@ public class LabeledText extends Composite {
 	}
 
 	@Override
-	public void setEnabled(boolean enabled) {
+	public void setEnabled(final boolean enabled) {
 		if (passwordTextField == null) {
 			textField.setEnabled(enabled);
 		} else {
 			passwordTextField.setEnabled(enabled);
+		}
+	}
+
+	public void setReadOnly(final boolean readOnly) {
+		if (passwordTextField == null) {
+			textField.setEditable(!readOnly);
+		} else {
+			passwordTextField.setEditable(!readOnly);
 		}
 	}
 }

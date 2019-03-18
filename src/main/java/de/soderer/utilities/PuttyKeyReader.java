@@ -118,10 +118,10 @@ public class PuttyKeyReader implements Closeable {
 
 		final String encryptionMethod = headers.get("Encryption");
 		if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
+			if (passwordByteArray == null) {
+				throw new WrongPasswordException();
+			}
 			try {
-				if (passwordByteArray == null) {
-					throw new Exception("Key decryption password is needed");
-				}
 				final byte[] puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKey(passwordByteArray);
 
 				final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
@@ -139,8 +139,10 @@ public class PuttyKeyReader implements Closeable {
 			final String calculatedMacChecksum = calculateMacChecksum(passwordByteArray, headers.get("PuTTY-User-Key-File-2"), headers.get("Encryption"), headers.get("Comment"), publicKey, privateKey);
 			final String foundMacChecksum = headers.get("Private-MAC");
 			if (foundMacChecksum == null || !foundMacChecksum.equalsIgnoreCase(calculatedMacChecksum)) {
-				throw new Exception("PuTTY key was tampered or password is wrong: Private-MAC hash is invalid");
+				throw new WrongPasswordException();
 			}
+		} catch (final WrongPasswordException e) {
+			throw e;
 		} catch (final Exception e) {
 			throw new Exception("Invalid PuTTY key data: " + e.getMessage(), e);
 		}

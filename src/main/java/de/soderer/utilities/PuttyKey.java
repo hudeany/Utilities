@@ -209,7 +209,7 @@ public class PuttyKey {
 				throw new Exception("Unsupported ECDSA bit length: " + bitLength);
 			}
 		} else{
-			throw new IllegalArgumentException("Unknown public key encoding: " + keyPair.getPublic().getAlgorithm());
+			throw new IllegalArgumentException("Unknown public key cipher: " + keyPair.getPublic().getAlgorithm());
 		}
 	}
 
@@ -353,18 +353,18 @@ public class PuttyKey {
 		return getAlgorithm() + " " + new String(Base64.getEncoder().encode(getPublicKeyBytes()));
 	}
 
-	public class BlockDataReader {
+	private class BlockDataReader {
 		private final DataInput keyDataInput;
 
-		public BlockDataReader(final byte[] key) {
+		private BlockDataReader(final byte[] key) {
 			keyDataInput = new DataInputStream(new ByteArrayInputStream(key));
 		}
 
-		public BigInteger readBigInt() throws Exception {
+		private BigInteger readBigInt() throws Exception {
 			return new BigInteger(readData());
 		}
 
-		public String readString() throws Exception {
+		private String readString() throws Exception {
 			return new String(readData(), "ISO-8859-1");
 		}
 
@@ -383,20 +383,20 @@ public class PuttyKey {
 		}
 	}
 
-	public class BlockDataWriter {
+	private class BlockDataWriter {
 		private final ByteArrayOutputStream outputStream;
 		private final DataOutput keyDataOutput;
 
-		public BlockDataWriter() {
+		private BlockDataWriter() {
 			outputStream = new ByteArrayOutputStream();
 			keyDataOutput = new DataOutputStream(outputStream);
 		}
 
-		public void writeBigInt(final BigInteger bigIntegerData) throws Exception {
+		private void writeBigInt(final BigInteger bigIntegerData) throws Exception {
 			writeData(bigIntegerData.toByteArray());
 		}
 
-		public void writeString(final String stringData) throws Exception {
+		private void writeString(final String stringData) throws Exception {
 			writeData(stringData.getBytes("ISO-8859-1"));
 		}
 
@@ -413,7 +413,7 @@ public class PuttyKey {
 			}
 		}
 
-		public byte[] toByteArray() {
+		private byte[] toByteArray() {
 			return outputStream.toByteArray();
 		}
 	}

@@ -29,8 +29,8 @@ import de.soderer.utilities.collection.CaseInsensitiveMap;
 public class SwtUtilities {
 	public static final int BOTTOM_RIGHT_ENTER_KEY = 16777296;
 
-	public static CaseInsensitiveMap<Integer> getSwtHandlesStatus(Display display) {
-		DeviceData swtDeviceData = display.getDeviceData();
+	public static CaseInsensitiveMap<Integer> getSwtHandlesStatus(final Display display) {
+		final DeviceData swtDeviceData = display.getDeviceData();
 
 		int colors = 0;
 		int cursors = 0;
@@ -44,7 +44,7 @@ public class SwtUtilities {
 		int transforms = 0;
 		int others = 0;
 
-		for (Object object : swtDeviceData.objects) {
+		for (final Object object : swtDeviceData.objects) {
 			if (object instanceof Color) {
 				colors++;
 			} else if (object instanceof Cursor) {
@@ -70,7 +70,7 @@ public class SwtUtilities {
 			}
 		}
 
-		CaseInsensitiveMap<Integer> result = new CaseInsensitiveMap<Integer>();
+		final CaseInsensitiveMap<Integer> result = new CaseInsensitiveMap<>();
 
 		result.put("Colors", colors);
 		result.put("Cursors", cursors);
@@ -87,50 +87,50 @@ public class SwtUtilities {
 		return result;
 	}
 
-	public static void expandTree(Tree tree, boolean expandValue) {
-		for (TreeItem subItem : tree.getItems()) {
+	public static void expandTree(final Tree tree, final boolean expandValue) {
+		for (final TreeItem subItem : tree.getItems()) {
 			expandTree(subItem, expandValue);
 		}
 	}
 
-	public static void expandTree(TreeItem item, boolean expandValue) {
+	public static void expandTree(final TreeItem item, final boolean expandValue) {
 		item.setExpanded(expandValue);
-		for (TreeItem subItem : item.getItems()) {
+		for (final TreeItem subItem : item.getItems()) {
 			expandTree(subItem, expandValue);
 		}
 	}
 
-	public static GridLayout createNoMarginGridLayout(int columns, boolean equalWidth) {
-		GridLayout gridLayout = new GridLayout(columns, equalWidth);
+	public static GridLayout createNoMarginGridLayout(final int columns, final boolean equalWidth) {
+		final GridLayout gridLayout = new GridLayout(columns, equalWidth);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		return gridLayout;
 	}
 
-	public static void addMainButtonComposite(Shell shell, ModalDialog<Boolean> parentDialog) {
+	public static void addMainButtonComposite(final Shell shell, final ModalDialog<Boolean> parentDialog) {
 		final ModalDialog<Boolean> finalParentDialog = parentDialog;
 
-		Composite mainButtonComposite = new Composite(shell, SWT.NONE);
+		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 
-		Button okButton = new Button(mainButtonComposite, SWT.PUSH);
+		final Button okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				finalParentDialog.setReturnValue(true);
 				finalParentDialog.getParent().close();
 			}
 		});
 
-		Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
+		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				finalParentDialog.setReturnValue(false);
 				finalParentDialog.getParent().close();
 			}

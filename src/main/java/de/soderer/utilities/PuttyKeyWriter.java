@@ -8,6 +8,8 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,6 +19,7 @@ import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,7 +29,6 @@ import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.ws.WebServiceException;
 
 /**
  * Writer for PuTTY ".ppk" keyfiles<br />
@@ -53,9 +55,23 @@ public class PuttyKeyWriter implements Closeable {
 		this.outputStream = outputStream;
 	}
 
-	public void writePuttyKeyFormat(final PuttyKey puttyKey, final String password) throws Exception {
+	public void writePublicKey(final PuttyKey puttyKey) throws Exception {
+		final byte[] publicKeyBytes = puttyKey.getPublicKeyBytes();
+
+		final String publicKeyBase64 = toWrappedBase64(publicKeyBytes, 64, "\r\n");
+
+		final StringBuilder content = new StringBuilder();
+		content.append("---- BEGIN SSH2 PUBLIC KEY ----").append("\r\n");
+		content.append("Comment: ").append(puttyKey.getComment()).append("\r\n");
+		content.append(publicKeyBase64).append("\r\n");
+		content.append("---- END SSH2 PUBLIC KEY ----").append("\r\n");
+
+		outputStream.write(content.toString().getBytes("ISO-8859-1"));
+	}
+
+	public void writePrivatePuttyKeyFormat(final PuttyKey puttyKey, final char[] password) throws Exception {
 		final String algorithmName = puttyKey.getAlgorithm();
-		final byte[] passwordBytes = password == null ? null : password.getBytes("ISO-8859-1");
+		final byte[] passwordBytes = password == null || password.length == 0 ? null : toBytes(password, "ISO-8859-1");
 
 		final byte[] publicKeyBytes = puttyKey.getPublicKeyBytes();
 		byte[] privateKeyBytes = puttyKey.getPrivateKeyBytes();
@@ -166,8 +182,8 @@ public class PuttyKeyWriter implements Closeable {
 	 * Using default encryption method "AES-128-CBC"<br />
 	 * This format includes private and public key data and is accepted by PuTTY's key import<br />
 	 */
-	public void writeProtectedPemFormat(final PuttyKey puttyKey, final String exportedKeyPassword) throws Exception {
-		writeProtectedPemFormat(puttyKey, null, exportedKeyPassword);
+	public void writeProtectedPemFormat(final PuttyKey puttyKey, final char[] password) throws Exception {
+		writeProtectedPemFormat(puttyKey, null, password);
 	}
 
 	/**
@@ -178,7 +194,7 @@ public class PuttyKeyWriter implements Closeable {
 	 *   default is "AES-128-CBC"<br />
 	 *   other value may be "DES-EDE3-CBC"<br />
 	 */
-	public void writeProtectedPemFormat(final PuttyKey puttyKey, String keyEncryptionCipherName, final String exportedKeyPassword) throws Exception {
+	public void writeProtectedPemFormat(final PuttyKey puttyKey, String keyEncryptionCipherName, final char[] password) throws Exception {
 		if (keyEncryptionCipherName == null || "".equals(keyEncryptionCipherName.trim())) {
 			keyEncryptionCipherName = AES128_PemEncryptionMethodName;
 		}
@@ -187,7 +203,7 @@ public class PuttyKeyWriter implements Closeable {
 			throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
 		}
 
-		if (exportedKeyPassword == null || "".equals(exportedKeyPassword)) {
+		if (password == null || password.length == 0) {
 			throw new Exception("Mandatory password is missing");
 		}
 
@@ -223,14 +239,14 @@ public class PuttyKeyWriter implements Closeable {
 			rnd.nextBytes(iv);
 			ivString = toHexString(iv);
 			cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(exportedKeyPassword, iv, 8, 24), "DESede"), new IvParameterSpec(iv));
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(password, iv, 8, 24), "DESede"), new IvParameterSpec(iv));
 			keyData = addSecurePadding(keyData, 16);
 		} else if (AES128_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
 			final byte[] iv = new byte[16];
 			rnd.nextBytes(iv);
 			ivString = toHexString(iv);
 			cipher = Cipher.getInstance("AES/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(exportedKeyPassword, iv, 8, 16), "AES"), new IvParameterSpec(iv));
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(password, iv, 8, 16), "AES"), new IvParameterSpec(iv));
 			keyData = addSecurePadding(keyData, 16);
 		} else {
 			throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
@@ -271,8 +287,8 @@ public class PuttyKeyWriter implements Closeable {
 		return headerBuilder.toString();
 	}
 
-	private static byte[] stretchPasswordForOpenSsl(final String password, final byte[] iv, final int usingIvSize, final int keySize) throws Exception {
-		final byte[] passphraseBytes = password.getBytes("ISO-8859-1");
+	private static byte[] stretchPasswordForOpenSsl(final char[] password, final byte[] iv, final int usingIvSize, final int keySize) throws Exception {
+		final byte[] passphraseBytes = toBytes(password, "ISO-8859-1");
 		final MessageDigest hash = MessageDigest.getInstance("MD5");
 		final byte[] key = new byte[keySize];
 		int hashesSize = keySize & 0XFFFFFFF0;
@@ -431,8 +447,15 @@ public class PuttyKeyWriter implements Closeable {
 		}
 	}
 
+	private static byte[] toBytes(final char[] chars, final String encoding) {
+		final ByteBuffer byteBuffer = Charset.forName(encoding).encode(CharBuffer.wrap(chars));
+		final byte[] bytes = Arrays.copyOfRange(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
+		Arrays.fill(byteBuffer.array(), (byte) 0); // clear sensitive data
+		return bytes;
+	}
+
 	@Override
-	public void close() throws WebServiceException {
+	public void close() {
 		try {
 			outputStream.close();
 		} catch (final Exception e) {

@@ -13,7 +13,7 @@ public class PuttyKeyTest {
 
 		final ByteArrayOutputStream output = new ByteArrayOutputStream();
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(output)) {
-			puttyKeyWriter.writePuttyKeyFormat(puttyKey, "passwörd");
+			puttyKeyWriter.writePrivatePuttyKeyFormat(puttyKey, "passwörd".toCharArray());
 		}
 
 		PuttyKey puttyKey2;
@@ -24,7 +24,7 @@ public class PuttyKeyTest {
 
 		final ByteArrayOutputStream outputNoPassword = new ByteArrayOutputStream();
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(outputNoPassword)) {
-			puttyKeyWriter.writePuttyKeyFormat(puttyKey, null);
+			puttyKeyWriter.writePrivatePuttyKeyFormat(puttyKey, null);
 		}
 
 		PuttyKey puttyKey3;
@@ -63,7 +63,7 @@ public class PuttyKeyTest {
 
 		final ByteArrayOutputStream output3 = new ByteArrayOutputStream();
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(output3)) {
-			puttyKeyWriter.writeProtectedPemFormat(puttyKey, "DES-EDE3-CBC", "passwörd");
+			puttyKeyWriter.writeProtectedPemFormat(puttyKey, "DES-EDE3-CBC", "passwörd".toCharArray());
 		}
 		if (output3.toByteArray() == null || output3.toByteArray().length == 0) {
 			throw new Exception();
