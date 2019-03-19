@@ -13,7 +13,7 @@ public class PuttyKeyTest {
 
 		final ByteArrayOutputStream output = new ByteArrayOutputStream();
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(output)) {
-			puttyKeyWriter.writePrivatePuttyKeyFormat(puttyKey, "passwörd".toCharArray());
+			puttyKeyWriter.writePuttyKeyFormat(puttyKey, "passwörd".toCharArray());
 		}
 
 		PuttyKey puttyKey2;
@@ -24,7 +24,7 @@ public class PuttyKeyTest {
 
 		final ByteArrayOutputStream outputNoPassword = new ByteArrayOutputStream();
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(outputNoPassword)) {
-			puttyKeyWriter.writePrivatePuttyKeyFormat(puttyKey, null);
+			puttyKeyWriter.writePuttyKeyFormat(puttyKey, null);
 		}
 
 		PuttyKey puttyKey3;
@@ -44,8 +44,8 @@ public class PuttyKeyTest {
 		}
 
 		final ByteArrayOutputStream output2 = new ByteArrayOutputStream();
-		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(output2)) {
-			puttyKeyWriter.writeUnprotectedPemFormat(puttyKey2);
+		try (OpenSshKeyWriter writer = new OpenSshKeyWriter(output2)) {
+			writer.writePKCS1Format(puttyKey2.getKeyPair());
 		}
 		if (output2.toByteArray() == null || output2.toByteArray().length == 0) {
 			throw new Exception();
@@ -62,8 +62,8 @@ public class PuttyKeyTest {
 		}
 
 		final ByteArrayOutputStream output3 = new ByteArrayOutputStream();
-		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(output3)) {
-			puttyKeyWriter.writeProtectedPemFormat(puttyKey, "DES-EDE3-CBC", "passwörd".toCharArray());
+		try (OpenSshKeyWriter writer = new OpenSshKeyWriter(output3)) {
+			writer.writePKCS8Format(puttyKey.getKeyPair(), "DES-EDE3-CBC", "passwörd".toCharArray());
 		}
 		if (output3.toByteArray() == null || output3.toByteArray().length == 0) {
 			throw new Exception();

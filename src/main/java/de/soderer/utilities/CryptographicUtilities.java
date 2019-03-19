@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigInteger;
@@ -105,7 +104,6 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.util.io.pem.PemObject;
 
 /**
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
@@ -893,25 +891,6 @@ public class CryptographicUtilities {
 		} catch (final Exception e) {
 			throw new PEMException("Unable to convert key pair: " + e.getMessage(), e);
 		}
-	}
-
-	public static PEMKeyPair getPemKeyPairFromPuttyKey(final PuttyKey puttyKey) throws Exception {
-		final ByteArrayOutputStream out = new ByteArrayOutputStream();
-		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(out)) {
-			puttyKeyWriter.writeUnprotectedPemFormat(puttyKey);
-		}
-		return getPEMKeyPairFromString(new String(out.toByteArray()));
-	}
-
-	public static String convertPuttyKeyToPublicOpenSshKey(final PuttyKey puttyKey) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		final KeyPair keyPair = puttyKey.getKeyPair();
-		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try (JcaPEMWriter writer = new JcaPEMWriter(new PrintWriter(outputStream))) {
-			writer.writeObject(new PemObject(puttyKey.getComment() + " public key", keyPair.getPublic().getEncoded()));
-		}
-		return new String(outputStream.toByteArray(), "UTF-8");
 	}
 
 	/**

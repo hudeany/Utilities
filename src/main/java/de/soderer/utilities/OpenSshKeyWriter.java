@@ -48,10 +48,29 @@ public class OpenSshKeyWriter implements Closeable {
 	}
 
 	/**
+	 * Converts this keypair into unprotected PEM format (PKCS#1) for OpenSSH keys<br />
+	 * This format includes private and public key data and is accepted by PuTTY's key import<br />
+	 * <br />
+	 * <b>Use with caution, because this key format is not protected by any password</>
+	 */
+	public void writePKCS1Format(final KeyPair keyPair) throws Exception {
+		if (keyPair.getPrivate() != null) {
+			writePKCS1Format(keyPair.getPrivate());
+			if (keyPair.getPublic() != null) {
+				writePKCS1Format(keyPair.getPublic());
+			}
+		} else if (keyPair.getPublic() != null) {
+			writePKCS1Format(keyPair.getPublic());
+		} else {
+			throw new Exception("No keydata included in keypair");
+		}
+	}
+
+	/**
 	 * Converts this public key into unprotected PEM format (PKCS#1) for OpenSSH keys<br />
 	 * This format includes public key data only and is NOT accepted by PuTTY's key import<br />
 	 */
-	public void writePublicKey(final PublicKey publicKey) throws Exception {
+	public void writePKCS1Format(final PublicKey publicKey) throws Exception {
 		final byte[] publicKeyBytes = getPublicKeyBytes(publicKey);
 
 		final String publicKeyBase64 = toWrappedBase64(publicKeyBytes, 64, "\r\n");
@@ -67,9 +86,10 @@ public class OpenSshKeyWriter implements Closeable {
 	/**
 	 * Converts this private key into unprotected PEM format (PKCS#1) for OpenSSH keys<br />
 	 * This format includes private key data only and is NOT accepted by PuTTY's key import<br />
-	 * @throws Exception
+	 * <br />
+	 * <b>Use with caution, because this key format is not protected by any password</>
 	 */
-	public void writePrivateKey(final PrivateKey privateKey) throws Exception {
+	public void writePKCS1Format(final PrivateKey privateKey) throws Exception {
 		final byte[] privateKeyBytes = getPrivateKeyBytes(privateKey);
 
 		final String privateKeyBase64 = toWrappedBase64(privateKeyBytes, 64, "\r\n");
@@ -87,8 +107,17 @@ public class OpenSshKeyWriter implements Closeable {
 	 * Using default encryption method "AES-128-CBC"<br />
 	 * This format includes private and public key data and is accepted by PuTTY's key import<br />
 	 */
-	public void writePrivateAndPublicKey(final KeyPair keyPair, final char[] password) throws Exception {
-		writePrivateAndPublicKey(keyPair, null, password);
+	public void writePKCS8Format(final KeyPair keyPair) throws Exception {
+		writePKCS8Format(keyPair, null, null);
+	}
+
+	/**
+	 * Converts this key into unprotected PEM format (PKCS#8) for OpenSSH keys<br />
+	 * Using default encryption method "AES-128-CBC"<br />
+	 * This format includes private and public key data and is accepted by PuTTY's key import<br />
+	 */
+	public void writePKCS8Format(final KeyPair keyPair, final char[] password) throws Exception {
+		writePKCS8Format(keyPair, null, password);
 	}
 
 	/**
@@ -99,19 +128,7 @@ public class OpenSshKeyWriter implements Closeable {
 	 *   default is "AES-128-CBC"<br />
 	 *   other value may be "DES-EDE3-CBC"<br />
 	 */
-	public void writePrivateAndPublicKey(final KeyPair keyPair, String keyEncryptionCipherName, final char[] password) throws Exception {
-		if (keyEncryptionCipherName == null || "".equals(keyEncryptionCipherName.trim())) {
-			keyEncryptionCipherName = AES128_PemEncryptionMethodName;
-		}
-
-		if (!AES128_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName) && !TripleDES_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
-			throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
-		}
-
-		if (password == null || password.length == 0) {
-			throw new Exception("Mandatory password is missing");
-		}
-
+	public void writePKCS8Format(final KeyPair keyPair, String keyEncryptionCipherName, final char[] password) throws Exception {
 		String keyTypeName;
 		byte[] keyData;
 		final String algorithmName = getAlgorithm(keyPair);
@@ -136,43 +153,53 @@ public class OpenSshKeyWriter implements Closeable {
 
 		final Map<String, String> headers = new LinkedHashMap<>();
 
-		final SecureRandom rnd = new SecureRandom();
-		final Cipher cipher;
-		final String ivString;
-		if (TripleDES_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
-			final byte[] iv = new byte[8];
-			rnd.nextBytes(iv);
-			ivString = toHexString(iv);
-			cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(password, iv, 8, 24), "DESede"), new IvParameterSpec(iv));
-			keyData = addSecurePadding(keyData, 16);
-		} else if (AES128_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
-			final byte[] iv = new byte[16];
-			rnd.nextBytes(iv);
-			ivString = toHexString(iv);
-			cipher = Cipher.getInstance("AES/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(password, iv, 8, 16), "AES"), new IvParameterSpec(iv));
-			keyData = addSecurePadding(keyData, 16);
-		} else {
-			throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
-		}
-		headers.put("Proc-Type", "4,ENCRYPTED");
-		headers.put("DEK-Info", keyEncryptionCipherName.toUpperCase() + "," + ivString);
+		if (password != null && password.length > 0) {
+			if (keyEncryptionCipherName == null || "".equals(keyEncryptionCipherName.trim())) {
+				keyEncryptionCipherName = AES128_PemEncryptionMethodName;
+			}
 
-		final byte[] encryptedKeyData = cipher.doFinal(keyData);
+			if (!AES128_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName) && !TripleDES_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
+				throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
+			}
+
+			final SecureRandom rnd = new SecureRandom();
+			final Cipher cipher;
+			final String ivString;
+			if (TripleDES_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
+				final byte[] iv = new byte[8];
+				rnd.nextBytes(iv);
+				ivString = toHexString(iv);
+				cipher = Cipher.getInstance("DESede/CBC/NoPadding");
+				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(password, iv, 8, 24), "DESede"), new IvParameterSpec(iv));
+				keyData = addSecurePadding(keyData, 16);
+			} else if (AES128_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
+				final byte[] iv = new byte[16];
+				rnd.nextBytes(iv);
+				ivString = toHexString(iv);
+				cipher = Cipher.getInstance("AES/CBC/NoPadding");
+				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(password, iv, 8, 16), "AES"), new IvParameterSpec(iv));
+				keyData = addSecurePadding(keyData, 16);
+			} else {
+				throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
+			}
+			headers.put("Proc-Type", "4,ENCRYPTED");
+			headers.put("DEK-Info", keyEncryptionCipherName.toUpperCase() + "," + ivString);
+
+			keyData = cipher.doFinal(keyData);
+		}
 
 		outputStream.write(("-----BEGIN " + keyTypeName + "-----\n").getBytes("UTF-8"));
 		outputStream.write(getPemHeaderLines(headers, 76).getBytes("UTF-8"));
-		outputStream.write(toWrappedBase64(encryptedKeyData, 76, "\n").getBytes("UTF-8"));
+		outputStream.write(toWrappedBase64(keyData, 76, "\n").getBytes("UTF-8"));
 		outputStream.write(("\n-----END " + keyTypeName + "-----\n").getBytes("UTF-8"));
 	}
 
 	/**
-	 * Converts this key into unprotected DER format for OpenSSH keys<br />
+	 * Converts this key into unprotected DER format (binary data) for OpenSSH keys<br />
 	 * <br />
 	 * <b>Use with caution, because this key format is not protected by any password</>
 	 */
-	public void writeUnprotectedDerFormat(final KeyPair keyPair) throws Exception {
+	public void writeDerFormat(final KeyPair keyPair) throws Exception {
 		final String algorithmName = getAlgorithm(keyPair);
 		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createRsaBinaryKey(keyPair));
@@ -189,41 +216,9 @@ public class OpenSshKeyWriter implements Closeable {
 		}
 	}
 
-	/**
-	 * Converts this key into unprotected PEM format (PKCS#1) for OpenSSH keys<br />
-	 * <br />
-	 * <b>Use with caution, because this key format is not protected by any password</>
-	 */
-	public void writeUnprotectedPemFormat(final KeyPair keyPair) throws Exception {
-		final String algorithmName = getAlgorithm(keyPair);
-		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
-			outputStream.write("-----BEGIN RSA PRIVATE KEY-----\n".getBytes("UTF-8"));
-			outputStream.write(toWrappedBase64(createRsaBinaryKey(keyPair), 64, "\n").getBytes("UTF-8"));
-			outputStream.write("\n-----END RSA PRIVATE KEY-----\n".getBytes("UTF-8"));
-		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
-			outputStream.write("-----BEGIN DSA PRIVATE KEY-----\n".getBytes("UTF-8"));
-			outputStream.write(toWrappedBase64(createDssBinaryKey(keyPair), 64, "\n").getBytes("UTF-8"));
-			outputStream.write("\n-----END DSA PRIVATE KEY-----\n".getBytes("UTF-8"));
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)) {
-			outputStream.write("-----BEGIN EC PRIVATE KEY-----\n".getBytes("UTF-8"));
-			outputStream.write(toWrappedBase64(createEcdsaBinaryKey(keyPair, OID.SECP256R1_ARRAY), 64, "\n").getBytes("UTF-8"));
-			outputStream.write("\n-----END EC PRIVATE KEY-----\n".getBytes("UTF-8"));
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)) {
-			outputStream.write("-----BEGIN EC PRIVATE KEY-----\n".getBytes("UTF-8"));
-			outputStream.write(toWrappedBase64(createEcdsaBinaryKey(keyPair, OID.SECP384R1_ARRAY), 64, "\n").getBytes("UTF-8"));
-			outputStream.write("\n-----END EC PRIVATE KEY-----\n".getBytes("UTF-8"));
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
-			outputStream.write("-----BEGIN EC PRIVATE KEY-----\n".getBytes("UTF-8"));
-			outputStream.write(toWrappedBase64(createEcdsaBinaryKey(keyPair, OID.SECP521R1_ARRAY), 64, "\n").getBytes("UTF-8"));
-			outputStream.write("\n-----END EC PRIVATE KEY-----\n".getBytes("UTF-8"));
-		} else {
-			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
-		}
-	}
-
 	private static String getPemHeaderLines(final Map<String, String> headers, final int maxLineLimit) {
 		final StringBuilder headerBuilder = new StringBuilder();
-		if (!headers.isEmpty()) {
+		if (headers != null && !headers.isEmpty()) {
 			for (final Entry<String, String> entry : headers.entrySet()) {
 				headerBuilder.append(entry.getKey() + ": ");
 				if ((entry.getKey().length() + entry.getValue().length() + 2) > maxLineLimit) {
