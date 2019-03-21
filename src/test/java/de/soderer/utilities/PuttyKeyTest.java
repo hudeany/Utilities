@@ -13,23 +13,22 @@ public class PuttyKeyTest {
 
 		final ByteArrayOutputStream output = new ByteArrayOutputStream();
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(output)) {
-			puttyKeyWriter.writePuttyKeyFormat(puttyKey, "passwörd".toCharArray());
+			puttyKeyWriter.writeKey(puttyKey, "passwörd".toCharArray());
 		}
 
 		PuttyKey puttyKey2;
 		try (PuttyKeyReader puttyKeyReader = new PuttyKeyReader(new ByteArrayInputStream(output.toByteArray()))) {
-			puttyKeyReader.setPassword("passwörd".toCharArray());
-			puttyKey2 = puttyKeyReader.readKey();
+			puttyKey2 = puttyKeyReader.readKey("passwörd".toCharArray());
 		}
 
 		final ByteArrayOutputStream outputNoPassword = new ByteArrayOutputStream();
 		try (PuttyKeyWriter puttyKeyWriter = new PuttyKeyWriter(outputNoPassword)) {
-			puttyKeyWriter.writePuttyKeyFormat(puttyKey, null);
+			puttyKeyWriter.writeKey(puttyKey, null);
 		}
 
 		PuttyKey puttyKey3;
 		try (PuttyKeyReader puttyKeyReader = new PuttyKeyReader(new ByteArrayInputStream(outputNoPassword.toByteArray()))) {
-			puttyKey3 = puttyKeyReader.readKey();
+			puttyKey3 = puttyKeyReader.readKey(null);
 		}
 
 		if (puttyKey.getMd5Fingerprint() == null || puttyKey.getMd5Fingerprint().length() == 0

@@ -43,7 +43,7 @@ public class PuttyKeyWriter implements Closeable {
 		this.outputStream = outputStream;
 	}
 
-	public void writePuttyKeyFormat(final PuttyKey puttyKey, final char[] password) throws Exception {
+	public void writeKey(final PuttyKey puttyKey, final char[] password) throws Exception {
 		final String algorithmName = puttyKey.getAlgorithm();
 		final byte[] passwordBytes = password == null || password.length == 0 ? null : toBytes(password, "ISO-8859-1");
 
@@ -56,7 +56,7 @@ public class PuttyKeyWriter implements Closeable {
 		final String macHash = calculateMacChecksum(passwordBytes, algorithmName, puttyKey.getComment(), publicKeyBytes, privateKeyBytes);
 
 		if (passwordBytes != null) {
-			final byte[] puttyKeyEncryptionKey = stretchPasswordForPutty(passwordBytes);
+			final byte[] puttyKeyEncryptionKey = stretchPassword(passwordBytes);
 
 			final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(puttyKeyEncryptionKey, 0, 32, "AES"), new IvParameterSpec(new byte[16])); // initial vector=0
@@ -80,7 +80,7 @@ public class PuttyKeyWriter implements Closeable {
 		outputStream.write(content.toString().getBytes("ISO-8859-1"));
 	}
 
-	private static byte[] stretchPasswordForPutty(final byte[] passwordByteArray) throws NoSuchAlgorithmException {
+	private static byte[] stretchPassword(final byte[] passwordByteArray) throws NoSuchAlgorithmException {
 		final byte[] puttyKeyEncryptionKey = new byte[32];
 		final MessageDigest digest = MessageDigest.getInstance("SHA-1");
 

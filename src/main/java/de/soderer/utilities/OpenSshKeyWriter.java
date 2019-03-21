@@ -2,8 +2,6 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -20,7 +18,6 @@ import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -32,12 +29,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class OpenSshKeyWriter implements Closeable {
-	public static String SSH_CIPHER_NAME_RSA = "ssh-rsa";
-	public static String SSH_CIPHER_NAME_DSA = "ssh-dss";
-	public static String SSH_CIPHER_NAME_ECDSA_NISTP256 = "ecdsa-sha2-nistp256";
-	public static String SSH_CIPHER_NAME_ECDSA_NISTP384 = "ecdsa-sha2-nistp384";
-	public static String SSH_CIPHER_NAME_ECDSA_NISTP521 = "ecdsa-sha2-nistp521";
-
 	private static final String AES128_PemEncryptionMethodName = "AES-128-CBC";
 	private static final String TripleDES_PemEncryptionMethodName = "DES-EDE3-CBC";
 
@@ -71,7 +62,7 @@ public class OpenSshKeyWriter implements Closeable {
 	 * This format includes public key data only and is NOT accepted by PuTTY's key import<br />
 	 */
 	public void writePKCS1Format(final PublicKey publicKey) throws Exception {
-		final byte[] publicKeyBytes = getPublicKeyBytes(publicKey);
+		final byte[] publicKeyBytes = KeyPairUtilities.getPublicKeyBytes(publicKey);
 
 		final String publicKeyBase64 = toWrappedBase64(publicKeyBytes, 64, "\r\n");
 
@@ -90,7 +81,7 @@ public class OpenSshKeyWriter implements Closeable {
 	 * <b>Use with caution, because this key format is not protected by any password</>
 	 */
 	public void writePKCS1Format(final PrivateKey privateKey) throws Exception {
-		final byte[] privateKeyBytes = getPrivateKeyBytes(privateKey);
+		final byte[] privateKeyBytes = KeyPairUtilities.getPrivateKeyBytes(privateKey);
 
 		final String privateKeyBase64 = toWrappedBase64(privateKeyBytes, 64, "\r\n");
 
@@ -100,15 +91,6 @@ public class OpenSshKeyWriter implements Closeable {
 		content.append("---- END SSH2 PRIVATE KEY ----").append("\r\n");
 
 		outputStream.write(content.toString().getBytes("UTF-8"));
-	}
-
-	/**
-	 * Converts this key into unprotected PEM format (PKCS#8) for OpenSSH keys<br />
-	 * Using default encryption method "AES-128-CBC"<br />
-	 * This format includes private and public key data and is accepted by PuTTY's key import<br />
-	 */
-	public void writePKCS8Format(final KeyPair keyPair) throws Exception {
-		writePKCS8Format(keyPair, null, null);
 	}
 
 	/**
@@ -131,20 +113,20 @@ public class OpenSshKeyWriter implements Closeable {
 	public void writePKCS8Format(final KeyPair keyPair, String keyEncryptionCipherName, final char[] password) throws Exception {
 		String keyTypeName;
 		byte[] keyData;
-		final String algorithmName = getAlgorithm(keyPair);
-		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
+		final String algorithmName = KeyPairUtilities.getAlgorithm(keyPair);
+		if (KeyPairUtilities.SSH_ALGORITHM_NAME_RSA.equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "RSA PRIVATE KEY";
 			keyData = createRsaBinaryKey(keyPair);
-		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
+		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_DSA.equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "DSA PRIVATE KEY";
 			keyData = createDssBinaryKey(keyPair);
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)) {
+		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "EC PRIVATE KEY";
 			keyData = createEcdsaBinaryKey(keyPair, OID.SECP256R1_ARRAY);
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)) {
+		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "EC PRIVATE KEY";
 			keyData = createEcdsaBinaryKey(keyPair, OID.SECP384R1_ARRAY);
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
+		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "EC PRIVATE KEY";
 			keyData = createEcdsaBinaryKey(keyPair, OID.SECP521R1_ARRAY);
 		} else {
@@ -200,16 +182,16 @@ public class OpenSshKeyWriter implements Closeable {
 	 * <b>Use with caution, because this key format is not protected by any password</>
 	 */
 	public void writeDerFormat(final KeyPair keyPair) throws Exception {
-		final String algorithmName = getAlgorithm(keyPair);
-		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
+		final String algorithmName = KeyPairUtilities.getAlgorithm(keyPair);
+		if (KeyPairUtilities.SSH_ALGORITHM_NAME_RSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createRsaBinaryKey(keyPair));
-		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
+		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_DSA.equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createDssBinaryKey(keyPair));
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)) {
+		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createEcdsaBinaryKey(keyPair, OID.SECP256R1_ARRAY));
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)) {
+		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createEcdsaBinaryKey(keyPair, OID.SECP384R1_ARRAY));
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
+		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createEcdsaBinaryKey(keyPair, OID.SECP521R1_ARRAY));
 		} else {
 			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
@@ -358,189 +340,12 @@ public class OpenSshKeyWriter implements Closeable {
 		return bytes;
 	}
 
-	private static byte[] getPublicKeyBytes(final PublicKey publicKey) throws Exception {
-		final BlockDataWriter publicKeyWriter = new BlockDataWriter();
-		final String algorithmName = getAlgorithm(publicKey);
-		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
-			final RSAPublicKey publicKeyRSA = ((RSAPublicKey) publicKey);
-			publicKeyWriter.writeString(SSH_CIPHER_NAME_RSA);
-			publicKeyWriter.writeBigInt(publicKeyRSA.getPublicExponent());
-			publicKeyWriter.writeBigInt(publicKeyRSA.getModulus());
-			return publicKeyWriter.toByteArray();
-		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
-			final DSAPublicKey publicKeyDSA = ((DSAPublicKey) publicKey);
-			publicKeyWriter.writeString(SSH_CIPHER_NAME_DSA);
-			publicKeyWriter.writeBigInt(publicKeyDSA.getParams().getP());
-			publicKeyWriter.writeBigInt(publicKeyDSA.getParams().getQ());
-			publicKeyWriter.writeBigInt(publicKeyDSA.getParams().getG());
-			publicKeyWriter.writeBigInt(publicKeyDSA.getY());
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)
-				|| SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)
-				|| SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
-			final ECPublicKey publicKeyEC = ((ECPublicKey) publicKey);
-			final int bitLength = publicKeyEC.getW().getAffineX().bitLength();
-			String curveName = null;
-			int qLength;
-			if (bitLength <= 256) {
-				curveName = "nistp256";
-				qLength = 65;
-			} else if (bitLength <= 384) {
-				curveName = "nistp384";
-				qLength = 97;
-			} else if (bitLength <= 521) {
-				curveName = "nistp521";
-				qLength = 133;
-			} else {
-				throw new Exception("Unsupported ECDSA bit length: " + bitLength);
-			}
-
-			publicKeyWriter.writeString(algorithmName);
-			publicKeyWriter.writeString(curveName);
-
-			final byte[] javaEncoding = publicKeyEC.getEncoded();
-			final byte[] q = new byte[qLength];
-			System.arraycopy(javaEncoding, javaEncoding.length - qLength, q, 0, qLength);
-			publicKeyWriter.writeData(q);
-		} else {
-			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
-		}
-		return publicKeyWriter.toByteArray();
-	}
-
-	private static byte[] getPrivateKeyBytes(final PrivateKey privateKey) throws Exception {
-		final BlockDataWriter privateKeyWriter = new BlockDataWriter();
-		final String algorithmName = getAlgorithm(privateKey);
-		if (SSH_CIPHER_NAME_RSA.equalsIgnoreCase(algorithmName)) {
-			final RSAPrivateCrtKey privateKeyRSA = ((RSAPrivateCrtKey) privateKey);
-			privateKeyWriter.writeBigInt(privateKeyRSA.getPrivateExponent());
-			privateKeyWriter.writeBigInt(privateKeyRSA.getPrimeP());
-			privateKeyWriter.writeBigInt(privateKeyRSA.getPrimeQ());
-			privateKeyWriter.writeBigInt(privateKeyRSA.getCrtCoefficient());
-		} else if (SSH_CIPHER_NAME_DSA.equalsIgnoreCase(algorithmName)) {
-			final DSAPrivateKey privateKeyDSA = ((DSAPrivateKey) privateKey);
-			privateKeyWriter.writeBigInt(privateKeyDSA.getX());
-		} else if (SSH_CIPHER_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)
-				|| SSH_CIPHER_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)
-				|| SSH_CIPHER_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
-			final ECPrivateKey privateKeyEC = ((ECPrivateKey) privateKey);
-			privateKeyWriter.writeBigInt(privateKeyEC.getS());
-		} else {
-			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
-		}
-		return privateKeyWriter.toByteArray();
-	}
-
-	/**
-	 * Key type<br />
-	 * "ssh-rsa" for RSA key<br />
-	 * "ssh-dss" for DSA key<br />
-	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br />
-	 */
-	private static String getAlgorithm(final KeyPair keyPair) throws Exception {
-		if (keyPair.getPublic() != null) {
-			return getAlgorithm(keyPair.getPublic());
-		} else if (keyPair.getPrivate() != null) {
-			return getAlgorithm(keyPair.getPrivate());
-		} else{
-			throw new IllegalArgumentException("Keypair contains no key data");
-		}
-	}
-
-	/**
-	 * Key type<br />
-	 * "ssh-rsa" for RSA key<br />
-	 * "ssh-dss" for DSA key<br />
-	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br />
-	 */
-	private static String getAlgorithm(final PublicKey publicKey) throws Exception {
-		if (publicKey.getAlgorithm().equals("RSA")){
-			return SSH_CIPHER_NAME_RSA;
-		} else if(publicKey.getAlgorithm().equals("DSA")){
-			return SSH_CIPHER_NAME_DSA;
-		} else if(publicKey.getAlgorithm().equals("EC")){
-			final int bitLength = ((ECPublicKey) publicKey).getW().getAffineX().bitLength();
-			if (bitLength <= 256) {
-				return SSH_CIPHER_NAME_ECDSA_NISTP256;
-			} else if (bitLength <= 384) {
-				return SSH_CIPHER_NAME_ECDSA_NISTP384;
-			} else if (bitLength <= 521) {
-				return SSH_CIPHER_NAME_ECDSA_NISTP521;
-			} else {
-				throw new Exception("Unsupported ECDSA bit length: " + bitLength);
-			}
-		} else{
-			throw new IllegalArgumentException("Unknown public key cipher");
-		}
-	}
-
-	/**
-	 * Key type<br />
-	 * "ssh-rsa" for RSA key<br />
-	 * "ssh-dss" for DSA key<br />
-	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br />
-	 */
-	private static String getAlgorithm(final PrivateKey privateKey) throws Exception {
-		if (privateKey instanceof RSAPrivateCrtKey) {
-			return SSH_CIPHER_NAME_RSA;
-		} else if (privateKey instanceof DSAPrivateKey) {
-			return SSH_CIPHER_NAME_DSA;
-		} else if (privateKey instanceof ECPrivateKey) {
-			final int bitLength = ((ECPrivateKey) privateKey).getS().bitLength();
-			if (bitLength <= 256) {
-				return SSH_CIPHER_NAME_ECDSA_NISTP256;
-			} else if (bitLength <= 384) {
-				return SSH_CIPHER_NAME_ECDSA_NISTP384;
-			} else if (bitLength <= 521) {
-				return SSH_CIPHER_NAME_ECDSA_NISTP521;
-			} else {
-				throw new Exception("Unsupported ECDSA bit length: " + bitLength);
-			}
-		} else{
-			throw new IllegalArgumentException("Unknown private key cipher");
-		}
-	}
-
 	@Override
 	public void close() {
 		try {
 			outputStream.close();
 		} catch (final Exception e) {
 			e.printStackTrace();
-		}
-	}
-
-	private static class BlockDataWriter {
-		private final ByteArrayOutputStream outputStream;
-		private final DataOutput keyDataOutput;
-
-		private BlockDataWriter() {
-			outputStream = new ByteArrayOutputStream();
-			keyDataOutput = new DataOutputStream(outputStream);
-		}
-
-		private void writeBigInt(final BigInteger bigIntegerData) throws Exception {
-			writeData(bigIntegerData.toByteArray());
-		}
-
-		private void writeString(final String stringData) throws Exception {
-			writeData(stringData.getBytes("ISO-8859-1"));
-		}
-
-		private void writeData(final byte[] data) throws IOException, Exception {
-			try {
-				if (data.length <= 0) {
-					throw new Exception("Key blocksize error");
-				}
-
-				keyDataOutput.writeInt(data.length);
-				keyDataOutput.write(data);
-			} catch (final IOException e) {
-				throw new Exception("Key block write error", e);
-			}
-		}
-
-		private byte[] toByteArray() {
-			return outputStream.toByteArray();
 		}
 	}
 }
