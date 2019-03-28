@@ -29,7 +29,7 @@ public class SystemUtilities {
 	}
 
 	public static int getProcessId() {
-		String data = ManagementFactory.getRuntimeMXBean().getName();
+		final String data = ManagementFactory.getRuntimeMXBean().getName();
 		if (data.contains("@")) {
 			return Integer.parseInt(data.substring(0, data.indexOf("@")));
 		} else if (isLinuxSystem()) {
@@ -51,9 +51,9 @@ public class SystemUtilities {
 		return ManagementFactory.getRuntimeMXBean().getInputArguments();
 	}
 
-	public static Map<String, String> getRuntimeProperties(boolean humanReadable) {
-		Runtime runtime = Runtime.getRuntime();
-		Map<String, String> resultMap = new CaseInsensitiveMap<String>();
+	public static Map<String, String> getRuntimeProperties(final boolean humanReadable) {
+		final Runtime runtime = Runtime.getRuntime();
+		final Map<String, String> resultMap = new CaseInsensitiveMap<>();
 		if (humanReadable) {
 			resultMap.put("memory.total", Utilities.getHumanReadableNumber(runtime.totalMemory(), "B", false));
 			resultMap.put("memory.free", Utilities.getHumanReadableNumber(runtime.freeMemory(), "B", false));
@@ -79,22 +79,21 @@ public class SystemUtilities {
 
 	public static List<String> getProcessListRaw() {
 		try {
-			List<String> data = new ArrayList<String>();
+			final List<String> data = new ArrayList<>();
 			Process p;
 			if (getOsName().toLowerCase().contains("windows")) {
 				p = Runtime.getRuntime().exec(System.getenv("windir") + "\\system32\\" + "tasklist.exe");
 			} else {
 				p = Runtime.getRuntime().exec("ps -e");
 			}
-			BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			final BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			String line;
 			while ((line = input.readLine()) != null) {
 				data.add(line);
-				System.out.println(line);
 			}
 			input.close();
 			return data;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -107,7 +106,7 @@ public class SystemUtilities {
 	public static boolean isunlimitedKeyStrengthAllowed() {
 		try {
 			return Cipher.getMaxAllowedKeyLength("AES") == Integer.MAX_VALUE;
-		} catch (NoSuchAlgorithmException e) {
+		} catch (final NoSuchAlgorithmException e) {
 			return false;
 		}
 	}

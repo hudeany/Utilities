@@ -2,13 +2,15 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.security.KeyPair;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class PuttyKeyTest {
 	@Test
 	public void test() throws Exception {
-		final PuttyKey puttyKey = new PuttyKey("TestKey (Ä)", 2048);
+		final PuttyKey puttyKey = new PuttyKey("TestKey (Ä)", KeyPairUtilities.createRsaKeyPair(2048));
 		puttyKey.setComment("TestKey (Ä)");
 
 		final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -34,12 +36,12 @@ public class PuttyKeyTest {
 		if (puttyKey.getMd5Fingerprint() == null || puttyKey.getMd5Fingerprint().length() == 0
 				|| !puttyKey.getMd5Fingerprint().equals(puttyKey2.getMd5Fingerprint())
 				|| !puttyKey.getMd5Fingerprint().equals(puttyKey3.getMd5Fingerprint())) {
-			throw new Exception();
+			Assert.fail();
 		}
 
 		final String authKey = puttyKey2.encodePublicKeyForAuthorizedKeys();
 		if (authKey == null || authKey.length() == 0) {
-			throw new Exception();
+			Assert.fail();
 		}
 
 		final ByteArrayOutputStream output2 = new ByteArrayOutputStream();
@@ -47,17 +49,17 @@ public class PuttyKeyTest {
 			writer.writePKCS1Format(puttyKey2.getKeyPair());
 		}
 		if (output2.toByteArray() == null || output2.toByteArray().length == 0) {
-			throw new Exception();
+			Assert.fail();
 		}
 
 		final String pemString = CryptographicUtilities.writeKeyPairToProtectedPrivateOpenSshKey(puttyKey.getKeyPair(), false, null, "passwörd");
 		if (pemString == null || pemString.length() == 0) {
-			throw new Exception();
+			Assert.fail();
 		}
 
 		final String sha256Fingerprint = puttyKey.getSha256Fingerprint();
 		if (sha256Fingerprint == null || sha256Fingerprint.length() == 0) {
-			throw new Exception();
+			Assert.fail();
 		}
 
 		final ByteArrayOutputStream output3 = new ByteArrayOutputStream();
@@ -65,7 +67,91 @@ public class PuttyKeyTest {
 			writer.writePKCS8Format(puttyKey.getKeyPair(), "DES-EDE3-CBC", "passwörd".toCharArray());
 		}
 		if (output3.toByteArray() == null || output3.toByteArray().length == 0) {
-			throw new Exception();
+			Assert.fail();
 		}
+	}
+
+	@Test
+	public void testEc256() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp256");
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
+				writer.writeKey(new PuttyKey("Test key", keyPair), "password".toCharArray());
+			}
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+			Assert.fail();
+		}
+
+		PuttyKey readPuttyKey;
+		try (PuttyKeyReader reader = new PuttyKeyReader(new ByteArrayInputStream(data))) {
+			readPuttyKey = reader.readKey("password".toCharArray());
+		}
+		final String readsha256Fingerprint = readPuttyKey.getSha256Fingerprint();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+	}
+
+	@Test
+	public void testEc384() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp384");
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
+				writer.writeKey(new PuttyKey("Test key", keyPair), "password".toCharArray());
+			}
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+			Assert.fail();
+		}
+
+		PuttyKey readPuttyKey;
+		try (PuttyKeyReader reader = new PuttyKeyReader(new ByteArrayInputStream(data))) {
+			readPuttyKey = reader.readKey("password".toCharArray());
+		}
+		final String readsha256Fingerprint = readPuttyKey.getSha256Fingerprint();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+	}
+
+	@Test
+	public void testEc521() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp521");
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
+				writer.writeKey(new PuttyKey("Test key", keyPair), "password".toCharArray());
+			}
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+			Assert.fail();
+		}
+
+		PuttyKey readPuttyKey;
+		try (PuttyKeyReader reader = new PuttyKeyReader(new ByteArrayInputStream(data))) {
+			readPuttyKey = reader.readKey("password".toCharArray());
+		}
+		final String readsha256Fingerprint = readPuttyKey.getSha256Fingerprint();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
 	}
 }

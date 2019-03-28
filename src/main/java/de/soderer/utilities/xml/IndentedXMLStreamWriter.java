@@ -265,50 +265,47 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 
 	public void write(final Node node) throws Exception {
 		switch (node.getNodeType()) {
-		case Node.DOCUMENT_TYPE_NODE:
-			writer.writeDTD("<!DOCTYPE " + ((DocumentType)node).getName() + " PUBLIC \"" + ((DocumentType)node).getPublicId() + "\" \"" + ((DocumentType)node).getSystemId() + "\">");
-			writer.writeCharacters("\n");
-			break;
-		case Node.ELEMENT_NODE:
-			if ("host".equals(node.getNodeName())) {
-				System.out.println();
-			}
-			final NodeList childList = node.getChildNodes();
-			if (childList.getLength() == 0) {
-				writeEmptyElement(node.getNodeName());
-				final NamedNodeMap attributeList = node.getAttributes();
-				if (attributeList != null) {
-					for (int attributeIndex = 0; attributeIndex < attributeList.getLength(); attributeIndex++) {
-						final Node attribute = attributeList.item(attributeIndex);
-						writeAttribute(attribute.getNodeName(), attribute.getNodeValue());
+			case Node.DOCUMENT_TYPE_NODE:
+				writer.writeDTD("<!DOCTYPE " + ((DocumentType)node).getName() + " PUBLIC \"" + ((DocumentType)node).getPublicId() + "\" \"" + ((DocumentType)node).getSystemId() + "\">");
+				writer.writeCharacters("\n");
+				break;
+			case Node.ELEMENT_NODE:
+				final NodeList childList = node.getChildNodes();
+				if (childList.getLength() == 0) {
+					writeEmptyElement(node.getNodeName());
+					final NamedNodeMap attributeList = node.getAttributes();
+					if (attributeList != null) {
+						for (int attributeIndex = 0; attributeIndex < attributeList.getLength(); attributeIndex++) {
+							final Node attribute = attributeList.item(attributeIndex);
+							writeAttribute(attribute.getNodeName(), attribute.getNodeValue());
+						}
 					}
-				}
-			} else {
-				writeStartElement(node.getNodeName());
-				final NamedNodeMap attributeList = node.getAttributes();
-				if (attributeList != null) {
-					for (int attributeIndex = 0; attributeIndex < attributeList.getLength(); attributeIndex++) {
-						final Node attribute = attributeList.item(attributeIndex);
-						writeAttribute(attribute.getNodeName(), attribute.getNodeValue());
+				} else {
+					writeStartElement(node.getNodeName());
+					final NamedNodeMap attributeList = node.getAttributes();
+					if (attributeList != null) {
+						for (int attributeIndex = 0; attributeIndex < attributeList.getLength(); attributeIndex++) {
+							final Node attribute = attributeList.item(attributeIndex);
+							writeAttribute(attribute.getNodeName(), attribute.getNodeValue());
+						}
 					}
+					for (int childNodeIndex = 0; childNodeIndex < childList.getLength(); childNodeIndex++) {
+						final Node childNode = childList.item(childNodeIndex);
+						write(childNode);
+					}
+					writeEndElement();
 				}
-				for (int childNodeIndex = 0; childNodeIndex < childList.getLength(); childNodeIndex++) {
-					final Node childNode = childList.item(childNodeIndex);
-					write(childNode);
+				break;
+			case Node.TEXT_NODE:
+				if (node.getNodeValue() != null && (!node.getNodeValue().startsWith("\n") || !isBlank(node.getNodeValue()))) {
+					writeCharacters(node.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
 				}
-				writeEndElement();
-			}
-			break;
-		case Node.TEXT_NODE:
-			if (node.getNodeValue() != null && (!node.getNodeValue().startsWith("\n") || !isBlank(node.getNodeValue()))) {
-				writeCharacters(node.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
-			}
-			break;
-		case Node.COMMENT_NODE:
-			if (node.getNodeValue() != null) {
-				writeComment(node.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
-			}
-			break;
+				break;
+			case Node.COMMENT_NODE:
+				if (node.getNodeValue() != null) {
+					writeComment(node.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
+				}
+				break;
 		}
 	}
 

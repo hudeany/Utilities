@@ -8,10 +8,8 @@ import java.math.BigInteger;
 import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.ECGenParameterSpec;
@@ -30,52 +28,6 @@ public class PuttyKey {
 	private final KeyPair keyPair;
 
 	/**
-	 * Create a RSA PuTTY key of given strength
-	 */
-	public PuttyKey(final String comment, final int keyStrength) throws Exception {
-		if (keyStrength < 512) {
-			throw new Exception("Invalid RSA key strength: " + keyStrength);
-		}
-		this.comment = comment;
-		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-		keyPairGenerator.initialize(keyStrength);
-		keyPair = keyPairGenerator.generateKeyPair();
-	}
-
-	/**
-	 * Create a DSA PuTTY key of standard 1024 bit strength
-	 */
-	public PuttyKey(final String comment) throws Exception {
-		this.comment = comment;
-		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
-		keyPair = keyPairGenerator.generateKeyPair();
-	}
-
-	/**
-	 * Create a ECDSA PuTTY key of eliptic curve name.
-	 * Supported eliptic curve names are
-	 *   nistp256 or secp256
-	 *   nistp384 or secp384
-	 *   nistp521 or secp521
-	 */
-	public PuttyKey(final String comment, final String ecdsaCurveName) throws Exception {
-		if (ecdsaCurveName == null || "".equals(ecdsaCurveName.trim())) {
-			throw new Exception("Missing ECDSA curve name parameter");
-		}
-		final String curveName = ecdsaCurveName.replace("nist", "sec").toLowerCase().trim();
-		if (!"sep256".equals(curveName) && !"secp384".equals(curveName) && !"secp521".equals(curveName)) {
-			throw new Exception("Unknown ECDSA curve name: " + ecdsaCurveName);
-		}
-		this.comment = comment;
-		final AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
-		parameters.init(new ECGenParameterSpec(curveName + "r1"));
-		final ECParameterSpec ecParameterSpec = parameters.getParameterSpec(ECParameterSpec.class);
-		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
-		keyPairGenerator.initialize(ecParameterSpec, new SecureRandom());
-		keyPair = keyPairGenerator.generateKeyPair();
-	}
-
-	/**
 	 * Create a PuTTY key with given keypair
 	 */
 	public PuttyKey(final String comment, final KeyPair keyPair) throws Exception {
@@ -83,7 +35,7 @@ public class PuttyKey {
 		if (!keyPair.getPublic().getAlgorithm().equals("RSA")
 				&& !keyPair.getPublic().getAlgorithm().equals("DSA")
 				&& !keyPair.getPublic().getAlgorithm().equals("EC")) {
-			throw new IllegalArgumentException("Unknown public key encoding: " + keyPair.getPublic().getAlgorithm());
+			throw new IllegalArgumentException("Invalid public key algorithm for PuTTY key (only supports RSA / DSA / EC): " + keyPair.getPublic().getAlgorithm());
 		}
 		this.keyPair = keyPair;
 	}
@@ -95,9 +47,9 @@ public class PuttyKey {
 		try {
 			this.comment = comment;
 			final BlockDataReader publicKeyReader = new BlockDataReader(publicKeyBytes);
-			final String cipherName = publicKeyReader.readString();
-			if (cipherName == null || !cipherName.equalsIgnoreCase(algorithmName)) {
-				throw new Exception("Corrupt public key data: Cipher name in data differs from defined cipher name. Expected \"" + algorithmName + "\", but was \"" + cipherName + "\"");
+			final String keyAlgorithmName = publicKeyReader.readString();
+			if (keyAlgorithmName == null || !keyAlgorithmName.equalsIgnoreCase(algorithmName)) {
+				throw new Exception("Corrupt public key data: Algorithm name in data differs from defined algorithm name. Expected \"" + algorithmName + "\", but was \"" + keyAlgorithmName + "\"");
 			}
 			final BlockDataReader privateKeyReader = new BlockDataReader(privateKeyBytes);
 
@@ -148,11 +100,14 @@ public class PuttyKey {
 				}
 				final int xLength = (qLength - 1) / 2;
 
-				final BigInteger q = publicKeyReader.readBigInt();
+				final byte[] qBytes = publicKeyReader.readData();
+				if (4 != qBytes[0]) {
+					throw new Exception("Invalid key data found");
+				}
 				final byte[] x = new byte[xLength];
 				final byte[] y = new byte[xLength];
-				System.arraycopy(q.toByteArray(), 1, x, 0, xLength);
-				System.arraycopy(q.toByteArray(), xLength + 1, y, 0, xLength);
+				System.arraycopy(qBytes, 1, x, 0, xLength);
+				System.arraycopy(qBytes, xLength + 1, y, 0, xLength);
 
 				final KeyFactory keyFactory = KeyFactory.getInstance("EC");
 				final AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
@@ -166,7 +121,7 @@ public class PuttyKey {
 
 				keyPair = new KeyPair(publicKey, privateKey);
 			} else {
-				throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
+				throw new IllegalArgumentException("Invalid public key algorithm for PuTTY key (only supports RSA / DSA / EC): " + algorithmName);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot read key data", e);

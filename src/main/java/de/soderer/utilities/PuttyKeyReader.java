@@ -59,10 +59,10 @@ public class PuttyKeyReader implements Closeable {
 		dataReader = new BufferedReader(new InputStreamReader(inputStream, "ISO-8859-1"));
 	}
 
-	public PuttyKey readKey(final char[] passwordCharArray) throws Exception {
+	public PuttyKey readKey(final char[] password) throws Exception {
 		final byte[] passwordByteArray;
-		if (passwordCharArray != null && passwordCharArray.length > 0)  {
-			final CharBuffer charBuffer = CharBuffer.wrap(passwordCharArray);
+		if (password != null && password.length > 0)  {
+			final CharBuffer charBuffer = CharBuffer.wrap(password);
 			final ByteBuffer byteBuffer = Charset.forName("ISO-8859-1").encode(charBuffer);
 			passwordByteArray = Arrays.copyOfRange(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
 		} else {
@@ -74,10 +74,10 @@ public class PuttyKeyReader implements Closeable {
 		String latestHeaderName = null;
 		String nextLine;
 		while ((nextLine = dataReader.readLine()) != null) {
-			final int indexOfHeaderSeparatore = nextLine.indexOf(": ");
-			if (indexOfHeaderSeparatore > 0) {
-				final String headerName = nextLine.substring(0, indexOfHeaderSeparatore).trim();
-				headers.put(headerName, nextLine.substring(indexOfHeaderSeparatore + 2));
+			final int indexOfHeaderSeparator = nextLine.indexOf(": ");
+			if (indexOfHeaderSeparator > 0) {
+				final String headerName = nextLine.substring(0, indexOfHeaderSeparator).trim();
+				headers.put(headerName, nextLine.substring(indexOfHeaderSeparator + 2));
 				latestHeaderName = headerName;
 			} else {
 				if (!data.containsKey(latestHeaderName)) {

@@ -278,19 +278,33 @@ public class OpenSshKeyWriter implements Closeable {
 	}
 
 	private static byte[] createEcdsaBinaryKey(final KeyPair keyPair, final byte[] oidKey) throws Exception {
+		int keyPartLength;
+		if (Arrays.equals(OID.SECP256R1_ARRAY, oidKey)) {
+			keyPartLength = 66;
+		} else if (Arrays.equals(OID.SECP384R1_ARRAY, oidKey)) {
+			keyPartLength = 98;
+		} else if (Arrays.equals(OID.SECP521R1_ARRAY, oidKey)) {
+			keyPartLength = 134;
+		} else {
+			throw new Exception("Unsupported ECDSA curve");
+		}
+
 		final ECPrivateKey privateKey = ((ECPrivateKey) keyPair.getPrivate());
 		final ECPublicKey publicKey = ((ECPublicKey) keyPair.getPublic());
+
+		final byte[] qBytes = new byte[keyPartLength];
+		qBytes[0] = 0;
+		qBytes[1] = 4;
+		final byte[] xBytes = publicKey.getW().getAffineX().toByteArray();
+		final byte[] yBytes = publicKey.getW().getAffineY().toByteArray();
+		System.arraycopy(xBytes, 0, qBytes, qBytes.length - ((keyPartLength - 2) / 2) - xBytes.length, xBytes.length);
+		System.arraycopy(yBytes, 0, qBytes, qBytes.length - yBytes.length, yBytes.length);
 
 		return Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_SEQUENCE,
 				Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_INTEGER, BigInteger.ONE.toByteArray()),
 				Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_OCTET_STRING, privateKey.getS().toByteArray()),
 				Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_CONTEXT_SPECIFIC_0, Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_OBJECT, oidKey)),
-				Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_CONTEXT_SPECIFIC_1, Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_BIT_STRING,
-						joinByteArrays(
-								new byte[] {0, 4},
-								publicKey.getW().getAffineX().toByteArray(),
-								publicKey.getW().getAffineY().toByteArray()))
-						)
+				Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_CONTEXT_SPECIFIC_1, Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_BIT_STRING, qBytes))
 				);
 	}
 

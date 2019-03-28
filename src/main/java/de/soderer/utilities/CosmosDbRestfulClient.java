@@ -374,8 +374,6 @@ public class CosmosDbRestfulClient {
 				throw new Exception("Unknown error (HttpResponseCode " + response.getHttpCode() + ") while getting list of document ids from cosmosdb" + (response.getContent() != null ? ": " + response.getContent() : ""));
 			}
 
-			System.out.println("Request");
-
 			if (response.getHeaders() != null && response.getHeaders().containsKey("x-ms-continuation")) {
 				continuationID = response.getHeaders().get("x-ms-continuation");
 			} else {

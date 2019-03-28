@@ -5,16 +5,21 @@ import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.AlgorithmParameters;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECParameterSpec;
 import java.util.Base64;
 
 public class KeyPairUtilities {
@@ -23,6 +28,51 @@ public class KeyPairUtilities {
 	public static String SSH_ALGORITHM_NAME_ECDSA_NISTP256 = "ecdsa-sha2-nistp256";
 	public static String SSH_ALGORITHM_NAME_ECDSA_NISTP384 = "ecdsa-sha2-nistp384";
 	public static String SSH_ALGORITHM_NAME_ECDSA_NISTP521 = "ecdsa-sha2-nistp521";
+
+	/**
+	 * Create a RSA keypair of given strength
+	 */
+	public static KeyPair createRsaKeyPair(final int keyStrength) throws Exception {
+		if (keyStrength < 512) {
+			throw new Exception("Invalid RSA key strength: " + keyStrength);
+		}
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+		keyPairGenerator.initialize(keyStrength);
+		return keyPairGenerator.generateKeyPair();
+	}
+
+	/**
+	 * Create a DSA keypair of given strength<br/>
+	 * Watchout: OpenSSH only supports 1024 bit DSA key strength<br/>
+	 */
+	public static KeyPair createDsaKeyPair(final int keyStrength) throws Exception {
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
+		keyPairGenerator.initialize(keyStrength);
+		return keyPairGenerator.generateKeyPair();
+	}
+
+	/**
+	 * Create a ECDSA keypair of eliptic curve name.
+	 * Supported eliptic curve names are
+	 *   nistp256 or secp256
+	 *   nistp384 or secp384
+	 *   nistp521 or secp521
+	 */
+	public static KeyPair createEllipticCurveKeyPair(final String ecdsaCurveName) throws Exception {
+		if (ecdsaCurveName == null || "".equals(ecdsaCurveName.trim())) {
+			throw new Exception("Missing ECDSA curve name parameter");
+		}
+		final String curveName = ecdsaCurveName.replace("nist", "sec").toLowerCase().trim();
+		if (!"secp256".equals(curveName) && !"secp384".equals(curveName) && !"secp521".equals(curveName)) {
+			throw new Exception("Unknown ECDSA curve name: " + ecdsaCurveName);
+		}
+		final AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
+		parameters.init(new ECGenParameterSpec(curveName + "r1"));
+		final ECParameterSpec ecParameterSpec = parameters.getParameterSpec(ECParameterSpec.class);
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+		keyPairGenerator.initialize(ecParameterSpec, new SecureRandom());
+		return keyPairGenerator.generateKeyPair();
+	}
 
 	/**
 	 * Key type<br />
@@ -116,7 +166,7 @@ public class KeyPairUtilities {
 			if (SSH_ALGORITHM_NAME_RSA.equalsIgnoreCase(algorithmName)) {
 				return ((RSAPublicKey) publicKey).getModulus().bitLength();
 			} else if (SSH_ALGORITHM_NAME_DSA.equalsIgnoreCase(algorithmName)) {
-				return 1024;
+				return ((DSAPublicKey) publicKey).getY().bitLength();
 			} else if (SSH_ALGORITHM_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)) {
 				return 256;
 			} else if (SSH_ALGORITHM_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)) {
@@ -242,6 +292,50 @@ public class KeyPairUtilities {
 		}
 	}
 
+	public static String getSha1Fingerprint(final KeyPair keyPair) throws Exception {
+		if (keyPair == null) {
+			throw new Exception("Invalid empty keyPair parameter");
+		} else {
+			return getSha1Fingerprint(keyPair.getPublic());
+		}
+	}
+
+	public static String getSha1Fingerprint(final PublicKey publicKey) throws Exception {
+		if (publicKey == null) {
+			throw new Exception("Invalid empty publicKey parameter");
+		} else {
+			try {
+				final MessageDigest md = MessageDigest.getInstance("SHA-1");
+				md.update(getPublicKeyBytes(publicKey));
+				return toHexString(md.digest(), ":");
+			} catch (final Exception e) {
+				throw new Exception("Cannot create SHA256 fingerprint", e);
+			}
+		}
+	}
+
+	public static String getSha1FingerprintBase64(final KeyPair keyPair) throws Exception {
+		if (keyPair == null) {
+			throw new Exception("Invalid empty keyPair parameter");
+		} else {
+			return getSha1FingerprintBase64(keyPair.getPublic());
+		}
+	}
+
+	public static String getSha1FingerprintBase64(final PublicKey publicKey) throws Exception {
+		if (publicKey == null) {
+			throw new Exception("Invalid empty publicKey parameter");
+		} else {
+			try {
+				final MessageDigest md = MessageDigest.getInstance("SHA-1");
+				md.update(getPublicKeyBytes(publicKey));
+				return Base64.getEncoder().encodeToString(md.digest());
+			} catch (final Exception e) {
+				throw new Exception("Cannot create SHA256 fingerprint", e);
+			}
+		}
+	}
+
 	public static String getSha256Fingerprint(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -251,6 +345,28 @@ public class KeyPairUtilities {
 	}
 
 	public static String getSha256Fingerprint(final PublicKey publicKey) throws Exception {
+		if (publicKey == null) {
+			throw new Exception("Invalid empty publicKey parameter");
+		} else {
+			try {
+				final MessageDigest md = MessageDigest.getInstance("SHA-256");
+				md.update(getPublicKeyBytes(publicKey));
+				return toHexString(md.digest(), ":");
+			} catch (final Exception e) {
+				throw new Exception("Cannot create SHA256 fingerprint", e);
+			}
+		}
+	}
+
+	public static String getSha256FingerprintBase64(final KeyPair keyPair) throws Exception {
+		if (keyPair == null) {
+			throw new Exception("Invalid empty keyPair parameter");
+		} else {
+			return getSha256FingerprintBase64(keyPair.getPublic());
+		}
+	}
+
+	public static String getSha256FingerprintBase64(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
 		} else {
