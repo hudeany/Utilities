@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -14,7 +15,7 @@ public class BitUtilities {
 	 * @param value
 	 * @return
 	 */
-	public static int getUnsignedValue(byte value) {
+	public static int getUnsignedValue(final byte value) {
 		if (value < 0) {
 			return (value) + 256;
 		} else {
@@ -28,8 +29,8 @@ public class BitUtilities {
 	 * @param value
 	 * @return
 	 */
-	public static int[] getUnsignedValue(byte[] value) {
-		int[] returnValue = new int[value.length];
+	public static int[] getUnsignedValue(final byte[] value) {
+		final int[] returnValue = new int[value.length];
 		for (int i = 0; i < value.length; i++) {
 			returnValue[i] = getUnsignedValue(value[i]);
 		}
@@ -43,7 +44,7 @@ public class BitUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static byte getUnsignedAsByte(int value) throws Exception {
+	public static byte getUnsignedAsByte(final int value) throws Exception {
 		if (value < 0 || value > 255) {
 			throw new Exception("Unsigned value out of range for byte");
 		} else if (value > 127) {
@@ -53,29 +54,29 @@ public class BitUtilities {
 		}
 	}
 
-	public static String getBitString(byte byteItem) {
-		StringBuilder result = new StringBuilder();
+	public static String getBitString(final byte byteItem) {
+		final StringBuilder result = new StringBuilder();
 		for (int i = 7; i >= 0; i--) {
 			result.append((byte) ((byteItem >>> i) & 0x01));
 		}
 		return result.toString();
 	}
 
-	public static String getBitString(int intItem) {
-		StringBuilder result = new StringBuilder();
+	public static String getBitString(final int intItem) {
+		final StringBuilder result = new StringBuilder();
 		for (int i = 31; i >= 0; i--) {
 			result.append((byte) ((intItem >>> i) & 0x01));
 		}
 		return result.toString();
 	}
 
-	public static String getBitString(byte[] byteArray) {
+	public static String getBitString(final byte[] byteArray) {
 		return getBitString(byteArray, " ");
 	}
 
-	public static String getBitString(byte[] byteArray, String byteSeparator) {
-		StringBuilder result = new StringBuilder();
-		for (byte byteItem : byteArray) {
+	public static String getBitString(final byte[] byteArray, final String byteSeparator) {
+		final StringBuilder result = new StringBuilder();
+		for (final byte byteItem : byteArray) {
 			if (result.length() > 0) {
 				result.append(byteSeparator);
 			}
@@ -100,7 +101,7 @@ public class BitUtilities {
 
 		byte result = 0;
 		int posValue = 1;
-		char[] characters = bitString.toCharArray();
+		final char[] characters = bitString.toCharArray();
 		for (int i = characters.length - 1; i >= 0; i--) {
 			if (characters[i] == '1') {
 				result += posValue;
@@ -123,7 +124,7 @@ public class BitUtilities {
 
 		int result = 0;
 		int posValue = 1;
-		char[] characters = bitString.toCharArray();
+		final char[] characters = bitString.toCharArray();
 		for (int i = characters.length - 1; i >= 0; i--) {
 			if (characters[i] == '1') {
 				result += posValue;
@@ -133,23 +134,23 @@ public class BitUtilities {
 		return result;
 	}
 
-	public static String getHexString(byte[] data) {
-		char[] hexArray = "0123456789ABCDEF".toCharArray();
+	public static String getHexString(final byte[] data) {
+		final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
-		char[] hexChars = new char[data.length * 2];
+		final char[] hexChars = new char[data.length * 2];
 		for (int j = 0; j < data.length; j++) {
-			int v = data[j] & 0xFF;
+			final int v = data[j] & 0xFF;
 			hexChars[j * 2] = hexArray[v >>> 4];
 			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
 		}
 		return new String(hexChars);
 	}
 
-	public static String getHexString(byte[] data, String separator, int bytesBeforeLinebreak, boolean insertHexLineNumber, boolean insertAsciiText) {
-		StringBuilder returnString = new StringBuilder();
+	public static String getHexString(final byte[] data, final String separator, final int bytesBeforeLinebreak, final boolean insertHexLineNumber, final boolean insertAsciiText) {
+		final StringBuilder returnString = new StringBuilder();
 		int byteCount = 0;
 		StringBuilder asciiTextLine = new StringBuilder();
-		for (byte dataByte : data) {
+		for (final byte dataByte : data) {
 			if (byteCount > 0) {
 				if (bytesBeforeLinebreak > 0 && byteCount % bytesBeforeLinebreak == 0) {
 					if (insertAsciiText) {
@@ -175,7 +176,7 @@ public class BitUtilities {
 		}
 
 		if (insertAsciiText && asciiTextLine.length() > 0) {
-			int bytesInLastLine = byteCount % bytesBeforeLinebreak;
+			final int bytesInLastLine = byteCount % bytesBeforeLinebreak;
 			if (bytesInLastLine > 0) {
 				returnString.append(TextUtilities.repeatString("   ", bytesBeforeLinebreak - bytesInLastLine));
 			}
@@ -190,9 +191,9 @@ public class BitUtilities {
 		}
 	}
 
-	public static byte[] getByteArrayFromHexString(String value) {
-		int length = value.length();
-		byte[] data = new byte[length / 2];
+	public static byte[] getByteArrayFromHexString(final String value) {
+		final int length = value.length();
+		final byte[] data = new byte[length / 2];
 		for (int i = 0; i < length; i += 2) {
 			data[i / 2] = (byte) ((Character.digit(value.charAt(i), 16) << 4) + Character.digit(value.charAt(i + 1), 16));
 		}
@@ -205,7 +206,7 @@ public class BitUtilities {
 	 * @param byteArrays
 	 * @return
 	 */
-	public static byte[] xor(byte[]... byteArrays) {
+	public static byte[] xor(final byte[]... byteArrays) {
 		return xor(Arrays.asList(byteArrays));
 	}
 
@@ -215,8 +216,8 @@ public class BitUtilities {
 	 * @param byteArrays
 	 * @return
 	 */
-	public static byte[] xor(List<byte[]> byteArrays) {
-		byte[] returnArray = new byte[byteArrays.get(0).length];
+	public static byte[] xor(final List<byte[]> byteArrays) {
+		final byte[] returnArray = new byte[byteArrays.get(0).length];
 
 		for (int i = 0; i < byteArrays.size(); i++) {
 			for (int j = 0; j < returnArray.length; j++) {
@@ -227,13 +228,21 @@ public class BitUtilities {
 		return returnArray;
 	}
 
-	public static byte xor(byte... keyData) {
+	public static byte xor(final byte... keyData) {
 		byte resultItem = 0;
 
-		for (byte key : keyData) {
+		for (final byte key : keyData) {
 			resultItem = (byte) (resultItem ^ key);
 		}
 
 		return resultItem;
+	}
+
+	public static byte[] joinByteArrays(final byte[]... arrays) throws Exception {
+		final ByteArrayOutputStream out = new ByteArrayOutputStream();
+		for (final byte[] array : arrays) {
+			out.write(array);
+		}
+		return out.toByteArray();
 	}
 }

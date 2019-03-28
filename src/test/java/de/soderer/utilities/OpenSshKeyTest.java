@@ -65,6 +65,7 @@ public class OpenSshKeyTest {
 	@Test
 	public void testEc256() throws Exception {
 		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp256");
+
 		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
 
 		final byte[] data;
@@ -92,6 +93,7 @@ public class OpenSshKeyTest {
 	@Test
 	public void testEc384() throws Exception {
 		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp384");
+
 		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
 
 		final byte[] data;

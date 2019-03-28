@@ -1,6 +1,5 @@
 package de.soderer.utilities;
 
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -280,9 +279,9 @@ public class OpenSshKeyWriter implements Closeable {
 	private static byte[] createEcdsaBinaryKey(final KeyPair keyPair, final byte[] oidKey) throws Exception {
 		int keyPartLength;
 		if (Arrays.equals(OID.SECP256R1_ARRAY, oidKey)) {
-			keyPartLength = 66;
+			keyPartLength = 68;
 		} else if (Arrays.equals(OID.SECP384R1_ARRAY, oidKey)) {
-			keyPartLength = 98;
+			keyPartLength = 100;
 		} else if (Arrays.equals(OID.SECP521R1_ARRAY, oidKey)) {
 			keyPartLength = 134;
 		} else {
@@ -329,14 +328,6 @@ public class OpenSshKeyWriter implements Closeable {
 	 */
 	private static String toWrappedBase64(final byte[] byteArray, final int maxLineLength, final String lineBreak) {
 		return Base64.getMimeEncoder(maxLineLength, lineBreak.getBytes(Charset.forName("UTF-8"))).encodeToString(byteArray);
-	}
-
-	private static byte[] joinByteArrays(final byte[]... arrays) throws Exception {
-		final ByteArrayOutputStream out = new ByteArrayOutputStream();
-		for (final byte[] array : arrays) {
-			out.write(array);
-		}
-		return out.toByteArray();
 	}
 
 	private static String toHexString(final byte[] data) {
