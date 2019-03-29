@@ -88,19 +88,15 @@ public class PuttyKey {
 					|| KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)
 					|| KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
 				final String curveName = publicKeyReader.readString();
-				int qLength;
 				if ("nistp256".equals(curveName)) {
-					qLength = 65;
 				} else if ("nistp384".equals(curveName)) {
-					qLength = 97;
 				} else if ("nistp521".equals(curveName)) {
-					qLength = 133;
 				} else {
 					throw new Exception("Unsupported ECDSA curveName: " + curveName);
 				}
-				final int xLength = (qLength - 1) / 2;
 
 				final byte[] qBytes = publicKeyReader.readData();
+				final int xLength = (qBytes.length - 1) / 2;
 				if (4 != qBytes[0]) {
 					throw new Exception("Invalid key data found");
 				}

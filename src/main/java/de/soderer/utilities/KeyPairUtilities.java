@@ -42,6 +42,16 @@ public class KeyPairUtilities {
 	}
 
 	/**
+	 * Create a DSA keypair of 1024 bit strength<br/>
+	 * Watchout: OpenSSH only supports 1024 bit DSA key strength<br/>
+	 */
+	public static KeyPair createDsaKeyPair() throws Exception {
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
+		keyPairGenerator.initialize(1024);
+		return keyPairGenerator.generateKeyPair();
+	}
+
+	/**
 	 * Create a DSA keypair of given strength<br/>
 	 * Watchout: OpenSSH only supports 1024 bit DSA key strength<br/>
 	 */
@@ -226,7 +236,6 @@ public class KeyPairUtilities {
 
 				publicKeyWriter.writeString(algorithmName);
 				publicKeyWriter.writeString(curveName);
-
 				final byte[] javaEncoding = publicKeyEC.getEncoded();
 				final byte[] q = new byte[qLength];
 				System.arraycopy(javaEncoding, javaEncoding.length - qLength, q, 0, qLength);

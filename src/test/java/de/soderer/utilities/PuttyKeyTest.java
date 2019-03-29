@@ -2,12 +2,39 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
 import java.security.KeyPair;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.json.schema.JsonSchema;
+
 public class PuttyKeyTest {
+	@Test
+	public void testTestKeyFiles() throws Exception {
+		for (final File sshkeyFile : new File(getClass().getClassLoader().getResource("sshkey").toURI()).listFiles()) {
+			final String filename = sshkeyFile.getName();
+			try {
+				if (filename.contains(".ppk")) {
+					final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
+					try (InputStream inputStream = JsonSchema.class.getClassLoader().getResourceAsStream("sshkey/" + filename)) {
+						PuttyKey puttyKey;
+						try (PuttyKeyReader reader = new PuttyKeyReader(inputStream)) {
+							puttyKey = reader.readKey("password".toCharArray());
+						}
+						final String readMd5Fingerprint = puttyKey.getMd5Fingerprint();
+						Assert.assertEquals(filename, md5Hash.toUpperCase(), readMd5Fingerprint.toUpperCase().replace(":", ""));
+					}
+				}
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail(filename + ": " + e.getMessage());
+			}
+		}
+	}
+
 	@Test
 	public void test() throws Exception {
 		final PuttyKey puttyKey = new PuttyKey("TestKey (Ä)", KeyPairUtilities.createRsaKeyPair(2048));
@@ -69,6 +96,62 @@ public class PuttyKeyTest {
 		if (output3.toByteArray() == null || output3.toByteArray().length == 0) {
 			Assert.fail();
 		}
+	}
+
+	@Test
+	public void testRsa() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createRsaKeyPair(2048);
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
+				writer.writeKey(new PuttyKey("Test key", keyPair), "password".toCharArray());
+			}
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+			Assert.fail();
+		}
+
+		PuttyKey readPuttyKey;
+		try (PuttyKeyReader reader = new PuttyKeyReader(new ByteArrayInputStream(data))) {
+			readPuttyKey = reader.readKey("password".toCharArray());
+		}
+		final String readsha256Fingerprint = readPuttyKey.getSha256Fingerprint();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+	}
+
+	@Test
+	public void testDsa() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createDsaKeyPair();
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
+				writer.writeKey(new PuttyKey("Test key", keyPair), "password".toCharArray());
+			}
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+			Assert.fail();
+		}
+
+		PuttyKey readPuttyKey;
+		try (PuttyKeyReader reader = new PuttyKeyReader(new ByteArrayInputStream(data))) {
+			readPuttyKey = reader.readKey("password".toCharArray());
+		}
+		final String readsha256Fingerprint = readPuttyKey.getSha256Fingerprint();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
 	}
 
 	@Test
