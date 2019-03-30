@@ -37,8 +37,7 @@ public class OpenSshKeyTest {
 					}
 				}
 			} catch (final Exception e) {
-				e.printStackTrace();
-				Assert.fail(filename + ": " + e.getMessage());
+				throw e;
 			}
 		}
 	}

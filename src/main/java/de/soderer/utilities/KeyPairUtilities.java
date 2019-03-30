@@ -79,7 +79,7 @@ public class KeyPairUtilities {
 		final AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
 		parameters.init(new ECGenParameterSpec(curveName + "r1"));
 		final ECParameterSpec ecParameterSpec = parameters.getParameterSpec(ECParameterSpec.class);
-		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
 		keyPairGenerator.initialize(ecParameterSpec, new SecureRandom());
 		return keyPairGenerator.generateKeyPair();
 	}

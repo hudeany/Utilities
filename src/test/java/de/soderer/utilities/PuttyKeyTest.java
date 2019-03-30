@@ -9,8 +9,6 @@ import java.security.KeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.soderer.utilities.json.schema.JsonSchema;
-
 public class PuttyKeyTest {
 	@Test
 	public void testTestKeyFiles() throws Exception {
@@ -19,7 +17,7 @@ public class PuttyKeyTest {
 			try {
 				if (filename.contains(".ppk")) {
 					final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
-					try (InputStream inputStream = JsonSchema.class.getClassLoader().getResourceAsStream("sshkey/" + filename)) {
+					try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + filename)) {
 						PuttyKey puttyKey;
 						try (PuttyKeyReader reader = new PuttyKeyReader(inputStream)) {
 							puttyKey = reader.readKey("password".toCharArray());
@@ -29,8 +27,7 @@ public class PuttyKeyTest {
 					}
 				}
 			} catch (final Exception e) {
-				e.printStackTrace();
-				Assert.fail(filename + ": " + e.getMessage());
+				throw e;
 			}
 		}
 	}
