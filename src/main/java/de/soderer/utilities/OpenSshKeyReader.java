@@ -56,16 +56,37 @@ public class OpenSshKeyReader implements Closeable {
 		Map<String, String> currentKeyHeaders = null;
 		StringBuilder currentKeyData = null;
 		String nextLine;
+		boolean withinKeyData = false;
 		while ((nextLine = dataReader.readLine()) != null) {
 			if (nextLine.startsWith("-----BEGIN ") && nextLine.endsWith("-----")) {
+				if (withinKeyData) {
+					throw new Exception("Invalid keydata found");
+				}
+				withinKeyData = true;
 				currentKeyName = nextLine.substring(11, nextLine.length() - 5);
 				currentKeyHeaders = new HashMap<>();
 				currentKeyData = new StringBuilder();
 			} else if (nextLine.equals("---- BEGIN SSH2 PUBLIC KEY ----")) {
+				if (withinKeyData) {
+					throw new Exception("Invalid keydata found");
+				}
+				withinKeyData = true;
 				currentKeyName = "SSH2 PUBLIC KEY";
 				currentKeyHeaders = new HashMap<>();
 				currentKeyData = new StringBuilder();
-			} else if ((nextLine.startsWith("-----END ") && nextLine.endsWith("-----")) || nextLine.equals("---- END SSH2 PUBLIC KEY ----")) {
+			} else if (nextLine.equals("---- BEGIN SSH2 PRIVATE KEY ----")) {
+				if (withinKeyData) {
+					throw new Exception("Invalid keydata found");
+				}
+				withinKeyData = true;
+				currentKeyName = "SSH2 PRIVATE KEY";
+				currentKeyHeaders = new HashMap<>();
+				currentKeyData = new StringBuilder();
+			} else if ((nextLine.startsWith("-----END ") && nextLine.endsWith("-----")) || (nextLine.startsWith("---- END ") && nextLine.endsWith(" ----"))) {
+				if (!withinKeyData) {
+					throw new Exception("Invalid keydata found");
+				}
+				withinKeyData = false;
 				final String endKeyName = nextLine.substring(9, nextLine.length() - 5);
 				if (currentKeyName == null || !currentKeyName.equals(endKeyName)) {
 					throw new Exception("Corrupt key data found");
@@ -108,9 +129,10 @@ public class OpenSshKeyReader implements Closeable {
 						}
 					} else if (currentKeyName.toLowerCase().contains("public")) {
 						if (keyPair.getPublic() != null) {
-							throw new Exception("Multiple public key data found");
+							// keep the first found public key, but check if the new public key fits the old one
+							// TODO
 						} else {
-							keyPair = readPublicKey(keyPair, currentKeyName, currentKeyHeaders, keyData);
+							keyPair = readPkcs1PublicKey(keyPair, currentKeyName, currentKeyHeaders, keyData);
 						}
 					} else {
 						throw new Exception("Unknown key identifier found");
@@ -138,7 +160,7 @@ public class OpenSshKeyReader implements Closeable {
 		}
 	}
 
-	private KeyPair readPublicKey(final KeyPair keyPair, final String keyName, final Map<String, String> keyHeaders, final byte[] data) throws Exception {
+	private KeyPair readPkcs1PublicKey(final KeyPair keyPair, final String keyName, final Map<String, String> keyHeaders, final byte[] data) throws Exception {
 		if (keyName == null || "".equals(keyName.trim())) {
 			throw new Exception("Invalid empty key name");
 		} else {
@@ -204,6 +226,8 @@ public class OpenSshKeyReader implements Closeable {
 	private KeyPair readPrivateKey(final KeyPair keyPair, final String keyName, final Map<String, String> keyHeaders, final byte[] data) throws Exception {
 		if (keyName == null || "".equals(keyName.trim())) {
 			throw new Exception("Invalid empty key name");
+		} else if (keyName.equals("SSH2 PRIVATE KEY")) {
+			return readPkcs1PrivateKey(keyPair, data);
 		} else if (keyName.startsWith("RSA")) {
 			return readRsaPrivateKey(data);
 		} else if (keyName.startsWith("DSA")) {
@@ -213,6 +237,18 @@ public class OpenSshKeyReader implements Closeable {
 		} else {
 			throw new IllegalArgumentException("Unsupported key name: " + keyName);
 		}
+	}
+
+	private KeyPair readPkcs1PrivateKey(final KeyPair keyPair, final byte[] data) throws Exception {
+		//		final BlockDataReader privateKeyReader = new BlockDataReader(data);
+		//		final BigInteger test1 = privateKeyReader.readBigInt();
+		//		final BigInteger test2 = privateKeyReader.readBigInt();
+		//		final BigInteger test3 = privateKeyReader.readBigInt();
+		//		final BigInteger test4 = privateKeyReader.readBigInt();
+		//		final BigInteger test5 = privateKeyReader.readBigInt();
+		//		//TODO detect key type
+		//		xxx
+		return new KeyPair(keyPair.getPublic(), keyPair.getPrivate());
 	}
 
 	private KeyPair readRsaPrivateKey(final byte[] data) throws Exception {

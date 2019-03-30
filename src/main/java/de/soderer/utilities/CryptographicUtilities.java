@@ -334,6 +334,17 @@ public class CryptographicUtilities {
 		return getStringFromKeyPair(privateKey, publicKey);
 	}
 
+	public static String getStringFromKeyPair(final AsymmetricCipherKeyPair keyPair, final char[] password) throws Exception {
+		final PublicKey publicKey = getPublicKeyFromKeyPair(keyPair);
+		final PrivateKey privateKey = getPrivateKeyFromKeyPair(keyPair);
+
+		return getStringFromKeyPair(privateKey, publicKey, password);
+	}
+
+	public static String getStringFromKeyPair(final KeyPair keyPair, final char[] password) throws Exception {
+		return getStringFromKeyPair(keyPair.getPrivate(), keyPair.getPublic(), password);
+	}
+
 	public static String getStringFromKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -348,17 +359,25 @@ public class CryptographicUtilities {
 		}
 	}
 
+	/**
+	 * TODO: ERROR: DOES NOT WORK for ECDSA
+	 */
 	public static String getStringFromKeyPair(final PrivateKey privateKey, final PublicKey publicKey, final char[] password) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try (StringWriter stringWriter = new StringWriter();
 				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
-			final PEMEncryptor pemEncryptor = new JcePEMEncryptorBuilder("AES-128-CBC").build(password);
-			final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(privateKey, pemEncryptor);
-			pemWriter.writeObject(pemGenerator);
-			pemWriter.writeObject(publicKey);
+			if (privateKey != null) {
+				final PEMEncryptor pemEncryptor = new JcePEMEncryptorBuilder("AES-128-CBC").build(password);
+				final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(privateKey, pemEncryptor);
+				pemWriter.writeObject(pemGenerator);
+			}
+			if (publicKey != null) {
+				pemWriter.writeObject(publicKey);
+			}
 			pemWriter.flush();
 			pemWriter.close();
+
 			return stringWriter.toString();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create key string: " + e.getMessage(), e);

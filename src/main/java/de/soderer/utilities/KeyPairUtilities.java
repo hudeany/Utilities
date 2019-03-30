@@ -79,8 +79,17 @@ public class KeyPairUtilities {
 		final AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
 		parameters.init(new ECGenParameterSpec(curveName + "r1"));
 		final ECParameterSpec ecParameterSpec = parameters.getParameterSpec(ECParameterSpec.class);
-		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");
 		keyPairGenerator.initialize(ecParameterSpec, new SecureRandom());
+		return keyPairGenerator.generateKeyPair();
+	}
+
+	public static KeyPair createEllipticCurveKeyPair(final int curveId) throws Exception {
+		if (256 != curveId && 384 != curveId && 521 != curveId) {
+			throw new Exception("Invalid ECDSA curve id parameter");
+		}
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+		keyPairGenerator.initialize(curveId);
 		return keyPairGenerator.generateKeyPair();
 	}
 
@@ -115,7 +124,7 @@ public class KeyPairUtilities {
 			return SSH_ALGORITHM_NAME_RSA;
 		} else if(publicKey.getAlgorithm().equals("DSA")){
 			return SSH_ALGORITHM_NAME_DSA;
-		} else if(publicKey.getAlgorithm().equals("EC")){
+		} else if(publicKey.getAlgorithm().equals("EC") || publicKey.getAlgorithm().equals("ECDSA")){
 			final int bitLength = ((ECPublicKey) publicKey).getW().getAffineX().bitLength();
 			if (bitLength <= 256) {
 				return SSH_ALGORITHM_NAME_ECDSA_NISTP256;

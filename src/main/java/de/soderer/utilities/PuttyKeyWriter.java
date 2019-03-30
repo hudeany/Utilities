@@ -12,7 +12,6 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -51,7 +50,7 @@ public class PuttyKeyWriter implements Closeable {
 		byte[] privateKeyBytes = puttyKey.getPrivateKeyBytes();
 
 		// padding up to multiple of 16 bytes for AES/CBC/NoPadding encryption
-		privateKeyBytes = addSecurePadding(privateKeyBytes, 16);
+		privateKeyBytes = addLengthCodedPadding(privateKeyBytes, 16);
 
 		final String macHash = calculateMacChecksum(passwordBytes, algorithmName, puttyKey.getComment(), publicKeyBytes, privateKeyBytes);
 
@@ -133,19 +132,21 @@ public class PuttyKeyWriter implements Closeable {
 		return toHexString(mac.doFinal(out.toByteArray())).toLowerCase();
 	}
 
-	private static byte[] addSecurePadding(byte[] data, final int paddingSize) {
+	public static byte[] addLengthCodedPadding(byte[] data, final int paddingSize) {
+		final byte[] dataPadded;
 		if (data.length % paddingSize != 0) {
-			final byte[] dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];
-			for (int i = 0; i < data.length; i++) {
-				dataPadded[i] = data[i];
-			}
-			final byte[] randomArray = new byte[dataPadded.length - data.length];
-			new SecureRandom().nextBytes(randomArray);
-			for (int i = 0; i < randomArray.length; i++) {
-				dataPadded[data.length + i] = randomArray[i];
-			}
-			data = dataPadded;
+			dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];
+		} else {
+			dataPadded = new byte[data.length + paddingSize];
 		}
+		for (int i = 0; i < data.length; i++) {
+			dataPadded[i] = data[i];
+		}
+		final byte padValue = (byte) (dataPadded.length - data.length);
+		for (int i = data.length; i < dataPadded.length; i++) {
+			dataPadded[i] = padValue;
+		}
+		data = dataPadded;
 		return data;
 	}
 

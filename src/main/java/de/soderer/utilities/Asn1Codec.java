@@ -7,6 +7,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -200,6 +201,11 @@ public class Asn1Codec {
 
 		public void setData(final byte[] data) {
 			this.data = data;
+		}
+
+		@Override
+		public String toString() {
+			return tagId + " (length " + data.length + "): " + Arrays.toString(data);
 		}
 	}
 }

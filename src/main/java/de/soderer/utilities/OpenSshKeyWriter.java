@@ -152,14 +152,14 @@ public class OpenSshKeyWriter implements Closeable {
 				ivString = toHexString(iv);
 				cipher = Cipher.getInstance("DESede/CBC/NoPadding");
 				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(password, iv, 8, 24), "DESede"), new IvParameterSpec(iv));
-				keyData = addSecurePadding(keyData, 16);
+				keyData = addLengthCodedPadding(keyData, 8);
 			} else if (AES128_PemEncryptionMethodName.equalsIgnoreCase(keyEncryptionCipherName)) {
 				final byte[] iv = new byte[16];
 				rnd.nextBytes(iv);
 				ivString = toHexString(iv);
 				cipher = Cipher.getInstance("AES/CBC/NoPadding");
 				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(stretchPasswordForOpenSsl(password, iv, 8, 16), "AES"), new IvParameterSpec(iv));
-				keyData = addSecurePadding(keyData, 16);
+				keyData = addLengthCodedPadding(keyData, 16);
 			} else {
 				throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
 			}
@@ -170,8 +170,8 @@ public class OpenSshKeyWriter implements Closeable {
 		}
 
 		outputStream.write(("-----BEGIN " + keyTypeName + "-----\n").getBytes("UTF-8"));
-		outputStream.write(getPemHeaderLines(headers, 76).getBytes("UTF-8"));
-		outputStream.write(toWrappedBase64(keyData, 76, "\n").getBytes("UTF-8"));
+		outputStream.write(getPemHeaderLines(headers, 64).getBytes("UTF-8"));
+		outputStream.write(toWrappedBase64(keyData, 64, "\n").getBytes("UTF-8"));
 		outputStream.write(("\n-----END " + keyTypeName + "-----\n").getBytes("UTF-8"));
 	}
 
@@ -277,13 +277,13 @@ public class OpenSshKeyWriter implements Closeable {
 	}
 
 	private static byte[] createEcdsaBinaryKey(final KeyPair keyPair, final byte[] oidKey) throws Exception {
-		int keyPartLength;
+		int qLength;
 		if (Arrays.equals(OID.SECP256R1_ARRAY, oidKey)) {
-			keyPartLength = 68;
+			qLength = 66;
 		} else if (Arrays.equals(OID.SECP384R1_ARRAY, oidKey)) {
-			keyPartLength = 100;
+			qLength = 98;
 		} else if (Arrays.equals(OID.SECP521R1_ARRAY, oidKey)) {
-			keyPartLength = 134;
+			qLength = 134;
 		} else {
 			throw new Exception("Unsupported ECDSA curve");
 		}
@@ -291,13 +291,10 @@ public class OpenSshKeyWriter implements Closeable {
 		final ECPrivateKey privateKey = ((ECPrivateKey) keyPair.getPrivate());
 		final ECPublicKey publicKey = ((ECPublicKey) keyPair.getPublic());
 
-		final byte[] qBytes = new byte[keyPartLength];
-		qBytes[0] = 0;
-		qBytes[1] = 4;
-		final byte[] xBytes = publicKey.getW().getAffineX().toByteArray();
-		final byte[] yBytes = publicKey.getW().getAffineY().toByteArray();
-		System.arraycopy(xBytes, 0, qBytes, qBytes.length - ((keyPartLength - 2) / 2) - xBytes.length, xBytes.length);
-		System.arraycopy(yBytes, 0, qBytes, qBytes.length - yBytes.length, yBytes.length);
+		final byte[] javaEncoding = publicKey.getEncoded();
+		final byte[] qBytes = new byte[qLength];
+
+		System.arraycopy(javaEncoding, javaEncoding.length - qLength, qBytes, 0, qLength);
 
 		return Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_SEQUENCE,
 				Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_INTEGER, BigInteger.ONE.toByteArray()),
@@ -307,19 +304,21 @@ public class OpenSshKeyWriter implements Closeable {
 				);
 	}
 
-	private static byte[] addSecurePadding(byte[] data, final int paddingSize) {
+	private static byte[] addLengthCodedPadding(byte[] data, final int paddingSize) {
+		final byte[] dataPadded;
 		if (data.length % paddingSize != 0) {
-			final byte[] dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];
-			for (int i = 0; i < data.length; i++) {
-				dataPadded[i] = data[i];
-			}
-			final byte[] randomArray = new byte[dataPadded.length - data.length];
-			new SecureRandom().nextBytes(randomArray);
-			for (int i = 0; i < randomArray.length; i++) {
-				dataPadded[data.length + i] = randomArray[i];
-			}
-			data = dataPadded;
+			dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];
+		} else {
+			dataPadded = new byte[data.length + paddingSize];
 		}
+		for (int i = 0; i < data.length; i++) {
+			dataPadded[i] = data[i];
+		}
+		final byte padValue = (byte) (dataPadded.length - data.length);
+		for (int i = data.length; i < dataPadded.length; i++) {
+			dataPadded[i] = padValue;
+		}
+		data = dataPadded;
 		return data;
 	}
 

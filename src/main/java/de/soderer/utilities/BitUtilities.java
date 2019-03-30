@@ -245,4 +245,22 @@ public class BitUtilities {
 		}
 		return out.toByteArray();
 	}
+
+	public static byte[] addLengthCodedPadding(byte[] data, final int paddingSize) {
+		final byte[] dataPadded;
+		if (data.length % paddingSize != 0) {
+			dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];
+		} else {
+			dataPadded = new byte[data.length + paddingSize];
+		}
+		for (int i = 0; i < data.length; i++) {
+			dataPadded[i] = data[i];
+		}
+		final byte padValue = (byte) (dataPadded.length - data.length);
+		for (int i = data.length; i < dataPadded.length; i++) {
+			dataPadded[i] = padValue;
+		}
+		data = dataPadded;
+		return data;
+	}
 }
