@@ -28,23 +28,23 @@ public class OpenSshKeyTestWithBC {
 		checkWithBc(keyPair);
 	}
 
-	@Test
-	public void testEc256() throws Exception {
-		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("secp256");
-		checkWithBc(keyPair);
-	}
-
-	@Test
-	public void testEc384() throws Exception {
-		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("secp384");
-		checkWithBc(keyPair);
-	}
-
-	@Test
-	public void testEc521() throws Exception {
-		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("secp521");
-		checkWithBc(keyPair);
-	}
+	//	@Test
+	//	public void testEc256() throws Exception {
+	//		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("secp256");
+	//		checkWithBc(keyPair);
+	//	}
+	//
+	//	@Test
+	//	public void testEc384() throws Exception {
+	//		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("secp384");
+	//		checkWithBc(keyPair);
+	//	}
+	//
+	//	@Test
+	//	public void testEc521() throws Exception {
+	//		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("secp521");
+	//		checkWithBc(keyPair);
+	//	}
 
 	private void checkWithBc(final KeyPair keyPair) throws Exception {
 		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());

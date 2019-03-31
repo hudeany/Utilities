@@ -70,7 +70,7 @@ public class PuttyKeyTest {
 
 		final ByteArrayOutputStream output2 = new ByteArrayOutputStream();
 		try (OpenSshKeyWriter writer = new OpenSshKeyWriter(output2)) {
-			writer.writePKCS1Format(puttyKey2.getKeyPair());
+			writer.writePKCS8Format(puttyKey2.getKeyPair(), null);
 		}
 		if (output2.toByteArray() == null || output2.toByteArray().length == 0) {
 			Assert.fail();

@@ -16,28 +16,34 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public class ComboSelectionDialog extends ModalDialog<String> {
-	private String text;
-	private List<String> items;
+	private final String text;
+	private final List<String> items;
 	private Combo comboBox;
 	private Button okButton;
+	private final int preSelectedItemIndex;
 
-	public ComboSelectionDialog(Shell shell, String title, String text, List<String> items) {
+	public ComboSelectionDialog(final Shell shell, final String title, final String text, final List<String> items) {
+		this(shell, title, text, items, -1);
+	}
+
+	public ComboSelectionDialog(final Shell shell, final String title, final String text, final List<String> items, final int preSelectedItemIndex) {
 		super(shell, SWT.RESIZE, title);
 
 		this.text = text;
 		this.items = items;
+		this.preSelectedItemIndex = preSelectedItemIndex;
 	}
 
 	@Override
-	protected void createComponents(Shell shell) throws Exception {
+	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new FillLayout());
 		shell.setSize(475, 120);
 		shell.setMinimumSize(475, 120);
-		Composite composite = new Composite(shell, SWT.NONE);
+		final Composite composite = new Composite(shell, SWT.NONE);
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
 
-		Label label = new Label(composite, SWT.FILL);
+		final Label label = new Label(composite, SWT.FILL);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
 
@@ -45,9 +51,13 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
 		if (items != null && items.size() > 0) {
-			String[] comboBoxItems = items.toArray(new String[items.size()]);
+			final String[] comboBoxItems = items.toArray(new String[items.size()]);
 			comboBox.setItems(comboBoxItems);
-			comboBox.select(comboBox.getItemCount() - 1);
+			if (preSelectedItemIndex < 0) {
+				comboBox.select(comboBox.getItemCount() - 1);
+			} else {
+				comboBox.select(preSelectedItemIndex);
+			}
 		}
 
 		okButton = new Button(composite, SWT.PUSH);
@@ -56,7 +66,7 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		okButton.setEnabled(comboBox.getItemCount() > 0);
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 
-		Button cancelButton = new Button(composite, SWT.PUSH);
+		final Button cancelButton = new Button(composite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new CancelButtonSelectionListener());
@@ -64,14 +74,14 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent e) {
+		public void widgetSelected(final SelectionEvent e) {
 			okButton.setEnabled(true);
 		}
 	}
 
 	private class OkButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent e) {
+		public void widgetSelected(final SelectionEvent e) {
 			if (comboBox.getSelectionIndex() > -1) {
 				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
 			}
@@ -81,7 +91,7 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 	private class CancelButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent e) {
+		public void widgetSelected(final SelectionEvent e) {
 			getParent().close();
 		}
 	}
