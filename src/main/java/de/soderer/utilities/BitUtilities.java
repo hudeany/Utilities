@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.ByteArrayOutputStream;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -246,6 +247,9 @@ public class BitUtilities {
 		return out.toByteArray();
 	}
 
+	/**
+	 * This padding type can be removed after an encryption
+	 */
 	public static byte[] addLengthCodedPadding(byte[] data, final int paddingSize) {
 		final byte[] dataPadded;
 		if (data.length % paddingSize != 0) {
@@ -262,5 +266,26 @@ public class BitUtilities {
 		}
 		data = dataPadded;
 		return data;
+	}
+
+	/**
+	 * This padding type is irremovable
+	 */
+	public byte[] addRandomPadding(final byte[] data, final int paddingSize) {
+		if (data.length % paddingSize != 0) {
+			final byte[] dataPadded;
+			dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];
+			for (int i = 0; i < data.length; i++) {
+				dataPadded[i] = data[i];
+			}
+			final byte[] randomPadding = new byte[dataPadded.length - data.length];
+			new SecureRandom().nextBytes(randomPadding);
+			for (int i = 0; i < randomPadding.length; i++) {
+				dataPadded[data.length + i] = randomPadding[i];
+			}
+			return dataPadded;
+		} else {
+			return data;
+		}
 	}
 }

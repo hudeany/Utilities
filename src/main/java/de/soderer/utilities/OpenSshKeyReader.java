@@ -107,6 +107,8 @@ public class OpenSshKeyReader implements Closeable {
 						} else {
 							throw new Exception("Unknown key encryption cipher: " + keyEncryptionCipherName);
 						}
+
+						keyData = removeLengthCodedPadding(keyData);
 					}
 
 					if (currentKeyName.toLowerCase().contains("private")) {
@@ -375,6 +377,13 @@ public class OpenSshKeyReader implements Closeable {
 			data[i / 2] = (byte) ((Character.digit(value.charAt(i), 16) << 4) + Character.digit(value.charAt(i + 1), 16));
 		}
 		return data;
+	}
+
+	private static byte[] removeLengthCodedPadding(final byte[] data) {
+		final int paddingSize = data[data.length - 1];
+		final byte[] dataUnpadded = new byte[data.length - paddingSize];
+		System.arraycopy(data, 0, dataUnpadded, 0, dataUnpadded.length);
+		return dataUnpadded;
 	}
 
 	@Override

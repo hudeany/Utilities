@@ -346,23 +346,6 @@ public class KeyPairUtilities {
 		}
 	}
 
-	public static PrivateKey parsePrivateKeyBytes(final byte[] data) throws Exception {
-		//		final BlockDataReader privateKeyReader = new BlockDataReader(data);
-		//		final BigInteger value1 = privateKeyReader.readBigInt();
-		//		final BigInteger value2 = privateKeyReader.readBigInt();
-		//		final BigInteger value3 = privateKeyReader.readBigInt();
-		//		final BigInteger value4 = privateKeyReader.readBigInt();
-		//
-		//		final BigInteger privateExponent = value1;
-		//		final BigInteger primeP = value2;
-		//		final BigInteger primeQ = value3;
-		//		final BigInteger crtCoefficient = value4;
-		//		final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-		//		return keyFactory.generatePrivate(new RSAPrivateCrtKeySpec(modulus, publicExponent, privateExponent, primeP, primeQ, dmp1, dmq1, iqmp));
-		//TODO
-		return null;
-	}
-
 	public static String getMd5Fingerprint(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");

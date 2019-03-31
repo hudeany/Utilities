@@ -265,7 +265,7 @@ public class OpenSshKeyWriter implements Closeable {
 				);
 	}
 
-	private static byte[] addLengthCodedPadding(byte[] data, final int paddingSize) {
+	private static byte[] addLengthCodedPadding(final byte[] data, final int paddingSize) {
 		final byte[] dataPadded;
 		if (data.length % paddingSize != 0) {
 			dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];
@@ -279,8 +279,7 @@ public class OpenSshKeyWriter implements Closeable {
 		for (int i = data.length; i < dataPadded.length; i++) {
 			dataPadded[i] = padValue;
 		}
-		data = dataPadded;
-		return data;
+		return dataPadded;
 	}
 
 	/**
