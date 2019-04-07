@@ -176,7 +176,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 						final String javaHome = System.getProperty("java.home");
 
 						if (SystemUtilities.isWindowsSystem()) {
-							final String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + "_offline.lnk";
+							final String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".lnk";
 							if (new File(desktopLinkFilePath).exists()) {
 								new File(desktopLinkFilePath).delete();
 							}
