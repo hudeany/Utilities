@@ -612,7 +612,17 @@ public class Utilities {
 					distributionInfoProperties.load(inputStream);
 					final String distributionName = distributionInfoProperties.getProperty("NAME");
 					final String distributionVersion = distributionInfoProperties.getProperty("VERSION");
-					propertiesMap.put("os.distribution", distributionName + " " + distributionVersion);
+					String distribution = "";
+					if (distributionName != null && !"".equals(distributionName.trim())) {
+						distribution += Utilities.trimSimultaneously(distributionName, "\"");
+						if (distributionVersion != null && !"".equals(distributionVersion.trim())) {
+							distribution += " ";
+							distribution += Utilities.trimSimultaneously(distributionVersion, "\"");
+						}
+					} else if (distributionVersion != null && !"".equals(distributionVersion.trim())) {
+						distribution += Utilities.trimSimultaneously(distributionVersion, "\"");
+					}
+					propertiesMap.put("os.distribution", distribution);
 				} catch (final Exception e) {
 					propertiesMap.put("os.distribution", "Unknown");
 				}
