@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -602,6 +603,22 @@ public class Utilities {
 		final Map<String, String> propertiesMap = new HashMap<>();
 		for (final Object key : System.getProperties().keySet()) {
 			propertiesMap.put((String) key, System.getProperties().getProperty((String) key));
+		}
+		if (SystemUtilities.isLinuxSystem()) {
+			final File distributionInfoFile = new File("/etc/os-release");
+			if (distributionInfoFile.exists()) {
+				try (FileInputStream inputStream = new FileInputStream(distributionInfoFile)) {
+					final Properties distributionInfoProperties = new Properties();
+					distributionInfoProperties.load(inputStream);
+					final String distributionName = distributionInfoProperties.getProperty("NAME");
+					final String distributionVersion = distributionInfoProperties.getProperty("VERSION");
+					propertiesMap.put("os.distribution", distributionName + " " + distributionVersion);
+				} catch (final Exception e) {
+					propertiesMap.put("os.distribution", "Unknown");
+				}
+			} else {
+				propertiesMap.put("os.distribution", "Unknown");
+			}
 		}
 		return propertiesMap;
 	}
