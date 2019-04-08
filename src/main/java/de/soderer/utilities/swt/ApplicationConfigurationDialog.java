@@ -262,7 +262,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							data.append("Type=Application\n");
 
 							// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
-							data.append("StartupWMClass=" + applicationJarFileName + "\n");
+							data.append("StartupWMClass=" + applicationName + "\n");
 
 							try {
 								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
