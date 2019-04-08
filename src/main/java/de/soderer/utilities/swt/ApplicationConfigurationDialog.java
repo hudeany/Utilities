@@ -261,6 +261,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							data.append("Terminal=false\n");
 							data.append("Type=Application\n");
 
+							// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
+							data.append("StartupWMClass=" + applicationJarFileName + "\n");
+
 							try {
 								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
 
@@ -276,9 +279,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
 								messageBox.open();
 							}
-
-							// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
-							data.append("StartupWMClass=" + applicationJarFileName + "\n");
 						}
 					}
 				} catch (final Exception e1) {
