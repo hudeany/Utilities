@@ -250,7 +250,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 							// %U-parameter allows drag and drop of files on starter bar in unity
 							// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window in unity
-							data.append("Exec=env UBUNTU_MENUPROXY=0 java -jar " + applicationJarFileName + " %U\n");
+							data.append("Exec=java -jar " + applicationJarFileName + " %U\n");
 							data.append("Terminal=false\n");
 							data.append("Type=Application\n");
 
@@ -269,6 +269,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
 								messageBox.open();
 							}
+
+							// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
+							data.append("StartupWMClass=" + applicationJarFileName + "\n");
 						}
 					}
 				} catch (final Exception e1) {
@@ -311,7 +314,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		showSwtPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
-				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(null), "\n", " = ", true))
+				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(getParent().getDisplay()), "\n", " = ", true))
 				.open();
 			}
 		});

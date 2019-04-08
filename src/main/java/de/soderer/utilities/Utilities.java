@@ -611,23 +611,24 @@ public class Utilities {
 					final Properties distributionInfoProperties = new Properties();
 					distributionInfoProperties.load(inputStream);
 					final String distributionName = distributionInfoProperties.getProperty("NAME");
-					final String distributionVersion = distributionInfoProperties.getProperty("VERSION");
-					String distribution = "";
 					if (distributionName != null && !"".equals(distributionName.trim())) {
-						distribution += Utilities.trimSimultaneously(distributionName, "\"");
-						if (distributionVersion != null && !"".equals(distributionVersion.trim())) {
-							distribution += " ";
-							distribution += Utilities.trimSimultaneously(distributionVersion, "\"");
-						}
-					} else if (distributionVersion != null && !"".equals(distributionVersion.trim())) {
-						distribution += Utilities.trimSimultaneously(distributionVersion, "\"");
+						propertiesMap.put("os.distribution.name",  Utilities.trimSimultaneously(distributionName, "\""));
+					} else {
+						propertiesMap.put("os.distribution.name", "Unknown");
 					}
-					propertiesMap.put("os.distribution", distribution);
+					final String distributionVersion = distributionInfoProperties.getProperty("VERSION");
+					if (distributionVersion != null && !"".equals(distributionVersion.trim())) {
+						propertiesMap.put("os.distribution.version",  Utilities.trimSimultaneously(distributionVersion, "\""));
+					} else {
+						propertiesMap.put("os.distribution.version", "Unknown");
+					}
 				} catch (final Exception e) {
-					propertiesMap.put("os.distribution", "Unknown");
+					propertiesMap.put("os.distribution.name", "Unknown");
+					propertiesMap.put("os.distribution.version", "Unknown");
 				}
 			} else {
-				propertiesMap.put("os.distribution", "Unknown");
+				propertiesMap.put("os.distribution.name", "Unknown");
+				propertiesMap.put("os.distribution.version", "Unknown");
 			}
 		}
 		return propertiesMap;
