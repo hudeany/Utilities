@@ -225,12 +225,19 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 								messageBox.open();
 							}
 						} else if (SystemUtilities.isLinuxSystem()) {
-							final String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+							String desktopLinkFilePath;
+							String iconPath;
+							final File localShareApplicationsDirectory = new File(System.getProperty("user.home") + "/.local/share/applications");
+							if (localShareApplicationsDirectory.exists()) {
+								desktopLinkFilePath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".desktop";
+								iconPath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".png";
+							} else {
+								desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+								iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
+							}
 							if (new File(desktopLinkFilePath).exists()) {
 								new File(desktopLinkFilePath).delete();
 							}
-
-							final String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
 							if (new File(iconPath).exists()) {
 								new File(iconPath).delete();
 							}
