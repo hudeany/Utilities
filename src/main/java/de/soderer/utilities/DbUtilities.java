@@ -546,9 +546,7 @@ public class DbUtilities {
 							|| metaData.getColumnType(i) == Types.LONGVARBINARY) {
 						if (dbVendor == DbVendor.SQLite || dbVendor == DbVendor.PostgreSQL) {
 							// SQLite does not allow "resultSet.getBlob(i)"
-							InputStream input = null;
-							try {
-								input = resultSet.getBinaryStream(metaData.getColumnName(i));
+							try (InputStream input = resultSet.getBinaryStream(metaData.getColumnName(i))) {
 								if (input != null) {
 									final byte[] data = Utilities.toByteArray(input);
 									values.add(Base64.getEncoder().encodeToString(data));
@@ -558,8 +556,6 @@ public class DbUtilities {
 							} catch (final Exception e) {
 								// NULL blobs throw a NullpointerException in SQLite
 								values.add("");
-							} finally {
-								Utilities.closeQuietly(input);
 							}
 						} else {
 							final Blob blob = resultSet.getBlob(i);

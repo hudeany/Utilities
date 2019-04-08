@@ -27,8 +27,8 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static File zipFile(File sourceFile) throws IOException {
-		File zippedFile = new File(sourceFile.getAbsolutePath() + ".zip");
+	public static File zipFile(final File sourceFile) throws IOException {
+		final File zippedFile = new File(sourceFile.getAbsolutePath() + ".zip");
 		zipFile(sourceFile, zippedFile);
 		return zippedFile;
 	}
@@ -40,9 +40,7 @@ public class ZipUtilities {
 	 * @param destinationZipFile
 	 * @throws IOException
 	 */
-	public static void zipFile(File sourceFile, File destinationZipFile) throws IOException {
-		ZipOutputStream zipOutputStream = null;
-
+	public static void zipFile(final File sourceFile, final File destinationZipFile) throws IOException {
 		if (!sourceFile.exists()) {
 			throw new IOException("SourceFile does not exist");
 		}
@@ -51,21 +49,13 @@ public class ZipUtilities {
 			throw new IOException("DestinationFile already exists");
 		}
 
-		try {
-			zipOutputStream = openNewZipOutputStream(destinationZipFile);
-
+		try (ZipOutputStream zipOutputStream = openNewZipOutputStream(destinationZipFile)) {
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
-
-			Utilities.closeQuietly(zipOutputStream);
-			zipOutputStream = null;
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			if (destinationZipFile.exists()) {
-				Utilities.closeQuietly(zipOutputStream);
 				destinationZipFile.delete();
 			}
 			throw e;
-		} finally {
-			Utilities.closeQuietly(zipOutputStream);
 		}
 	}
 
@@ -76,7 +66,7 @@ public class ZipUtilities {
 	 * @param destinationZipFileSream
 	 * @throws IOException
 	 */
-	public static void addFileToOpenZipFileStream(File sourceFile, ZipOutputStream destinationZipFileSream) throws IOException {
+	public static void addFileToOpenZipFileStream(final File sourceFile, final ZipOutputStream destinationZipFileSream) throws IOException {
 		addFileToOpenZipFileStream(sourceFile, File.separator, destinationZipFileSream);
 	}
 
@@ -87,9 +77,7 @@ public class ZipUtilities {
 	 * @param destinationZipFileSream
 	 * @throws IOException
 	 */
-	public static void addFileToOpenZipFileStream(File sourceFile, String relativeDirPath, ZipOutputStream destinationZipFileSream) throws IOException {
-		BufferedInputStream bufferedFileInputStream = null;
-
+	public static void addFileToOpenZipFileStream(final File sourceFile, final String relativeDirPath, final ZipOutputStream destinationZipFileSream) throws IOException {
 		if (!sourceFile.exists()) {
 			throw new IOException("SourceFile does not exist");
 		}
@@ -104,31 +92,28 @@ public class ZipUtilities {
 
 		try {
 			if (!sourceFile.isDirectory()) {
-				ZipEntry entry = new ZipEntry(relativeDirPath + sourceFile.getName());
+				final ZipEntry entry = new ZipEntry(relativeDirPath + sourceFile.getName());
 				entry.setTime(sourceFile.lastModified());
 				destinationZipFileSream.putNextEntry(entry);
 
-				bufferedFileInputStream = new BufferedInputStream(new FileInputStream(sourceFile));
-				byte[] bufferArray = new byte[4096];
-				int byteBufferFillLength = bufferedFileInputStream.read(bufferArray);
-				while (byteBufferFillLength > -1) {
-					destinationZipFileSream.write(bufferArray, 0, byteBufferFillLength);
-					byteBufferFillLength = bufferedFileInputStream.read(bufferArray);
-				}
-				bufferedFileInputStream.close();
-				bufferedFileInputStream = null;
+				try (BufferedInputStream bufferedFileInputStream = new BufferedInputStream(new FileInputStream(sourceFile))) {
+					final byte[] bufferArray = new byte[4096];
+					int byteBufferFillLength = bufferedFileInputStream.read(bufferArray);
+					while (byteBufferFillLength > -1) {
+						destinationZipFileSream.write(bufferArray, 0, byteBufferFillLength);
+						byteBufferFillLength = bufferedFileInputStream.read(bufferArray);
+					}
 
-				destinationZipFileSream.flush();
-				destinationZipFileSream.closeEntry();
+					destinationZipFileSream.flush();
+					destinationZipFileSream.closeEntry();
+				}
 			} else {
-				for (File sourceSubFile : sourceFile.listFiles()) {
+				for (final File sourceSubFile : sourceFile.listFiles()) {
 					addFileToOpenZipFileStream(sourceSubFile, relativeDirPath + sourceFile.getName() + File.separator, destinationZipFileSream);
 				}
 			}
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			throw e;
-		} finally {
-			Utilities.closeQuietly(bufferedFileInputStream);
 		}
 	}
 
@@ -140,7 +125,7 @@ public class ZipUtilities {
 	 * @param destinationZipFileSream
 	 * @throws IOException
 	 */
-	public static void addFileDataToOpenZipFileStream(byte[] fileData, String filename, ZipOutputStream destinationZipFileSream) throws IOException {
+	public static void addFileDataToOpenZipFileStream(final byte[] fileData, final String filename, final ZipOutputStream destinationZipFileSream) throws IOException {
 		addFileDataToOpenZipFileStream(fileData, File.separator, filename, destinationZipFileSream);
 	}
 
@@ -151,7 +136,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static ZipOutputStream openNewZipOutputStream(File destinationZipFile) throws IOException {
+	public static ZipOutputStream openNewZipOutputStream(final File destinationZipFile) throws IOException {
 		if (destinationZipFile.exists()) {
 			throw new IOException("DestinationFile already exists");
 		} else if (!destinationZipFile.getParentFile().exists()) {
@@ -160,7 +145,7 @@ public class ZipUtilities {
 
 		try {
 			return new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(destinationZipFile)));
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			if (destinationZipFile.exists()) {
 				destinationZipFile.delete();
 			}
@@ -175,7 +160,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static ZipOutputStream openNewZipOutputStream(OutputStream destinationZipStream) throws IOException {
+	public static ZipOutputStream openNewZipOutputStream(final OutputStream destinationZipStream) throws IOException {
 		if (destinationZipStream == null) {
 			throw new IOException("DestinationStream is missing");
 		}
@@ -192,7 +177,7 @@ public class ZipUtilities {
 	 * @param destinationZipFileStream
 	 * @throws IOException
 	 */
-	public static void addFileDataToOpenZipFileStream(byte[] fileData, String relativeDirPath, String filename, ZipOutputStream destinationZipFileStream) throws IOException {
+	public static void addFileDataToOpenZipFileStream(final byte[] fileData, final String relativeDirPath, final String filename, final ZipOutputStream destinationZipFileStream) throws IOException {
 		if (fileData == null) {
 			throw new IOException("FileData is missing");
 		}
@@ -209,7 +194,7 @@ public class ZipUtilities {
 			throw new IOException("RelativeDirPath is invalid");
 		}
 
-		ZipEntry entry = new ZipEntry(relativeDirPath + filename);
+		final ZipEntry entry = new ZipEntry(relativeDirPath + filename);
 		entry.setTime(new Date().getTime());
 		destinationZipFileStream.putNextEntry(entry);
 
@@ -226,12 +211,9 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static void addFileToExistingzipFile(File sourceFile, File zipFile) throws IOException {
-		ZipOutputStream zipOutputStream = openExistingZipFileForExtension(zipFile);
-		try {
+	public static void addFileToExistingzipFile(final File sourceFile, final File zipFile) throws IOException {
+		try (ZipOutputStream zipOutputStream = openExistingZipFileForExtension(zipFile)) {
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
-		} finally {
-			Utilities.closeQuietly(zipOutputStream);
 		}
 	}
 
@@ -242,14 +224,11 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static void addFileToExistingzipFile(List<File> sourceFiles, File zipFile) throws IOException {
-		ZipOutputStream zipOutputStream = openExistingZipFileForExtension(zipFile);
-		try {
-			for (File file : sourceFiles) {
+	public static void addFileToExistingzipFile(final List<File> sourceFiles, final File zipFile) throws IOException {
+		try (ZipOutputStream zipOutputStream = openExistingZipFileForExtension(zipFile)) {
+			for (final File file : sourceFiles) {
 				addFileToOpenZipFileStream(file, zipOutputStream);
 			}
-		} finally {
-			Utilities.closeQuietly(zipOutputStream);
 		}
 	}
 
@@ -260,7 +239,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static ZipOutputStream openExistingZipFileForExtensionOrCreateNewZipFile(File zipFile) throws IOException {
+	public static ZipOutputStream openExistingZipFileForExtensionOrCreateNewZipFile(final File zipFile) throws IOException {
 		if (zipFile.exists()) {
 			return openExistingZipFileForExtension(zipFile);
 		} else {
@@ -276,34 +255,30 @@ public class ZipUtilities {
 	 * @throws IOException
 	 * @throws ZipException
 	 */
-	public static ZipOutputStream openExistingZipFileForExtension(File zipFile) throws IOException {
-		File originalFileTemp = new File(zipFile.getParentFile().getAbsolutePath() + "/" + String.valueOf(System.currentTimeMillis()));
+	public static ZipOutputStream openExistingZipFileForExtension(final File zipFile) throws IOException {
+		final File originalFileTemp = new File(zipFile.getParentFile().getAbsolutePath() + "/" + String.valueOf(System.currentTimeMillis()));
 		zipFile.renameTo(originalFileTemp);
 
-		ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
+		final ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
 
-		BufferedInputStream bufferedInputStream = null;
 		ZipFile sourceZipFile = null;
 		try {
 			sourceZipFile = new ZipFile(originalFileTemp);
-			Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
+			final Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
 			while (srcEntries.hasMoreElements()) {
-				ZipEntry sourceZipFileEntry = srcEntries.nextElement();
+				final ZipEntry sourceZipFileEntry = srcEntries.nextElement();
 				zipOutputStream.putNextEntry(sourceZipFileEntry);
 
-				bufferedInputStream = new BufferedInputStream(sourceZipFile.getInputStream(sourceZipFileEntry));
+				try (BufferedInputStream bufferedInputStream = new BufferedInputStream(sourceZipFile.getInputStream(sourceZipFileEntry))) {
+					final byte[] bufferArray = new byte[4096];
+					int byteBufferFillLength = bufferedInputStream.read(bufferArray);
+					while (byteBufferFillLength > -1) {
+						zipOutputStream.write(bufferArray, 0, byteBufferFillLength);
+						byteBufferFillLength = bufferedInputStream.read(bufferArray);
+					}
 
-				byte[] bufferArray = new byte[4096];
-				int byteBufferFillLength = bufferedInputStream.read(bufferArray);
-				while (byteBufferFillLength > -1) {
-					zipOutputStream.write(bufferArray, 0, byteBufferFillLength);
-					byteBufferFillLength = bufferedInputStream.read(bufferArray);
+					zipOutputStream.closeEntry();
 				}
-
-				zipOutputStream.closeEntry();
-
-				bufferedInputStream.close();
-				bufferedInputStream = null;
 			}
 
 			zipOutputStream.flush();
@@ -311,7 +286,7 @@ public class ZipUtilities {
 			originalFileTemp.delete();
 
 			return zipOutputStream;
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			if (zipFile.exists()) {
 				Utilities.closeQuietly(zipOutputStream);
 				zipFile.delete();
@@ -320,7 +295,6 @@ public class ZipUtilities {
 			originalFileTemp.renameTo(zipFile);
 			throw e;
 		} finally {
-			Utilities.closeQuietly(bufferedInputStream);
 			Utilities.closeQuietly(sourceZipFile);
 		}
 	}
@@ -332,55 +306,36 @@ public class ZipUtilities {
 	 * @return All entries in a map
 	 * @throws IOException
 	 */
-	public static Map<String, byte[]> readExistingZipFile(File zipFile) throws IOException {
-		Map<String, byte[]> returnMap = new HashMap<String, byte[]>();
-
-		ZipFile sourceZipFile = null;
-		BufferedInputStream bufferedInputStream = null;
-		ByteArrayOutputStream byteArrayOutputStream = null;
-
-		try {
-			sourceZipFile = new ZipFile(zipFile);
-
-			Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
+	public static Map<String, byte[]> readExistingZipFile(final File zipFile) throws IOException {
+		final Map<String, byte[]> returnMap = new HashMap<>();
+		try (ZipFile sourceZipFile = new ZipFile(zipFile)) {
+			final Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
 			while (srcEntries.hasMoreElements()) {
-				ZipEntry sourceZipFileEntry = srcEntries.nextElement();
+				final ZipEntry sourceZipFileEntry = srcEntries.nextElement();
 
-				bufferedInputStream = new BufferedInputStream(sourceZipFile.getInputStream(sourceZipFileEntry));
-				byteArrayOutputStream = new ByteArrayOutputStream();
+				try (BufferedInputStream bufferedInputStream = new BufferedInputStream(sourceZipFile.getInputStream(sourceZipFileEntry))) {
+					final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-				byte[] bufferArray = new byte[4096];
-				int byteBufferFillLength = bufferedInputStream.read(bufferArray);
-				while (byteBufferFillLength > -1) {
-					byteArrayOutputStream.write(bufferArray, 0, byteBufferFillLength);
-					byteBufferFillLength = bufferedInputStream.read(bufferArray);
+					final byte[] bufferArray = new byte[4096];
+					int byteBufferFillLength = bufferedInputStream.read(bufferArray);
+					while (byteBufferFillLength > -1) {
+						byteArrayOutputStream.write(bufferArray, 0, byteBufferFillLength);
+						byteBufferFillLength = bufferedInputStream.read(bufferArray);
+					}
+
+					returnMap.put(sourceZipFileEntry.getName(), byteArrayOutputStream.toByteArray());
 				}
-
-				returnMap.put(sourceZipFileEntry.getName(), byteArrayOutputStream.toByteArray());
-
-				byteArrayOutputStream.close();
-				byteArrayOutputStream = null;
-
-				bufferedInputStream.close();
-				bufferedInputStream = null;
 			}
-
-			sourceZipFile.close();
-
-			return returnMap;
-		} finally {
-			Utilities.closeQuietly(bufferedInputStream);
-			Utilities.closeQuietly(byteArrayOutputStream);
-			Utilities.closeQuietly(sourceZipFile);
 		}
+		return returnMap;
 	}
 
-	public static String[] getZipFileEntries(File file) throws ZipException, IOException {
+	public static String[] getZipFileEntries(final File file) throws ZipException, IOException {
 		try (ZipFile zipFile = new ZipFile(file)) {
-			Enumeration<? extends ZipEntry> entries = zipFile.entries();
-			List<String> entryList = new ArrayList<String>();
+			final Enumeration<? extends ZipEntry> entries = zipFile.entries();
+			final List<String> entryList = new ArrayList<>();
 			while (entries.hasMoreElements()) {
-				ZipEntry entry = entries.nextElement();
+				final ZipEntry entry = entries.nextElement();
 				entryList.add(entry.getName());
 			}
 			return entryList.toArray(new String[0]);

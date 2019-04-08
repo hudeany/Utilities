@@ -21,11 +21,11 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 	private PrivateKey privateKey = null;
 	private String signatureMethod = null;
 
-	public FileSignatureWorker(ProgressShowingModalDialog<?> parent, File fileToSign, File signatureDestinationFile, PrivateKey privateKey) {
+	public FileSignatureWorker(final ProgressShowingModalDialog<?> parent, final File fileToSign, final File signatureDestinationFile, final PrivateKey privateKey) {
 		this(parent, fileToSign, signatureDestinationFile, privateKey, null);
 	}
 
-	public FileSignatureWorker(ProgressShowingModalDialog<?> parent, File fileToSign, File signatureDestinationFile, PrivateKey privateKey, String signatureMethod) {
+	public FileSignatureWorker(final ProgressShowingModalDialog<?> parent, final File fileToSign, final File signatureDestinationFile, final PrivateKey privateKey, final String signatureMethod) {
 		super(parent);
 		this.fileToSign = fileToSign;
 		this.signatureDestinationFile = signatureDestinationFile;
@@ -41,16 +41,14 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 	public Boolean work() throws Exception {
 		showProgress();
 
-		BufferedInputStream dataStream = null;
-		try {
-			itemsToDo = fileToSign.length();
-			
-			Security.addProvider(new BouncyCastleProvider());
+		itemsToDo = fileToSign.length();
 
-			dataStream = new BufferedInputStream(new FileInputStream(fileToSign));
-			Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
+		Security.addProvider(new BouncyCastleProvider());
+
+		try (BufferedInputStream dataStream = new BufferedInputStream(new FileInputStream(fileToSign))) {
+			final Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
 			signature.initSign(privateKey);
-			byte[] buffer = new byte[4096];
+			final byte[] buffer = new byte[4096];
 			int bytesRead;
 			while ((bytesRead = dataStream.read(buffer)) >= 0) {
 				if (cancel) {
@@ -61,14 +59,12 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 					showProgress();
 				}
 			}
-			byte[] signatureData = signature.sign();
+			final byte[] signatureData = signature.sign();
 			FileUtils.writeByteArrayToFile(signatureDestinationFile, signatureData);
 
 			return true;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot create signature", e);
-		} finally {
-			Utilities.closeQuietly(dataStream);
 		}
 	}
 }

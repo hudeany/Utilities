@@ -22,37 +22,33 @@ import de.soderer.utilities.csv.CsvWriter;
 public class ConfigurationProperties {
 	public static String MAXSIZE_EXTENSION = ".maxSize";
 
-	private Properties properties = new Properties();
-	private String applicationName;
+	private final Properties properties = new Properties();
+	private final String applicationName;
 	private boolean useSubDirectory = false;
 
-	public ConfigurationProperties(String applicationName) {
+	public ConfigurationProperties(final String applicationName) {
 		this(applicationName, false);
 	}
 
-	public ConfigurationProperties(String applicationName, boolean useSubDirectory) {
+	public ConfigurationProperties(final String applicationName, final boolean useSubDirectory) {
 		this.applicationName = applicationName;
 		this.useSubDirectory = useSubDirectory;
-		File configFile = new File(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
+		final File configFile = new File(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
 		if (configFile.exists()) {
-			FileInputStream fileInputStream = null;
-			try {
-				fileInputStream = new FileInputStream(configFile);
-				Properties propertiesLoaded = new Properties();
+			try (FileInputStream fileInputStream = new FileInputStream(configFile)) {
+				final Properties propertiesLoaded = new Properties();
 				propertiesLoaded.load(fileInputStream);
-				for (Entry<Object, Object> entry : propertiesLoaded.entrySet()) {
+				for (final Entry<Object, Object> entry : propertiesLoaded.entrySet()) {
 					properties.setProperty((String) entry.getKey(), unEscape((String) entry.getValue()));
 				}
-			} catch (IOException e) {
+			} catch (final IOException e) {
 				e.printStackTrace();
 				throw new RuntimeException("Cannot load configuration", e);
-			} finally {
-				Utilities.closeQuietly(fileInputStream);
 			}
 		}
 	}
 
-	public String get(String name) {
+	public String get(final String name) {
 		if (properties.containsKey(name)) {
 			return properties.getProperty(name);
 		} else {
@@ -65,7 +61,7 @@ public class ConfigurationProperties {
 	 *
 	 * @param name
 	 */
-	public void ensure(String name) {
+	public void ensure(final String name) {
 		if (!properties.containsKey(name)) {
 			properties.setProperty(name, "");
 		}
@@ -76,13 +72,13 @@ public class ConfigurationProperties {
 	 *
 	 * @param name
 	 */
-	public void ensure(String name, boolean defaultValue) {
+	public void ensure(final String name, final boolean defaultValue) {
 		if (!properties.containsKey(name)) {
 			properties.setProperty(name, defaultValue ? "true" : "false");
 		}
 	}
 
-	public void ensureRecentList(String name, int maxSize) {
+	public void ensureRecentList(final String name, final int maxSize) {
 		if (!properties.containsKey(name)) {
 			properties.setProperty(name, "");
 		}
@@ -91,23 +87,23 @@ public class ConfigurationProperties {
 		}
 	}
 
-	public void set(String name, String value) {
+	public void set(final String name, final String value) {
 		properties.setProperty(name, value);
 	}
 
-	public void set(String name, int value) {
+	public void set(final String name, final int value) {
 		properties.setProperty(name, Integer.toString(value));
 	}
 
-	public void set(String name, char value) {
+	public void set(final String name, final char value) {
 		properties.setProperty(name, Character.toString(value));
 	}
 
-	public void set(String name, Date value) {
+	public void set(final String name, final Date value) {
 		properties.setProperty(name, new SimpleDateFormat(DateUtilities.YYYYMMDD_HHMMSS).format(value));
 	}
 
-	public int getInteger(String name) {
+	public int getInteger(final String name) {
 		if (properties.containsKey(name)) {
 			return Integer.parseInt(properties.getProperty(name));
 		} else {
@@ -115,7 +111,7 @@ public class ConfigurationProperties {
 		}
 	}
 
-	public Character getCharacter(String name) {
+	public Character getCharacter(final String name) {
 		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			return properties.getProperty(name).toCharArray()[0];
 		} else {
@@ -123,7 +119,7 @@ public class ConfigurationProperties {
 		}
 	}
 
-	public boolean getBoolean(String name) {
+	public boolean getBoolean(final String name) {
 		if (properties.containsKey(name)) {
 			return Utilities.interpretAsBool(properties.getProperty(name));
 		} else {
@@ -131,42 +127,42 @@ public class ConfigurationProperties {
 		}
 	}
 
-	public Date getDate(String name) {
+	public Date getDate(final String name) {
 		try {
 			if (properties.containsKey(name)) {
 				return new SimpleDateFormat(DateUtilities.YYYYMMDD_HHMMSS).parse(properties.getProperty(name));
 			} else {
 				return null;
 			}
-		} catch (ParseException e) {
+		} catch (final ParseException e) {
 			return null;
 		}
 	}
 
-	public void set(String name, boolean value) {
+	public void set(final String name, final boolean value) {
 		properties.setProperty(name, value ? "true" : "false");
 	}
 
-	public List<String> getList(String name) {
+	public List<String> getList(final String name) {
 		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			try {
 				return CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"'), properties.getProperty(name));
-			} catch (Exception e) {
-				return new ArrayList<String>();
+			} catch (final Exception e) {
+				return new ArrayList<>();
 			}
 		} else {
-			return new ArrayList<String>();
+			return new ArrayList<>();
 		}
 	}
 
-	public boolean removeFromList(String name, String value) {
+	public boolean removeFromList(final String name, final String value) {
 		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			try {
-				List<String> currentList = CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"'), properties.getProperty(name));
-				boolean removedValue = currentList.remove(value);
+				final List<String> currentList = CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"'), properties.getProperty(name));
+				final boolean removedValue = currentList.remove(value);
 				set(name, currentList);
 				return removedValue;
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				return false;
 			}
 		} else {
@@ -174,69 +170,64 @@ public class ConfigurationProperties {
 		}
 	}
 
-	public void set(String name, List<String> list) {
+	public void set(final String name, final List<String> list) {
 		properties.setProperty(name, CsvWriter.getCsvLine(';', '"', list));
 	}
 
-	public void addRecentListEntry(String name, String value) {
-		List<String> valueList = new UniqueFifoQueuedList<String>(getInteger(name + MAXSIZE_EXTENSION), getList(name));
+	public void addRecentListEntry(final String name, final String value) {
+		final List<String> valueList = new UniqueFifoQueuedList<>(getInteger(name + MAXSIZE_EXTENSION), getList(name));
 		valueList.add(value);
 		set(name, valueList);
 	}
 
-	public void addListEntry(String name, String value) {
-		List<String> valueList = getList(name);
+	public void addListEntry(final String name, final String value) {
+		final List<String> valueList = getList(name);
 		valueList.add(value);
 		set(name, valueList);
 	}
 
-	public void addSetEntry(String name, String value) {
-		Set<String> valueSet = new HashSet<String>(getList(name));
+	public void addSetEntry(final String name, final String value) {
+		final Set<String> valueSet = new HashSet<>(getList(name));
 		valueSet.add(value);
-		set(name, new ArrayList<String>(valueSet));
+		set(name, new ArrayList<>(valueSet));
 	}
 
-	public String getLatestRecentValue(String name) {
-		return new UniqueFifoQueuedList<String>(getInteger(name + MAXSIZE_EXTENSION), getList(name)).getLatestAdded();
+	public String getLatestRecentValue(final String name) {
+		return new UniqueFifoQueuedList<>(getInteger(name + MAXSIZE_EXTENSION), getList(name)).getLatestAdded();
 	}
 
 	public void save() {
-		FileOutputStream fileOutputStream = null;
-		try {
-			if (useSubDirectory && !new File(System.getProperty("user.home") + File.separator + "." + applicationName).exists()) {
-				new File(System.getProperty("user.home") + File.separator + "." + applicationName).mkdirs();
-			}
-			fileOutputStream = new FileOutputStream(
-					System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
-			Properties propertiesToStore = new Properties();
-			for (Entry<Object, Object> entry : properties.entrySet()) {
+		if (useSubDirectory && !new File(System.getProperty("user.home") + File.separator + "." + applicationName).exists()) {
+			new File(System.getProperty("user.home") + File.separator + "." + applicationName).mkdirs();
+		}
+		try (FileOutputStream fileOutputStream = new FileOutputStream(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config")) {
+			final Properties propertiesToStore = new Properties();
+			for (final Entry<Object, Object> entry : properties.entrySet()) {
 				propertiesToStore.setProperty((String) entry.getKey(), escape((String) entry.getValue()));
 			}
 			propertiesToStore.store(fileOutputStream, applicationName + ".config");
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
-		} finally {
-			Utilities.closeQuietly(fileOutputStream);
 		}
 	}
 
 	public List<String> getKeyList() {
-		List<String> returnList = new ArrayList<String>();
-		for (Object key : properties.keySet()) {
+		final List<String> returnList = new ArrayList<>();
+		for (final Object key : properties.keySet()) {
 			returnList.add(key.toString());
 		}
 		return returnList;
 	}
 
-	public boolean containsKey(String name) {
+	public boolean containsKey(final String name) {
 		return properties.containsKey(name);
 	}
 
-	public static String escape(String value) {
+	public static String escape(final String value) {
 		return value.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t").replace("\\", "\\\\");
 	}
 
-	public static String unEscape(String value) {
+	public static String unEscape(final String value) {
 		return value.replace("\\\\", "\\").replace("\\t", "\t").replace("\\n", "\n").replace("\\r", "\r");
 	}
 }

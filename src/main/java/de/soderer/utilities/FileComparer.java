@@ -16,13 +16,10 @@ public class FileComparer {
 	public static final String SOURCE1_SIGN = "-";
 	public static final String SOURCE2_SIGN = "+";
 
-	public boolean compareExactly(File file1, File file2) throws IOException {
+	public boolean compareExactly(final File file1, final File file2) throws IOException {
 		if (file1.length() == file2.length()) {
-			BufferedInputStream fileInputStream1 = null;
-			BufferedInputStream fileInputStream2 = null;
-			try {
-				fileInputStream1 = new BufferedInputStream(new FileInputStream(file1));
-				fileInputStream2 = new BufferedInputStream(new FileInputStream(file2));
+			try (BufferedInputStream fileInputStream1 = new BufferedInputStream(new FileInputStream(file1));
+					BufferedInputStream fileInputStream2 = new BufferedInputStream(new FileInputStream(file2))) {
 				int buffer = 0;
 				while ((buffer = fileInputStream1.read()) != -1) {
 					if (buffer != fileInputStream2.read()) {
@@ -30,33 +27,30 @@ public class FileComparer {
 					}
 				}
 				return true;
-			} finally {
-				Utilities.closeQuietly(fileInputStream1);
-				Utilities.closeQuietly(fileInputStream2);
 			}
 		} else {
 			return false;
 		}
 	}
 
-	public static String generateUnifiedDiff(File file1, File file2) throws Exception {
+	public static String generateUnifiedDiff(final File file1, final File file2) throws Exception {
 		return generateUnifiedDiff(file1, file2, false, true, OutputMode.All);
 	}
 
-	public static String generateUnifiedDiff(File file1, File file2, boolean ignoreLeadingAndTrailingWhitespaces, boolean blockSensitiveCompare, OutputMode outputMode) throws Exception {
+	public static String generateUnifiedDiff(final File file1, final File file2, final boolean ignoreLeadingAndTrailingWhitespaces, final boolean blockSensitiveCompare, final OutputMode outputMode) throws Exception {
 		if (!file1.exists()) {
 			throw new Exception("File \"" + file1.getAbsolutePath() + "\" does not exist");
 		} else if (!file2.exists()) {
 			throw new Exception("File \"" + file2.getAbsolutePath() + "\" does not exist");
 		}
 
-		TextFilePropertiesReader fileReader1 = new TextFilePropertiesReader(file1);
-		String dataString1 = fileReader1.readFileToString();
+		final TextFilePropertiesReader fileReader1 = new TextFilePropertiesReader(file1);
+		final String dataString1 = fileReader1.readFileToString();
 
-		TextFilePropertiesReader fileReader2 = new TextFilePropertiesReader(file2);
-		String dataString2 = fileReader2.readFileToString();
+		final TextFilePropertiesReader fileReader2 = new TextFilePropertiesReader(file2);
+		final String dataString2 = fileReader2.readFileToString();
 
-		StringBuilder result = new StringBuilder();
+		final StringBuilder result = new StringBuilder();
 		result.append(generateUnifiedDiff(file1.getAbsolutePath() + " " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(new Date(file1.lastModified())), dataString1,
 				file2.getAbsolutePath() + " " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(new Date(file2.lastModified())), dataString2, ignoreLeadingAndTrailingWhitespaces, blockSensitiveCompare,
 				outputMode));
@@ -64,8 +58,8 @@ public class FileComparer {
 		return result.toString();
 	}
 
-	public static String generateUnifiedDiff(String sourceName1, String dataString1, String sourceName2, String dataString2, boolean ignoreLeadingAndTrailingWhitespaces, boolean blockSensitiveCompare,
-			OutputMode outputMode) throws Exception {
+	public static String generateUnifiedDiff(final String sourceName1, String dataString1, final String sourceName2, String dataString2, final boolean ignoreLeadingAndTrailingWhitespaces, final boolean blockSensitiveCompare,
+			final OutputMode outputMode) throws Exception {
 		if (dataString1 == null) {
 			throw new Exception("Datastring 1 is invalid");
 		} else if (dataString2 == null) {
@@ -77,12 +71,12 @@ public class FileComparer {
 			dataString2 = TextUtilities.removeLeadingAndTrailingWhitespaces(dataString2);
 		}
 
-		List<String> lines1 = TextUtilities.getLines(dataString1);
+		final List<String> lines1 = TextUtilities.getLines(dataString1);
 		int position1 = 0;
-		List<String> lines2 = TextUtilities.getLines(dataString2);
+		final List<String> lines2 = TextUtilities.getLines(dataString2);
 		int position2 = 0;
 
-		StringBuilder result = new StringBuilder();
+		final StringBuilder result = new StringBuilder();
 		result.append(Utilities.repeat(SOURCE1_SIGN, 3) + " " + sourceName1 + "\n");
 		result.append(Utilities.repeat(SOURCE2_SIGN, 3) + " " + sourceName2 + "\n");
 
@@ -148,14 +142,14 @@ public class FileComparer {
 		return result.toString();
 	}
 
-	public static <T> Tuple<Integer, Integer> findNextEquationStraigth(int startPosition1, List<T> list1, int startPosition2, List<T> list2) {
+	public static <T> Tuple<Integer, Integer> findNextEquationStraigth(final int startPosition1, final List<T> list1, final int startPosition2, final List<T> list2) {
 		Tuple<Integer, Integer> nextEquationPosition1 = null;
 		Tuple<Integer, Integer> nextEquationPosition2 = null;
 
 		for (int position1 = startPosition1; position1 < list1.size() && nextEquationPosition1 == null; position1++) {
 			for (int position2 = startPosition2; position2 < list2.size() && nextEquationPosition1 == null; position2++) {
 				if (list1.get(position1).equals(list2.get(position2))) {
-					nextEquationPosition1 = new Tuple<Integer, Integer>(position1, position2);
+					nextEquationPosition1 = new Tuple<>(position1, position2);
 				}
 			}
 		}
@@ -163,7 +157,7 @@ public class FileComparer {
 		for (int position2 = startPosition2; position2 < list2.size() && nextEquationPosition2 == null; position2++) {
 			for (int position1 = startPosition1; position1 < list1.size() && nextEquationPosition2 == null; position1++) {
 				if (list2.get(position2).equals(list1.get(position1))) {
-					nextEquationPosition2 = new Tuple<Integer, Integer>(position1, position2);
+					nextEquationPosition2 = new Tuple<>(position1, position2);
 				}
 			}
 		}
@@ -181,12 +175,12 @@ public class FileComparer {
 		}
 	}
 
-	public static <T> Tuple<Integer, Integer> findNextEquationByBlock(int startPosition1, List<T> list1, int startPosition2, List<T> list2) {
+	public static <T> Tuple<Integer, Integer> findNextEquationByBlock(final int startPosition1, final List<T> list1, final int startPosition2, final List<T> list2) {
 		int endPosition1 = list1.size() - 1;
 		int endPosition2 = list2.size() - 1;
 
 		while (true) {
-			Tuple<Integer, Integer> equationBlockPosition = findLargestBlockEquation(startPosition1, endPosition1, list1, startPosition2, endPosition2, list2);
+			final Tuple<Integer, Integer> equationBlockPosition = findLargestBlockEquation(startPosition1, endPosition1, list1, startPosition2, endPosition2, list2);
 			if (equationBlockPosition != null && (equationBlockPosition.getFirst() < endPosition1 || equationBlockPosition.getSecond() < endPosition2)) {
 				endPosition1 = equationBlockPosition.getFirst();
 				endPosition2 = equationBlockPosition.getSecond();
@@ -196,7 +190,7 @@ public class FileComparer {
 		}
 	}
 
-	public static <T> Tuple<Integer, Integer> findLargestBlockEquation(int startPosition1, int endPosition1, List<T> list1, int startPosition2, int endPosition2, List<T> list2) {
+	public static <T> Tuple<Integer, Integer> findLargestBlockEquation(final int startPosition1, int endPosition1, final List<T> list1, final int startPosition2, int endPosition2, final List<T> list2) {
 		if (endPosition1 < 0 || endPosition1 >= list1.size()) {
 			endPosition1 = list1.size() - 1;
 		}
@@ -221,7 +215,7 @@ public class FileComparer {
 
 					if (largestEquationLength < equationLength) {
 						largestEquationLength = equationLength;
-						largestEquationPosition = new Tuple<Integer, Integer>(position1, position2);
+						largestEquationPosition = new Tuple<>(position1, position2);
 					}
 				}
 			}

@@ -13,14 +13,10 @@ public class VersionInfo {
 	}
 
 	public static String getVersionInfoText() {
-		InputStream inputStream = null;
-		try {
-			inputStream = VersionInfo.class.getClassLoader().getResourceAsStream("VersionInfo.txt");
+		try (InputStream inputStream = VersionInfo.class.getClassLoader().getResourceAsStream("VersionInfo.txt")) {
 			return new String(Utilities.toByteArray(inputStream), "UTF-8");
 		} catch (final Exception e) {
 			return "VersionInfo not found";
-		} finally {
-			Utilities.closeQuietly(inputStream);
 		}
 	}
 }

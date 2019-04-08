@@ -32,33 +32,33 @@ import javax.net.ssl.X509TrustManager;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class HttpUtilities {
-	public static void pingUrlWithoutSslCheckNoWaitForAnswer(String pingUrl) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+	public static void pingUrlWithoutSslCheckNoWaitForAnswer(final String pingUrl) throws IOException, NoSuchAlgorithmException, KeyManagementException {
 		InputStream downloadStream = null;
 		try {
 			if (pingUrl.startsWith("https")) {
 				// Deactivate SSL-Certificates check
-				SSLContext sslContext = SSLContext.getInstance("TLS");
-				TrustManager[] tms = new TrustManager[] {
-					new X509TrustManager() {
-						@Override
-						public X509Certificate[] getAcceptedIssuers() {
-							return null;
+				final SSLContext sslContext = SSLContext.getInstance("TLS");
+				final TrustManager[] tms = new TrustManager[] {
+						new X509TrustManager() {
+							@Override
+							public X509Certificate[] getAcceptedIssuers() {
+								return null;
+							}
+
+							@Override
+							public void checkServerTrusted(final X509Certificate[] arg0, final String arg1) throws CertificateException {
+								// nothing to do
+							}
+
+							@Override
+							public void checkClientTrusted(final X509Certificate[] arg0, final String arg1) throws CertificateException {
+								// nothing to do
+							}
 						}
-	
-						@Override
-						public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-							// nothing to do
-						}
-	
-						@Override
-						public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-							// nothing to do
-						}
-					}
 				};
 				sslContext.init(null, tms, null);
-				SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-				HttpsURLConnection connection = (HttpsURLConnection) new URL(pingUrl).openConnection();
+				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+				final HttpsURLConnection connection = (HttpsURLConnection) new URL(pingUrl).openConnection();
 				connection.setSSLSocketFactory(sslSocketFactory);
 				connection.setRequestMethod("POST");
 				connection.setConnectTimeout(5000);
@@ -67,7 +67,7 @@ public class HttpUtilities {
 				connection.setDoOutput(false);
 				downloadStream = connection.getInputStream();
 			} else {
-				HttpURLConnection connection = (HttpURLConnection) new URL(pingUrl).openConnection();
+				final HttpURLConnection connection = (HttpURLConnection) new URL(pingUrl).openConnection();
 				connection.setRequestMethod("POST");
 				connection.setConnectTimeout(5000);
 				connection.setReadTimeout(100);
@@ -75,15 +75,13 @@ public class HttpUtilities {
 				connection.setDoOutput(false);
 				downloadStream = connection.getInputStream();
 			}
-		} catch (SocketTimeoutException stex) {
+		} catch (final SocketTimeoutException stex) {
 			// This Exception is expected for the real short timeout
 		} finally {
-			if (downloadStream != null) {
-				Utilities.closeQuietly(downloadStream);
-			}
+			Utilities.closeQuietly(downloadStream);
 		}
 	}
-	
+
 	public enum RequestMethod {
 		GET,
 		POST,
@@ -92,12 +90,12 @@ public class HttpUtilities {
 	}
 
 	public static final String CONTENT_ENCODING = "UTF-8";
-	
+
 	public static final String CONTENT_TYPE_JAVASCRIPT = "application/javascript";
 	public static final String CONTENT_TYPE_JSON = "application/json";
 	public static final String APPLICATION_JSON_UTF8 = CONTENT_TYPE_JSON + ";charset=" + CONTENT_ENCODING;
 	public static final String IMAGE_CONTENT_TYPE = "image";
-	
+
 	public static final String SECURE_HTTP_PROTOCOL_SIGN = "https://";
 	public static final String HTTP_PROTOCOL_SIGN = "http://";
 
@@ -109,28 +107,28 @@ public class HttpUtilities {
 		}
 
 		@Override
-		public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+		public void checkClientTrusted(final java.security.cert.X509Certificate[] certs, final String authType) {
 			// nothing to do
 		}
 
 		@Override
-		public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+		public void checkServerTrusted(final java.security.cert.X509Certificate[] certs, final String authType) {
 			// nothing to do
 		}
 	};
-	
+
 	private static HostnameVerifier TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER = (hostname, session) -> true;
 
-	public static String convertToParameterString(Map<String, Object> parameterMap, String encoding) throws UnsupportedEncodingException {
+	public static String convertToParameterString(final Map<String, Object> parameterMap, String encoding) throws UnsupportedEncodingException {
 		if (parameterMap == null) {
 			return null;
 		} else {
 			if (Utilities.isBlank(encoding)) {
 				encoding = "UTF-8";
 			}
-			StringBuilder returnValue = new StringBuilder();
+			final StringBuilder returnValue = new StringBuilder();
 			try {
-				for (Entry<String, Object> entry : parameterMap.entrySet()) {
+				for (final Entry<String, Object> entry : parameterMap.entrySet()) {
 					if (returnValue.length() > 0) {
 						returnValue.append("&");
 					}
@@ -140,87 +138,87 @@ public class HttpUtilities {
 						returnValue.append(URLEncoder.encode(entry.getValue().toString(), encoding));
 					}
 				}
-			} catch (UnsupportedEncodingException e) {
+			} catch (final UnsupportedEncodingException e) {
 				throw e;
 			}
-			
+
 			return returnValue.toString();
 		}
 	}
-	
-	public static Tuple<String, String> createHtmlFormMimetypeHeader(String encoding) {
+
+	public static Tuple<String, String> createHtmlFormMimetypeHeader(final String encoding) {
 		if (Utilities.isBlank(encoding)) {
 			return new Tuple<>("content-type", "application/x-www-form-urlencoded");
 		} else {
 			return new Tuple<>("content-type", "application/x-www-form-urlencoded; charset=" + encoding.toLowerCase());
 		}
 	}
-	
-	public static String executeHttpGetRequest(String httpUrl) throws Exception {
+
+	public static String executeHttpGetRequest(final String httpUrl) throws Exception {
 		return executeHttpRequest(httpUrl, null, null);
 	}
-	
-	public static String executeHttpGetRequest(String httpUrl, Map<String, Object> httpUrlParameter) throws Exception {
+
+	public static String executeHttpGetRequest(final String httpUrl, final Map<String, Object> httpUrlParameter) throws Exception {
 		return executeHttpRequest(httpUrl, httpUrlParameter, null);
 	}
-	
-	public static String executeHttpGetRequest(String httpUrl, Map<String, Object> httpUrlParameter, boolean checkSslServerCert) throws Exception {
+
+	public static String executeHttpGetRequest(final String httpUrl, final Map<String, Object> httpUrlParameter, final boolean checkSslServerCert) throws Exception {
 		return executeHttpRequest(httpUrl, httpUrlParameter, null, checkSslServerCert);
 	}
-	
-	public static String executeHttpPostRequest(String httpUrl, Map<String, Object> httpPostParameter) throws Exception {
+
+	public static String executeHttpPostRequest(final String httpUrl, final Map<String, Object> httpPostParameter) throws Exception {
 		return executeHttpRequest(httpUrl, null, httpPostParameter);
 	}
-	
-	public static String executeHttpPostRequest(String httpUrl, Map<String, Object> httpPostParameter, boolean checkSslServerCert) throws Exception {
+
+	public static String executeHttpPostRequest(final String httpUrl, final Map<String, Object> httpPostParameter, final boolean checkSslServerCert) throws Exception {
 		return executeHttpRequest(httpUrl, null, httpPostParameter, checkSslServerCert);
 	}
-	
-	public static String executeHttpRequest(String httpUrlString, Map<String, Object> httpUrlParameter, Map<String, Object> httpPostParameter) throws Exception {
+
+	public static String executeHttpRequest(final String httpUrlString, final Map<String, Object> httpUrlParameter, final Map<String, Object> httpPostParameter) throws Exception {
 		return executeHttpRequest(httpUrlString, httpUrlParameter, httpPostParameter, true);
 	}
-	
-	public static String executeHttpRequest(String httpUrlString, Map<String, Object> httpUrlParameter, Map<String, Object> httpPostParameter, boolean checkSslServerCert) throws Exception {
+
+	public static String executeHttpRequest(final String httpUrlString, final Map<String, Object> httpUrlParameter, final Map<String, Object> httpPostParameter, final boolean checkSslServerCert) throws Exception {
 		return executeHttpRequest(httpUrlString, null, httpUrlParameter, httpPostParameter, checkSslServerCert);
 	}
-	
-	public static String executeHttpRequest(String httpUrlString, Map<String, String> httpRequestHeaders, Map<String, Object> httpUrlParameter, Map<String, Object> httpPostParameter, boolean checkSslServerCert) throws Exception {
+
+	public static String executeHttpRequest(final String httpUrlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final Map<String, Object> httpPostParameter, final boolean checkSslServerCert) throws Exception {
 		String httpRequestBody = null;
 		if (httpPostParameter != null && httpPostParameter.size() > 0) {
 			httpRequestBody = convertToParameterString(httpPostParameter, null);
 		}
-		
-		HttpResponse response = executeHttpRequest(null, httpUrlString, httpRequestHeaders, httpUrlParameter, httpRequestBody, checkSslServerCert);
-		
+
+		final HttpResponse response = executeHttpRequest(null, httpUrlString, httpRequestHeaders, httpUrlParameter, httpRequestBody, checkSslServerCert);
+
 		if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
 			return response.getContent();
 		} else {
 			throw new HttpException(httpUrlString, response.getHttpCode());
 		}
 	}
-	
-	public static HttpResponse executeHttpRequest(RequestMethod requestMethod, String httpUrlString, Map<String, String> httpRequestHeaders, Map<String, Object> httpUrlParameter, String httpRequestBody, boolean checkSslServerCert) throws Exception {
+
+	public static HttpResponse executeHttpRequest(final RequestMethod requestMethod, final String httpUrlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final String httpRequestBody, final boolean checkSslServerCert) throws Exception {
 		return executeHttpRequest(requestMethod, httpUrlString, httpRequestHeaders, httpUrlParameter, httpRequestBody, null, checkSslServerCert);
 	}
-	
-	public static HttpResponse executeHttpRequest(RequestMethod requestMethod, String urlString, Map<String, String> httpRequestHeaders, Map<String, Object> httpUrlParameter, String httpRequestBody, String requestEncoding, boolean checkSslServerCert) throws Exception {
+
+	public static HttpResponse executeHttpRequest(final RequestMethod requestMethod, final String urlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final String httpRequestBody, final String requestEncoding, final boolean checkSslServerCert) throws Exception {
 		return executeHttpRequest(requestMethod, urlString, httpRequestHeaders,httpUrlParameter, httpRequestBody, requestEncoding, checkSslServerCert, null);
 	}
-	 
-	public static HttpResponse executeHttpRequest(RequestMethod requestMethod, String urlString, Map<String, String> httpRequestHeaders, Map<String, Object> httpUrlParameter, String httpRequestBody, String requestEncoding, boolean checkSslServerCert, Proxy proxy) throws Exception {
+
+	public static HttpResponse executeHttpRequest(final RequestMethod requestMethod, String urlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final String httpRequestBody, String requestEncoding, final boolean checkSslServerCert, final Proxy proxy) throws Exception {
 		if (Utilities.isBlank(urlString)) {
 			throw new RuntimeException("Invalid empty URL for http request");
 		}
-		
+
 		// Check for protocol "https://" or "http://" (fallback: "http://")
 		if (!urlString.startsWith(SECURE_HTTP_PROTOCOL_SIGN) && !urlString.startsWith(HTTP_PROTOCOL_SIGN)) {
 			urlString = HTTP_PROTOCOL_SIGN + urlString;
 		}
-			
+
 		try {
 			if (httpUrlParameter != null && httpUrlParameter.size() > 0) {
 				// Prepare Get parameter data
-				String getParameterString = convertToParameterString(httpUrlParameter, requestEncoding);
+				final String getParameterString = convertToParameterString(httpUrlParameter, requestEncoding);
 				urlString += "?" + getParameterString;
 			}
 
@@ -231,46 +229,46 @@ public class HttpUtilities {
 			} else {
 				urlConnection = (HttpURLConnection) new URL(urlString).openConnection(proxy);
 			}
-			
+
 			if (requestMethod != null) {
 				urlConnection.setRequestMethod(requestMethod.name());
 			}
-			
+
 			if (urlString.startsWith(SECURE_HTTP_PROTOCOL_SIGN) && !checkSslServerCert) {
-				SSLContext sslContext = SSLContext.getInstance("SSL");
+				final SSLContext sslContext = SSLContext.getInstance("SSL");
 				sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new java.security.SecureRandom());
-				SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 				((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
 				((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
 			}
-			
+
 			if (httpRequestHeaders != null) {
-				for (Entry<String, String> headerEntry : httpRequestHeaders.entrySet()) {
+				for (final Entry<String, String> headerEntry : httpRequestHeaders.entrySet()) {
 					urlConnection.setRequestProperty(headerEntry.getKey(), headerEntry.getValue());
 				}
 			}
-			
+
 			if (httpRequestBody != null) {
 				// Send post parameter data
 				urlConnection.setDoOutput(true);
 				if (Utilities.isBlank(requestEncoding)) {
 					requestEncoding = "UTF-8";
 				}
-			    try (OutputStreamWriter out = new OutputStreamWriter(urlConnection.getOutputStream(), requestEncoding)) {
-				    out.write(httpRequestBody);
-				    out.flush();
-			    }
+				try (OutputStreamWriter out = new OutputStreamWriter(urlConnection.getOutputStream(), requestEncoding)) {
+					out.write(httpRequestBody);
+					out.flush();
+				}
 			}
-			
+
 			urlConnection.connect();
-			
-			int httpResponseCode = urlConnection.getResponseCode();
+
+			final int httpResponseCode = urlConnection.getResponseCode();
 			if (httpResponseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
-				Map<String, String> headers = new CaseInsensitiveMap<>();
-				for (String headerName : urlConnection.getHeaderFields().keySet()) {
+				final Map<String, String> headers = new CaseInsensitiveMap<>();
+				for (final String headerName : urlConnection.getHeaderFields().keySet()) {
 					headers.put(headerName, urlConnection.getHeaderField(headerName));
 				}
-				
+
 				String encoding = "UTF-8";
 				if (headers.containsKey("content-type")) {
 					String contentType = headers.get("content-type");
@@ -279,24 +277,24 @@ public class HttpUtilities {
 						encoding = contentType.substring(contentType.indexOf("charset=") + 8).trim();
 					}
 				}
-				
+
 				try (BufferedReader httpResponseContentReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), encoding))) {
-					StringBuilder httpResponseContent = new StringBuilder();
+					final StringBuilder httpResponseContent = new StringBuilder();
 					String httpResponseContentLine;
 					while ((httpResponseContentLine = httpResponseContentReader.readLine()) != null) {
 						httpResponseContent.append(httpResponseContentLine);
 						httpResponseContent.append("\n");
 					}
 					return new HttpResponse(httpResponseCode, httpResponseContent.toString(), urlConnection.getContentType(), headers);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					return new HttpResponse(httpResponseCode, null, null, null);
 				}
 			} else {
-				Map<String, String> headers = new CaseInsensitiveMap<>();
-				for (String headerName : urlConnection.getHeaderFields().keySet()) {
+				final Map<String, String> headers = new CaseInsensitiveMap<>();
+				for (final String headerName : urlConnection.getHeaderFields().keySet()) {
 					headers.put(headerName, urlConnection.getHeaderField(headerName));
 				}
-				
+
 				String encoding = "UTF-8";
 				if (headers.containsKey("content-type")) {
 					String contentType = headers.get("content-type");
@@ -305,37 +303,37 @@ public class HttpUtilities {
 						encoding = contentType.substring(contentType.indexOf("charset=") + 8).trim();
 					}
 				}
-				
+
 				try (BufferedReader httpResponseContentReader = new BufferedReader(new InputStreamReader(urlConnection.getErrorStream(), encoding))) {
-					StringBuilder httpResponseContent = new StringBuilder();
+					final StringBuilder httpResponseContent = new StringBuilder();
 					String httpResponseContentLine;
 					while ((httpResponseContentLine = httpResponseContentReader.readLine()) != null) {
 						httpResponseContent.append(httpResponseContentLine);
 						httpResponseContent.append("\n");
 					}
 					return new HttpResponse(httpResponseCode, httpResponseContent.toString(), urlConnection.getContentType(), headers);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					return new HttpResponse(httpResponseCode, null, null, null);
 				}
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw e;
 		}
 	}
-	
+
 	/**
 	 * This proxy will be used as default proxy.
 	 * To override default proxy usage use "Proxy.NO_PROXY"
-	 * 
+	 *
 	 * It is set via JVM properties on startup:
 	 * java ... -Dhttp.proxyHost=proxy.url.local -Dhttp.proxyPort=8080 -Dhttp.nonProxyHosts='127.0.0.1|localhost'
 	 */
-	public static Proxy getProxyFromSystem(String url) {
-		String proxyHost = System.getProperty("http.proxyHost");
+	public static Proxy getProxyFromSystem(final String url) {
+		final String proxyHost = System.getProperty("http.proxyHost");
 		if (Utilities.isNotBlank(proxyHost)) {
-			String proxyPort = System.getProperty("http.proxyPort");
-			String nonProxyHosts = System.getProperty("http.nonProxyHosts");
-			
+			final String proxyPort = System.getProperty("http.proxyPort");
+			final String nonProxyHosts = System.getProperty("http.nonProxyHosts");
+
 			if (Utilities.isBlank(nonProxyHosts)) {
 				if (Utilities.isNotBlank(proxyHost)) {
 					if (Utilities.isNotBlank(proxyPort) && NumberUtilities.isNumber(proxyPort)) {
@@ -346,7 +344,7 @@ public class HttpUtilities {
 				}
 			} else {
 				boolean ignoreProxy = false;
-				String urlDomain = getDomainFromUrl(url);
+				final String urlDomain = getDomainFromUrl(url);
 				for (String nonProxyHost : nonProxyHosts.split("\\|")) {
 					nonProxyHost = nonProxyHost.trim();
 					if (urlDomain == null || urlDomain.equalsIgnoreCase(url)) {
@@ -365,10 +363,10 @@ public class HttpUtilities {
 				}
 			}
 		}
-		
+
 		return Proxy.NO_PROXY;
 	}
-	
+
 	public static String getDomainFromUrl(String url) {
 		if (!url.startsWith("http") && !url.startsWith("https")) {
 			url = "http://" + url;
@@ -376,14 +374,14 @@ public class HttpUtilities {
 		URL netUrl;
 		try {
 			netUrl = new URL(url);
-		} catch (MalformedURLException e) {
+		} catch (final MalformedURLException e) {
 			return null;
 		}
 		return netUrl.getHost();
 	}
-	
-	public static String addUrlParameter(String url, String parameterName, Object parameterValue, String encodingCharSet) throws UnsupportedEncodingException {
-		StringBuilder escapedParameterNameAndValue = new StringBuilder();
+
+	public static String addUrlParameter(final String url, final String parameterName, final Object parameterValue, final String encodingCharSet) throws UnsupportedEncodingException {
+		final StringBuilder escapedParameterNameAndValue = new StringBuilder();
 
 		if (Utilities.isEmpty(encodingCharSet)) {
 			escapedParameterNameAndValue.append(parameterName);
@@ -400,18 +398,18 @@ public class HttpUtilities {
 				escapedParameterNameAndValue.append(URLEncoder.encode(new String((char[]) parameterValue), encodingCharSet));
 			}
 		} else if (parameterValue instanceof Object[]) {
-        	boolean isFirstValue = true;
-        	for (Object value : (Object[]) parameterValue) {
-        		if (!isFirstValue) {
-        			escapedParameterNameAndValue.append(",");
-        		}
-        		if (Utilities.isEmpty(encodingCharSet)) {
-    				escapedParameterNameAndValue.append(String.valueOf(value));
-    			} else {
-    				escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(value), encodingCharSet));
-    			}
-        		isFirstValue = false;
-        	}
+			boolean isFirstValue = true;
+			for (final Object value : (Object[]) parameterValue) {
+				if (!isFirstValue) {
+					escapedParameterNameAndValue.append(",");
+				}
+				if (Utilities.isEmpty(encodingCharSet)) {
+					escapedParameterNameAndValue.append(String.valueOf(value));
+				} else {
+					escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(value), encodingCharSet));
+				}
+				isFirstValue = false;
+			}
 		} else {
 			if (Utilities.isEmpty(encodingCharSet)) {
 				escapedParameterNameAndValue.append(String.valueOf(parameterValue));
@@ -422,13 +420,13 @@ public class HttpUtilities {
 		return addUrlParameter(url, escapedParameterNameAndValue.toString());
 	}
 
-	public static String addPathParameter(String url, String escapedParameterNameAndValue) throws UnsupportedEncodingException {
-		StringBuilder newUrl = new StringBuilder();
+	public static String addPathParameter(final String url, final String escapedParameterNameAndValue) throws UnsupportedEncodingException {
+		final StringBuilder newUrl = new StringBuilder();
 		int insertPosition = url.indexOf('?');
 		if (insertPosition < 0) {
 			insertPosition = url.indexOf('#');
 		}
-		
+
 		if (insertPosition < 0) {
 			newUrl.append(url);
 			newUrl.append(";");
@@ -439,14 +437,14 @@ public class HttpUtilities {
 			newUrl.append(escapedParameterNameAndValue);
 			newUrl.append(url.substring(insertPosition));
 		}
-		
+
 		return newUrl.toString();
 	}
 
-	public static String addUrlParameter(String url, String escapedParameterNameAndValue) throws UnsupportedEncodingException {
-		StringBuilder newUrl = new StringBuilder();
-		int insertPosition = url.indexOf('#');
-		
+	public static String addUrlParameter(final String url, final String escapedParameterNameAndValue) throws UnsupportedEncodingException {
+		final StringBuilder newUrl = new StringBuilder();
+		final int insertPosition = url.indexOf('#');
+
 		if (insertPosition < 0) {
 			newUrl.append(url);
 			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
@@ -457,16 +455,16 @@ public class HttpUtilities {
 			newUrl.append(escapedParameterNameAndValue);
 			newUrl.append(url.substring(insertPosition));
 		}
-		
+
 		return newUrl.toString();
 	}
-	
-	public static String getPlainParameterFromHtml(String htmlText, String parameterName) throws Exception {
+
+	public static String getPlainParameterFromHtml(final String htmlText, final String parameterName) throws Exception {
 		if (Utilities.isBlank(htmlText)) {
 			return null;
 		} else {
-			Pattern parameterPattern = Pattern.compile("\\W" + parameterName + "\\s*=(\\w*)\\W", Pattern.MULTILINE);
-			Matcher parameterMatcher = parameterPattern.matcher(htmlText);
+			final Pattern parameterPattern = Pattern.compile("\\W" + parameterName + "\\s*=(\\w*)\\W", Pattern.MULTILINE);
+			final Matcher parameterMatcher = parameterPattern.matcher(htmlText);
 			if (parameterMatcher.find()) {
 				return parameterMatcher.group(1).trim();
 			} else {
@@ -474,13 +472,13 @@ public class HttpUtilities {
 			}
 		}
 	}
-	
-	public static String getQuotedParameterFromHtml(String htmlText, String parameterName) throws Exception {
+
+	public static String getQuotedParameterFromHtml(final String htmlText, final String parameterName) throws Exception {
 		if (Utilities.isBlank(htmlText)) {
 			return null;
 		} else {
-			Pattern parameterPattern = Pattern.compile("\\W" + parameterName + "\\s*=\\s\"(\\w*)\"\\W", Pattern.MULTILINE);
-			Matcher parameterMatcher = parameterPattern.matcher(htmlText);
+			final Pattern parameterPattern = Pattern.compile("\\W" + parameterName + "\\s*=\\s\"(\\w*)\"\\W", Pattern.MULTILINE);
+			final Matcher parameterMatcher = parameterPattern.matcher(htmlText);
 			if (parameterMatcher.find()) {
 				return parameterMatcher.group(1).trim();
 			} else {
@@ -488,8 +486,8 @@ public class HttpUtilities {
 			}
 		}
 	}
-	
-	public static String getHttpStatusText(int httpStatusCode) {
+
+	public static String getHttpStatusText(final int httpStatusCode) {
 		switch (httpStatusCode) {
 			case HttpURLConnection.HTTP_OK:
 				// 200

@@ -29,8 +29,8 @@ public class FileUtilities {
 	 * @param nameStart
 	 * @param extension
 	 */
-	public static void deleteSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
-		for (File file : getSubfilesByNameAndExtension(directory, nameStart, extension)) {
+	public static void deleteSubfilesByNameAndExtension(final File directory, final String nameStart, final String extension) {
+		for (final File file : getSubfilesByNameAndExtension(directory, nameStart, extension)) {
 			FileUtils.deleteQuietly(file);
 		}
 	}
@@ -43,9 +43,9 @@ public class FileUtilities {
 	 * @param extension
 	 * @return
 	 */
-	public static File[] getSubfilesByNameAndExtension(File directory, String nameStart, String extension) {
-		List<File> files = new LinkedList<File>();
-		for (File file : directory.listFiles()) {
+	public static File[] getSubfilesByNameAndExtension(final File directory, final String nameStart, final String extension) {
+		final List<File> files = new LinkedList<>();
+		for (final File file : directory.listFiles()) {
 			if (file.getName().startsWith(nameStart) && file.getName().endsWith("." + extension)) {
 				files.add(file);
 			}
@@ -61,18 +61,18 @@ public class FileUtilities {
 	 * @param traverseCompletely
 	 * @return
 	 */
-	public static List<File> getFilesWithWildcards(File startDirectory, String fileFilterWithWildcards, boolean traverseCompletely) {
-		List<File> files = new ArrayList<File>();
+	public static List<File> getFilesWithWildcards(final File startDirectory, final String fileFilterWithWildcards, final boolean traverseCompletely) {
+		final List<File> files = new ArrayList<>();
 		if (startDirectory.isDirectory()) {
-			FileFilter fileFilter = new WildcardFileFilter(fileFilterWithWildcards);
-			for (File file : startDirectory.listFiles(fileFilter)) {
+			final FileFilter fileFilter = new WildcardFileFilter(fileFilterWithWildcards);
+			for (final File file : startDirectory.listFiles(fileFilter)) {
 				if (file.isFile()) {
 					files.add(file);
 				}
 			}
 
 			if (traverseCompletely) {
-				for (File file : startDirectory.listFiles()) {
+				for (final File file : startDirectory.listFiles()) {
 					if (file.isDirectory()) {
 						files.addAll(getFilesWithWildcards(file, fileFilterWithWildcards, traverseCompletely));
 					}
@@ -93,8 +93,8 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileSearchText(File searchFile, String searchText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
-		List<String> searchTexts = new ArrayList<String>();
+	public static boolean fileSearchText(final File searchFile, final String searchText, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final String defaultEncoding) throws Exception {
+		final List<String> searchTexts = new ArrayList<>();
 		searchTexts.add(searchText);
 		return fileSearchText(searchFile, searchTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
 	}
@@ -110,44 +110,41 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileSearchText(File searchFile, List<String> searchTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding) throws Exception {
-		FileInputStream fileInputStream = null;
-		try {
-			if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
-				byte[] encodingBuffer = readFirstFileData(searchFile, 100);
-				Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
-				if (encodingData == null) {
-					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
-				}
+	public static boolean fileSearchText(final File searchFile, final List<String> searchTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final String defaultEncoding) throws Exception {
+		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
+			final byte[] encodingBuffer = readFirstFileData(searchFile, 100);
+			Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
+			if (encodingData == null) {
+				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
+			}
 
-				fileInputStream = new FileInputStream(searchFile);
-				String dataString = Utilities.toString(fileInputStream, encodingData.getFirst());
+			final String dataString;
+			try (FileInputStream fileInputStream = new FileInputStream(searchFile)) {
+				dataString = Utilities.toString(fileInputStream, encodingData.getFirst());
+			}
 
-				for (int i = 0; i < searchTexts.size(); i++) {
-					Pattern searchPattern;
-					if (searchTextIsRegularExpression) {
-						if (searchCaseSensitive) {
-							searchPattern = Pattern.compile(searchTexts.get(i));
-						} else {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE);
-						}
+			for (int i = 0; i < searchTexts.size(); i++) {
+				Pattern searchPattern;
+				if (searchTextIsRegularExpression) {
+					if (searchCaseSensitive) {
+						searchPattern = Pattern.compile(searchTexts.get(i));
 					} else {
-						if (searchCaseSensitive) {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.LITERAL);
-						} else {
-							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-						}
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE);
 					}
-					Matcher matcher = searchPattern.matcher(dataString);
-					if (matcher.find()) {
-						return true;
+				} else {
+					if (searchCaseSensitive) {
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.LITERAL);
+					} else {
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
 					}
+				}
+				final Matcher matcher = searchPattern.matcher(dataString);
+				if (matcher.find()) {
+					return true;
 				}
 			}
-			return false;
-		} finally {
-			Utilities.closeQuietly(fileInputStream);
 		}
+		return false;
 	}
 
 	/**
@@ -162,11 +159,11 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileReplaceText(File searchFile, String searchText, String replacementText, boolean searchCaseSensitive, boolean searchTextIsRegularExpression, String defaultEncoding)
+	public static boolean fileReplaceText(final File searchFile, final String searchText, final String replacementText, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final String defaultEncoding)
 			throws Exception {
-		List<String> searchTexts = new ArrayList<String>();
+		final List<String> searchTexts = new ArrayList<>();
 		searchTexts.add(searchText);
-		List<String> replacementTexts = new ArrayList<String>();
+		final List<String> replacementTexts = new ArrayList<>();
 		replacementTexts.add(replacementText);
 		return fileReplaceText(searchFile, searchTexts, replacementTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
 	}
@@ -183,19 +180,16 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileReplaceText(File searchFile, List<String> searchTexts, List<String> replacementTexts, boolean searchCaseSensitive, boolean searchTextIsRegularExpression,
-			String defaultEncoding) throws Exception {
-		FileInputStream fileInputStream = null;
-		try {
+	public static boolean fileReplaceText(final File searchFile, final List<String> searchTexts, final List<String> replacementTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final String defaultEncoding) throws Exception {
+		try (FileInputStream fileInputStream = new FileInputStream(searchFile)) {
 			boolean foundAndReplaced = false;
 			if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0 && replacementTexts != null && replacementTexts.size() > 0) {
-				byte[] encodingBuffer = readFirstFileData(searchFile, 100);
+				final byte[] encodingBuffer = readFirstFileData(searchFile, 100);
 				Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
 				if (encodingData == null) {
 					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
 				}
 
-				fileInputStream = new FileInputStream(searchFile);
 				String dataString = Utilities.toString(fileInputStream, encodingData.getFirst());
 
 				for (int i = 0; i < searchTexts.size(); i++) {
@@ -213,7 +207,7 @@ public class FileUtilities {
 							searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
 						}
 					}
-					Matcher matcher = searchPattern.matcher(dataString);
+					final Matcher matcher = searchPattern.matcher(dataString);
 					if (matcher.find()) {
 						dataString = matcher.replaceAll(replacementTexts.get(i));
 						foundAndReplaced = true;
@@ -225,8 +219,6 @@ public class FileUtilities {
 				}
 			}
 			return foundAndReplaced;
-		} finally {
-			Utilities.closeQuietly(fileInputStream);
 		}
 	}
 
@@ -238,18 +230,14 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static byte[] readFirstFileData(File dataFile, int maxAmountToRead) throws Exception {
-		FileInputStream input = null;
-		try {
-			input = new FileInputStream(dataFile);
-			byte[] encodingBufferInterim = new byte[maxAmountToRead];
-			int bytesRead = input.read(encodingBufferInterim);
-			byte[] encodingBuffer = ArrayUtils.subarray(encodingBufferInterim, 0, bytesRead);
+	public static byte[] readFirstFileData(final File dataFile, final int maxAmountToRead) throws Exception {
+		try (FileInputStream input = new FileInputStream(dataFile)) {
+			final byte[] encodingBufferInterim = new byte[maxAmountToRead];
+			final int bytesRead = input.read(encodingBufferInterim);
+			final byte[] encodingBuffer = ArrayUtils.subarray(encodingBufferInterim, 0, bytesRead);
 			return encodingBuffer;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw e;
-		} finally {
-			Utilities.closeQuietly(input);
 		}
 	}
 
@@ -259,7 +247,7 @@ public class FileUtilities {
 	 * @param basenameList
 	 * @return
 	 */
-	public static ArrayList<File> getArrayOfFilesByStammname(String basenameList) {
+	public static ArrayList<File> getArrayOfFilesByStammname(final String basenameList) {
 		return getArrayOfFilesByStammname(Arrays.asList(basenameList.split(";")));
 	}
 
@@ -269,23 +257,23 @@ public class FileUtilities {
 	 * @param stammNamenListe
 	 * @return
 	 */
-	public static ArrayList<File> getArrayOfFilesByStammname(List<String> stammNamenListe) {
-		ArrayList<File> ergebnisListe = new ArrayList<File>();
+	public static ArrayList<File> getArrayOfFilesByStammname(final List<String> stammNamenListe) {
+		final ArrayList<File> ergebnisListe = new ArrayList<>();
 
-		for (String stammName : stammNamenListe) {
+		for (final String stammName : stammNamenListe) {
 			// Suchverzeichnis und Dateistammname ermitteln
 			// Achtung: stammName kann auch wildcards wie '*' enthalten daher
 			// NICHT mit File-Class arbeiten
-			int unixLastIndexOfSeparator = stammName.lastIndexOf("/");
-			int dosLastIndexOfSeparator = stammName.lastIndexOf("\\");
-			int lastIndexOfSeparator = Math.max(unixLastIndexOfSeparator, dosLastIndexOfSeparator);
-			String suchVerzeichnis = stammName.substring(0, lastIndexOfSeparator + 1);
-			String stammFileName = stammName.substring(lastIndexOfSeparator + 1);
+			final int unixLastIndexOfSeparator = stammName.lastIndexOf("/");
+			final int dosLastIndexOfSeparator = stammName.lastIndexOf("\\");
+			final int lastIndexOfSeparator = Math.max(unixLastIndexOfSeparator, dosLastIndexOfSeparator);
+			final String suchVerzeichnis = stammName.substring(0, lastIndexOfSeparator + 1);
+			final String stammFileName = stammName.substring(lastIndexOfSeparator + 1);
 
 			// Dateiliste erstellen
-			File searchPath = new File(suchVerzeichnis);
+			final File searchPath = new File(suchVerzeichnis);
 			if (searchPath.isDirectory()) {
-				File[] partList = searchPath.listFiles();
+				final File[] partList = searchPath.listFiles();
 				for (int i = 0; i < partList.length; i++) {
 					if (partList[i].isFile() && (stammFileName.endsWith("*") && partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1))
 							|| !stammFileName.endsWith("*") && partList[i].getName().equals(stammFileName))) {
@@ -309,7 +297,7 @@ public class FileUtilities {
 	 * @param traverseCompletely
 	 * @return
 	 */
-	public static List<File> getFilesByPattern(File startDirectory, String patternString, boolean traverseCompletely) {
+	public static List<File> getFilesByPattern(final File startDirectory, final String patternString, final boolean traverseCompletely) {
 		return getFilesByPattern(startDirectory, Pattern.compile(patternString), traverseCompletely);
 	}
 
@@ -321,10 +309,10 @@ public class FileUtilities {
 	 * @param traverseCompletely
 	 * @return
 	 */
-	public static List<File> getFilesByPattern(File startDirectory, Pattern pattern, boolean traverseCompletely) {
-		List<File> files = new ArrayList<File>();
+	public static List<File> getFilesByPattern(final File startDirectory, final Pattern pattern, final boolean traverseCompletely) {
+		final List<File> files = new ArrayList<>();
 		if (startDirectory.isDirectory()) {
-			for (File file : startDirectory.listFiles()) {
+			for (final File file : startDirectory.listFiles()) {
 				if (file.isDirectory()) {
 					files.add(file);
 					if (traverseCompletely) {
@@ -345,12 +333,12 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static List<File> getAllSubfiles(File directory) throws Exception {
+	public static List<File> getAllSubfiles(final File directory) throws Exception {
 		try {
-			List<File> files = new LinkedList<File>();
-			File[] subFiles = directory.listFiles();
+			final List<File> files = new LinkedList<>();
+			final File[] subFiles = directory.listFiles();
 			if (subFiles != null) {
-				for (File file : subFiles) {
+				for (final File file : subFiles) {
 					if (file.isDirectory()) {
 						files.addAll(getAllSubfiles(file));
 					} else {
@@ -359,7 +347,7 @@ public class FileUtilities {
 				}
 			}
 			return files;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error reading subfiles of: " + directory.getAbsolutePath(), e);
 		}
 	}
@@ -371,12 +359,12 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static int getAllSubfilesNumber(File directory) throws Exception {
+	public static int getAllSubfilesNumber(final File directory) throws Exception {
 		try {
 			int fileCount = 0;
-			File[] subFiles = directory.listFiles();
+			final File[] subFiles = directory.listFiles();
 			if (subFiles != null) {
-				for (File file : subFiles) {
+				for (final File file : subFiles) {
 					if (file.isDirectory()) {
 						fileCount += getAllSubfilesNumber(file);
 					} else {
@@ -385,7 +373,7 @@ public class FileUtilities {
 				}
 			}
 			return fileCount;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error reading subfilenumber of: " + directory.getAbsolutePath(), e);
 		}
 	}
@@ -397,12 +385,12 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static long getAllSubfilesSize(File directory) throws Exception {
+	public static long getAllSubfilesSize(final File directory) throws Exception {
 		try {
 			long fileSizeSum = 0;
-			File[] subFiles = directory.listFiles();
+			final File[] subFiles = directory.listFiles();
 			if (subFiles != null) {
-				for (File file : subFiles) {
+				for (final File file : subFiles) {
 					if (file.isDirectory()) {
 						fileSizeSum += getAllSubfilesSize(file);
 					} else {
@@ -411,7 +399,7 @@ public class FileUtilities {
 				}
 			}
 			return fileSizeSum;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error reading subfilesize of: " + directory.getAbsolutePath(), e);
 		}
 	}
@@ -423,46 +411,45 @@ public class FileUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static int getLineCount(File file) throws IOException {
+	public static int getLineCount(final File file) throws IOException {
 		InputStream inputStream = null;
-		LineNumberReader lineNumberReader = null;
 		try {
 			inputStream = new FileInputStream(file);
 			if (Utilities.endsWithIgnoreCase(file.getName(), ".zip")) {
 				inputStream = new ZipInputStream(inputStream);
 				((ZipInputStream) inputStream).getNextEntry();
 			}
-			
-			lineNumberReader = new LineNumberReader(new InputStreamReader(inputStream));
-			while (lineNumberReader.readLine() != null) {
-				// do nothing
-			}
 
-			return lineNumberReader.getLineNumber();
+			try (LineNumberReader lineNumberReader = new LineNumberReader(new InputStreamReader(inputStream))) {
+				while (lineNumberReader.readLine() != null) {
+					// do nothing
+				}
+
+				return lineNumberReader.getLineNumber();
+			}
 		} finally {
-			Utilities.closeQuietly(lineNumberReader);
 			Utilities.closeQuietly(inputStream);
 		}
 	}
 
-	public static void write(File file, byte[] data) throws Exception {
+	public static void write(final File file, final byte[] data) throws Exception {
 		try (FileOutputStream out = new FileOutputStream(file)) {
 			out.write(data);
 		}
 	}
-	
-	public static byte[] readFileToByteArray(File dataFile) throws Exception {
+
+	public static byte[] readFileToByteArray(final File dataFile) throws Exception {
 		ByteArrayOutputStream output = null;
 		try (FileInputStream input = new FileInputStream(dataFile)) {
 			output = new ByteArrayOutputStream();
 			Utilities.copy(input, output);
 			return output.toByteArray();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw e;
 		}
 	}
-	
-	public static String readFileToString(File dataFile, String encoding) throws Exception {
+
+	public static String readFileToString(final File dataFile, final String encoding) throws Exception {
 		return new String(readFileToByteArray(dataFile), encoding);
 	}
 }

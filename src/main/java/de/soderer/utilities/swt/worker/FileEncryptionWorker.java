@@ -42,7 +42,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	 * @param encryptedFile
 	 * @param publicKey
 	 */
-	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, PublicKey publicKey) {
+	public FileEncryptionWorker(final WorkerParentSimple parent, final File fileToEncrypt, final File encryptedFile, final PublicKey publicKey) {
 		this(parent, fileToEncrypt, encryptedFile, publicKey, null, true);
 	}
 
@@ -56,7 +56,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	 * @param encryptionMethod
 	 * @param zipBeforeEncryption
 	 */
-	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, PublicKey publicKey, String encryptionMethod, boolean zipBeforeEncryption) {
+	public FileEncryptionWorker(final WorkerParentSimple parent, final File fileToEncrypt, final File encryptedFile, final PublicKey publicKey, final String encryptionMethod, final boolean zipBeforeEncryption) {
 		super(parent);
 		this.fileToEncrypt = fileToEncrypt;
 		this.encryptedFile = encryptedFile;
@@ -77,7 +77,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	 * @param password
 	 * @param publicKey
 	 */
-	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, char[] password) {
+	public FileEncryptionWorker(final WorkerParentSimple parent, final File fileToEncrypt, final File encryptedFile, final char[] password) {
 		this(parent, fileToEncrypt, encryptedFile, password, null, null, null, true);
 	}
 
@@ -91,8 +91,8 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	 * @param encryptionMethod
 	 * @param zipBeforeEncryption
 	 */
-	public FileEncryptionWorker(WorkerParentSimple parent, File fileToEncrypt, File encryptedFile, char[] password, String encryptionMethod, byte[] salt, byte[] initalizationVector,
-			boolean zipBeforeEncryption) {
+	public FileEncryptionWorker(final WorkerParentSimple parent, final File fileToEncrypt, final File encryptedFile, final char[] password, final String encryptionMethod, final byte[] salt, final byte[] initalizationVector,
+			final boolean zipBeforeEncryption) {
 		super(parent);
 		this.fileToEncrypt = fileToEncrypt;
 		this.encryptedFile = encryptedFile;
@@ -119,49 +119,47 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 	public Boolean work() throws Exception {
 		showProgress();
 
-		InputStream inputStream = null;
-		OutputStream outputStream = null;
-		try {
-			itemsToDo = fileToEncrypt.length();
-			
-			Security.addProvider(new BouncyCastleProvider());
+		itemsToDo = fileToEncrypt.length();
 
-			inputStream = new BufferedInputStream(new FileInputStream(fileToEncrypt));
+		Security.addProvider(new BouncyCastleProvider());
 
-			Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
+		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fileToEncrypt))) {
+			final Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			if (publicKey != null) {
 				encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
 			} else {
-				byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
-				SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+				final byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
+				final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 				encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			}
-			outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(encryptedFile)), encryptCipher);
+			OutputStream outputStream = null;
+			try {
+				outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(encryptedFile)), encryptCipher);
 
-			if (zipBeforeEncryption) {
-				outputStream = new ZipOutputStream(outputStream);
-				ZipEntry entry = new ZipEntry(fileToEncrypt.getName());
-				entry.setTime(fileToEncrypt.lastModified());
-				((ZipOutputStream) outputStream).putNextEntry(entry);
-			}
-
-			byte[] buffer = new byte[4096];
-			int bytesRead;
-			while ((bytesRead = inputStream.read(buffer)) >= 0) {
-				if (cancel) {
-					break;
-				} else {
-					outputStream.write(buffer, 0, bytesRead);
-					itemsDone += bytesRead;
-					showProgress();
+				if (zipBeforeEncryption) {
+					outputStream = new ZipOutputStream(outputStream);
+					final ZipEntry entry = new ZipEntry(fileToEncrypt.getName());
+					entry.setTime(fileToEncrypt.lastModified());
+					((ZipOutputStream) outputStream).putNextEntry(entry);
 				}
+
+				final byte[] buffer = new byte[4096];
+				int bytesRead;
+				while ((bytesRead = inputStream.read(buffer)) >= 0) {
+					if (cancel) {
+						break;
+					} else {
+						outputStream.write(buffer, 0, bytesRead);
+						itemsDone += bytesRead;
+						showProgress();
+					}
+				}
+				return true;
+			} finally {
+				Utilities.closeQuietly(outputStream);
 			}
-			return true;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error while encrypting: " + e.getMessage(), e);
-		} finally {
-			Utilities.closeQuietly(outputStream);
-			Utilities.closeQuietly(inputStream);
 		}
 	}
 }

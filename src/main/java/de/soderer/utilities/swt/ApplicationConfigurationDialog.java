@@ -2,6 +2,7 @@ package de.soderer.utilities.swt;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -55,7 +56,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	}
 
 	@Override
-	protected void createComponents(final Shell shell) {
+	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new FillLayout(SWT.VERTICAL));
 		shell.setMinimumSize(500, 300);
 		shell.setSize(500, 300);
@@ -121,7 +122,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(LangResources.get("conf." + key + ".help"))) {
 					final String helpText = LangResources.get("conf." + key + ".help");
 					final Button button = new Button(dataPart, SWT.PUSH);
-					button.setImage(new Image(shell.getDisplay(), getClass().getClassLoader().getResourceAsStream("images/icons/question.png")));
+					try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("images/icons/question.png")) {
+						button.setImage(new Image(shell.getDisplay(), inputStream));
+					}
 					button.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 					button.addSelectionListener(new SelectionAdapter() {
 						@Override

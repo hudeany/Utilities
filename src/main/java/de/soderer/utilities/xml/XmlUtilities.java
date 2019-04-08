@@ -355,13 +355,9 @@ public class XmlUtilities {
 	 *             the exception
 	 */
 	public static void writeDocumentToFile(final Document document, final String encoding, final File file) throws Exception {
-		OutputStream outputStream = null;
-		try {
-			outputStream = new FileOutputStream(file);
+		try (OutputStream outputStream = new FileOutputStream(file)) {
 			final StreamResult result = new StreamResult(outputStream);
 			transformNode(document, encoding, false, result);
-		} finally {
-			Utilities.closeQuietly(outputStream);
 		}
 	}
 

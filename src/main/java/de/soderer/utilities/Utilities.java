@@ -110,17 +110,13 @@ public class Utilities {
 	 * @return
 	 */
 	public static byte[] gzipByteArray(final byte[] clearData) {
-		GZIPOutputStream gzipCompresser = null;
-		try {
-			final ByteArrayOutputStream encoded = new ByteArrayOutputStream();
-			gzipCompresser = new GZIPOutputStream(encoded);
+		try (ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+				GZIPOutputStream gzipCompresser = new GZIPOutputStream(encoded)) {
 			gzipCompresser.write(clearData);
 			gzipCompresser.close();
 			return encoded.toByteArray();
 		} catch (final IOException e) {
 			return null;
-		} finally {
-			closeQuietly(gzipCompresser);
 		}
 	}
 
@@ -827,17 +823,11 @@ public class Utilities {
 	 * @throws Exception
 	 */
 	public static void downloadFile(final String url, final String localeDestionationPath) throws Exception {
-		BufferedInputStream bufferedInputStream = null;
-		FileOutputStream fileOutputStream = null;
-		try {
-			bufferedInputStream = new BufferedInputStream(new URL(url).openStream());
-			fileOutputStream = new FileOutputStream(localeDestionationPath);
+		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new URL(url).openStream());
+				FileOutputStream fileOutputStream = new FileOutputStream(localeDestionationPath)) {
 			copy(bufferedInputStream, fileOutputStream);
 		} catch (final Exception e) {
 			throw new Exception("Cannot download file", e);
-		} finally {
-			closeQuietly(fileOutputStream);
-			closeQuietly(bufferedInputStream);
 		}
 	}
 
@@ -1268,17 +1258,13 @@ public class Utilities {
 	}
 
 	public static List<String> readLines(final InputStream inStream, final String encoding) throws IOException {
-		BufferedReader reader = null;
-		try {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(inStream, encoding))) {
 			final List<String> lines = new ArrayList<>();
-			reader = new BufferedReader(new InputStreamReader(inStream, encoding));
 			String nextLine;
 			while ((nextLine = reader.readLine()) != null) {
 				lines.add(nextLine);
 			}
 			return lines;
-		} finally {
-			closeQuietly(reader);
 		}
 	}
 
