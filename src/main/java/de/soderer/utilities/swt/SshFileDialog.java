@@ -35,7 +35,7 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.swt.LabeledText.ArrangementStyle;
 
 /**
- * TODO: Delete folder, delete file, use PPK, Use Port
+ * TODO: use PPK key files
  */
 public class SshFileDialog extends ModalDialog<Boolean> {
 	public enum Mode {
