@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -28,17 +29,20 @@ import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
 public class JschWrapper {
 	private static final transient Logger logger = LoggerFactory.getLogger(JschWrapper.class);
 
-	public static Session openSession(ServerAccessData serverEntry) throws Exception {
+	public static Session openSession(final ServerAccessData serverEntry) throws Exception {
+		if (!"ssh".equalsIgnoreCase(serverEntry.getProtocol())) {
+			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for SSH connection. Only 'ssh' allowed");
+		}
 		Session session = null;
 		try {
-			JSch jsch = new JSch();
+			final JSch jsch = new JSch();
 			session = jsch.getSession(serverEntry.getUsername(), serverEntry.getHostname(), serverEntry.getPort());
 
 			if (Utilities.isNotBlank(serverEntry.getKeyFile())) {
 				jsch.addIdentity(serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), null,
-						serverEntry.getPassword() == null ? new byte[0] : serverEntry.getPassword().getBytes("UTF-8"));
+						serverEntry.getPassword() == null ? new byte[0] : new String(serverEntry.getPassword()).getBytes("UTF-8"));
 			} else {
-				session.setPassword(serverEntry.getPassword());
+				session.setPassword(new String(serverEntry.getPassword()));
 			}
 
 			if (serverEntry.getCheckHostKey()) {
@@ -50,21 +54,21 @@ public class JschWrapper {
 			session.connect();
 
 			return session;
-		} catch (JSchException jse) {
+		} catch (final JSchException jse) {
 			if (jse.getCause() != null && jse.getCause() instanceof UnknownHostException) {
 				throw new Exception(LangResources.get("noConnectionTohost", serverEntry.getHostname()));
 			} else {
 				throw jse;
 			}
-		} catch (UnknownHostException uhe) {
+		} catch (final UnknownHostException uhe) {
 			throw new Exception(LangResources.get("noConnectionTohost", serverEntry.getHostname()));
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			closeQuietly(session);
 			throw new Exception("Error in opening ssh session: " + ExceptionUtilities.toString(e), e);
 		}
 	}
 
-	public static boolean exists(Session session, String filePath) throws Exception {
+	public static boolean exists(final Session session, final String filePath) throws Exception {
 		Channel channel = null;
 		InputStream inStream = null;
 		InputStream inErrorStream = null;
@@ -80,7 +84,7 @@ public class JschWrapper {
 
 			Utilities.toByteArray(inStream);
 
-			byte[] errorData = Utilities.toByteArray(inErrorStream);
+			final byte[] errorData = Utilities.toByteArray(inErrorStream);
 
 			return errorData == null || errorData.length == 0;
 		} finally {
@@ -90,7 +94,7 @@ public class JschWrapper {
 		}
 	}
 
-	public static boolean isFile(Session session, String filePath) throws Exception {
+	public static boolean isFile(final Session session, final String filePath) throws Exception {
 		Channel channel = null;
 		InputStream inStream = null;
 		InputStream inErrorStream = null;
@@ -104,10 +108,10 @@ public class JschWrapper {
 
 			channel.connect();
 
-			byte[] successData = Utilities.toByteArray(inStream);
-			String successString = new String(successData, "UTF-8");
+			final byte[] successData = Utilities.toByteArray(inStream);
+			final String successString = new String(successData, "UTF-8");
 
-			byte[] errorData = Utilities.toByteArray(inErrorStream);
+			final byte[] errorData = Utilities.toByteArray(inErrorStream);
 
 			if (errorData != null && errorData.length > 0) {
 				return false;
@@ -121,7 +125,7 @@ public class JschWrapper {
 		}
 	}
 
-	public static boolean isFolder(Session session, String filePath) throws Exception {
+	public static boolean isFolder(final Session session, final String filePath) throws Exception {
 		Channel channel = null;
 		InputStream inStream = null;
 		InputStream inErrorStream = null;
@@ -135,10 +139,10 @@ public class JschWrapper {
 
 			channel.connect();
 
-			byte[] successData = Utilities.toByteArray(inStream);
-			String successString = new String(successData, "UTF-8");
+			final byte[] successData = Utilities.toByteArray(inStream);
+			final String successString = new String(successData, "UTF-8");
 
-			byte[] errorData = Utilities.toByteArray(inErrorStream);
+			final byte[] errorData = Utilities.toByteArray(inErrorStream);
 
 			if (errorData != null && errorData.length > 0) {
 				return false;
@@ -152,80 +156,151 @@ public class JschWrapper {
 		}
 	}
 
-	public static Tuple<List<String>, List<String>> getDirectory(Session session, String filePath) throws Exception {
+	public static List<String> getFolders(final Session session, final String filePath) throws Exception {
+		final List<String> folderList = new ArrayList<>();
 		Channel channel = null;
-		InputStream inStream = null;
-		InputStream inErrorStream = null;
 		try {
 			// Read folders
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -1ad " + filePath + (filePath.endsWith("/") ? "" : "/") + "*/");
+			((ChannelExec) channel).setCommand("find " + filePath + (filePath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type d");
 
 			// Streams must be fetched before channel connect
-			inStream = channel.getInputStream();
-			inErrorStream = channel.getExtInputStream();
+			try (InputStream inStream = channel.getInputStream();
+					InputStream inErrorStream = channel.getExtInputStream()) {
 
-			channel.connect();
+				channel.connect();
 
-			List<String> folderListRaw = Utilities.readLines(inStream, "UTF-8");
-
-			byte[] errorData = Utilities.toByteArray(inErrorStream);
-			if (errorData != null && errorData.length > 0) {
-				// there is no subdirectory
-				// throw new Exception(new String(errorData, "UTF-8"));
-			}
-
-			channel.disconnect();
-			channel = null;
-
-			// Read file entries
-			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -1a " + filePath);
-
-			// Streams must be fetched before channel connect
-			inStream = channel.getInputStream();
-			inErrorStream = channel.getExtInputStream();
-
-			channel.connect();
-
-			List<String> fileList = Utilities.readLines(inStream, "UTF-8");
-
-			errorData = Utilities.toByteArray(inErrorStream);
-			if (errorData != null && errorData.length > 0) {
-				throw new Exception(new String(errorData, "UTF-8"));
-			}
-
-			// Calculate return values
-			List<String> folderList = new ArrayList<String>();
-
-			fileList.remove(".");
-			fileList.remove("..");
-			for (String folder : folderListRaw) {
-				if (folder.endsWith("/")) {
-					folder = folder.substring(0, folder.length() - 1);
+				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+					folderList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
 				}
-				if (folder.contains("/")) {
-					folder = folder.substring(folder.lastIndexOf("/") + 1);
-				}
-				folderList.add(folder);
-				fileList.remove(folder);
-			}
 
-			return new Tuple<List<String>, List<String>>(folderList, fileList);
-		} catch (Exception e) {
-			throw new Exception("Error in getDirectory", e);
+				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				if (errorData != null && errorData.length > 0) {
+					throw new Exception(new String(errorData, "UTF-8"));
+				}
+			}
 		} finally {
 			closeQuietly(channel);
-			Utilities.closeQuietly(inStream);
-			Utilities.closeQuietly(inErrorStream);
+			channel = null;
 		}
+		folderList.addAll(getFolderLinks(session, filePath));
+		Collections.sort(folderList);
+		return folderList;
 	}
 
-	public static void createFolder(Session session, String selectedFilePath, String folderName) throws Exception {
+	public static List<String> getFiles(final Session session, final String filePath) throws Exception {
+		final List<String> fileList = new ArrayList<>();
+		Channel channel = null;
+		try {
+			// Read files
+			channel = session.openChannel("exec");
+			((ChannelExec) channel).setCommand("find " + filePath + (filePath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type f");
+
+			// Streams must be fetched before channel connect
+			try (InputStream inStream = channel.getInputStream();
+					InputStream inErrorStream = channel.getExtInputStream()) {
+
+				channel.connect();
+
+				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+					fileList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
+				}
+
+				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				if (errorData != null && errorData.length > 0) {
+					throw new Exception(new String(errorData, "UTF-8"));
+				}
+			}
+		} finally {
+			closeQuietly(channel);
+			channel = null;
+		}
+		fileList.addAll(getFileLinks(session, filePath));
+		Collections.sort(fileList);
+		return fileList;
+	}
+
+	public static List<String> getFolderLinks(final Session session, final String filePath) throws Exception {
+		final List<String> folderList = new ArrayList<>();
+		final List<String> linkList = new ArrayList<>();
+		Channel channel = null;
+		try {
+			// Read links
+			channel = session.openChannel("exec");
+			((ChannelExec) channel).setCommand("find " + filePath + (filePath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type l");
+
+			// Streams must be fetched before channel connect
+			try (InputStream inStream = channel.getInputStream();
+					InputStream inErrorStream = channel.getExtInputStream()) {
+
+				channel.connect();
+
+				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+					linkList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
+				}
+
+				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				if (errorData != null && errorData.length > 0) {
+					throw new Exception(new String(errorData, "UTF-8"));
+				}
+			}
+		} finally {
+			closeQuietly(channel);
+			channel = null;
+		}
+
+		for (final String link : linkList) {
+			if (isFolder(session, filePath + "/" + link)) {
+				folderList.add(link);
+			}
+		}
+		Collections.sort(folderList);
+		return folderList;
+	}
+
+	public static List<String> getFileLinks(final Session session, final String filePath) throws Exception {
+		final List<String> fileList = new ArrayList<>();
+		final List<String> linkList = new ArrayList<>();
+		Channel channel = null;
+		try {
+			// Read links
+			channel = session.openChannel("exec");
+			((ChannelExec) channel).setCommand("find " + filePath + (filePath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type l");
+
+			// Streams must be fetched before channel connect
+			try (InputStream inStream = channel.getInputStream();
+					InputStream inErrorStream = channel.getExtInputStream()) {
+
+				channel.connect();
+
+				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+					linkList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
+				}
+
+				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				if (errorData != null && errorData.length > 0) {
+					throw new Exception(new String(errorData, "UTF-8"));
+				}
+			}
+		} finally {
+			closeQuietly(channel);
+			channel = null;
+		}
+
+		for (final String link : linkList) {
+			if (isFile(session, filePath + "/" + link)) {
+				fileList.add(link);
+			}
+		}
+		Collections.sort(fileList);
+		return fileList;
+	}
+
+	public static void createFolder(final Session session, final String selectedFilePath, final String folderName) throws Exception {
 		executeCommand(session, "mkdir " + selectedFilePath + "/" + folderName);
 	}
 
-	public static void uploadFileData(Session session, String filePath, byte[] fileData) throws Exception {
+	public static void uploadFileData(final Session session, final String filePath, final byte[] fileData) throws Exception {
 		Channel channel = null;
 		OutputStream outStream = null;
 		InputStream inStream = null;
@@ -242,7 +317,7 @@ public class JschWrapper {
 			checkAcknowledge(inStream);
 
 			// send command "C0664 filesize filename"
-			String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+			final String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
 			command = "C0664 " + fileData.length + " " + fileName + "\n";
 			outStream.write(command.getBytes("UTF-8"));
 			outStream.flush();
@@ -256,7 +331,7 @@ public class JschWrapper {
 			sendZeroByte(outStream);
 
 			checkAcknowledge(inStream);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error in uploadFileData", e);
 		} finally {
 			Utilities.closeQuietly(outStream);
@@ -265,7 +340,7 @@ public class JschWrapper {
 		}
 	}
 
-	public static JschFileData getFileData(Session session, String filePath) throws Exception {
+	public static JschFileData getFileData(final Session session, final String filePath) throws Exception {
 		Channel channel = null;
 		InputStream inStream = null;
 		InputStream inErrorStream = null;
@@ -279,10 +354,10 @@ public class JschWrapper {
 
 			channel.connect();
 
-			byte[] successData = Utilities.toByteArray(inStream);
-			String successString = new String(successData, "UTF-8");
+			final byte[] successData = Utilities.toByteArray(inStream);
+			final String successString = new String(successData, "UTF-8");
 
-			byte[] errorData = Utilities.toByteArray(inErrorStream);
+			final byte[] errorData = Utilities.toByteArray(inErrorStream);
 
 			if (errorData != null && errorData.length > 0) {
 				return null;
@@ -296,14 +371,14 @@ public class JschWrapper {
 		}
 	}
 
-	public static InputStream getFileInputStream(Session session, String filePath) throws Exception {
+	public static InputStream getFileInputStream(final Session session, final String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("scp -f " + filePath);
 
-			OutputStream outStream = channel.getOutputStream();
-			InputStream inStream = channel.getInputStream();
+			final OutputStream outStream = channel.getOutputStream();
+			final InputStream inStream = channel.getInputStream();
 			// InputStream inErrorStream = channel.getExtInputStream();
 
 			channel.connect();
@@ -312,7 +387,7 @@ public class JschWrapper {
 			sendZeroByte(outStream);
 
 			// read rights key like '0644 ' (5 bytes)
-			byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+			final byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 			@SuppressWarnings("unused")
 			String rights = null;
 			if (rightsData != null && rightsData.length > 0) {
@@ -320,7 +395,7 @@ public class JschWrapper {
 			}
 
 			// read filesize (if empty filesize read until no more data)
-			byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+			final byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 			@SuppressWarnings("unused")
 			long filesize = -1;
 			if (filesizeData != null && filesizeData.length > 0) {
@@ -328,7 +403,7 @@ public class JschWrapper {
 			}
 
 			// read filename (even if it is not used on single download)
-			byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+			final byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 			@SuppressWarnings("unused")
 			String filename = null;
 			if (filenameData != null && filenameData.length > 0) {
@@ -339,7 +414,7 @@ public class JschWrapper {
 			sendZeroByte(outStream);
 
 			return inStream;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		}
 	}
@@ -357,12 +432,12 @@ public class JschWrapper {
 	 *            des PrivateKey falls notwendig
 	 * @throws Exception
 	 */
-	public static void deleteFile(Session session, String remoteHostPathAndFileName) throws Exception {
+	public static void deleteFile(final Session session, final String remoteHostPathAndFileName) throws Exception {
 		Channel channel = null;
 		InputStream inStream = null;
 		try {
 			// exec 'rm /full/path/to/file' remotely
-			String command = "rm -f " + remoteHostPathAndFileName;
+			final String command = "rm -f " + remoteHostPathAndFileName;
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
@@ -374,8 +449,8 @@ public class JschWrapper {
 			checkAcknowledge(inStream);
 
 			session.disconnect();
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Delete: " + e.getMessage());
+		} catch (final Exception e) {
+			throw new Exception("Fehler bei SSH-Delete: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
 			Utilities.closeQuietly(inStream);
@@ -383,7 +458,38 @@ public class JschWrapper {
 	}
 
 	/**
-	 * Upload von Dateien via SCP
+	 * Delete a folder via SSH
+	 *
+	 * @param session
+	 * @param remoteHostPathAndFileName
+	 * @throws Exception
+	 */
+	public static void deleteFolder(final Session session, final String remoteHostPathAndFolderName) throws Exception {
+		Channel channel = null;
+		InputStream inStream = null;
+		try {
+			final String command = "rm -rf " + remoteHostPathAndFolderName;
+			channel = session.openChannel("exec");
+			((ChannelExec) channel).setCommand(command);
+
+			// get I/O stream for remote scp
+			inStream = channel.getInputStream();
+
+			channel.connect();
+
+			checkAcknowledge(inStream);
+
+			session.disconnect();
+		} catch (final Exception e) {
+			throw new Exception("Fehler bei SSH-Delete: " + e.getMessage());
+		} finally {
+			closeQuietly(channel);
+			Utilities.closeQuietly(inStream);
+		}
+	}
+
+	/**
+	 * Upload von Dateien via SSH
 	 *
 	 * @param remoteHostname
 	 * @param checkHostKey
@@ -397,27 +503,27 @@ public class JschWrapper {
 	 *            des PrivateKey falls notwendig
 	 * @throws Exception
 	 */
-	public static void uploadFile(Session session, String remoteHostPathAndFileName, String localPathAndFileName) throws Exception {
+	public static void uploadFile(final Session session, final String remoteHostPathAndFileName, final String localPathAndFileName) throws Exception {
 		if (localPathAndFileName.contains("*") || localPathAndFileName.contains("?")) {
-			throw new Exception("Fehler bei SCP-Upload: Wildcards in localPathAndFileName sind bei SCP-Upload nicht erlaubt");
+			throw new Exception("Fehler bei SSH-Upload: Wildcards in localPathAndFileName sind bei SSH-Upload nicht erlaubt");
 		}
 
 		if (!new File(localPathAndFileName).exists()) {
-			throw new Exception("Fehler bei SCP-Upload: Quelldatei '" + localPathAndFileName + "' existiert nicht");
+			throw new Exception("Fehler bei SSH-Upload: Quelldatei '" + localPathAndFileName + "' existiert nicht");
 		}
 
-		String remoteHostPath = getPathOfPathAndFileName(remoteHostPathAndFileName);
+		final String remoteHostPath = getPathOfPathAndFileName(remoteHostPathAndFileName);
 		String remoteHostFileName = getFileNameOfPathAndFileName(remoteHostPathAndFileName);
 		if (Utilities.isEmpty(remoteHostFileName)) {
 			remoteHostFileName = getFileNameOfPathAndFileName(localPathAndFileName);
 		}
 
-		List<String> directory = listFiles(session, remoteHostPath);
+		final List<String> directory = listFiles(session, remoteHostPath);
 		if (!directory.contains(".")) {
-			throw new Exception("Fehler bei SCP-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
+			throw new Exception("Fehler bei SSH-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
 		}
 		if (directory.contains(remoteHostFileName)) {
-			throw new Exception("Fehler bei SCP-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
+			throw new Exception("Fehler bei SSH-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
 		}
 
 		Channel channel = null;
@@ -439,7 +545,7 @@ public class JschWrapper {
 			checkAcknowledge(in);
 
 			// send "C0664 filesize filename", where filename should not include '/'
-			long filesize = new File(localPathAndFileName).length();
+			final long filesize = new File(localPathAndFileName).length();
 			command = "C0664 " + filesize + " " + remoteHostFileName + "\n";
 			out.write(command.getBytes("UTF-8"));
 			out.flush();
@@ -447,9 +553,9 @@ public class JschWrapper {
 
 			// send a content of lfile
 			bufferedFileInputStream = new BufferedInputStream(new FileInputStream(localPathAndFileName));
-			byte[] buf = new byte[4096];
+			final byte[] buf = new byte[4096];
 			while (true) {
-				int len = bufferedFileInputStream.read(buf);
+				final int len = bufferedFileInputStream.read(buf);
 				if (len <= 0) {
 					break;
 				}
@@ -466,8 +572,8 @@ public class JschWrapper {
 
 			channel.disconnect();
 			session.disconnect();
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Upload: " + e.getMessage());
+		} catch (final Exception e) {
+			throw new Exception("Fehler bei SSH-Upload: " + e.getMessage());
 		} finally {
 			Utilities.closeQuietly(bufferedFileInputStream);
 			closeQuietly(channel);
@@ -476,14 +582,14 @@ public class JschWrapper {
 		}
 	}
 
-	public static void uploadFileData(Session session, String remoteHostPath, String remoteHostFileName, byte[] fileData) throws Exception {
+	public static void uploadFileData(final Session session, final String remoteHostPath, final String remoteHostFileName, final byte[] fileData) throws Exception {
 		// Directory auslesen um zu Prüfen, ob das Verzeichnis existiert aber die Datei noch nicht
-		List<String> directory = listFiles(session, remoteHostPath);
+		final List<String> directory = listFiles(session, remoteHostPath);
 		if (!directory.contains(".")) {
-			throw new Exception("Fehler bei SCP-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
+			throw new Exception("Fehler bei SSH-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
 		}
 		if (directory.contains(remoteHostFileName)) {
-			throw new Exception("Fehler bei SCP-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
+			throw new Exception("Fehler bei SSH-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
 		}
 
 		Channel channel = null;
@@ -520,8 +626,8 @@ public class JschWrapper {
 
 			channel.disconnect();
 			session.disconnect();
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Upload: " + e.getMessage());
+		} catch (final Exception e) {
+			throw new Exception("Fehler bei SSH-Upload: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
 			Utilities.closeQuietly(in);
@@ -529,14 +635,14 @@ public class JschWrapper {
 		}
 	}
 
-	public static List<String> listFiles(Session session, String remoteHostPath) throws Exception {
+	public static List<String> listFiles(final Session session, final String remoteHostPath) throws Exception {
 		Channel channel = null;
 		InputStream in = null;
 		try {
-			List<String> returnList = new ArrayList<String>();
+			final List<String> returnList = new ArrayList<>();
 
 			// exec 'ls -1 pathn' remotely
-			String command = "ls -1a " + remoteHostPath;
+			final String command = "ls -1a " + remoteHostPath;
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
@@ -567,8 +673,8 @@ public class JschWrapper {
 			session.disconnect();
 
 			return returnList;
-		} catch (Exception e) {
-			throw new Exception("Fehler bei SCP-Download\n" + ExceptionUtilities.toString(e), e);
+		} catch (final Exception e) {
+			throw new Exception("Fehler bei SSH-Download\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
 			Utilities.closeQuietly(in);
@@ -582,10 +688,10 @@ public class JschWrapper {
 	 * @param username
 	 * @param password
 	 */
-	public static void addHostKeyToKnownHostKeys(String hostname, String username, String password, byte[] privateKey) {
+	public static void addHostKeyToKnownHostKeys(final String hostname, final String username, final String password, final byte[] privateKey) {
 		Session session = null;
 		try {
-			JSch jsch = new JSch();
+			final JSch jsch = new JSch();
 			setKnownHostKeys(jsch);
 
 			System.out.println("KnownHosts (before adding):");
@@ -606,7 +712,7 @@ public class JschWrapper {
 			// known_hosts file, host names will be hashed
 			session.connect();
 
-			HostKey hk = session.getHostKey();
+			final HostKey hk = session.getHostKey();
 			System.out.println("Adding HostKey: " + hk.getHost() + " " + hk.getType() + " " + hk.getFingerPrint(jsch) + "\n");
 
 			// Channel channel = session.openChannel("shell");
@@ -621,25 +727,25 @@ public class JschWrapper {
 			System.out.println("");
 
 			session.disconnect();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			System.out.println(e);
 		} finally {
 			if (session != null) {
 				try {
 					session.disconnect();
 					session = null;
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					e.printStackTrace();
 				}
 			}
 		}
 	}
 
-	public static byte[] downloadFileData(Session session, String filePath) throws Exception {
+	public static byte[] downloadFileData(final Session session, final String filePath) throws Exception {
 		Channel channel = null;
 		OutputStream outStream = null;
 		InputStream inStream = null;
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("scp -f " + filePath);
@@ -659,7 +765,7 @@ public class JschWrapper {
 				}
 
 				// read rights key like '0644 ' (5 bytes)
-				byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+				final byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 				@SuppressWarnings("unused")
 				String rights = null;
 				if (rightsData != null && rightsData.length > 0) {
@@ -667,14 +773,14 @@ public class JschWrapper {
 				}
 
 				// read filesize (if empty filesize read until no more data)
-				byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+				final byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 				long filesize = -1;
 				if (filesizeData != null && filesizeData.length > 0) {
 					filesize = Long.parseLong(new String(filesizeData));
 				}
 
 				// read filename (even if it is not used on single download)
-				byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+				final byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 				@SuppressWarnings("unused")
 				String filename = null;
 				if (filenameData != null && filenameData.length > 0) {
@@ -687,7 +793,7 @@ public class JschWrapper {
 				// read file content
 				if (filesize > 0) {
 					int nextReadLength;
-					byte[] buffer = new byte[4096];
+					final byte[] buffer = new byte[4096];
 					while (true) {
 						if (buffer.length < filesize) {
 							nextReadLength = buffer.length;
@@ -715,7 +821,7 @@ public class JschWrapper {
 			}
 
 			return bos.toByteArray();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
 			Utilities.closeQuietly(bos);
@@ -725,15 +831,15 @@ public class JschWrapper {
 		}
 	}
 
-	public static void tailviewFileData(Session session, String filePath, int numberOfLastLinesToShow, LineListener lineListener) throws Exception {
+	public static void tailviewFileData(final Session session, final String filePath, final int numberOfLastLinesToShow, final LineListener lineListener) throws Exception {
 		Channel channel = null;
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " " + filePath);
 
-			OutputStream outStream = channel.getOutputStream();
-			InputStream inStream = channel.getInputStream();
+			final OutputStream outStream = channel.getOutputStream();
+			final InputStream inStream = channel.getInputStream();
 
 			channel.connect();
 
@@ -749,12 +855,12 @@ public class JschWrapper {
 				}
 
 				// waits if no more data is available right now
-				byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
+				final byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
 				lineListener.addLineData(nextLineData);
 			}
-		} catch (java.io.InterruptedIOException e) {
+		} catch (final java.io.InterruptedIOException e) {
 			// do nothing
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
 			Utilities.closeQuietly(bos);
@@ -762,11 +868,11 @@ public class JschWrapper {
 		}
 	}
 
-	public static byte[] readTailFileData(Session session, String filePath, int numberOfLastLinesToShow) throws Exception {
+	public static byte[] readTailFileData(final Session session, final String filePath, final int numberOfLastLinesToShow) throws Exception {
 		Channel channel = null;
 		OutputStream outStream = null;
 		InputStream inStream = null;
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("tail -n " + numberOfLastLinesToShow + " " + filePath);
@@ -780,7 +886,7 @@ public class JschWrapper {
 			sendZeroByte(outStream);
 
 			return Utilities.toByteArray(inStream);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
 			Utilities.closeQuietly(bos);
@@ -790,7 +896,7 @@ public class JschWrapper {
 		}
 	}
 
-	public static String executeCommand(Session session, String command) throws Exception {
+	public static String executeCommand(final Session session, final String command) throws Exception {
 		Channel channel = null;
 		OutputStream out = null;
 		InputStream in = null;
@@ -845,7 +951,7 @@ public class JschWrapper {
 			} else {
 				return returnText;
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Fehler bei SSH-Command\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
@@ -855,47 +961,47 @@ public class JschWrapper {
 		}
 	}
 
-	private static void setKnownHostKeys(JSch jsch) throws Exception {
+	private static void setKnownHostKeys(final JSch jsch) throws Exception {
 		InputStream knownHostsKeysInputStream = null;
 		try {
 			// Nicht mit der URI arbeiten, einen Pfad zu einer Resource in einem JAR-File gibts nicht
 			// Wann immer möglich im JavaEE-Umfeld mit Streams arbeiten!
-			// So nicht: InputStream knownHostsKeysInputStream = Utilities.getResource("KnownHostsKeysForSCP");
-			knownHostsKeysInputStream = Utilities.getResourceAsStream("KnownHostsKeysForSCP");
-			logger.debug("KnownHostsKeysForSCP " + (knownHostsKeysInputStream == null ? "NOT " : "") + "found");
+			// So nicht: InputStream knownHostsKeysInputStream = Utilities.getResource("KnownHostsKeysForSSH");
+			knownHostsKeysInputStream = Utilities.getResourceAsStream("KnownHostsKeysForSSH");
+			logger.debug("KnownHostsKeysForSSH " + (knownHostsKeysInputStream == null ? "NOT " : "") + "found");
 			if (knownHostsKeysInputStream != null) {
 				jsch.setKnownHosts(knownHostsKeysInputStream);
 			} else {
-				throw new Exception("KnownHostsKeysForSCP für SCP-Verbindung nicht gefunden");
+				throw new Exception("KnownHostsKeysForSSH für SSH-Verbindung nicht gefunden");
 			}
 
-		} catch (JSchException e) {
+		} catch (final JSchException e) {
 			e.printStackTrace();
 		} finally {
 			Utilities.closeQuietly(knownHostsKeysInputStream);
 		}
 	}
 
-	private static void printKnownHostKeys(JSch jsch) {
-		HostKeyRepository hkr = jsch.getHostKeyRepository();
-		HostKey[] hks = hkr.getHostKey();
+	private static void printKnownHostKeys(final JSch jsch) {
+		final HostKeyRepository hkr = jsch.getHostKeyRepository();
+		final HostKey[] hks = hkr.getHostKey();
 		if (hks != null) {
 			System.out.println("Host keys in " + hkr.getKnownHostsRepositoryID());
-			for (HostKey hk : hks) {
+			for (final HostKey hk : hks) {
 				System.out.println(hk.getHost() + " " + hk.getType() + " " + hk.getFingerPrint(jsch));
 			}
 			System.out.println("");
 		}
 	}
 
-	private static int checkAcknowledge(InputStream in) throws Exception {
-		int returnCode = in.read();
+	private static int checkAcknowledge(final InputStream in) throws Exception {
+		final int returnCode = in.read();
 		// returnCode may be 0 for success,
 		// 1 for error,
 		// 2 for fatal error,
 		// -1
 		if (returnCode == 1 || returnCode == 2) {
-			StringBuffer returnTextBuffer = new StringBuffer();
+			final StringBuffer returnTextBuffer = new StringBuffer();
 			int charReadBuffer;
 			do {
 				charReadBuffer = in.read();
@@ -912,31 +1018,31 @@ public class JschWrapper {
 		}
 	}
 
-	private static String getFileNameOfPathAndFileName(String pathAndFileName) {
+	private static String getFileNameOfPathAndFileName(final String pathAndFileName) {
 		if (Utilities.isEmpty(pathAndFileName)) {
 			return null;
 		} else {
-			int lastIndexOfPathSeparator = Math.max(pathAndFileName.lastIndexOf("/"), pathAndFileName.lastIndexOf("\\"));
+			final int lastIndexOfPathSeparator = Math.max(pathAndFileName.lastIndexOf("/"), pathAndFileName.lastIndexOf("\\"));
 			return pathAndFileName.substring(lastIndexOfPathSeparator + 1);
 		}
 	}
 
-	private static String getPathOfPathAndFileName(String pathAndFileName) {
+	private static String getPathOfPathAndFileName(final String pathAndFileName) {
 		if (Utilities.isEmpty(pathAndFileName)) {
 			return null;
 		} else {
-			int lastIndexOfPathSeparator = Math.max(pathAndFileName.lastIndexOf("/"), pathAndFileName.lastIndexOf("\\"));
+			final int lastIndexOfPathSeparator = Math.max(pathAndFileName.lastIndexOf("/"), pathAndFileName.lastIndexOf("\\"));
 			return pathAndFileName.substring(0, lastIndexOfPathSeparator + 1);
 		}
 	}
 
-	private static void sendZeroByte(OutputStream outputStream) throws IOException {
+	private static void sendZeroByte(final OutputStream outputStream) throws IOException {
 		outputStream.write(new byte[] { 0 });
 		outputStream.flush();
 	}
 
-	private static byte[] readStreamUntilBlankOrEndOrLinefeed(InputStream inStream) throws IOException {
-		ByteArrayOutputStream returnData = new ByteArrayOutputStream();
+	private static byte[] readStreamUntilBlankOrEndOrLinefeed(final InputStream inStream) throws IOException {
+		final ByteArrayOutputStream returnData = new ByteArrayOutputStream();
 		int nextByte;
 		while (true) {
 			nextByte = inStream.read();
@@ -952,22 +1058,22 @@ public class JschWrapper {
 		return returnData.toByteArray();
 	}
 
-	public static void closeQuietly(Channel channel) {
+	public static void closeQuietly(final Channel channel) {
 		try {
 			if (channel != null) {
 				channel.disconnect();
 			}
-		} catch (Exception ioe) {
+		} catch (final Exception ioe) {
 			// ignore
 		}
 	}
 
-	public static void closeQuietly(Session session) {
+	public static void closeQuietly(final Session session) {
 		try {
 			if (session != null) {
 				session.disconnect();
 			}
-		} catch (Exception ioe) {
+		} catch (final Exception ioe) {
 			// ignore
 		}
 	}

@@ -1,7 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.io.File;
-import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -31,23 +31,28 @@ import de.soderer.utilities.JschWrapper;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
-import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.swt.LabeledText.ArrangementStyle;
 
+/**
+ * TODO: Delete folder, delete file, use PPK, Use Port
+ */
 public class SshFileDialog extends ModalDialog<Boolean> {
 	public enum Mode {
 		Open, Save
 	}
 
 	private String hostnameOrIp = null;
+	private int port = 22;
 	private String username = null;
 	private String keyFile = null;
-	private String password = null;
+	private char[] password = null;
 	private String selectedFilePath = null;
 	private String selectedFileName = null;
 	private boolean connected = false;
-	private Text hostnameField;
-	private Text usernameField;
+	private LabeledText hostnameField;
+	private LabeledText portField;
+	private LabeledText usernameField;
 	private Button useKeyFileButton;
 	private Text passwordField;
 	private Tree folderTree;
@@ -59,38 +64,42 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private Button connectButton;
 	private Button actionButton;
 	private char[] inMemoryPassword;
-	private File keystoreFile;
-	private static final byte[] keystoreFileSalt = "wR&54sH,tz2".getBytes(Charset.forName("UTF-8"));
+	private final File keystoreFile;
+	private final byte[] keystoreFileSalt;
 	private SecureDataStore keyStore = null;
 
-	private Mode dialogMode;
-	private Text fileNameField;
+	private final Mode dialogMode;
+	private LabeledText fileNameField;
 	private Button createFolderButton;
+	private Button deleteFolderButton;
+	private Button deleteFileButton;
 
-	public SshFileDialog(Shell parentShell, String title, Mode dialogMode) {
+	public SshFileDialog(final Shell parentShell, final String title, final Mode dialogMode) {
 		super(parentShell, title);
 		keystoreFile = null;
+		keystoreFileSalt = null;
 		inMemoryPassword = null;
 		this.dialogMode = dialogMode;
 	}
 
-	public SshFileDialog(Shell parentShell, String title, Mode dialogMode, File keystoreFile, char[] inMemoryPassword) {
+	public SshFileDialog(final Shell parentShell, final String title, final Mode dialogMode, final File keystoreFile, final byte[] keystoreFileSalt, final char[] inMemoryPassword) {
 		super(parentShell, title);
 		this.keystoreFile = keystoreFile;
+		this.keystoreFileSalt = keystoreFileSalt;
 		this.inMemoryPassword = inMemoryPassword;
 		this.dialogMode = dialogMode;
 	}
 
 	@Override
-	protected void createComponents(Shell parentShell) throws Exception {
+	protected void createComponents(final Shell parentShell) throws Exception {
 		parentShell.setLayout(new GridLayout(1, true));
 
 		if (keystoreFile != null) {
-			Composite serverEntriesComposite = new Composite(parentShell, SWT.BORDER);
+			final Composite serverEntriesComposite = new Composite(parentShell, SWT.BORDER);
 			serverEntriesComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 			serverEntriesComposite.setLayout(SwtUtilities.createNoMarginGridLayout(5, false));
 
-			Label serverEntriesLabel = new Label(serverEntriesComposite, SWT.NONE);
+			final Label serverEntriesLabel = new Label(serverEntriesComposite, SWT.NONE);
 			serverEntriesLabel.setText(LangResources.get("serverEntries"));
 
 			serverEntriesCombo = new Combo(serverEntriesComposite, SWT.NONE);
@@ -98,20 +107,21 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			serverEntriesCombo.setItems(new String[] {});
 			serverEntriesCombo.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(ModifyEvent e) {
+				public void modifyText(final ModifyEvent e) {
 					checkButtonStatus();
 				}
 			});
 			serverEntriesCombo.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(SelectionEvent event) {
+				public void widgetSelected(final SelectionEvent event) {
 					if (Utilities.isNotBlank(serverEntriesCombo.getText())) {
-						ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, serverEntriesCombo.getText());
+						final ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, serverEntriesCombo.getText());
 						hostnameField.setText(entry.getHostname());
+						portField.setText(Integer.toString(entry.getPort()));
 						usernameField.setText(entry.getUsername());
 						keyFile = entry.getKeyFile();
 						useKeyFileButton.setSelection(Utilities.isNotBlank(keyFile));
-						passwordField.setText(entry.getPassword());
+						passwordField.setText(new String(entry.getPassword()));
 					}
 				}
 			});
@@ -120,7 +130,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			loadServerEntriesButton.setText(LangResources.get("loadServerEntries"));
 			loadServerEntriesButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(SelectionEvent event) {
+				public void widgetSelected(final SelectionEvent event) {
 					loadServerEntries();
 
 					checkButtonStatus();
@@ -131,7 +141,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			removeServerEntryButton.setText(LangResources.get("removeServerEntry"));
 			removeServerEntryButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(SelectionEvent event) {
+				public void widgetSelected(final SelectionEvent event) {
 					if (keyStore != null) {
 						keyStore.removeEntry(ServerAccessData.class, serverEntriesCombo.getText());
 						serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
@@ -141,11 +151,11 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 
 					serverEntriesCombo.setText("");
 
-					char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
+					final char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 					if (password != null) {
 						try {
 							keyStore.save(keystoreFile, password, keystoreFileSalt);
-						} catch (Exception e) {
+						} catch (final Exception e) {
 							e.printStackTrace();
 						}
 					}
@@ -158,17 +168,17 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			saveServerEntryButton.setText(LangResources.get("saveServerEntry"));
 			saveServerEntryButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(SelectionEvent event) {
+				public void widgetSelected(final SelectionEvent event) {
 					if (keyStore == null) {
 						keyStore = new SecureDataStore();
 					}
-					String newEntryName = serverEntriesCombo.getText();
-					keyStore.addEntry(serverEntriesCombo.getText(), new ServerAccessData(hostnameOrIp, username, keyFile, password));
-					char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
+					final String newEntryName = serverEntriesCombo.getText();
+					keyStore.addEntry(serverEntriesCombo.getText(), getServerEntry());
+					final char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 					if (password != null) {
 						try {
 							keyStore.save(keystoreFile, password, keystoreFileSalt);
-						} catch (Exception e) {
+						} catch (final Exception e) {
 							e.printStackTrace();
 						}
 					}
@@ -178,34 +188,48 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			});
 		}
 
-		Composite sshCredentialsComposite = new Composite(parentShell, SWT.BORDER);
+		final Composite sshCredentialsComposite = new Composite(parentShell, SWT.BORDER);
 		sshCredentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		sshCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(8, false));
+		sshCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(9, false));
 
-		Label hostnameLabel = new Label(sshCredentialsComposite, SWT.NONE);
-		hostnameLabel.setText(LangResources.get("hostnameOrIp"));
-		hostnameField = new Text(sshCredentialsComposite, SWT.BORDER);
-		GridData hostnameFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
-		hostnameFieldGridData.widthHint = 150;
+		hostnameField = new LabeledText(sshCredentialsComposite, SWT.NONE, LangResources.get("hostnameOrIp"), ArrangementStyle.Horizontal);
+		final GridData hostnameFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
+		hostnameFieldGridData.widthHint = 225;
 		hostnameField.setLayoutData(hostnameFieldGridData);
 		hostnameField.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent event) {
-				hostnameOrIp = ((Text) event.widget).getText();
+			public void modifyText(final ModifyEvent event) {
+				hostnameOrIp = ((LabeledText) event.widget).getText();
 				checkButtonStatus();
 			}
 		});
 
-		Label usernameLabel = new Label(sshCredentialsComposite, SWT.NONE);
-		usernameLabel.setText(LangResources.get("username"));
-		usernameField = new Text(sshCredentialsComposite, SWT.BORDER);
-		GridData usernameFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
-		usernameFieldGridData.widthHint = 100;
+		portField = new LabeledText(sshCredentialsComposite, SWT.NONE, LangResources.get("port"), ArrangementStyle.Horizontal);
+		portField.setText(Integer.toString(port));
+		final GridData portFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
+		portFieldGridData.widthHint = 60;
+		portField.setLayoutData(portFieldGridData);
+		portField.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(final ModifyEvent event) {
+				try {
+					port = Integer.parseInt(((LabeledText) event.widget).getText());
+				} catch (final Exception e) {
+					port = 22;
+					((Text) event.widget).setText("22");
+				}
+				checkButtonStatus();
+			}
+		});
+
+		usernameField = new LabeledText(sshCredentialsComposite, SWT.NONE, LangResources.get("username"), ArrangementStyle.Horizontal);
+		final GridData usernameFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
+		usernameFieldGridData.widthHint = 125;
 		usernameField.setLayoutData(usernameFieldGridData);
 		usernameField.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent event) {
-				username = ((Text) event.widget).getText();
+			public void modifyText(final ModifyEvent event) {
+				username = ((LabeledText) event.widget).getText();
 				checkButtonStatus();
 			}
 		});
@@ -214,12 +238,12 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		useKeyFileButton.setText(LangResources.get("useKeyFile"));
 		useKeyFileButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				if (((Button) e.widget).getSelection()) {
-					FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
+					final FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
 					dialog.setText(LangResources.get("openKeyFile"));
 					dialog.setFileName(keyFile);
-					String fileName = dialog.open();
+					final String fileName = dialog.open();
 					if (fileName != null) {
 						keyFile = fileName;
 					} else {
@@ -232,13 +256,13 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		Label passwordLabel = new Label(sshCredentialsComposite, SWT.NONE);
+		final Label passwordLabel = new Label(sshCredentialsComposite, SWT.NONE);
 		passwordLabel.setText(LangResources.get("password"));
 		passwordField = new Text(sshCredentialsComposite, SWT.PASSWORD | SWT.BORDER);
 		passwordField.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent event) {
-				password = ((Text) event.widget).getText();
+			public void modifyText(final ModifyEvent event) {
+				password = ((Text) event.widget).getText().toCharArray();
 				checkButtonStatus();
 			}
 		});
@@ -247,7 +271,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		connectButton.setText(LangResources.get("connect"));
 		connectButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				if (!connected) {
 					connect();
 				} else {
@@ -257,82 +281,39 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		SashForm sashForm = new SashForm(parentShell, SWT.SMOOTH | SWT.HORIZONTAL | SWT.BORDER);
+		final SashForm sashForm = new SashForm(parentShell, SWT.SMOOTH | SWT.HORIZONTAL | SWT.BORDER);
 		sashForm.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 
-		Composite treePartComposite = new Composite(sashForm, SWT.NONE);
+		final Composite treePartComposite = new Composite(sashForm, SWT.NONE);
 		treePartComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 		folderTree = new Tree(treePartComposite, SWT.BORDER);
-		GridData folderTreeGridData = new GridData(SWT.FILL, SWT.UP, true, true);
+		final GridData folderTreeGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		folderTreeGridData.heightHint = 300;
 		folderTree.setLayoutData(folderTreeGridData);
 		folderTree.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent event) {
-				Session session = null;
-				try {
-					TreeItem selectedFolderItem = folderTree.getSelection()[0];
-					String path = selectedFolderItem.getText();
-					TreeItem parentTreeItem = selectedFolderItem.getParentItem();
-					while (parentTreeItem != null) {
-						path = parentTreeItem.getText() + (parentTreeItem.getText().endsWith("/") ? "" : "/") + path;
-						parentTreeItem = parentTreeItem.getParentItem();
-					}
-					session = JschWrapper.openSession(getServerEntry());
-					Tuple<List<String>, List<String>> directory = JschWrapper.getDirectory(session, path);
-					for (TreeItem subItem : selectedFolderItem.getItems()) {
-						if (!directory.getFirst().contains(subItem.getText())) {
-							subItem.dispose();
-						}
-					}
-					for (String folderName : directory.getFirst()) {
-						boolean subItemExists = false;
-						for (TreeItem subItem : selectedFolderItem.getItems()) {
-							if (subItem.getText().equals(folderName)) {
-								subItemExists = true;
-								break;
-							}
-						}
-						if (!subItemExists) {
-							TreeItem folderTreeItem = new TreeItem(selectedFolderItem, SWT.NONE);
-							folderTreeItem.setText(folderName);
-						}
-					}
-					selectedFolderItem.setExpanded(true);
-					filesTree.removeAll();
-					for (String fileName : directory.getSecond()) {
-						TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
-						filesTreeItem.setText(fileName);
-					}
-					if (directory.getSecond().size() > 0) {
-						filesTree.setSelection(filesTree.getItem(0));
-					}
-					selectedFilePath = path;
-				} catch (Exception e) {
-					new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
-				} finally {
-					JschWrapper.closeQuietly(session);
-				}
+			public void widgetSelected(final SelectionEvent event) {
+				showPathDirectory();
 				checkButtonStatus();
 			}
 		});
 
-		Composite detailPartComposite = new Composite(sashForm, SWT.NONE);
+		final Composite detailPartComposite = new Composite(sashForm, SWT.NONE);
 		detailPartComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 		filesTree = new Tree(detailPartComposite, SWT.BORDER);
-		GridData filesTreeGridData = new GridData(SWT.FILL, SWT.UP, true, true);
+		final GridData filesTreeGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		filesTreeGridData.heightHint = 300;
 		filesTree.setLayoutData(filesTreeGridData);
 		filesTree.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent event) {
+			public void widgetSelected(final SelectionEvent event) {
 				try {
-					TreeItem selectedFilesItem = filesTree.getSelection()[0];
+					final TreeItem selectedFilesItem = filesTree.getSelection()[0];
 					selectedFileName = selectedFilesItem.getText();
 					if (dialogMode == Mode.Save) {
 						fileNameField.setText(selectedFileName);
 					}
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					e.printStackTrace();
 				}
 				checkButtonStatus();
@@ -340,7 +321,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		});
 		filesTree.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mouseDoubleClick(MouseEvent e) {
+			public void mouseDoubleClick(final MouseEvent e) {
 				if (((Tree) e.widget).getSelection().length == 1) {
 					setReturnValue(true);
 					getParent().close();
@@ -349,43 +330,92 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		});
 
 		if (dialogMode == Mode.Save) {
-			Composite additionalSaveComposite = new Composite(parentShell, SWT.NONE);
-			additionalSaveComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
-			additionalSaveComposite.setLayout(SwtUtilities.createNoMarginGridLayout(3, false));
+			final Composite additionalButtonsComposite = new Composite(parentShell, SWT.NONE);
+			additionalButtonsComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+			additionalButtonsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(3, false));
 
-			createFolderButton = new Button(additionalSaveComposite, SWT.PUSH);
+			createFolderButton = new Button(additionalButtonsComposite, SWT.PUSH);
 			createFolderButton.setText(LangResources.get("createFolder"));
 			createFolderButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(SelectionEvent event) {
-					String folderName = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterFolderName")).open();
+				public void widgetSelected(final SelectionEvent event) {
+					final String folderName = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterFolderName")).open();
 					if (Utilities.isNotBlank(folderName)) {
 						Session session = null;
 						try {
+							session = JschWrapper.openSession(getServerEntry());
 							JschWrapper.createFolder(session, selectedFilePath, folderName);
-						} catch (Exception e) {
+						} catch (final Exception e) {
 							new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 						} finally {
 							JschWrapper.closeQuietly(session);
+						}
+						showPathDirectory();
+					}
+				}
+			});
+
+			deleteFolderButton = new Button(additionalButtonsComposite, SWT.PUSH);
+			deleteFolderButton.setText(LangResources.get("deleteFolder"));
+			deleteFolderButton.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(final SelectionEvent event) {
+					if (Utilities.isNotBlank(selectedFilePath)) {
+						if (new QuestionDialog(getParent(), LangResources.get("deleteFolder"), LangResources.get("reallyDeleteFolder", selectedFilePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
+							Session session = null;
+							try {
+								session = JschWrapper.openSession(getServerEntry());
+								JschWrapper.deleteFolder(session, selectedFilePath);
+								folderTree.select(folderTree.getSelection()[0].getParentItem());
+							} catch (final Exception e) {
+								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
+							} finally {
+								JschWrapper.closeQuietly(session);
+							}
+							showPathDirectory();
 						}
 					}
 				}
 			});
 
-			Label fileNameLabel = new Label(additionalSaveComposite, SWT.NONE);
-			fileNameLabel.setText(LangResources.get("fileName"));
-			fileNameField = new Text(additionalSaveComposite, SWT.BORDER);
+			deleteFileButton = new Button(additionalButtonsComposite, SWT.PUSH);
+			deleteFileButton.setText(LangResources.get("deleteFile"));
+			deleteFileButton.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(final SelectionEvent event) {
+					if (Utilities.isNotBlank(selectedFilePath) && Utilities.isNotBlank(selectedFileName)) {
+						if (new QuestionDialog(getParent(), LangResources.get("deleteFile"), LangResources.get("reallyDeleteFile", selectedFilePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
+							Session session = null;
+							try {
+								session = JschWrapper.openSession(getServerEntry());
+								JschWrapper.deleteFile(session, selectedFilePath + "/" + selectedFileName);
+							} catch (final Exception e) {
+								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
+							} finally {
+								JschWrapper.closeQuietly(session);
+							}
+							showPathDirectory();
+						}
+					}
+				}
+			});
+
+			final Composite additionalSaveComposite = new Composite(parentShell, SWT.BORDER);
+			additionalSaveComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+			additionalSaveComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
+
+			fileNameField = new LabeledText(additionalSaveComposite, SWT.NONE, LangResources.get("fileName"), ArrangementStyle.Horizontal);
 			fileNameField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 			fileNameField.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(ModifyEvent event) {
-					selectedFileName = ((Text) event.widget).getText();
+				public void modifyText(final ModifyEvent event) {
+					selectedFileName = ((LabeledText) event.widget).getText();
 					checkButtonStatus();
 				}
 			});
 		}
 
-		Composite mainButtonComposite = new Composite(parentShell, SWT.NONE);
+		final Composite mainButtonComposite = new Composite(parentShell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 		mainButtonComposite.setLayout(new FillLayout());
 
@@ -393,17 +423,21 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		actionButton.setText(LangResources.get(dialogMode == Mode.Open ? "open" : "save"));
 		actionButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent event) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(true);
 				getParent().close();
 			}
 		});
 
-		Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
+		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
+				if (password != null) {
+					Arrays.fill(password, '\u0000');
+					password = null;
+				}
 				setReturnValue(false);
 				getParent().close();
 			}
@@ -420,16 +454,17 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		Session session = null;
 		try {
 			session = JschWrapper.openSession(getServerEntry());
-			Tuple<List<String>, List<String>> directory = JschWrapper.getDirectory(session, "/");
+			final List<String> folders = JschWrapper.getFolders(session, "/");
+			final List<String> files = JschWrapper.getFiles(session, "/");
 			folderTree.removeAll();
-			TreeItem rootTreeItem = new TreeItem(folderTree, SWT.NONE);
+			final TreeItem rootTreeItem = new TreeItem(folderTree, SWT.NONE);
 			rootTreeItem.setText("/");
-			for (String folderName : directory.getFirst()) {
-				TreeItem folderTreeItem = new TreeItem(rootTreeItem, SWT.NONE);
+			for (final String folderName : folders) {
+				final TreeItem folderTreeItem = new TreeItem(rootTreeItem, SWT.NONE);
 				folderTreeItem.setText(folderName);
 			}
-			for (String fileName : directory.getSecond()) {
-				TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
+			for (final String fileName : files) {
+				final TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
 				filesTreeItem.setText(fileName);
 			}
 			rootTreeItem.setExpanded(true);
@@ -437,7 +472,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			selectedFilePath = "/";
 
 			connected = true;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			connected = false;
 			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 		} finally {
@@ -467,12 +502,15 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			connectButton.setText(LangResources.get("disconnect"));
 			actionButton.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
 			hostnameField.setEnabled(false);
+			portField.setEnabled(false);
 			usernameField.setEnabled(false);
 			passwordField.setEnabled(false);
 			useKeyFileButton.setEnabled(false);
 			if (dialogMode == Mode.Save) {
 				fileNameField.setEnabled(true);
 				createFolderButton.setEnabled(true);
+				deleteFolderButton.setEnabled(true);
+				deleteFileButton.setEnabled(true);
 			}
 		} else {
 			if (keystoreFile != null) {
@@ -485,18 +523,21 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			connectButton.setText(LangResources.get("connect"));
 			actionButton.setEnabled(false);
 			hostnameField.setEnabled(true);
+			portField.setEnabled(true);
 			usernameField.setEnabled(true);
 			passwordField.setEnabled(true);
 			useKeyFileButton.setEnabled(true);
 			if (dialogMode == Mode.Save) {
 				fileNameField.setEnabled(false);
 				createFolderButton.setEnabled(false);
+				deleteFolderButton.setEnabled(false);
+				deleteFileButton.setEnabled(false);
 			}
 		}
 	}
 
 	public ServerAccessData getServerEntry() {
-		return new ServerAccessData(hostnameOrIp, username, keyFile, password);
+		return new ServerAccessData("ssh", hostnameOrIp, port, username, keyFile, password, false);
 	}
 
 	public String getSelectedFile() {
@@ -509,36 +550,47 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 
 	private void loadServerEntries() {
 		if (keystoreFile.exists()) {
-			char[] password = inMemoryPassword == null ? null : inMemoryPassword;
+			boolean passwordWasWrong = false;
 
-			if (password == null) {
-				// try to use empty password
-				try {
-					password = "".toCharArray();
-					keyStore = new SecureDataStore();
-					keyStore.load(keystoreFile, password, keystoreFileSalt);
-				} catch (Exception e1) {
-					password = null;
-					keyStore = null;
+			char[] password = inMemoryPassword == null ? "".toCharArray() : Arrays.copyOf(inMemoryPassword, inMemoryPassword.length);
+			try {
+				keyStore = new SecureDataStore();
+				keyStore.load(keystoreFile, password, keystoreFileSalt);
+			} catch (final Exception e) {
+				password = null;
+				keyStore = null;
+				if (inMemoryPassword != null) {
+					Arrays.fill(inMemoryPassword, '\u0000');
 				}
+				inMemoryPassword = null;
+				passwordWasWrong = true;
 			}
 
-			if (password == null && keyStore == null) {
-				PasswordDialog dialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"));
+			while (passwordWasWrong) {
+				final PasswordDialog dialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"));
 				dialog.setKeepInMemoryText(LangResources.get("keepPasswordInMemory"));
 				password = dialog.open();
-				if (dialog.keepInMemory()) {
-					inMemoryPassword = password;
-				}
-			}
-
-			if (password != null && keyStore == null) {
-				try {
-					keyStore = new SecureDataStore();
-					keyStore.load(keystoreFile, password, keystoreFileSalt);
-				} catch (Exception e) {
-					e.printStackTrace();
-					new QuestionDialog(getParent(), getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).open();
+				if (password != null) {
+					if (dialog.keepInMemory()) {
+						inMemoryPassword = Arrays.copyOf(password, password.length);
+					}
+					try {
+						keyStore = new SecureDataStore();
+						// Kills the password after usage
+						keyStore.load(keystoreFile, password, keystoreFileSalt);
+						passwordWasWrong = false;
+					} catch (final Exception e) {
+						e.printStackTrace();
+						new QuestionDialog(getParent(), getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).open();
+						keyStore = null;
+						passwordWasWrong = true;
+						if (inMemoryPassword != null) {
+							Arrays.fill(inMemoryPassword, '\u0000');
+						}
+						inMemoryPassword = null;
+					}
+				} else {
+					passwordWasWrong = false;
 					keyStore = null;
 				}
 			}
@@ -550,18 +602,69 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 			if (serverEntriesCombo.getItemCount() > 0) {
 				serverEntriesCombo.select(0);
-				String selectionName = serverEntriesCombo.getText();
+				final String selectionName = serverEntriesCombo.getText();
 				if (Utilities.isNotBlank(selectionName)) {
-					ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, selectionName);
-					hostnameField.setText(entry.getHostname());
-					usernameField.setText(entry.getUsername());
-					keyFile = entry.getKeyFile();
-					useKeyFileButton.setSelection(Utilities.isNotBlank(keyFile));
-					passwordField.setText(entry.getPassword());
+					final ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, selectionName);
+					if ("ssh".equalsIgnoreCase(entry.getProtocol())) {
+						hostnameField.setText(entry.getHostname());
+						portField.setText(Integer.toString(entry.getPort()));
+						usernameField.setText(entry.getUsername());
+						keyFile = entry.getKeyFile();
+						useKeyFileButton.setSelection(Utilities.isNotBlank(keyFile));
+						passwordField.setText(new String(entry.getPassword()));
+					}
 				}
 			}
 		} else {
 			serverEntriesCombo.setItems(new String[] {});
+		}
+	}
+
+	private void showPathDirectory() {
+		Session session = null;
+		try {
+			final TreeItem selectedFolderItem = folderTree.getSelection()[0];
+			String path = selectedFolderItem.getText();
+			TreeItem parentTreeItem = selectedFolderItem.getParentItem();
+			while (parentTreeItem != null) {
+				path = parentTreeItem.getText() + (parentTreeItem.getText().endsWith("/") ? "" : "/") + path;
+				parentTreeItem = parentTreeItem.getParentItem();
+			}
+			session = JschWrapper.openSession(getServerEntry());
+			final List<String> folders = JschWrapper.getFolders(session, path);
+			final List<String> files = JschWrapper.getFiles(session, path);
+			for (final TreeItem subItem : selectedFolderItem.getItems()) {
+				if (!folders.contains(subItem.getText())) {
+					subItem.dispose();
+				}
+			}
+			for (final String folderName : folders) {
+				boolean subItemExists = false;
+				for (final TreeItem subItem : selectedFolderItem.getItems()) {
+					if (subItem.getText().equals(folderName)) {
+						subItemExists = true;
+						break;
+					}
+				}
+				if (!subItemExists) {
+					final TreeItem folderTreeItem = new TreeItem(selectedFolderItem, SWT.NONE);
+					folderTreeItem.setText(folderName);
+				}
+			}
+			selectedFolderItem.setExpanded(true);
+			filesTree.removeAll();
+			for (final String fileName : files) {
+				final TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
+				filesTreeItem.setText(fileName);
+			}
+			if (files.size() > 0) {
+				filesTree.setSelection(filesTree.getItem(0));
+			}
+			selectedFilePath = path;
+		} catch (final Exception e) {
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
+		} finally {
+			JschWrapper.closeQuietly(session);
 		}
 	}
 }

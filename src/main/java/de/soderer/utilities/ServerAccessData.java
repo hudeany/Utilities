@@ -3,27 +3,29 @@ package de.soderer.utilities;
 public class ServerAccessData {
 	public static final String PRELUDE = "\\\\";
 
+	private String protocol;
 	private String hostname;
 	private int port;
 	private String username;
 	private String keyFile;
-	private String password;
+	private char[] password;
 	private boolean checkHostKey;
 
 	protected ServerAccessData() {
 	}
 
-	public ServerAccessData(final String hostname, final String username, final String keyFile, final String password) {
-		this(hostname, 22, username, keyFile, password, false);
-	}
-
-	public ServerAccessData(final String hostname, final int port, final String username, final String keyFile, final String password, final boolean checkHostKey) {
+	public ServerAccessData(final String protocol, final String hostname, final int port, final String username, final String keyFile, final char[] password, final boolean checkHostKey) {
+		this.protocol = protocol;
 		this.hostname = hostname;
 		this.port = port;
 		this.username = username;
 		this.keyFile = keyFile;
 		this.password = password;
 		this.checkHostKey = checkHostKey;
+	}
+
+	public String getProtocol() {
+		return protocol;
 	}
 
 	public String getHostname() {
@@ -42,7 +44,7 @@ public class ServerAccessData {
 		return keyFile;
 	}
 
-	public String getPassword() {
+	public char[] getPassword() {
 		return password;
 	}
 
@@ -69,11 +71,17 @@ public class ServerAccessData {
 	@Override
 	public String toString() {
 		final StringBuilder returnValue = new StringBuilder();
+		if (protocol != null) {
+			returnValue.append(protocol);
+		} else {
+			returnValue.append("<No protocol defined>");
+		}
+		returnValue.append("://");
 		if (username != null) {
 			returnValue.append(username);
 			returnValue.append("@");
 		}
-		if (username != null) {
+		if (hostname != null) {
 			returnValue.append(hostname);
 		} else {
 			returnValue.append("<No host defined>");
