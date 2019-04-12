@@ -138,62 +138,77 @@ public class EmailUtilities {
 	 */
 	public static boolean openMailInStandardClient(final String toAdress, final String ccAdress, final String subject, final String body) {
 		try {
-			final String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8") + "?" + (Utilities.isNotBlank(ccAdress) ? "cc=" + URLEncoder.encode(ccAdress, "UTF-8") + "&" : "") + "subject="
-					+ URLEncoder.encode(subject, "UTF-8").replace("+", "%20") + "&body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20");
-			//					+ (attachmentFile != null ? "&attachment=" + URLEncoder.encode(attachmentFile.getAbsolutePath(), "UTF-8") : ""); // maybe it is "&attach="
-
-			boolean success;
-			try {
-				final Desktop desktop = Desktop.getDesktop();
-				desktop.mail(new URI(mailtoString));
-				success = true;
-			} catch (final Exception e) {
-				success = false;
+			if (Utilities.isBlank(toAdress)) {
+				throw new Exception("TO address is missing or empty");
 			}
 
-			if (!success) {
-				try {
-					success = Program.launch(mailtoString);
-				} catch (final Exception e) {
-					throw new Exception("Open mail by swt.Program failed");
+			String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8");
+
+			boolean isFirstParameter = true;
+
+			if (Utilities.isNotBlank(ccAdress)) {
+				if (isFirstParameter) {
+					mailtoString += "?";
+				} else {
+					mailtoString += "&";
 				}
+				mailtoString += "cc=" + URLEncoder.encode(ccAdress, "UTF-8");
+				isFirstParameter = false;
 			}
 
-			if (!success) {
-				if (SystemUtilities.isWindowsSystem()) {
-					if (Desktop.isDesktopSupported()) {
-						final Desktop desktop = Desktop.getDesktop();
-						if (desktop.isSupported(Desktop.Action.MAIL)) {
-							desktop.mail(new URI(mailtoString));
-							return true;
-						} else {
-							return false;
-						}
+			if (Utilities.isNotBlank(subject)) {
+				if (isFirstParameter) {
+					mailtoString += "?";
+				} else {
+					mailtoString += "&";
+				}
+				mailtoString += "subject=" + URLEncoder.encode(subject, "UTF-8").replace("+", "%20");
+				isFirstParameter = false;
+			}
+
+			if (Utilities.isNotBlank(body)) {
+				if (isFirstParameter) {
+					mailtoString += "?";
+				} else {
+					mailtoString += "&";
+				}
+				mailtoString += "body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20");
+				isFirstParameter = false;
+			}
+			// + (attachmentFile != null ? "&attachment=" + URLEncoder.encode(attachmentFile.getAbsolutePath(), "UTF-8") : ""); // maybe it is "&attach="
+
+			if (SystemUtilities.isWindowsSystem()) {
+				if (Desktop.isDesktopSupported()) {
+					final Desktop desktop = Desktop.getDesktop();
+					if (desktop.isSupported(Desktop.Action.MAIL)) {
+						desktop.mail(new URI(mailtoString));
+						return true;
 					} else {
 						return false;
 					}
 				} else {
 					try {
-						Runtime.getRuntime().exec("xdg-open " + mailtoString);
-						success = true;
+						return Program.launch(mailtoString);
 					} catch (final Exception e) {
-						success = false;
-					}
-
-					if (!success) {
-						try {
-							// For using the parameters check the following description
-							// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
-							Runtime.getRuntime().exec("thunderbird -compose");
-							success = Program.launch(mailtoString);
-						} catch (final Exception e) {
-							throw new Exception("Open mail by thunderbird failed");
-						}
+						return false;
 					}
 				}
-				return true;
 			} else {
-				return true;
+				try {
+					Runtime.getRuntime().exec("xdg-open " + mailtoString);
+					return true;
+				} catch (final Exception e) {
+					// Try some other method of mail creation
+				}
+
+				try {
+					// For using the parameters check the following description
+					// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
+					Runtime.getRuntime().exec("thunderbird -compose");
+					return Program.launch(mailtoString);
+				} catch (final Exception e) {
+					return false;
+				}
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();
