@@ -138,44 +138,7 @@ public class EmailUtilities {
 	 */
 	public static boolean openMailInStandardClient(final String toAdress, final String ccAdress, final String subject, final String body) {
 		try {
-			if (Utilities.isBlank(toAdress)) {
-				throw new Exception("TO address is missing or empty");
-			}
-
-			String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8");
-
-			boolean isFirstParameter = true;
-
-			if (Utilities.isNotBlank(ccAdress)) {
-				if (isFirstParameter) {
-					mailtoString += "?";
-				} else {
-					mailtoString += "&";
-				}
-				mailtoString += "cc=" + URLEncoder.encode(ccAdress, "UTF-8");
-				isFirstParameter = false;
-			}
-
-			if (Utilities.isNotBlank(subject)) {
-				if (isFirstParameter) {
-					mailtoString += "?";
-				} else {
-					mailtoString += "&";
-				}
-				mailtoString += "subject=" + URLEncoder.encode(subject, "UTF-8").replace("+", "%20");
-				isFirstParameter = false;
-			}
-
-			if (Utilities.isNotBlank(body)) {
-				if (isFirstParameter) {
-					mailtoString += "?";
-				} else {
-					mailtoString += "&";
-				}
-				mailtoString += "body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20");
-				isFirstParameter = false;
-			}
-			// + (attachmentFile != null ? "&attachment=" + URLEncoder.encode(attachmentFile.getAbsolutePath(), "UTF-8") : ""); // maybe it is "&attach="
+			final String mailtoString = createMailtoLink(toAdress, ccAdress, subject, body);
 
 			if (SystemUtilities.isWindowsSystem()) {
 				if (Desktop.isDesktopSupported()) {
@@ -183,15 +146,15 @@ public class EmailUtilities {
 					if (desktop.isSupported(Desktop.Action.MAIL)) {
 						desktop.mail(new URI(mailtoString));
 						return true;
-					} else {
-						return false;
 					}
-				} else {
-					try {
-						return Program.launch(mailtoString);
-					} catch (final Exception e) {
-						return false;
+				}
+
+				try {
+					if (Program.launch(mailtoString)) {
+						return true;
 					}
+				} catch (final Exception e) {
+					// Try some other method of mail creation
 				}
 			} else {
 				try {
@@ -205,14 +168,61 @@ public class EmailUtilities {
 					// For using the parameters check the following description
 					// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
 					Runtime.getRuntime().exec("thunderbird -compose");
-					return Program.launch(mailtoString);
+					if (Program.launch(mailtoString)) {
+						return true;
+					}
 				} catch (final Exception e) {
-					return false;
+					// Try some other method of mail creation
 				}
 			}
+
+			throw new Exception("Cannot create mail in standard mailclient");
 		} catch (final Exception e) {
 			e.printStackTrace();
 			return false;
 		}
+	}
+
+	private static String createMailtoLink(final String toAdress, final String ccAdress, final String subject, final String body) throws Exception {
+		if (Utilities.isBlank(toAdress)) {
+			throw new Exception("TO address is missing or empty");
+		}
+
+		String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8");
+
+		boolean isFirstParameter = true;
+
+		if (Utilities.isNotBlank(ccAdress)) {
+			if (isFirstParameter) {
+				mailtoString += "?";
+			} else {
+				mailtoString += "&";
+			}
+			mailtoString += "cc=" + URLEncoder.encode(ccAdress, "UTF-8");
+			isFirstParameter = false;
+		}
+
+		if (Utilities.isNotBlank(subject)) {
+			if (isFirstParameter) {
+				mailtoString += "?";
+			} else {
+				mailtoString += "&";
+			}
+			mailtoString += "subject=" + URLEncoder.encode(subject, "UTF-8").replace("+", "%20");
+			isFirstParameter = false;
+		}
+
+		if (Utilities.isNotBlank(body)) {
+			if (isFirstParameter) {
+				mailtoString += "?";
+			} else {
+				mailtoString += "&";
+			}
+			mailtoString += "body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20");
+			isFirstParameter = false;
+		}
+		// + (attachmentFile != null ? "&attachment=" + URLEncoder.encode(attachmentFile.getAbsolutePath(), "UTF-8") : ""); // maybe it is "&attach="
+
+		return mailtoString;
 	}
 }
