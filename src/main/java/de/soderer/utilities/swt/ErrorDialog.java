@@ -27,19 +27,17 @@ import de.soderer.utilities.VisibleException;
 
 public class ErrorDialog extends ModalDialog<Boolean> {
 	private final String applicationName;
+	private final String applicationVersion;
 	private final String emailRecipient;
 	private final Throwable throwable;
 	private Button detailButton;
 	private Composite detailPart;
 
-	public ErrorDialog(final Shell shell, final String applicationName, final Throwable throwable) {
-		this(shell, applicationName, "", throwable);
-	}
-
-	public ErrorDialog(final Shell shell, final String applicationName, final String emailRecipient, final Throwable throwable) {
-		super(shell, SWT.CLOSE, applicationName + " " + getText("ERROR"));
+	public ErrorDialog(final Shell shell, final String applicationName, final String applicationVersion, final String emailRecipient, final Throwable throwable) {
+		super(shell, SWT.CLOSE, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + getText("ERROR"));
 		this.throwable = throwable;
 		this.applicationName = applicationName;
+		this.applicationVersion = applicationVersion;
 		this.emailRecipient = emailRecipient;
 	}
 
@@ -58,6 +56,8 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		String text1 = getText("ERROR_OCCURRED");
 		if (throwable instanceof VisibleException) {
 			text1 = ((VisibleException) throwable).getVisibleMessage();
+		} else {
+			text1 = throwable.getMessage();
 		}
 
 		final GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
@@ -76,7 +76,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		sendMailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
-				final boolean success = EmailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName, ExceptionUtilities.throwableToString(throwable));
+				final boolean success = EmailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : ""), ExceptionUtilities.throwableToString(throwable));
 				if (!success) {
 					new QuestionDialog(getParent(), getText(), getText("CANNOT_OPEN_MAIL"), "OK").open();
 				}
