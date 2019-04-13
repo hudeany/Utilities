@@ -14,10 +14,6 @@ public class LabeledText extends Composite {
 	protected Text textField;
 	protected Text passwordTextField = null;
 
-	public enum ArrangementStyle {
-		Vertical, Horizontal
-	}
-
 	protected LabeledText(final Composite parent, final int style) throws Exception {
 		super(parent, style);
 	}

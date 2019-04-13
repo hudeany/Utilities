@@ -15,7 +15,6 @@ import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.swt.RadioButtonGroup.ArrangementStyle;
 
 public class CsvConfigDialog extends ModalDialog<Boolean> {
 	protected String text = null;
@@ -34,17 +33,17 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 	protected RadioButtonGroup separatorRadioButtonGroup;
 	protected Button useQuoteButton;
 
-	public CsvConfigDialog(Shell shell, String title, String text) {
+	public CsvConfigDialog(final Shell shell, final String title, final String text) {
 		super(shell, title);
 		this.text = text;
 	}
 
 	@Override
-	protected void createComponents(Shell shell) throws Exception {
+	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
 
 		if (Utilities.isNotBlank(text)) {
-			Label label = new Label(shell, SWT.NONE);
+			final Label label = new Label(shell, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
 			label.setText(text);
 		}
@@ -54,7 +53,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		separatorRadioButtonGroup.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
 		separatorRadioButtonGroup.setSelectedButtonIndex(separator == ',' ? 0 : 1);
 
-		Composite quoteComposite = new Composite(shell, SWT.NONE);
+		final Composite quoteComposite = new Composite(shell, SWT.NONE);
 		quoteComposite.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 		quoteComposite.setLayout(SwtUtilities.createNoMarginGridLayout(3, false));
 
@@ -63,7 +62,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		useQuoteButton.setSelection(useStringQuote);
 		useQuoteButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				checkStatus();
 			}
 		});
@@ -72,13 +71,13 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		quoteTypeRadioButtonGroup.setSelectedButtonIndex(stringQuote == '\'' ? 0 : 1);
 
 		if (showContainsHeadersInFirstRowButton) {
-			Button containsHeadersInFirstRowButton = new Button(quoteComposite, SWT.CHECK);
+			final Button containsHeadersInFirstRowButton = new Button(quoteComposite, SWT.CHECK);
 			containsHeadersInFirstRowButton.setText(LangResources.get("containsHeadersInFirstRow"));
 			containsHeadersInFirstRowButton.setSelection(containsHeadersInFirstRow);
 			containsHeadersInFirstRowButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 3, 1));
 			containsHeadersInFirstRowButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(SelectionEvent e) {
+				public void widgetSelected(final SelectionEvent e) {
 					containsHeadersInFirstRow = ((Button) e.widget).getSelection();
 					checkStatus();
 				}
@@ -90,35 +89,35 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		underfilledLinesRadioButtonGroup.setSelectedButtonIndex(allowUnderfilledLines ? 0 : 1);
 
 		if (showEncodingField) {
-			Composite encodingComposite = new Composite(shell, SWT.NONE);
+			final Composite encodingComposite = new Composite(shell, SWT.NONE);
 			encodingComposite.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 			encodingComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
 
-			Label encodingLabel = new Label(encodingComposite, SWT.NONE);
+			final Label encodingLabel = new Label(encodingComposite, SWT.NONE);
 			encodingLabel.setText(LangResources.get("encoding") + ": ");
 
-			Combo encodingText = new Combo(encodingComposite, SWT.BORDER);
+			final Combo encodingText = new Combo(encodingComposite, SWT.BORDER);
 			encodingText.setItems(new String[] { "UTF-8", "ISO-8859-1", "ISO-8859-15" });
 			encodingText.setText(encoding);
 			encodingText.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(ModifyEvent e) {
+				public void modifyText(final ModifyEvent e) {
 					encoding = ((Combo) e.widget).getText();
 					checkStatus();
 				}
 			});
 		}
 
-		Composite mainButtonComposite = new Composite(shell, SWT.NONE);
+		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 
-		Button okButton = new Button(mainButtonComposite, SWT.PUSH);
+		final Button okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				separator = separatorRadioButtonGroup.getSelectedButtonIndex() == 0 ? ',' : ';';
 				useStringQuote = useQuoteButton.getSelection();
 				stringQuote = quoteTypeRadioButtonGroup.getSelectedButtonIndex() == 0 ? '\'' : '"';
@@ -128,12 +127,12 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
+		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				setReturnValue(false);
 				getParent().close();
 			}
@@ -151,7 +150,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		quoteTypeRadioButtonGroup.setEnabled(useQuoteButton.getSelection());
 	}
 
-	public void setSeparator(char value) {
+	public void setSeparator(final char value) {
 		separator = value;
 	}
 
@@ -159,7 +158,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		return separator;
 	}
 
-	public void setStringQuote(char value) {
+	public void setStringQuote(final char value) {
 		stringQuote = value;
 	}
 
@@ -167,7 +166,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		return stringQuote;
 	}
 
-	public void setUseStringQuote(boolean value) {
+	public void setUseStringQuote(final boolean value) {
 		useStringQuote = value;
 	}
 
@@ -175,7 +174,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		return useStringQuote;
 	}
 
-	public void setAllowUnderfilledLines(boolean value) {
+	public void setAllowUnderfilledLines(final boolean value) {
 		allowUnderfilledLines = value;
 	}
 
@@ -183,11 +182,11 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		return allowUnderfilledLines;
 	}
 
-	public void setShowContainsHeadersInFirstRowButton(boolean value) {
+	public void setShowContainsHeadersInFirstRowButton(final boolean value) {
 		showContainsHeadersInFirstRowButton = value;
 	}
 
-	public void setContainsHeadersInFirstRow(boolean value) {
+	public void setContainsHeadersInFirstRow(final boolean value) {
 		containsHeadersInFirstRow = value;
 	}
 
@@ -195,11 +194,11 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		return containsHeadersInFirstRow;
 	}
 
-	public void setShowEncodingField(boolean value) {
+	public void setShowEncodingField(final boolean value) {
 		showEncodingField = value;
 	}
 
-	public void setEncoding(String value) {
+	public void setEncoding(final String value) {
 		encoding = value;
 	}
 

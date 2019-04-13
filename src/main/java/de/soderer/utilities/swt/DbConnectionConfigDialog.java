@@ -13,7 +13,6 @@ import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.swt.RadioButtonGroup.ArrangementStyle;
 
 public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 	private String text = null;
@@ -34,17 +33,17 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 
 	private Button okButton;
 
-	public DbConnectionConfigDialog(Shell shell, String title, String text) {
+	public DbConnectionConfigDialog(final Shell shell, final String title, final String text) {
 		super(shell, title);
 		this.text = text;
 	}
 
 	@Override
-	protected void createComponents(Shell shell) throws Exception {
+	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
 
 		if (Utilities.isNotBlank(text)) {
-			Label label = new Label(shell, SWT.NONE);
+			final Label label = new Label(shell, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
 			label.setText(text);
 		}
@@ -53,71 +52,71 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		dbTypeRadioButtonGroup.setSelectedButtonIndex(1);
 		dbTypeRadioButtonGroup.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent e) {
+			public void modifyText(final ModifyEvent e) {
 				isOracle = ((RadioButtonGroup) e.widget).getSelectedButtonIndex() == 0;
 			}
 		});
 
-		Composite credentialsComposite = new Composite(shell, SWT.NONE);
+		final Composite credentialsComposite = new Composite(shell, SWT.NONE);
 		credentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 		credentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
 
-		Label hostnameLabel = new Label(credentialsComposite, SWT.NONE);
+		final Label hostnameLabel = new Label(credentialsComposite, SWT.NONE);
 		hostnameLabel.setText(LangResources.get("hostname") + ": ");
 
 		dbServerHostnameText = new Text(credentialsComposite, SWT.BORDER);
 		dbServerHostnameText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent e) {
+			public void modifyText(final ModifyEvent e) {
 				dbServerHostname = ((Text) e.widget).getText();
 				checkStatus();
 			}
 		});
 
-		Label portLabel = new Label(credentialsComposite, SWT.NONE);
+		final Label portLabel = new Label(credentialsComposite, SWT.NONE);
 		portLabel.setText(LangResources.get("port") + ": ");
 
 		dbServerPortText = new NumberText(credentialsComposite, SWT.BORDER, 5);
 		dbServerPortText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		dbServerPortText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent e) {
+			public void modifyText(final ModifyEvent e) {
 				dbServerPort = ((NumberText) e.widget).getValue();
 				checkStatus();
 			}
 		});
 
-		Label dbNameLabel = new Label(credentialsComposite, SWT.NONE);
+		final Label dbNameLabel = new Label(credentialsComposite, SWT.NONE);
 		dbNameLabel.setText(LangResources.get("dbName") + ": ");
 
 		dbNameText = new Text(credentialsComposite, SWT.BORDER);
 		dbNameText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent e) {
+			public void modifyText(final ModifyEvent e) {
 				dbName = ((Text) e.widget).getText();
 				checkStatus();
 			}
 		});
 
-		Label userLabel = new Label(credentialsComposite, SWT.NONE);
+		final Label userLabel = new Label(credentialsComposite, SWT.NONE);
 		userLabel.setText(LangResources.get("userName") + ": ");
 
 		userNameText = new Text(credentialsComposite, SWT.BORDER);
 		userNameText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent e) {
+			public void modifyText(final ModifyEvent e) {
 				userName = ((Text) e.widget).getText();
 				checkStatus();
 			}
 		});
 
-		Label passwordLabel = new Label(credentialsComposite, SWT.NONE);
+		final Label passwordLabel = new Label(credentialsComposite, SWT.NONE);
 		passwordLabel.setText(LangResources.get("password") + ": ");
 
 		passwordText = new Text(credentialsComposite, SWT.PASSWORD | SWT.BORDER);
 		passwordText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent e) {
+			public void modifyText(final ModifyEvent e) {
 				password = ((Text) e.widget).getText();
 				checkStatus();
 			}

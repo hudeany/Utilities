@@ -16,11 +16,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.TypedListener;
 
 public class RadioButtonGroup extends Composite {
-	public enum ArrangementStyle {
-		Vertical,
-		Horizontal
-	}
-
 	private final List<Button> radioButtons;
 
 	public RadioButtonGroup(final Composite parent, final int style, final String... buttonTexts) throws Exception {

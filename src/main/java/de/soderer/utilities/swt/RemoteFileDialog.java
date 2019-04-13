@@ -27,21 +27,21 @@ import org.eclipse.swt.widgets.TreeItem;
 
 import com.jcraft.jsch.Session;
 
+import de.soderer.utilities.FtpHelper;
 import de.soderer.utilities.JschWrapper;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.swt.LabeledText.ArrangementStyle;
 
-/**
- * TODO: use PPK key files
- */
-public class SshFileDialog extends ModalDialog<Boolean> {
+public class RemoteFileDialog extends ModalDialog<Boolean> {
+	private static final List<String> PROTOCOL_LIST = Arrays.asList("SSH", "SFTP", "FTP");
+
 	public enum Mode {
 		Open, Save
 	}
 
+	private String protocol = "SSH";
 	private String hostnameOrIp = null;
 	private int port = 22;
 	private String username = null;
@@ -49,7 +49,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private char[] password = null;
 	private String selectedFilePath = null;
 	private String selectedFileName = null;
-	private boolean connected = false;
+	private LabeledCombo protocolField;
 	private LabeledText hostnameField;
 	private LabeledText portField;
 	private LabeledText usernameField;
@@ -74,7 +74,10 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	private Button deleteFolderButton;
 	private Button deleteFileButton;
 
-	public SshFileDialog(final Shell parentShell, final String title, final Mode dialogMode) {
+	private Session session = null;
+	private FtpHelper ftpHelper = null;
+
+	public RemoteFileDialog(final Shell parentShell, final String title, final Mode dialogMode) {
 		super(parentShell, title);
 		keystoreFile = null;
 		keystoreFileSalt = null;
@@ -82,7 +85,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		this.dialogMode = dialogMode;
 	}
 
-	public SshFileDialog(final Shell parentShell, final String title, final Mode dialogMode, final File keystoreFile, final byte[] keystoreFileSalt, final char[] inMemoryPassword) {
+	public RemoteFileDialog(final Shell parentShell, final String title, final Mode dialogMode, final File keystoreFile, final byte[] keystoreFileSalt, final char[] inMemoryPassword) {
 		super(parentShell, title);
 		this.keystoreFile = keystoreFile;
 		this.keystoreFileSalt = keystoreFileSalt;
@@ -116,6 +119,14 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				public void widgetSelected(final SelectionEvent event) {
 					if (Utilities.isNotBlank(serverEntriesCombo.getText())) {
 						final ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, serverEntriesCombo.getText());
+
+						for (int i = 0; i < PROTOCOL_LIST.size(); i++) {
+							final String protocol = PROTOCOL_LIST.get(i);
+							if (protocol.equalsIgnoreCase(entry.getProtocol())) {
+								protocolField.setSelectedItemIndex(i);
+							}
+						}
+
 						hostnameField.setText(entry.getHostname());
 						portField.setText(Integer.toString(entry.getPort()));
 						usernameField.setText(entry.getUsername());
@@ -188,11 +199,23 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			});
 		}
 
-		final Composite sshCredentialsComposite = new Composite(parentShell, SWT.BORDER);
-		sshCredentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		sshCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(9, false));
+		final Composite serverCredentialsComposite = new Composite(parentShell, SWT.BORDER);
+		serverCredentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
+		serverCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(9, false));
 
-		hostnameField = new LabeledText(sshCredentialsComposite, SWT.NONE, LangResources.get("hostnameOrIp"), ArrangementStyle.Horizontal);
+		protocolField = new LabeledCombo(serverCredentialsComposite, SWT.NONE, LangResources.get("protocol"), PROTOCOL_LIST, 0, ArrangementStyle.Horizontal);
+		final GridData protocolFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
+		protocolFieldGridData.widthHint = 110;
+		protocolField.setLayoutData(protocolFieldGridData);
+		protocolField.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(final ModifyEvent event) {
+				protocol = PROTOCOL_LIST.get(((LabeledCombo) event.widget).getSelectedItemIndex());
+				checkButtonStatus();
+			}
+		});
+
+		hostnameField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("hostnameOrIp"), ArrangementStyle.Horizontal);
 		final GridData hostnameFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		hostnameFieldGridData.widthHint = 225;
 		hostnameField.setLayoutData(hostnameFieldGridData);
@@ -204,7 +227,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		portField = new LabeledText(sshCredentialsComposite, SWT.NONE, LangResources.get("port"), ArrangementStyle.Horizontal);
+		portField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("port"), ArrangementStyle.Horizontal);
 		portField.setText(Integer.toString(port));
 		final GridData portFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		portFieldGridData.widthHint = 60;
@@ -222,7 +245,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		usernameField = new LabeledText(sshCredentialsComposite, SWT.NONE, LangResources.get("username"), ArrangementStyle.Horizontal);
+		usernameField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("username"), ArrangementStyle.Horizontal);
 		final GridData usernameFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
 		usernameFieldGridData.widthHint = 125;
 		usernameField.setLayoutData(usernameFieldGridData);
@@ -234,7 +257,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		useKeyFileButton = new Button(sshCredentialsComposite, SWT.CHECK);
+		useKeyFileButton = new Button(serverCredentialsComposite, SWT.CHECK);
 		useKeyFileButton.setText(LangResources.get("useKeyFile"));
 		useKeyFileButton.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -256,9 +279,9 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		final Label passwordLabel = new Label(sshCredentialsComposite, SWT.NONE);
+		final Label passwordLabel = new Label(serverCredentialsComposite, SWT.NONE);
 		passwordLabel.setText(LangResources.get("password"));
-		passwordField = new Text(sshCredentialsComposite, SWT.PASSWORD | SWT.BORDER);
+		passwordField = new Text(serverCredentialsComposite, SWT.PASSWORD | SWT.BORDER);
 		passwordField.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(final ModifyEvent event) {
@@ -267,13 +290,17 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		connectButton = new Button(sshCredentialsComposite, SWT.PUSH);
+		connectButton = new Button(serverCredentialsComposite, SWT.PUSH);
 		connectButton.setText(LangResources.get("connect"));
 		connectButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
-				if (!connected) {
-					connect();
+				if (session == null && ftpHelper == null) {
+					if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+						connectViaSSH();
+					} else if ("FTP".equalsIgnoreCase(protocol)) {
+						connectViaFTP();
+					}
 				} else {
 					disconnect();
 				}
@@ -293,7 +320,11 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		folderTree.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				showPathDirectory();
+				if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+					showPathDirectorySSH();
+				} else if ("FTP".equalsIgnoreCase(protocol)) {
+					showPathDirectoryFTP();
+				}
 				checkButtonStatus();
 			}
 		});
@@ -341,16 +372,17 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				public void widgetSelected(final SelectionEvent event) {
 					final String folderName = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterFolderName")).open();
 					if (Utilities.isNotBlank(folderName)) {
-						Session session = null;
 						try {
-							session = JschWrapper.openSession(getServerEntry());
-							JschWrapper.createFolder(session, selectedFilePath, folderName);
+							if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+								JschWrapper.createFolder(session, selectedFilePath, folderName);
+								showPathDirectorySSH();
+							} else if ("FTP".equalsIgnoreCase(protocol)) {
+								ftpHelper.createFolder(selectedFilePath, folderName);
+								showPathDirectoryFTP();
+							}
 						} catch (final Exception e) {
-							new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
-						} finally {
-							JschWrapper.closeQuietly(session);
+							new QuestionDialog(getParent(), getText(), "Error while creating folder on server: " + e.getMessage(), LangResources.get("ok")).open();
 						}
-						showPathDirectory();
 					}
 				}
 			});
@@ -362,17 +394,19 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				public void widgetSelected(final SelectionEvent event) {
 					if (Utilities.isNotBlank(selectedFilePath)) {
 						if (new QuestionDialog(getParent(), LangResources.get("deleteFolder"), LangResources.get("reallyDeleteFolder", selectedFilePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
-							Session session = null;
 							try {
-								session = JschWrapper.openSession(getServerEntry());
-								JschWrapper.deleteFolder(session, selectedFilePath);
-								folderTree.select(folderTree.getSelection()[0].getParentItem());
+								if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+									JschWrapper.deleteFolder(session, selectedFilePath);
+									folderTree.select(folderTree.getSelection()[0].getParentItem());
+									showPathDirectorySSH();
+								} else if ("FTP".equalsIgnoreCase(protocol)) {
+									ftpHelper.deleteFolder(selectedFilePath);
+									folderTree.select(folderTree.getSelection()[0].getParentItem());
+									showPathDirectoryFTP();
+								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
-							} finally {
-								JschWrapper.closeQuietly(session);
 							}
-							showPathDirectory();
 						}
 					}
 				}
@@ -384,17 +418,18 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
 					if (Utilities.isNotBlank(selectedFilePath) && Utilities.isNotBlank(selectedFileName)) {
-						if (new QuestionDialog(getParent(), LangResources.get("deleteFile"), LangResources.get("reallyDeleteFile", selectedFilePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
-							Session session = null;
+						if (new QuestionDialog(getParent(), LangResources.get("deleteFile"), LangResources.get("reallyDeleteFile", selectedFilePath + "/" + selectedFileName), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
 							try {
-								session = JschWrapper.openSession(getServerEntry());
-								JschWrapper.deleteFile(session, selectedFilePath + "/" + selectedFileName);
+								if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+									JschWrapper.deleteFile(session, selectedFilePath + "/" + selectedFileName);
+									showPathDirectorySSH();
+								} else if ("FTP".equalsIgnoreCase(protocol)) {
+									ftpHelper.deleteFile(selectedFilePath + "/" + selectedFileName);
+									showPathDirectoryFTP();
+								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
-							} finally {
-								JschWrapper.closeQuietly(session);
 							}
-							showPathDirectory();
 						}
 					}
 				}
@@ -424,6 +459,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		actionButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
+				disconnect();
 				setReturnValue(true);
 				getParent().close();
 			}
@@ -438,6 +474,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 					Arrays.fill(password, '\u0000');
 					password = null;
 				}
+				disconnect();
 				setReturnValue(false);
 				getParent().close();
 			}
@@ -450,8 +487,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		checkButtonStatus();
 	}
 
-	private void connect() {
-		Session session = null;
+	private void connectViaSSH() {
 		try {
 			session = JschWrapper.openSession(getServerEntry());
 			final List<String> folders = JschWrapper.getFolders(session, "/");
@@ -470,28 +506,60 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			rootTreeItem.setExpanded(true);
 			folderTree.select(folderTree.getItem(0));
 			selectedFilePath = "/";
-
-			connected = true;
 		} catch (final Exception e) {
-			connected = false;
-			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
-		} finally {
 			JschWrapper.closeQuietly(session);
+			session = null;
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
+		}
+
+		checkButtonStatus();
+	}
+
+	private void connectViaFTP() {
+		try {
+			ftpHelper = FtpHelper.openConnection(getServerEntry());
+			final List<String> folders = ftpHelper.getFolders("/");
+			final List<String> files = ftpHelper.getFiles("/");
+			folderTree.removeAll();
+			final TreeItem rootTreeItem = new TreeItem(folderTree, SWT.NONE);
+			rootTreeItem.setText("/");
+			for (final String folderName : folders) {
+				final TreeItem folderTreeItem = new TreeItem(rootTreeItem, SWT.NONE);
+				folderTreeItem.setText(folderName);
+			}
+			for (final String fileName : files) {
+				final TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
+				filesTreeItem.setText(fileName);
+			}
+			rootTreeItem.setExpanded(true);
+			folderTree.select(folderTree.getItem(0));
+			selectedFilePath = "/";
+		} catch (final Exception e) {
+			FtpHelper.closeQuietly(ftpHelper);
+			ftpHelper = null;
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 		}
 
 		checkButtonStatus();
 	}
 
 	private void disconnect() {
-		connected = false;
+		if (ftpHelper != null) {
+			FtpHelper.closeQuietly(ftpHelper);
+			ftpHelper = null;
+		}
+
+		if (session != null) {
+			JschWrapper.closeQuietly(session);
+			session = null;
+		}
+
 		folderTree.removeAll();
-		selectedFilePath = null;
 		filesTree.removeAll();
-		selectedFileName = null;
 	}
 
 	private void checkButtonStatus() {
-		if (connected) {
+		if (session != null || ftpHelper != null) {
 			if (keystoreFile != null) {
 				serverEntriesCombo.setEnabled(false);
 				loadServerEntriesButton.setEnabled(false);
@@ -501,6 +569,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			connectButton.setEnabled(true);
 			connectButton.setText(LangResources.get("disconnect"));
 			actionButton.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
+			protocolField.setEnabled(false);
 			hostnameField.setEnabled(false);
 			portField.setEnabled(false);
 			usernameField.setEnabled(false);
@@ -522,6 +591,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username));
 			connectButton.setText(LangResources.get("connect"));
 			actionButton.setEnabled(false);
+			protocolField.setEnabled(true);
 			hostnameField.setEnabled(true);
 			portField.setEnabled(true);
 			usernameField.setEnabled(true);
@@ -537,7 +607,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 	}
 
 	public ServerAccessData getServerEntry() {
-		return new ServerAccessData("ssh", hostnameOrIp, port, username, keyFile, password, false);
+		return new ServerAccessData(protocol, hostnameOrIp, port, username, keyFile, password, false);
 	}
 
 	public String getSelectedFile() {
@@ -605,14 +675,18 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				final String selectionName = serverEntriesCombo.getText();
 				if (Utilities.isNotBlank(selectionName)) {
 					final ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, selectionName);
-					if ("ssh".equalsIgnoreCase(entry.getProtocol())) {
-						hostnameField.setText(entry.getHostname());
-						portField.setText(Integer.toString(entry.getPort()));
-						usernameField.setText(entry.getUsername());
-						keyFile = entry.getKeyFile();
-						useKeyFileButton.setSelection(Utilities.isNotBlank(keyFile));
-						passwordField.setText(new String(entry.getPassword()));
+					for (int i = 0; i < PROTOCOL_LIST.size(); i++) {
+						final String protocol = PROTOCOL_LIST.get(i);
+						if (protocol.equalsIgnoreCase(entry.getProtocol())) {
+							protocolField.setSelectedItemIndex(i);
+						}
 					}
+					hostnameField.setText(entry.getHostname());
+					portField.setText(Integer.toString(entry.getPort()));
+					usernameField.setText(entry.getUsername());
+					keyFile = entry.getKeyFile();
+					useKeyFileButton.setSelection(Utilities.isNotBlank(keyFile));
+					passwordField.setText(new String(entry.getPassword()));
 				}
 			}
 		} else {
@@ -620,8 +694,7 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 		}
 	}
 
-	private void showPathDirectory() {
-		Session session = null;
+	private void showPathDirectorySSH() {
 		try {
 			final TreeItem selectedFolderItem = folderTree.getSelection()[0];
 			String path = selectedFolderItem.getText();
@@ -630,7 +703,6 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 				path = parentTreeItem.getText() + (parentTreeItem.getText().endsWith("/") ? "" : "/") + path;
 				parentTreeItem = parentTreeItem.getParentItem();
 			}
-			session = JschWrapper.openSession(getServerEntry());
 			final List<String> folders = JschWrapper.getFolders(session, path);
 			final List<String> files = JschWrapper.getFiles(session, path);
 			for (final TreeItem subItem : selectedFolderItem.getItems()) {
@@ -663,8 +735,50 @@ public class SshFileDialog extends ModalDialog<Boolean> {
 			selectedFilePath = path;
 		} catch (final Exception e) {
 			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
-		} finally {
-			JschWrapper.closeQuietly(session);
+		}
+	}
+
+	private void showPathDirectoryFTP() {
+		try {
+			final TreeItem selectedFolderItem = folderTree.getSelection()[0];
+			String path = selectedFolderItem.getText();
+			TreeItem parentTreeItem = selectedFolderItem.getParentItem();
+			while (parentTreeItem != null) {
+				path = parentTreeItem.getText() + (parentTreeItem.getText().endsWith("/") ? "" : "/") + path;
+				parentTreeItem = parentTreeItem.getParentItem();
+			}
+			final List<String> folders = ftpHelper.getFolders(path);
+			final List<String> files = ftpHelper.getFiles(path);
+			for (final TreeItem subItem : selectedFolderItem.getItems()) {
+				if (!folders.contains(subItem.getText())) {
+					subItem.dispose();
+				}
+			}
+			for (final String folderName : folders) {
+				boolean subItemExists = false;
+				for (final TreeItem subItem : selectedFolderItem.getItems()) {
+					if (subItem.getText().equals(folderName)) {
+						subItemExists = true;
+						break;
+					}
+				}
+				if (!subItemExists) {
+					final TreeItem folderTreeItem = new TreeItem(selectedFolderItem, SWT.NONE);
+					folderTreeItem.setText(folderName);
+				}
+			}
+			selectedFolderItem.setExpanded(true);
+			filesTree.removeAll();
+			for (final String fileName : files) {
+				final TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
+				filesTreeItem.setText(fileName);
+			}
+			if (files.size() > 0) {
+				filesTree.setSelection(filesTree.getItem(0));
+			}
+			selectedFilePath = path;
+		} catch (final Exception e) {
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 		}
 	}
 }

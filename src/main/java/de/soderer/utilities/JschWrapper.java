@@ -30,8 +30,8 @@ public class JschWrapper {
 	private static final transient Logger logger = LoggerFactory.getLogger(JschWrapper.class);
 
 	public static Session openSession(final ServerAccessData serverEntry) throws Exception {
-		if (!"ssh".equalsIgnoreCase(serverEntry.getProtocol())) {
-			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for SSH connection. Only 'ssh' allowed");
+		if (!"ssh".equalsIgnoreCase(serverEntry.getProtocol()) && !"sftp".equalsIgnoreCase(serverEntry.getProtocol())) {
+			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for SSH connection. Only 'ssh' and 'sftp' are allowed");
 		}
 		Session session = null;
 		try {
@@ -188,13 +188,13 @@ public class JschWrapper {
 		return folderList;
 	}
 
-	public static List<String> getFiles(final Session session, final String filePath) throws Exception {
+	public static List<String> getFiles(final Session session, final String directoryPath) throws Exception {
 		final List<String> fileList = new ArrayList<>();
 		Channel channel = null;
 		try {
 			// Read files
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find " + filePath + (filePath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type f");
+			((ChannelExec) channel).setCommand("find " + directoryPath + (directoryPath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type f");
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
@@ -215,19 +215,19 @@ public class JschWrapper {
 			closeQuietly(channel);
 			channel = null;
 		}
-		fileList.addAll(getFileLinks(session, filePath));
+		fileList.addAll(getFileLinks(session, directoryPath));
 		Collections.sort(fileList);
 		return fileList;
 	}
 
-	public static List<String> getFolderLinks(final Session session, final String filePath) throws Exception {
+	public static List<String> getFolderLinks(final Session session, final String directoryPath) throws Exception {
 		final List<String> folderList = new ArrayList<>();
 		final List<String> linkList = new ArrayList<>();
 		Channel channel = null;
 		try {
 			// Read links
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find " + filePath + (filePath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type l");
+			((ChannelExec) channel).setCommand("find " + directoryPath + (directoryPath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type l");
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
@@ -250,7 +250,7 @@ public class JschWrapper {
 		}
 
 		for (final String link : linkList) {
-			if (isFolder(session, filePath + "/" + link)) {
+			if (isFolder(session, directoryPath + "/" + link)) {
 				folderList.add(link);
 			}
 		}
@@ -964,9 +964,6 @@ public class JschWrapper {
 	private static void setKnownHostKeys(final JSch jsch) throws Exception {
 		InputStream knownHostsKeysInputStream = null;
 		try {
-			// Nicht mit der URI arbeiten, einen Pfad zu einer Resource in einem JAR-File gibts nicht
-			// Wann immer möglich im JavaEE-Umfeld mit Streams arbeiten!
-			// So nicht: InputStream knownHostsKeysInputStream = Utilities.getResource("KnownHostsKeysForSSH");
 			knownHostsKeysInputStream = Utilities.getResourceAsStream("KnownHostsKeysForSSH");
 			logger.debug("KnownHostsKeysForSSH " + (knownHostsKeysInputStream == null ? "NOT " : "") + "found");
 			if (knownHostsKeysInputStream != null) {

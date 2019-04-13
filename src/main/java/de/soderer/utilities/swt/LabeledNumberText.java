@@ -10,20 +10,18 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.TypedListener;
 
-import de.soderer.utilities.swt.LabeledText.ArrangementStyle;
-
 public class LabeledNumberText extends Composite {
 	protected NumberText textField;
 
-	protected LabeledNumberText(Composite parent, int style) throws Exception {
+	protected LabeledNumberText(final Composite parent, final int style) throws Exception {
 		super(parent, style);
 	}
 
-	public LabeledNumberText(Composite parent, int style, String labelText) throws Exception {
+	public LabeledNumberText(final Composite parent, final int style, final String labelText) throws Exception {
 		this(parent, style, labelText, null);
 	}
 
-	public LabeledNumberText(Composite parent, int style, String labelText, ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledNumberText(final Composite parent, final int style, final String labelText, ArrangementStyle arrangementStyle) throws Exception {
 		super(parent, style);
 
 		final LabeledNumberText labeledText = this;
@@ -32,12 +30,12 @@ public class LabeledNumberText extends Composite {
 			arrangementStyle = ArrangementStyle.Vertical;
 		}
 
-		GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : 2, false);
+		final GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : 2, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		setLayout(gridLayout);
 
-		Label label = new Label(this, SWT.NONE);
+		final Label label = new Label(this, SWT.NONE);
 		label.setText(labelText);
 
 		textField = new NumberText(this, SWT.BORDER | style);
@@ -45,20 +43,20 @@ public class LabeledNumberText extends Composite {
 		textField.setText("");
 		textField.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent arg0) {
-				Event event = new Event();
+			public void modifyText(final ModifyEvent arg0) {
+				final Event event = new Event();
 				event.widget = labeledText;
 				labeledText.notifyListeners(SWT.Modify, event);
 			}
 		});
 	}
 
-	public void addModifyListener(ModifyListener listener) {
+	public void addModifyListener(final ModifyListener listener) {
 		checkWidget();
 		if (listener == null) {
 			throw new RuntimeException("Missing listener");
 		} else {
-			TypedListener typedListener = new TypedListener(listener);
+			final TypedListener typedListener = new TypedListener(listener);
 			addListener(SWT.Modify, typedListener);
 		}
 	}
@@ -67,12 +65,12 @@ public class LabeledNumberText extends Composite {
 		return textField.getValue();
 	}
 
-	public void setValue(int value) {
+	public void setValue(final int value) {
 		textField.setValue(value);
 	}
 
 	@Override
-	public void setEnabled(boolean enabled) {
+	public void setEnabled(final boolean enabled) {
 		textField.setEnabled(enabled);
 	}
 }
