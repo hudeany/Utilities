@@ -43,7 +43,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 	private String protocol = "SSH";
 	private String hostnameOrIp = null;
-	private int port = 22;
+	private int port = 0;
 	private String username = null;
 	private String keyFile = null;
 	private char[] password = null;
@@ -227,8 +227,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		portField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("port"), ArrangementStyle.Horizontal);
-		portField.setText(Integer.toString(port));
+		portField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("port"), ArrangementStyle.Horizontal, "[0-9]*");
+		portField.setText("");
 		final GridData portFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		portFieldGridData.widthHint = 60;
 		portField.setLayoutData(portFieldGridData);
@@ -238,8 +238,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				try {
 					port = Integer.parseInt(((LabeledText) event.widget).getText());
 				} catch (final Exception e) {
-					port = 22;
-					((Text) event.widget).setText("22");
+					port = 0;
 				}
 				checkButtonStatus();
 			}

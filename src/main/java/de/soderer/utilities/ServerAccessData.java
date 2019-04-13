@@ -33,7 +33,19 @@ public class ServerAccessData {
 	}
 
 	public int getPort() {
-		return port;
+		if (port == 0) {
+			if ("ssh".equalsIgnoreCase(protocol)) {
+				return 22;
+			} else if ("sftp".equalsIgnoreCase(protocol)) {
+				return 22;
+			} else if ("ftp".equalsIgnoreCase(protocol)) {
+				return 21;
+			} else {
+				return port;
+			}
+		} else {
+			return port;
+		}
 	}
 
 	public String getUsername() {

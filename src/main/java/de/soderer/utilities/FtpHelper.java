@@ -313,7 +313,20 @@ public class FtpHelper implements Closeable {
 
 	public void deleteFolder(final String directoryPath) throws Exception {
 		checkForConnection();
-		// TODO recursively delete
+
+		final FTPFile[] files = ftpClient.listFiles(directoryPath);
+		if (files.length > 0) {
+			for (final FTPFile ftpFile : files) {
+				final String fileName = ftpFile.getName();
+				if (!".".equals(fileName) && !"..".equals(fileName)) {
+					if (ftpFile.isDirectory()) {
+						deleteFolder(directoryPath + "/" + fileName);
+					} else {
+						ftpClient.deleteFile(directoryPath + "/" + fileName);
+					}
+				}
+			}
+		}
 		ftpClient.removeDirectory(directoryPath);
 	}
 

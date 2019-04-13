@@ -1,8 +1,12 @@
 package de.soderer.utilities.swt;
 
+import java.util.regex.Pattern;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.VerifyEvent;
+import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
@@ -22,7 +26,11 @@ public class LabeledText extends Composite {
 		this(parent, style, labelText, null);
 	}
 
-	public LabeledText(final Composite parent, final int style, final String labelText, ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledText(final Composite parent, final int style, final String labelText, final ArrangementStyle arrangementStyle) throws Exception {
+		this(parent, style, labelText, arrangementStyle, null);
+	}
+
+	public LabeledText(final Composite parent, final int style, final String labelText, ArrangementStyle arrangementStyle, final String verifyPattern) throws Exception {
 		super(parent, style);
 
 		final LabeledText labeledText = this;
@@ -49,6 +57,22 @@ public class LabeledText extends Composite {
 					labeledText.notifyListeners(SWT.Modify, event);
 				}
 			});
+
+			if (verifyPattern != null) {
+				textField.addVerifyListener(new VerifyListener() {
+					@Override
+					public void verifyText(final VerifyEvent e) {
+						final Text text = (Text) e.getSource();
+
+						final String oldContent = text.getText();
+						final String newContent = oldContent.substring(0, e.start) + e.text + oldContent.substring(e.end);
+
+						if (!Pattern.matches(verifyPattern, newContent)) {
+							e.doit = false;
+						}
+					}
+				});
+			}
 		} else {
 			passwordTextField = new Text(this, SWT.BORDER | style);
 			passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
