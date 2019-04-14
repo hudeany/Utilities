@@ -1,16 +1,13 @@
 package de.soderer.utilities;
 
-import com.jcraft.jsch.Session;
-
 public class SshFileChangeWatcherThread extends Thread {
-	private ServerAccessData serverData;
-	private Session session;
-	private String filePath;
-	private int numberOfLastLinesToShow;
+	private final ServerAccessData serverData;
+	private final String filePath;
+	private final int numberOfLastLinesToShow;
 	protected LineListener listener;
 	protected boolean running = true;
 
-	public SshFileChangeWatcherThread(ServerAccessData serverData, String filePath, int numberOfLastLinesToShow, LineListener listener) {
+	public SshFileChangeWatcherThread(final ServerAccessData serverData, final String filePath, final int numberOfLastLinesToShow, final LineListener listener) {
 		setDaemon(true);
 		this.serverData = serverData;
 		this.filePath = filePath;
@@ -20,22 +17,19 @@ public class SshFileChangeWatcherThread extends Thread {
 
 	@Override
 	public void run() {
-		try {
-			session = JschWrapper.openSession(serverData);
+		try (SftpConnection sftpConnection = new SftpConnection(serverData)) {
 			try {
-				JschWrapper.tailviewFileData(session, filePath, numberOfLastLinesToShow, listener);
-			} catch (InterruptedException ie) {
+				sftpConnection.tailviewFileData(filePath, numberOfLastLinesToShow, listener);
+			} catch (final InterruptedException ie) {
 				throw ie;
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 				running = false;
 			}
-		} catch (InterruptedException ie) {
+		} catch (final InterruptedException ie) {
 			handleInterrupt();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
-		} finally {
-			JschWrapper.closeQuietly(session);
 		}
 	}
 
@@ -51,6 +45,6 @@ public class SshFileChangeWatcherThread extends Thread {
 	}
 
 	public interface LineListener {
-		public void addLineData(byte[] textLineData);
+		void addLineData(byte[] textLineData);
 	}
 }

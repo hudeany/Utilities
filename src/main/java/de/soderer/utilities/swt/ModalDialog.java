@@ -15,11 +15,13 @@ public abstract class ModalDialog<T> extends Dialog {
 	public ModalDialog(final Shell parentShell, final String title) {
 		super(new Shell(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
 		getParent().setText(title);
+		setText(title);
 	}
 
 	public ModalDialog(final Shell parentShell, final int style, final String title) {
 		super(new Shell(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL));
 		getParent().setText(title);
+		setText(title);
 	}
 
 	public T open() {

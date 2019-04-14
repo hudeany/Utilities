@@ -1503,4 +1503,15 @@ public class Utilities {
 		}
 		return false;
 	}
+
+	public static String replaceUsersHome(final String filePath) {
+		if (filePath == null) {
+			return filePath;
+		}
+		final String homePath = System.getProperty("user.home");
+		return filePath
+				.replace("~", homePath)
+				.replace("$HOME", homePath)
+				.replace("${HOME}", homePath);
+	}
 }

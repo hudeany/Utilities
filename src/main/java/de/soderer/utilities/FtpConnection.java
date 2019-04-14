@@ -12,20 +12,18 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.log4j.Logger;
 
 /**
- * The Class FtpHelper.
- * It uses FTP passive mode by default
+ * FtpConnection
  */
-public class FtpHelper implements Closeable {
-
+public class FtpConnection implements Closeable {
 	/** The Constant logger. */
 	@SuppressWarnings("unused")
-	private static final transient Logger logger = Logger.getLogger(FtpHelper.class);
+	private static final transient Logger logger = Logger.getLogger(FtpConnection.class);
 
 	/** The host. */
-	private String host = null;
+	private String hostname = null;
 
 	/** The user. */
-	private String user = null;
+	private String username = null;
 
 	/** The password. */
 	private String password = null;
@@ -36,7 +34,7 @@ public class FtpHelper implements Closeable {
 	/**
 	 * usePassiveMode
 	 */
-	private final boolean usePassiveMode = true;
+	private final boolean usePassiveMode;
 
 	/**
 	 * Currently connected client
@@ -46,30 +44,74 @@ public class FtpHelper implements Closeable {
 	/**
 	 * Instantiates a new ftp helper.
 	 * Default port for FTP is 21.
+	 * Uses FTP passive mode.
 	 *
 	 * @param host the host
 	 * @param user the user
 	 * @param password the password
+	 * @throws Exception
 	 */
-	public FtpHelper(final String host, final String user, final String password) {
-		this.host = host;
-		this.user = user;
+	public FtpConnection(final String hostname, final String username, final String password) throws Exception {
+		this.hostname = hostname;
+		this.username = username;
 		this.password = password;
+		usePassiveMode = true;
+
+		connect();
+	}
+
+	/**
+	 * Instantiates a new ftp helper.
+	 * Uses FTP passive mode.
+	 *
+	 * @param hostname
+	 * @param username
+	 * @param password
+	 * @param port
+	 * @throws Exception
+	 */
+	public FtpConnection(final String hostname, final String username, final String password, final int port) throws Exception {
+		this.hostname = hostname;
+		this.username = username;
+		this.password = password;
+		this.port = port;
+		usePassiveMode = true;
+
+		connect();
 	}
 
 	/**
 	 * Instantiates a new ftp helper.
 	 *
-	 * @param host the host
-	 * @param user the user
-	 * @param password the password
-	 * @param port the port
+	 * @param hostname
+	 * @param username
+	 * @param password
+	 * @param port
+	 * @param usePassiveMode
+	 * @throws Exception
 	 */
-	public FtpHelper(final String host, final String user, final String password, final int port) {
-		this.host = host;
-		this.user = user;
+	public FtpConnection(final String hostname, final String username, final String password, final int port, final boolean usePassiveMode) throws Exception {
+		this.hostname = hostname;
+		this.username = username;
 		this.password = password;
 		this.port = port;
+		this.usePassiveMode = usePassiveMode;
+
+		connect();
+	}
+
+	public FtpConnection(final ServerAccessData serverEntry) throws Exception {
+		if (!"ftp".equalsIgnoreCase(serverEntry.getProtocol())) {
+			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for FTP connection. Only 'ftp' is allowed");
+		} else {
+			hostname = serverEntry.getHostname();
+			username = serverEntry.getUsername();
+			password = new String(serverEntry.getPassword());
+			port = serverEntry.getPort();
+			usePassiveMode = true;
+
+			connect();
+		}
 	}
 
 	/**
@@ -78,11 +120,16 @@ public class FtpHelper implements Closeable {
 	 *
 	 * @param fileServerAndAuthConfigString like "ftp://[username[:password]@]server[:port]"
 	 */
-	public FtpHelper(String fileServerAndAuthConfigString) throws Exception {
-		if (fileServerAndAuthConfigString.toLowerCase().startsWith("sftp://")) {
-			throw new Exception("Invalid protocol for FtpHelper");
-		} else if (fileServerAndAuthConfigString.toLowerCase().startsWith("ftp://")) {
-			fileServerAndAuthConfigString = fileServerAndAuthConfigString.substring(6);
+	public FtpConnection(String fileServerAndAuthConfigString) throws Exception {
+		if (fileServerAndAuthConfigString == null) {
+			throw new Exception("Invalid empty connection string");
+		} else if (fileServerAndAuthConfigString.matches("^[A-Za-z]+://.*")) {
+			final String protocol = fileServerAndAuthConfigString.substring(0, fileServerAndAuthConfigString.indexOf("://"));
+			if (!"ftp".equalsIgnoreCase(protocol)) {
+				throw new Exception("Invalid protocol '" + protocol + "' for FTP connection. Only 'ftp' is allowed");
+			} else {
+				fileServerAndAuthConfigString = fileServerAndAuthConfigString.substring(fileServerAndAuthConfigString.indexOf("://") + 3);
+			}
 		}
 
 		if (fileServerAndAuthConfigString.contains("@")) {
@@ -91,40 +138,42 @@ public class FtpHelper implements Closeable {
 			final String serverPart = fileServerAndAuthConfigString.substring(hostSeparatorIndex + 1);
 
 			if (authPart.contains(":")) {
-				user = authPart.substring(0, authPart.indexOf(":"));
+				username = authPart.substring(0, authPart.indexOf(":"));
 				password = authPart.substring(authPart.indexOf(":") + 1);
 			} else {
-				user = authPart;
+				username = authPart;
 			}
 
 			if (serverPart.contains(":")) {
-				host = serverPart.substring(0, serverPart.indexOf(":"));
+				hostname = serverPart.substring(0, serverPart.indexOf(":"));
 				port = Integer.parseInt(serverPart.substring(serverPart.indexOf(":") + 1));
 			} else {
-				host = serverPart;
+				hostname = serverPart;
 			}
 		} else {
-			host = fileServerAndAuthConfigString;
+			hostname = fileServerAndAuthConfigString;
 		}
+		usePassiveMode = true;
+
+		connect();
 	}
 
 	/**
 	 * Connect.
-	 *
-	 * @throws Exception the exception
 	 */
-	public void connect() throws Exception {
+	private FtpConnection connect() throws Exception {
 		try {
 			ftpClient = new FTPClient();
-			ftpClient.connect(host, port);
+			ftpClient.connect(hostname, port);
 			if (usePassiveMode) {
 				ftpClient.enterLocalPassiveMode();
 			}
-			if (!ftpClient.login(user, password)) {
+			if (!ftpClient.login(username, password)) {
 				ftpClient.logout();
 				throw new Exception("Authentication failed");
 			}
 			ftpClient.setListHiddenFiles(true);
+			return this;
 		} catch (final Exception e) {
 			close();
 			throw new Exception("Connection failed");
@@ -271,41 +320,6 @@ public class FtpHelper implements Closeable {
 		return false;
 	}
 
-	class FtpInputStream extends FilterInputStream {
-		FtpHelper ftpHelper;
-		boolean isClosed = false;
-
-		protected FtpInputStream(final InputStream in, final FtpHelper ftpHelper) {
-			super(in);
-			this.ftpHelper = ftpHelper;
-		}
-
-		@Override
-		public void close() throws IOException {
-			super.close();
-			if (!isClosed) {
-				ftpHelper.completePendingCommand();
-			}
-
-			isClosed = true;
-		}
-	}
-
-	public static FtpHelper openConnection(final ServerAccessData serverEntry) throws Exception {
-		if (!"ftp".equalsIgnoreCase(serverEntry.getProtocol())) {
-			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for FTP connection. Only 'ftp' is allowed");
-		}
-		FtpHelper ftpHelper = null;
-		try {
-			ftpHelper = new FtpHelper(serverEntry.getHostname(), serverEntry.getUsername(), new String(serverEntry.getPassword()), serverEntry.getPort());
-			ftpHelper.connect();
-			return ftpHelper;
-		} catch (final Exception e) {
-			closeQuietly(ftpHelper);
-			throw new Exception("Error in opening ftp connection: " + ExceptionUtilities.toString(e), e);
-		}
-	}
-
 	public void deleteFile(final String filePath) throws Exception {
 		checkForConnection();
 		ftpClient.deleteFile(filePath);
@@ -335,7 +349,27 @@ public class FtpHelper implements Closeable {
 		ftpClient.makeDirectory(parentDirectoryPath + "/" + folderName);
 	}
 
-	public static void closeQuietly(final FtpHelper ftpHelper) {
+	class FtpInputStream extends FilterInputStream {
+		FtpConnection ftpHelper;
+		boolean isClosed = false;
+
+		protected FtpInputStream(final InputStream in, final FtpConnection ftpHelper) {
+			super(in);
+			this.ftpHelper = ftpHelper;
+		}
+
+		@Override
+		public void close() throws IOException {
+			super.close();
+			if (!isClosed) {
+				ftpHelper.completePendingCommand();
+			}
+
+			isClosed = true;
+		}
+	}
+
+	public static void closeQuietly(final FtpConnection ftpHelper) {
 		try {
 			if (ftpHelper != null) {
 				ftpHelper.close();

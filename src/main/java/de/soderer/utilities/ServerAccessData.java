@@ -7,21 +7,44 @@ public class ServerAccessData {
 	private String hostname;
 	private int port;
 	private String username;
-	private String keyFile;
+	private String keyFilePath;
 	private char[] password;
-	private boolean checkHostKey;
+
+	/**
+	 * hostKey
+	 * if null: do not check<br />
+	 * if empty: check against local known host keys (~/.ssh/known_hosts)<br />
+	 * if filepath: check against specific known host keys file<br />
+	 * if filled with hash value: check against this fingerprint<br />
+	 */
+	private String hostKey;
 
 	protected ServerAccessData() {
 	}
 
-	public ServerAccessData(final String protocol, final String hostname, final int port, final String username, final String keyFile, final char[] password, final boolean checkHostKey) {
+	/**
+	 * Constructor
+	 *
+	 * @param protocol
+	 * @param hostname
+	 * @param port
+	 * @param username
+	 * @param keyFilePath
+	 * @param password
+	 * @param hostKey (used by ssh and sftp protocol only)<br />
+	 * if null: do not check<br />
+	 * if empty: check against local known host keys (~/.ssh/known_hosts)<br />
+	 * if filepath: check against specific known host keys file<br />
+	 * if filled with hash value: check against this fingerprint<br />
+	 */
+	public ServerAccessData(final String protocol, final String hostname, final int port, final String username, final String keyFilePath, final char[] password, final String hostKey) {
 		this.protocol = protocol;
 		this.hostname = hostname;
 		this.port = port;
 		this.username = username;
-		this.keyFile = keyFile;
+		this.keyFilePath = keyFilePath;
 		this.password = password;
-		this.checkHostKey = checkHostKey;
+		this.hostKey = hostKey;
 	}
 
 	public String getProtocol() {
@@ -53,15 +76,15 @@ public class ServerAccessData {
 	}
 
 	public String getKeyFile() {
-		return keyFile;
+		return keyFilePath;
 	}
 
 	public char[] getPassword() {
 		return password;
 	}
 
-	public boolean getCheckHostKey() {
-		return checkHostKey;
+	public String getHostKey() {
+		return hostKey;
 	}
 
 	public static String parseFilestringToServerEntryName(final String fileName) throws Exception {
