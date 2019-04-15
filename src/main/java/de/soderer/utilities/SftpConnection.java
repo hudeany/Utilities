@@ -14,8 +14,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
@@ -28,8 +26,6 @@ import com.jcraft.jsch.Session;
 import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
 
 public class SftpConnection implements Closeable {
-	private static final transient Logger logger = LoggerFactory.getLogger(SftpConnection.class);
-
 	/** The host. */
 	private String hostname = null;
 
@@ -40,7 +36,7 @@ public class SftpConnection implements Closeable {
 	private byte[] keyFileData = null;
 
 	/** The password. */
-	private String password = null;
+	private char[] password = null;
 
 	/**
 	 * The port.<br />
@@ -59,24 +55,50 @@ public class SftpConnection implements Closeable {
 
 	private Session session = null;
 
+	private OutputStream newKnownHosts;
+
 	public SftpConnection(final ServerAccessData serverEntry) throws Exception {
+		this(serverEntry, null);
+	}
+
+	public SftpConnection(final ServerAccessData serverEntry, final OutputStream newKnownHosts) throws Exception {
 		if (!"ssh".equalsIgnoreCase(serverEntry.getProtocol()) && !"sftp".equalsIgnoreCase(serverEntry.getProtocol())) {
 			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for SFTP connection. Only 'ssh' and 'ftp' are allowed");
 		} else {
 			hostname = serverEntry.getHostname();
 			username = serverEntry.getUsername();
 			keyFileData = FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile()));
-			password = new String(serverEntry.getPassword());
+			password = serverEntry.getPassword();
 			port = serverEntry.getPort();
 			hostKey = serverEntry.getHostKey();
+
+			this.newKnownHosts = newKnownHosts;
 
 			connect();
 		}
 	}
 
-	private SftpConnection connect() throws Exception {
+	public SftpConnection(final String hostname, final String username, final byte[] keyFileData, final char[] password, final int port, final String hostKey) throws Exception {
+		this(hostname, username, keyFileData, password, port, hostKey, null);
+	}
+
+	public SftpConnection(final String hostname, final String username, final byte[] keyFileData, final char[] password, final int port, final String hostKey, final OutputStream newKnownHosts) throws Exception {
+		this.hostname = hostname;
+		this.username = username;
+		this.keyFileData = keyFileData;
+		this.password = password;
+		this.port = port;
+		this.hostKey = hostKey;
+
+		this.newKnownHosts = newKnownHosts;
+
+		connect();
+	}
+
+	private void connect() throws Exception {
+		JSch jsch = null;
 		try {
-			final JSch jsch = new JSch();
+			jsch = new JSch();
 			session = jsch.getSession(username, hostname, port);
 
 			if (keyFileData != null) {
@@ -88,43 +110,70 @@ public class SftpConnection implements Closeable {
 			boolean checkHostKeyFingerprint = false;
 			if (hostKey == null) {
 				session.setConfig("StrictHostKeyChecking", "no");
-			} else if ("".equals(hostKey)) {
-				final File knownHostsFile = new File(Utilities.replaceUsersHome("~/.ssh/known_hosts"));
-				if (knownHostsFile.isFile()) {
-					try (FileInputStream fileInputStream = new FileInputStream(knownHostsFile)) {
-						jsch.setKnownHosts(fileInputStream);
-					}
-				} else {
-					setKnownHostKeys(jsch);
-				}
+			} else if (hostKey.matches("[A-Fa-f0-9:]+")) {
+				// Special fingerprint check afterwards
+				session.setConfig("StrictHostKeyChecking", "no");
+				checkHostKeyFingerprint = true;
 			} else {
-				final File knownHostsFile = new File(Utilities.replaceUsersHome(hostKey));
+				File knownHostsFile;
+				if ("".equals(hostKey)) {
+					knownHostsFile = new File(Utilities.replaceUsersHome("~/.ssh/known_hosts"));
+				} else {
+					knownHostsFile = new File(Utilities.replaceUsersHome(hostKey));
+				}
+
 				if (knownHostsFile.isFile()) {
 					try (FileInputStream fileInputStream = new FileInputStream(knownHostsFile)) {
 						jsch.setKnownHosts(fileInputStream);
 					}
 				} else {
-					// Special fingerprint check afterwards
-					session.setConfig("StrictHostKeyChecking", "no");
-					checkHostKeyFingerprint = true;
+					throw new Exception("Cannot find known hosts file: " + knownHostsFile.getAbsolutePath());
+				}
+			}
+
+			// If new hostkeys are added, they are stored in hashed format
+			session.setConfig("HashKnownHosts", "yes");
+
+			// Workaround fix for "ecdsa-sha2-nistp256" knownhostkeys
+			final HostKeyRepository hkr = jsch.getHostKeyRepository();
+			for (final HostKey hk : hkr.getHostKey()) {
+				if (hk.getHost().equalsIgnoreCase(hostname)) {
+					final String type = hk.getType();
+					session.setConfig("server_host_key", type);
+				}
+			}
+
+			if (checkHostKeyFingerprint) {
+				final HostKey actualHostKey = session.getHostKey();
+				final String actualHostKeyFingerprint = actualHostKey.getFingerPrint(jsch);
+
+				if (!hostKey.replace(":", "").trim().equalsIgnoreCase(actualHostKeyFingerprint.replace(":", "").trim())) {
+					throw new UnknownHostException("Unexpected fingerprint of hostkey. \nExpected: " + hostKey + " \nHost: " + actualHostKeyFingerprint);
+				}
+
+				if (newKnownHosts != null) {
+					final HostKeyRepository hostKeyRepository = jsch.getHostKeyRepository();
+					final HostKey[] hostKeys = hostKeyRepository.getHostKey();
+					if (hostKeys != null) {
+						for (final HostKey hostKeyItem : hostKeys) {
+							newKnownHosts.write((hostKeyItem.getHost() + " " + hostKeyItem.getType() + " " + hostKeyItem.getKey() + "\n").getBytes("UTF-8"));
+						}
+					}
 				}
 			}
 
 			session.connect();
-
-			if (checkHostKeyFingerprint) {
-				final String actualHostKeyFingerprint = session.getHostKey().getFingerPrint(jsch);
-				if (!hostKey.replace(":", "").trim().equalsIgnoreCase(actualHostKeyFingerprint.replace(":", "").trim())) {
-					throw new UnknownHostException("Unexpected fingerprint of hostkey. \nExpected: " + hostKey + " \nHost: " + actualHostKeyFingerprint);
-				}
-			}
-
-			return this;
 		} catch (final JSchException jse) {
-			close();
 			if (jse.getCause() != null && jse.getCause() instanceof UnknownHostException) {
+				close();
 				throw new Exception("Cannot connect to host: " + hostname);
+			} else if (jse.getMessage().contains("UnknownHostKey")) {
+				final HostKey actualHostKey = session.getHostKey();
+				final String actualHostKeyFingerprint = actualHostKey.getFingerPrint(jsch);
+				close();
+				throw new UnknownHostKeyException("Cannot connect to host, because its hostkey is unknown", hostname, actualHostKeyFingerprint);
 			} else {
+				close();
 				throw jse;
 			}
 		} catch (final UnknownHostException uhe) {
@@ -364,23 +413,23 @@ public class SftpConnection implements Closeable {
 			try (OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
 				channel.connect();
-	
+
 				checkAcknowledge(inStream);
-	
+
 				// send command "C0664 filesize filename"
 				final String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
 				command = "C0664 " + fileData.length + " " + fileName + "\n";
 				outStream.write(command.getBytes("UTF-8"));
 				outStream.flush();
-	
+
 				checkAcknowledge(inStream);
-	
+
 				// send content of file
 				outStream.write(fileData, 0, fileData.length);
-	
+
 				// send '\0' as EOF
 				sendZeroByte(outStream);
-	
+
 				checkAcknowledge(inStream);
 			}
 		} catch (final Exception e) {
@@ -400,17 +449,17 @@ public class SftpConnection implements Closeable {
 			try (InputStream inStream = channel.getInputStream();
 					InputStream inErrorStream = channel.getExtInputStream()) {
 				channel.connect();
-	
+
 				final byte[] successData = Utilities.toByteArray(inStream);
 				final String successString = new String(successData, "UTF-8");
-	
+
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
-	
+
 				if (errorData != null && errorData.length > 0) {
 					return null;
 				} else {
 					return new JschFileData(successString);
-			}
+				}
 			}
 		} finally {
 			closeQuietly(channel);
@@ -489,7 +538,7 @@ public class SftpConnection implements Closeable {
 			// get I/O stream for remote scp
 			try (InputStream inStream = channel.getInputStream()) {
 				channel.connect();
-	
+
 				checkAcknowledge(inStream);
 			}
 		} catch (final Exception e) {
@@ -516,7 +565,7 @@ public class SftpConnection implements Closeable {
 			// get I/O stream for remote scp
 			try (InputStream inStream = channel.getInputStream()) {
 				channel.connect();
-	
+
 				checkAcknowledge(inStream);
 			}
 		} catch (final Exception e) {
@@ -575,16 +624,16 @@ public class SftpConnection implements Closeable {
 			try (OutputStream out = channel.getOutputStream();
 					InputStream in = channel.getInputStream()) {
 				channel.connect();
-	
+
 				checkAcknowledge(in);
-	
+
 				// send "C0664 filesize filename", where filename should not include '/'
 				final long filesize = new File(localPathAndFileName).length();
 				command = "C0664 " + filesize + " " + remoteHostFileName + "\n";
 				out.write(command.getBytes("UTF-8"));
 				out.flush();
 				checkAcknowledge(in);
-	
+
 				// send a content of lfile
 				try (InputStream bufferedFileInputStream = new BufferedInputStream(new FileInputStream(localPathAndFileName))) {
 					final byte[] buf = new byte[4096];
@@ -597,11 +646,11 @@ public class SftpConnection implements Closeable {
 					}
 					// send '\0'
 					sendZeroByte(out);
-		
+
 					checkAcknowledge(in);
-		
+
 					out.close();
-		
+
 					channel.disconnect();
 				}
 			}
@@ -633,24 +682,24 @@ public class SftpConnection implements Closeable {
 			try (OutputStream out = channel.getOutputStream();
 					InputStream in = channel.getInputStream()) {
 				channel.connect();
-	
+
 				checkAcknowledge(in);
-	
+
 				// send command "C0664 filesize filename"
 				command = "C0664 " + fileData.length + " " + remoteHostFileName + "\n";
 				out.write(command.getBytes("UTF-8"));
 				out.flush();
 				checkAcknowledge(in);
-	
+
 				// send content of file
 				out.write(fileData, 0, fileData.length);
-	
+
 				// send '\0' as EOF
 				sendZeroByte(out);
-	
+
 				checkAcknowledge(in);
 				out.close();
-	
+
 				channel.disconnect();
 			}
 		} catch (final Exception e) {
@@ -674,15 +723,15 @@ public class SftpConnection implements Closeable {
 			// OutputStream out = channel.getOutputStream();
 			try (InputStream in = channel.getInputStream()) {
 				channel.connect();
-	
+
 				// byte[] buf = new byte[4096];
-	
+
 				// send '\0'
 				// sendZeroByte(out);
-	
+
 				int charValue = checkAcknowledge(in);
 				StringBuilder inputString = new StringBuilder();
-	
+
 				while (charValue != -1) { // EOF
 					if (charValue == '\n') { // EOL
 						returnList.add(inputString.toString());
@@ -692,7 +741,7 @@ public class SftpConnection implements Closeable {
 					}
 					charValue = checkAcknowledge(in);
 				}
-	
+
 				return returnList;
 			}
 		} catch (final Exception e) {
@@ -702,74 +751,25 @@ public class SftpConnection implements Closeable {
 		}
 	}
 
-	/**
-	 * Hinzufügen von public Hostkeys zu der KnownHosts-Datei
-	 *
-	 * @param hostname
-	 * @param username
-	 * @param password
-	 */
-	public void addHostKeyToKnownHostKeys(final String hostname, final String username, final String password, final byte[] privateKey) {
-		Session session = null;
-		try {
-			final JSch jsch = new JSch();
-			setKnownHostKeys(jsch);
-
-			System.out.println("KnownHosts (before adding):");
-			printKnownHostKeys(jsch);
-
-			session = jsch.getSession(username, hostname, 22);
-			if (privateKey != null) {
-				// privateKey wird durch die Benutzung geleert
-				jsch.addIdentity(username, privateKey.clone(), null, password == null ? new byte[0] : password.getBytes("UTF-8"));
-			} else {
-				session.setPassword(password);
-			}
-			session.setConfig("StrictHostKeyChecking", "no"); // automatische
-			// Aufnahme
-			// neuer
-			// HostPublicKeys
-			// session.setConfig("HashKnownHosts", "yes"); // In adding to
-			// known_hosts file, host names will be hashed
-			session.connect();
-
-			final HostKey hk = session.getHostKey();
-			System.out.println("Adding HostKey: " + hk.getHost() + " " + hk.getType() + " " + hk.getFingerPrint(jsch) + "\n");
-
-			// Channel channel = session.openChannel("shell");
-			//
-			// channel.setInputStream(System.in);
-			// channel.setOutputStream(System.out);
-			//
-			// channel.connect();
-
-			System.out.println("KnownHosts (after adding):");
-			printKnownHostKeys(jsch);
-			System.out.println("");
-		} catch (final Exception e) {
-			System.out.println(e);
-		}
-	}
-
 	public byte[] downloadFileData(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("scp -f " + filePath);
 
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			try (OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
 				channel.connect();
-	
+
 				// send '\0' to start data transfer
 				sendZeroByte(outStream);
-				
+
 				while (true) {
 					if (checkAcknowledge(inStream) != 'C') {
 						break;
 					}
-	
+
 					// read rights key like '0644 ' (5 bytes)
 					final byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 					@SuppressWarnings("unused")
@@ -777,14 +777,14 @@ public class SftpConnection implements Closeable {
 					if (rightsData != null && rightsData.length > 0) {
 						rights = new String(rightsData, "UTF-8");
 					}
-	
+
 					// read filesize (if empty filesize read until no more data)
 					final byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 					long filesize = -1;
 					if (filesizeData != null && filesizeData.length > 0) {
 						filesize = Long.parseLong(new String(filesizeData));
 					}
-	
+
 					// read filename (even if it is not used on single download)
 					final byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 					@SuppressWarnings("unused")
@@ -792,10 +792,10 @@ public class SftpConnection implements Closeable {
 					if (filenameData != null && filenameData.length > 0) {
 						filename = new String(filenameData, "UTF-8");
 					}
-	
+
 					// send '\0' to start data transfer
 					sendZeroByte(outStream);
-	
+
 					// read file content
 					if (filesize > 0) {
 						int nextReadLength;
@@ -819,13 +819,13 @@ public class SftpConnection implements Closeable {
 							}
 						}
 					}
-	
+
 					checkAcknowledge(inStream);
-	
+
 					// send '\0' to start data transfer of next file (if this is a multi download)
 					sendZeroByte(outStream);
 				}
-	
+
 				return bos.toByteArray();
 			}
 		} catch (final Exception e) {
@@ -844,10 +844,10 @@ public class SftpConnection implements Closeable {
 			try (OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
 				channel.connect();
-	
+
 				// send '\0' to start data transfer
 				sendZeroByte(outStream);
-	
+
 				while (true) {
 					// reads all now available data at once
 					byte[] nextData = Utilities.toByteArray(inStream);
@@ -855,7 +855,7 @@ public class SftpConnection implements Closeable {
 						lineListener.addLineData(nextData);
 						nextData = Utilities.toByteArray(inStream);
 					}
-	
+
 					// waits if no more data is available right now
 					final byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
 					lineListener.addLineData(nextLineData);
@@ -879,10 +879,10 @@ public class SftpConnection implements Closeable {
 			try(OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
 				channel.connect();
-	
+
 				// send '\0' to start data transfer
 				sendZeroByte(outStream);
-	
+
 				return Utilities.toByteArray(inStream);
 			}
 		} catch (final Exception e) {
@@ -905,13 +905,13 @@ public class SftpConnection implements Closeable {
 					InputStream in = channel.getInputStream();
 					InputStream inError = channel.getExtInputStream()) {
 				channel.connect();
-	
+
 				// send '\0'
 				sendZeroByte(out);
-	
+
 				int charValue = checkAcknowledge(in);
 				StringBuilder inputString = new StringBuilder();
-	
+
 				while (charValue != -1) { // EOF
 					if (charValue == '\n') { // EOL
 						returnText += inputString + "\n";
@@ -921,11 +921,11 @@ public class SftpConnection implements Closeable {
 					}
 					charValue = checkAcknowledge(in);
 				}
-	
+
 				String returnError = "";
 				int charValueErrorStream = checkAcknowledge(inError);
 				StringBuilder inputStringErrorStream = new StringBuilder();
-	
+
 				while (charValueErrorStream != -1) { // EOF
 					if (charValueErrorStream == '\n') { // EOL
 						returnError += inputStringErrorStream + "\n";
@@ -935,7 +935,7 @@ public class SftpConnection implements Closeable {
 					}
 					charValueErrorStream = checkAcknowledge(inError);
 				}
-	
+
 				if (returnError.length() > 0) {
 					throw new Exception(returnError);
 				} else {
@@ -961,19 +961,6 @@ public class SftpConnection implements Closeable {
 				// do nothing
 			}
 			session = null;
-		}
-	}
-
-	private static void setKnownHostKeys(final JSch jsch) throws Exception {
-		try (InputStream knownHostsKeysInputStream = Utilities.getResourceAsStream("KnownHostsKeysForSSH")) {
-			logger.debug("KnownHostsKeysForSSH " + (knownHostsKeysInputStream == null ? "NOT " : "") + "found");
-			if (knownHostsKeysInputStream != null) {
-				jsch.setKnownHosts(knownHostsKeysInputStream);
-			} else {
-				throw new Exception("KnownHostsKeysForSSH für SSH-Verbindung nicht gefunden");
-			}
-		} catch (final JSchException e) {
-			e.printStackTrace();
 		}
 	}
 

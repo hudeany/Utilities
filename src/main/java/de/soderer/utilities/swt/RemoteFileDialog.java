@@ -1,9 +1,12 @@
 package de.soderer.utilities.swt;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.ModifyEvent;
@@ -30,6 +33,7 @@ import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.SftpConnection;
+import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
 
 public class RemoteFileDialog extends ModalDialog<Boolean> {
@@ -45,7 +49,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private String username = null;
 	private String keyFilePath = null;
 	private char[] password = null;
-	private boolean checkHostKey = false;
+	private boolean checkHostKey = true;
 	private String hostKey = null;
 	private String selectedFilePath = null;
 	private String selectedFileName = null;
@@ -289,6 +293,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 		checkHostKeyButton = new Button(checkHostKeyComposite, SWT.CHECK);
 		checkHostKeyButton.setText(LangResources.get("checkHostKey"));
+		checkHostKeyButton.setSelection(checkHostKey);
 		checkHostKeyButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -509,7 +514,29 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 	private void connectViaSSH() {
 		try {
-			sftpConnection = new SftpConnection(getServerEntry());
+			try {
+				sftpConnection = new SftpConnection(getServerEntry());
+			} catch (final UnknownHostKeyException e) {
+				if (new QuestionDialog(getParent(), getText(), LangResources.get("confirmNewHostKey", e.getHostnameOrIp(), e.getHostKeyFingerPrint()), LangResources.get("yes"), LangResources.get("no")).open() == 0) {
+					final ByteArrayOutputStream newKnownHosts = new ByteArrayOutputStream();
+					final ServerAccessData serverEntry = getServerEntry();
+					sftpConnection = new SftpConnection(serverEntry.getHostname(), serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), serverEntry.getPassword(), serverEntry.getPort(), e.getHostKeyFingerPrint(), newKnownHosts);
+					if ("".equals(hostKey.trim())) {
+						hostKey = "~/.ssh/known_hosts";
+					}
+					if (new File(Utilities.replaceUsersHome(hostKey)).isFile()) {
+						try (FileOutputStream fileOutputStream = new FileOutputStream(Utilities.replaceUsersHome(hostKey), true)) {
+							fileOutputStream.write(newKnownHosts.toByteArray());
+						}
+					} else if (!hostKey.matches("[A-Fa-f0-9:]+")) {
+						try (FileOutputStream fileOutputStream = new FileOutputStream(Utilities.replaceUsersHome(hostKey))) {
+							fileOutputStream.write(newKnownHosts.toByteArray());
+						}
+					}
+				} else {
+					throw e;
+				}
+			}
 			final List<String> folders = sftpConnection.getFolders("/");
 			final List<String> files = sftpConnection.getFiles("/");
 			folderTree.removeAll();
