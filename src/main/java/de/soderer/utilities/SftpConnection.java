@@ -135,6 +135,7 @@ public class SftpConnection implements Closeable {
 			session.setConfig("HashKnownHosts", "yes");
 
 			// Workaround fix for "ecdsa-sha2-nistp256" knownhostkeys
+			// Otherwise the command "ssh-keyscan -H -t rsa <hostname> >> ~/.ssh/known_hosts" may help
 			final HostKeyRepository hkr = jsch.getHostKeyRepository();
 			for (final HostKey hk : hkr.getHostKey()) {
 				if (hk.getHost().equalsIgnoreCase(hostname)) {
