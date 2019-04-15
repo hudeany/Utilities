@@ -356,72 +356,64 @@ public class SftpConnection implements Closeable {
 
 	public void uploadFileData(final String filePath, final byte[] fileData) throws Exception {
 		Channel channel = null;
-		OutputStream outStream = null;
-		InputStream inStream = null;
 		try {
 			String command = "scp -p -t " + filePath;
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
-			outStream = channel.getOutputStream();
-			inStream = channel.getInputStream();
-
-			channel.connect();
-
-			checkAcknowledge(inStream);
-
-			// send command "C0664 filesize filename"
-			final String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
-			command = "C0664 " + fileData.length + " " + fileName + "\n";
-			outStream.write(command.getBytes("UTF-8"));
-			outStream.flush();
-
-			checkAcknowledge(inStream);
-
-			// send content of file
-			outStream.write(fileData, 0, fileData.length);
-
-			// send '\0' as EOF
-			sendZeroByte(outStream);
-
-			checkAcknowledge(inStream);
+			try (OutputStream outStream = channel.getOutputStream();
+					InputStream inStream = channel.getInputStream()) {
+				channel.connect();
+	
+				checkAcknowledge(inStream);
+	
+				// send command "C0664 filesize filename"
+				final String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+				command = "C0664 " + fileData.length + " " + fileName + "\n";
+				outStream.write(command.getBytes("UTF-8"));
+				outStream.flush();
+	
+				checkAcknowledge(inStream);
+	
+				// send content of file
+				outStream.write(fileData, 0, fileData.length);
+	
+				// send '\0' as EOF
+				sendZeroByte(outStream);
+	
+				checkAcknowledge(inStream);
+			}
 		} catch (final Exception e) {
 			throw new Exception("Error in uploadFileData", e);
 		} finally {
-			Utilities.closeQuietly(outStream);
-			Utilities.closeQuietly(inStream);
 			closeQuietly(channel);
 		}
 	}
 
-	public JschFileData getFileData(final String filePath) throws Exception {
+	public JschFileData getFileInfo(final String filePath) throws Exception {
 		Channel channel = null;
-		InputStream inStream = null;
-		InputStream inErrorStream = null;
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("ls -l " + filePath);
 
 			// Streams must be fetched before channel connect
-			inStream = channel.getInputStream();
-			inErrorStream = channel.getExtInputStream();
-
-			channel.connect();
-
-			final byte[] successData = Utilities.toByteArray(inStream);
-			final String successString = new String(successData, "UTF-8");
-
-			final byte[] errorData = Utilities.toByteArray(inErrorStream);
-
-			if (errorData != null && errorData.length > 0) {
-				return null;
-			} else {
-				return new JschFileData(successString);
+			try (InputStream inStream = channel.getInputStream();
+					InputStream inErrorStream = channel.getExtInputStream()) {
+				channel.connect();
+	
+				final byte[] successData = Utilities.toByteArray(inStream);
+				final String successString = new String(successData, "UTF-8");
+	
+				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+	
+				if (errorData != null && errorData.length > 0) {
+					return null;
+				} else {
+					return new JschFileData(successString);
+			}
 			}
 		} finally {
 			closeQuietly(channel);
-			Utilities.closeQuietly(inStream);
-			Utilities.closeQuietly(inErrorStream);
 		}
 	}
 
@@ -488,7 +480,6 @@ public class SftpConnection implements Closeable {
 	 */
 	public void deleteFile(final String remoteHostPathAndFileName) throws Exception {
 		Channel channel = null;
-		InputStream inStream = null;
 		try {
 			// exec 'rm /full/path/to/file' remotely
 			final String command = "rm -f " + remoteHostPathAndFileName;
@@ -496,18 +487,15 @@ public class SftpConnection implements Closeable {
 			((ChannelExec) channel).setCommand(command);
 
 			// get I/O stream for remote scp
-			inStream = channel.getInputStream();
-
-			channel.connect();
-
-			checkAcknowledge(inStream);
-
-			session.disconnect();
+			try (InputStream inStream = channel.getInputStream()) {
+				channel.connect();
+	
+				checkAcknowledge(inStream);
+			}
 		} catch (final Exception e) {
 			throw new Exception("Fehler bei SSH-Delete: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
-			Utilities.closeQuietly(inStream);
 		}
 	}
 
@@ -520,25 +508,21 @@ public class SftpConnection implements Closeable {
 	 */
 	public void deleteFolder(final String remoteHostPathAndFolderName) throws Exception {
 		Channel channel = null;
-		InputStream inStream = null;
 		try {
 			final String command = "rm -rf " + remoteHostPathAndFolderName;
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
 			// get I/O stream for remote scp
-			inStream = channel.getInputStream();
-
-			channel.connect();
-
-			checkAcknowledge(inStream);
-
-			session.disconnect();
+			try (InputStream inStream = channel.getInputStream()) {
+				channel.connect();
+	
+				checkAcknowledge(inStream);
+			}
 		} catch (final Exception e) {
 			throw new Exception("Fehler bei SSH-Delete: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
-			Utilities.closeQuietly(inStream);
 		}
 	}
 
@@ -581,9 +565,6 @@ public class SftpConnection implements Closeable {
 		}
 
 		Channel channel = null;
-		OutputStream out = null;
-		InputStream in = null;
-		BufferedInputStream bufferedFileInputStream = null;
 		try {
 			// exec 'scp -t rfile' remotely
 			String command = "scp -p -t " + remoteHostPathAndFileName;
@@ -591,48 +572,43 @@ public class SftpConnection implements Closeable {
 			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
-			out = channel.getOutputStream();
-			in = channel.getInputStream();
-
-			channel.connect();
-
-			checkAcknowledge(in);
-
-			// send "C0664 filesize filename", where filename should not include '/'
-			final long filesize = new File(localPathAndFileName).length();
-			command = "C0664 " + filesize + " " + remoteHostFileName + "\n";
-			out.write(command.getBytes("UTF-8"));
-			out.flush();
-			checkAcknowledge(in);
-
-			// send a content of lfile
-			bufferedFileInputStream = new BufferedInputStream(new FileInputStream(localPathAndFileName));
-			final byte[] buf = new byte[4096];
-			while (true) {
-				final int len = bufferedFileInputStream.read(buf);
-				if (len <= 0) {
-					break;
+			try (OutputStream out = channel.getOutputStream();
+					InputStream in = channel.getInputStream()) {
+				channel.connect();
+	
+				checkAcknowledge(in);
+	
+				// send "C0664 filesize filename", where filename should not include '/'
+				final long filesize = new File(localPathAndFileName).length();
+				command = "C0664 " + filesize + " " + remoteHostFileName + "\n";
+				out.write(command.getBytes("UTF-8"));
+				out.flush();
+				checkAcknowledge(in);
+	
+				// send a content of lfile
+				try (InputStream bufferedFileInputStream = new BufferedInputStream(new FileInputStream(localPathAndFileName))) {
+					final byte[] buf = new byte[4096];
+					while (true) {
+						final int len = bufferedFileInputStream.read(buf);
+						if (len <= 0) {
+							break;
+						}
+						out.write(buf, 0, len); // out.flush();
+					}
+					// send '\0'
+					sendZeroByte(out);
+		
+					checkAcknowledge(in);
+		
+					out.close();
+		
+					channel.disconnect();
 				}
-				out.write(buf, 0, len); // out.flush();
 			}
-			bufferedFileInputStream.close();
-			bufferedFileInputStream = null;
-			// send '\0'
-			sendZeroByte(out);
-
-			checkAcknowledge(in);
-
-			out.close();
-
-			channel.disconnect();
-			session.disconnect();
 		} catch (final Exception e) {
 			throw new Exception("Fehler bei SSH-Upload: " + e.getMessage());
 		} finally {
-			Utilities.closeQuietly(bufferedFileInputStream);
 			closeQuietly(channel);
-			Utilities.closeQuietly(in);
-			Utilities.closeQuietly(out);
 		}
 	}
 
@@ -647,8 +623,6 @@ public class SftpConnection implements Closeable {
 		}
 
 		Channel channel = null;
-		OutputStream out = null;
-		InputStream in = null;
 		try {
 			// exec 'scp -t rfile' remotely
 			String command = "scp -p -t " + remoteHostPath + "/" + remoteHostFileName;
@@ -656,42 +630,38 @@ public class SftpConnection implements Closeable {
 			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
-			out = channel.getOutputStream();
-			in = channel.getInputStream();
-
-			channel.connect();
-
-			checkAcknowledge(in);
-
-			// send command "C0664 filesize filename"
-			command = "C0664 " + fileData.length + " " + remoteHostFileName + "\n";
-			out.write(command.getBytes("UTF-8"));
-			out.flush();
-			checkAcknowledge(in);
-
-			// send content of file
-			out.write(fileData, 0, fileData.length);
-
-			// send '\0' as EOF
-			sendZeroByte(out);
-
-			checkAcknowledge(in);
-			out.close();
-
-			channel.disconnect();
-			session.disconnect();
+			try (OutputStream out = channel.getOutputStream();
+					InputStream in = channel.getInputStream()) {
+				channel.connect();
+	
+				checkAcknowledge(in);
+	
+				// send command "C0664 filesize filename"
+				command = "C0664 " + fileData.length + " " + remoteHostFileName + "\n";
+				out.write(command.getBytes("UTF-8"));
+				out.flush();
+				checkAcknowledge(in);
+	
+				// send content of file
+				out.write(fileData, 0, fileData.length);
+	
+				// send '\0' as EOF
+				sendZeroByte(out);
+	
+				checkAcknowledge(in);
+				out.close();
+	
+				channel.disconnect();
+			}
 		} catch (final Exception e) {
 			throw new Exception("Fehler bei SSH-Upload: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
-			Utilities.closeQuietly(in);
-			Utilities.closeQuietly(out);
 		}
 	}
 
 	public List<String> listFiles(final String remoteHostPath) throws Exception {
 		Channel channel = null;
-		InputStream in = null;
 		try {
 			final List<String> returnList = new ArrayList<>();
 
@@ -702,36 +672,33 @@ public class SftpConnection implements Closeable {
 
 			// get I/O streams for remote scp
 			// OutputStream out = channel.getOutputStream();
-			in = channel.getInputStream();
-
-			channel.connect();
-
-			// byte[] buf = new byte[4096];
-
-			// send '\0'
-			// sendZeroByte(out);
-
-			int charValue = checkAcknowledge(in);
-			StringBuilder inputString = new StringBuilder();
-
-			while (charValue != -1) { // EOF
-				if (charValue == '\n') { // EOL
-					returnList.add(inputString.toString());
-					inputString = new StringBuilder();
-				} else {
-					inputString.append((char) charValue);
+			try (InputStream in = channel.getInputStream()) {
+				channel.connect();
+	
+				// byte[] buf = new byte[4096];
+	
+				// send '\0'
+				// sendZeroByte(out);
+	
+				int charValue = checkAcknowledge(in);
+				StringBuilder inputString = new StringBuilder();
+	
+				while (charValue != -1) { // EOF
+					if (charValue == '\n') { // EOL
+						returnList.add(inputString.toString());
+						inputString = new StringBuilder();
+					} else {
+						inputString.append((char) charValue);
+					}
+					charValue = checkAcknowledge(in);
 				}
-				charValue = checkAcknowledge(in);
+	
+				return returnList;
 			}
-
-			session.disconnect();
-
-			return returnList;
 		} catch (final Exception e) {
 			throw new Exception("Fehler bei SSH-Download\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
-			Utilities.closeQuietly(in);
 		}
 	}
 
@@ -779,182 +746,154 @@ public class SftpConnection implements Closeable {
 			System.out.println("KnownHosts (after adding):");
 			printKnownHostKeys(jsch);
 			System.out.println("");
-
-			session.disconnect();
 		} catch (final Exception e) {
 			System.out.println(e);
-		} finally {
-			if (session != null) {
-				try {
-					session.disconnect();
-					session = null;
-				} catch (final Exception e) {
-					e.printStackTrace();
-				}
-			}
 		}
 	}
 
 	public byte[] downloadFileData(final String filePath) throws Exception {
 		Channel channel = null;
-		OutputStream outStream = null;
-		InputStream inStream = null;
-		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("scp -f " + filePath);
 
-			outStream = channel.getOutputStream();
-			inStream = channel.getInputStream();
-			// InputStream inErrorStream = channel.getExtInputStream();
-
-			channel.connect();
-
-			// send '\0' to start data transfer
-			sendZeroByte(outStream);
-
-			while (true) {
-				if (checkAcknowledge(inStream) != 'C') {
-					break;
-				}
-
-				// read rights key like '0644 ' (5 bytes)
-				final byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
-				@SuppressWarnings("unused")
-				String rights = null;
-				if (rightsData != null && rightsData.length > 0) {
-					rights = new String(rightsData, "UTF-8");
-				}
-
-				// read filesize (if empty filesize read until no more data)
-				final byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
-				long filesize = -1;
-				if (filesizeData != null && filesizeData.length > 0) {
-					filesize = Long.parseLong(new String(filesizeData));
-				}
-
-				// read filename (even if it is not used on single download)
-				final byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
-				@SuppressWarnings("unused")
-				String filename = null;
-				if (filenameData != null && filenameData.length > 0) {
-					filename = new String(filenameData, "UTF-8");
-				}
-
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			try (OutputStream outStream = channel.getOutputStream();
+					InputStream inStream = channel.getInputStream()) {
+				channel.connect();
+	
 				// send '\0' to start data transfer
 				sendZeroByte(outStream);
-
-				// read file content
-				if (filesize > 0) {
-					int nextReadLength;
-					final byte[] buffer = new byte[4096];
-					while (true) {
-						if (buffer.length < filesize) {
-							nextReadLength = buffer.length;
-						} else {
-							nextReadLength = (int) filesize;
-						}
-						nextReadLength = inStream.read(buffer, 0, nextReadLength);
-						if (nextReadLength < 0) {
-							// error
-							break;
-						} else {
-							bos.write(buffer, 0, nextReadLength);
-							filesize -= nextReadLength;
-							if (filesize <= 0) {
+				
+				while (true) {
+					if (checkAcknowledge(inStream) != 'C') {
+						break;
+					}
+	
+					// read rights key like '0644 ' (5 bytes)
+					final byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+					@SuppressWarnings("unused")
+					String rights = null;
+					if (rightsData != null && rightsData.length > 0) {
+						rights = new String(rightsData, "UTF-8");
+					}
+	
+					// read filesize (if empty filesize read until no more data)
+					final byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+					long filesize = -1;
+					if (filesizeData != null && filesizeData.length > 0) {
+						filesize = Long.parseLong(new String(filesizeData));
+					}
+	
+					// read filename (even if it is not used on single download)
+					final byte[] filenameData = readStreamUntilBlankOrEndOrLinefeed(inStream);
+					@SuppressWarnings("unused")
+					String filename = null;
+					if (filenameData != null && filenameData.length > 0) {
+						filename = new String(filenameData, "UTF-8");
+					}
+	
+					// send '\0' to start data transfer
+					sendZeroByte(outStream);
+	
+					// read file content
+					if (filesize > 0) {
+						int nextReadLength;
+						final byte[] buffer = new byte[4096];
+						while (true) {
+							if (buffer.length < filesize) {
+								nextReadLength = buffer.length;
+							} else {
+								nextReadLength = (int) filesize;
+							}
+							nextReadLength = inStream.read(buffer, 0, nextReadLength);
+							if (nextReadLength < 0) {
+								// error
 								break;
+							} else {
+								bos.write(buffer, 0, nextReadLength);
+								filesize -= nextReadLength;
+								if (filesize <= 0) {
+									break;
+								}
 							}
 						}
 					}
+	
+					checkAcknowledge(inStream);
+	
+					// send '\0' to start data transfer of next file (if this is a multi download)
+					sendZeroByte(outStream);
 				}
-
-				checkAcknowledge(inStream);
-
-				// send '\0' to start data transfer of next file (if this is a multi download)
-				sendZeroByte(outStream);
+	
+				return bos.toByteArray();
 			}
-
-			return bos.toByteArray();
 		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
-			Utilities.closeQuietly(bos);
 			closeQuietly(channel);
-			Utilities.closeQuietly(inStream);
-			Utilities.closeQuietly(outStream);
 		}
 	}
 
 	public void tailviewFileData(final String filePath, final int numberOfLastLinesToShow, final LineListener lineListener) throws Exception {
 		Channel channel = null;
-		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " " + filePath);
 
-			final OutputStream outStream = channel.getOutputStream();
-			final InputStream inStream = channel.getInputStream();
-
-			channel.connect();
-
-			// send '\0' to start data transfer
-			sendZeroByte(outStream);
-
-			while (true) {
-				// reads all now available data at once
-				byte[] nextData = Utilities.toByteArray(inStream);
-				while (nextData.length > 0) {
-					lineListener.addLineData(nextData);
-					nextData = Utilities.toByteArray(inStream);
+			try (OutputStream outStream = channel.getOutputStream();
+					InputStream inStream = channel.getInputStream()) {
+				channel.connect();
+	
+				// send '\0' to start data transfer
+				sendZeroByte(outStream);
+	
+				while (true) {
+					// reads all now available data at once
+					byte[] nextData = Utilities.toByteArray(inStream);
+					while (nextData.length > 0) {
+						lineListener.addLineData(nextData);
+						nextData = Utilities.toByteArray(inStream);
+					}
+	
+					// waits if no more data is available right now
+					final byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
+					lineListener.addLineData(nextLineData);
 				}
-
-				// waits if no more data is available right now
-				final byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
-				lineListener.addLineData(nextLineData);
 			}
 		} catch (final java.io.InterruptedIOException e) {
 			// do nothing
 		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
-			Utilities.closeQuietly(bos);
 			closeQuietly(channel);
 		}
 	}
 
 	public byte[] readTailFileData(final String filePath, final int numberOfLastLinesToShow) throws Exception {
 		Channel channel = null;
-		OutputStream outStream = null;
-		InputStream inStream = null;
-		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("tail -n " + numberOfLastLinesToShow + " " + filePath);
 
-			outStream = channel.getOutputStream();
-			inStream = channel.getInputStream();
-
-			channel.connect();
-
-			// send '\0' to start data transfer
-			sendZeroByte(outStream);
-
-			return Utilities.toByteArray(inStream);
+			try(OutputStream outStream = channel.getOutputStream();
+					InputStream inStream = channel.getInputStream()) {
+				channel.connect();
+	
+				// send '\0' to start data transfer
+				sendZeroByte(outStream);
+	
+				return Utilities.toByteArray(inStream);
+			}
 		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
 		} finally {
-			Utilities.closeQuietly(bos);
 			closeQuietly(channel);
-			Utilities.closeQuietly(inStream);
-			Utilities.closeQuietly(outStream);
 		}
 	}
 
 	public String executeCommand(final String command) throws Exception {
 		Channel channel = null;
-		OutputStream out = null;
-		InputStream in = null;
-		InputStream inError = null;
 		try {
 			String returnText = "";
 
@@ -962,56 +901,51 @@ public class SftpConnection implements Closeable {
 			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
-			out = channel.getOutputStream();
-			in = channel.getInputStream();
-			inError = channel.getExtInputStream();
-
-			channel.connect();
-
-			// send '\0'
-			sendZeroByte(out);
-
-			int charValue = checkAcknowledge(in);
-			StringBuilder inputString = new StringBuilder();
-
-			while (charValue != -1) { // EOF
-				if (charValue == '\n') { // EOL
-					returnText += inputString + "\n";
-					inputString = new StringBuilder();
-				} else {
-					inputString.append((char) charValue);
+			try (OutputStream out = channel.getOutputStream();
+					InputStream in = channel.getInputStream();
+					InputStream inError = channel.getExtInputStream()) {
+				channel.connect();
+	
+				// send '\0'
+				sendZeroByte(out);
+	
+				int charValue = checkAcknowledge(in);
+				StringBuilder inputString = new StringBuilder();
+	
+				while (charValue != -1) { // EOF
+					if (charValue == '\n') { // EOL
+						returnText += inputString + "\n";
+						inputString = new StringBuilder();
+					} else {
+						inputString.append((char) charValue);
+					}
+					charValue = checkAcknowledge(in);
 				}
-				charValue = checkAcknowledge(in);
-			}
-
-			String returnError = "";
-			int charValueErrorStream = checkAcknowledge(inError);
-			StringBuilder inputStringErrorStream = new StringBuilder();
-
-			while (charValueErrorStream != -1) { // EOF
-				if (charValueErrorStream == '\n') { // EOL
-					returnError += inputStringErrorStream + "\n";
-					inputStringErrorStream = new StringBuilder();
-				} else {
-					inputStringErrorStream.append((char) charValueErrorStream);
+	
+				String returnError = "";
+				int charValueErrorStream = checkAcknowledge(inError);
+				StringBuilder inputStringErrorStream = new StringBuilder();
+	
+				while (charValueErrorStream != -1) { // EOF
+					if (charValueErrorStream == '\n') { // EOL
+						returnError += inputStringErrorStream + "\n";
+						inputStringErrorStream = new StringBuilder();
+					} else {
+						inputStringErrorStream.append((char) charValueErrorStream);
+					}
+					charValueErrorStream = checkAcknowledge(inError);
 				}
-				charValueErrorStream = checkAcknowledge(inError);
-			}
-
-			session.disconnect();
-
-			if (returnError.length() > 0) {
-				throw new Exception(returnError);
-			} else {
-				return returnText;
+	
+				if (returnError.length() > 0) {
+					throw new Exception(returnError);
+				} else {
+					return returnText;
+				}
 			}
 		} catch (final Exception e) {
 			throw new Exception("Fehler bei SSH-Command\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
-			Utilities.closeQuietly(in);
-			Utilities.closeQuietly(out);
-			Utilities.closeQuietly(inError);
 		}
 	}
 
@@ -1031,32 +965,15 @@ public class SftpConnection implements Closeable {
 	}
 
 	private static void setKnownHostKeys(final JSch jsch) throws Exception {
-		InputStream knownHostsKeysInputStream = null;
-		try {
-			knownHostsKeysInputStream = Utilities.getResourceAsStream("KnownHostsKeysForSSH");
+		try (InputStream knownHostsKeysInputStream = Utilities.getResourceAsStream("KnownHostsKeysForSSH")) {
 			logger.debug("KnownHostsKeysForSSH " + (knownHostsKeysInputStream == null ? "NOT " : "") + "found");
 			if (knownHostsKeysInputStream != null) {
 				jsch.setKnownHosts(knownHostsKeysInputStream);
 			} else {
 				throw new Exception("KnownHostsKeysForSSH für SSH-Verbindung nicht gefunden");
 			}
-
 		} catch (final JSchException e) {
 			e.printStackTrace();
-		} finally {
-			Utilities.closeQuietly(knownHostsKeysInputStream);
-		}
-	}
-
-	private static void printKnownHostKeys(final JSch jsch) {
-		final HostKeyRepository hkr = jsch.getHostKeyRepository();
-		final HostKey[] hks = hkr.getHostKey();
-		if (hks != null) {
-			System.out.println("Host keys in " + hkr.getKnownHostsRepositoryID());
-			for (final HostKey hk : hks) {
-				System.out.println(hk.getHost() + " " + hk.getType() + " " + hk.getFingerPrint(jsch));
-			}
-			System.out.println("");
 		}
 	}
 
