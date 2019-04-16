@@ -87,7 +87,7 @@ public class TextFileScanner implements Iterator<String> {
 	private Locale locale = null;
 
 	// A cache of the last few recently used Patterns
-	private LRUCache<String, Pattern> patternCache = new LRUCache<String, Pattern>(7);
+	private LRUCache<String, Pattern> patternCache = new LRUCache<>(7);
 
 	// A holder of the last IOException encountered
 	private IOException lastException;

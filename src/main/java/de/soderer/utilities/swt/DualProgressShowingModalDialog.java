@@ -56,17 +56,21 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 
 	@Override
 	public void showUnlimitedSubProgress() {
+		// Do nothing
 	}
 
 	@Override
 	public void showItemStart(final String itemName) {
+		// Do nothing
 	}
 
 	@Override
 	public void showItemProgress(final Date itemStart, final long subItemToDo, final long subItemDone) {
+		// Do nothing
 	}
 
 	@Override
 	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
+		// Do nothing
 	}
 }

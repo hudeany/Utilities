@@ -34,7 +34,7 @@ public class SecureDataStore {
 	/**
 	 * First key is class name of entries grouped by their class name, second key is the entry name
 	 */
-	private Map<String, Map<String, Object>> dataEntries = new HashMap<String, Map<String, Object>>();
+	private Map<String, Map<String, Object>> dataEntries = new HashMap<>();
 
 	public void save(File storeFile, char[] password, byte[] salt) throws Exception {
 		try {
@@ -81,7 +81,7 @@ public class SecureDataStore {
 				if (password == null) {
 					password = "".toCharArray();
 				}
-				dataEntries = new HashMap<String, Map<String, Object>>();
+				dataEntries = new HashMap<>();
 				try (FileInputStream fis = new FileInputStream(storeFile)) {
 					byte[] keyBytes = stretchPassword(password, salt);
 					SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
@@ -133,7 +133,7 @@ public class SecureDataStore {
 
 	public Set<String> getEntryNames(Class<?> classType) {
 		if (dataEntries.get(classType.getName()) == null) {
-			return new HashSet<String>();
+			return new HashSet<>();
 		} else {
 			return dataEntries.get(classType.getName()).keySet();
 		}

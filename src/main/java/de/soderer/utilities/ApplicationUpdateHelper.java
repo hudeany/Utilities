@@ -545,6 +545,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry))  {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
 					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+						// Do nothing
 					}
 				}
 			}

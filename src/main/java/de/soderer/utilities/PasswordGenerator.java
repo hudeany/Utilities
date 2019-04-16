@@ -11,7 +11,7 @@ public class PasswordGenerator {
 	}
 
 	public static char[] generatePassword(int size, String... characterGroups) throws Exception {
-		List<PasswordGeneratorCharacterGroup> groups = new ArrayList<PasswordGeneratorCharacterGroup>();
+		List<PasswordGeneratorCharacterGroup> groups = new ArrayList<>();
 		for (String characterGroup : characterGroups) {
 			groups.add(new PasswordGeneratorCharacterGroup(1, 99, characterGroup.toCharArray()));
 		}
@@ -26,10 +26,10 @@ public class PasswordGenerator {
 		int minimumLength = Math.min(minimumLengthParam, minimumLengthParam);
 		int maximumLength = Math.max(minimumLengthParam, maximumLengthParam);
 
-		List<Character> passwordLetters = new ArrayList<Character>();
-		Map<PasswordGeneratorCharacterGroup, Integer> groupsLeftToUse = new HashMap<PasswordGeneratorCharacterGroup, Integer>();
+		List<Character> passwordLetters = new ArrayList<>();
+		Map<PasswordGeneratorCharacterGroup, Integer> groupsLeftToUse = new HashMap<>();
 		for (PasswordGeneratorCharacterGroup group : characterGroups) {
-			List<Character> nextPasswordLetters = new ArrayList<Character>();
+			List<Character> nextPasswordLetters = new ArrayList<>();
 			for (int i = 0; i < group.minimum; i++) {
 				nextPasswordLetters.add(group.getRandomCharacter());
 			}

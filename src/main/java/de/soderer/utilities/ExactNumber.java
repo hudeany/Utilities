@@ -68,7 +68,7 @@ public class ExactNumber {
 			postDecimalSeparator = postDecimalSeparator.substring(0, postDecimalSeparator.length() - 2);
 		}
 
-		return new Tuple<Long, Integer>(Long.parseLong(preDecimalSeparator + postDecimalSeparator), postDecimalSeparator.length());
+		return new Tuple<>(Long.parseLong(preDecimalSeparator + postDecimalSeparator), postDecimalSeparator.length());
 	}
 
 	@Override

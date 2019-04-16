@@ -78,6 +78,10 @@ public class OpenSshKeyReader implements Closeable {
 			} else if ((nextLine.startsWith("---- END ") && nextLine.endsWith(" ----")) || (nextLine.startsWith("-----END ") && nextLine.endsWith("-----"))) {
 				if (currentKeyName == null || !currentKeyName.equals(nextLine.substring(9, nextLine.length() - 5))) {
 					throw new Exception("Corrupt key data found");
+				} else if (currentKeyData == null) {
+					throw new Exception("Corrupt key data found");
+				} else if (currentKeyHeaders == null) {
+					throw new Exception("Corrupt key data found");
 				} else {
 					byte[] keyData = Base64.getDecoder().decode(currentKeyData.toString());
 					if ("4,ENCRYPTED".equals(currentKeyHeaders.get("Proc-Type"))) {
@@ -142,12 +146,18 @@ public class OpenSshKeyReader implements Closeable {
 			} else if (currentKeyName != null) {
 				final int indexOfHeaderSeparator = nextLine.indexOf(": ");
 				if (indexOfHeaderSeparator > 0) {
-					if (currentKeyData.length() > 0) {
+					if (currentKeyData == null || currentKeyData.length() > 0) {
+						throw new Exception("Corrupt key data found");
+					}
+					if (currentKeyHeaders == null) {
 						throw new Exception("Corrupt key data found");
 					}
 					final String headerName = nextLine.substring(0, indexOfHeaderSeparator).trim();
 					currentKeyHeaders.put(headerName, nextLine.substring(indexOfHeaderSeparator + 2));
 				} else {
+					if (currentKeyData == null || currentKeyData.length() > 0) {
+						throw new Exception("Corrupt key data found");
+					}
 					currentKeyData.append(nextLine);
 				}
 			}

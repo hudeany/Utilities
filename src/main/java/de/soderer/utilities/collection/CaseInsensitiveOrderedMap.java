@@ -13,7 +13,7 @@ public class CaseInsensitiveOrderedMap<V> extends AbstractLinkedHashMap<String, 
 	private static final long serialVersionUID = 7467218114617744333L;
 
 	public static <V> CaseInsensitiveOrderedMap<V> create() {
-		return new CaseInsensitiveOrderedMap<V>();
+		return new CaseInsensitiveOrderedMap<>();
 	}
 
 	public CaseInsensitiveOrderedMap() {

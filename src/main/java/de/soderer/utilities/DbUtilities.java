@@ -211,7 +211,9 @@ public class DbUtilities {
 	 */
 	public static final OutputStream DEV_NULL = new OutputStream() {
 		@Override
-		public void write(final int b) {}
+		public void write(final int b) {
+			// Do nothing
+		}
 	};
 
 	/**
@@ -2171,6 +2173,8 @@ public class DbUtilities {
 					try (ResultSet resultSet = statement.executeQuery("SELECT sql FROM sqlite_master WHERE type = 'table' AND LOWER(name) = LOWER('" + tableName + "')")) {
 						if (resultSet.next()) {
 							createTableStatement = resultSet.getString("sql");
+						} else {
+							throw new Exception("Cannot find create table sql");
 						}
 					}
 

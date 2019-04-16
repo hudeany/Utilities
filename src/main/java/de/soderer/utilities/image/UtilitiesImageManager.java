@@ -12,7 +12,7 @@ public class UtilitiesImageManager {
 	private static UtilitiesImageManager instance = null;
 
 	private Shell shell;
-	private Map<String, Image> store = new HashMap<String, Image>();
+	private Map<String, Image> store = new HashMap<>();
 
 	public UtilitiesImageManager(Shell shell) {
 		this.shell = shell;

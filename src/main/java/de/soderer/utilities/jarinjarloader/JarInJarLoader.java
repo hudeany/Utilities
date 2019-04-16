@@ -107,7 +107,7 @@ public class JarInJarLoader {
 	private static String[] getZipFileEntries(File file) throws ZipException, IOException {
 		try (ZipFile zipFile = new ZipFile(file)) {
 			Enumeration<? extends ZipEntry> entries = zipFile.entries();
-			List<String> entryList = new ArrayList<String>();
+			List<String> entryList = new ArrayList<>();
 			while (entries.hasMoreElements()) {
 				ZipEntry entry = entries.nextElement();
 				entryList.add(entry.getName());

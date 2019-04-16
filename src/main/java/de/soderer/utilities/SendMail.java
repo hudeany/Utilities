@@ -32,7 +32,7 @@ public class SendMail {
 
 	// adressenListe ist ein ";"-getrennter String mit den EmailAdressen
 	public static boolean sendWarningMail(String adressenListe, String pBetreff, String pMailtext) throws Exception {
-		List<String> zielEmailAdressen = new ArrayList<String>();
+		List<String> zielEmailAdressen = new ArrayList<>();
 		while (adressenListe.indexOf(";") > -1) {
 			zielEmailAdressen.add(adressenListe.substring(0, adressenListe.indexOf(";")).trim());
 			adressenListe = adressenListe.substring(adressenListe.indexOf(";") + 1);
@@ -60,7 +60,7 @@ public class SendMail {
 	}
 
 	public static boolean sendMail(String[] toEmailAdressen, String pBetreff, String pMailtext, File... filesToAttach) throws Exception {
-		List<String> to = new ArrayList<String>();
+		List<String> to = new ArrayList<>();
 		for (String adresse : toEmailAdressen) {
 			to.add(adresse);
 		}
@@ -68,7 +68,7 @@ public class SendMail {
 	}
 
 	public static boolean sendMail(String toEmailAdresse, String pBetreff, String pMailtext, File... filesToAttach) throws Exception {
-		List<String> to = new ArrayList<String>();
+		List<String> to = new ArrayList<>();
 		to.add(toEmailAdresse);
 		return sendMailWithSignature(to, null, null, pBetreff, pMailtext, filesToAttach);
 	}
@@ -170,7 +170,7 @@ public class SendMail {
 				}
 			}
 			// TO Emails
-			List<InternetAddress> toAdresses = new ArrayList<InternetAddress>();
+			List<InternetAddress> toAdresses = new ArrayList<>();
 			for (String recipient : pTO) {
 				toAdresses.add(new InternetAddress(recipient));
 			}
@@ -180,7 +180,7 @@ public class SendMail {
 			}
 			// CC Emails
 			if (pCC != null) {
-				List<InternetAddress> ccAdresses = new ArrayList<InternetAddress>();
+				List<InternetAddress> ccAdresses = new ArrayList<>();
 				for (String ccRecipient : pCC) {
 					ccAdresses.add(new InternetAddress(ccRecipient));
 				}
@@ -191,7 +191,7 @@ public class SendMail {
 			}
 			// BCC Emails
 			if (pBCC != null) {
-				List<InternetAddress> bccAdresses = new ArrayList<InternetAddress>();
+				List<InternetAddress> bccAdresses = new ArrayList<>();
 				for (String bccRecipient : pBCC) {
 					bccAdresses.add(new InternetAddress(bccRecipient));
 				}

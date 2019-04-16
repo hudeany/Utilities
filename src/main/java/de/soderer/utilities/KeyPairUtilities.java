@@ -287,8 +287,11 @@ public class KeyPairUtilities {
 				|| KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
 			final String curveName = publicKeyReader.readString();
 			if ("nistp256".equals(curveName)) {
+				// Do nothing
 			} else if ("nistp384".equals(curveName)) {
+				// Do nothing
 			} else if ("nistp521".equals(curveName)) {
+				// Do nothing
 			} else {
 				throw new Exception("Unsupported ECDSA curveName: " + curveName);
 			}

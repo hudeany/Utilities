@@ -537,20 +537,16 @@ public class CryptographicUtilities {
 	public static void encryptSymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final char[] password, final byte[] salt, final byte[] initializationVector, final String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		CipherOutputStream cipherOutputStream = null;
 		try {
 			final byte[] keyBytes = stretchPassword(password, 128, salt);
 			final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 			final Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-			cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher);
-			IOUtils.copy(dataStream, cipherOutputStream);
+			try (CipherOutputStream cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher)) {
+				IOUtils.copy(dataStream, cipherOutputStream);
+			}
 		} catch (final Exception e) {
 			throw new Exception("Error while encrypting: " + e.getMessage(), e);
-		} finally {
-			if (cipherOutputStream != null) {
-				cipherOutputStream.close();
-			}
 		}
 	}
 
@@ -561,20 +557,16 @@ public class CryptographicUtilities {
 	public static void decryptSymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final char[] password, final byte[] salt, final byte[] initializationVector, final String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		CipherInputStream cipherInputStream = null;
 		try {
 			final byte[] keyBytes = stretchPassword(password, 128, salt);
 			final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 			final Cipher decryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-			cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher);
-			IOUtils.copy(cipherInputStream, dataOutputStream);
+			try (CipherInputStream cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher)) {
+				IOUtils.copy(cipherInputStream, dataOutputStream);
+			}
 		} catch (final Exception e) {
 			throw new Exception("Error while decrypting: " + e.getMessage(), e);
-		} finally {
-			if (cipherInputStream != null) {
-				cipherInputStream.close();
-			}
 		}
 	}
 
@@ -936,6 +928,7 @@ public class CryptographicUtilities {
 				final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(keyPair.getPrivate(), null);
 				jcaPEMWriter.writeObject(pemGenerator);
 				if (includePublicKeyData) {
+					// Do nothing
 				}
 			}
 

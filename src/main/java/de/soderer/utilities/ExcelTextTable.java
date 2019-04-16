@@ -3,7 +3,6 @@ package de.soderer.utilities;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 import jxl.Workbook;
@@ -23,11 +22,11 @@ import jxl.write.WritableWorkbook;
 public class ExcelTextTable extends TextTable {
 
 	public ExcelTextTable() {
-		columnNames = new ArrayList<List<String>>();
-		columnColors = new ArrayList<String>();
-		content = new ArrayList<List<String>>();
-		columnRightAligned = new ArrayList<Boolean>();
-		lineColors = new ArrayList<String>();
+		columnNames = new ArrayList<>();
+		columnColors = new ArrayList<>();
+		content = new ArrayList<>();
+		columnRightAligned = new ArrayList<>();
+		lineColors = new ArrayList<>();
 
 		// Erste Zeile enthält die Header
 		columnNames.add(new ArrayList<String>());
@@ -111,7 +110,7 @@ public class ExcelTextTable extends TextTable {
 					// Gruppenwechsel
 					if (contentChanged == false) {
 						sheet.mergeCells(startColumnIndex, 0, columnIndex - 1, 0);
-						if (latestContent.trim().equals("") && columnNames.size() > 1) {
+						if ((latestContent == null || "".equals(latestContent.trim())) && columnNames.size() > 1) {
 							sheet.mergeCells(startColumnIndex, 1, columnIndex - 1, 1);
 						}
 					}

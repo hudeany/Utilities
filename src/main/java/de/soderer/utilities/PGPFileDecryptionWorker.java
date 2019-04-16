@@ -75,6 +75,10 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 				throw new IllegalArgumentException("secret key for message not found.");
 			}
 
+			if (publicKeyEncryptedData == null) {
+				throw new IllegalArgumentException("encrypted data not found.");
+			}
+
 			// This execution checks for the JCE allowed key strength
 			decryptedPacketInputStream = publicKeyEncryptedData.getDataStream(new BcPublicKeyDataDecryptorFactory(privateKey));
 

@@ -78,6 +78,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 
 	@Override
 	public void showUpdateDownloadStart() {
+		// Do nothing
 	}
 
 	@Override

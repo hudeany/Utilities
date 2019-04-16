@@ -32,9 +32,9 @@ public class SectionedProperties {
 	
 	public void load(InputStream inputStream) throws Exception {
 		if (useCaseInsensitiveKeys) {
-			entries = new CaseInsensitiveOrderedMap<Map<String, String>>();
+			entries = new CaseInsensitiveOrderedMap<>();
 		} else {
-			entries = new LinkedHashMap<String, Map<String, String>>();
+			entries = new LinkedHashMap<>();
 		}
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
@@ -128,9 +128,9 @@ public class SectionedProperties {
 	public void setValue(String sectionName, String key, String value) {
 		if (entries == null) {
 			if (useCaseInsensitiveKeys) {
-				entries = new CaseInsensitiveOrderedMap<Map<String, String>>();
+				entries = new CaseInsensitiveOrderedMap<>();
 			} else {
-				entries = new LinkedHashMap<String, Map<String, String>>();
+				entries = new LinkedHashMap<>();
 			}
 		}
 

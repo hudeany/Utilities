@@ -23,11 +23,11 @@ public class TextTable {
 	protected int currentColumnIndex = -1;
 
 	public TextTable() {
-		columnNames = new ArrayList<List<String>>();
-		columnColors = new ArrayList<String>();
-		content = new ArrayList<List<String>>();
-		columnRightAligned = new ArrayList<Boolean>();
-		lineColors = new ArrayList<String>();
+		columnNames = new ArrayList<>();
+		columnColors = new ArrayList<>();
+		content = new ArrayList<>();
+		columnRightAligned = new ArrayList<>();
+		lineColors = new ArrayList<>();
 
 		// First line contains headers
 		columnNames.add(new ArrayList<String>());
@@ -157,12 +157,12 @@ public class TextTable {
 
 	@Override
 	public String toString() {
-		List<StringBuilder> columnNamesLines = new ArrayList<StringBuilder>();
+		List<StringBuilder> columnNamesLines = new ArrayList<>();
 		for (int lineIndex = 0; lineIndex < columnNames.size(); lineIndex++) {
 			columnNamesLines.add(new StringBuilder());
 		}
 
-		List<StringBuilder> contentLines = new ArrayList<StringBuilder>();
+		List<StringBuilder> contentLines = new ArrayList<>();
 		for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 			contentLines.add(new StringBuilder());
 		}
@@ -423,7 +423,7 @@ public class TextTable {
 					}
 				}
 				if (METADATA_HEADER.equals(lineParts[0])) {
-					List<String> headerLine = new ArrayList<String>();
+					List<String> headerLine = new ArrayList<>();
 					columnNames.add(headerLine);
 					for (int i = 1; i < lineParts.length; i++) {
 						headerLine.add(lineParts[i]);
@@ -450,7 +450,7 @@ public class TextTable {
 					} else {
 						lineColors.add(lineParts[0]);
 					}
-					List<String> contentLine = new ArrayList<String>();
+					List<String> contentLine = new ArrayList<>();
 					content.add(contentLine);
 					for (int i = 1; i < lineParts.length; i++) {
 						contentLine.add(lineParts[i]);

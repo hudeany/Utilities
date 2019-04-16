@@ -37,7 +37,7 @@ public class TextPropertiesReader {
 	 * Scan for the text properties of the given text
 	 */
 	public void readProperties() {
-		foundCharacters = new HashMap<Character, Integer>();
+		foundCharacters = new HashMap<>();
 		int lineCount = 0;
 		int nonWhitespaceCharactersCount = 0;
 		int wordCount = 0;

@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 public class JsonObject implements Iterable<Map.Entry<String, Object>> {
-	private Map<String, Object> properties = new LinkedHashMap<String, Object>();
+	private Map<String, Object> properties = new LinkedHashMap<>();
 
 	/**
 	 * When using the same key multiple times only the last value will be stored

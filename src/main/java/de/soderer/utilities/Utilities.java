@@ -1138,10 +1138,10 @@ public class Utilities {
 	}
 
 	public static byte[] toByteArray(final InputStream inputStream) throws IOException {
-		final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		copy(inputStream, byteArrayOutputStream);
-		byteArrayOutputStream.close();
-		return byteArrayOutputStream.toByteArray();
+		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+			copy(inputStream, byteArrayOutputStream);
+			return byteArrayOutputStream.toByteArray();
+		}
 	}
 
 	/**

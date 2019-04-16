@@ -19,11 +19,11 @@ public class HttpRequest {
 	private HttpMethod requestMethod;
 	private String url;
 	
-	private Map<String, Object> urlParameters = new HashMap<String, Object>();
-	private Map<String, Object> postParameters= new HashMap<String, Object>();
-	private Map<String, byte[]> fileAttachments= new HashMap<String, byte[]>();
-	private Map<String, Object> pathParameterData= new HashMap<String, Object>();
-	private Map<String, String> cookieData= new HashMap<String, String>();
+	private Map<String, Object> urlParameters = new HashMap<>();
+	private Map<String, Object> postParameters= new HashMap<>();
+	private Map<String, byte[]> fileAttachments= new HashMap<>();
+	private Map<String, Object> pathParameterData= new HashMap<>();
+	private Map<String, String> cookieData= new HashMap<>();
 	
 	private boolean checkSslCertificates = true;
 	

@@ -123,8 +123,9 @@ public class PGPUtilities {
 
 		DSA(PublicKeyAlgorithmTags.DSA),
 		/**
-		 * @deprecated use ECDH
+		 * @Deprecated use ECDH
 		 */
+		@SuppressWarnings("deprecation")
 		EC(PublicKeyAlgorithmTags.EC),
 		ECDH(PublicKeyAlgorithmTags.ECDH),
 		ECDSA(PublicKeyAlgorithmTags.ECDSA),

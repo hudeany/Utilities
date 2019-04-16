@@ -86,12 +86,12 @@ public class SystemUtilities {
 			} else {
 				p = Runtime.getRuntime().exec("ps -e");
 			}
-			final BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			String line;
-			while ((line = input.readLine()) != null) {
-				data.add(line);
+			try (BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+				String line;
+				while ((line = input.readLine()) != null) {
+					data.add(line);
+				}
 			}
-			input.close();
 			return data;
 		} catch (final Exception e) {
 			e.printStackTrace();

@@ -136,7 +136,6 @@ public class NetworkUtilities {
 	}
 
 	public static boolean wakeOnLanPing(final String macAddress) {
-		DatagramSocket socket = null;
 		try {
 			final byte[] macBytes = getMacAddressBytes(macAddress);
 			final byte[] bytes = new byte[6 + 16 * macBytes.length];
@@ -145,17 +144,13 @@ public class NetworkUtilities {
 				System.arraycopy(macBytes, 0, bytes, i, macBytes.length);
 			}
 
-			socket = new DatagramSocket();
-			socket.send(new DatagramPacket(bytes, bytes.length, InetAddress.getByName("255.255.255.255"), 9));
-			socket.close();
+			try (DatagramSocket socket = new DatagramSocket()) {
+				socket.send(new DatagramPacket(bytes, bytes.length, InetAddress.getByName("255.255.255.255"), 9));
+			}
 
 			return true;
 		} catch (final Exception e) {
 			return false;
-		} finally {
-			if (socket != null) {
-				socket.close();
-			}
 		}
 	}
 

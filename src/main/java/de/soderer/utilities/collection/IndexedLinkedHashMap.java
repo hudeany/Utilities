@@ -30,7 +30,7 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 
 	public List<K> getKeyList() {
 		if (keyList == null) {
-			keyList = new ArrayList<K>(keySet());
+			keyList = new ArrayList<>(keySet());
 		}
 
 		return keyList;

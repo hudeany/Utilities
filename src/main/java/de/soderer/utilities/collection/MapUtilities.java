@@ -11,8 +11,8 @@ import java.util.Map.Entry;
 
 public class MapUtilities {
 	public static <K extends Comparable<K>, V> LinkedHashMap<K, V> sort(Map<K, V> map) {
-		LinkedHashMap<K, V> returnMap = new LinkedHashMap<K, V>();
-		List<K> keys = new LinkedList<K>(map.keySet());
+		LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
+		List<K> keys = new LinkedList<>(map.keySet());
 		Collections.sort(keys);
 		for (K key : keys) {
 			returnMap.put(key, map.get(key));
@@ -21,8 +21,8 @@ public class MapUtilities {
 	}
 
 	public static <K, V> LinkedHashMap<K, V> sort(Map<K, V> map, Comparator<K> comparator) {
-		LinkedHashMap<K, V> returnMap = new LinkedHashMap<K, V>();
-		List<K> keys = new LinkedList<K>(map.keySet());
+		LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
+		List<K> keys = new LinkedList<>(map.keySet());
 		Collections.sort(keys, comparator);
 		for (K key : keys) {
 			returnMap.put(key, map.get(key));
@@ -31,8 +31,8 @@ public class MapUtilities {
 	}
 
 	public static <K, V> LinkedHashMap<K, V> sortEntries(Map<K, V> map, Comparator<Entry<K, V>> comparator) {
-		LinkedHashMap<K, V> returnMap = new LinkedHashMap<K, V>();
-		List<Entry<K, V>> entries = new LinkedList<Entry<K, V>>(map.entrySet());
+		LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
+		List<Entry<K, V>> entries = new LinkedList<>(map.entrySet());
 		Collections.sort(entries, comparator);
 		for (Entry<K, V> entry : entries) {
 			returnMap.put(entry.getKey(), entry.getValue());
@@ -44,7 +44,7 @@ public class MapUtilities {
 		@SuppressWarnings("unchecked")
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		List<K> keys = new LinkedList<K>(map.keySet());
+		List<K> keys = new LinkedList<>(map.keySet());
 		Collections.sort(keys);
 		for (K key : keys) {
 			returnMap.put(key, map.get(key));
@@ -56,7 +56,7 @@ public class MapUtilities {
 		@SuppressWarnings("unchecked")
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		List<K> keys = new LinkedList<K>(map.keySet());
+		List<K> keys = new LinkedList<>(map.keySet());
 		Collections.sort(keys, comparator);
 		for (K key : keys) {
 			returnMap.put(key, map.get(key));
@@ -68,7 +68,7 @@ public class MapUtilities {
 		@SuppressWarnings("unchecked")
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		List<Entry<K, V>> entries = new LinkedList<Entry<K, V>>(map.entrySet());
+		List<Entry<K, V>> entries = new LinkedList<>(map.entrySet());
 		Collections.sort(entries, comparator);
 		for (Entry<K, V> entry : entries) {
 			returnMap.put(entry.getKey(), entry.getValue());

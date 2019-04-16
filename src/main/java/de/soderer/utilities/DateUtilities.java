@@ -380,7 +380,7 @@ public class DateUtilities {
 		returnStart.add(Calendar.YEAR, 1);
 
 		// Holidays to exclude
-		List<GregorianCalendar> excludedDays = new ArrayList<GregorianCalendar>();
+		List<GregorianCalendar> excludedDays = new ArrayList<>();
 
 		if (timingString.equalsIgnoreCase("once")) {
 			return null;
@@ -434,7 +434,7 @@ public class DateUtilities {
 					// Fr: weekly execution on Friday at 00:00 Uhr
 					boolean onlyWithinOddWeeks = false;
 					boolean onlyWithinEvenWeeks = false;
-					List<Integer> weekdayIndexes = new ArrayList<Integer>();
+					List<Integer> weekdayIndexes = new ArrayList<>();
 					for (String weekDay : TextUtilities.chopToChunks(timingParameter, 2)) {
 						if (weekDay.equalsIgnoreCase("ev")) {
 							onlyWithinEvenWeeks = true;
@@ -544,7 +544,7 @@ public class DateUtilities {
 				boolean onlyWithinOddWeeks = false;
 				boolean onlyWithinEvenWeeks = false;
 				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				List<Integer> weekdayIndexes = new ArrayList<Integer>();
+				List<Integer> weekdayIndexes = new ArrayList<>();
 				for (String weekDay : TextUtilities.chopToChunks(wochenTage, 2)) {
 					if (weekDay.equalsIgnoreCase("ev")) {
 						onlyWithinEvenWeeks = true;

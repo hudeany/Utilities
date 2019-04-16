@@ -46,6 +46,7 @@ public class AnyOfValidator extends BaseJsonSchemaValidator {
 				}
 				return;
 			} catch (JsonSchemaDataValidationError e) {
+				throw e;
 			}
 		}
 		throw new JsonSchemaDataValidationError("No option of 'anyOf' property did apply to JsonNode", jsonPath);

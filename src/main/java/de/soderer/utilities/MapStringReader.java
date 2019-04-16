@@ -20,7 +20,7 @@ public class MapStringReader extends BasicReader {
 	}
 	
 	public Map<String, String> readMap() throws Exception {
-		Map<String, String> returnMap = new HashMap<String, String>();
+		Map<String, String> returnMap = new HashMap<>();
 		
 		boolean inValue = false;
 		
@@ -36,6 +36,7 @@ public class MapStringReader extends BasicReader {
 					if ('=' == currentChar) {
 						break;
 					}
+				//$FALL-THROUGH$
 				case ',':
 				case ';':
 				case '\n':

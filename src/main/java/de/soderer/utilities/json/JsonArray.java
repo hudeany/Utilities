@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class JsonArray implements Iterable<Object> {
-	private List<Object> items = new ArrayList<Object>();
+	private List<Object> items = new ArrayList<>();
 
 	public void add(Object value) {
 		items.add(value);

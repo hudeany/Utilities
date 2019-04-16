@@ -46,7 +46,7 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
 			File compilationPathFile = new File(compilationPath);
 			compilationPathFile.mkdirs();
 
-			List<String> options = new ArrayList<String>();
+			List<String> options = new ArrayList<>();
 			options.add("-d");
 			options.add(compilationPath);
 			options.add("-classpath");

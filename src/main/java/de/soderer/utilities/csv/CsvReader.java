@@ -144,7 +144,7 @@ public class CsvReader extends BasicReader {
 	public List<String> readNextCsvLine() throws IOException, CsvDataException {
 		readCsvLines++;
 		singleReadStarted = true;
-		List<String> returnList = new ArrayList<String>();
+		List<String> returnList = new ArrayList<>();
 		StringBuilder nextValue = new StringBuilder();
 		boolean insideString = false;
 		boolean isQuotedString = false;
@@ -152,7 +152,7 @@ public class CsvReader extends BasicReader {
 		char previousCharacter = (char) -1;
 		
 		while ((nextCharacter = readNextCharacter()) != null) {
-			char nextChar = (char) nextCharacter;
+			char nextChar = nextCharacter;
 			if (csvFormat.getQuoteMode() != QuoteMode.NO_QUOTE && nextChar == csvFormat.getStringQuote()) {
 				if (csvFormat.getStringQuoteEscapeCharacter() != csvFormat.getStringQuote()) {
 					if (previousCharacter != csvFormat.getStringQuoteEscapeCharacter()) {
@@ -256,7 +256,7 @@ public class CsvReader extends BasicReader {
 		}
 
 		try {
-			List<List<String>> csvValues = new ArrayList<List<String>>();
+			List<List<String>> csvValues = new ArrayList<>();
 			List<String> lineValues;
 			while ((lineValues = readNextCsvLine()) != null) {
 				csvValues.add(lineValues);
@@ -388,7 +388,7 @@ public class CsvReader extends BasicReader {
 	 * @return
 	 */
 	public static String checkForDuplicateCsvHeader(List<String> csvFileHeaders) {
-		Set<String> foundHeaders = new HashSet<String>();
+		Set<String> foundHeaders = new HashSet<>();
 		for (String nextHeader : csvFileHeaders) {
 			if (nextHeader != null) {
 				nextHeader = nextHeader.trim();
