@@ -144,6 +144,8 @@ public class SftpConnection implements Closeable {
 				}
 			}
 
+			session.connect();
+
 			if (checkHostKeyFingerprint) {
 				final HostKey actualHostKey = session.getHostKey();
 				final String actualHostKeyFingerprint = actualHostKey.getFingerPrint(jsch);
@@ -162,8 +164,6 @@ public class SftpConnection implements Closeable {
 					}
 				}
 			}
-
-			session.connect();
 		} catch (final JSchException jse) {
 			if (jse.getCause() != null && jse.getCause() instanceof UnknownHostException) {
 				close();
