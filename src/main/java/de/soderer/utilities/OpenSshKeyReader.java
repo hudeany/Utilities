@@ -146,18 +146,12 @@ public class OpenSshKeyReader implements Closeable {
 			} else if (currentKeyName != null) {
 				final int indexOfHeaderSeparator = nextLine.indexOf(": ");
 				if (indexOfHeaderSeparator > 0) {
-					if (currentKeyData == null || currentKeyData.length() > 0) {
-						throw new Exception("Corrupt key data found");
-					}
-					if (currentKeyHeaders == null) {
+					if (currentKeyData != null && currentKeyData.length() > 0) {
 						throw new Exception("Corrupt key data found");
 					}
 					final String headerName = nextLine.substring(0, indexOfHeaderSeparator).trim();
 					currentKeyHeaders.put(headerName, nextLine.substring(indexOfHeaderSeparator + 2));
-				} else {
-					if (currentKeyData == null || currentKeyData.length() > 0) {
-						throw new Exception("Corrupt key data found");
-					}
+				} else if (currentKeyData != null) {
 					currentKeyData.append(nextLine);
 				}
 			}
