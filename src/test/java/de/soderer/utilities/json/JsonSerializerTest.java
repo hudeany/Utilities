@@ -54,7 +54,7 @@ public class JsonSerializerTest {
 	@Test
 	public void testCylic1() throws Exception {
 		try {
-			List<Object> list = new ArrayList<Object>();
+			List<Object> list = new ArrayList<>();
 			list.add(1);
 			list.add(2);
 			list.add(3);
@@ -73,8 +73,8 @@ public class JsonSerializerTest {
 		try {
 			TestObjectComplex someObject = new TestObjectComplex();
 			
-			List<Object> list1 = new ArrayList<Object>();
-			List<Object> list2 = new ArrayList<Object>();
+			List<Object> list1 = new ArrayList<>();
+			List<Object> list2 = new ArrayList<>();
 			
 			list1.add(1);
 			list1.add(2);
@@ -99,7 +99,7 @@ public class JsonSerializerTest {
 	public void testNonCylic() throws Exception {
 		TestObjectComplex someObject = new TestObjectComplex();
 		
-		List<Object> list = new ArrayList<Object>();
+		List<Object> list = new ArrayList<>();
 		list.add(1);
 		list.add(2);
 		list.add(someObject);
@@ -112,8 +112,8 @@ public class JsonSerializerTest {
 	public void testNonCylic2() throws Exception {
 		TestObjectComplex someObject = new TestObjectComplex();
 		
-		List<Object> list1 = new ArrayList<Object>();
-		List<Object> list2 = new ArrayList<Object>();
+		List<Object> list1 = new ArrayList<>();
+		List<Object> list2 = new ArrayList<>();
 		
 		list1.add(1);
 		list1.add(2);

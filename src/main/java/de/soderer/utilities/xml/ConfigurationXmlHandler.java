@@ -18,7 +18,7 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 	private static final String ATTRIBUTENAME_ENTRY_NAME = "name";
 	private static final String ATTRIBUTENAME_ENTRY_value = "value";
 
-	private Map<String, String> values = new Hashtable<String, String>();
+	private Map<String, String> values = new Hashtable<>();
 
 	private boolean foundRootTag = false;
 

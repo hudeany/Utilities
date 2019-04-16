@@ -101,7 +101,7 @@ public class UtilitiesTest {
 			Assert.assertEquals("a,b,c", Utilities.join(new String[]{"a", "b", "c"}, ","));
 			Assert.assertEquals("a,b, c", Utilities.join(new String[]{"a", "b", " c"}, ","));
 			Assert.assertEquals("a,,c", Utilities.join(new String[]{"a", null, "c"}, ","));
-			List<Object> list = new ArrayList<Object>();
+			List<Object> list = new ArrayList<>();
 			list.add("a");
 			list.add("b");
 			list.add("c");
@@ -355,7 +355,8 @@ public class UtilitiesTest {
 		}
 		
 		try {
-			new Version("03.x02.01");
+			Version versionToFail = new Version("03.x02.01");
+			versionToFail.toString();
 			Assert.fail("Missing error on invalid version string");
 		} catch (Exception e) {
 			// Expected exception
@@ -392,7 +393,7 @@ public class UtilitiesTest {
 	@Test
 	public void testParseMapStringWithObjectValue() {
 		try {
-			Map<String, Object> map = new HashMap<String, Object>();
+			Map<String, Object> map = new HashMap<>();
 
 			map.put("abc122", null);
 			map.put("abc123", 123);

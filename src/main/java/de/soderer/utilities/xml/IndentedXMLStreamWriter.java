@@ -306,6 +306,8 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 					writeComment(node.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
 				}
 				break;
+			default:
+				throw new Exception("Unexpected xmlnodetype");
 		}
 	}
 

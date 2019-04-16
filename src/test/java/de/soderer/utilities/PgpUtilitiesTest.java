@@ -35,7 +35,7 @@ public class PgpUtilitiesTest {
 			PGPPublicKey extendedPublicKey = PGPUtilities.signPublicKey(pgpSecretKey1, password1, pgpSecretKey2.getPublicKey());
 			pgpSecretKey2 = PGPSecretKey.replacePublicKey(pgpSecretKey2, extendedPublicKey);
 			
-			List<String> identities = new ArrayList<String>();
+			List<String> identities = new ArrayList<>();
 			for (Map<String, Object> signerData : PGPUtilities.getKeySigners(pgpSecretKey2.getPublicKey())) {
 				identities.add((String) signerData.get("identity"));
 			}

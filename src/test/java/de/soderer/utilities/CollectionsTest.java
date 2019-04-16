@@ -9,7 +9,7 @@ import de.soderer.utilities.collection.CaseInsensitiveSet;
 public class CollectionsTest {
 	@Test
 	public void testCaseInsensitiveMap() {
-		CaseInsensitiveMap<String> map = new CaseInsensitiveMap<String>();
+		CaseInsensitiveMap<String> map = new CaseInsensitiveMap<>();
 		map.put("AbcD123äÄ", "Test1");
 		map.put("abcd123ää", "Test2");
 		map.put("AbcD123äÄ", "Test3");

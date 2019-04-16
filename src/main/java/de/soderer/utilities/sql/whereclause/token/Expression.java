@@ -7,26 +7,26 @@ import java.util.List;
 import java.util.Set;
 
 public class Expression extends Value {
-	public static final Set<String> SYSDATE_VALUES = new HashSet<String>(Arrays.asList(new String[] { "sysdate", "sysdate()" }));
+	public static final Set<String> SYSDATE_VALUES = new HashSet<>(Arrays.asList(new String[] { "sysdate", "sysdate()" }));
 
-	public static final Set<String> SINGLE_PARAMETER_STRING_FUNCTION_SIGNS = new HashSet<String>(Arrays.asList(new String[] { "lower", "upper" }));
+	public static final Set<String> SINGLE_PARAMETER_STRING_FUNCTION_SIGNS = new HashSet<>(Arrays.asList(new String[] { "lower", "upper" }));
 
-	public static final Set<String> DATE_FUNCTION_SIGNS = new HashSet<String>(Arrays.asList(new String[] { "date", "to_date", "str_to_date" }));
+	public static final Set<String> DATE_FUNCTION_SIGNS = new HashSet<>(Arrays.asList(new String[] { "date", "to_date", "str_to_date" }));
 
-	public static final Set<String> CHAR_FUNCTION_SIGNS = new HashSet<String>(Arrays.asList(new String[] { "char", "to_char", "date_format" }));
+	public static final Set<String> CHAR_FUNCTION_SIGNS = new HashSet<>(Arrays.asList(new String[] { "char", "to_char", "date_format" }));
 
-	public static final Set<String> BOOL_UNARY_POSTFIX_OPERATOR_SIGNS = new HashSet<String>(Arrays.asList(new String[] { "is null", "is not null" }));
+	public static final Set<String> BOOL_UNARY_POSTFIX_OPERATOR_SIGNS = new HashSet<>(Arrays.asList(new String[] { "is null", "is not null" }));
 
 	public static final String MOD_FUNCTION_SIGN = "mod";
 	public static final String BEANSHELL_MOD_SIGN = "%";
 
-	public static final Set<String> COMPARE_OPERATOR_SIGNS = new HashSet<String>(Arrays.asList(new String[] { "<", "<=", "=", "!=", "<>", ">=", ">" }));
+	public static final Set<String> COMPARE_OPERATOR_SIGNS = new HashSet<>(Arrays.asList(new String[] { "<", "<=", "=", "!=", "<>", ">=", ">" }));
 
-	public static final Set<String> CALCULATION_OPERATOR_SIGNS = new HashSet<String>(Arrays.asList(new String[] { "-", "+" }));
+	public static final Set<String> CALCULATION_OPERATOR_SIGNS = new HashSet<>(Arrays.asList(new String[] { "-", "+" }));
 
-	public static final Set<String> STRING_ONLY_COMPARE_OPERATOR_SIGNS = new HashSet<String>(Arrays.asList(new String[] { "like", "not like" }));
+	public static final Set<String> STRING_ONLY_COMPARE_OPERATOR_SIGNS = new HashSet<>(Arrays.asList(new String[] { "like", "not like" }));
 
-	public static final List<String> BOOL_ONLY_OPERATOR_SIGNS = new ArrayList<String>(Arrays.asList(new String[] { "or", // lower arithmetic priority
+	public static final List<String> BOOL_ONLY_OPERATOR_SIGNS = new ArrayList<>(Arrays.asList(new String[] { "or", // lower arithmetic priority
 			"and" // higher arithmetic priority
 	}));
 

@@ -22,12 +22,6 @@ import de.soderer.utilities.WorkerSimple;
 public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog implements WorkerParentSimple {
 	private static final long serialVersionUID = 4039220978715450890L;
 
-	public enum Result {
-		OK,
-		ERROR,
-		CANCELED
-	}
-
 	protected T worker;
 	protected JProgressBar progressBar;
 	protected boolean canceledByUser = false;
@@ -79,7 +73,7 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 
 		pack();
 
-		setLocationRelativeTo((Window) parent);
+		setLocationRelativeTo(parent);
 		
 		if (cancelButton != null) {
 			getRootPane().setDefaultButton(cancelButton);
@@ -122,6 +116,7 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 			progressBar.setStringPainted(false);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
+				@Override
 				public void run() {
 					showUnlimitedProgress();
 				}
@@ -135,6 +130,7 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 			updateProgressBar(progressBar, start, itemsToDo, itemsDone);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
+				@Override
 				public void run() {
 					showProgress(start, itemsToDo, itemsDone);
 				}
@@ -148,6 +144,7 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 			dispose();
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
+				@Override
 				public void run() {
 					showDone(start, end, itemsDone);
 				}
@@ -168,6 +165,7 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 			}
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
+				@Override
 				public void run() {
 					cancel();
 				}

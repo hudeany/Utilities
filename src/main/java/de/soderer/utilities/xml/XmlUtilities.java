@@ -112,19 +112,13 @@ public class XmlUtilities {
 	 *             the IO exception
 	 */
 	public static Document parseXmlFile(final File file) throws IOException {
-		BufferedInputStream inputStream = null;
-		try {
-			inputStream = new BufferedInputStream(new FileInputStream(file));
+		try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file))) {
 			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
 		} catch (final Exception e) {
 			return null;
-		} finally {
-			if (inputStream != null) {
-				inputStream.close();
-			}
 		}
 	}
 
@@ -577,7 +571,6 @@ public class XmlUtilities {
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource domSource = null;
-		final StringWriter writer = new java.io.StringWriter();
 		StreamResult result = null;
 
 		try {
@@ -598,25 +591,19 @@ public class XmlUtilities {
 			}
 
 			domSource = new DOMSource(pDocument);
-			result = new StreamResult(writer);
-
-			transformer.transform(domSource, result);
-
-			return writer.toString();
+			try (StringWriter writer = new java.io.StringWriter()) {
+				result = new StreamResult(writer);
+	
+				transformer.transform(domSource, result);
+	
+				return writer.toString();
+			}
 		} catch (final TransformerFactoryConfigurationError e) {
 			throw new Exception("TransformerFactoryConfigurationError", e);
 		} catch (final TransformerConfigurationException e) {
 			throw new Exception("TransformerConfigurationException", e);
 		} catch (final TransformerException e) {
 			throw new Exception("TransformerException", e);
-		} finally {
-			try {
-				if (writer != null) {
-					writer.close();
-				}
-			} catch (final IOException ex) {
-				throw new Exception("IO error", ex);
-			}
 		}
 	}
 
@@ -635,7 +622,6 @@ public class XmlUtilities {
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource domSource = null;
-		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		StreamResult result = null;
 
 		try {
@@ -656,25 +642,19 @@ public class XmlUtilities {
 			}
 
 			domSource = new DOMSource(pDocument);
-			result = new StreamResult(outputStream);
-
-			transformer.transform(domSource, result);
-
-			return outputStream.toByteArray();
+			try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+				result = new StreamResult(outputStream);
+	
+				transformer.transform(domSource, result);
+	
+				return outputStream.toByteArray();
+			}
 		} catch (final TransformerFactoryConfigurationError e) {
 			throw new Exception("TransformerFactoryConfigurationError", e);
 		} catch (final TransformerConfigurationException e) {
 			throw new Exception("TransformerConfigurationException", e);
 		} catch (final TransformerException e) {
 			throw new Exception("TransformerException", e);
-		} finally {
-			try {
-				if (outputStream != null) {
-					outputStream.close();
-				}
-			} catch (final IOException ex) {
-				throw new Exception("IO error", ex);
-			}
 		}
 	}
 

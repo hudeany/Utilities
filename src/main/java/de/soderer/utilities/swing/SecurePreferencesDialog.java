@@ -118,7 +118,8 @@ public class SecurePreferencesDialog extends JDialog {
 		preferencesTable.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 		preferencesTable.setToolTipText(text);
 		preferencesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
-	        public void valueChanged(ListSelectionEvent event) {
+	        @Override
+			public void valueChanged(ListSelectionEvent event) {
 	        	loadButton.setEnabled(preferencesTable.getSelectedRows().length == 1);
 	        	updateButton.setEnabled(preferencesTable.getSelectedRows().length == 1);
 	        	deleteButton.setEnabled(preferencesTable.getSelectedRows().length > 0);

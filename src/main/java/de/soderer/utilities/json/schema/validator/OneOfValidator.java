@@ -20,7 +20,7 @@ public class OneOfValidator extends BaseJsonSchemaValidator {
     	if (validatorData == null) {
     		throw new JsonSchemaDefinitionError("OneOf array is 'null'", jsonSchemaPath);
     	} else if (validatorData instanceof JsonArray) {
-    		subValidatorPackages = new ArrayList<List<BaseJsonSchemaValidator>>();
+    		subValidatorPackages = new ArrayList<>();
     		for (Object subValidationData : ((JsonArray) validatorData)) {
     			if (subValidationData instanceof JsonObject) {
     				subValidatorPackages.add(JsonSchema.createValidators((JsonObject) subValidationData, jsonSchemaDependencyResolver, jsonSchemaPath, jsonNode, jsonPath));
@@ -46,6 +46,7 @@ public class OneOfValidator extends BaseJsonSchemaValidator {
 				}
 				applyCount++;
 			} catch (JsonSchemaDataValidationError e) {
+				throw e;
 			}
 		}
 

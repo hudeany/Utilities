@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class SubSelect extends Value {
-	public static final Set<String> SIGNS = new HashSet<String>(Arrays.asList(new String[] { "select" }));
+	public static final Set<String> SIGNS = new HashSet<>(Arrays.asList(new String[] { "select" }));
 
 	public String value;
 

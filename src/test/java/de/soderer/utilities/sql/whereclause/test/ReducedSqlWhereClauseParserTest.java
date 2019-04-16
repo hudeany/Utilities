@@ -171,7 +171,7 @@ public class ReducedSqlWhereClauseParserTest extends TestCase {
 	}
 	
 	private static Map<String, Value.Type> getDefaultFields() {
-		Map<String, Value.Type> fieldList = new HashMap<String, Value.Type>();
+		Map<String, Value.Type> fieldList = new HashMap<>();
 		fieldList.put("email", Value.Type.String);
 		fieldList.put("text", Value.Type.String);
 		fieldList.put("nummer", Value.Type.Number);

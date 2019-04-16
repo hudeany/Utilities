@@ -79,7 +79,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 
 		pack();
 
-        setLocationRelativeTo((Window) parent);
+        setLocationRelativeTo(parent);
 		
 		if (cancelButton != null) {
 			getRootPane().setDefaultButton(cancelButton);
@@ -93,6 +93,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 			subItemProgressBar.setStringPainted(false);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
+				@Override
 				public void run() {
 					showUnlimitedSubProgress();
 				}
@@ -112,6 +113,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 			subItemProgressBar.setStringPainted(true);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
+				@Override
 				public void run() {
 					showItemStart(itemName);
 				}
@@ -125,6 +127,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 			updateProgressBar(subItemProgressBar, itemStart, subItemToDo, subItemDone);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
+				@Override
 				public void run() {
 					showItemProgress(itemStart, subItemToDo, subItemDone);
 				}
@@ -142,6 +145,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 			subItemProgressBar.setStringPainted(true);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
+				@Override
 				public void run() {
 					showItemDone(itemStart, itemEnd, subItemsDone);
 				}

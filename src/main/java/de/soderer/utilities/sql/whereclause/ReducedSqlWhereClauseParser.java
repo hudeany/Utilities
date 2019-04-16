@@ -29,7 +29,7 @@ import de.soderer.utilities.sql.whereclause.token.Value.Type;
  */
 public class ReducedSqlWhereClauseParser {
 	public RulePart parse(String formula, Map<String, Value.Type> descriptors) {
-		Map<String, Value.Type> fieldDescriptors = new HashMap<String, Value.Type>();
+		Map<String, Value.Type> fieldDescriptors = new HashMap<>();
 		for (String value : descriptors.keySet()) {
 			fieldDescriptors.put(value.toLowerCase(), descriptors.get(value));
 		}
@@ -40,11 +40,11 @@ public class ReducedSqlWhereClauseParser {
 		int charIndex = 0;
 		int length = formula.length();
 		String lowerFormula = formula.toLowerCase();
-		List<RulePart> parts = new ArrayList<RulePart>();
+		List<RulePart> parts = new ArrayList<>();
 		boolean readingString = false;
 		StringBuilder currentString = new StringBuilder();
 
-		Set<String> operators = new HashSet<String>();
+		Set<String> operators = new HashSet<>();
 		operators.addAll(Expression.BOOL_UNARY_POSTFIX_OPERATOR_SIGNS);
 		operators.addAll(Expression.COMPARE_OPERATOR_SIGNS);
 		operators.addAll(Expression.CALCULATION_OPERATOR_SIGNS);
@@ -57,7 +57,7 @@ public class ReducedSqlWhereClauseParser {
 		operators.addAll(Expression.SINGLE_PARAMETER_STRING_FUNCTION_SIGNS);
 		operators.addAll(ListExpression.SIGNS);
 
-		Set<String> texts = new HashSet<String>();
+		Set<String> texts = new HashSet<>();
 		texts.addAll(operators);
 		texts.addAll(fieldDescriptors.keySet());
 
@@ -273,7 +273,7 @@ public class ReducedSqlWhereClauseParser {
 						throw new IllegalArgumentException("Invalid definition for list operator: " + operator.sign);
 					} else {
 						int closingPosition = -1;
-						List<Value> values = new ArrayList<Value>();
+						List<Value> values = new ArrayList<>();
 						for (int j = i + 2; j < parts.size(); j++) {
 							if (parts.get(j) instanceof SupplementalPart && ((SupplementalPart) parts.get(j)).type == SupplementalPart.Type.ClosingBracket) {
 								closingPosition = j;

@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Set;
 
 public class ListExpression extends Value {
-	public static final Set<String> SIGNS = new HashSet<String>(Arrays.asList(new String[] { "in", "not in" }));
+	public static final Set<String> SIGNS = new HashSet<>(Arrays.asList(new String[] { "in", "not in" }));
 
 	public Value value;
 	public Operator operator;
-	public List<Value> valueList = new ArrayList<Value>();
+	public List<Value> valueList = new ArrayList<>();
 
 	public ListExpression(Value value, Operator operator, List<Value> values) {
 		type = Type.Bool;
