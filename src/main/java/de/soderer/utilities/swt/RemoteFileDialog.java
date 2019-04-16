@@ -38,6 +38,7 @@ import de.soderer.utilities.Utilities;
 
 public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private static final List<String> PROTOCOL_LIST = Arrays.asList("SSH", "SFTP", "FTP");
+	private static final String STANDARD_KNOWNHOSTS_FILE = "~/.ssh/known_hosts";
 
 	public enum Mode {
 		Open, Save
@@ -50,9 +51,10 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private String keyFilePath = null;
 	private char[] password = null;
 	private boolean checkHostKey = true;
-	private String hostKey = null;
+	private String hostKey = STANDARD_KNOWNHOSTS_FILE;
 	private String selectedFilePath = null;
 	private String selectedFileName = null;
+	
 	private LabeledCombo protocolField;
 	private LabeledText hostnameField;
 	private LabeledText portField;
@@ -197,7 +199,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 		protocolField = new LabeledCombo(serverCredentialsComposite, SWT.NONE, LangResources.get("protocol"), PROTOCOL_LIST, 0, ArrangementStyle.Vertical);
 		final GridData protocolFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
-		protocolFieldGridData.widthHint = 50;
+		protocolFieldGridData.widthHint = 65;
 		protocolField.setLayoutData(protocolFieldGridData);
 		protocolField.addModifyListener(new ModifyListener() {
 			@Override
@@ -224,10 +226,10 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		portField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("port"), ArrangementStyle.Vertical, "[0-9]*");
+		portField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("port"), ArrangementStyle.Vertical, "[0-9]{0,5}");
 		portField.setText("");
 		final GridData portFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
-		portFieldGridData.widthHint = 40;
+		portFieldGridData.widthHint = 60;
 		portField.setLayoutData(portFieldGridData);
 		portField.addModifyListener(new ModifyListener() {
 			@Override
@@ -261,7 +263,11 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				if (((Button) e.widget).getSelection()) {
 					final FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
 					dialog.setText(LangResources.get("openKeyFile"));
-					dialog.setFileName(keyFilePath);
+					if (keyFilePath == null || "".equals(keyFilePath.trim())) {
+						dialog.setFilterPath(Utilities.replaceUsersHome("~/.ssh/"));
+					} else {
+						dialog.setFileName(keyFilePath);
+					}
 					final String fileName = dialog.open();
 					if (fileName != null) {
 						keyFilePath = fileName;
@@ -299,7 +305,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			public void widgetSelected(final SelectionEvent event) {
 				checkHostKey = ((Button) event.widget).getSelection();
 				if (checkHostKey && Utilities.isBlank(hostKeyField.getText())) {
-					hostKeyField.setText("~/.ssh/known_hosts");
+					hostKeyField.setText(STANDARD_KNOWNHOSTS_FILE);
 				}
 				checkButtonStatus();
 			}
@@ -307,6 +313,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 		hostKeyField = new Text(checkHostKeyComposite, SWT.BORDER);
 		hostKeyField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+		hostKeyField.setText(hostKey);
 		hostKeyField.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(final ModifyEvent event) {
@@ -522,13 +529,13 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					final ServerAccessData serverEntry = getServerEntry();
 					sftpConnection = new SftpConnection(serverEntry.getHostname(), serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), serverEntry.getPassword(), serverEntry.getPort(), e.getHostKeyFingerPrint(), newKnownHosts);
 					if ("".equals(hostKey.trim())) {
-						hostKey = "~/.ssh/known_hosts";
+						hostKey = STANDARD_KNOWNHOSTS_FILE;
 					}
 					if (new File(Utilities.replaceUsersHome(hostKey)).isFile()) {
 						try (FileOutputStream fileOutputStream = new FileOutputStream(Utilities.replaceUsersHome(hostKey), true)) {
 							fileOutputStream.write(newKnownHosts.toByteArray());
 						}
-					} else if (!hostKey.matches("[A-Fa-f0-9:]+")) {
+					} else if (!hostKey.matches("[A-Fa-f0-9:]")) {
 						try (FileOutputStream fileOutputStream = new FileOutputStream(Utilities.replaceUsersHome(hostKey))) {
 							fileOutputStream.write(newKnownHosts.toByteArray());
 						}
