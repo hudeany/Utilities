@@ -5,7 +5,9 @@ public class ServerAccessData {
 
 	private String protocol;
 	private String hostname;
-	private int port;
+	private String domain;
+	private String shareName;
+	private int port = 0;
 	private String username;
 	private String keyFilePath;
 	private char[] password;
@@ -47,6 +49,24 @@ public class ServerAccessData {
 		this.hostKey = hostKey;
 	}
 
+	/**
+	 * Constructor for the smb protocol
+	 *
+	 * @param hostname
+	 * @param domain
+	 * @param shareName
+	 * @param username
+	 * @param password
+	 */
+	public ServerAccessData(final String hostname, final String domain, final String shareName, final String username, final char[] password) {
+		protocol = "smb";
+		this.hostname = hostname;
+		this.domain = domain;
+		this.shareName = shareName;
+		this.username = username;
+		this.password = password;
+	}
+
 	public String getProtocol() {
 		return protocol;
 	}
@@ -63,12 +83,22 @@ public class ServerAccessData {
 				return 22;
 			} else if ("ftp".equalsIgnoreCase(protocol)) {
 				return 21;
+			} else if ("smb".equalsIgnoreCase(protocol)) {
+				return 445;
 			} else {
 				return port;
 			}
 		} else {
 			return port;
 		}
+	}
+
+	public String getDomain() {
+		return domain;
+	}
+
+	public String getShareName() {
+		return shareName;
 	}
 
 	public String getUsername() {

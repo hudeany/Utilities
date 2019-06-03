@@ -37,14 +37,14 @@ import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
 
 public class RemoteFileDialog extends ModalDialog<Boolean> {
-	private static final List<String> PROTOCOL_LIST = Arrays.asList("SSH", "SFTP", "FTP");
+	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp");
 	private static final String STANDARD_KNOWNHOSTS_FILE = "~/.ssh/known_hosts";
 
 	public enum Mode {
 		Open, Save
 	}
 
-	private String protocol = "SSH";
+	private String protocol = "ssh";
 	private String hostnameOrIp = null;
 	private int port = 0;
 	private String username = null;
@@ -54,7 +54,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private String hostKey = STANDARD_KNOWNHOSTS_FILE;
 	private String selectedFilePath = null;
 	private String selectedFileName = null;
-	
+
 	private LabeledCombo protocolField;
 	private LabeledText hostnameField;
 	private LabeledText portField;
@@ -272,6 +272,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (fileName != null) {
 						keyFilePath = fileName;
 					} else {
+						((Button) e.widget).setSelection(false);
 						keyFilePath = null;
 					}
 				} else {
@@ -328,9 +329,9 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				if (sftpConnection == null && ftpConnection == null) {
-					if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+					if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
 						connectViaSSH();
-					} else if ("FTP".equalsIgnoreCase(protocol)) {
+					} else if ("ftp".equalsIgnoreCase(protocol)) {
 						connectViaFTP();
 					}
 				} else {
@@ -352,9 +353,9 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		folderTree.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+				if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
 					showPathDirectorySSH();
-				} else if ("FTP".equalsIgnoreCase(protocol)) {
+				} else if ("ftp".equalsIgnoreCase(protocol)) {
 					showPathDirectoryFTP();
 				}
 				checkButtonStatus();
@@ -405,10 +406,10 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					final String folderName = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterFolderName")).open();
 					if (Utilities.isNotBlank(folderName)) {
 						try {
-							if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+							if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
 								sftpConnection.createFolder(selectedFilePath, folderName);
 								showPathDirectorySSH();
-							} else if ("FTP".equalsIgnoreCase(protocol)) {
+							} else if ("ftp".equalsIgnoreCase(protocol)) {
 								ftpConnection.createFolder(selectedFilePath, folderName);
 								showPathDirectoryFTP();
 							}
@@ -427,11 +428,11 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (Utilities.isNotBlank(selectedFilePath)) {
 						if (new QuestionDialog(getParent(), LangResources.get("deleteFolder"), LangResources.get("reallyDeleteFolder", selectedFilePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
 							try {
-								if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+								if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
 									sftpConnection.deleteFolder(selectedFilePath);
 									folderTree.select(folderTree.getSelection()[0].getParentItem());
 									showPathDirectorySSH();
-								} else if ("FTP".equalsIgnoreCase(protocol)) {
+								} else if ("ftp".equalsIgnoreCase(protocol)) {
 									ftpConnection.deleteFolder(selectedFilePath);
 									folderTree.select(folderTree.getSelection()[0].getParentItem());
 									showPathDirectoryFTP();
@@ -452,10 +453,10 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (Utilities.isNotBlank(selectedFilePath) && Utilities.isNotBlank(selectedFileName)) {
 						if (new QuestionDialog(getParent(), LangResources.get("deleteFile"), LangResources.get("reallyDeleteFile", selectedFilePath + "/" + selectedFileName), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
 							try {
-								if ("SSH".equalsIgnoreCase(protocol) || "SFTP".equalsIgnoreCase(protocol)) {
+								if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
 									sftpConnection.deleteFile(selectedFilePath + "/" + selectedFileName);
 									showPathDirectorySSH();
-								} else if ("FTP".equalsIgnoreCase(protocol)) {
+								} else if ("ftp".equalsIgnoreCase(protocol)) {
 									ftpConnection.deleteFile(selectedFilePath + "/" + selectedFileName);
 									showPathDirectoryFTP();
 								}
@@ -588,7 +589,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			folderTree.select(folderTree.getItem(0));
 			selectedFilePath = "/";
 		} catch (final Exception e) {
-			FtpConnection.closeQuietly(ftpConnection);
+			Utilities.closeQuietly(ftpConnection);
 			ftpConnection = null;
 			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 		}

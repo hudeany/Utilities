@@ -2,7 +2,6 @@ package de.soderer.utilities;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -25,7 +24,7 @@ import com.jcraft.jsch.Session;
 
 import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
 
-public class SftpConnection implements Closeable {
+public class SftpConnection implements RemoteConnection {
 	/** The host. */
 	private String hostname = null;
 
@@ -63,7 +62,7 @@ public class SftpConnection implements Closeable {
 
 	public SftpConnection(final ServerAccessData serverEntry, final OutputStream newKnownHosts) throws Exception {
 		if (!"ssh".equalsIgnoreCase(serverEntry.getProtocol()) && !"sftp".equalsIgnoreCase(serverEntry.getProtocol())) {
-			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for SFTP connection. Only 'ssh' and 'ftp' are allowed");
+			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for SFTP connection. Only 'ssh' and 'sftp' are allowed");
 		} else {
 			hostname = serverEntry.getHostname();
 			username = serverEntry.getUsername();
@@ -186,29 +185,8 @@ public class SftpConnection implements Closeable {
 		}
 	}
 
-	public boolean exists(final String filePath) throws Exception {
-		Channel channel = null;
-		try {
-			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls " + filePath);
-
-			// Streams must be fetched before channel connect
-			try (InputStream inStream = channel.getInputStream();
-					InputStream inErrorStream = channel.getExtInputStream()) {
-				channel.connect();
-
-				Utilities.toByteArray(inStream);
-
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
-
-				return errorData == null || errorData.length == 0;
-			}
-		} finally {
-			closeQuietly(channel);
-		}
-	}
-
-	public boolean isFile(final String filePath) throws Exception {
+	@Override
+	public boolean fileExists(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
@@ -235,7 +213,7 @@ public class SftpConnection implements Closeable {
 		}
 	}
 
-	public boolean isFolder(final String filePath) throws Exception {
+	public boolean folderExists(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
@@ -354,7 +332,7 @@ public class SftpConnection implements Closeable {
 		}
 
 		for (final String link : linkList) {
-			if (isFolder(directoryPath + "/" + link)) {
+			if (folderExists(directoryPath + "/" + link)) {
 				folderList.add(link);
 			}
 		}
@@ -392,7 +370,7 @@ public class SftpConnection implements Closeable {
 		}
 
 		for (final String link : linkList) {
-			if (isFile( filePath + "/" + link)) {
+			if (fileExists(filePath + "/" + link)) {
 				fileList.add(link);
 			}
 		}
@@ -404,9 +382,11 @@ public class SftpConnection implements Closeable {
 		executeCommand("mkdir " + selectedFilePath + "/" + folderName);
 	}
 
-	public void uploadFileData(final String filePath, final byte[] fileData) throws Exception {
+	@Override
+	public void uploadFile(final String filePath, final InputStream fileInputStream) throws Exception {
 		Channel channel = null;
 		try {
+			final byte[] fileData = Utilities.readStreamToByteArray(fileInputStream);
 			String command = "scp -p -t " + filePath;
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
@@ -426,6 +406,7 @@ public class SftpConnection implements Closeable {
 				checkAcknowledge(inStream);
 
 				// send content of file
+				// TODO: Use stream buffered read and write
 				outStream.write(fileData, 0, fileData.length);
 
 				// send '\0' as EOF
@@ -440,7 +421,7 @@ public class SftpConnection implements Closeable {
 		}
 	}
 
-	public JschFileData getFileInfo(final String filePath) throws Exception {
+	public RemoteFile getFileInfo(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
@@ -459,7 +440,8 @@ public class SftpConnection implements Closeable {
 				if (errorData != null && errorData.length > 0) {
 					return null;
 				} else {
-					return new JschFileData(successString);
+					final JschFileData fileData = new JschFileData(successString);
+					return new RemoteFile(filePath, fileData.getSize(), fileData.getChangeDate());
 				}
 			}
 		} finally {
@@ -467,7 +449,8 @@ public class SftpConnection implements Closeable {
 		}
 	}
 
-	public InputStream getFileInputStream(final String filePath) throws Exception {
+	@Override
+	public InputStream getFile(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
@@ -664,7 +647,7 @@ public class SftpConnection implements Closeable {
 
 	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData) throws Exception {
 		// Directory auslesen um zu Prüfen, ob das Verzeichnis existiert aber die Datei noch nicht
-		final List<String> directory = listFiles( remoteHostPath);
+		final List<String> directory = listFiles(remoteHostPath);
 		if (!directory.contains(".")) {
 			throw new Exception("Fehler bei SSH-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
 		}

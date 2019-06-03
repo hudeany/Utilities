@@ -1,12 +1,12 @@
 package de.soderer.utilities;
 
-import java.io.Closeable;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.log4j.Logger;
@@ -14,7 +14,7 @@ import org.apache.log4j.Logger;
 /**
  * FtpConnection
  */
-public class FtpConnection implements Closeable {
+public class FtpConnection implements RemoteConnection {
 	/** The Constant logger. */
 	@SuppressWarnings("unused")
 	private static final transient Logger logger = Logger.getLogger(FtpConnection.class);
@@ -42,7 +42,7 @@ public class FtpConnection implements Closeable {
 	private FTPClient ftpClient = null;
 
 	/**
-	 * Instantiates a new ftp helper.
+	 * Instantiates a new FtpConnection.
 	 * Default port for FTP is 21.
 	 * Uses FTP passive mode.
 	 *
@@ -61,7 +61,7 @@ public class FtpConnection implements Closeable {
 	}
 
 	/**
-	 * Instantiates a new ftp helper.
+	 * Instantiates a new FtpConnection.
 	 * Uses FTP passive mode.
 	 *
 	 * @param hostname
@@ -81,7 +81,7 @@ public class FtpConnection implements Closeable {
 	}
 
 	/**
-	 * Instantiates a new ftp helper.
+	 * Instantiates a new FtpConnection.
 	 *
 	 * @param hostname
 	 * @param username
@@ -115,84 +115,32 @@ public class FtpConnection implements Closeable {
 	}
 
 	/**
-	 * Instantiates a new ftp helper.
-	 * Default port for FTP is 21
-	 *
-	 * @param fileServerAndAuthConfigString like "ftp://[username[:password]@]server[:port]"
-	 */
-	public FtpConnection(String fileServerAndAuthConfigString) throws Exception {
-		if (fileServerAndAuthConfigString == null) {
-			throw new Exception("Invalid empty connection string");
-		} else if (fileServerAndAuthConfigString.matches("^[A-Za-z]+://.*")) {
-			final String protocol = fileServerAndAuthConfigString.substring(0, fileServerAndAuthConfigString.indexOf("://"));
-			if (!"ftp".equalsIgnoreCase(protocol)) {
-				throw new Exception("Invalid protocol '" + protocol + "' for FTP connection. Only 'ftp' is allowed");
-			} else {
-				fileServerAndAuthConfigString = fileServerAndAuthConfigString.substring(fileServerAndAuthConfigString.indexOf("://") + 3);
-			}
-		}
-
-		if (fileServerAndAuthConfigString.contains("@")) {
-			final int hostSeparatorIndex = fileServerAndAuthConfigString.lastIndexOf("@");
-			final String authPart = fileServerAndAuthConfigString.substring(0, hostSeparatorIndex);
-			final String serverPart = fileServerAndAuthConfigString.substring(hostSeparatorIndex + 1);
-
-			if (authPart.contains(":")) {
-				username = authPart.substring(0, authPart.indexOf(":"));
-				password = authPart.substring(authPart.indexOf(":") + 1);
-			} else {
-				username = authPart;
-			}
-
-			if (serverPart.contains(":")) {
-				hostname = serverPart.substring(0, serverPart.indexOf(":"));
-				port = Integer.parseInt(serverPart.substring(serverPart.indexOf(":") + 1));
-			} else {
-				hostname = serverPart;
-			}
-		} else {
-			hostname = fileServerAndAuthConfigString;
-		}
-		usePassiveMode = true;
-
-		connect();
-	}
-
-	/**
 	 * Connect.
 	 */
-	private FtpConnection connect() throws Exception {
+	private void connect() throws Exception {
 		try {
 			ftpClient = new FTPClient();
 			ftpClient.connect(hostname, port);
 			if (usePassiveMode) {
 				ftpClient.enterLocalPassiveMode();
 			}
+			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+			ftpClient.setAutodetectUTF8(true);
 			if (!ftpClient.login(username, password)) {
 				ftpClient.logout();
 				throw new Exception("Authentication failed");
 			}
 			ftpClient.setListHiddenFiles(true);
-			return this;
 		} catch (final Exception e) {
 			close();
 			throw new Exception("Connection failed");
 		}
 	}
 
-	/**
-	 * Cd.
-	 *
-	 * @param path the path
-	 */
-	public void cd(final String path) throws Exception {
+	@Override
+	public List<String> getFiles(final String folderPath) throws Exception {
 		checkForConnection();
-		ftpClient.changeWorkingDirectory(path);
-	}
-
-	public List<String> getFiles(final String path) throws Exception {
-		checkForConnection();
-		final FTPFile[] files = ftpClient.listFiles(path);
+		final FTPFile[] files = ftpClient.listFiles(folderPath);
 		if (files != null) {
 			final List<String> returnList = new ArrayList<>();
 			for (final FTPFile file : files) {
@@ -206,9 +154,10 @@ public class FtpConnection implements Closeable {
 		}
 	}
 
-	public List<String> getFolders(final String path) throws Exception {
+	@Override
+	public List<String> getFolders(final String folderPath) throws Exception {
 		checkForConnection();
-		final FTPFile[] directories = ftpClient.listDirectories(path);
+		final FTPFile[] directories = ftpClient.listDirectories(folderPath);
 		if (directories != null) {
 			final List<String> returnList = new ArrayList<>();
 			for (final FTPFile directory : directories) {
@@ -224,15 +173,12 @@ public class FtpConnection implements Closeable {
 	}
 
 	/**
-	 * Check if directory exists on sftp server
-	 *
-	 * @param directoryPath
-	 * @return
-	 * @throws Exception
+	 * Check if folder exists
 	 */
-	public boolean directoryExists(final String directoryPath) throws Exception {
+	@Override
+	public boolean folderExists(final String folderPath) throws Exception {
 		checkForConnection();
-		ftpClient.changeWorkingDirectory(directoryPath);
+		ftpClient.changeWorkingDirectory(folderPath);
 		final int returnCode = ftpClient.getReplyCode();
 		if (returnCode == 550) {
 			return false;
@@ -248,6 +194,7 @@ public class FtpConnection implements Closeable {
 	 * @return
 	 * @throws Exception on invalid directory
 	 */
+	@Override
 	public boolean fileExists(final String filePath) throws Exception {
 		checkForConnection();
 		return ftpClient.listFiles(filePath).length > 0;
@@ -259,9 +206,10 @@ public class FtpConnection implements Closeable {
 	 * @param in the in
 	 * @param dst the dst
 	 */
-	public void put(final InputStream inputStream, final String destination) throws Exception {
+	@Override
+	public void uploadFile(final String filePath, final InputStream inputStream) throws Exception {
 		checkForConnection();
-		ftpClient.storeFile(destination, inputStream);
+		ftpClient.storeFile(filePath, inputStream);
 	}
 
 	/**
@@ -270,9 +218,11 @@ public class FtpConnection implements Closeable {
 	 * @param name the name
 	 * @return the input stream
 	 */
-	public InputStream get(final String name) throws Exception {
+	@Override
+	public InputStream getFile(final String filePath) throws Exception {
 		checkForConnection();
-		final InputStream inputStream = ftpClient.retrieveFileStream(name);
+		ftpClient.cwd(filePath.substring(0, filePath.lastIndexOf("/")));
+		final InputStream inputStream = ftpClient.retrieveFileStream(filePath.substring(filePath.lastIndexOf("/") + 1));
 		final int returnCode = ftpClient.getReplyCode();
 		if (inputStream != null && returnCode != 550) {
 			return new FtpInputStream(inputStream, this);
@@ -283,10 +233,10 @@ public class FtpConnection implements Closeable {
 
 	private void checkForConnection() throws Exception {
 		if (ftpClient == null) {
-			throw new Exception("FtpHelper is not connected");
+			throw new Exception("FtpConnection is not connected");
 		} else if (!ftpClient.isConnected()) {
 			ftpClient = null;
-			throw new Exception("FtpHelper is not connected anymore");
+			throw new Exception("FtpConnection is not connected anymore");
 		}
 	}
 
@@ -307,7 +257,7 @@ public class FtpConnection implements Closeable {
 		}
 	}
 
-	public boolean completePendingCommand() {
+	private boolean completePendingCommand() {
 		if (ftpClient != null) {
 			if (ftpClient.isConnected()) {
 				try {
@@ -320,62 +270,62 @@ public class FtpConnection implements Closeable {
 		return false;
 	}
 
+	@Override
 	public void deleteFile(final String filePath) throws Exception {
 		checkForConnection();
 		ftpClient.deleteFile(filePath);
 	}
 
-	public void deleteFolder(final String directoryPath) throws Exception {
+	@Override
+	public void deleteFolder(final String folderPath) throws Exception {
 		checkForConnection();
-
-		final FTPFile[] files = ftpClient.listFiles(directoryPath);
+		final FTPFile[] files = ftpClient.listFiles(folderPath);
 		if (files.length > 0) {
 			for (final FTPFile ftpFile : files) {
 				final String fileName = ftpFile.getName();
 				if (!".".equals(fileName) && !"..".equals(fileName)) {
 					if (ftpFile.isDirectory()) {
-						deleteFolder(directoryPath + "/" + fileName);
+						deleteFolder(folderPath + "/" + fileName);
 					} else {
-						ftpClient.deleteFile(directoryPath + "/" + fileName);
+						ftpClient.deleteFile(folderPath + "/" + fileName);
 					}
 				}
 			}
 		}
-		ftpClient.removeDirectory(directoryPath);
+		ftpClient.removeDirectory(folderPath);
 	}
 
-	public void createFolder(final String parentDirectoryPath, final String folderName) throws Exception {
+	@Override
+	public void createFolder(final String parentFolderPath, final String folderName) throws Exception {
 		checkForConnection();
-		ftpClient.makeDirectory(parentDirectoryPath + "/" + folderName);
+		ftpClient.makeDirectory(parentFolderPath + "/" + folderName);
+	}
+
+	@Override
+	public RemoteFile getFileInfo(final String filePath) throws Exception {
+		checkForConnection();
+
+		final FTPFile file = ftpClient.mlistFile(filePath);
+		return new RemoteFile(filePath, file.getSize(), file.getTimestamp().getTime());
 	}
 
 	class FtpInputStream extends FilterInputStream {
-		FtpConnection ftpHelper;
+		FtpConnection ftpConnection;
 		boolean isClosed = false;
 
-		protected FtpInputStream(final InputStream in, final FtpConnection ftpHelper) {
+		protected FtpInputStream(final InputStream in, final FtpConnection ftpConnection) {
 			super(in);
-			this.ftpHelper = ftpHelper;
+			this.ftpConnection = ftpConnection;
 		}
 
 		@Override
 		public void close() throws IOException {
 			super.close();
 			if (!isClosed) {
-				ftpHelper.completePendingCommand();
+				ftpConnection.completePendingCommand();
 			}
 
 			isClosed = true;
-		}
-	}
-
-	public static void closeQuietly(final FtpConnection ftpHelper) {
-		try {
-			if (ftpHelper != null) {
-				ftpHelper.close();
-			}
-		} catch (final Exception ioe) {
-			// ignore
 		}
 	}
 }
