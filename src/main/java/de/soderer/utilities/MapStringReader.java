@@ -7,23 +7,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MapStringReader extends BasicReader {
-	public MapStringReader(InputStream inputStream) throws Exception {
+	public MapStringReader(final InputStream inputStream) throws Exception {
 		super(inputStream, (String) null);
 	}
-	
-	public MapStringReader(InputStream inputStream, String encoding) throws Exception {
+
+	public MapStringReader(final InputStream inputStream, final String encoding) throws Exception {
 		super(inputStream, encoding);
 	}
-	
-	public MapStringReader(InputStream inputStream, Charset encodingCharset) throws Exception {
+
+	public MapStringReader(final InputStream inputStream, final Charset encodingCharset) throws Exception {
 		super(inputStream, encodingCharset);
 	}
-	
+
 	public Map<String, String> readMap() throws Exception {
-		Map<String, String> returnMap = new HashMap<>();
-		
+		final Map<String, String> returnMap = new HashMap<>();
+
 		boolean inValue = false;
-		
+
 		StringBuilder nextKey = new StringBuilder();
 		StringBuilder nextValue = new StringBuilder();
 
@@ -34,9 +34,10 @@ public class MapStringReader extends BasicReader {
 					currentChar = readNextNonWhitespace();
 					reuseCurrentChar();
 					if ('=' == currentChar) {
+						currentChar = readNextCharacter();
 						break;
 					}
-				//$FALL-THROUGH$
+					//$FALL-THROUGH$
 				case ',':
 				case ';':
 				case '\n':
@@ -53,7 +54,7 @@ public class MapStringReader extends BasicReader {
 				case '\'':
 				case '"':
 					// Start quoted value
-					String quotedText = readQuotedText(currentChar, '\\');
+					final String quotedText = readQuotedText(currentChar, '\\');
 					if (inValue) {
 						nextValue.append(quotedText);
 					} else {
@@ -86,18 +87,18 @@ public class MapStringReader extends BasicReader {
 					break;
 			}
 		}
-		
+
 		if (inValue || nextKey.length() > 0) {
 			returnMap.put(nextKey.toString(), nextValue.toString());
 			inValue = false;
 			nextKey = new StringBuilder();
 			nextValue = new StringBuilder();
 		}
-		
+
 		return returnMap;
 	}
-	
-	public static Map<String, String> readMap(String mapString) throws Exception {
+
+	public static Map<String, String> readMap(final String mapString) throws Exception {
 		try (MapStringReader mapStringReader = new MapStringReader(new ByteArrayInputStream(mapString.getBytes("UTF-8")), "UTF-8")) {
 			return mapStringReader.readMap();
 		}
