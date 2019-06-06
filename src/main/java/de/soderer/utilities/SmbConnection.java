@@ -33,6 +33,9 @@ public class SmbConnection implements RemoteConnection {
 	/** The host. */
 	private String hostname = null;
 
+	/** The port. */
+	private int port = 445;
+
 	/** The user. */
 	private String username = null;
 
@@ -43,7 +46,7 @@ public class SmbConnection implements RemoteConnection {
 	private String domain = null;
 
 	/** The domain. */
-	private String shareName = null;
+	private String sharename = null;
 
 	/**
 	 * Currently connected client
@@ -53,11 +56,14 @@ public class SmbConnection implements RemoteConnection {
 	private Session session = null;
 	private DiskShare diskShare = null;
 
-	public SmbConnection(final String hostname, final String username, final String domain, final String shareName, final char[] password) throws Exception {
+	public SmbConnection(final String hostname, final int port, final String username, final String domain, final String sharename, final char[] password) throws Exception {
 		this.hostname = hostname;
+		if (0 <= port && port <= 65535) {
+			this.port = port;
+		}
 		this.username = username;
 		this.domain = domain;
-		this.shareName = shareName;
+		this.sharename = sharename;
 		this.password = password;
 
 		connect();
@@ -68,9 +74,12 @@ public class SmbConnection implements RemoteConnection {
 			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for smb connection. Only 'smb' is allowed");
 		} else {
 			hostname = serverEntry.getHostname();
+			if (0 <= serverEntry.getPort() && serverEntry.getPort() <= 65535) {
+				port = serverEntry.getPort();
+			}
 			username = serverEntry.getUsername();
 			domain = serverEntry.getDomain();
-			shareName = serverEntry.getShareName();
+			sharename = serverEntry.getSharename();
 			password = serverEntry.getPassword();
 
 			connect();
@@ -83,9 +92,9 @@ public class SmbConnection implements RemoteConnection {
 	private void connect() throws Exception {
 		try {
 			client = new SMBClient();
-			connection = client.connect(hostname);
-			session = connection.authenticate(new AuthenticationContext(username, password, domain));
-			diskShare = (DiskShare) session.connectShare(shareName);
+			connection = client.connect(hostname, port);
+			session = connection.authenticate(new AuthenticationContext(username, password, domain == null ? "" : domain));
+			diskShare = (DiskShare) session.connectShare(sharename == null ? "" : sharename);
 		} catch (final Exception e) {
 			close();
 			throw new Exception("Connection failed");
@@ -93,7 +102,10 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public List<String> getFolders(final String folderPath) throws Exception {
+	public List<String> getFolders(String folderPath) throws Exception {
+		if (folderPath.startsWith("/")) {
+			folderPath = folderPath.substring(1);
+		}
 		final List<String> folderNames = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			if (!".".equals(fileIdBothDirectoryInformation.getFileName()) && !"..".equals(fileIdBothDirectoryInformation.getFileName())) {
@@ -131,7 +143,10 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public List<String> getFiles(final String folderPath) throws Exception {
+	public List<String> getFiles(String folderPath) throws Exception {
+		if (folderPath.startsWith("/")) {
+			folderPath = folderPath.substring(1);
+		}
 		final List<String> fileNames = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			if (!".".equals(fileIdBothDirectoryInformation.getFileName()) && !"..".equals(fileIdBothDirectoryInformation.getFileName())) {
@@ -144,7 +159,10 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public boolean fileExists(final String filePath) throws Exception {
+	public boolean fileExists(String filePath) throws Exception {
+		if (filePath.startsWith("/")) {
+			filePath = filePath.substring(1);
+		}
 		final int lastPathSeparator = filePath.replace("\\", "/").lastIndexOf("/");
 		final String folderPath = lastPathSeparator >= 0 ? filePath.substring(0, lastPathSeparator) : "";
 		final String fileName = lastPathSeparator >= 0 ? filePath.substring(lastPathSeparator + 1) : filePath;
@@ -164,14 +182,20 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFile getFileInfo(final String filePath) throws Exception {
+	public RemoteFile getFileInfo(String filePath) throws Exception {
+		if (filePath.startsWith("/")) {
+			filePath = filePath.substring(1);
+		}
 		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
 		final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
 		return new RemoteFile("/" + domain + fileAllInformation.getNameInformation().replace("\\", "/"), fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
 	}
 
 	@Override
-	public InputStream getFile(final String filePath) throws Exception {
+	public InputStream getFile(String filePath) throws Exception {
+		if (filePath.startsWith("/")) {
+			filePath = filePath.substring(1);
+		}
 		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
 		return remoteSmbjFile.getInputStream();
 	}

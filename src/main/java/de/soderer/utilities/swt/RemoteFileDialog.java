@@ -30,14 +30,16 @@ import org.eclipse.swt.widgets.TreeItem;
 
 import de.soderer.utilities.FtpConnection;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.RemoteConnection;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.SftpConnection;
+import de.soderer.utilities.SmbConnection;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
 
 public class RemoteFileDialog extends ModalDialog<Boolean> {
-	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp");
+	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb");
 	private static final String STANDARD_KNOWNHOSTS_FILE = "~/.ssh/known_hosts";
 
 	public enum Mode {
@@ -52,6 +54,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private char[] password = null;
 	private boolean checkHostKey = true;
 	private String hostKey = STANDARD_KNOWNHOSTS_FILE;
+	private String domain = null;
+	private String sharename = null;
 	private String selectedFilePath = null;
 	private String selectedFileName = null;
 
@@ -62,6 +66,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private Button useKeyFileButton;
 	private LabeledText passwordField;
 	private Button checkHostKeyButton;
+	private LabeledText domainField;
+	private LabeledText sharenameField;
 	private Text hostKeyField;
 	private Tree folderTree;
 	private Tree filesTree;
@@ -82,8 +88,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private Button deleteFolderButton;
 	private Button deleteFileButton;
 
-	private SftpConnection sftpConnection = null;
-	private FtpConnection ftpConnection = null;
+	private RemoteConnection connection = null;
 
 	public RemoteFileDialog(final Shell parentShell, final String title, final Mode dialogMode) {
 		super(parentShell, title);
@@ -195,7 +200,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 		final Composite serverCredentialsComposite = new Composite(parentShell, SWT.BORDER);
 		serverCredentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		serverCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(9, false));
+		serverCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(11, false));
 
 		protocolField = new LabeledCombo(serverCredentialsComposite, SWT.NONE, LangResources.get("protocol"), PROTOCOL_LIST, 0, ArrangementStyle.Vertical);
 		final GridData protocolFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
@@ -205,10 +210,12 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			@Override
 			public void modifyText(final ModifyEvent event) {
 				protocol = PROTOCOL_LIST.get(((LabeledCombo) event.widget).getSelectedItemIndex());
-				if (("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) && portField.getText().equals("21")) {
+				if (("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) && (portField.getText().equals("21") || portField.getText().equals("445"))) {
 					portField.setText("22");
-				} else if ("ftp".equalsIgnoreCase(protocol) && portField.getText().equals("22")) {
+				} else if ("ftp".equalsIgnoreCase(protocol) && (portField.getText().equals("22") || portField.getText().equals("445"))) {
 					portField.setText("21");
+				} else if ("smb".equalsIgnoreCase(protocol) && (portField.getText().equals("21") || portField.getText().equals("22"))) {
+					portField.setText("445");
 				}
 				checkButtonStatus();
 			}
@@ -323,17 +330,37 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
+		domainField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("domain"), ArrangementStyle.Vertical);
+		final GridData domainFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
+		domainFieldGridData.widthHint = 95;
+		domainField.setLayoutData(domainFieldGridData);
+		domainField.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(final ModifyEvent event) {
+				domain = ((LabeledText) event.widget).getText();
+				checkButtonStatus();
+			}
+		});
+
+		sharenameField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("sharename"), ArrangementStyle.Vertical);
+		final GridData sharenameFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
+		sharenameFieldGridData.widthHint = 95;
+		sharenameField.setLayoutData(sharenameFieldGridData);
+		sharenameField.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(final ModifyEvent event) {
+				sharename = ((LabeledText) event.widget).getText();
+				checkButtonStatus();
+			}
+		});
+
 		connectButton = new Button(serverCredentialsComposite, SWT.PUSH);
 		connectButton.setText(LangResources.get("connect"));
 		connectButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
-				if (sftpConnection == null && ftpConnection == null) {
-					if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
-						connectViaSSH();
-					} else if ("ftp".equalsIgnoreCase(protocol)) {
-						connectViaFTP();
-					}
+				if (connection == null) {
+					connect();
 				} else {
 					disconnect();
 				}
@@ -353,11 +380,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		folderTree.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
-					showPathDirectorySSH();
-				} else if ("ftp".equalsIgnoreCase(protocol)) {
-					showPathDirectoryFTP();
-				}
+				showPathDirectory();
 				checkButtonStatus();
 			}
 		});
@@ -406,13 +429,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					final String folderName = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterFolderName")).open();
 					if (Utilities.isNotBlank(folderName)) {
 						try {
-							if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
-								sftpConnection.createFolder(selectedFilePath, folderName);
-								showPathDirectorySSH();
-							} else if ("ftp".equalsIgnoreCase(protocol)) {
-								ftpConnection.createFolder(selectedFilePath, folderName);
-								showPathDirectoryFTP();
-							}
+							connection.createFolder(selectedFilePath, folderName);
+							showPathDirectory();
 						} catch (final Exception e) {
 							new QuestionDialog(getParent(), getText(), "Error while creating folder on server: " + e.getMessage(), LangResources.get("ok")).open();
 						}
@@ -428,15 +446,9 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (Utilities.isNotBlank(selectedFilePath)) {
 						if (new QuestionDialog(getParent(), LangResources.get("deleteFolder"), LangResources.get("reallyDeleteFolder", selectedFilePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
 							try {
-								if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
-									sftpConnection.deleteFolder(selectedFilePath);
-									folderTree.select(folderTree.getSelection()[0].getParentItem());
-									showPathDirectorySSH();
-								} else if ("ftp".equalsIgnoreCase(protocol)) {
-									ftpConnection.deleteFolder(selectedFilePath);
-									folderTree.select(folderTree.getSelection()[0].getParentItem());
-									showPathDirectoryFTP();
-								}
+								connection.deleteFolder(selectedFilePath);
+								folderTree.select(folderTree.getSelection()[0].getParentItem());
+								showPathDirectory();
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 							}
@@ -453,13 +465,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (Utilities.isNotBlank(selectedFilePath) && Utilities.isNotBlank(selectedFileName)) {
 						if (new QuestionDialog(getParent(), LangResources.get("deleteFile"), LangResources.get("reallyDeleteFile", selectedFilePath + "/" + selectedFileName), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
 							try {
-								if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
-									sftpConnection.deleteFile(selectedFilePath + "/" + selectedFileName);
-									showPathDirectorySSH();
-								} else if ("ftp".equalsIgnoreCase(protocol)) {
-									ftpConnection.deleteFile(selectedFilePath + "/" + selectedFileName);
-									showPathDirectoryFTP();
-								}
+								connection.deleteFile(selectedFilePath + "/" + selectedFileName);
+								showPathDirectory();
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
 							}
@@ -520,33 +527,40 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		checkButtonStatus();
 	}
 
-	private void connectViaSSH() {
+	private void connect() {
 		try {
-			try {
-				sftpConnection = new SftpConnection(getServerEntry());
-			} catch (final UnknownHostKeyException e) {
-				if (new QuestionDialog(getParent(), getText(), LangResources.get("confirmNewHostKey", e.getHostnameOrIp(), e.getHostKeyFingerPrint()), LangResources.get("yes"), LangResources.get("no")).open() == 0) {
-					final ByteArrayOutputStream newKnownHosts = new ByteArrayOutputStream();
-					final ServerAccessData serverEntry = getServerEntry();
-					sftpConnection = new SftpConnection(serverEntry.getHostname(), serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), serverEntry.getPassword(), serverEntry.getPort(), e.getHostKeyFingerPrint(), newKnownHosts);
-					if ("".equals(hostKey.trim())) {
-						hostKey = STANDARD_KNOWNHOSTS_FILE;
-					}
-					if (new File(Utilities.replaceUsersHome(hostKey)).isFile()) {
-						try (FileOutputStream fileOutputStream = new FileOutputStream(Utilities.replaceUsersHome(hostKey), true)) {
-							fileOutputStream.write(newKnownHosts.toByteArray());
+			if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
+				try {
+					connection = new SftpConnection(getServerEntry());
+				} catch (final UnknownHostKeyException e) {
+					if (new QuestionDialog(getParent(), getText(), LangResources.get("confirmNewHostKey", e.getHostnameOrIp(), e.getHostKeyFingerPrint()), LangResources.get("yes"), LangResources.get("no")).open() == 0) {
+						final ByteArrayOutputStream newKnownHosts = new ByteArrayOutputStream();
+						final ServerAccessData serverEntry = getServerEntry();
+						connection = new SftpConnection(serverEntry.getHostname(), serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), serverEntry.getPassword(), serverEntry.getPort(), e.getHostKeyFingerPrint(), newKnownHosts);
+						if ("".equals(hostKey.trim())) {
+							hostKey = STANDARD_KNOWNHOSTS_FILE;
 						}
-					} else if (!hostKey.matches("[A-Fa-f0-9:]")) {
-						try (FileOutputStream fileOutputStream = new FileOutputStream(Utilities.replaceUsersHome(hostKey))) {
-							fileOutputStream.write(newKnownHosts.toByteArray());
+						if (new File(Utilities.replaceUsersHome(hostKey)).isFile()) {
+							try (FileOutputStream fileOutputStream = new FileOutputStream(Utilities.replaceUsersHome(hostKey), true)) {
+								fileOutputStream.write(newKnownHosts.toByteArray());
+							}
+						} else if (!hostKey.matches("[A-Fa-f0-9:]")) {
+							try (FileOutputStream fileOutputStream = new FileOutputStream(Utilities.replaceUsersHome(hostKey))) {
+								fileOutputStream.write(newKnownHosts.toByteArray());
+							}
 						}
+					} else {
+						throw e;
 					}
-				} else {
-					throw e;
 				}
+			} else if ("ftp".equalsIgnoreCase(protocol)) {
+				connection = new FtpConnection(getServerEntry());
+			} else if ("smb".equalsIgnoreCase(protocol)) {
+				connection = new SmbConnection(getServerEntry());
 			}
-			final List<String> folders = sftpConnection.getFolders("/");
-			final List<String> files = sftpConnection.getFiles("/");
+
+			final List<String> folders = connection.getFolders("/");
+			final List<String> files = connection.getFiles("/");
 			folderTree.removeAll();
 			final TreeItem rootTreeItem = new TreeItem(folderTree, SWT.NONE);
 			rootTreeItem.setText("/");
@@ -569,43 +583,10 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		checkButtonStatus();
 	}
 
-	private void connectViaFTP() {
-		try {
-			ftpConnection = new FtpConnection(getServerEntry());
-			final List<String> folders = ftpConnection.getFolders("/");
-			final List<String> files = ftpConnection.getFiles("/");
-			folderTree.removeAll();
-			final TreeItem rootTreeItem = new TreeItem(folderTree, SWT.NONE);
-			rootTreeItem.setText("/");
-			for (final String folderName : folders) {
-				final TreeItem folderTreeItem = new TreeItem(rootTreeItem, SWT.NONE);
-				folderTreeItem.setText(folderName);
-			}
-			for (final String fileName : files) {
-				final TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
-				filesTreeItem.setText(fileName);
-			}
-			rootTreeItem.setExpanded(true);
-			folderTree.select(folderTree.getItem(0));
-			selectedFilePath = "/";
-		} catch (final Exception e) {
-			Utilities.closeQuietly(ftpConnection);
-			ftpConnection = null;
-			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
-		}
-
-		checkButtonStatus();
-	}
-
 	private void disconnect() {
-		if (ftpConnection != null) {
-			Utilities.closeQuietly(ftpConnection);
-			ftpConnection = null;
-		}
-
-		if (sftpConnection != null) {
-			Utilities.closeQuietly(sftpConnection);
-			sftpConnection = null;
+		if (connection != null) {
+			Utilities.closeQuietly(connection);
+			connection = null;
 		}
 
 		folderTree.removeAll();
@@ -613,7 +594,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	}
 
 	private void checkButtonStatus() {
-		if (sftpConnection != null || ftpConnection != null) {
+		if (connection != null) {
 			if (keystoreFile != null) {
 				serverEntriesCombo.setEnabled(false);
 				loadServerEntriesButton.setEnabled(false);
@@ -629,6 +610,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			usernameField.setEnabled(false);
 			passwordField.setEnabled(false);
 			useKeyFileButton.setEnabled(false);
+			domainField.setEnabled(false);
+			sharenameField.setEnabled(false);
 			if (dialogMode == Mode.Save) {
 				fileNameField.setEnabled(true);
 				createFolderButton.setEnabled(true);
@@ -652,7 +635,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			portField.setEnabled(true);
 			usernameField.setEnabled(true);
 			passwordField.setEnabled(true);
-			useKeyFileButton.setEnabled(true);
+			useKeyFileButton.setEnabled(!"ftp".equalsIgnoreCase(protocol) && !"smb".equalsIgnoreCase(protocol));
 			if (dialogMode == Mode.Save) {
 				fileNameField.setEnabled(false);
 				createFolderButton.setEnabled(false);
@@ -661,11 +644,21 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 			checkHostKeyButton.setEnabled("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol));
 			hostKeyField.setEnabled(("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) && checkHostKeyButton.getSelection());
+			domainField.setEnabled("smb".equalsIgnoreCase(protocol));
+			sharenameField.setEnabled("smb".equalsIgnoreCase(protocol));
 		}
 	}
 
 	public ServerAccessData getServerEntry() {
-		return new ServerAccessData(protocol, hostnameOrIp, port, username, keyFilePath, password, ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) && checkHostKey ? hostKey : null);
+		if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
+			return new ServerAccessData(protocol, hostnameOrIp, port, null, null, username, keyFilePath, password, checkHostKey ? hostKey : null);
+		} else if ("ftp".equalsIgnoreCase(protocol)) {
+			return new ServerAccessData(protocol, hostnameOrIp, port, null, null, username, null, password, null);
+		} else if ("smb".equalsIgnoreCase(protocol)) {
+			return new ServerAccessData(protocol, hostnameOrIp, port, domain, sharename, username, null, password, null);
+		} else {
+			throw new IllegalArgumentException("Unknown protocol: " + protocol);
+		}
 	}
 
 	public String getSelectedFile() {
@@ -760,7 +753,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		hostKeyField.setText(checkHostKey ? entry.getHostKey() : "");
 	}
 
-	private void showPathDirectorySSH() {
+	private void showPathDirectory() {
 		try {
 			final TreeItem selectedFolderItem = folderTree.getSelection()[0];
 			String path = selectedFolderItem.getText();
@@ -769,52 +762,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				path = parentTreeItem.getText() + (parentTreeItem.getText().endsWith("/") ? "" : "/") + path;
 				parentTreeItem = parentTreeItem.getParentItem();
 			}
-			final List<String> folders = sftpConnection.getFolders(path);
-			final List<String> files = sftpConnection.getFiles(path);
-			for (final TreeItem subItem : selectedFolderItem.getItems()) {
-				if (!folders.contains(subItem.getText())) {
-					subItem.dispose();
-				}
-			}
-			for (final String folderName : folders) {
-				boolean subItemExists = false;
-				for (final TreeItem subItem : selectedFolderItem.getItems()) {
-					if (subItem.getText().equals(folderName)) {
-						subItemExists = true;
-						break;
-					}
-				}
-				if (!subItemExists) {
-					final TreeItem folderTreeItem = new TreeItem(selectedFolderItem, SWT.NONE);
-					folderTreeItem.setText(folderName);
-				}
-			}
-			selectedFolderItem.setExpanded(true);
-			filesTree.removeAll();
-			for (final String fileName : files) {
-				final TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
-				filesTreeItem.setText(fileName);
-			}
-			if (files.size() > 0) {
-				filesTree.setSelection(filesTree.getItem(0));
-			}
-			selectedFilePath = path;
-		} catch (final Exception e) {
-			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
-		}
-	}
-
-	private void showPathDirectoryFTP() {
-		try {
-			final TreeItem selectedFolderItem = folderTree.getSelection()[0];
-			String path = selectedFolderItem.getText();
-			TreeItem parentTreeItem = selectedFolderItem.getParentItem();
-			while (parentTreeItem != null) {
-				path = parentTreeItem.getText() + (parentTreeItem.getText().endsWith("/") ? "" : "/") + path;
-				parentTreeItem = parentTreeItem.getParentItem();
-			}
-			final List<String> folders = ftpConnection.getFolders(path);
-			final List<String> files = ftpConnection.getFiles(path);
+			final List<String> folders = connection.getFolders(path);
+			final List<String> files = connection.getFiles(path);
 			for (final TreeItem subItem : selectedFolderItem.getItems()) {
 				if (!folders.contains(subItem.getText())) {
 					subItem.dispose();

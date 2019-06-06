@@ -7,7 +7,7 @@
 
 	<groupId>de.soderer</groupId>
 	<artifactId>soderer-utilities</artifactId>
-	<version>19.0.0</version>
+	<version>19.1.0</version>
 	<packaging>jar</packaging>
 
 	<name>soderer-utilities</name>
@@ -30,11 +30,16 @@
 			<id>snapshots</id>
 			<url>https://repository.apache.org/content/repositories/snapshots</url>
 		</repository>
-	    <repository>
-	    	<name>SWT Repository</name>
-	        <id>maven-eclipse-github-repo</id>
-        	<url>http://maven-eclipse.github.io/maven</url>
-	    </repository>
+		<repository>
+			<name>SWT Repository</name>
+			<id>maven-eclipse-github-repo</id>
+			<url>http://maven-eclipse.github.io/maven</url>
+		</repository>
+		<repository>
+			<name>SMBJ-RPC Repository</name>
+			<id>maven-smbjrpc-repo</id>
+			<url>https://mvnrepository.com/artifact/com.rapid7.client/dcerpc</url>
+		</repository>
 	</repositories>
 
 	<dependencies>
@@ -59,9 +64,9 @@
 			<version>1.12</version>
 		</dependency>
 		<dependency>
-		   <groupId>org.apache.commons</groupId>
-		   <artifactId>commons-text</artifactId>
-		   <version>1.6</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>1.6</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-net</groupId>
@@ -95,21 +100,21 @@
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on -->
-		    <groupId>org.bouncycastle</groupId>
-		    <artifactId>bcprov-jdk15on</artifactId>
-		    <version>1.61</version>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk15on</artifactId>
+			<version>1.61</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on -->
-		    <groupId>org.bouncycastle</groupId>
-		    <artifactId>bcpg-jdk15on</artifactId>
-		    <version>1.61</version>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpg-jdk15on</artifactId>
+			<version>1.61</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
-		    <groupId>org.bouncycastle</groupId>
-		    <artifactId>bcpkix-jdk15on</artifactId>
-		    <version>1.61</version>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk15on</artifactId>
+			<version>1.61</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>
@@ -121,6 +126,11 @@
 			<groupId>com.hierynomus</groupId>
 			<artifactId>smbj</artifactId>
 			<version>0.9.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.rapid7.client</groupId>
+			<artifactId>dcerpc</artifactId>
+			<version>0.3.1</version>
 		</dependency>
 	</dependencies>
 

@@ -6,7 +6,7 @@ public class ServerAccessData {
 	private String protocol;
 	private String hostname;
 	private String domain;
-	private String shareName;
+	private String sharename;
 	private int port = 0;
 	private String username;
 	private String keyFilePath;
@@ -30,6 +30,8 @@ public class ServerAccessData {
 	 * @param protocol
 	 * @param hostname
 	 * @param port
+	 * @param domain
+	 * @param sharename
 	 * @param username
 	 * @param keyFilePath
 	 * @param password
@@ -39,32 +41,53 @@ public class ServerAccessData {
 	 * if filepath: check against specific known host keys file<br />
 	 * if filled with hash value: check against this fingerprint<br />
 	 */
-	public ServerAccessData(final String protocol, final String hostname, final int port, final String username, final String keyFilePath, final char[] password, final String hostKey) {
-		this.protocol = protocol;
-		this.hostname = hostname;
-		this.port = port;
-		this.username = username;
-		this.keyFilePath = keyFilePath;
-		this.password = password;
-		this.hostKey = hostKey;
-	}
-
-	/**
-	 * Constructor for the smb protocol
-	 *
-	 * @param hostname
-	 * @param domain
-	 * @param shareName
-	 * @param username
-	 * @param password
-	 */
-	public ServerAccessData(final String hostname, final String domain, final String shareName, final String username, final char[] password) {
-		protocol = "smb";
-		this.hostname = hostname;
-		this.domain = domain;
-		this.shareName = shareName;
-		this.username = username;
-		this.password = password;
+	public ServerAccessData(final String protocol, final String hostname, final int port, final String domain, final String sharename, final String username, final String keyFilePath, final char[] password, final String hostKey) {
+		if (Utilities.isBlank(protocol)) {
+			throw new IllegalArgumentException("Invalid empty protocol");
+		} else {
+			this.protocol = protocol.trim().toLowerCase();
+			if ("ssh".equalsIgnoreCase(this.protocol) || "sftp".equalsIgnoreCase(this.protocol)) {
+				this.hostname = hostname;
+				this.port = port;
+				this.username = username;
+				this.keyFilePath = keyFilePath;
+				this.password = password;
+				this.hostKey = hostKey;
+				if (Utilities.isNotBlank(domain)) {
+					throw new IllegalArgumentException("Invalid argument domain '" + domain + "' for protocol: " + this.protocol);
+				} else if (Utilities.isNotBlank(sharename)) {
+					throw new IllegalArgumentException("Invalid argument sharename '" + sharename + "' for protocol: " + this.protocol);
+				}
+			} else 	if ("ftp".equalsIgnoreCase(this.protocol)) {
+				this.hostname = hostname;
+				this.port = port;
+				this.username = username;
+				this.password = password;
+				if (Utilities.isNotBlank(keyFilePath)) {
+					throw new IllegalArgumentException("Invalid argument keyFilePath '" + keyFilePath + "' for protocol: " + this.protocol);
+				} else if (Utilities.isNotBlank(hostKey)) {
+					throw new IllegalArgumentException("Invalid argument hostKey '" + hostKey + "' for protocol: " + this.protocol);
+				} else if (Utilities.isNotBlank(domain)) {
+					throw new IllegalArgumentException("Invalid argument domain '" + domain + "' for protocol: " + this.protocol);
+				} else if (Utilities.isNotBlank(sharename)) {
+					throw new IllegalArgumentException("Invalid argument sharename '" + sharename + "' for protocol: " + this.protocol);
+				}
+			} else if ("smb".equalsIgnoreCase(this.protocol)) {
+				this.hostname = hostname;
+				this.port = port;
+				this.domain = domain;
+				this.sharename = sharename;
+				this.username = username;
+				this.password = password;
+				if (Utilities.isNotBlank(keyFilePath)) {
+					throw new IllegalArgumentException("Invalid argument keyFilePath '" + keyFilePath + "' for protocol: " + this.protocol);
+				} else if (Utilities.isNotBlank(hostKey)) {
+					throw new IllegalArgumentException("Invalid argument hostKey '" + hostKey + "' for protocol: " + this.protocol);
+				}
+			} else {
+				throw new IllegalArgumentException("Unsupported protocol: " + this.protocol);
+			}
+		}
 	}
 
 	public String getProtocol() {
@@ -97,8 +120,8 @@ public class ServerAccessData {
 		return domain;
 	}
 
-	public String getShareName() {
-		return shareName;
+	public String getSharename() {
+		return sharename;
 	}
 
 	public String getUsername() {
@@ -154,6 +177,16 @@ public class ServerAccessData {
 		if (port != 0) {
 			returnValue.append(":");
 			returnValue.append(port);
+		}
+		if ("smb".equalsIgnoreCase(protocol)) {
+			if (domain != null) {
+				returnValue.append("/");
+				returnValue.append(domain);
+			}
+			if (sharename != null) {
+				returnValue.append("/");
+				returnValue.append(sharename);
+			}
 		}
 		return returnValue.toString();
 	}

@@ -30,13 +30,13 @@ import de.soderer.utilities.json.JsonWriter;
 
 public class SecureDataStore {
 	private static final String SYMMETRIC_ENCRYPTION_METHOD = "AES";
-	
+
 	/**
 	 * First key is class name of entries grouped by their class name, second key is the entry name
 	 */
 	private Map<String, Map<String, Object>> dataEntries = new HashMap<>();
 
-	public void save(File storeFile, char[] password, byte[] salt) throws Exception {
+	public void save(final File storeFile, char[] password, final byte[] salt) throws Exception {
 		try {
 			if (storeFile == null) {
 				throw new Exception("SecureDataStore file is undefined");
@@ -45,16 +45,16 @@ public class SecureDataStore {
 					password = "".toCharArray();
 				}
 				try (FileOutputStream fos = new FileOutputStream(storeFile)) {
-					byte[] keyBytes = stretchPassword(password, salt);
-					SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-					Cipher encryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
+					final byte[] keyBytes = stretchPassword(password, salt);
+					final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+					final Cipher encryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
 					encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec);
 					try (CipherOutputStream cipherOutputStream = new CipherOutputStream(fos, encryptCipher)) {
 						try (JsonWriter jsonWriter = new JsonWriter(cipherOutputStream)) {
 							jsonWriter.openJsonArray();
-							for (Entry<String, Map<String, Object>> entryMap : dataEntries.entrySet()) {
-								for (Entry<String, Object> entry : entryMap.getValue().entrySet()) {
-									JsonObject entryObject = new JsonObject();
+							for (final Entry<String, Map<String, Object>> entryMap : dataEntries.entrySet()) {
+								for (final Entry<String, Object> entry : entryMap.getValue().entrySet()) {
+									final JsonObject entryObject = new JsonObject();
 									entryObject.add("class", entryMap.getKey());
 									entryObject.add("name", entry.getKey());
 									entryObject.add("value", JsonSerializer.serialize(entry.getValue(), false, false, false, true).getValue());
@@ -70,8 +70,8 @@ public class SecureDataStore {
 			Arrays.fill(password, '\u0000');
 		}
 	}
-	
-	public void load(File storeFile, char[] password, byte[] salt) throws Exception {
+
+	public void load(final File storeFile, char[] password, final byte[] salt) throws Exception {
 		try {
 			if (storeFile == null) {
 				throw new Exception("SecureDataStore file is undefined");
@@ -83,32 +83,32 @@ public class SecureDataStore {
 				}
 				dataEntries = new HashMap<>();
 				try (FileInputStream fis = new FileInputStream(storeFile)) {
-					byte[] keyBytes = stretchPassword(password, salt);
-					SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-					Cipher decryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
+					final byte[] keyBytes = stretchPassword(password, salt);
+					final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+					final Cipher decryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
 					decryptCipher.init(Cipher.DECRYPT_MODE, keySpec);
 					try (CipherInputStream cipherInputStream = new CipherInputStream(fis, decryptCipher)) {
-						try (JsonReader jsonWriter = new JsonReader(cipherInputStream)) {
-							JsonToken jsonToken = jsonWriter.readNextToken();
+						try (JsonReader jsonReader = new JsonReader(cipherInputStream)) {
+							final JsonToken jsonToken = jsonReader.readNextToken();
 							if (jsonToken != JsonToken.JsonArray_Open) {
 								throw new Exception("SecureDataStore is corrupt");
 							} else {
-								while (jsonWriter.readNextJsonNode()) {
+								while (jsonReader.readNextJsonNode()) {
 									if (jsonToken == JsonToken.JsonArray_Close) {
 										break;
 									} else {
-										JsonObject entryObject = (JsonObject) jsonWriter.getCurrentObject();
-										String className = (String) entryObject.get("class");
+										final JsonObject entryObject = (JsonObject) jsonReader.getCurrentObject();
+										final String className = (String) entryObject.get("class");
 										if (!dataEntries.containsKey(className)) {
 											dataEntries.put(className, new HashMap<String, Object>());
 										}
-										String entryName = (String) entryObject.get("name");
+										final String entryName = (String) entryObject.get("name");
 										dataEntries.get(className).put(entryName, JsonSerializer.deserialize((JsonObject) entryObject.get("value")));
 									}
 								}
 							}
 						}
-					} catch (IOException e) {
+					} catch (final IOException e) {
 						if (e.getCause() != null && e.getCause() instanceof BadPaddingException) {
 							throw new WrongPasswordException();
 						} else {
@@ -122,16 +122,16 @@ public class SecureDataStore {
 		}
 	}
 
-	private byte[] stretchPassword(char[] password, byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
-		String algorithm = "PBKDF2WithHmacSHA512";
-		int derivedKeyLength = 128;
-		int iterations = 5000;
-		KeySpec spec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
-		SecretKeyFactory f = SecretKeyFactory.getInstance(algorithm);
+	private byte[] stretchPassword(final char[] password, final byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
+		final String algorithm = "PBKDF2WithHmacSHA512";
+		final int derivedKeyLength = 128;
+		final int iterations = 5000;
+		final KeySpec spec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
+		final SecretKeyFactory f = SecretKeyFactory.getInstance(algorithm);
 		return f.generateSecret(spec).getEncoded();
 	}
 
-	public Set<String> getEntryNames(Class<?> classType) {
+	public Set<String> getEntryNames(final Class<?> classType) {
 		if (dataEntries.get(classType.getName()) == null) {
 			return new HashSet<>();
 		} else {
@@ -139,18 +139,19 @@ public class SecureDataStore {
 		}
 	}
 
-	public <T> T getEntry(Class<T> classType, String entryName) {
+	public <T> T getEntry(final Class<T> classType, final String entryName) {
 		if (dataEntries.get(classType.getName()) == null) {
 			return null;
 		}
 		@SuppressWarnings("unchecked")
+		final
 		T returnValue = (T) dataEntries.get(classType.getName()).get(entryName);
 		return returnValue;
 	}
 
-	public Object getEntry(String entryName) {
-		for (Entry<String, Map<String, Object>> classEntry : dataEntries.entrySet()) {
-			for (Entry<String, Object> entry : classEntry.getValue().entrySet()) {
+	public Object getEntry(final String entryName) {
+		for (final Entry<String, Map<String, Object>> classEntry : dataEntries.entrySet()) {
+			for (final Entry<String, Object> entry : classEntry.getValue().entrySet()) {
 				if (StringUtilities.equals(entryName, entry.getKey())) {
 					return entry.getValue();
 				}
@@ -159,24 +160,24 @@ public class SecureDataStore {
 		return null;
 	}
 
-	public void addEntry(String entryName, Object entryValue) {
+	public void addEntry(final String entryName, final Object entryValue) {
 		if (dataEntries.get(entryValue.getClass().getName()) == null) {
 			dataEntries.put(entryValue.getClass().getName(), new HashMap<String, Object>());
 		}
 		dataEntries.get(entryValue.getClass().getName()).put(entryName, entryValue);
 	}
 
-	public void removeEntry(Class<?> classType, String entryName) {
+	public void removeEntry(final Class<?> classType, final String entryName) {
 		dataEntries.get(classType.getName()).remove(entryName);
 	}
 
-	public void removeEntriesByEntryName(String entryName) {
-		for (Entry<String, Map<String, Object>> classEntry : dataEntries.entrySet()) {
+	public void removeEntriesByEntryName(final String entryName) {
+		for (final Entry<String, Map<String, Object>> classEntry : dataEntries.entrySet()) {
 			classEntry.getValue().remove(entryName);
 		}
 	}
 
-	public void removeEntriesByEntryClass(Class<?> classType) {
+	public void removeEntriesByEntryClass(final Class<?> classType) {
 		dataEntries.remove(classType.getName());
 	}
 }

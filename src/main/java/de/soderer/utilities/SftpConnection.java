@@ -16,6 +16,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.HostKey;
 import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSch;
@@ -213,6 +214,7 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	@Override
 	public boolean folderExists(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
@@ -240,6 +242,7 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	@Override
 	public List<String> getFolders(final String filePath) throws Exception {
 		final List<String> folderList = new ArrayList<>();
 		Channel channel = null;
@@ -271,6 +274,7 @@ public class SftpConnection implements RemoteConnection {
 		return folderList;
 	}
 
+	@Override
 	public List<String> getFiles(final String directoryPath) throws Exception {
 		final List<String> fileList = new ArrayList<>();
 		Channel channel = null;
@@ -378,12 +382,26 @@ public class SftpConnection implements RemoteConnection {
 		return fileList;
 	}
 
+	@Override
 	public void createFolder(final String selectedFilePath, final String folderName) throws Exception {
 		executeCommand("mkdir " + selectedFilePath + "/" + folderName);
 	}
 
 	@Override
-	public void uploadFile(final String filePath, final InputStream fileInputStream) throws Exception {
+	public void uploadFile(final String filePath, final InputStream inputStream) throws Exception {
+		ChannelSftp channel = null;
+		try {
+			channel = (ChannelSftp) session.openChannel("sftp");
+			channel.connect();
+			channel.put(inputStream, filePath);
+		} catch (final Exception e) {
+			throw new Exception("Error in uploadFileData", e);
+		} finally {
+			closeQuietly(channel);
+		}
+	}
+
+	public void uploadFileAlternative(final String filePath, final InputStream fileInputStream) throws Exception {
 		Channel channel = null;
 		try {
 			final byte[] fileData = Utilities.readStreamToByteArray(fileInputStream);
@@ -406,7 +424,6 @@ public class SftpConnection implements RemoteConnection {
 				checkAcknowledge(inStream);
 
 				// send content of file
-				// TODO: Use stream buffered read and write
 				outStream.write(fileData, 0, fileData.length);
 
 				// send '\0' as EOF
@@ -421,6 +438,7 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	@Override
 	public RemoteFile getFileInfo(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
@@ -511,6 +529,7 @@ public class SftpConnection implements RemoteConnection {
 	 *            des PrivateKey falls notwendig
 	 * @throws Exception
 	 */
+	@Override
 	public void deleteFile(final String remoteHostPathAndFileName) throws Exception {
 		Channel channel = null;
 		try {
@@ -539,6 +558,7 @@ public class SftpConnection implements RemoteConnection {
 	 * @param remoteHostPathAndFileName
 	 * @throws Exception
 	 */
+	@Override
 	public void deleteFolder(final String remoteHostPathAndFolderName) throws Exception {
 		Channel channel = null;
 		try {
