@@ -751,6 +751,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		checkHostKey = hostKey != null;
 		checkHostKeyButton.setSelection(checkHostKey);
 		hostKeyField.setText(checkHostKey ? entry.getHostKey() : "");
+		domainField.setText(entry.getDomain());
+		sharenameField.setText(entry.getSharename());
 	}
 
 	private void showPathDirectory() {

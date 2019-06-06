@@ -35,11 +35,6 @@
 			<id>maven-eclipse-github-repo</id>
 			<url>http://maven-eclipse.github.io/maven</url>
 		</repository>
-		<repository>
-			<name>SMBJ-RPC Repository</name>
-			<id>maven-smbjrpc-repo</id>
-			<url>https://mvnrepository.com/artifact/com.rapid7.client/dcerpc</url>
-		</repository>
 	</repositories>
 
 	<dependencies>
@@ -126,11 +121,6 @@
 			<groupId>com.hierynomus</groupId>
 			<artifactId>smbj</artifactId>
 			<version>0.9.1</version>
-		</dependency>
-		<dependency>
-			<groupId>com.rapid7.client</groupId>
-			<artifactId>dcerpc</artifactId>
-			<version>0.3.1</version>
 		</dependency>
 	</dependencies>
 
