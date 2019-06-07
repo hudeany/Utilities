@@ -43,9 +43,6 @@ public class SmbConnection implements RemoteConnection {
 	private char[] password = null;
 
 	/** The domain. */
-	private String domain = null;
-
-	/** The domain. */
 	private String sharename = null;
 
 	/**
@@ -56,13 +53,12 @@ public class SmbConnection implements RemoteConnection {
 	private Session session = null;
 	private DiskShare diskShare = null;
 
-	public SmbConnection(final String hostname, final int port, final String username, final String domain, final String sharename, final char[] password) throws Exception {
+	public SmbConnection(final String hostname, final int port, final String username, final String sharename, final char[] password) throws Exception {
 		this.hostname = hostname;
 		if (0 <= port && port <= 65535) {
 			this.port = port;
 		}
 		this.username = username;
-		this.domain = domain;
 		this.sharename = sharename;
 		this.password = password;
 
@@ -78,7 +74,6 @@ public class SmbConnection implements RemoteConnection {
 				port = serverEntry.getPort();
 			}
 			username = serverEntry.getUsername();
-			domain = serverEntry.getDomain();
 			sharename = serverEntry.getSharename();
 			password = serverEntry.getPassword();
 
@@ -93,7 +88,7 @@ public class SmbConnection implements RemoteConnection {
 		try {
 			client = new SMBClient();
 			connection = client.connect(hostname, port);
-			session = connection.authenticate(new AuthenticationContext(username, password, domain == null ? "" : domain));
+			session = connection.authenticate(new AuthenticationContext(username, password, ""));
 			diskShare = (DiskShare) session.connectShare(sharename == null ? "" : sharename);
 		} catch (final Exception e) {
 			close();
@@ -188,7 +183,7 @@ public class SmbConnection implements RemoteConnection {
 		}
 		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
 		final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-		return new RemoteFile("/" + domain + fileAllInformation.getNameInformation().replace("\\", "/"), fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
+		return new RemoteFile("/" + fileAllInformation.getNameInformation().replace("\\", "/"), fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
 	}
 
 	@Override

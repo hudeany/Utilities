@@ -54,7 +54,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private char[] password = null;
 	private boolean checkHostKey = true;
 	private String hostKey = STANDARD_KNOWNHOSTS_FILE;
-	private String domain = null;
 	private String sharename = null;
 	private String selectedFilePath = null;
 	private String selectedFileName = null;
@@ -66,7 +65,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private Button useKeyFileButton;
 	private LabeledText passwordField;
 	private Button checkHostKeyButton;
-	private LabeledText domainField;
 	private LabeledText sharenameField;
 	private Text hostKeyField;
 	private Tree folderTree;
@@ -200,7 +198,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 		final Composite serverCredentialsComposite = new Composite(parentShell, SWT.BORDER);
 		serverCredentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
-		serverCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(11, false));
+		serverCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(9, false));
 
 		protocolField = new LabeledCombo(serverCredentialsComposite, SWT.NONE, LangResources.get("protocol"), PROTOCOL_LIST, 0, ArrangementStyle.Vertical);
 		final GridData protocolFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
@@ -326,18 +324,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			@Override
 			public void modifyText(final ModifyEvent event) {
 				hostKey = ((Text) event.widget).getText();
-				checkButtonStatus();
-			}
-		});
-
-		domainField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("domain"), ArrangementStyle.Vertical);
-		final GridData domainFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
-		domainFieldGridData.widthHint = 95;
-		domainField.setLayoutData(domainFieldGridData);
-		domainField.addModifyListener(new ModifyListener() {
-			@Override
-			public void modifyText(final ModifyEvent event) {
-				domain = ((LabeledText) event.widget).getText();
 				checkButtonStatus();
 			}
 		});
@@ -610,7 +596,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			usernameField.setEnabled(false);
 			passwordField.setEnabled(false);
 			useKeyFileButton.setEnabled(false);
-			domainField.setEnabled(false);
 			sharenameField.setEnabled(false);
 			if (dialogMode == Mode.Save) {
 				fileNameField.setEnabled(true);
@@ -644,18 +629,17 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 			checkHostKeyButton.setEnabled("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol));
 			hostKeyField.setEnabled(("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) && checkHostKeyButton.getSelection());
-			domainField.setEnabled("smb".equalsIgnoreCase(protocol));
 			sharenameField.setEnabled("smb".equalsIgnoreCase(protocol));
 		}
 	}
 
 	public ServerAccessData getServerEntry() {
 		if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
-			return new ServerAccessData(protocol, hostnameOrIp, port, null, null, username, keyFilePath, password, checkHostKey ? hostKey : null);
+			return new ServerAccessData(protocol, hostnameOrIp, port, null, username, keyFilePath, password, checkHostKey ? hostKey : null);
 		} else if ("ftp".equalsIgnoreCase(protocol)) {
-			return new ServerAccessData(protocol, hostnameOrIp, port, null, null, username, null, password, null);
+			return new ServerAccessData(protocol, hostnameOrIp, port, null, username, null, password, null);
 		} else if ("smb".equalsIgnoreCase(protocol)) {
-			return new ServerAccessData(protocol, hostnameOrIp, port, domain, sharename, username, null, password, null);
+			return new ServerAccessData(protocol, hostnameOrIp, port, sharename, username, null, password, null);
 		} else {
 			throw new IllegalArgumentException("Unknown protocol: " + protocol);
 		}
@@ -751,7 +735,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		checkHostKey = hostKey != null;
 		checkHostKeyButton.setSelection(checkHostKey);
 		hostKeyField.setText(checkHostKey ? entry.getHostKey() : "");
-		domainField.setText(entry.getDomain());
 		sharenameField.setText(entry.getSharename());
 	}
 

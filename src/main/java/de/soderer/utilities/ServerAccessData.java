@@ -5,7 +5,6 @@ public class ServerAccessData {
 
 	private String protocol;
 	private String hostname;
-	private String domain;
 	private String sharename;
 	private int port = 0;
 	private String username;
@@ -41,7 +40,7 @@ public class ServerAccessData {
 	 * if filepath: check against specific known host keys file<br />
 	 * if filled with hash value: check against this fingerprint<br />
 	 */
-	public ServerAccessData(final String protocol, final String hostname, final int port, final String domain, final String sharename, final String username, final String keyFilePath, final char[] password, final String hostKey) {
+	public ServerAccessData(final String protocol, final String hostname, final int port, final String sharename, final String username, final String keyFilePath, final char[] password, final String hostKey) {
 		if (Utilities.isBlank(protocol)) {
 			throw new IllegalArgumentException("Invalid empty protocol");
 		} else {
@@ -53,9 +52,7 @@ public class ServerAccessData {
 				this.keyFilePath = keyFilePath;
 				this.password = password;
 				this.hostKey = hostKey;
-				if (Utilities.isNotBlank(domain)) {
-					throw new IllegalArgumentException("Invalid argument domain '" + domain + "' for protocol: " + this.protocol);
-				} else if (Utilities.isNotBlank(sharename)) {
+				if (Utilities.isNotBlank(sharename)) {
 					throw new IllegalArgumentException("Invalid argument sharename '" + sharename + "' for protocol: " + this.protocol);
 				}
 			} else 	if ("ftp".equalsIgnoreCase(this.protocol)) {
@@ -67,15 +64,12 @@ public class ServerAccessData {
 					throw new IllegalArgumentException("Invalid argument keyFilePath '" + keyFilePath + "' for protocol: " + this.protocol);
 				} else if (Utilities.isNotBlank(hostKey)) {
 					throw new IllegalArgumentException("Invalid argument hostKey '" + hostKey + "' for protocol: " + this.protocol);
-				} else if (Utilities.isNotBlank(domain)) {
-					throw new IllegalArgumentException("Invalid argument domain '" + domain + "' for protocol: " + this.protocol);
 				} else if (Utilities.isNotBlank(sharename)) {
 					throw new IllegalArgumentException("Invalid argument sharename '" + sharename + "' for protocol: " + this.protocol);
 				}
 			} else if ("smb".equalsIgnoreCase(this.protocol)) {
 				this.hostname = hostname;
 				this.port = port;
-				this.domain = domain;
 				this.sharename = sharename;
 				this.username = username;
 				this.password = password;
@@ -114,10 +108,6 @@ public class ServerAccessData {
 		} else {
 			return port;
 		}
-	}
-
-	public String getDomain() {
-		return domain;
 	}
 
 	public String getSharename() {
@@ -179,10 +169,6 @@ public class ServerAccessData {
 			returnValue.append(port);
 		}
 		if ("smb".equalsIgnoreCase(protocol)) {
-			if (domain != null) {
-				returnValue.append("/");
-				returnValue.append(domain);
-			}
 			if (sharename != null) {
 				returnValue.append("/");
 				returnValue.append(sharename);
