@@ -95,12 +95,14 @@ public class SmbConnection implements RemoteConnection {
 			diskShare = (DiskShare) session.connectShare(sharename == null ? "" : sharename);
 		} catch (final Exception e) {
 			close();
+			int level = 0;
 			Throwable causeException = e;
-			while (causeException.getCause() != null && causeException.getCause() != causeException) {
+			while (level < 10 && causeException.getCause() != null && causeException.getCause() != causeException) {
 				if (causeException.getCause() instanceof SMB1NotSupportedException) {
 					throw new Exception("SMBv1 is not supported");
 				}
 				causeException = causeException.getCause();
+				level++;
 			}
 			throw new Exception("Connection failed");
 		}
