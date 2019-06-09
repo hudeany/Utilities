@@ -197,7 +197,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		}
 
 		final Composite serverCredentialsComposite = new Composite(parentShell, SWT.BORDER);
-		serverCredentialsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false));
+		serverCredentialsComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		serverCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(9, false));
 
 		protocolField = new LabeledCombo(serverCredentialsComposite, SWT.NONE, LangResources.get("protocol"), PROTOCOL_LIST, 0, ArrangementStyle.Vertical);

@@ -15,10 +15,12 @@ import com.hierynomus.msdtyp.AccessMask;
 import com.hierynomus.msfscc.FileAttributes;
 import com.hierynomus.msfscc.fileinformation.FileAllInformation;
 import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation;
+import com.hierynomus.mssmb.SMB1NotSupportedException;
 import com.hierynomus.mssmb2.SMB2CreateDisposition;
 import com.hierynomus.mssmb2.SMB2ShareAccess;
 import com.hierynomus.protocol.commons.EnumWithValue;
 import com.hierynomus.smbj.SMBClient;
+import com.hierynomus.smbj.SmbConfig;
 import com.hierynomus.smbj.auth.AuthenticationContext;
 import com.hierynomus.smbj.connection.Connection;
 import com.hierynomus.smbj.session.Session;
@@ -86,12 +88,20 @@ public class SmbConnection implements RemoteConnection {
 	 */
 	private void connect() throws Exception {
 		try {
-			client = new SMBClient();
+			final SmbConfig smbConfig = SmbConfig.builder().withMultiProtocolNegotiate(true).build();
+			client = new SMBClient(smbConfig);
 			connection = client.connect(hostname, port);
 			session = connection.authenticate(new AuthenticationContext(username, password, ""));
 			diskShare = (DiskShare) session.connectShare(sharename == null ? "" : sharename);
 		} catch (final Exception e) {
 			close();
+			Throwable causeException = e;
+			while (causeException.getCause() != null && causeException.getCause() != causeException) {
+				if (causeException.getCause() instanceof SMB1NotSupportedException) {
+					throw new Exception("SMBv1 is not supported");
+				}
+				causeException = causeException.getCause();
+			}
 			throw new Exception("Connection failed");
 		}
 	}
