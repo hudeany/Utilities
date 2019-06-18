@@ -67,7 +67,7 @@ public class ServerAccessData {
 				} else if (Utilities.isNotBlank(sharename)) {
 					throw new IllegalArgumentException("Invalid argument sharename '" + sharename + "' for protocol: " + this.protocol);
 				}
-			} else if ("smb".equalsIgnoreCase(this.protocol)) {
+			} else if ("smb".equalsIgnoreCase(this.protocol) || "smb1".equalsIgnoreCase(this.protocol)) {
 				this.hostname = hostname;
 				this.port = port;
 				this.sharename = sharename;
@@ -101,6 +101,8 @@ public class ServerAccessData {
 			} else if ("ftp".equalsIgnoreCase(protocol)) {
 				return 21;
 			} else if ("smb".equalsIgnoreCase(protocol)) {
+				return 445;
+			} else if ("smb1".equalsIgnoreCase(protocol)) {
 				return 445;
 			} else {
 				return port;
@@ -168,7 +170,7 @@ public class ServerAccessData {
 			returnValue.append(":");
 			returnValue.append(port);
 		}
-		if ("smb".equalsIgnoreCase(protocol)) {
+		if ("smb".equalsIgnoreCase(protocol) || "smb1".equalsIgnoreCase(protocol)) {
 			if (sharename != null) {
 				returnValue.append("/");
 				returnValue.append(sharename);

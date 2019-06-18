@@ -34,12 +34,13 @@ import de.soderer.utilities.RemoteConnection;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.SftpConnection;
+import de.soderer.utilities.Smb1Connection;
 import de.soderer.utilities.SmbConnection;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
 
 public class RemoteFileDialog extends ModalDialog<Boolean> {
-	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb");
+	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb", "smb1");
 	private static final String STANDARD_KNOWNHOSTS_FILE = "~/.ssh/known_hosts";
 
 	public enum Mode {
@@ -213,6 +214,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				} else if ("ftp".equalsIgnoreCase(protocol) && (portField.getText().equals("22") || portField.getText().equals("445"))) {
 					portField.setText("21");
 				} else if ("smb".equalsIgnoreCase(protocol) && (portField.getText().equals("21") || portField.getText().equals("22"))) {
+					portField.setText("445");
+				} else if ("smb1".equalsIgnoreCase(protocol) && (portField.getText().equals("21") || portField.getText().equals("22"))) {
 					portField.setText("445");
 				}
 				checkButtonStatus();
@@ -543,6 +546,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				connection = new FtpConnection(getServerEntry());
 			} else if ("smb".equalsIgnoreCase(protocol)) {
 				connection = new SmbConnection(getServerEntry());
+			} else if ("smb1".equalsIgnoreCase(protocol)) {
+				connection = new Smb1Connection(getServerEntry());
 			}
 
 			final List<String> folders = connection.getFolders("/");
@@ -620,7 +625,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			portField.setEnabled(true);
 			usernameField.setEnabled(true);
 			passwordField.setEnabled(true);
-			useKeyFileButton.setEnabled(!"ftp".equalsIgnoreCase(protocol) && !"smb".equalsIgnoreCase(protocol));
+			useKeyFileButton.setEnabled(!"ftp".equalsIgnoreCase(protocol) && !"smb".equalsIgnoreCase(protocol) && !"smb1".equalsIgnoreCase(protocol));
 			if (dialogMode == Mode.Save) {
 				fileNameField.setEnabled(false);
 				createFolderButton.setEnabled(false);
@@ -629,7 +634,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 			checkHostKeyButton.setEnabled("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol));
 			hostKeyField.setEnabled(("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) && checkHostKeyButton.getSelection());
-			sharenameField.setEnabled("smb".equalsIgnoreCase(protocol));
+			sharenameField.setEnabled("smb".equalsIgnoreCase(protocol) || "smb1".equalsIgnoreCase(protocol));
 		}
 	}
 
@@ -639,6 +644,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		} else if ("ftp".equalsIgnoreCase(protocol)) {
 			return new ServerAccessData(protocol, hostnameOrIp, port, null, username, null, password, null);
 		} else if ("smb".equalsIgnoreCase(protocol)) {
+			return new ServerAccessData(protocol, hostnameOrIp, port, sharename, username, null, password, null);
+		} else if ("smb1".equalsIgnoreCase(protocol)) {
 			return new ServerAccessData(protocol, hostnameOrIp, port, sharename, username, null, password, null);
 		} else {
 			throw new IllegalArgumentException("Unknown protocol: " + protocol);
