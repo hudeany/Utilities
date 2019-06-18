@@ -104,10 +104,7 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public void deleteFolder(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
+	public void deleteFolder(final String folderPath) throws Exception {
 		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		smbFile.delete();
 	}
