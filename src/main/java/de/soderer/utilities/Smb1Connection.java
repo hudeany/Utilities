@@ -76,7 +76,7 @@ public class Smb1Connection implements RemoteConnection {
 			} else {
 				auth = NtlmPasswordAuthentication.ANONYMOUS;
 			}
-			new SmbFile(getBasePath(), auth);
+			new SmbFile(getPath(), auth);
 		} catch (final Exception e) {
 			close();
 			throw new Exception("Connection failed");
@@ -89,7 +89,7 @@ public class Smb1Connection implements RemoteConnection {
 			folderPath = folderPath.substring(1);
 		}
 		final List<String> folderNames = new ArrayList<>();
-		final SmbFile smbFile = new SmbFile(getBasePath() + folderPath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		if (smbFile.isDirectory()) {
 			for (final SmbFile subFile : smbFile.listFiles()) {
 				if (subFile.isDirectory()) {
@@ -105,7 +105,7 @@ public class Smb1Connection implements RemoteConnection {
 		if (folderPath.startsWith("/")) {
 			folderPath = folderPath.substring(1);
 		}
-		final SmbFile smbFile = new SmbFile(getBasePath() + folderPath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		return smbFile.isDirectory();
 	}
 
@@ -114,7 +114,7 @@ public class Smb1Connection implements RemoteConnection {
 		if (folderPath.startsWith("/")) {
 			folderPath = folderPath.substring(1);
 		}
-		final SmbFile smbFile = new SmbFile(getBasePath() + folderPath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		smbFile.delete();
 	}
 
@@ -123,7 +123,7 @@ public class Smb1Connection implements RemoteConnection {
 		if (parentFolderPath.startsWith("/")) {
 			parentFolderPath = parentFolderPath.substring(1);
 		}
-		final SmbFile smbFile = new SmbFile(getBasePath() + parentFolderPath + "/" + folderName, auth);
+		final SmbFile smbFile = new SmbFile(getPath(parentFolderPath) + "/" + folderName, auth);
 		smbFile.mkdir();
 	}
 
@@ -133,7 +133,7 @@ public class Smb1Connection implements RemoteConnection {
 			folderPath = folderPath.substring(1);
 		}
 		final List<String> fileNames = new ArrayList<>();
-		final SmbFile smbFile = new SmbFile(getBasePath() + folderPath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		if (smbFile.isDirectory()) {
 			for (final SmbFile subFile : smbFile.listFiles()) {
 				if (subFile.isFile()) {
@@ -149,7 +149,7 @@ public class Smb1Connection implements RemoteConnection {
 		if (filePath.startsWith("/")) {
 			filePath = filePath.substring(1);
 		}
-		final SmbFile smbFile = new SmbFile(getBasePath() + filePath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		return smbFile.isDirectory();
 	}
 
@@ -158,7 +158,7 @@ public class Smb1Connection implements RemoteConnection {
 		if (filePath.startsWith("/")) {
 			filePath = filePath.substring(1);
 		}
-		final SmbFile smbFile = new SmbFile(getBasePath() + filePath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		smbFile.delete();
 	}
 
@@ -167,7 +167,7 @@ public class Smb1Connection implements RemoteConnection {
 		if (filePath.startsWith("/")) {
 			filePath = filePath.substring(1);
 		}
-		final SmbFile smbFile = new SmbFile(getBasePath() + filePath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		final long size = smbFile.getContentLengthLong();
 		final Date fileDate = new Date(smbFile.getDate());
 		return new RemoteFile(filePath, size, fileDate);
@@ -178,7 +178,7 @@ public class Smb1Connection implements RemoteConnection {
 		if (filePath.startsWith("/")) {
 			filePath = filePath.substring(1);
 		}
-		final SmbFile smbFile = new SmbFile(getBasePath() + filePath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		return smbFile.getInputStream();
 	}
 
@@ -187,7 +187,7 @@ public class Smb1Connection implements RemoteConnection {
 		if (filePath.startsWith("/")) {
 			filePath = filePath.substring(1);
 		}
-		final SmbFile smbFile = new SmbFile(getBasePath() + filePath, auth);
+		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		try (OutputStream outputStream = smbFile.getOutputStream()) {
 			IOUtils.copy(fileInputStream, outputStream);
 		}
@@ -198,7 +198,14 @@ public class Smb1Connection implements RemoteConnection {
 		auth = null;
 	}
 
-	private String getBasePath() {
+	private String getPath() {
 		return "smb://" + hostname + (port != 445 ? ":" + port : "") + "/" + sharename + "/";
+	}
+
+	private String getPath(String path) {
+		if (path.startsWith("/")) {
+			path = path.substring(1);
+		}
+		return getPath() + path;
 	}
 }
