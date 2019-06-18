@@ -84,10 +84,7 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public List<String> getFolders(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
+	public List<String> getFolders(final String folderPath) throws Exception {
 		final List<String> folderNames = new ArrayList<>();
 		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		if (smbFile.isDirectory()) {
@@ -101,10 +98,7 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public boolean folderExists(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
+	public boolean folderExists(final String folderPath) throws Exception {
 		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		return smbFile.isDirectory();
 	}
@@ -119,19 +113,13 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public void createFolder(String parentFolderPath, final String folderName) throws Exception {
-		if (parentFolderPath.startsWith("/")) {
-			parentFolderPath = parentFolderPath.substring(1);
-		}
+	public void createFolder(final String parentFolderPath, final String folderName) throws Exception {
 		final SmbFile smbFile = new SmbFile(getPath(parentFolderPath) + "/" + folderName, auth);
 		smbFile.mkdir();
 	}
 
 	@Override
-	public List<String> getFiles(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
+	public List<String> getFiles(final String folderPath) throws Exception {
 		final List<String> fileNames = new ArrayList<>();
 		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		if (smbFile.isDirectory()) {
@@ -145,28 +133,19 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public boolean fileExists(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
+	public boolean fileExists(final String filePath) throws Exception {
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		return smbFile.isDirectory();
 	}
 
 	@Override
-	public void deleteFile(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
+	public void deleteFile(final String filePath) throws Exception {
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		smbFile.delete();
 	}
 
 	@Override
-	public RemoteFile getFileInfo(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
+	public RemoteFile getFileInfo(final String filePath) throws Exception {
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		final long size = smbFile.getContentLengthLong();
 		final Date fileDate = new Date(smbFile.getDate());
@@ -174,19 +153,13 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public InputStream getFile(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
+	public InputStream getFile(final String filePath) throws Exception {
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		return smbFile.getInputStream();
 	}
 
 	@Override
-	public void uploadFile(String filePath, final InputStream fileInputStream) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
+	public void uploadFile(final String filePath, final InputStream fileInputStream) throws Exception {
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		try (OutputStream outputStream = smbFile.getOutputStream()) {
 			IOUtils.copy(fileInputStream, outputStream);
