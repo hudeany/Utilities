@@ -658,6 +658,7 @@ public class TextUtilities {
 			}
 
 			final String interimString = new String(data, "UTF-8").toLowerCase();
+
 			final int zeroIndex = interimString.indexOf('\u0000');
 			if (zeroIndex >= 0 && zeroIndex <= 100) {
 				if (zeroIndex % 2 == 0) {
@@ -665,6 +666,10 @@ public class TextUtilities {
 				} else {
 					return new Tuple<>("UTF-16LE", false);
 				}
+			}
+
+			if (interimString.contains("ä") || interimString.contains("ö") || interimString.contains("ü") || interimString.contains("Ä") || interimString.contains("Ö") || interimString.contains("Ü") || interimString.contains("ß")) {
+				return new Tuple<>("UTF-8", false);
 			}
 
 			return null;

@@ -20,9 +20,6 @@ public class Smb1Connection implements RemoteConnection {
 	/** The host. */
 	private String hostname = null;
 
-	/** The port. */
-	private int port = 445;
-
 	/** The user. */
 	private String username = null;
 
@@ -37,11 +34,9 @@ public class Smb1Connection implements RemoteConnection {
 	 */
 	private NtlmPasswordAuthentication auth = null;
 
-	public Smb1Connection(final String hostname, final int port, final String username, final String sharename, final char[] password) throws Exception {
+	/** The port. SMBv1 uses the ports 137–139 by default */
+	public Smb1Connection(final String hostname, final String username, final String sharename, final char[] password) throws Exception {
 		this.hostname = hostname;
-		if (0 <= port && port <= 65535) {
-			this.port = port;
-		}
 		this.username = username;
 		this.sharename = sharename;
 		this.password = password;
@@ -54,9 +49,6 @@ public class Smb1Connection implements RemoteConnection {
 			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for smb1 connection. Only 'smb1' is allowed");
 		} else {
 			hostname = serverEntry.getHostname();
-			if (0 <= serverEntry.getPort() && serverEntry.getPort() <= 65535) {
-				port = serverEntry.getPort();
-			}
 			username = serverEntry.getUsername();
 			sharename = serverEntry.getSharename();
 			password = serverEntry.getPassword();
@@ -70,13 +62,12 @@ public class Smb1Connection implements RemoteConnection {
 	 */
 	private void connect() throws Exception {
 		try {
-			NtlmPasswordAuthentication auth;
 			if (Utilities.isNotBlank(username)) {
 				auth = new NtlmPasswordAuthentication("", username, new String(password));
 			} else {
 				auth = NtlmPasswordAuthentication.ANONYMOUS;
 			}
-			new SmbFile(getPath(), auth);
+			new SmbFile(getPathWithProtocol(), auth);
 		} catch (final Exception e) {
 			close();
 			throw new Exception("Connection failed");
@@ -85,6 +76,7 @@ public class Smb1Connection implements RemoteConnection {
 
 	@Override
 	public List<String> getFolders(final String folderPath) throws Exception {
+		checkConnection();
 		final List<String> folderNames = new ArrayList<>();
 		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		if (smbFile.isDirectory()) {
@@ -99,24 +91,28 @@ public class Smb1Connection implements RemoteConnection {
 
 	@Override
 	public boolean folderExists(final String folderPath) throws Exception {
+		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		return smbFile.isDirectory();
 	}
 
 	@Override
 	public void deleteFolder(final String folderPath) throws Exception {
+		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		smbFile.delete();
 	}
 
 	@Override
 	public void createFolder(final String parentFolderPath, final String folderName) throws Exception {
+		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(parentFolderPath) + "/" + folderName, auth);
 		smbFile.mkdir();
 	}
 
 	@Override
 	public List<String> getFiles(final String folderPath) throws Exception {
+		checkConnection();
 		final List<String> fileNames = new ArrayList<>();
 		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
 		if (smbFile.isDirectory()) {
@@ -131,18 +127,21 @@ public class Smb1Connection implements RemoteConnection {
 
 	@Override
 	public boolean fileExists(final String filePath) throws Exception {
+		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
-		return smbFile.isDirectory();
+		return smbFile.isFile();
 	}
 
 	@Override
 	public void deleteFile(final String filePath) throws Exception {
+		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		smbFile.delete();
 	}
 
 	@Override
 	public RemoteFile getFileInfo(final String filePath) throws Exception {
+		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		final long size = smbFile.getContentLengthLong();
 		final Date fileDate = new Date(smbFile.getDate());
@@ -151,15 +150,23 @@ public class Smb1Connection implements RemoteConnection {
 
 	@Override
 	public InputStream getFile(final String filePath) throws Exception {
+		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		return smbFile.getInputStream();
 	}
 
 	@Override
 	public void uploadFile(final String filePath, final InputStream fileInputStream) throws Exception {
+		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		try (OutputStream outputStream = smbFile.getOutputStream()) {
 			IOUtils.copy(fileInputStream, outputStream);
+		}
+	}
+
+	private void checkConnection() throws Exception {
+		if (auth == null) {
+			throw new Exception("Not connected");
 		}
 	}
 
@@ -168,14 +175,14 @@ public class Smb1Connection implements RemoteConnection {
 		auth = null;
 	}
 
-	private String getPath() {
-		return "smb://" + hostname + (port != 445 ? ":" + port : "") + "/" + sharename + "/";
+	private String getPathWithProtocol() {
+		return "smb://" + hostname + "/" + sharename + "/";
 	}
 
 	private String getPath(String path) {
 		if (path.startsWith("/")) {
 			path = path.substring(1);
 		}
-		return getPath() + path;
+		return getPathWithProtocol() + path;
 	}
 }

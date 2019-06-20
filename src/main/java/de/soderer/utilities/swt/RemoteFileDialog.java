@@ -622,7 +622,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			actionButton.setEnabled(false);
 			protocolField.setEnabled(true);
 			hostnameField.setEnabled(true);
-			portField.setEnabled(true);
+			portField.setEnabled(!"smb1".equalsIgnoreCase(protocol));
 			usernameField.setEnabled(true);
 			passwordField.setEnabled(true);
 			useKeyFileButton.setEnabled(!"ftp".equalsIgnoreCase(protocol) && !"smb".equalsIgnoreCase(protocol) && !"smb1".equalsIgnoreCase(protocol));
@@ -646,7 +646,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		} else if ("smb".equalsIgnoreCase(protocol)) {
 			return new ServerAccessData(protocol, hostnameOrIp, port, sharename, username, null, password, null);
 		} else if ("smb1".equalsIgnoreCase(protocol)) {
-			return new ServerAccessData(protocol, hostnameOrIp, port, sharename, username, null, password, null);
+			return new ServerAccessData(protocol, hostnameOrIp, 0, sharename, username, null, password, null);
 		} else {
 			throw new IllegalArgumentException("Unknown protocol: " + protocol);
 		}
