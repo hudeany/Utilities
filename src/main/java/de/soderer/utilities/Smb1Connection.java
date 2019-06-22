@@ -45,8 +45,8 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	public Smb1Connection(final ServerAccessData serverEntry) throws Exception {
-		if (!"smb1".equalsIgnoreCase(serverEntry.getProtocol())) {
-			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for smb1 connection. Only 'smb1' is allowed");
+		if (!"smb1".equalsIgnoreCase(serverEntry.getProtocol()) && !"smb".equalsIgnoreCase(serverEntry.getProtocol())) {
+			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for smb v1 connection. Only 'smb1' and 'smb' are allowed");
 		} else {
 			hostname = serverEntry.getHostname();
 			username = serverEntry.getUsername();
