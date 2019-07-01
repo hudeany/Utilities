@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -451,5 +452,11 @@ public class FileUtilities {
 
 	public static String readFileToString(final File dataFile, final String encoding) throws Exception {
 		return new String(readFileToByteArray(dataFile), encoding);
+	}
+
+	public static void append(final File fileToAppend, final String textToAppend, final String encoding) throws Exception {
+		try (OutputStream os = new FileOutputStream(fileToAppend, true)) {
+			os.write(textToAppend.getBytes(encoding));
+		}
 	}
 }
