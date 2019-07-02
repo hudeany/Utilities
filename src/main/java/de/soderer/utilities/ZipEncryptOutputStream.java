@@ -7,43 +7,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * Output stream that can be used to password-protect zip files.
- *
- * <h3>Example usage:</h3>
- * <p>Creating a password-protected zip file:</p>
- * <pre>
- *  ZipEncryptOutputStream zeos = new ZipEncryptOutputStream(new FileOutputStream(fileName), password);
- *  ZipOutputStream zos = new ZipOuputStream(zdis);
- *  ... create zip file using the standard JDK ZipOutputStream in zos variable ...
- * </pre>
- * <p>Converting a plain zip file to a password-protected zip file:</p>
- * <pre>
- *  FileInputStream src = new FileInputStream(srcFile);
- *  ZipEncryptOutputStream dest = new ZipEncryptOutputStream(new FileOutputStream(destFile), password);
- *
- *  // should wrap with try-catch-finally, do the close in finally
- *  int b;
- *  while ((b = src.read()) > -1) {
- *      dest.write(b);
- *  }
- *
- *  src.close();
- *  dest.close();
- * </pre>
- *
- * @author Martin Matula (martin at alutam.com)
- */
-
-
-/**
  * ZipEncryptOutputStream<br />
  * <br />
  * Example:<br />
- * OutputStream zipOutputStream = new ZipOutputStream(new ZipEncryptOutputStream(new FileOutputStream(new File("path to zip file")), "password".toCharArray()));
- * ((ZipOutputStream) zipOutputStream).putNextEntry(new ZipEntry("zipped file name"));
- * IOUtils.copy(new ByteArrayInputStream(testString.getBytes("UTF-8")), zipOutputStream);
- * ((ZipOutputStream) zipOutputStream).closeEntry();
- * zipOutputStream.close();
+ * OutputStream zipOutputStream = new ZipOutputStream(new ZipEncryptOutputStream(new FileOutputStream(new File("path to zip file")), "password".toCharArray()));<br />
+ * ((ZipOutputStream) zipOutputStream).putNextEntry(new ZipEntry("zipped file name"));<br />
+ * IOUtils.copy(new ByteArrayInputStream(testString.getBytes("UTF-8")), zipOutputStream);<br />
+ * ((ZipOutputStream) zipOutputStream).closeEntry();<br />
+ * zipOutputStream.close();<br />
  */
 public class ZipEncryptOutputStream extends OutputStream {
 	static final int[] CRC_TABLE = new int[256];
