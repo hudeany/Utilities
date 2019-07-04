@@ -100,6 +100,16 @@ public class SwtUtilities {
 		}
 	}
 
+	public static String getAbsolutePath(final TreeItem selectedFolderItem) {
+		String path = selectedFolderItem.getText();
+		TreeItem parentTreeItem = selectedFolderItem.getParentItem();
+		while (parentTreeItem != null) {
+			path = parentTreeItem.getText() + (parentTreeItem.getText().endsWith("/") ? "" : "/") + path;
+			parentTreeItem = parentTreeItem.getParentItem();
+		}
+		return path;
+	}
+
 	public static GridLayout createNoMarginGridLayout(final int columns, final boolean equalWidth) {
 		final GridLayout gridLayout = new GridLayout(columns, equalWidth);
 		gridLayout.marginWidth = 0;

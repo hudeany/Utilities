@@ -83,6 +83,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 	private final Mode dialogMode;
 	private LabeledText fileNameField;
+	private LabeledText currentPathField;
 	private Button createFolderButton;
 	private Button deleteFolderButton;
 	private Button deleteFileButton;
@@ -370,6 +371,10 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				showPathDirectory();
+				if (dialogMode == Mode.Open) {
+					final TreeItem selectedFolderItem = folderTree.getSelection()[0];
+					currentPathField.setText(SwtUtilities.getAbsolutePath(selectedFolderItem) + "/");
+				}
 				checkButtonStatus();
 			}
 		});
@@ -388,6 +393,9 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					selectedFileName = selectedFilesItem.getText();
 					if (dialogMode == Mode.Save) {
 						fileNameField.setText(selectedFileName);
+					} else {
+						final TreeItem selectedFolderItem = folderTree.getSelection()[0];
+						currentPathField.setText(SwtUtilities.getAbsolutePath(selectedFolderItem) + "/" + selectedFileName);
 					}
 				} catch (final Exception e) {
 					e.printStackTrace();
@@ -474,6 +482,21 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				@Override
 				public void modifyText(final ModifyEvent event) {
 					selectedFileName = ((LabeledText) event.widget).getText();
+					checkButtonStatus();
+				}
+			});
+		} else {
+			final Composite additionalSaveComposite = new Composite(parentShell, SWT.BORDER);
+			additionalSaveComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+			additionalSaveComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
+
+			currentPathField = new LabeledText(additionalSaveComposite, SWT.NONE, LangResources.get("currentPath"), ArrangementStyle.Vertical);
+			currentPathField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+			currentPathField.setEnabled(false);
+			currentPathField.addModifyListener(new ModifyListener() {
+				@Override
+				public void modifyText(final ModifyEvent event) {
+					// TODO
 					checkButtonStatus();
 				}
 			});
@@ -748,12 +771,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private void showPathDirectory() {
 		try {
 			final TreeItem selectedFolderItem = folderTree.getSelection()[0];
-			String path = selectedFolderItem.getText();
-			TreeItem parentTreeItem = selectedFolderItem.getParentItem();
-			while (parentTreeItem != null) {
-				path = parentTreeItem.getText() + (parentTreeItem.getText().endsWith("/") ? "" : "/") + path;
-				parentTreeItem = parentTreeItem.getParentItem();
-			}
+			final String path = SwtUtilities.getAbsolutePath(selectedFolderItem);
 			final List<String> folders = connection.getFolders(path);
 			final List<String> files = connection.getFiles(path);
 			for (final TreeItem subItem : selectedFolderItem.getItems()) {

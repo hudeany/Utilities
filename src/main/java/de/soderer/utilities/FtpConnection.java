@@ -220,6 +220,7 @@ public class FtpConnection implements RemoteConnection {
 	 */
 	@Override
 	public InputStream getFile(final String filePath) throws Exception {
+		// TODO: Filestream is empty
 		checkForConnection();
 		ftpClient.cwd(filePath.substring(0, filePath.lastIndexOf("/")));
 		final InputStream inputStream = ftpClient.retrieveFileStream(filePath.substring(filePath.lastIndexOf("/") + 1));
