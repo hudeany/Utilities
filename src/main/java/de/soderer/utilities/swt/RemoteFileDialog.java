@@ -492,7 +492,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 			currentPathField = new LabeledText(additionalSaveComposite, SWT.NONE, LangResources.get("currentPath"), ArrangementStyle.Vertical);
 			currentPathField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
-			currentPathField.setEnabled(false);
+			currentPathField.setReadOnly(true);
 			currentPathField.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(final ModifyEvent event) {
