@@ -3,6 +3,8 @@ package de.soderer.utilities.swt;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,6 +23,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -75,7 +78,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private Button removeServerEntryButton;
 	private Button saveServerEntryButton;
 	private Button connectButton;
-	private Button actionButton;
+	private Button action1Button;
+	private Button action2Button;
 	private char[] inMemoryPassword;
 	private final File keystoreFile;
 	private final byte[] keystoreFileSalt;
@@ -492,7 +496,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 			currentPathField = new LabeledText(additionalSaveComposite, SWT.NONE, LangResources.get("currentPath"), ArrangementStyle.Vertical);
 			currentPathField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
-			currentPathField.setReadOnly(true);
 			currentPathField.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(final ModifyEvent event) {
@@ -506,14 +509,53 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 		mainButtonComposite.setLayout(new FillLayout());
 
-		actionButton = new Button(mainButtonComposite, SWT.PUSH);
-		actionButton.setText(LangResources.get(dialogMode == Mode.Open ? "open" : "save"));
-		actionButton.addSelectionListener(new SelectionAdapter() {
+		action1Button = new Button(mainButtonComposite, SWT.PUSH);
+		action1Button.setText(LangResources.get(dialogMode == Mode.Open ? "open" : "save"));
+		action1Button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				disconnect();
 				setReturnValue(true);
 				getParent().close();
+			}
+		});
+
+		action2Button = new Button(mainButtonComposite, SWT.PUSH);
+		action2Button.setText(LangResources.get(dialogMode == Mode.Open ? "download" : "upload"));
+		action2Button.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(final SelectionEvent event) {
+				final String currentPath = currentPathField.getText();
+				if (currentPath.endsWith("/")) {
+					final DirectoryDialog dialog = new DirectoryDialog(parentShell, SWT.SAVE);
+					dialog.setText(LangResources.get("download"));
+					final String destinationPath = dialog.open();
+					if (destinationPath != null) {
+						try {
+							recursiveDownload(currentPath, destinationPath);
+							new QuestionDialog(getParent(), LangResources.get("download"), LangResources.get("done"), LangResources.get("ok")).open();
+						} catch (final Exception e) {
+							disconnect();
+							new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).open();
+						}
+					}
+				} else {
+					final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
+					final FileDialog dialog = new FileDialog(parentShell, SWT.SAVE);
+					dialog.setText(LangResources.get("download"));
+					dialog.setFileName(currentFileName);
+					final String destinationPath = dialog.open();
+					if (destinationPath != null) {
+						try (InputStream inputStream = connection.getFile(currentPath);
+								OutputStream outputStream = new FileOutputStream(destinationPath)) {
+							Utilities.copy(inputStream, outputStream);
+							new QuestionDialog(getParent(), LangResources.get("download"), LangResources.get("done"), LangResources.get("ok")).open();
+						} catch (final Exception e) {
+							disconnect();
+							new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).open();
+						}
+					}
+				}
 			}
 		});
 
@@ -537,6 +579,24 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		parentShell.pack();
 
 		checkButtonStatus();
+	}
+
+	protected void recursiveDownload(String currentPath, final String destinationPath) throws Exception {
+		if (connection != null) {
+			if (currentPath.endsWith("/")) {
+				currentPath = currentPath.substring(0, currentPath.length() - 1);
+			}
+			for (final String folder : connection.getFolders(currentPath)) {
+				new File(destinationPath + "/" + folder).mkdir();
+				recursiveDownload(currentPath + "/" + folder, destinationPath + "/" + folder);
+			}
+			for (final String file : connection.getFiles(currentPath)) {
+				try (InputStream inputStream = connection.getFile(currentPath + "/" + file);
+						OutputStream outputStream = new FileOutputStream(destinationPath + "/" + file)) {
+					Utilities.copy(inputStream, outputStream);
+				}
+			}
+		}
 	}
 
 	private void connect() {
@@ -617,7 +677,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 			connectButton.setEnabled(true);
 			connectButton.setText(LangResources.get("disconnect"));
-			actionButton.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
+			action1Button.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
+			action2Button.setEnabled(Utilities.isNotBlank(selectedFileName) || Utilities.isNotBlank(selectedFilePath));
 			protocolField.setEnabled(false);
 			hostnameField.setEnabled(false);
 			portField.setEnabled(false);
@@ -642,7 +703,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 			connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username));
 			connectButton.setText(LangResources.get("connect"));
-			actionButton.setEnabled(false);
+			action1Button.setEnabled(false);
+			action2Button.setEnabled(false);
 			protocolField.setEnabled(true);
 			hostnameField.setEnabled(true);
 			portField.setEnabled(!"smb1".equalsIgnoreCase(protocol));
