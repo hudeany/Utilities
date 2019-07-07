@@ -23,11 +23,11 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	protected boolean cancel = false;
 	private boolean isDone = false;
 
-	public WorkerSimple(WorkerParentSimple parent) {
+	public WorkerSimple(final WorkerParentSimple parent) {
 		this.parent = parent;
 	}
-	
-	public void setParent(WorkerParentSimple parent) {
+
+	public void setParent(final WorkerParentSimple parent) {
 		this.parent = parent;
 	}
 
@@ -36,7 +36,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	 *
 	 * @param value
 	 */
-	public void setShowProgressAfterMilliseconds(long value) {
+	public void setShowProgressAfterMilliseconds(final long value) {
 		showProgressAfterMilliseconds = value;
 	}
 
@@ -44,7 +44,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		showProgress(false);
 	}
 
-	protected void showProgress(boolean overrideRefreshTime) {
+	protected void showProgress(final boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
 			if (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds) {
 				// Normal progress update
@@ -65,8 +65,18 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	}
 
 	@Override
-	public boolean cancel(boolean arg0) {
-		return cancel();
+	public boolean cancel(final boolean waitForDone) {
+		final boolean success = cancel();
+		if (waitForDone) {
+			while (!isDone()) {
+				try {
+					Thread.sleep(500);
+				} catch (final InterruptedException e) {
+					// do nothing
+				}
+			}
+		}
+		return success;
 	}
 
 	public boolean cancel() {
@@ -87,13 +97,13 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			return result;
 		}
 	}
-	
+
 	public Exception getError() {
 		return error;
 	}
 
 	@Override
-	public T get(long arg0, TimeUnit arg1) throws InterruptedException, ExecutionException, TimeoutException {
+	public T get(final long arg0, final TimeUnit arg1) throws InterruptedException, ExecutionException, TimeoutException {
 		return get();
 	}
 
@@ -111,7 +121,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		return startTime;
 	}
 
-	public void setEndTime(Date endTime) {
+	public void setEndTime(final Date endTime) {
 		this.endTime = endTime;
 	}
 
@@ -136,15 +146,15 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		itemsToDo = 0L;
 		itemsDone = 0L;
 		startTime = new Date();
-		
+
 		try {
 			result = work();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			error = e;
-		} catch (Throwable e) {
+		} catch (final Throwable e) {
 			error = new Exception("Fatal error occurred: " + e.getMessage(), e);
 		}
-		
+
 		if (endTime == null) {
 			endTime = new Date();
 		}
@@ -153,6 +163,6 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			parent.showDone(startTime, endTime, itemsDone);
 		}
 	}
-	
+
 	public abstract T work() throws Exception;
 }

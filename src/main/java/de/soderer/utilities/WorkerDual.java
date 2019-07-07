@@ -9,11 +9,11 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	protected long subItemsToDo = -1;
 	protected long subItemsDone = -1;
 
-	public WorkerDual(WorkerParentDual parent) {
+	public WorkerDual(final WorkerParentDual parent) {
 		super(parent);
 	}
 
-	protected void showItemStart(String itemName) {
+	protected void showItemStart(final String itemName) {
 		currentItemName = itemName;
 		startTimeSub = new Date();
 		if (parent != null && !cancel) {
@@ -25,14 +25,16 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 		showItemProgress(false);
 	}
 
-	protected void showItemProgress(boolean overrideRefreshTime) {
+	protected void showItemProgress(final boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
 			if (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds) {
 				// Normal progress update
+				((WorkerParentDual) parent).showProgress(startTimeSub, itemsToDo, itemsDone);
 				((WorkerParentDual) parent).showItemProgress(startTimeSub, subItemsToDo, subItemsDone);
 				lastProgressShow = new Date();
 			} else if (overrideRefreshTime) {
 				// Important progress update, which may not be left out
+				((WorkerParentDual) parent).showProgress(startTimeSub, itemsToDo, itemsDone);
 				((WorkerParentDual) parent).showItemProgress(startTimeSub, subItemsToDo, subItemsDone);
 				lastProgressShow = new Date();
 			}

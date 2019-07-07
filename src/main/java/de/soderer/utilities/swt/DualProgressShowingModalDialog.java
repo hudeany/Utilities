@@ -56,21 +56,62 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 
 	@Override
 	public void showUnlimitedSubProgress() {
-		// Do nothing
+		getParent().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+						dualProgressDialog.showUnlimitedProgress();
+					}
+				}
+			}
+		});
 	}
 
 	@Override
 	public void showItemStart(final String itemName) {
-		// Do nothing
+		getParent().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+						dualProgressDialog.setSubItemTitle(itemName);
+						dualProgressDialog.setSubProgress(100, 0);
+					}
+				}
+			}
+		});
 	}
 
 	@Override
 	public void showItemProgress(final Date itemStart, final long subItemToDo, final long subItemDone) {
-		// Do nothing
+		getParent().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+						dualProgressDialog.setSubProgress(subItemToDo, subItemDone);
+					}
+				}
+			}
+		});
 	}
 
 	@Override
 	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
-		// Do nothing
+		getParent().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				if (progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+						dualProgressDialog.setSubProgress(subItemsDone, subItemsDone);
+					}
+				}
+			}
+		});
 	}
 }

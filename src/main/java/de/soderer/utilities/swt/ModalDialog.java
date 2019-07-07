@@ -35,7 +35,7 @@ public abstract class ModalDialog<T> extends Dialog {
 
 		getParent().open();
 		final Display display = getParent().getDisplay();
-		while (!getParent().isDisposed()) {
+		while (!getParent().isDisposed() && !display.isDisposed()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();
 			}

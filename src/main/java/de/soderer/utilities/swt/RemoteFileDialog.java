@@ -41,8 +41,10 @@ import de.soderer.utilities.Smb1Connection;
 import de.soderer.utilities.SmbConnection;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
+import de.soderer.utilities.swt.worker.FileDownloadWorker;
 
-public class RemoteFileDialog extends ModalDialog<Boolean> {
+public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb", "smb1");
 	private static final String STANDARD_KNOWNHOSTS_FILE = "~/.ssh/known_hosts";
 
@@ -113,6 +115,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	@Override
 	protected void createComponents(final Shell parentShell) throws Exception {
 		parentShell.setLayout(new GridLayout(1, true));
+
+		final RemoteFileDialog remoteFileDialog = this;
 
 		if (keystoreFile != null) {
 			final Composite serverEntriesComposite = new Composite(parentShell, SWT.BORDER);
@@ -532,8 +536,17 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					final String destinationPath = dialog.open();
 					if (destinationPath != null) {
 						try {
-							recursiveDownload(currentPath, destinationPath);
-							new QuestionDialog(getParent(), LangResources.get("download"), LangResources.get("done"), LangResources.get("ok")).open();
+							final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
+							progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "");
+							new Thread(directoryDownloadWorker).start();
+							if (progressDialog.open()) {
+								directoryDownloadWorker.cancel(true);
+								showMessage(LangResources.get("menu.directoryHashing"), LangResources.get("canceledByUser"));
+							} else {
+								// check for errors
+								directoryDownloadWorker.get();
+								showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
+							}
 						} catch (final Exception e) {
 							disconnect();
 							new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).open();
@@ -546,10 +559,22 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					dialog.setFileName(currentFileName);
 					final String destinationPath = dialog.open();
 					if (destinationPath != null) {
-						try (InputStream inputStream = connection.getFile(currentPath);
-								OutputStream outputStream = new FileOutputStream(destinationPath)) {
-							Utilities.copy(inputStream, outputStream);
-							new QuestionDialog(getParent(), LangResources.get("download"), LangResources.get("done"), LangResources.get("ok")).open();
+						try {
+							final FileDownloadWorker fileDownloadWorker = new FileDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
+							progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("download"));
+							new Thread(fileDownloadWorker).start();
+							if (progressDialog.open()) {
+								fileDownloadWorker.cancel(true);
+								showMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
+							} else {
+								// check for errors
+								fileDownloadWorker.get();
+
+								showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
+
+								setReturnValue(true);
+								getParent().close();
+							}
 						} catch (final Exception e) {
 							disconnect();
 							new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).open();
