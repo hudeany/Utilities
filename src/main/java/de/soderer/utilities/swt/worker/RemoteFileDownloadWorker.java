@@ -10,13 +10,13 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerParentSimple;
 import de.soderer.utilities.WorkerSimple;
 
-public class FileDownloadWorker extends WorkerSimple<FileDownloadWorker> {
+public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWorker> {
 	private RemoteConnection connection = null;
 
 	private String remoteFilePath = null;
 	private String localFilePath = null;
 
-	public FileDownloadWorker(final WorkerParentSimple parent, final RemoteConnection connection, final String remoteFilePath, final String localFilePath) throws Exception {
+	public RemoteFileDownloadWorker(final WorkerParentSimple parent, final RemoteConnection connection, final String remoteFilePath, final String localFilePath) throws Exception {
 		super(parent);
 
 		this.connection = connection;
@@ -37,7 +37,7 @@ public class FileDownloadWorker extends WorkerSimple<FileDownloadWorker> {
 	}
 
 	@Override
-	public FileDownloadWorker work() throws Exception {
+	public RemoteFileDownloadWorker work() throws Exception {
 		showUnlimitedProgress();
 
 		itemsToDo = connection.getFileInfo(remoteFilePath).getFileSize();

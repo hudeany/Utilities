@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
 import de.soderer.utilities.FtpConnection;
+import de.soderer.utilities.HttpFileConnection;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.RemoteConnection;
 import de.soderer.utilities.SecureDataStore;
@@ -42,10 +43,10 @@ import de.soderer.utilities.SmbConnection;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
-import de.soderer.utilities.swt.worker.FileDownloadWorker;
+import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
 
 public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
-	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb", "smb1");
+	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb", "smb1", "http", "https");
 	private static final String STANDARD_KNOWNHOSTS_FILE = "~/.ssh/known_hosts";
 
 	public enum Mode {
@@ -218,14 +219,20 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			@Override
 			public void modifyText(final ModifyEvent event) {
 				protocol = PROTOCOL_LIST.get(((LabeledCombo) event.widget).getSelectedItemIndex());
-				if (("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) && (portField.getText().equals("21") || portField.getText().equals("445"))) {
-					portField.setText("22");
-				} else if ("ftp".equalsIgnoreCase(protocol) && (portField.getText().equals("22") || portField.getText().equals("445"))) {
-					portField.setText("21");
-				} else if ("smb".equalsIgnoreCase(protocol) && (portField.getText().equals("21") || portField.getText().equals("22"))) {
-					portField.setText("445");
-				} else if ("smb1".equalsIgnoreCase(protocol) && (portField.getText().equals("21") || portField.getText().equals("22"))) {
-					portField.setText("445");
+				if (portField.getText().equals("21") || portField.getText().equals("22") || portField.getText().equals("445") || portField.getText().equals("80") || portField.getText().equals("443")) {
+					if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
+						portField.setText("22");
+					} else if ("ftp".equalsIgnoreCase(protocol)) {
+						portField.setText("21");
+					} else if ("smb".equalsIgnoreCase(protocol)) {
+						portField.setText("445");
+					} else if ("smb1".equalsIgnoreCase(protocol)) {
+						portField.setText("445");
+					} else if ("http".equalsIgnoreCase(protocol)) {
+						portField.setText("80");
+					} else if ("https".equalsIgnoreCase(protocol)) {
+						portField.setText("443");
+					}
 				}
 				checkButtonStatus();
 			}
@@ -548,7 +555,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
 							}
 						} catch (final Exception e) {
-							disconnect();
 							new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).open();
 						}
 					}
@@ -560,7 +566,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 					final String destinationPath = dialog.open();
 					if (destinationPath != null) {
 						try {
-							final FileDownloadWorker fileDownloadWorker = new FileDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
+							final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
 							progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("download"));
 							new Thread(fileDownloadWorker).start();
 							if (progressDialog.open()) {
@@ -569,14 +575,9 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 							} else {
 								// check for errors
 								fileDownloadWorker.get();
-
 								showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
-
-								setReturnValue(true);
-								getParent().close();
 							}
 						} catch (final Exception e) {
-							disconnect();
 							new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).open();
 						}
 					}
@@ -656,6 +657,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 				connection = new SmbConnection(getServerEntry());
 			} else if ("smb1".equalsIgnoreCase(protocol)) {
 				connection = new Smb1Connection(getServerEntry());
+			} else if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) {
+				connection = new HttpFileConnection(getServerEntry());
 			}
 
 			final List<String> folders = connection.getFolders("/");
@@ -690,6 +693,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 
 		folderTree.removeAll();
 		filesTree.removeAll();
+		checkButtonStatus();
 	}
 
 	private void checkButtonStatus() {
@@ -721,12 +725,12 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			hostKeyField.setEnabled(false);
 		} else {
 			if (keystoreFile != null) {
-				serverEntriesCombo.setEnabled(serverEntriesCombo.getItemCount() > 0 || (Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username)));
+				serverEntriesCombo.setEnabled(serverEntriesCombo.getItemCount() > 0 || (Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol))));
 				loadServerEntriesButton.setEnabled(keystoreFile.exists());
 				removeServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()));
-				saveServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()) && Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username));
+				saveServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()) && Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)));
 			}
-			connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username));
+			connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)));
 			connectButton.setText(LangResources.get("connect"));
 			action1Button.setEnabled(false);
 			action2Button.setEnabled(false);
@@ -744,7 +748,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			}
 			checkHostKeyButton.setEnabled("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol));
 			hostKeyField.setEnabled(("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) && checkHostKeyButton.getSelection());
-			sharenameField.setEnabled("smb".equalsIgnoreCase(protocol) || "smb1".equalsIgnoreCase(protocol));
+			sharenameField.setEnabled("smb".equalsIgnoreCase(protocol) || "smb1".equalsIgnoreCase(protocol) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol));
 		}
 	}
 
@@ -757,6 +761,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			return new ServerAccessData(protocol, hostnameOrIp, port, sharename, username, null, password, null);
 		} else if ("smb1".equalsIgnoreCase(protocol)) {
 			return new ServerAccessData(protocol, hostnameOrIp, 0, sharename, username, null, password, null);
+		} else if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) {
+			return new ServerAccessData(protocol, hostnameOrIp, port, sharename, username, null, password, null);
 		} else {
 			throw new IllegalArgumentException("Unknown protocol: " + protocol);
 		}

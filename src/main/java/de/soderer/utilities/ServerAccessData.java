@@ -78,6 +78,17 @@ public class ServerAccessData {
 				} else if (Utilities.isNotBlank(hostKey)) {
 					throw new IllegalArgumentException("Invalid argument hostKey '" + hostKey + "' for protocol: " + this.protocol);
 				}
+			} else if ("http".equalsIgnoreCase(this.protocol) || "https".equalsIgnoreCase(this.protocol)) {
+				this.hostname = hostname;
+				this.sharename = sharename;
+				this.port = port;
+				this.username = username;
+				this.password = password;
+				if (Utilities.isNotBlank(keyFilePath)) {
+					throw new IllegalArgumentException("Invalid argument keyFilePath '" + keyFilePath + "' for protocol: " + this.protocol);
+				} else if (Utilities.isNotBlank(hostKey)) {
+					throw new IllegalArgumentException("Invalid argument hostKey '" + hostKey + "' for protocol: " + this.protocol);
+				}
 			} else {
 				throw new IllegalArgumentException("Unsupported protocol: " + this.protocol);
 			}
