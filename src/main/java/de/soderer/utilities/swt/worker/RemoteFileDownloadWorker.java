@@ -5,10 +5,10 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import de.soderer.utilities.RemoteConnection;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerParentSimple;
 import de.soderer.utilities.WorkerSimple;
+import de.soderer.utilities.remote.RemoteConnection;
 
 public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWorker> {
 	private RemoteConnection connection = null;

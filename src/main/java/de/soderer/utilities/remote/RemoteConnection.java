@@ -1,8 +1,11 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 import java.io.Closeable;
 import java.io.InputStream;
 import java.util.List;
+
+import de.soderer.utilities.RemoteFileInfo;
+import de.soderer.utilities.RemoteFolderInfo;
 
 public interface RemoteConnection extends Closeable {
 	List<String> getFolders(String folderPath) throws Exception;

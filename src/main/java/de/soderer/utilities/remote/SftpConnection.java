@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,6 +23,14 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
+import de.soderer.utilities.ExceptionUtilities;
+import de.soderer.utilities.JschFileData;
+import de.soderer.utilities.RemoteFileInfo;
+import de.soderer.utilities.RemoteFolderInfo;
+import de.soderer.utilities.ServerAccessData;
+import de.soderer.utilities.SshFileChangeWatcherThread;
+import de.soderer.utilities.UnknownHostKeyException;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
 
 public class SftpConnection implements RemoteConnection {

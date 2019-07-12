@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -10,6 +10,10 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.log4j.Logger;
+
+import de.soderer.utilities.RemoteFileInfo;
+import de.soderer.utilities.RemoteFolderInfo;
+import de.soderer.utilities.ServerAccessData;
 
 /**
  * FtpConnection

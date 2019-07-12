@@ -1,5 +1,7 @@
 package de.soderer.utilities;
 
+import de.soderer.utilities.remote.SftpConnection;
+
 public class SshFileChangeWatcherThread extends Thread {
 	private final ServerAccessData serverData;
 	private final String filePath;

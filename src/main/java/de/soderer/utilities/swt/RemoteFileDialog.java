@@ -31,17 +31,17 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
-import de.soderer.utilities.FtpConnection;
-import de.soderer.utilities.HttpFileConnection;
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.RemoteConnection;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
-import de.soderer.utilities.SftpConnection;
-import de.soderer.utilities.Smb1Connection;
-import de.soderer.utilities.SmbConnection;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.remote.FtpConnection;
+import de.soderer.utilities.remote.HttpFileConnection;
+import de.soderer.utilities.remote.RemoteConnection;
+import de.soderer.utilities.remote.SftpConnection;
+import de.soderer.utilities.remote.Smb1Connection;
+import de.soderer.utilities.remote.SmbConnection;
 import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
 import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
 

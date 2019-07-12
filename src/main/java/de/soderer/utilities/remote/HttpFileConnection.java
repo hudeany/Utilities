@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -16,6 +16,13 @@ import java.util.List;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.log4j.Logger;
+
+import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.RemoteFileInfo;
+import de.soderer.utilities.RemoteFolderInfo;
+import de.soderer.utilities.ServerAccessData;
+import de.soderer.utilities.Utilities;
 
 /**
  * HttpFileConnection

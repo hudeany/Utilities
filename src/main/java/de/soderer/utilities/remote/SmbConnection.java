@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,6 +26,10 @@ import com.hierynomus.smbj.connection.Connection;
 import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
+
+import de.soderer.utilities.RemoteFileInfo;
+import de.soderer.utilities.RemoteFolderInfo;
+import de.soderer.utilities.ServerAccessData;
 
 public class SmbConnection implements RemoteConnection {
 	/** The Constant logger. */
