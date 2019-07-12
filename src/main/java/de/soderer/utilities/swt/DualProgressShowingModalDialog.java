@@ -6,7 +6,7 @@ import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.WorkerParentDual;
+import de.soderer.utilities.worker.WorkerParentDual;
 
 public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingModalDialog<T> implements WorkerParentDual {
 	@SuppressWarnings("unused")

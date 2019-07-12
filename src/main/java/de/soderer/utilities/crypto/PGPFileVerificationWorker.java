@@ -14,8 +14,8 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 	private InputStream dataToVerify = null;

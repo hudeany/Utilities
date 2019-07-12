@@ -12,6 +12,9 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.zip.ZipDecryptInputStream;
+import de.soderer.utilities.zip.ZipEncryptOutputStream;
+
 public class ZipEncryptionTest {
 	@Test
 	public void test() {

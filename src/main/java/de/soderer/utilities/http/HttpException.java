@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.http;
 
 public class HttpException extends Exception {
 	private static final long serialVersionUID = -3519288978067750949L;

@@ -16,8 +16,8 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 
 import de.soderer.utilities.DateUtilities;
-import de.soderer.utilities.WorkerParentSimple;
-import de.soderer.utilities.WorkerSimple;
+import de.soderer.utilities.worker.WorkerParentSimple;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog implements WorkerParentSimple {
 	private static final long serialVersionUID = 4039220978715450890L;

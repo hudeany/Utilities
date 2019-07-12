@@ -6,9 +6,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.WorkerParentSimple;
-import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.remote.RemoteConnection;
+import de.soderer.utilities.worker.WorkerParentSimple;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWorker> {
 	private RemoteConnection connection = null;

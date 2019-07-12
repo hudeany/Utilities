@@ -19,10 +19,10 @@ import javax.crypto.spec.SecretKeySpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.WorkerParentSimple;
-import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerParentSimple;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 	private File fileToDecrypt = null;

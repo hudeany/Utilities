@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.http;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,6 +29,9 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import de.soderer.utilities.NumberUtilities;
+import de.soderer.utilities.Tuple;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class HttpUtilities {

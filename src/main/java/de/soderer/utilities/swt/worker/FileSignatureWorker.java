@@ -11,9 +11,9 @@ import org.apache.commons.io.FileUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class FileSignatureWorker extends WorkerSimple<Boolean> {
 	private File fileToSign = null;

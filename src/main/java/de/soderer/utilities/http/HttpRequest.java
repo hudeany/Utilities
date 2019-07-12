@@ -1,7 +1,9 @@
-package de.soderer.utilities;
+package de.soderer.utilities.http;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import de.soderer.utilities.Utilities;
 
 public class HttpRequest {
 	public enum HttpMethod {

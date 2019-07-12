@@ -30,6 +30,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import de.soderer.utilities.UserError.Reason;
+import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.xml.XmlUtilities;
 
 public class ApplicationUpdateHelper implements WorkerParentSimple {

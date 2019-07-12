@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.zip;
 
 import java.io.IOException;
 import java.io.InputStream;

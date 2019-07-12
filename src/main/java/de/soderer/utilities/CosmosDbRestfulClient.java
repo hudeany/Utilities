@@ -18,7 +18,9 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.log4j.Logger;
 
-import de.soderer.utilities.HttpUtilities.RequestMethod;
+import de.soderer.utilities.http.HttpResponse;
+import de.soderer.utilities.http.HttpUtilities;
+import de.soderer.utilities.http.HttpUtilities.RequestMethod;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;

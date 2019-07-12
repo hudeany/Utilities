@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.zip;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -18,6 +18,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+
+import de.soderer.utilities.Utilities;
 
 public class ZipUtilities {
 	/**

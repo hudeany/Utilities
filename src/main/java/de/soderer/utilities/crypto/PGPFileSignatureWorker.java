@@ -16,9 +16,9 @@ import org.bouncycastle.openpgp.PGPSignatureGenerator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.crypto.PGPUtilities.PgpHashMethod;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 	private InputStream dataToSign = null;

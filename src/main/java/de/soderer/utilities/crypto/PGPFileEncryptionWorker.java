@@ -19,9 +19,9 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPDataEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPublicKeyKeyEncryptionMethodGenerator;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.crypto.PGPUtilities.PgpSymmetricEncryptionMethod;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerSimple;
 
 /**
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html

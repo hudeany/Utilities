@@ -6,7 +6,7 @@ import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.WorkerParentSimple;
+import de.soderer.utilities.worker.WorkerParentSimple;
 
 public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> implements WorkerParentSimple {
 	private static final transient Logger logger = Logger.getLogger(ProgressShowingModalDialog.class);

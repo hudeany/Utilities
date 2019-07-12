@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.worker;
 
 import java.util.Date;
 
