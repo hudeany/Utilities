@@ -115,9 +115,10 @@ public class SmbConnection implements RemoteConnection {
 		}
 		final List<String> folderNames = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
-			if (!".".equals(fileIdBothDirectoryInformation.getFileName()) && !"..".equals(fileIdBothDirectoryInformation.getFileName())) {
+			final String entryName = fileIdBothDirectoryInformation.getFileName();
+			if (!".".equals(entryName) && !"..".equals(entryName)) {
 				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
-					folderNames.add(fileIdBothDirectoryInformation.getFileName());
+					folderNames.add(entryName);
 				}
 			}
 		}
@@ -156,9 +157,10 @@ public class SmbConnection implements RemoteConnection {
 		}
 		final List<String> fileNames = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
-			if (!".".equals(fileIdBothDirectoryInformation.getFileName()) && !"..".equals(fileIdBothDirectoryInformation.getFileName())) {
+			final String entryName = fileIdBothDirectoryInformation.getFileName();
+			if (!".".equals(entryName) && !"..".equals(entryName)) {
 				if (!EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
-					fileNames.add(fileIdBothDirectoryInformation.getFileName());
+					fileNames.add(entryName);
 				}
 			}
 		}
@@ -189,13 +191,20 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFile getFileInfo(String filePath) throws Exception {
+	public RemoteFileInfo getFileInfo(String filePath) throws Exception {
 		if (filePath.startsWith("/")) {
 			filePath = filePath.substring(1);
 		}
+		filePath = filePath.replace("\\", "/");
+		String fileName;
+		if (filePath.contains("/")) {
+			fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+		} else {
+			fileName = filePath;
+		}
 		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
 		final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-		return new RemoteFile("/" + fileAllInformation.getNameInformation().replace("\\", "/"), fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
+		return new RemoteFileInfo(fileName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
 	}
 
 	@Override
@@ -252,5 +261,46 @@ public class SmbConnection implements RemoteConnection {
 			}
 			client = null;
 		}
+	}
+
+	private void checkForConnection() throws Exception {
+		if (client == null) {
+			throw new Exception("SmbConnection is not connected");
+		}
+	}
+
+	@Override
+	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
+		checkForConnection();
+
+		folderPath = folderPath.replace("\\", "/");
+
+		if (folderPath.startsWith("/")) {
+			folderPath = folderPath.substring(1);
+		}
+
+		String folderName;
+		if (folderPath.contains("/")) {
+			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+		} else {
+			folderName = folderPath;
+		}
+
+		final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
+		final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
+			final String entryName = fileIdBothDirectoryInformation.getFileName();
+			if (!".".equals(entryName) && !"..".equals(entryName)) {
+				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
+					folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
+				} else {
+					final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
+					fileInfoList.add(new RemoteFileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
+				}
+			}
+		}
+
+		return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
 	}
 }

@@ -459,4 +459,36 @@ public class FileUtilities {
 			os.write(textToAppend.getBytes(encoding));
 		}
 	}
+
+	public static String trimLeadingFileSeparator(final String path) {
+		if (path.startsWith("/")) {
+			return path.substring(1);
+		} else {
+			return path;
+		}
+	}
+
+	public static String trimTrailingFileSeparator(final String path) {
+		if (path.endsWith("/")) {
+			return path.substring(0, path.length() - 1);
+		} else {
+			return path;
+		}
+	}
+
+	public static String getFilenameFromPath(final String path) {
+		if (path.contains("/")) {
+			return path.substring(path.lastIndexOf("/") + 1);
+		} else {
+			return path;
+		}
+	}
+
+	public static String getParentFromPath(final String path) {
+		if (path.contains("/")) {
+			return path.substring(0, path.lastIndexOf("/"));
+		} else {
+			return "";
+		}
+	}
 }

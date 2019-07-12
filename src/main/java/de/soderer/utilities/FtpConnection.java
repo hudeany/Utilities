@@ -301,11 +301,47 @@ public class FtpConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFile getFileInfo(final String filePath) throws Exception {
+	public RemoteFileInfo getFileInfo(final String filePath) throws Exception {
 		checkForConnection();
 
 		final FTPFile file = ftpClient.mlistFile(filePath);
-		return new RemoteFile(filePath, file.getSize(), file.getTimestamp().getTime());
+		return new RemoteFileInfo(file.getName(), file.getSize(), file.getTimestamp().getTime());
+	}
+
+	@Override
+	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
+		checkForConnection();
+
+		folderPath = folderPath.replace("\\", "/");
+		String folderName;
+		if (folderPath.contains("/")) {
+			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+		} else {
+			folderName = folderPath;
+		}
+
+		final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
+		final FTPFile[] directories = ftpClient.listDirectories(folderPath);
+		if (directories != null) {
+			for (final FTPFile directory : directories) {
+				final String directoryName = directory.getName();
+				if (!".".equals(directoryName) && !"..".equals(directoryName) && directory.isDirectory()) {
+					folderInfoList.add(getFolderInfo(folderPath + "/" + directoryName));
+				}
+			}
+		}
+
+		final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+		final FTPFile[] files = ftpClient.listFiles(folderPath);
+		if (files != null) {
+			for (final FTPFile file : files) {
+				if (file.isFile()) {
+					fileInfoList.add(new RemoteFileInfo(file.getName(), file.getSize(), file.getTimestamp().getTime()));
+				}
+			}
+		}
+
+		return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
 	}
 
 	class FtpInputStream extends FilterInputStream {

@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import de.soderer.utilities.RemoteConnection;
+import de.soderer.utilities.RemoteFileInfo;
+import de.soderer.utilities.RemoteFolderInfo;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerDual;
 import de.soderer.utilities.WorkerParentDual;
@@ -56,51 +58,36 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 	@Override
 	public DirectoryDownloadWorker work() throws Exception {
 		showUnlimitedProgress();
-		itemsToDo = getDirectoryDataSize(remoteDirectoryPath);
+		final RemoteFolderInfo remoteFolderInfo = connection.getFolderInfo(remoteDirectoryPath);
+		itemsToDo = remoteFolderInfo.getRecursiveFolderDataSize();
 		showProgress(true);
-		recursiveDownload(remoteDirectoryPath, localParentDirectoryPath);
+		final File destinationParentDirectoryPath = new File(localParentDirectoryPath + "/" + remoteFolderInfo.getFolderName());
+		destinationParentDirectoryPath.mkdir();
+		recursiveDownload(remoteDirectoryPath, remoteFolderInfo, destinationParentDirectoryPath);
 		return this;
 	}
 
-	private long getDirectoryDataSize(final String currentPath) throws Exception {
-		long dataSize = 0;
+	private void recursiveDownload(final String remoteFolderPath, final RemoteFolderInfo remoteFolderInfo, final File destinationParentDirectory) throws Exception {
 		if (!cancel) {
-			for (final String folder : connection.getFolders(currentPath)) {
+			for (final RemoteFolderInfo subFolderInfo : remoteFolderInfo.getSubFolders()) {
 				if (!cancel) {
-					dataSize += getDirectoryDataSize(currentPath + "/" + folder);
+					final File nextFolderDestination = new File(destinationParentDirectory, subFolderInfo.getFolderName());
+					nextFolderDestination.mkdir();
+					recursiveDownload(remoteFolderPath + "/" + subFolderInfo.getFolderName(), subFolderInfo, nextFolderDestination);
 				}
 			}
 		}
 		if (!cancel) {
-			for (final String file: connection.getFiles(currentPath)) {
-				if (!cancel) {
-					dataSize += connection.getFileInfo(currentPath + "/" + file).getFileSize();
-				}
-			}
-		}
-		if (cancel) {
-			return 0;
-		} else {
-			return dataSize;
-		}
-	}
+			for (final RemoteFileInfo fileInfo : remoteFolderInfo.getFiles()) {
+				final String nextRemoteFile = remoteFolderPath + "/" + fileInfo.getFileName();
+				final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
+				subItemsDone = 0;
+				final String nextRemoteFileRelativePath = nextRemoteFile.substring(remoteDirectoryPath.length() + 1);
+				showItemStart(nextRemoteFileRelativePath);
+				showProgress();
 
-	private void recursiveDownload(final String currentRemoteDirectoryPath, final String destinationParentDirectoryPath) throws Exception {
-		if (!cancel) {
-			for (final String folder : connection.getFolders(currentRemoteDirectoryPath)) {
 				if (!cancel) {
-					new File(destinationParentDirectoryPath + "/" + folder).mkdir();
-					recursiveDownload(currentRemoteDirectoryPath + "/" + folder, destinationParentDirectoryPath + "/" + folder);
-				}
-			}
-		}
-		if (!cancel) {
-			for (final String file : connection.getFiles(currentRemoteDirectoryPath)) {
-				if (!cancel) {
-					final String nextRemoteFile = currentRemoteDirectoryPath + "/" + file;
-					final File nextLocalFile = new File(destinationParentDirectoryPath + "/" + file);
-					subItemsToDo = connection.getFileInfo(nextRemoteFile).getFileSize();
-					final String nextRemoteFileRelativePath = nextRemoteFile.substring(remoteDirectoryPath.length() + 1);
+					subItemsToDo = fileInfo.getFileSize();
 					showItemStart(nextRemoteFileRelativePath);
 					try (InputStream inputStream = connection.getFile(nextRemoteFile);
 							OutputStream outputStream = new FileOutputStream(nextLocalFile)) {
@@ -116,8 +103,7 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 								showItemProgress();
 							}
 						}
-
-						itemsDone += subItemsToDo;
+						itemsDone += subItemsDone;
 						showProgress();
 					}
 

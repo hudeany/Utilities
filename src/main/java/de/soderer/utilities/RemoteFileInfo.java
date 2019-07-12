@@ -3,19 +3,19 @@ package de.soderer.utilities;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class RemoteFile {
-	private final String filePath;
+public class RemoteFileInfo {
+	private final String fileName;
 	private final long fileSize;
 	private final Date modificationDate;
 
-	public RemoteFile(final String filePath, final long fileSize, final Date modificationDate) {
-		this.filePath = filePath;
+	public RemoteFileInfo(final String fileName, final long fileSize, final Date modificationDate) {
+		this.fileName = fileName;
 		this.fileSize = fileSize;
 		this.modificationDate = modificationDate;
 	}
 
-	public String getFilePath() {
-		return filePath;
+	public String getFileName() {
+		return fileName;
 	}
 
 	public long getFileSize() {
@@ -28,6 +28,6 @@ public class RemoteFile {
 
 	@Override
 	public String toString() {
-		return filePath + " [" + fileSize + " Byte, " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(modificationDate) + "]";
+		return fileName + " [" + fileSize + " Byte, " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(modificationDate) + "]";
 	}
 }

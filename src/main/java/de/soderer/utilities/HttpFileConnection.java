@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.log4j.Logger;
 
@@ -120,37 +119,14 @@ public class HttpFileConnection implements RemoteConnection {
 	}
 
 	@Override
-	public List<String> getFiles(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
+	public List<String> getFiles(final String folderPath) throws Exception {
 		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
-					ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-				Utilities.copy(inputStream, outputStream);
+			final URLConnection urlConnection = getUrl(FileUtilities.trimLeadingFileSeparator(folderPath)).openConnection();
+			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				final List<String> returnList = new ArrayList<>();
-				final byte[] data = outputStream.toByteArray();
-				final String rawDataString = new String(data, "UTF-8");
-				final int dataStart = rawDataString.indexOf("<pre>");
-				if (dataStart >= 0) {
-					final int dataEnd = rawDataString.indexOf("</pre>", dataStart + 5);
-					if (dataEnd >= 0) {
-						final String dataString = rawDataString.substring(dataStart + 5, dataEnd);
-						final BufferedReader reader = new BufferedReader(new StringReader(dataString));
-						String nextLine;
-						while ((nextLine = reader.readLine()) != null) {
-							if (!nextLine.contains("alt=\"[PARENTDIR]\">") && !nextLine.contains("alt=\"[DIR]\">")) {
-								final int fileNameStart = nextLine.indexOf("<a href=\"");
-								if (fileNameStart >= 0) {
-									final int fileNameEnd = nextLine.indexOf("\"", fileNameStart + 9);
-									if (fileNameEnd >= 0) {
-										returnList.add(nextLine.substring(fileNameStart + 9, fileNameEnd));
-									}
-								}
-							}
-						}
-					}
+				final byte[] data = Utilities.toByteArray(inputStream);
+				for (final String fileLine : getFileLines(data)) {
+					returnList.add(getEntryNameFromLine(fileLine));
 				}
 				return returnList;
 			}
@@ -160,43 +136,12 @@ public class HttpFileConnection implements RemoteConnection {
 	}
 
 	@Override
-	public List<String> getFolders(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
+	public List<String> getFolders(final String folderPath) throws Exception {
 		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
-					ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-				Utilities.copy(inputStream, outputStream);
-				final List<String> returnList = new ArrayList<>();
-				final byte[] data = outputStream.toByteArray();
-				final String rawDataString = new String(data, "UTF-8");
-				final int dataStart = rawDataString.indexOf("<pre>");
-				if (dataStart >= 0) {
-					final int dataEnd = rawDataString.indexOf("</pre>", dataStart + 5);
-					if (dataEnd >= 0) {
-						final String dataString = rawDataString.substring(dataStart + 5, dataEnd);
-						final BufferedReader reader = new BufferedReader(new StringReader(dataString));
-						String nextLine;
-						while ((nextLine = reader.readLine()) != null) {
-							if (!nextLine.contains("alt=\"[PARENTDIR]\">") && nextLine.contains("alt=\"[DIR]\">")) {
-								final int folderNameStart = nextLine.indexOf("<a href=\"");
-								if (folderNameStart >= 0) {
-									final int folderNameEnd = nextLine.indexOf("\"", folderNameStart + 9);
-									if (folderNameEnd >= 0) {
-										String folderName = nextLine.substring(folderNameStart + 9, folderNameEnd);
-										if (folderName.endsWith("/")) {
-											folderName = folderName.substring(0, folderName.length() - 1);
-										}
-										returnList.add(folderName);
-									}
-								}
-							}
-						}
-					}
-				}
-				return returnList;
+			final URLConnection urlConnection = getUrl(FileUtilities.trimLeadingFileSeparator(folderPath)).openConnection();
+			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+				final byte[] data = Utilities.toByteArray(inputStream);
+				return getFolderNames(data);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);
@@ -208,47 +153,14 @@ public class HttpFileConnection implements RemoteConnection {
 	 */
 	@Override
 	public boolean folderExists(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
-		if (folderPath.endsWith("/")) {
-			folderPath = folderPath.substring(0, folderPath.length() - 1);
-		}
-		String parentFolderPath;
-		String folderName;
-		if (folderPath.contains("/")) {
-			parentFolderPath = folderPath.substring(0, folderPath.lastIndexOf("/"));
-			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
-		} else {
-			parentFolderPath = "";
-			folderName = folderPath;
-		}
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
+		final String parentFolderPath = FileUtilities.getParentFromPath(folderPath);
+		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
 		try {
 			final URLConnection urlConnection = getUrl(parentFolderPath).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
-					ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-				Utilities.copy(inputStream, outputStream);
-				final byte[] data = outputStream.toByteArray();
-				final String rawDataString = new String(data, "UTF-8");
-				final int dataStart = rawDataString.indexOf("<pre>");
-				if (dataStart >= 0) {
-					final int dataEnd = rawDataString.indexOf("</pre>", dataStart + 5);
-					if (dataEnd >= 0) {
-						final String dataString = rawDataString.substring(dataStart + 5, dataEnd);
-						final BufferedReader reader = new BufferedReader(new StringReader(dataString));
-						String nextLine;
-						while ((nextLine = reader.readLine()) != null) {
-							if (!nextLine.contains("alt=\"[PARENTDIR]\">") && nextLine.contains("alt=\"[DIR]\">") && (nextLine.contains("<a href=\"" + folderName + "\">") || nextLine.contains("<a href=\"" + folderName + "/\">"))) {
-								return true;
-							}
-						}
-						return false;
-					} else {
-						return false;
-					}
-				} else {
-					return false;
-				}
+			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+				final byte[] data = Utilities.toByteArray(inputStream);
+				return getFolderNames(data).contains(folderName);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot check folder exists for '" + folderPath + "': " + e.getMessage(), e);
@@ -264,44 +176,20 @@ public class HttpFileConnection implements RemoteConnection {
 	 */
 	@Override
 	public boolean fileExists(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
-		String folderPath;
-		String fileName;
-		if (filePath.contains("/")) {
-			folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
-			fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
-		} else {
-			folderPath = "";
-			fileName = filePath;
-		}
+		filePath = FileUtilities.trimLeadingFileSeparator(filePath);
+		final String folderPath = FileUtilities.getParentFromPath(filePath);
+		final String fileName = FileUtilities.getFilenameFromPath(filePath);
 		try {
 			final URLConnection urlConnection = getUrl(folderPath).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
-					ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-				Utilities.copy(inputStream, outputStream);
-				final byte[] data = outputStream.toByteArray();
-				final String rawDataString = new String(data, "UTF-8");
-				final int dataStart = rawDataString.indexOf("<pre>");
-				if (dataStart >= 0) {
-					final int dataEnd = rawDataString.indexOf("</pre>", dataStart + 5);
-					if (dataEnd >= 0) {
-						final String dataString = rawDataString.substring(dataStart + 5, dataEnd);
-						final BufferedReader reader = new BufferedReader(new StringReader(dataString));
-						String nextLine;
-						while ((nextLine = reader.readLine()) != null) {
-							if (!nextLine.contains("alt=\"[PARENTDIR]\">") && !nextLine.contains("alt=\"[DIR]\">") && nextLine.contains("<a href=\"" + fileName + "\">")) {
-								return true;
-							}
-						}
-						return false;
-					} else {
-						return false;
+			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+				final byte[] data = Utilities.toByteArray(inputStream);
+				for (final String fileLine : getFileLines(data)) {
+					final String fileNameFromLine = getEntryNameFromLine(fileLine);
+					if (fileNameFromLine != null && fileNameFromLine.equals(fileName)) {
+						return true;
 					}
-				} else {
-					return false;
 				}
+				return false;
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot check file exists for '" + filePath + "': " + e.getMessage(), e);
@@ -327,9 +215,7 @@ public class HttpFileConnection implements RemoteConnection {
 	 */
 	@Override
 	public InputStream getFile(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
+		filePath = FileUtilities.trimLeadingFileSeparator(filePath);
 		try {
 			final URLConnection urlConnection = getUrl(filePath).openConnection();
 			return new BufferedInputStream(urlConnection.getInputStream());
@@ -362,65 +248,60 @@ public class HttpFileConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFile getFileInfo(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
-		String folderPath;
-		String fileName;
-		if (filePath.contains("/")) {
-			folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
-			fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
-		} else {
-			folderPath = "";
-			fileName = filePath;
-		}
+	public RemoteFileInfo getFileInfo(String filePath) throws Exception {
+		filePath = FileUtilities.trimLeadingFileSeparator(filePath);
+		final String folderPath = FileUtilities.getParentFromPath(filePath);
+		final String fileName = FileUtilities.getFilenameFromPath(filePath);
 		try {
 			final URLConnection urlConnection = getUrl(folderPath).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
-					ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-				Utilities.copy(inputStream, outputStream);
-				final byte[] data = outputStream.toByteArray();
-				final String rawDataString = new String(data, "UTF-8");
-				final int dataStart = rawDataString.indexOf("<pre>");
-				if (dataStart >= 0) {
-					final int dataEnd = rawDataString.indexOf("</pre>", dataStart + 5);
-					if (dataEnd >= 0) {
-						final String dataString = rawDataString.substring(dataStart + 5, dataEnd);
-						final BufferedReader reader = new BufferedReader(new StringReader(dataString));
-						String nextLine;
-						while ((nextLine = reader.readLine()) != null) {
-							if (nextLine.contains("<a href=\"" + fileName + "\">")) {
-								final String fileInfoPart = nextLine.substring(nextLine.lastIndexOf("</a>") + 4).trim();
-								final int separatorIndex = fileInfoPart.lastIndexOf(" ");
-								final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
-								final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
-								final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
-								long fileSize;
-								if (sizeString.endsWith("k")) {
-									fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024);
-								} else if (sizeString.endsWith("m")) {
-									fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024 * 1024);
-								} else if (sizeString.endsWith("g")) {
-									fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024 * 1024 * 1024);
-								} else if (sizeString.endsWith("t")) {
-									fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024 * 1024 * 1024 * 1024);
-								} else {
-									fileSize = Long.parseLong(sizeString);
-								}
-								return new RemoteFile(filePath, fileSize, modificationDate);
-							}
-						}
-						return null;
-					} else {
-						return null;
+			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+				final byte[] data = Utilities.toByteArray(inputStream);
+				for (final String fileLine : getFileLines(data)) {
+					final String fileNameFromLine = getEntryNameFromLine(fileLine);
+					if (fileNameFromLine != null && fileNameFromLine.equals(fileName)) {
+						final String fileInfoPart = fileLine.substring(fileLine.lastIndexOf("</a>") + 4).trim();
+						final int separatorIndex = fileInfoPart.lastIndexOf(" ");
+						final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
+						final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
+						final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
+						final long fileSize = getFileSize(sizeString);
+						return new RemoteFileInfo(fileName, fileSize, modificationDate);
 					}
-				} else {
-					return null;
 				}
+				return null;
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot download file info for '" + filePath + "': " + e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
+		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
+		try {
+			final URLConnection urlConnection = getUrl(folderPath).openConnection();
+			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+				final byte[] data = Utilities.toByteArray(inputStream);
+				final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
+				for (final String subFolderName : getFolderNames(data)) {
+					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
+				}
+				final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+				for (final String fileLine : getFileLines(data)) {
+					final String fileName = getEntryNameFromLine(fileLine);
+					final String fileInfoPart = fileLine.substring(fileLine.lastIndexOf("</a>") + 4).trim();
+					final int separatorIndex = fileInfoPart.lastIndexOf(" ");
+					final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
+					final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
+					final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
+					final long fileSize = getFileSize(sizeString);
+					fileInfoList.add(new RemoteFileInfo(fileName, fileSize, modificationDate));
+				}
+				return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
+			}
+		} catch (final Exception e) {
+			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);
 		}
 	}
 
@@ -433,5 +314,87 @@ public class HttpFileConnection implements RemoteConnection {
 				+ "/" + path
 				+ (username != null ? "?username=" + URLEncoder.encode(username, "UTF-8") + (password != null ? "&password=" + URLEncoder.encode(password, "UTF-8") : "") : "")
 				);
+	}
+
+	private List<String> getEntryLines(final byte[] data) throws Exception {
+		final String rawDataString = new String(data, "UTF-8");
+		final int dataStart = rawDataString.indexOf("<pre>");
+		if (dataStart >= 0) {
+			final int dataEnd = rawDataString.indexOf("</pre>", dataStart + 5);
+			if (dataEnd >= 0) {
+				final String dataString = rawDataString.substring(dataStart + 5, dataEnd);
+				final BufferedReader reader = new BufferedReader(new StringReader(dataString));
+				final List<String> entryLines = new ArrayList<>();
+				String nextLine;
+				while ((nextLine = reader.readLine()) != null) {
+					if (!nextLine.contains("alt=\"[PARENTDIR]\">")) {
+						entryLines.add(nextLine);
+					}
+				}
+				return entryLines;
+			} else {
+				return null;
+			}
+		} else {
+			return null;
+		}
+	}
+
+	private String getEntryNameFromLine(final String line) {
+		final int entryNameStart = line.indexOf("<a href=\"");
+		if (entryNameStart >= 0) {
+			final int entryNameEnd = line.indexOf("\"", entryNameStart + 9);
+			if (entryNameEnd >= 0) {
+				return line.substring(entryNameStart + 9, entryNameEnd);
+			} else {
+				return null;
+			}
+		} else {
+			return null;
+		}
+	}
+
+	private List<String> getFileLines(final byte[] data) throws Exception {
+		final List<String> fileLines = new ArrayList<>();
+		for (final String nextLine : getEntryLines(data)) {
+			if (!nextLine.contains("alt=\"[DIR]\">")) {
+				fileLines.add(nextLine);
+			}
+		}
+		return fileLines;
+	}
+
+	private List<String> getFolderNames(final byte[] data) throws Exception {
+		final List<String> folderLines = new ArrayList<>();
+		for (final String nextLine : getEntryLines(data)) {
+			if (nextLine.contains("alt=\"[DIR]\">")) {
+				final String folderName = FileUtilities.trimTrailingFileSeparator(getEntryNameFromLine(nextLine));
+				folderLines.add(folderName);
+			}
+		}
+		return folderLines;
+	}
+
+	/**
+	 * This size data is very imprecise
+	 */
+	private long getFileSize(final String sizeString) {
+		long fileSize;
+		if (sizeString.endsWith("k")) {
+			fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024);
+			fileSize = (fileSize / 1000) * 1000;
+		} else if (sizeString.endsWith("m")) {
+			fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024 * 1024);
+			fileSize = (fileSize / (long) Math.pow(1000, 2)) * (long) Math.pow(1000, 2);
+		} else if (sizeString.endsWith("g")) {
+			fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024 * 1024 * 1024);
+			fileSize = (fileSize / (long) Math.pow(1000, 3)) * (long) Math.pow(1000, 3);
+		} else if (sizeString.endsWith("t")) {
+			fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024 * 1024 * 1024 * 1024);
+			fileSize = (fileSize / (long) Math.pow(1000, 4)) * (long) Math.pow(1000, 4);
+		} else {
+			fileSize = Long.parseLong(sizeString);
+		}
+		return fileSize;
 	}
 }

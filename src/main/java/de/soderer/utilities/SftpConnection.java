@@ -243,13 +243,13 @@ public class SftpConnection implements RemoteConnection {
 	}
 
 	@Override
-	public List<String> getFolders(final String filePath) throws Exception {
+	public List<String> getFolders(final String folderPath) throws Exception {
 		final List<String> folderList = new ArrayList<>();
 		Channel channel = null;
 		try {
 			// Read folders
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find " + filePath + (filePath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type d");
+			((ChannelExec) channel).setCommand("find " + folderPath + (folderPath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type d");
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
@@ -269,7 +269,7 @@ public class SftpConnection implements RemoteConnection {
 			closeQuietly(channel);
 			channel = null;
 		}
-		folderList.addAll(getFolderLinks(filePath));
+		folderList.addAll(getFolderLinks(folderPath));
 		Collections.sort(folderList);
 		return folderList;
 	}
@@ -439,9 +439,16 @@ public class SftpConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFile getFileInfo(final String filePath) throws Exception {
+	public RemoteFileInfo getFileInfo(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
+			String fileName;
+			if (filePath.contains("/")) {
+				fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+			} else {
+				fileName = filePath;
+			}
+
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("ls -l " + filePath);
 
@@ -459,7 +466,7 @@ public class SftpConnection implements RemoteConnection {
 					return null;
 				} else {
 					final JschFileData fileData = new JschFileData(successString);
-					return new RemoteFile(filePath, fileData.getSize(), fileData.getChangeDate());
+					return new RemoteFileInfo(fileName, fileData.getSize(), fileData.getChangeDate());
 				}
 			}
 		} finally {
@@ -1039,6 +1046,66 @@ public class SftpConnection implements RemoteConnection {
 			}
 		} catch (final Exception ioe) {
 			// ignore
+		}
+	}
+
+	@Override
+	public RemoteFolderInfo getFolderInfo(final String folderPath) throws Exception {
+		Channel channel = null;
+		try {
+			String folderName;
+			if (folderPath.contains("/")) {
+				folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+			} else {
+				folderName = folderPath;
+			}
+
+			final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
+			final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+
+			// Read folders
+			channel = session.openChannel("exec");
+
+			((ChannelExec) channel).setCommand("find " + folderPath + (folderPath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type d");
+			// Streams must be fetched before channel connect
+			try (InputStream inStream = channel.getInputStream();
+					InputStream inErrorStream = channel.getExtInputStream()) {
+				channel.connect();
+
+				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+					final String subFolderName = folderLine.substring(folderLine.lastIndexOf("/") + 1);
+					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
+				}
+
+				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				if (errorData != null && errorData.length > 0) {
+					throw new Exception(new String(errorData, "UTF-8"));
+				}
+			}
+
+			((ChannelExec) channel).setCommand("find " + folderPath + (folderPath.endsWith("/") ? "" : "/") + " -mindepth 1 -maxdepth 1 -type f");
+			// Streams must be fetched before channel connect
+			try (InputStream inStream = channel.getInputStream();
+					InputStream inErrorStream = channel.getExtInputStream()) {
+				channel.connect();
+
+				final byte[] successData = Utilities.toByteArray(inStream);
+				final String successString = new String(successData, "UTF-8");
+
+				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+
+				if (errorData != null && errorData.length > 0) {
+					return null;
+				} else {
+					final JschFileData fileData = new JschFileData(successString);
+					fileInfoList.add(new RemoteFileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+				}
+			}
+
+			return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
+		} finally {
+			closeQuietly(channel);
+			channel = null;
 		}
 	}
 }

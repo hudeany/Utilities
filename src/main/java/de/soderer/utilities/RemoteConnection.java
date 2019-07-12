@@ -9,6 +9,8 @@ public interface RemoteConnection extends Closeable {
 
 	boolean folderExists(String folderPath) throws Exception;
 
+	RemoteFolderInfo getFolderInfo(String folderPath) throws Exception;
+
 	void deleteFolder(String folderPath) throws Exception;
 
 	void createFolder(String parentFolderPath, String folderName) throws Exception;
@@ -19,7 +21,7 @@ public interface RemoteConnection extends Closeable {
 
 	void deleteFile(String filePath) throws Exception;
 
-	RemoteFile getFileInfo(String filePath) throws Exception;
+	RemoteFileInfo getFileInfo(String filePath) throws Exception;
 
 	InputStream getFile(String filePath) throws Exception;
 
