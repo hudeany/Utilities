@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInput;
@@ -19,6 +19,8 @@ import java.security.spec.ECPrivateKeySpec;
 import java.security.spec.ECPublicKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+
+import de.soderer.utilities.KeyPairUtilities;
 
 /**
  * Container for PuTTY key data

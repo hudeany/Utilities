@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -13,6 +13,8 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
+import de.soderer.utilities.Utilities;
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {

@@ -5,12 +5,12 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import de.soderer.utilities.RemoteFileInfo;
-import de.soderer.utilities.RemoteFolderInfo;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerDual;
 import de.soderer.utilities.WorkerParentDual;
 import de.soderer.utilities.remote.RemoteConnection;
+import de.soderer.utilities.remote.RemoteFileInfo;
+import de.soderer.utilities.remote.RemoteFolderInfo;
 
 public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker> {
 	private RemoteConnection connection = null;

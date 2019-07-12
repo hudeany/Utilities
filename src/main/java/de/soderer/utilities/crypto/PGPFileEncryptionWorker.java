@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -18,7 +18,9 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.operator.bc.BcPGPDataEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPublicKeyKeyEncryptionMethodGenerator;
 
-import de.soderer.utilities.PGPUtilities.PgpSymmetricEncryptionMethod;
+import de.soderer.utilities.Utilities;
+import de.soderer.utilities.WorkerSimple;
+import de.soderer.utilities.crypto.PGPUtilities.PgpSymmetricEncryptionMethod;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 /**

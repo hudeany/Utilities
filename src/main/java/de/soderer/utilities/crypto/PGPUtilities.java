@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -55,6 +55,10 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPKeyPair;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
+
+import de.soderer.utilities.LangResources;
+import de.soderer.utilities.UserError;
+import de.soderer.utilities.Utilities;
 
 public class PGPUtilities {
 	public static final String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES-256";

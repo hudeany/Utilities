@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -25,6 +25,8 @@ import java.util.Map.Entry;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import de.soderer.utilities.KeyPairUtilities;
 
 public class OpenSshKeyWriter implements Closeable {
 	private static final String AES128_PemEncryptionMethodName = "AES-128-CBC";

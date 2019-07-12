@@ -1,8 +1,10 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+
+import de.soderer.utilities.DateUtilities;
 
 public class RemoteFolderInfo {
 	private final String folderName;

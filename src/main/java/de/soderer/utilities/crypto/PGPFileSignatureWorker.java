@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -15,7 +15,9 @@ import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureGenerator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
 
-import de.soderer.utilities.PGPUtilities.PgpHashMethod;
+import de.soderer.utilities.Utilities;
+import de.soderer.utilities.WorkerSimple;
+import de.soderer.utilities.crypto.PGPUtilities.PgpHashMethod;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {

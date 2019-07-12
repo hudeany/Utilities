@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +21,12 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
+import de.soderer.utilities.LangResources;
+import de.soderer.utilities.SystemUtilities;
+import de.soderer.utilities.TextUtilities;
+import de.soderer.utilities.UserError;
+import de.soderer.utilities.Utilities;
+import de.soderer.utilities.WorkerSimple;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 /**

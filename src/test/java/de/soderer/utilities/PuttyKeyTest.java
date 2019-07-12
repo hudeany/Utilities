@@ -9,6 +9,12 @@ import java.security.KeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.CryptographicUtilities;
+import de.soderer.utilities.crypto.OpenSshKeyWriter;
+import de.soderer.utilities.crypto.PuttyKey;
+import de.soderer.utilities.crypto.PuttyKeyReader;
+import de.soderer.utilities.crypto.PuttyKeyWriter;
+
 public class PuttyKeyTest {
 	@Test
 	public void testTestKeyFiles() throws Exception {

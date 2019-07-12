@@ -10,6 +10,8 @@ import org.bouncycastle.openpgp.PGPSecretKey;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.PGPUtilities;
+
 public class PgpUtilitiesTest {
 	private static PGPSecretKey pgpSecretKey1 = null;
 	private static char[] password1 = Utilities.getRandomString(12).toCharArray();

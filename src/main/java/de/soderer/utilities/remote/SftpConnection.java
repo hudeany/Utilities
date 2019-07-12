@@ -25,8 +25,6 @@ import com.jcraft.jsch.Session;
 
 import de.soderer.utilities.ExceptionUtilities;
 import de.soderer.utilities.JschFileData;
-import de.soderer.utilities.RemoteFileInfo;
-import de.soderer.utilities.RemoteFolderInfo;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.SshFileChangeWatcherThread;
 import de.soderer.utilities.UnknownHostKeyException;

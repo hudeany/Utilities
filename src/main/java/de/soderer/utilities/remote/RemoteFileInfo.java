@@ -1,7 +1,9 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import de.soderer.utilities.DateUtilities;
 
 public class RemoteFileInfo {
 	private final String fileName;

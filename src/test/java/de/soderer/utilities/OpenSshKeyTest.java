@@ -9,6 +9,9 @@ import java.security.KeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.OpenSshKeyReader;
+import de.soderer.utilities.crypto.OpenSshKeyWriter;
+
 public class OpenSshKeyTest {
 	@Test
 	public void testTestKeyFiles() throws Exception {

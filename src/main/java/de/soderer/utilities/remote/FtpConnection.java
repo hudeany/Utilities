@@ -11,8 +11,6 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.log4j.Logger;
 
-import de.soderer.utilities.RemoteFileInfo;
-import de.soderer.utilities.RemoteFolderInfo;
 import de.soderer.utilities.ServerAccessData;
 
 /**

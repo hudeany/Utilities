@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -34,7 +34,9 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.soderer.utilities.Asn1Codec.DerTag;
+import de.soderer.utilities.KeyPairUtilities;
+import de.soderer.utilities.WrongPasswordException;
+import de.soderer.utilities.crypto.Asn1Codec.DerTag;
 
 public class OpenSshKeyReader implements Closeable {
 	private static final String AES128_PemEncryptionMethodName = "AES-128-CBC";

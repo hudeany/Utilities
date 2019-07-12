@@ -13,6 +13,8 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.CryptographicUtilities;
+
 public class CryptographicUtilitiesTest {
 	private static AsymmetricCipherKeyPair rsaKeyPairCache = null;
 	private static AsymmetricCipherKeyPair elGamalKeyPairCache = null;

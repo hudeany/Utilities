@@ -3,6 +3,8 @@ package de.soderer.utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.Asn1Codec;
+
 public class AsnCodecTest {
 	@Test
 	public void test1() {

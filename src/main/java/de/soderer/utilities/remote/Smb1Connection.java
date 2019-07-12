@@ -9,8 +9,6 @@ import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
-import de.soderer.utilities.RemoteFileInfo;
-import de.soderer.utilities.RemoteFolderInfo;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Utilities;
 import jcifs.smb.NtlmPasswordAuthentication;

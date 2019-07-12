@@ -10,9 +10,9 @@ import java.security.Signature;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import de.soderer.utilities.CryptographicUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WorkerSimple;
+import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
 
 public class FileVerificationWorker extends WorkerSimple<Boolean> {

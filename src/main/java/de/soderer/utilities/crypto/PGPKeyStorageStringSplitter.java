@@ -1,8 +1,10 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+
+import de.soderer.utilities.Utilities;
 
 public class PGPKeyStorageStringSplitter {
 	private static final String PUBLIC_KEY_START = "-----BEGIN PGP PUBLIC KEY BLOCK-----";

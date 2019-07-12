@@ -27,8 +27,6 @@ import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
 
-import de.soderer.utilities.RemoteFileInfo;
-import de.soderer.utilities.RemoteFolderInfo;
 import de.soderer.utilities.ServerAccessData;
 
 public class SmbConnection implements RemoteConnection {

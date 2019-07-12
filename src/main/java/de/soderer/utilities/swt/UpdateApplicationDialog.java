@@ -19,7 +19,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.CryptographicUtilities;
 import de.soderer.utilities.FileDownloadWorker;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
@@ -27,6 +26,7 @@ import de.soderer.utilities.SimpleCredentialsData;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.UserError.Reason;
+import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.Utilities;
 
 public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {

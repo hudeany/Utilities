@@ -15,6 +15,10 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.CryptographicUtilities;
+import de.soderer.utilities.crypto.OpenSshKeyReader;
+import de.soderer.utilities.crypto.OpenSshKeyWriter;
+
 public class OpenSshKeyTestWithBC {
 	@Test
 	public void testRsa() throws Exception {

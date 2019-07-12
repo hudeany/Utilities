@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.crypto;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;

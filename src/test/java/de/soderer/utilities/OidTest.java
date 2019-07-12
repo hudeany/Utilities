@@ -3,6 +3,8 @@ package de.soderer.utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.OID;
+
 public class OidTest {
 	@Test
 	public void test1() {
