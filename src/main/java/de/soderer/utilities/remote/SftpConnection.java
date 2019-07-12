@@ -26,10 +26,9 @@ import com.jcraft.jsch.Session;
 import de.soderer.utilities.ExceptionUtilities;
 import de.soderer.utilities.JschFileData;
 import de.soderer.utilities.ServerAccessData;
-import de.soderer.utilities.SshFileChangeWatcherThread;
+import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
 
 public class SftpConnection implements RemoteConnection {
 	/** The host. */
