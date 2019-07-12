@@ -25,7 +25,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.soderer.utilities.KeyPairUtilities;
 import de.soderer.utilities.WrongPasswordException;
 
 /**

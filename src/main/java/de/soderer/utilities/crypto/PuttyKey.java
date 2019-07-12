@@ -20,8 +20,6 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 
-import de.soderer.utilities.KeyPairUtilities;
-
 /**
  * Container for PuTTY key data
  */

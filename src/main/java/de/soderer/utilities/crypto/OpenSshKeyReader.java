@@ -34,7 +34,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.soderer.utilities.KeyPairUtilities;
 import de.soderer.utilities.WrongPasswordException;
 import de.soderer.utilities.crypto.Asn1Codec.DerTag;
 

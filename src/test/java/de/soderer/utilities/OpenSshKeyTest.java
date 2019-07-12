@@ -9,6 +9,7 @@ import java.security.KeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.KeyPairUtilities;
 import de.soderer.utilities.crypto.OpenSshKeyReader;
 import de.soderer.utilities.crypto.OpenSshKeyWriter;
 

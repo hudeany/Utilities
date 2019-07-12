@@ -26,8 +26,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.soderer.utilities.KeyPairUtilities;
-
 public class OpenSshKeyWriter implements Closeable {
 	private static final String AES128_PemEncryptionMethodName = "AES-128-CBC";
 	private static final String TripleDES_PemEncryptionMethodName = "DES-EDE3-CBC";
