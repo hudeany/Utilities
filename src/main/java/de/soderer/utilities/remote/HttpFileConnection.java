@@ -362,7 +362,7 @@ public class HttpFileConnection implements RemoteConnection {
 	private List<String> getFileLines(final byte[] data) throws Exception {
 		final List<String> fileLines = new ArrayList<>();
 		for (final String nextLine : getEntryLines(data)) {
-			if (!nextLine.contains("alt=\"[DIR]\">")) {
+			if (nextLine.contains("alt=") && !nextLine.contains("alt=\"[DIR]\">")) {
 				fileLines.add(nextLine);
 			}
 		}
