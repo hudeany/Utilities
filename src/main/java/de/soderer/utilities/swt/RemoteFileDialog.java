@@ -43,7 +43,9 @@ import de.soderer.utilities.remote.SftpConnection;
 import de.soderer.utilities.remote.Smb1Connection;
 import de.soderer.utilities.remote.SmbConnection;
 import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
+import de.soderer.utilities.swt.worker.DirectoryUploadWorker;
 import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
+import de.soderer.utilities.swt.worker.RemoteFileUploadWorker;
 
 public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb", "smb1", "http", "https");
@@ -536,49 +538,98 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 		action2Button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				final String currentPath = currentPathField.getText();
-				if (currentPath.endsWith("/")) {
-					final DirectoryDialog dialog = new DirectoryDialog(parentShell, SWT.SAVE);
-					dialog.setText(LangResources.get("download"));
-					final String destinationPath = dialog.open();
-					if (destinationPath != null) {
-						try {
-							final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
-							progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "");
-							new Thread(directoryDownloadWorker).start();
-							if (progressDialog.open()) {
-								directoryDownloadWorker.cancel(true);
-								showMessage(LangResources.get("menu.directoryHashing"), LangResources.get("canceledByUser"));
-							} else {
-								// check for errors
-								directoryDownloadWorker.get();
-								showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
+				if (dialogMode == Mode.Save) {
+					final String currentPath = currentPathField.getText();
+					if (currentPath.endsWith("/")) {
+						final DirectoryDialog dialog = new DirectoryDialog(parentShell, SWT.OPEN);
+						dialog.setText(LangResources.get("upload"));
+						final String sourcePath = dialog.open();
+						if (sourcePath != null) {
+							try {
+								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(remoteFileDialog, connection, sourcePath, currentPath);
+								progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "");
+								new Thread(directoryUploadWorker).start();
+								if (progressDialog.open()) {
+									directoryUploadWorker.cancel(true);
+									showMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
+								} else {
+									// check for errors
+									directoryUploadWorker.get();
+									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
+								}
+							} catch (final Exception e) {
+								new QuestionDialog(getParent(), getText(), "Error while uploading directory: " + e.getMessage(), LangResources.get("ok")).open();
 							}
-						} catch (final Exception e) {
-							new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).open();
+						}
+					} else {
+						final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
+						final FileDialog dialog = new FileDialog(parentShell, SWT.OPEN);
+						dialog.setText(LangResources.get("upload"));
+						dialog.setFileName(currentFileName);
+						final String sourcePath = dialog.open();
+						if (sourcePath != null) {
+							try {
+								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(remoteFileDialog, connection, sourcePath, currentPath);
+								progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("upload"));
+								new Thread(fileUploadWorker).start();
+								if (progressDialog.open()) {
+									fileUploadWorker.cancel(true);
+									showMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
+								} else {
+									// check for errors
+									fileUploadWorker.get();
+									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
+								}
+							} catch (final Exception e) {
+								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).open();
+							}
 						}
 					}
 				} else {
-					final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
-					final FileDialog dialog = new FileDialog(parentShell, SWT.SAVE);
-					dialog.setText(LangResources.get("download"));
-					dialog.setFileName(currentFileName);
-					final String destinationPath = dialog.open();
-					if (destinationPath != null) {
-						try {
-							final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
-							progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("download"));
-							new Thread(fileDownloadWorker).start();
-							if (progressDialog.open()) {
-								fileDownloadWorker.cancel(true);
-								showMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
-							} else {
-								// check for errors
-								fileDownloadWorker.get();
-								showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
+					final String currentPath = currentPathField.getText();
+					if (currentPath.endsWith("/")) {
+						final DirectoryDialog dialog = new DirectoryDialog(parentShell, SWT.SAVE);
+						dialog.setText(LangResources.get("download"));
+						final String destinationPath = dialog.open();
+						if (destinationPath != null) {
+							try {
+								final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
+								progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "");
+								new Thread(directoryDownloadWorker).start();
+								if (progressDialog.open()) {
+									directoryDownloadWorker.cancel(true);
+									showMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
+								} else {
+									// check for errors
+									directoryDownloadWorker.get();
+									showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
+								}
+							} catch (final Exception e) {
+								new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).open();
 							}
-						} catch (final Exception e) {
-							new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).open();
+						}
+					} else {
+						final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
+						final FileDialog dialog = new FileDialog(parentShell, SWT.SAVE);
+						dialog.setText(LangResources.get("download"));
+						dialog.setFileName(currentFileName);
+						final String destinationPath = dialog.open();
+						if (destinationPath != null) {
+							try {
+								final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
+								progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("download"));
+								new Thread(fileDownloadWorker).start();
+								if (progressDialog.open()) {
+									fileDownloadWorker.cancel(true);
+									showMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
+								} else {
+									// check for errors
+									fileDownloadWorker.get();
+									showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
+								}
+							} catch (final Exception e) {
+								new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).open();
+							}
 						}
 					}
 				}

@@ -27,6 +27,7 @@ import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
 
+import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
 
 public class SmbConnection implements RemoteConnection {
@@ -112,9 +113,8 @@ public class SmbConnection implements RemoteConnection {
 
 	@Override
 	public List<String> getFolders(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
+		checkForConnection();
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
 		final List<String> folderNames = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			final String entryName = fileIdBothDirectoryInformation.getFileName();
@@ -128,8 +128,10 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public boolean folderExists(final String folderPath) throws Exception {
-		final int lastPathSeparator = folderPath.replace("\\", "/").lastIndexOf("/");
+	public boolean folderExists(String folderPath) throws Exception {
+		checkForConnection();
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
+		final int lastPathSeparator = folderPath.lastIndexOf("/");
 		final String folderParentPath = lastPathSeparator >= 0 ? folderPath.substring(0, lastPathSeparator) : "";
 		final String folderName = lastPathSeparator >= 0 ? folderPath.substring(lastPathSeparator + 1) : folderPath;
 		try {
@@ -143,20 +145,23 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public void deleteFolder(final String folderPath) throws Exception {
+	public void deleteFolder(String folderPath) throws Exception {
+		checkForConnection();
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
 		diskShare.rmdir(folderPath, true);
 	}
 
 	@Override
-	public void createFolder(final String parentFolderPath, final String folderName) throws Exception {
+	public void createFolder(String parentFolderPath, final String folderName) throws Exception {
+		checkForConnection();
+		parentFolderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(parentFolderPath.replace("\\", "/")));
 		diskShare.mkdir((parentFolderPath != null && parentFolderPath.length() > 0 ? parentFolderPath + "/" : "") + folderName);
 	}
 
 	@Override
 	public List<String> getFiles(String folderPath) throws Exception {
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
+		checkForConnection();
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
 		final List<String> fileNames = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			final String entryName = fileIdBothDirectoryInformation.getFileName();
@@ -171,9 +176,8 @@ public class SmbConnection implements RemoteConnection {
 
 	@Override
 	public boolean fileExists(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
+		checkForConnection();
+		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		final int lastPathSeparator = filePath.replace("\\", "/").lastIndexOf("/");
 		final String folderPath = lastPathSeparator >= 0 ? filePath.substring(0, lastPathSeparator) : "";
 		final String fileName = lastPathSeparator >= 0 ? filePath.substring(lastPathSeparator + 1) : filePath;
@@ -188,16 +192,16 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public void deleteFile(final String filePath) throws Exception {
+	public void deleteFile(String filePath) throws Exception {
+		checkForConnection();
+		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		diskShare.rm(filePath);
 	}
 
 	@Override
 	public RemoteFileInfo getFileInfo(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
-		filePath = filePath.replace("\\", "/");
+		checkForConnection();
+		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		String fileName;
 		if (filePath.contains("/")) {
 			fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
@@ -211,19 +215,49 @@ public class SmbConnection implements RemoteConnection {
 
 	@Override
 	public InputStream getFile(String filePath) throws Exception {
-		if (filePath.startsWith("/")) {
-			filePath = filePath.substring(1);
-		}
+		checkForConnection();
+		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
 		return remoteSmbjFile.getInputStream();
 	}
 
 	@Override
-	public void uploadFile(final String filePath, final InputStream fileInputStream) throws Exception {
+	public void uploadFile(String filePath, final InputStream fileInputStream) throws Exception {
+		checkForConnection();
+		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		final File newFile = diskShare.openFile(filePath, new HashSet<>(Arrays.asList(new AccessMask[]{AccessMask.GENERIC_ALL})), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_CREATE, null);
 		try (OutputStream outputStream = newFile.getOutputStream()) {
 			IOUtils.copy(fileInputStream, outputStream);
 		}
+	}
+
+	@Override
+	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
+		checkForConnection();
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
+		String folderName;
+		if (folderPath.contains("/")) {
+			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+		} else {
+			folderName = folderPath;
+		}
+
+		final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
+		final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
+			final String entryName = fileIdBothDirectoryInformation.getFileName();
+			if (!".".equals(entryName) && !"..".equals(entryName)) {
+				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
+					folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
+				} else {
+					final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
+					fileInfoList.add(new RemoteFileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
+				}
+			}
+		}
+
+		return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
 	}
 
 	@Override
@@ -269,40 +303,5 @@ public class SmbConnection implements RemoteConnection {
 		if (client == null) {
 			throw new Exception("SmbConnection is not connected");
 		}
-	}
-
-	@Override
-	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
-		checkForConnection();
-
-		folderPath = folderPath.replace("\\", "/");
-
-		if (folderPath.startsWith("/")) {
-			folderPath = folderPath.substring(1);
-		}
-
-		String folderName;
-		if (folderPath.contains("/")) {
-			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
-		} else {
-			folderName = folderPath;
-		}
-
-		final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
-		final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
-		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
-			final String entryName = fileIdBothDirectoryInformation.getFileName();
-			if (!".".equals(entryName) && !"..".equals(entryName)) {
-				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
-					folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
-				} else {
-					final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
-					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-					fileInfoList.add(new RemoteFileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
-				}
-			}
-		}
-
-		return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
 	}
 }

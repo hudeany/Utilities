@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Utilities;
 import jcifs.smb.NtlmPasswordAuthentication;
@@ -80,11 +81,11 @@ public class Smb1Connection implements RemoteConnection {
 	public List<String> getFolders(final String folderPath) throws Exception {
 		checkConnection();
 		final List<String> folderNames = new ArrayList<>();
-		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
+		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
 		if (smbFile.isDirectory()) {
 			for (final SmbFile subFile : smbFile.listFiles()) {
 				if (subFile.isDirectory()) {
-					folderNames.add(subFile.getName());
+					folderNames.add(FileUtilities.trimTrailingFileSeparator(subFile.getName()));
 				}
 			}
 		}
@@ -116,7 +117,7 @@ public class Smb1Connection implements RemoteConnection {
 	public List<String> getFiles(final String folderPath) throws Exception {
 		checkConnection();
 		final List<String> fileNames = new ArrayList<>();
-		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
+		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
 		if (smbFile.isDirectory()) {
 			for (final SmbFile subFile : smbFile.listFiles()) {
 				if (subFile.isFile()) {
@@ -151,9 +152,12 @@ public class Smb1Connection implements RemoteConnection {
 			fileName = filePath;
 		}
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
-		final long size = smbFile.getContentLengthLong();
+		long fileSize = smbFile.getContentLengthLong();
+		if (fileSize < 0) {
+			fileSize = smbFile.getContentLength();
+		}
 		final Date fileDate = new Date(smbFile.getDate());
-		return new RemoteFileInfo(fileName, size, fileDate);
+		return new RemoteFileInfo(fileName, fileSize, fileDate);
 	}
 
 	@Override
@@ -188,17 +192,17 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	private String getPath(String path) {
-		if (path.startsWith("/")) {
-			path = path.substring(1);
-		}
-		return getPathWithProtocol() + path;
+		path = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(path.replace("\\", "/")));
+		return FileUtilities.trimTrailingFileSeparator(getPathWithProtocol() + path);
 	}
 
 	@Override
-	public RemoteFolderInfo getFolderInfo(final String folderPath) throws Exception {
+	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
 		checkConnection();
 
-		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
+
+		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
 		if (smbFile.isDirectory()) {
 			String folderName;
 			if (folderPath.contains("/")) {
@@ -206,16 +210,23 @@ public class Smb1Connection implements RemoteConnection {
 			} else {
 				folderName = folderPath;
 			}
+			if  ("".equals(folderName)) {
+				folderName = "/";
+			}
 
 			final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
 			final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
 
 			for (final SmbFile subFile : smbFile.listFiles()) {
 				if (subFile.isDirectory()) {
-					folderInfoList.add(getFolderInfo(folderPath + "/" + subFile.getName()));
+					final String subFolderName = FileUtilities.trimTrailingFileSeparator(subFile.getName());
+					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
 				} else if (subFile.isFile()) {
-					final long fileSize = smbFile.getContentLengthLong();
-					final Date modificationDate = new Date(smbFile.getDate());
+					long fileSize = subFile.getContentLengthLong();
+					if (fileSize < 0) {
+						fileSize = subFile.getContentLength();
+					}
+					final Date modificationDate = new Date(subFile.getDate());
 					fileInfoList.add(new RemoteFileInfo(subFile.getName(), fileSize, modificationDate));
 				}
 			}

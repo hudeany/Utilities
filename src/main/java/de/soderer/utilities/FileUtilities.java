@@ -461,7 +461,7 @@ public class FileUtilities {
 	}
 
 	public static String trimLeadingFileSeparator(final String path) {
-		if (path.startsWith("/")) {
+		if (path != null && path.startsWith("/")) {
 			return path.substring(1);
 		} else {
 			return path;
@@ -469,7 +469,7 @@ public class FileUtilities {
 	}
 
 	public static String trimTrailingFileSeparator(final String path) {
-		if (path.endsWith("/")) {
+		if (path != null && path.endsWith("/")) {
 			return path.substring(0, path.length() - 1);
 		} else {
 			return path;
@@ -477,7 +477,7 @@ public class FileUtilities {
 	}
 
 	public static String getFilenameFromPath(final String path) {
-		if (path.contains("/")) {
+		if (path != null && path.contains("/")) {
 			return path.substring(path.lastIndexOf("/") + 1);
 		} else {
 			return path;
@@ -485,10 +485,28 @@ public class FileUtilities {
 	}
 
 	public static String getParentFromPath(final String path) {
-		if (path.contains("/")) {
+		if (path != null && path.contains("/")) {
 			return path.substring(0, path.lastIndexOf("/"));
 		} else {
 			return "";
+		}
+	}
+
+	/**
+	 * Delete directories and all of their files in a recursive way
+	 * @throws IOException
+	 */
+	public static void delete(final File file) throws IOException {
+		if (file.isDirectory()) {
+			final File[] entries = file.listFiles();
+			if (entries != null) {
+				for (final File entry : entries) {
+					delete(entry);
+				}
+			}
+		}
+		if (!file.delete()) {
+			throw new IOException("Failed to delete " + file);
 		}
 	}
 }

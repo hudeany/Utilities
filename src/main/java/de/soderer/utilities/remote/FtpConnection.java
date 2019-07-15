@@ -11,6 +11,7 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.log4j.Logger;
 
+import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
 
 /**
@@ -28,7 +29,7 @@ public class FtpConnection implements RemoteConnection {
 	private String username = null;
 
 	/** The password. */
-	private String password = null;
+	private char[] password = null;
 
 	/** The port. */
 	private int port = 21; // Default port for FTP is 21
@@ -53,7 +54,7 @@ public class FtpConnection implements RemoteConnection {
 	 * @param password the password
 	 * @throws Exception
 	 */
-	public FtpConnection(final String hostname, final String username, final String password) throws Exception {
+	public FtpConnection(final String hostname, final String username, final char[] password) throws Exception {
 		this.hostname = hostname;
 		this.username = username;
 		this.password = password;
@@ -72,7 +73,7 @@ public class FtpConnection implements RemoteConnection {
 	 * @param port
 	 * @throws Exception
 	 */
-	public FtpConnection(final String hostname, final String username, final String password, final int port) throws Exception {
+	public FtpConnection(final String hostname, final String username, final char[] password, final int port) throws Exception {
 		this.hostname = hostname;
 		this.username = username;
 		this.password = password;
@@ -92,7 +93,7 @@ public class FtpConnection implements RemoteConnection {
 	 * @param usePassiveMode
 	 * @throws Exception
 	 */
-	public FtpConnection(final String hostname, final String username, final String password, final int port, final boolean usePassiveMode) throws Exception {
+	public FtpConnection(final String hostname, final String username, final char[] password, final int port, final boolean usePassiveMode) throws Exception {
 		this.hostname = hostname;
 		this.username = username;
 		this.password = password;
@@ -108,7 +109,7 @@ public class FtpConnection implements RemoteConnection {
 		} else {
 			hostname = serverEntry.getHostname();
 			username = serverEntry.getUsername();
-			password = new String(serverEntry.getPassword());
+			password = serverEntry.getPassword();
 			port = serverEntry.getPort();
 			usePassiveMode = true;
 
@@ -128,7 +129,7 @@ public class FtpConnection implements RemoteConnection {
 			}
 			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 			ftpClient.setAutodetectUTF8(true);
-			if (!ftpClient.login(username, password)) {
+			if (!ftpClient.login(username, new String(password))) {
 				ftpClient.logout();
 				throw new Exception("Authentication failed");
 			}
@@ -307,7 +308,8 @@ public class FtpConnection implements RemoteConnection {
 		checkForConnection();
 
 		final FTPFile file = ftpClient.mlistFile(filePath);
-		return new RemoteFileInfo(file.getName(), file.getSize(), file.getTimestamp().getTime());
+		final String fileName = FileUtilities.getFilenameFromPath(file.getName());
+		return new RemoteFileInfo(fileName, file.getSize(), file.getTimestamp().getTime());
 	}
 
 	@Override
@@ -320,6 +322,9 @@ public class FtpConnection implements RemoteConnection {
 			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
 		} else {
 			folderName = folderPath;
+		}
+		if  ("".equals(folderName)) {
+			folderName = "/";
 		}
 
 		final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
