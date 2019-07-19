@@ -35,16 +35,6 @@ public class SftpConnectionTest {
 	}
 
 	@Test
-	public void testRootFolderInfo() {
-		try (RemoteConnection connection = getConnection()) {
-			final RemoteFolderInfo remoteFolderInfo = connection.getFolderInfo("/");
-			Assert.assertEquals("/", remoteFolderInfo.getFolderName());
-		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
-		}
-	}
-
-	@Test
 	public void testFolderInfo() {
 		try (RemoteConnection connection = getConnection()) {
 			final RemoteFolderInfo remoteFolderInfo = connection.getFolderInfo("/home/andreas/TestFolder");
@@ -58,17 +48,7 @@ public class SftpConnectionTest {
 	public void testFileInfo() {
 		try (RemoteConnection connection = getConnection()) {
 			final RemoteFileInfo remoteFileInfo = connection.getFileInfo("/home/andreas/TestFolder/testFile.txt");
-			Assert.assertEquals("test.txt", remoteFileInfo.getFileName());
-		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
-		}
-	}
-
-	@Test
-	public void testRootFolderDownload() {
-		try (RemoteConnection connection = getConnection()) {
-			new DirectoryDownloadWorker(null, connection, "/", localTestDirectory.getAbsolutePath()).work();
-			Assert.assertEquals(2, localTestDirectory.listFiles().length);
+			Assert.assertEquals("testFile.txt", remoteFileInfo.getFileName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -87,7 +67,7 @@ public class SftpConnectionTest {
 	@Test
 	public void testFileDownload() {
 		try (RemoteConnection connection = getConnection()) {
-			new RemoteFileDownloadWorker(null, connection, "/home/andreas/TestFolder/testFile.txt", localTestDirectory.getAbsolutePath() + "/testFile1.txt").work();
+			new RemoteFileDownloadWorker(null, connection, "/home/andreas/TestFolder/testFile.txt", localTestDirectory.getAbsolutePath() + "\\testFile1.txt").work();
 			Assert.assertEquals("testFile1.txt", localTestDirectory.listFiles()[0].getName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());

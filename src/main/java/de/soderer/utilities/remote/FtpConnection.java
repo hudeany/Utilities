@@ -352,11 +352,11 @@ public class FtpConnection implements RemoteConnection {
 	}
 
 	class FtpInputStream extends FilterInputStream {
-		FtpConnection ftpConnection;
-		boolean isClosed = false;
+		private final FtpConnection ftpConnection;
+		private boolean isClosed = false;
 
-		protected FtpInputStream(final InputStream in, final FtpConnection ftpConnection) {
-			super(in);
+		protected FtpInputStream(final InputStream inputStream, final FtpConnection ftpConnection) {
+			super(inputStream);
 			this.ftpConnection = ftpConnection;
 		}
 

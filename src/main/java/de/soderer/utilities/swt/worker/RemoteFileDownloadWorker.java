@@ -28,7 +28,7 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 		} else if (Utilities.isBlank(remoteFilePath)) {
 			throw new Exception("No remoteFilePath");
 		} else if (!connection.fileExists(remoteFilePath)) {
-			throw new Exception("Remote file not found or is no directory: \"" + remoteFilePath + "\"");
+			throw new Exception("Remote file not found or is no file: \"" + remoteFilePath + "\"");
 		} else if (Utilities.isBlank(localFilePath)) {
 			throw new Exception("No localFilePath");
 		} else if (new File(localFilePath).exists()) {
@@ -46,7 +46,6 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 
 		try (InputStream inputStream = connection.getFile(remoteFilePath);
 				OutputStream outputStream = new FileOutputStream(localFilePath)) {
-
 			final byte[] buffer = new byte[4096];
 			int bytesRead;
 			while ((bytesRead = inputStream.read(buffer)) >= 0) {
