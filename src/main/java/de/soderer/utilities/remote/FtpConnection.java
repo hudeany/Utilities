@@ -143,7 +143,8 @@ public class FtpConnection implements RemoteConnection {
 	@Override
 	public List<String> getFiles(final String folderPath) throws Exception {
 		checkForConnection();
-		final FTPFile[] files = ftpClient.listFiles(folderPath);
+		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
+		final FTPFile[] files = ftpClient.listFiles(folderPath.replace(" ", "\\ "));
 		if (files != null) {
 			final List<String> returnList = new ArrayList<>();
 			for (final FTPFile file : files) {
@@ -160,7 +161,8 @@ public class FtpConnection implements RemoteConnection {
 	@Override
 	public List<String> getFolders(final String folderPath) throws Exception {
 		checkForConnection();
-		final FTPFile[] directories = ftpClient.listDirectories(folderPath);
+		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
+		final FTPFile[] directories = ftpClient.listDirectories(folderPath.replace(" ", "\\ "));
 		if (directories != null) {
 			final List<String> returnList = new ArrayList<>();
 			for (final FTPFile directory : directories) {
@@ -281,7 +283,8 @@ public class FtpConnection implements RemoteConnection {
 	@Override
 	public void deleteFolder(final String folderPath) throws Exception {
 		checkForConnection();
-		final FTPFile[] files = ftpClient.listFiles(folderPath);
+		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
+		final FTPFile[] files = ftpClient.listFiles(folderPath.replace(" ", "\\ "));
 		if (files.length > 0) {
 			for (final FTPFile ftpFile : files) {
 				final String fileName = ftpFile.getName();
@@ -328,7 +331,8 @@ public class FtpConnection implements RemoteConnection {
 		}
 
 		final List<FolderInfo> folderInfoList = new ArrayList<>();
-		final FTPFile[] directories = ftpClient.listDirectories(folderPath);
+		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
+		final FTPFile[] directories = ftpClient.listDirectories(folderPath.replace(" ", "\\ "));
 		if (directories != null) {
 			for (final FTPFile directory : directories) {
 				final String directoryName = directory.getName();
@@ -339,7 +343,8 @@ public class FtpConnection implements RemoteConnection {
 		}
 
 		final List<FileInfo> fileInfoList = new ArrayList<>();
-		final FTPFile[] files = ftpClient.listFiles(folderPath);
+		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
+		final FTPFile[] files = ftpClient.listFiles(folderPath.replace(" ", "\\ "));
 		if (files != null) {
 			for (final FTPFile file : files) {
 				if (file.isFile()) {

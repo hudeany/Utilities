@@ -9,10 +9,14 @@ import org.junit.Test;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
+import de.soderer.utilities.swt.worker.DirectoryUploadWorker;
 import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
+import de.soderer.utilities.swt.worker.RemoteFileUploadWorker;
+import de.soderer.utilities.zip.ZipUtilities;
 
 public class FtpConnectionTest {
 	private static final File localTestDirectory = new File("C:\\Users\\Andreas\\Downloads\\test");
+	private static final File localTestDirectory2 = new File("C:\\Users\\Andreas\\Downloads\\test2");
 
 	private RemoteConnection getConnection() throws Exception {
 		return new FtpConnection(System.getenv().get("FTP_HOSTNAME"), System.getenv().get("FTP_USERNAME"), System.getenv().get("FTP_PASSWORD").toCharArray());
@@ -24,6 +28,10 @@ public class FtpConnectionTest {
 			FileUtilities.delete(localTestDirectory);
 		}
 		localTestDirectory.mkdir();
+
+		if (localTestDirectory2.exists()) {
+			FileUtilities.delete(localTestDirectory2);
+		}
 	}
 
 	@After
@@ -31,15 +39,8 @@ public class FtpConnectionTest {
 		if (localTestDirectory.exists()) {
 			FileUtilities.delete(localTestDirectory);
 		}
-	}
-
-	@Test
-	public void testRootFolderInfo() {
-		try (RemoteConnection connection = getConnection()) {
-			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/");
-			Assert.assertEquals("/", remoteFolderInfo.getFolderName());
-		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+		if (localTestDirectory2.exists()) {
+			FileUtilities.delete(localTestDirectory2);
 		}
 	}
 
@@ -55,30 +56,68 @@ public class FtpConnectionTest {
 	}
 
 	@Test
-	public void testFileInfo() {
+	public void directoryRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			final FileInfo remoteFileInfo = connection.getFileInfo("/soderer.de/files/download/certificates/andreas_at_soderer.de.crt");
-			Assert.assertEquals("andreas_at_soderer.de.crt", remoteFileInfo.getFileName());
+			if (connection.folderExists("/soderer.de/files/download/test")) {
+				connection.deleteFolder("/soderer.de/files/download/test");
+			}
+			try {
+				final File testFolderZipFile = new File(getClass().getClassLoader().getResource("TestFolder.zip").getFile());
+				ZipUtilities.unzipFile(testFolderZipFile, localTestDirectory);
+				new DirectoryUploadWorker(null, connection, localTestDirectory, "/soderer.de/files/download", "test").work();
+				final FolderInfo remoteFolderInfo = connection.getFolderInfo("/soderer.de/files/download/test");
+				Assert.assertEquals("test", remoteFolderInfo.getFolderName());
+				new DirectoryDownloadWorker(null, connection, "/soderer.de/files/download/test", localTestDirectory2.getParentFile(), "test2").work();
+				Assert.assertTrue("Resulting directories differ", FileUtilities.directoriesAreEqual(localTestDirectory, localTestDirectory2));
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail(e.getMessage());
+			} finally {
+				if (connection.folderExists("/soderer.de/files/download/test")) {
+					connection.deleteFolder("/soderer.de/files/download/test");
+				}
+			}
 		} catch (final Exception e) {
+			e.printStackTrace();
 			Assert.fail(e.getMessage());
 		}
 	}
 
 	@Test
-	public void testFolderDownload() {
+	public void fileRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			new DirectoryDownloadWorker(null, connection, "/soderer.de/files/download/certificates", localTestDirectory).work();
-			Assert.assertEquals("certificates", localTestDirectory.listFiles()[0].getName());
+			if (connection.folderExists("/soderer.de/files/download")) {
+				connection.deleteFolder("/soderer.de/files/download/test");
+			}
+			connection.createFolder("/soderer.de/files/download", "test");
+			localTestDirectory2.mkdir();
+			try {
+				final File testFolderZipFile = new File(getClass().getClassLoader().getResource("TestFolder.zip").getFile());
+				ZipUtilities.unzipFile(testFolderZipFile, localTestDirectory);
+				new RemoteFileUploadWorker(null, connection, new File(localTestDirectory, "TextFileWithUmlautÄ.txt"), "/soderer.de/files/download/test/TextFile With Umlaut Ä.txt").work();
+				final FileInfo remoteFileInfo = connection.getFileInfo("/soderer.de/files/download/test/TextFile With Umlaut Ä.txt");
+				Assert.assertEquals("TextFile With Umlaut Ä.txt", remoteFileInfo.getFileName());
+				new RemoteFileDownloadWorker(null, connection, "/soderer.de/files/download/test/TextFile With Umlaut Ä.txt", new File(localTestDirectory2, "TextFileWithUmlautÄ.txt")).work();
+				Assert.assertTrue("Resulting files differ", FileUtilities.filesAreEqual(new File(localTestDirectory, "TextFileWithUmlautÄ.txt"), new File(localTestDirectory2, "TextFileWithUmlautÄ.txt")));
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail(e.getMessage());
+			} finally {
+				if (connection.folderExists("/soderer.de/files/download/test")) {
+					connection.deleteFolder("/soderer.de/files/download/test");
+				}
+			}
 		} catch (final Exception e) {
+			e.printStackTrace();
 			Assert.fail(e.getMessage());
 		}
 	}
 
 	@Test
-	public void testFileDownload() {
+	public void testRootFolderInfo() {
 		try (RemoteConnection connection = getConnection()) {
-			new RemoteFileDownloadWorker(null, connection, "/soderer.de/files/download/certificates/andreas_at_soderer.de.crt", new File(localTestDirectory.getAbsolutePath(), "testFile1.txt")).work();
-			Assert.assertEquals("testFile1.txt", localTestDirectory.listFiles()[0].getName());
+			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/");
+			Assert.assertEquals("/", remoteFolderInfo.getFolderName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
