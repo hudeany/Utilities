@@ -6,12 +6,12 @@ import java.util.List;
 
 import de.soderer.utilities.DateUtilities;
 
-public class RemoteFolderInfo {
+public class FolderInfo {
 	private final String folderName;
-	private final List<RemoteFolderInfo> subFolders;
-	private final List<RemoteFileInfo> files;
+	private final List<FolderInfo> subFolders;
+	private final List<FileInfo> files;
 
-	public RemoteFolderInfo(final String folderName, final List<RemoteFolderInfo> subFolders, final List<RemoteFileInfo> files) {
+	public FolderInfo(final String folderName, final List<FolderInfo> subFolders, final List<FileInfo> files) {
 		this.folderName = folderName;
 		this.subFolders = subFolders;
 		this.files = files;
@@ -21,17 +21,17 @@ public class RemoteFolderInfo {
 		return folderName;
 	}
 
-	public List<RemoteFolderInfo> getSubFolders() {
+	public List<FolderInfo> getSubFolders() {
 		return subFolders;
 	}
 
-	public List<RemoteFileInfo> getFiles() {
+	public List<FileInfo> getFiles() {
 		return files;
 	}
 
 	public long getFolderDataSize() {
 		long folderSize = 0;
-		for (final RemoteFileInfo file : files) {
+		for (final FileInfo file : files) {
 			folderSize += file.getFileSize();
 		}
 		return folderSize;
@@ -39,10 +39,10 @@ public class RemoteFolderInfo {
 
 	public long getRecursiveFolderDataSize() {
 		long folderSize = 0;
-		for (final RemoteFolderInfo subFolder : subFolders) {
+		for (final FolderInfo subFolder : subFolders) {
 			folderSize += subFolder.getRecursiveFolderDataSize();
 		}
-		for (final RemoteFileInfo file : files) {
+		for (final FileInfo file : files) {
 			folderSize += file.getFileSize();
 		}
 		return folderSize;
@@ -54,7 +54,7 @@ public class RemoteFolderInfo {
 
 	public int getRecursiveFileCount() {
 		int recursiveFileCount = 0;
-		for (final RemoteFolderInfo subFolder : subFolders) {
+		for (final FolderInfo subFolder : subFolders) {
 			recursiveFileCount += subFolder.getRecursiveFileCount();
 		}
 		recursiveFileCount += files.size();
@@ -67,7 +67,7 @@ public class RemoteFolderInfo {
 
 	public int getRecursiveFolderCount() {
 		int recursiveFolderCount = 0;
-		for (final RemoteFolderInfo subFolder : subFolders) {
+		for (final FolderInfo subFolder : subFolders) {
 			recursiveFolderCount += subFolder.getRecursiveFolderCount();
 			recursiveFolderCount++;
 		}
@@ -76,7 +76,7 @@ public class RemoteFolderInfo {
 
 	public Date getMinimumModificationDate() {
 		Date minimumModificationDate = null;
-		for (final RemoteFileInfo file : files) {
+		for (final FileInfo file : files) {
 			if (minimumModificationDate == null || minimumModificationDate.before(file.getModificationDate())) {
 				minimumModificationDate = file.getModificationDate();
 			}
@@ -86,13 +86,13 @@ public class RemoteFolderInfo {
 
 	public Date getRecursiveMinimumModificationDate() {
 		Date minimumModificationDate = null;
-		for (final RemoteFolderInfo subFolder : subFolders) {
+		for (final FolderInfo subFolder : subFolders) {
 			final Date minimumModificationDateSubFolder = subFolder.getRecursiveMinimumModificationDate();
 			if (minimumModificationDate == null || minimumModificationDate.before(minimumModificationDateSubFolder)) {
 				minimumModificationDate = minimumModificationDateSubFolder;
 			}
 		}
-		for (final RemoteFileInfo file : files) {
+		for (final FileInfo file : files) {
 			if (minimumModificationDate == null || minimumModificationDate.before(file.getModificationDate())) {
 				minimumModificationDate = file.getModificationDate();
 			}
@@ -102,7 +102,7 @@ public class RemoteFolderInfo {
 
 	public Date getMaximumModificationDate() {
 		Date maximumModificationDate = null;
-		for (final RemoteFileInfo file : files) {
+		for (final FileInfo file : files) {
 			if (maximumModificationDate == null || maximumModificationDate.before(file.getModificationDate())) {
 				maximumModificationDate = file.getModificationDate();
 			}
@@ -112,13 +112,13 @@ public class RemoteFolderInfo {
 
 	public Date getRecursiveMaximumModificationDate() {
 		Date maximumModificationDate = null;
-		for (final RemoteFolderInfo subFolder : subFolders) {
+		for (final FolderInfo subFolder : subFolders) {
 			final Date maximumModificationDateSubFolder = subFolder.getRecursiveMaximumModificationDate();
 			if (maximumModificationDate == null || maximumModificationDate.before(maximumModificationDateSubFolder)) {
 				maximumModificationDate = maximumModificationDateSubFolder;
 			}
 		}
-		for (final RemoteFileInfo file : files) {
+		for (final FileInfo file : files) {
 			if (maximumModificationDate == null || maximumModificationDate.before(file.getModificationDate())) {
 				maximumModificationDate = file.getModificationDate();
 			}

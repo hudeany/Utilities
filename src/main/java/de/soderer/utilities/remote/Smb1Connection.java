@@ -143,7 +143,7 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFileInfo getFileInfo(final String filePath) throws Exception {
+	public FileInfo getFileInfo(final String filePath) throws Exception {
 		checkConnection();
 		String fileName;
 		if (filePath.contains("/")) {
@@ -157,7 +157,7 @@ public class Smb1Connection implements RemoteConnection {
 			fileSize = smbFile.getContentLength();
 		}
 		final Date fileDate = new Date(smbFile.getDate());
-		return new RemoteFileInfo(fileName, fileSize, fileDate);
+		return new FileInfo(fileName, fileSize, fileDate);
 	}
 
 	@Override
@@ -197,7 +197,7 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
+	public FolderInfo getFolderInfo(String folderPath) throws Exception {
 		checkConnection();
 
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
@@ -214,8 +214,8 @@ public class Smb1Connection implements RemoteConnection {
 				folderName = "/";
 			}
 
-			final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
-			final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+			final List<FolderInfo> folderInfoList = new ArrayList<>();
+			final List<FileInfo> fileInfoList = new ArrayList<>();
 
 			for (final SmbFile subFile : smbFile.listFiles()) {
 				if (subFile.isDirectory()) {
@@ -227,11 +227,11 @@ public class Smb1Connection implements RemoteConnection {
 						fileSize = subFile.getContentLength();
 					}
 					final Date modificationDate = new Date(subFile.getDate());
-					fileInfoList.add(new RemoteFileInfo(subFile.getName(), fileSize, modificationDate));
+					fileInfoList.add(new FileInfo(subFile.getName(), fileSize, modificationDate));
 				}
 			}
 
-			return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
+			return new FolderInfo(folderName, folderInfoList, fileInfoList);
 		} else {
 			return null;
 		}

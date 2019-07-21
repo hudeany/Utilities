@@ -12,6 +12,7 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -21,6 +22,11 @@ import java.util.zip.ZipInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
+
+import de.soderer.utilities.remote.FileInfo;
+import de.soderer.utilities.remote.FolderInfo;
+import de.soderer.utilities.swt.worker.DirectoryHashingWorker;
+import de.soderer.utilities.swt.worker.FileHashingWorker;
 
 public class FileUtilities {
 	/**
@@ -508,5 +514,70 @@ public class FileUtilities {
 		if (!file.delete()) {
 			throw new IOException("Failed to delete " + file);
 		}
+	}
+
+	public static FolderInfo getFolderInfo(String folderPath) {
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
+		String folderName;
+		if (folderPath.contains("/")) {
+			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+		} else {
+			folderName = folderPath;
+		}
+
+		final List<FolderInfo> folderInfoList = new ArrayList<>();
+		final List<FileInfo> fileInfoList = new ArrayList<>();
+		for (final File subFile : new File(folderPath).listFiles()) {
+			final String entryName = subFile.getName();
+			if (subFile.isDirectory()) {
+				folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
+			} else {
+				fileInfoList.add(new FileInfo(entryName, subFile.length(), new Date(subFile.lastModified())));
+			}
+		}
+
+		return new FolderInfo(folderName, folderInfoList, fileInfoList);
+	}
+
+	public static boolean directoriesAreEqual(final File file1, final File file2) throws Exception {
+		if (file1 == null) {
+			throw new Exception("First directory is missing");
+		} else if (!file1.exists()) {
+			throw new Exception("First directory does not exists: " + file1.getAbsolutePath());
+		} else if (!file1.isDirectory()) {
+			throw new Exception("First directory is not a directory: " + file1.getAbsolutePath());
+		} else if (file2 == null) {
+			throw new Exception("Second directory is missing");
+		} else if (!file2.exists()) {
+			throw new Exception("Second directory does not exists: " + file2.getAbsolutePath());
+		} else if (!file2.isDirectory()) {
+			throw new Exception("Second directory is not a directory: " + file2.getAbsolutePath());
+		}
+
+		final HashItem hash1 = new DirectoryHashingWorker(null, file1, HashAlgorithm.SHA_512).work();
+		final HashItem hash2 = new DirectoryHashingWorker(null, file2, HashAlgorithm.SHA_512).work();
+
+		return Arrays.equals(hash1.getHash(), hash2.getHash());
+	}
+
+	public static boolean filesAreEqual(final File file1, final File file2) throws Exception {
+		if (file1 == null) {
+			throw new Exception("First file is missing");
+		} else if (!file1.exists()) {
+			throw new Exception("First file does not exists: " + file1.getAbsolutePath());
+		} else if (!file1.isFile()) {
+			throw new Exception("First file is not a file: " + file1.getAbsolutePath());
+		} else if (file2 == null) {
+			throw new Exception("Second file is missing");
+		} else if (!file2.exists()) {
+			throw new Exception("Second file does not exists: " + file2.getAbsolutePath());
+		} else if (!file2.isFile()) {
+			throw new Exception("Second file is not a file: " + file2.getAbsolutePath());
+		}
+
+		final byte[] hash1 = new FileHashingWorker(null, file1, HashAlgorithm.SHA_512).work();
+		final byte[] hash2 = new FileHashingWorker(null, file2, HashAlgorithm.SHA_512).work();
+
+		return Arrays.equals(hash1, hash2);
 	}
 }

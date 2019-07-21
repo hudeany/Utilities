@@ -448,7 +448,7 @@ public class SftpConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFileInfo getFileInfo(final String filePath) throws Exception {
+	public FileInfo getFileInfo(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			String fileName;
@@ -475,7 +475,7 @@ public class SftpConnection implements RemoteConnection {
 					return null;
 				} else {
 					final JschFileData fileData = new JschFileData(successString);
-					return new RemoteFileInfo(fileName, fileData.getSize(), fileData.getChangeDate());
+					return new FileInfo(fileName, fileData.getSize(), fileData.getChangeDate());
 				}
 			}
 		} finally {
@@ -509,7 +509,6 @@ public class SftpConnection implements RemoteConnection {
 
 			// read filesize (if empty filesize read until no more data)
 			final byte[] filesizeData = readStreamUntilBlankOrEndOrLinefeed(inStream);
-			@SuppressWarnings("unused")
 			long filesize = -1;
 			if (filesizeData != null && filesizeData.length > 0) {
 				filesize = Long.parseLong(new String(filesizeData));
@@ -886,8 +885,8 @@ public class SftpConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
-		final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+	public FolderInfo getFolderInfo(String folderPath) throws Exception {
+		final List<FileInfo> fileInfoList = new ArrayList<>();
 		final List<String> subFolderNames = new ArrayList<>();
 
 		folderPath = FileUtilities.trimTrailingFileSeparator(folderPath);
@@ -919,17 +918,19 @@ public class SftpConnection implements RemoteConnection {
 				} else {
 					try (BufferedReader reader = new BufferedReader(new StringReader(successString))) {
 						String nextLine;
+						boolean isFirstLine = true;
 						while ((nextLine = reader.readLine()) != null) {
-							if (!nextLine.startsWith("total")) {
+							if (!isFirstLine || !nextLine.startsWith("total")) {
 								final JschFileData fileData = new JschFileData(nextLine);
 								if (fileData.getFileType() == JschFileType.RegularFile) {
-									fileInfoList.add(new RemoteFileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+									fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
 								} else if (fileData.getFileType() == JschFileType.SymbolicLink) {
-									fileInfoList.add(new RemoteFileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+									fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
 								} else if (fileData.getFileType() == JschFileType.Directory) {
 									subFolderNames.add(fileData.getFileName());
 								}
 							}
+							isFirstLine = false;
 						}
 					}
 
@@ -940,7 +941,7 @@ public class SftpConnection implements RemoteConnection {
 			closeQuietly(channel);
 		}
 
-		final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
+		final List<FolderInfo> folderInfoList = new ArrayList<>();
 
 		for (final String subFolderName : subFolderNames) {
 			folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
@@ -949,7 +950,7 @@ public class SftpConnection implements RemoteConnection {
 		if (Utilities.isEmpty(folderName)) {
 			folderName = "/";
 		}
-		return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
+		return new FolderInfo(folderName, folderInfoList, fileInfoList);
 	}
 
 	/**

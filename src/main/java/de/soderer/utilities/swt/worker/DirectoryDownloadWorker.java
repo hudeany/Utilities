@@ -7,17 +7,21 @@ import java.io.OutputStream;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.remote.FileInfo;
+import de.soderer.utilities.remote.FolderInfo;
 import de.soderer.utilities.remote.RemoteConnection;
-import de.soderer.utilities.remote.RemoteFileInfo;
-import de.soderer.utilities.remote.RemoteFolderInfo;
 import de.soderer.utilities.worker.WorkerDual;
 import de.soderer.utilities.worker.WorkerParentDual;
 
 public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker> {
-	private RemoteConnection connection = null;
+	private final RemoteConnection connection;
+	private final String remoteDirectoryPath;
+	private final File localParentDirectory;
+	private final String localDirectoryName;
 
-	private String remoteDirectoryPath = null;
-	private String localParentDirectoryPath = null;
+	public DirectoryDownloadWorker(final WorkerParentDual parent, final RemoteConnection connection, final String remoteDirectoryPath, final File localParentDirectory) throws Exception {
+		this(parent, connection, remoteDirectoryPath, localParentDirectory, null);
+	}
 
 	/**
 	 * Remote directory "remoteDirectoryPath" will be copied to local "localParentDirectoryPath/remoteDirectoryName"
@@ -25,46 +29,57 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 	 * @param parent
 	 * @param connection
 	 * @param remoteDirectoryPath
-	 * @param localParentDirectoryPath
+	 * @param localParentDirectory
 	 * @throws Exception
 	 */
-	public DirectoryDownloadWorker(final WorkerParentDual parent, final RemoteConnection connection, final String remoteDirectoryPath, final String localParentDirectoryPath) throws Exception {
+	public DirectoryDownloadWorker(final WorkerParentDual parent, final RemoteConnection connection, final String remoteDirectoryPath, final File localParentDirectory, final String localDirectoryName) throws Exception {
 		super(parent);
 
 		if (connection == null) {
 			throw new Exception("No RemoteConnection");
 		} else if (Utilities.isBlank(remoteDirectoryPath)) {
 			throw new Exception("No remoteDirectoryPath");
-		} else if (Utilities.isBlank(localParentDirectoryPath)) {
+		} else if (localParentDirectory == null) {
 			throw new Exception("No localDestination");
 		}
 
 		this.connection = connection;
 		this.remoteDirectoryPath = FileUtilities.trimTrailingFileSeparator(remoteDirectoryPath);
-		this.localParentDirectoryPath = FileUtilities.trimTrailingFileSeparator(localParentDirectoryPath);
+		this.localParentDirectory = localParentDirectory;
+		if (Utilities.isBlank(localDirectoryName)) {
+			this.localDirectoryName = FileUtilities.getFilenameFromPath(remoteDirectoryPath);
+		} else {
+			this.localDirectoryName = localDirectoryName;
+		}
 
 		if (!this.connection.folderExists(this.remoteDirectoryPath)) {
 			throw new Exception("Remote directory not found or is no directory: \"" + this.remoteDirectoryPath + "\"");
-		} else if (!new File(this.localParentDirectoryPath).exists() || !new File(this.localParentDirectoryPath).isDirectory()) {
-			throw new Exception("Destination not found or is no directory: \"" + this.remoteDirectoryPath + "\"");
+		} else if (!this.localParentDirectory.exists()) {
+			throw new Exception("Destination not found: \"" + this.localParentDirectory.getAbsolutePath() + "\"");
+		} else if (!this.localParentDirectory.isDirectory()) {
+			throw new Exception("Destination is no directory: \"" + this.localParentDirectory.getAbsolutePath() + "\"");
+		}
+
+		if (new File(this.localParentDirectory, this.localDirectoryName).exists()) {
+			throw new Exception("Local directory already exists: \"" + new File(this.localParentDirectory, this.localDirectoryName).getAbsolutePath() + "\"");
 		}
 	}
 
 	@Override
 	public DirectoryDownloadWorker work() throws Exception {
 		showUnlimitedProgress();
-		final RemoteFolderInfo remoteFolderInfo = connection.getFolderInfo(remoteDirectoryPath);
+		final FolderInfo remoteFolderInfo = connection.getFolderInfo(remoteDirectoryPath);
 		itemsToDo = remoteFolderInfo.getRecursiveFolderDataSize();
 		showProgress(true);
-		final File destinationParentDirectoryPath = new File(localParentDirectoryPath + "/" + remoteFolderInfo.getFolderName());
+		final File destinationParentDirectoryPath = new File(localParentDirectory, localDirectoryName);
 		destinationParentDirectoryPath.mkdir();
 		recursiveDownload(remoteDirectoryPath, remoteFolderInfo, destinationParentDirectoryPath);
 		return this;
 	}
 
-	private void recursiveDownload(final String remoteFolderPath, final RemoteFolderInfo remoteFolderInfo, final File destinationParentDirectory) throws Exception {
+	private void recursiveDownload(final String remoteFolderPath, final FolderInfo remoteFolderInfo, final File destinationParentDirectory) throws Exception {
 		if (!cancel) {
-			for (final RemoteFolderInfo subFolderInfo : remoteFolderInfo.getSubFolders()) {
+			for (final FolderInfo subFolderInfo : remoteFolderInfo.getSubFolders()) {
 				if (!cancel) {
 					final File nextFolderDestination = new File(destinationParentDirectory, subFolderInfo.getFolderName());
 					nextFolderDestination.mkdir();
@@ -73,17 +88,14 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 			}
 		}
 		if (!cancel) {
-			for (final RemoteFileInfo fileInfo : remoteFolderInfo.getFiles()) {
-				final String nextRemoteFile = remoteFolderPath + "/" + fileInfo.getFileName();
-				final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
-				subItemsDone = 0;
-				final String nextRemoteFileRelativePath = nextRemoteFile.substring(remoteDirectoryPath.length() + 1);
-				showItemStart(nextRemoteFileRelativePath);
-				showProgress();
-
+			for (final FileInfo fileInfo : remoteFolderInfo.getFiles()) {
 				if (!cancel) {
+					final String nextRemoteFile = remoteFolderPath + "/" + fileInfo.getFileName();
+					final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
+					subItemsDone = 0;
 					subItemsToDo = fileInfo.getFileSize();
-					showItemStart(nextRemoteFileRelativePath);
+					showItemStart(nextRemoteFile.substring(remoteDirectoryPath.length() + 1));
+					showProgress();
 					try (InputStream inputStream = connection.getFile(nextRemoteFile);
 							OutputStream outputStream = new FileOutputStream(nextLocalFile)) {
 

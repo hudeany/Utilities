@@ -14,14 +14,14 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 	private RemoteConnection connection = null;
 
 	private String remoteFilePath = null;
-	private String localFilePath = null;
+	private File localFile = null;
 
-	public RemoteFileDownloadWorker(final WorkerParentSimple parent, final RemoteConnection connection, final String remoteFilePath, final String localFilePath) throws Exception {
+	public RemoteFileDownloadWorker(final WorkerParentSimple parent, final RemoteConnection connection, final String remoteFilePath, final File localFile) throws Exception {
 		super(parent);
 
 		this.connection = connection;
 		this.remoteFilePath = remoteFilePath;
-		this.localFilePath = localFilePath;
+		this.localFile = localFile;
 
 		if (connection == null) {
 			throw new Exception("No RemoteConnection");
@@ -29,10 +29,12 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 			throw new Exception("No remoteFilePath");
 		} else if (!connection.fileExists(remoteFilePath)) {
 			throw new Exception("Remote file not found or is no file: \"" + remoteFilePath + "\"");
-		} else if (Utilities.isBlank(localFilePath)) {
+		} else if (localFile == null) {
 			throw new Exception("No localFilePath");
-		} else if (new File(localFilePath).exists()) {
-			throw new Exception("Local file already exists: \"" + localFilePath + "\"");
+		} else if (!localFile.getParentFile().exists()) {
+			throw new Exception("Local file parent directory dow not exist: \"" + localFile.getAbsolutePath() + "\"");
+		} else if (localFile.exists()) {
+			throw new Exception("Local file already exists: \"" + localFile.getAbsolutePath() + "\"");
 		}
 	}
 
@@ -45,7 +47,7 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 		showProgress();
 
 		try (InputStream inputStream = connection.getFile(remoteFilePath);
-				OutputStream outputStream = new FileOutputStream(localFilePath)) {
+				OutputStream outputStream = new FileOutputStream(localFile)) {
 			final byte[] buffer = new byte[4096];
 			int bytesRead;
 			while ((bytesRead = inputStream.read(buffer)) >= 0) {
@@ -59,8 +61,8 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 			}
 		}
 
-		if (cancel && new File(localFilePath).exists()) {
-			new File(localFilePath).delete();
+		if (cancel && localFile.exists()) {
+			localFile.delete();
 		}
 
 		return this;

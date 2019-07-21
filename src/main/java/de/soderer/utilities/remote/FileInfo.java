@@ -5,12 +5,12 @@ import java.util.Date;
 
 import de.soderer.utilities.DateUtilities;
 
-public class RemoteFileInfo {
+public class FileInfo {
 	private final String fileName;
 	private final long fileSize;
 	private final Date modificationDate;
 
-	public RemoteFileInfo(final String fileName, final long fileSize, final Date modificationDate) {
+	public FileInfo(final String fileName, final long fileSize, final Date modificationDate) {
 		this.fileName = fileName;
 		this.fileSize = fileSize;
 		this.modificationDate = modificationDate;

@@ -1,38 +1,44 @@
 package de.soderer.utilities.swt.worker;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
+import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.remote.RemoteConnection;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker> {
-	private RemoteConnection connection = null;
+	private final RemoteConnection connection;
 
-	private String remoteFilePath = null;
-	private String localFilePath = null;
+	private final File localFile;
+	private final String remoteFilePath;
 
-	public RemoteFileUploadWorker(final WorkerParentSimple parent, final RemoteConnection connection, final String localFilePath, final String remoteFilePath) throws Exception {
+	public RemoteFileUploadWorker(final WorkerParentSimple parent, final RemoteConnection connection, final File localFile, final String remoteFilePath) throws Exception {
 		super(parent);
 
 		this.connection = connection;
+		this.localFile = localFile;
 		this.remoteFilePath = remoteFilePath;
-		this.localFilePath = localFilePath;
 
 		if (connection == null) {
 			throw new Exception("No RemoteConnection");
+		} else if (localFile == null) {
+			throw new Exception("No localFile");
+		} else if (!localFile.exists()) {
+			throw new Exception("Local file does not exist: \"" + localFile.getAbsolutePath() + "\"");
+		} else if (!localFile.isFile()) {
+			throw new Exception("Local file is not a file: \"" + localFile.getAbsolutePath() + "\"");
 		} else if (Utilities.isBlank(remoteFilePath)) {
 			throw new Exception("No remoteFilePath");
-		} else if (!connection.fileExists(remoteFilePath)) {
-			throw new Exception("Remote file not found or is no directory: \"" + remoteFilePath + "\"");
-		} else if (Utilities.isBlank(localFilePath)) {
-			throw new Exception("No localFilePath");
-		} else if (new File(localFilePath).exists()) {
-			throw new Exception("Local file already exists: \"" + localFilePath + "\"");
+		} else if (!connection.folderExists(FileUtilities.getParentFromPath(remoteFilePath))) {
+			throw new Exception("Remote file parent folder does not exist: \"" + remoteFilePath + "\"");
+		} else if (connection.fileExists(remoteFilePath)) {
+			throw new Exception("Remote file already exists: \"" + remoteFilePath + "\"");
 		}
 	}
 
@@ -40,30 +46,51 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 	public RemoteFileUploadWorker work() throws Exception {
 		showUnlimitedProgress();
 
-		itemsToDo = connection.getFileInfo(remoteFilePath).getFileSize();
+		itemsToDo = localFile.length();
 
 		showProgress();
-
-		try (InputStream inputStream = connection.getFile(remoteFilePath);
-				OutputStream outputStream = new FileOutputStream(localFilePath)) {
-
-			final byte[] buffer = new byte[4096];
-			int bytesRead;
-			while ((bytesRead = inputStream.read(buffer)) >= 0) {
-				if (cancel) {
-					break;
-				} else {
-					outputStream.write(buffer, 0, bytesRead);
-					itemsDone += bytesRead;
-					showProgress();
-				}
-			}
+		try (InputStream inputStream = new ProgressInputStream(new FileInputStream(localFile))) {
+			connection.uploadFile(remoteFilePath, inputStream);
+			showProgress();
 		}
 
-		if (cancel && new File(localFilePath).exists()) {
-			new File(localFilePath).delete();
+		if (cancel && connection.fileExists(remoteFilePath)) {
+			connection.deleteFile(remoteFilePath);
 		}
 
 		return this;
+	}
+
+	private class ProgressInputStream extends FilterInputStream {
+		protected ProgressInputStream(final InputStream inputStream) {
+			super(inputStream);
+		}
+
+		@Override
+		public int read() throws IOException {
+			final int readByte = super.read();
+			if (readByte != -1) {
+				itemsDone ++;
+			}
+			return readByte;
+		}
+
+		@Override
+		public int read(final byte b[]) throws IOException {
+			final int readBytes = super.read(b);
+			if (readBytes > 0) {
+				itemsDone += readBytes;
+			}
+			return readBytes;
+		}
+
+		@Override
+		public int read(final byte b[], final int off, final int len) throws IOException {
+			final int readBytes = super.read(b, off, len);
+			if (readBytes > 0) {
+				itemsDone += readBytes;
+			}
+			return readBytes;
+		}
 	}
 }

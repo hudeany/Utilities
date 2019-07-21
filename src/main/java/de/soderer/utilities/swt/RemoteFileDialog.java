@@ -546,7 +546,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
-								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(remoteFileDialog, connection, sourcePath, currentPath);
+								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
 								progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "");
 								new Thread(directoryUploadWorker).start();
 								if (progressDialog.open()) {
@@ -569,7 +569,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
-								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(remoteFileDialog, connection, sourcePath, currentPath);
+								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
 								progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("upload"));
 								new Thread(fileUploadWorker).start();
 								if (progressDialog.open()) {
@@ -593,7 +593,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String destinationPath = dialog.open();
 						if (destinationPath != null) {
 							try {
-								final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
+								final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(remoteFileDialog, connection, currentPath, new File(destinationPath));
 								progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "");
 								new Thread(directoryDownloadWorker).start();
 								if (progressDialog.open()) {
@@ -616,7 +616,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String destinationPath = dialog.open();
 						if (destinationPath != null) {
 							try {
-								final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(remoteFileDialog, connection, currentPath, destinationPath);
+								final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(remoteFileDialog, connection, currentPath, new File(destinationPath));
 								progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("download"));
 								new Thread(fileDownloadWorker).start();
 								if (progressDialog.open()) {

@@ -199,7 +199,7 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFileInfo getFileInfo(String filePath) throws Exception {
+	public FileInfo getFileInfo(String filePath) throws Exception {
 		checkForConnection();
 		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		String fileName;
@@ -210,7 +210,7 @@ public class SmbConnection implements RemoteConnection {
 		}
 		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
 		final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-		return new RemoteFileInfo(fileName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
+		return new FileInfo(fileName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
 	}
 
 	@Override
@@ -232,7 +232,7 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
+	public FolderInfo getFolderInfo(String folderPath) throws Exception {
 		checkForConnection();
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
 		String folderName;
@@ -242,8 +242,8 @@ public class SmbConnection implements RemoteConnection {
 			folderName = folderPath;
 		}
 
-		final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
-		final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+		final List<FolderInfo> folderInfoList = new ArrayList<>();
+		final List<FileInfo> fileInfoList = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			final String entryName = fileIdBothDirectoryInformation.getFileName();
 			if (!".".equals(entryName) && !"..".equals(entryName)) {
@@ -252,12 +252,12 @@ public class SmbConnection implements RemoteConnection {
 				} else {
 					final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
 					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-					fileInfoList.add(new RemoteFileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
+					fileInfoList.add(new FileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
 				}
 			}
 		}
 
-		return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
+		return new FolderInfo(folderName, folderInfoList, fileInfoList);
 	}
 
 	@Override

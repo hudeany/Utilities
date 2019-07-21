@@ -36,7 +36,7 @@ public class FtpConnectionTest {
 	@Test
 	public void testRootFolderInfo() {
 		try (RemoteConnection connection = getConnection()) {
-			final RemoteFolderInfo remoteFolderInfo = connection.getFolderInfo("/");
+			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/");
 			Assert.assertEquals("/", remoteFolderInfo.getFolderName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -46,7 +46,7 @@ public class FtpConnectionTest {
 	@Test
 	public void testFolderInfo() {
 		try (RemoteConnection connection = getConnection()) {
-			final RemoteFolderInfo remoteFolderInfo = connection.getFolderInfo("/soderer.de/files/download");
+			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/soderer.de/files/download");
 			Assert.assertEquals("download", remoteFolderInfo.getFolderName());
 		} catch (final Exception e) {
 			e.printStackTrace();
@@ -57,7 +57,7 @@ public class FtpConnectionTest {
 	@Test
 	public void testFileInfo() {
 		try (RemoteConnection connection = getConnection()) {
-			final RemoteFileInfo remoteFileInfo = connection.getFileInfo("/soderer.de/files/download/certificates/andreas_at_soderer.de.crt");
+			final FileInfo remoteFileInfo = connection.getFileInfo("/soderer.de/files/download/certificates/andreas_at_soderer.de.crt");
 			Assert.assertEquals("andreas_at_soderer.de.crt", remoteFileInfo.getFileName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -67,7 +67,7 @@ public class FtpConnectionTest {
 	@Test
 	public void testFolderDownload() {
 		try (RemoteConnection connection = getConnection()) {
-			new DirectoryDownloadWorker(null, connection, "/soderer.de/files/download/certificates", localTestDirectory.getAbsolutePath()).work();
+			new DirectoryDownloadWorker(null, connection, "/soderer.de/files/download/certificates", localTestDirectory).work();
 			Assert.assertEquals("certificates", localTestDirectory.listFiles()[0].getName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -77,7 +77,7 @@ public class FtpConnectionTest {
 	@Test
 	public void testFileDownload() {
 		try (RemoteConnection connection = getConnection()) {
-			new RemoteFileDownloadWorker(null, connection, "/soderer.de/files/download/certificates/andreas_at_soderer.de.crt", localTestDirectory.getAbsolutePath() + "/testFile1.txt").work();
+			new RemoteFileDownloadWorker(null, connection, "/soderer.de/files/download/certificates/andreas_at_soderer.de.crt", new File(localTestDirectory.getAbsolutePath(), "testFile1.txt")).work();
 			Assert.assertEquals("testFile1.txt", localTestDirectory.listFiles()[0].getName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());

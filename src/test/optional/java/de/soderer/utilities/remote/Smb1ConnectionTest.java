@@ -36,7 +36,7 @@ public class Smb1ConnectionTest {
 	@Test
 	public void testRootFolderInfo() {
 		try (RemoteConnection connection = getConnection()) {
-			final RemoteFolderInfo remoteFolderInfo = connection.getFolderInfo("/");
+			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/");
 			Assert.assertEquals("/", remoteFolderInfo.getFolderName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -46,7 +46,7 @@ public class Smb1ConnectionTest {
 	@Test
 	public void testFolderInfo() {
 		try (RemoteConnection connection = getConnection()) {
-			final RemoteFolderInfo remoteFolderInfo = connection.getFolderInfo("/TestFolder");
+			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/TestFolder");
 			Assert.assertEquals("TestFolder", remoteFolderInfo.getFolderName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -56,7 +56,7 @@ public class Smb1ConnectionTest {
 	@Test
 	public void testFileInfo() {
 		try (RemoteConnection connection = getConnection()) {
-			final RemoteFileInfo remoteFileInfo = connection.getFileInfo("/test.txt");
+			final FileInfo remoteFileInfo = connection.getFileInfo("/test.txt");
 			Assert.assertEquals("test.txt", remoteFileInfo.getFileName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -66,7 +66,7 @@ public class Smb1ConnectionTest {
 	@Test
 	public void testRootFolderDownload() {
 		try (RemoteConnection connection = getConnection()) {
-			new DirectoryDownloadWorker(null, connection, "/", localTestDirectory.getAbsolutePath()).work();
+			new DirectoryDownloadWorker(null, connection, "/", localTestDirectory).work();
 			Assert.assertEquals(2, localTestDirectory.listFiles().length);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -76,7 +76,7 @@ public class Smb1ConnectionTest {
 	@Test
 	public void testFolderDownload() {
 		try (RemoteConnection connection = getConnection()) {
-			new DirectoryDownloadWorker(null, connection, "/TestFolder", localTestDirectory.getAbsolutePath()).work();
+			new DirectoryDownloadWorker(null, connection, "/TestFolder", localTestDirectory).work();
 			Assert.assertEquals("TestFolder", localTestDirectory.listFiles()[0].getName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -86,7 +86,7 @@ public class Smb1ConnectionTest {
 	@Test
 	public void testFileDownload() {
 		try (RemoteConnection connection = getConnection()) {
-			new RemoteFileDownloadWorker(null, connection, "/TestFolder/testFile1.txt", localTestDirectory.getAbsolutePath() + "/testFile1.txt").work();
+			new RemoteFileDownloadWorker(null, connection, "/TestFolder/testFile1.txt", new File(localTestDirectory.getAbsolutePath(), "testFile1.txt")).work();
 			Assert.assertEquals("testFile1.txt", localTestDirectory.listFiles()[0].getName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());

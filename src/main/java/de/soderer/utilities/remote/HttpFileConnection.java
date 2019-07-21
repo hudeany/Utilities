@@ -253,7 +253,7 @@ public class HttpFileConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFileInfo getFileInfo(String filePath) throws Exception {
+	public FileInfo getFileInfo(String filePath) throws Exception {
 		filePath = FileUtilities.trimLeadingFileSeparator(filePath);
 		final String folderPath = FileUtilities.getParentFromPath(filePath);
 		final String fileName = FileUtilities.getFilenameFromPath(filePath);
@@ -270,7 +270,7 @@ public class HttpFileConnection implements RemoteConnection {
 						final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
 						final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
 						final long fileSize = getFileSize(sizeString);
-						return new RemoteFileInfo(fileName, fileSize, modificationDate);
+						return new FileInfo(fileName, fileSize, modificationDate);
 					}
 				}
 				return null;
@@ -281,18 +281,18 @@ public class HttpFileConnection implements RemoteConnection {
 	}
 
 	@Override
-	public RemoteFolderInfo getFolderInfo(String folderPath) throws Exception {
+	public FolderInfo getFolderInfo(String folderPath) throws Exception {
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
 		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
 		try {
 			final URLConnection urlConnection = getUrl(folderPath).openConnection();
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				final byte[] data = Utilities.toByteArray(inputStream);
-				final List<RemoteFolderInfo> folderInfoList = new ArrayList<>();
+				final List<FolderInfo> folderInfoList = new ArrayList<>();
 				for (final String subFolderName : getFolderNames(data)) {
 					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
 				}
-				final List<RemoteFileInfo> fileInfoList = new ArrayList<>();
+				final List<FileInfo> fileInfoList = new ArrayList<>();
 				for (final String fileLine : getFileLines(data)) {
 					final String fileName = getEntryNameFromLine(fileLine);
 					final String fileInfoPart = fileLine.substring(fileLine.lastIndexOf("</a>") + 4).trim();
@@ -301,9 +301,9 @@ public class HttpFileConnection implements RemoteConnection {
 					final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
 					final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
 					final long fileSize = getFileSize(sizeString);
-					fileInfoList.add(new RemoteFileInfo(fileName, fileSize, modificationDate));
+					fileInfoList.add(new FileInfo(fileName, fileSize, modificationDate));
 				}
-				return new RemoteFolderInfo(folderName, folderInfoList, fileInfoList);
+				return new FolderInfo(folderName, folderInfoList, fileInfoList);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);
