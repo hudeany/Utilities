@@ -47,23 +47,28 @@ public class Smb1ConnectionTest {
 	@Test
 	public void directoryRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			if (connection.folderExists("/home/andreas/test")) {
-				connection.deleteFolder("/home/andreas/test");
+			if (connection.folderExists("/test")) {
+				connection.deleteFolder("/test");
 			}
 			try {
 				final File testFolderZipFile = new File(getClass().getClassLoader().getResource("TestFolder.zip").getFile());
 				ZipUtilities.unzipFile(testFolderZipFile, localTestDirectory);
-				new DirectoryUploadWorker(null, connection, localTestDirectory, "/home/andreas", "test").work();
-				final FolderInfo remoteFolderInfo = connection.getFolderInfo("/home/andreas/test");
+				new DirectoryUploadWorker(null, connection, localTestDirectory, "/", "test").work();
+
+				final FolderInfo remoteFolderInfo = connection.getFolderInfo("/test");
 				Assert.assertEquals("test", remoteFolderInfo.getFolderName());
-				new DirectoryDownloadWorker(null, connection, "/home/andreas/test", localTestDirectory2.getParentFile(), "test2").work();
+
+				final FolderInfo rootFolderInfo = connection.getFolderInfo("/");
+				Assert.assertEquals("/", rootFolderInfo.getFolderName());
+
+				new DirectoryDownloadWorker(null, connection, "/test", localTestDirectory2.getParentFile(), "test2").work();
 				Assert.assertTrue("Resulting directories differ", FileUtilities.directoriesAreEqual(localTestDirectory, localTestDirectory2));
 			} catch (final Exception e) {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
 			} finally {
-				if (connection.folderExists("/home/andreas/test")) {
-					connection.deleteFolder("/home/andreas/test");
+				if (connection.folderExists("/test")) {
+					connection.deleteFolder("/test");
 				}
 			}
 		} catch (final Exception e) {
@@ -75,49 +80,29 @@ public class Smb1ConnectionTest {
 	@Test
 	public void fileRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			if (connection.folderExists("/home/andreas/test")) {
-				connection.deleteFolder("/home/andreas/test");
+			if (connection.folderExists("/test")) {
+				connection.deleteFolder("/test");
 			}
-			connection.createFolder("/home/andreas", "test");
+			connection.createFolder("/", "test");
 			localTestDirectory2.mkdir();
 			try {
 				final File testFolderZipFile = new File(getClass().getClassLoader().getResource("TestFolder.zip").getFile());
 				ZipUtilities.unzipFile(testFolderZipFile, localTestDirectory);
-				new RemoteFileUploadWorker(null, connection, new File(localTestDirectory, "TextFileWithUmlautÄ.txt"), "/home/andreas/test/TextFile With Umlaut Ä.txt").work();
-				final FileInfo remoteFileInfo = connection.getFileInfo("/home/andreas/test/TextFile With Umlaut Ä.txt");
+				new RemoteFileUploadWorker(null, connection, new File(localTestDirectory, "TextFileWithUmlautÄ.txt"), "/test/TextFile With Umlaut Ä.txt").work();
+				final FileInfo remoteFileInfo = connection.getFileInfo("/test/TextFile With Umlaut Ä.txt");
 				Assert.assertEquals("TextFile With Umlaut Ä.txt", remoteFileInfo.getFileName());
-				new RemoteFileDownloadWorker(null, connection, "/home/andreas/test/TextFile With Umlaut Ä.txt", new File(localTestDirectory2, "TextFileWithUmlautÄ.txt")).work();
+				new RemoteFileDownloadWorker(null, connection, "/test/TextFile With Umlaut Ä.txt", new File(localTestDirectory2, "TextFileWithUmlautÄ.txt")).work();
 				Assert.assertTrue("Resulting files differ", FileUtilities.filesAreEqual(new File(localTestDirectory, "TextFileWithUmlautÄ.txt"), new File(localTestDirectory2, "TextFileWithUmlautÄ.txt")));
 			} catch (final Exception e) {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
 			} finally {
-				if (connection.folderExists("/home/andreas/test")) {
-					connection.deleteFolder("/home/andreas/test");
+				if (connection.folderExists("/test")) {
+					connection.deleteFolder("/test");
 				}
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
-		}
-	}
-
-	@Test
-	public void testRootFolderInfo() {
-		try (RemoteConnection connection = getConnection()) {
-			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/");
-			Assert.assertEquals("/", remoteFolderInfo.getFolderName());
-		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
-		}
-	}
-
-	@Test
-	public void testRootFolderDownload() {
-		try (RemoteConnection connection = getConnection()) {
-			new DirectoryDownloadWorker(null, connection, "/", localTestDirectory).work();
-			Assert.assertEquals(2, localTestDirectory.listFiles().length);
-		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
 	}

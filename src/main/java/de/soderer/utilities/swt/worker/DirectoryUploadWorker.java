@@ -44,7 +44,7 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 			throw new Exception("Source directory is no directory: \"" + localDirectory.getAbsolutePath() + "\"");
 		} else if (Utilities.isBlank(remoteParentDirectoryPath)) {
 			throw new Exception("No remoteParentDirectoryPath");
-		} else if (!connection.folderExists(remoteParentDirectoryPath)) {
+		} else if (!"/".equals(remoteParentDirectoryPath) && !connection.folderExists(remoteParentDirectoryPath)) {
 			throw new Exception("Remote directory not found or is no directory: \"" + remoteParentDirectoryPath + "\"");
 		}
 

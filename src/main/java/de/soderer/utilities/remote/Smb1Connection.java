@@ -95,14 +95,14 @@ public class Smb1Connection implements RemoteConnection {
 	@Override
 	public boolean folderExists(final String folderPath) throws Exception {
 		checkConnection();
-		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
+		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
 		return smbFile.isDirectory();
 	}
 
 	@Override
 	public void deleteFolder(final String folderPath) throws Exception {
 		checkConnection();
-		final SmbFile smbFile = new SmbFile(getPath(folderPath), auth);
+		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
 		smbFile.delete();
 	}
 

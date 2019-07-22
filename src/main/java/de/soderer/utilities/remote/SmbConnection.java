@@ -1,5 +1,7 @@
 package de.soderer.utilities.remote;
 
+import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ import com.hierynomus.smbj.share.File;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
+import de.soderer.utilities.Utilities;
 
 public class SmbConnection implements RemoteConnection {
 	/** The Constant logger. */
@@ -131,9 +134,8 @@ public class SmbConnection implements RemoteConnection {
 	public boolean folderExists(String folderPath) throws Exception {
 		checkForConnection();
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
-		final int lastPathSeparator = folderPath.lastIndexOf("/");
-		final String folderParentPath = lastPathSeparator >= 0 ? folderPath.substring(0, lastPathSeparator) : "";
-		final String folderName = lastPathSeparator >= 0 ? folderPath.substring(lastPathSeparator + 1) : folderPath;
+		final String folderParentPath = FileUtilities.getParentFromPath(folderPath);
+		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
 		try {
 			for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderParentPath, folderName)) {
 				return EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
@@ -208,9 +210,10 @@ public class SmbConnection implements RemoteConnection {
 		} else {
 			fileName = filePath;
 		}
-		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
-		final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-		return new FileInfo(fileName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
+		try (final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+			final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
+			return new FileInfo(fileName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
+		}
 	}
 
 	@Override
@@ -218,16 +221,17 @@ public class SmbConnection implements RemoteConnection {
 		checkForConnection();
 		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
-		return remoteSmbjFile.getInputStream();
+		return new SmbInputStream(remoteSmbjFile.getInputStream(), remoteSmbjFile);
 	}
 
 	@Override
 	public void uploadFile(String filePath, final InputStream fileInputStream) throws Exception {
 		checkForConnection();
 		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
-		final File newFile = diskShare.openFile(filePath, new HashSet<>(Arrays.asList(new AccessMask[]{AccessMask.GENERIC_ALL})), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_CREATE, null);
-		try (OutputStream outputStream = newFile.getOutputStream()) {
-			IOUtils.copy(fileInputStream, outputStream);
+		try (final File newFile = diskShare.openFile(filePath, new HashSet<>(Arrays.asList(new AccessMask[]{AccessMask.GENERIC_ALL})), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_CREATE, null)) {
+			try (OutputStream outputStream = newFile.getOutputStream()) {
+				IOUtils.copy(fileInputStream, outputStream);
+			}
 		}
 	}
 
@@ -242,6 +246,10 @@ public class SmbConnection implements RemoteConnection {
 			folderName = folderPath;
 		}
 
+		if (Utilities.isEmpty(folderName)) {
+			folderName = "/";
+		}
+
 		final List<FolderInfo> folderInfoList = new ArrayList<>();
 		final List<FileInfo> fileInfoList = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
@@ -250,9 +258,10 @@ public class SmbConnection implements RemoteConnection {
 				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
 					folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
 				} else {
-					final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
-					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-					fileInfoList.add(new FileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
+					try (final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+						final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
+						fileInfoList.add(new FileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
+					}
 				}
 			}
 		}
@@ -302,6 +311,26 @@ public class SmbConnection implements RemoteConnection {
 	private void checkForConnection() throws Exception {
 		if (client == null) {
 			throw new Exception("SmbConnection is not connected");
+		}
+	}
+
+	class SmbInputStream extends FilterInputStream {
+		private final File remoteSmbjFile;
+		private boolean isClosed = false;
+
+		protected SmbInputStream(final InputStream inputStream, final File remoteSmbjFile) {
+			super(inputStream);
+			this.remoteSmbjFile = remoteSmbjFile;
+		}
+
+		@Override
+		public void close() throws IOException {
+			super.close();
+			if (!isClosed) {
+				remoteSmbjFile.close();
+			}
+
+			isClosed = true;
 		}
 	}
 }
