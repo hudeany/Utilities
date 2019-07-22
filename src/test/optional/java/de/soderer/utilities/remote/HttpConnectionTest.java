@@ -23,7 +23,6 @@ public class HttpConnectionTest {
 		if (localTestDirectory.exists()) {
 			FileUtilities.delete(localTestDirectory);
 		}
-		localTestDirectory.mkdir();
 	}
 
 	@After
