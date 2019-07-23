@@ -234,6 +234,28 @@ public class UtilitiesTest {
 	}
 
 	@Test
+	public void testPunycode6() {
+		try {
+			PunycodeCodec.encodeEmailAdress("Jemand@.Östereich.at");
+			Assert.fail("Missing expected exception");
+		} catch (final Exception e) {
+			// Expected exception
+		}
+	}
+
+	@Test
+	public void testPunycode7() {
+		try {
+			final String punycode = PunycodeCodec.encodeEmailAdress("Norm.mail@example.com");
+			Assert.assertEquals("Norm.mail@example.com", punycode);
+			final String result = PunycodeCodec.decodeEmailAdress(punycode);
+			Assert.assertEquals("Norm.mail@example.com", result);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
 	public void testHumanReadable1() {
 		try {
 			final String result = Utilities.getHumanReadableNumber(0.1);

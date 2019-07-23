@@ -1,5 +1,7 @@
 package de.soderer.utilities;
 
+import java.net.IDN;
+
 public class PunycodeCodec {
 	private final static int TMIN = 1;
 	private final static int TMAX = 26;
@@ -9,12 +11,11 @@ public class PunycodeCodec {
 	private final static int DAMP = 700;
 	private final static int SKEW = 38;
 	private final static char DELIMITER = '-';
-	private final static String ENCODED_DOMAINNAME_PREFIX = "xn--";
 
 	/**
 	 * Encode a string in Unicode
 	 */
-	public static String encode(String stringToEncode) throws Exception {
+	public static String encode(final String stringToEncode) throws Exception {
 		if (stringToEncode == null) {
 			return null;
 		}
@@ -23,14 +24,14 @@ public class PunycodeCodec {
 		int delta = 0;
 		int bias = INITIAL_BIAS;
 
-		StringBuffer output = new StringBuffer();
-		for (char character : stringToEncode.toCharArray()) {
+		final StringBuffer output = new StringBuffer();
+		for (final char character : stringToEncode.toCharArray()) {
 			if (isSimpleCharacter(character)) {
 				output.append(character);
 			}
 		}
 
-		int baseOutputLength = output.length();
+		final int baseOutputLength = output.length();
 		if (baseOutputLength > 0 && baseOutputLength < stringToEncode.length()) {
 			output.append(DELIMITER);
 		}
@@ -39,7 +40,7 @@ public class PunycodeCodec {
 		while (h < stringToEncode.length()) {
 			int m = Integer.MAX_VALUE;
 
-			for (int character : stringToEncode.toCharArray()) {
+			for (final int character : stringToEncode.toCharArray()) {
 				if (character >= n && character < m) {
 					m = character;
 				}
@@ -51,7 +52,7 @@ public class PunycodeCodec {
 			delta = delta + (m - n) * (h + 1);
 			n = m;
 
-			for (char character : stringToEncode.toCharArray()) {
+			for (final char character : stringToEncode.toCharArray()) {
 				if (character < n) {
 					delta++;
 					if (0 == delta) {
@@ -94,7 +95,7 @@ public class PunycodeCodec {
 	/**
 	 * Decode a punycoded string
 	 */
-	public static String decode(String punycodeString) throws Exception {
+	public static String decode(final String punycodeString) throws Exception {
 		if (punycodeString == null) {
 			return null;
 		}
@@ -102,12 +103,12 @@ public class PunycodeCodec {
 		int n = INITIAL_N;
 		int i = 0;
 		int bias = INITIAL_BIAS;
-		StringBuffer output = new StringBuffer();
+		final StringBuffer output = new StringBuffer();
 
 		int d = punycodeString.lastIndexOf(DELIMITER);
 		if (d > 0) {
 			for (int j = 0; j < d; j++) {
-				char c = punycodeString.charAt(j);
+				final char c = punycodeString.charAt(j);
 				if (!isSimpleCharacter(c)) {
 					throw new Exception("Invalid input for decoding punycode");
 				}
@@ -119,15 +120,15 @@ public class PunycodeCodec {
 		}
 
 		while (d < punycodeString.length()) {
-			int oldi = i;
+			final int oldi = i;
 			int w = 1;
 
 			for (int k = BASE;; k += BASE) {
 				if (d == punycodeString.length()) {
 					throw new Exception("Invalid input for decoding punycode");
 				}
-				int c = punycodeString.charAt(d++);
-				int digit = codePointToPunycodeDigit(c);
+				final int c = punycodeString.charAt(d++);
+				final int digit = codePointToPunycodeDigit(c);
 				if (digit > (Integer.MAX_VALUE - i) / w) {
 					throw new Exception("Punycode overflow");
 				}
@@ -163,7 +164,7 @@ public class PunycodeCodec {
 		return output.toString();
 	}
 
-	private final static int adapt(int delta, int numpoints, boolean first) {
+	private final static int adapt(int delta, final int numpoints, final boolean first) {
 		if (first) {
 			delta = delta / DAMP;
 		} else {
@@ -181,11 +182,11 @@ public class PunycodeCodec {
 		return k + ((BASE - TMIN + 1) * delta) / (delta + SKEW);
 	}
 
-	private final static boolean isSimpleCharacter(char character) {
+	private final static boolean isSimpleCharacter(final char character) {
 		return character < 0x80;
 	}
 
-	private final static int punycodeDigitToCodePoint(int punycodeDigit) throws Exception {
+	private final static int punycodeDigitToCodePoint(final int punycodeDigit) throws Exception {
 		if (punycodeDigit < 26) {
 			return punycodeDigit + 'a';
 		} else if (punycodeDigit < 36) {
@@ -195,7 +196,7 @@ public class PunycodeCodec {
 		}
 	}
 
-	private final static int codePointToPunycodeDigit(int codepoint) throws Exception {
+	private final static int codePointToPunycodeDigit(final int codepoint) throws Exception {
 		if (codepoint - '0' < 10) {
 			return codepoint - '0' + 26;
 		} else if (codepoint - 'a' < 26) {
@@ -205,93 +206,61 @@ public class PunycodeCodec {
 		}
 	}
 
-	public static String encodeDomainName(String domainName) throws Exception {
+	public static String encodeDomainName(final String domainName) throws Exception {
 		if (domainName == null) {
 			return null;
+		} else {
+			return IDN.toASCII(domainName);
 		}
-
-		String[] domainNameParts = domainName.toLowerCase().trim().split("\\.");
-		StringBuilder punycodedDomainName = new StringBuilder(domainName.length());
-		for (String domainNamePart : domainNameParts) {
-			if (punycodedDomainName.length() > 0) {
-				punycodedDomainName.append('.');
-			}
-
-			String punycodedDomainNamePart = encode(domainNamePart);
-			if (!punycodedDomainNamePart.equals(domainNamePart)) {
-				punycodedDomainName.append(ENCODED_DOMAINNAME_PREFIX);
-				punycodedDomainName.append(punycodedDomainNamePart);
-			} else {
-				punycodedDomainName.append(domainNamePart);
-			}
-		}
-		return punycodedDomainName.toString();
 	}
 
-	public static String decodeDomainName(String domainNameToDecode) throws Exception {
+	public static String decodeDomainName(final String domainNameToDecode) throws Exception {
 		if (domainNameToDecode == null) {
 			return null;
+		} else {
+			return IDN.toUnicode(domainNameToDecode);
 		}
-
-		String[] domainNameParts = domainNameToDecode.toLowerCase().trim().split("\\.");
-		StringBuilder decodedDomainName = new StringBuilder();
-		for (String domainNamePart : domainNameParts) {
-			if (decodedDomainName.length() > 0) {
-				decodedDomainName.append('.');
-			}
-
-			if (domainNamePart.startsWith(ENCODED_DOMAINNAME_PREFIX)) {
-				domainNamePart = domainNamePart.substring(ENCODED_DOMAINNAME_PREFIX.length());
-				String punycodedDomainNamePart = decode(domainNamePart);
-				if (!punycodedDomainNamePart.equals(domainNamePart)) {
-					decodedDomainName.append(punycodedDomainNamePart);
-				} else {
-					decodedDomainName.append(domainNamePart);
-				}
-			} else {
-				decodedDomainName.append(domainNamePart);
-			}
-		}
-		return decodedDomainName.toString();
 	}
 
-	public static String encodeEmailAdress(String email) throws Exception {
+	public static String encodeEmailAdress(final String email) throws Exception {
 		if (email == null) {
 			return null;
+		} else if (!NetworkUtilities.isValidEmail(email)) {
+			throw new Exception("Not a valid email address: " + email);
+		} else {
+			final int mailDelimiterIndex = email.trim().indexOf('@');
+			if (mailDelimiterIndex < 0) {
+				throw new Exception("Invalid email address");
+			}
+
+			final String localPart = email.substring(0, mailDelimiterIndex);
+			final String domainName = email.substring(mailDelimiterIndex + 1);
+			final StringBuilder encodedEmail = new StringBuilder();
+			encodedEmail.append(localPart);
+			encodedEmail.append('@');
+			encodedEmail.append(encodeDomainName(domainName));
+
+			return encodedEmail.toString();
 		}
-
-		int mailDelimiterIndex = email.trim().indexOf('@');
-		if (mailDelimiterIndex < 0) {
-			throw new Exception("Invalid email address");
-		}
-
-		String localPart = email.substring(0, mailDelimiterIndex);
-		String domainName = email.substring(mailDelimiterIndex + 1);
-		StringBuilder encodedEmail = new StringBuilder();
-		encodedEmail.append(localPart);
-		encodedEmail.append('@');
-		encodedEmail.append(encodeDomainName(domainName));
-
-		return encodedEmail.toString();
 	}
 
-	public static String decodeEmailAdress(String emailToDecode) throws Exception {
+	public static String decodeEmailAdress(final String emailToDecode) throws Exception {
 		if (emailToDecode == null) {
 			return null;
+		} else {
+			final int mailDelimiterIndex = emailToDecode.trim().indexOf('@');
+			if (mailDelimiterIndex < 0) {
+				throw new Exception("Invalid email address");
+			}
+
+			final String localPart = emailToDecode.substring(0, mailDelimiterIndex);
+			final String domainName = emailToDecode.substring(mailDelimiterIndex + 1);
+			final StringBuilder decodedEmail = new StringBuilder();
+			decodedEmail.append(localPart);
+			decodedEmail.append('@');
+			decodedEmail.append(decodeDomainName(domainName));
+
+			return decodedEmail.toString();
 		}
-
-		int mailDelimiterIndex = emailToDecode.trim().indexOf('@');
-		if (mailDelimiterIndex < 0) {
-			throw new Exception("Invalid email address");
-		}
-
-		String localPart = emailToDecode.substring(0, mailDelimiterIndex);
-		String domainName = emailToDecode.substring(mailDelimiterIndex + 1);
-		StringBuilder decodedEmail = new StringBuilder();
-		decodedEmail.append(localPart);
-		decodedEmail.append('@');
-		decodedEmail.append(decodeDomainName(domainName));
-
-		return decodedEmail.toString();
 	}
 }
