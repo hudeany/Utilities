@@ -58,8 +58,14 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 			this.remoteDirectoryName = remoteDirectoryName;
 		}
 
-		if (connection.folderExists(remoteParentDirectoryPath + "/" + this.remoteDirectoryName) || connection.fileExists(remoteParentDirectoryPath + "/" + this.remoteDirectoryName)) {
-			throw new Exception("Remote directory already exists: \"" + remoteParentDirectoryPath + "/" + this.remoteDirectoryName + "\"");
+		String remotePath;
+		if ("/".equals(remoteParentDirectoryPath)) {
+			remotePath = "/" + this.remoteDirectoryName;
+		} else {
+			remotePath = remoteParentDirectoryPath + "/" + this.remoteDirectoryName;
+		}
+		if (connection.folderExists(remotePath) || connection.fileExists(remotePath)) {
+			throw new Exception("Remote directory already exists: \"" + remotePath + "\"");
 		}
 	}
 
