@@ -85,13 +85,13 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 	private Button connectButton;
 	private Button action1Button;
 	private Button action2Button;
+	private Button action3Button;
 	private char[] inMemoryPassword;
 	private final File keystoreFile;
 	private final byte[] keystoreFileSalt;
 	private SecureDataStore keyStore = null;
 
 	private final Mode dialogMode;
-	private LabeledText fileNameField;
 	private LabeledText currentPathField;
 	private Button createFolderButton;
 	private Button deleteFolderButton;
@@ -388,10 +388,12 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				showPathDirectory();
-				if (dialogMode == Mode.Open) {
-					final TreeItem selectedFolderItem = folderTree.getSelection()[0];
-					currentPathField.setText(SwtUtilities.getAbsolutePath(selectedFolderItem) + "/");
+				final TreeItem selectedFolderItem = folderTree.getSelection()[0];
+				String currentPath = SwtUtilities.getAbsolutePath(selectedFolderItem) + "/";
+				if ("//".equals(currentPath)) {
+					currentPath = "/";
 				}
+				currentPathField.setText(currentPath);
 				checkButtonStatus();
 			}
 		});
@@ -408,12 +410,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 				try {
 					final TreeItem selectedFilesItem = filesTree.getSelection()[0];
 					selectedFileName = selectedFilesItem.getText();
-					if (dialogMode == Mode.Save) {
-						fileNameField.setText(selectedFileName);
-					} else {
-						final TreeItem selectedFolderItem = folderTree.getSelection()[0];
-						currentPathField.setText(SwtUtilities.getAbsolutePath(selectedFolderItem) + "/" + selectedFileName);
-					}
+					final TreeItem selectedFolderItem = folderTree.getSelection()[0];
+					currentPathField.setText(SwtUtilities.getAbsolutePath(selectedFolderItem) + "/" + selectedFileName);
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
@@ -477,9 +475,15 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
 					if (Utilities.isNotBlank(selectedFilePath) && Utilities.isNotBlank(selectedFileName)) {
-						if (new QuestionDialog(getParent(), LangResources.get("deleteFile"), LangResources.get("reallyDeleteFile", selectedFilePath + "/" + selectedFileName), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
+						String filePath = selectedFilePath;
+						if ("/".equals(filePath)) {
+							filePath = "/" + selectedFileName;
+						} else {
+							filePath = selectedFilePath + "/" + selectedFileName;
+						}
+						if (new QuestionDialog(getParent(), LangResources.get("deleteFile"), LangResources.get("reallyDeleteFile", filePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
 							try {
-								connection.deleteFile(selectedFilePath + "/" + selectedFileName);
+								connection.deleteFile(filePath);
 								showPathDirectory();
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
@@ -488,35 +492,20 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 					}
 				}
 			});
-
-			final Composite additionalSaveComposite = new Composite(parentShell, SWT.BORDER);
-			additionalSaveComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
-			additionalSaveComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
-
-			fileNameField = new LabeledText(additionalSaveComposite, SWT.NONE, LangResources.get("fileName"), ArrangementStyle.Vertical);
-			fileNameField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
-			fileNameField.addModifyListener(new ModifyListener() {
-				@Override
-				public void modifyText(final ModifyEvent event) {
-					selectedFileName = ((LabeledText) event.widget).getText();
-					checkButtonStatus();
-				}
-			});
-		} else {
-			final Composite additionalSaveComposite = new Composite(parentShell, SWT.BORDER);
-			additionalSaveComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
-			additionalSaveComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
-
-			currentPathField = new LabeledText(additionalSaveComposite, SWT.NONE, LangResources.get("currentPath"), ArrangementStyle.Vertical);
-			currentPathField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
-			currentPathField.addModifyListener(new ModifyListener() {
-				@Override
-				public void modifyText(final ModifyEvent event) {
-					// TODO
-					checkButtonStatus();
-				}
-			});
 		}
+
+		final Composite currentPathComposite = new Composite(parentShell, SWT.BORDER);
+		currentPathComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+		currentPathComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
+
+		currentPathField = new LabeledText(currentPathComposite, SWT.NONE, LangResources.get("currentPath"), ArrangementStyle.Vertical);
+		currentPathField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+		currentPathField.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(final ModifyEvent event) {
+				checkButtonStatus();
+			}
+		});
 
 		final Composite mainButtonComposite = new Composite(parentShell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
@@ -534,32 +523,40 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 		});
 
 		action2Button = new Button(mainButtonComposite, SWT.PUSH);
-		action2Button.setText(LangResources.get(dialogMode == Mode.Open ? "download" : "upload"));
+		action2Button.setText(LangResources.get(dialogMode == Mode.Open ? "download" : "uploadFile"));
 		action2Button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				if (dialogMode == Mode.Save) {
 					final String currentPath = currentPathField.getText();
 					if (currentPath.endsWith("/")) {
-						final DirectoryDialog dialog = new DirectoryDialog(parentShell, SWT.OPEN);
+						final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
+						final FileDialog dialog = new FileDialog(parentShell, SWT.OPEN);
 						dialog.setText(LangResources.get("upload"));
+						dialog.setFileName(currentFileName);
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
-								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
-								progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "");
-								new Thread(directoryUploadWorker).start();
+								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
+								progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("upload"));
+								new Thread(fileUploadWorker).start();
 								if (progressDialog.open()) {
-									directoryUploadWorker.cancel(true);
+									fileUploadWorker.cancel(true);
 									showMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
 								} else {
 									// check for errors
-									directoryUploadWorker.get();
+									fileUploadWorker.get();
 									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while uploading directory: " + e.getMessage(), LangResources.get("ok")).open();
+								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).open();
+							} finally {
+								if (progressDialog != null) {
+									progressDialog.close();
+									progressDialog = null;
+								}
 							}
+							showPathDirectory();
 						}
 					} else {
 						final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
@@ -582,7 +579,13 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).open();
+							} finally {
+								if (progressDialog != null) {
+									progressDialog.close();
+									progressDialog = null;
+								}
 							}
+							showPathDirectory();
 						}
 					}
 				} else {
@@ -606,6 +609,11 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).open();
+							} finally {
+								if (progressDialog != null) {
+									progressDialog.close();
+									progressDialog = null;
+								}
 							}
 						}
 					} else {
@@ -629,12 +637,58 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).open();
+							} finally {
+								if (progressDialog != null) {
+									progressDialog.close();
+									progressDialog = null;
+								}
 							}
 						}
 					}
 				}
 			}
 		});
+
+		if (dialogMode == Mode.Save) {
+			action3Button = new Button(mainButtonComposite, SWT.PUSH);
+			action3Button.setText(LangResources.get("uploadFolder"));
+			action3Button.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(final SelectionEvent event) {
+					final String currentPath = currentPathField.getText();
+					if (currentPath.endsWith("/")) {
+						final DirectoryDialog dialog = new DirectoryDialog(parentShell, SWT.OPEN);
+						dialog.setText(LangResources.get("upload"));
+						final String sourcePath = dialog.open();
+						if (sourcePath != null) {
+							try {
+								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
+								progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "");
+								new Thread(directoryUploadWorker).start();
+								if (progressDialog.open()) {
+									directoryUploadWorker.cancel(true);
+									showMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
+								} else {
+									// check for errors
+									directoryUploadWorker.get();
+									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
+								}
+							} catch (final Exception e) {
+								new QuestionDialog(getParent(), getText(), "Error while uploading directory: " + e.getMessage(), LangResources.get("ok")).open();
+							} finally {
+								if (progressDialog != null) {
+									progressDialog.close();
+									progressDialog = null;
+								}
+							}
+							showPathDirectory();
+						}
+					} else {
+						new QuestionDialog(getParent(), getText(), "Must select some directory to upload to", LangResources.get("ok")).open();
+					}
+				}
+			});
+		}
 
 		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setText(LangResources.get("cancel"));
@@ -728,6 +782,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			rootTreeItem.setExpanded(true);
 			folderTree.select(folderTree.getItem(0));
 			selectedFilePath = "/";
+			currentPathField.setText(selectedFilePath);
 		} catch (final Exception e) {
 			disconnect();
 			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
@@ -759,6 +814,13 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			connectButton.setText(LangResources.get("disconnect"));
 			action1Button.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
 			action2Button.setEnabled(Utilities.isNotBlank(selectedFileName) || Utilities.isNotBlank(selectedFilePath));
+			if (action3Button != null) {
+				if (currentPathField.getText().endsWith("/")) {
+					action3Button.setEnabled(Utilities.isNotBlank(selectedFileName) || Utilities.isNotBlank(selectedFilePath));
+				} else {
+					action3Button.setEnabled(false);
+				}
+			}
 			protocolField.setEnabled(false);
 			hostnameField.setEnabled(false);
 			portField.setEnabled(false);
@@ -767,7 +829,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			useKeyFileButton.setEnabled(false);
 			sharenameField.setEnabled(false);
 			if (dialogMode == Mode.Save) {
-				fileNameField.setEnabled(true);
 				createFolderButton.setEnabled(true);
 				deleteFolderButton.setEnabled(true);
 				deleteFileButton.setEnabled(true);
@@ -785,6 +846,9 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			connectButton.setText(LangResources.get("connect"));
 			action1Button.setEnabled(false);
 			action2Button.setEnabled(false);
+			if (action3Button != null) {
+				action3Button.setEnabled(false);
+			}
 			protocolField.setEnabled(true);
 			hostnameField.setEnabled(true);
 			portField.setEnabled(!"smb1".equalsIgnoreCase(protocol));
@@ -792,7 +856,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			passwordField.setEnabled(true);
 			useKeyFileButton.setEnabled(!"ftp".equalsIgnoreCase(protocol) && !"smb".equalsIgnoreCase(protocol) && !"smb1".equalsIgnoreCase(protocol));
 			if (dialogMode == Mode.Save) {
-				fileNameField.setEnabled(false);
 				createFolderButton.setEnabled(false);
 				deleteFolderButton.setEnabled(false);
 				deleteFileButton.setEnabled(false);

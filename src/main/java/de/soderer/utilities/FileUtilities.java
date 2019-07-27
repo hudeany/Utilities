@@ -492,9 +492,18 @@ public class FileUtilities {
 
 	public static String getParentFromPath(final String path) {
 		if (path != null && path.contains("/")) {
-			return path.substring(0, path.lastIndexOf("/"));
+			final String returnPath = path.substring(0, path.lastIndexOf("/"));
+			if (Utilities.isEmpty(returnPath) && path.startsWith("/")) {
+				return "/";
+			} else {
+				return returnPath;
+			}
 		} else {
-			return "";
+			if (path != null && path.startsWith("/")) {
+				return "/";
+			} else {
+				return "";
+			}
 		}
 	}
 
