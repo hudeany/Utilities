@@ -31,6 +31,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
+import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
@@ -516,6 +517,10 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 		action1Button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
+				if (dialogMode == Mode.Save) {
+					selectedFilePath = FileUtilities.getParentFromPath(currentPathField.getText());
+					selectedFileName = FileUtilities.getFilenameFromPath(currentPathField.getText());
+				}
 				disconnect();
 				setReturnValue(true);
 				getParent().close();
@@ -812,14 +817,13 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			}
 			connectButton.setEnabled(true);
 			connectButton.setText(LangResources.get("disconnect"));
-			action1Button.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
-			action2Button.setEnabled(Utilities.isNotBlank(selectedFileName) || Utilities.isNotBlank(selectedFilePath));
-			if (action3Button != null) {
-				if (currentPathField.getText().endsWith("/")) {
-					action3Button.setEnabled(Utilities.isNotBlank(selectedFileName) || Utilities.isNotBlank(selectedFilePath));
-				} else {
-					action3Button.setEnabled(false);
-				}
+			if (dialogMode == Mode.Open) {
+				action1Button.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
+				action2Button.setEnabled(Utilities.isNotBlank(selectedFileName) || Utilities.isNotBlank(selectedFilePath));
+			} else {
+				action1Button.setEnabled(Utilities.isNotBlank(currentPathField.getText()) && !currentPathField.getText().trim().endsWith("/"));
+				action2Button.setEnabled(Utilities.isNotBlank(currentPathField.getText()));
+				action3Button.setEnabled(Utilities.isNotBlank(currentPathField.getText()) && currentPathField.getText().trim().endsWith("/"));
 			}
 			protocolField.setEnabled(false);
 			hostnameField.setEnabled(false);
