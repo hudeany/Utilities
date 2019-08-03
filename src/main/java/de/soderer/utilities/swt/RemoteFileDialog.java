@@ -846,7 +846,15 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 				removeServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()));
 				saveServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()) && Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)));
 			}
-			connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)));
+			if (dialogMode == Mode.Open) {
+				connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)));
+			} else {
+				if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) {
+					connectButton.setEnabled(false);
+				} else {
+					connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username));
+				}
+			}
 			connectButton.setText(LangResources.get("connect"));
 			action1Button.setEnabled(false);
 			action2Button.setEnabled(false);
