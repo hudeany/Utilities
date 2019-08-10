@@ -34,7 +34,7 @@ public class ZipUtilities {
 	 */
 	public static File zipFile(final File sourceFile) throws IOException {
 		final File zippedFile = new File(sourceFile.getAbsolutePath() + ".zip");
-		zipFile(sourceFile, zippedFile);
+		zipFile(sourceFile, zippedFile, null, null);
 		return zippedFile;
 	}
 
@@ -45,7 +45,7 @@ public class ZipUtilities {
 	 * @param destinationZipFile
 	 * @throws IOException
 	 */
-	public static void zipFile(final File sourceFile, final File destinationZipFile) throws IOException {
+	public static void zipFile(final File sourceFile, final File destinationZipFile, final char[] password, final Charset fileNameEncodingCharset) throws IOException {
 		if (!sourceFile.exists()) {
 			throw new IOException("SourceFile does not exist");
 		}
@@ -54,7 +54,7 @@ public class ZipUtilities {
 			throw new IOException("DestinationFile already exists");
 		}
 
-		try (ZipOutputStream zipOutputStream = openNewZipOutputStream(destinationZipFile)) {
+		try (ZipOutputStream zipOutputStream = openNewZipOutputStream(destinationZipFile, password, fileNameEncodingCharset)) {
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
 		} catch (final IOException e) {
 			if (destinationZipFile.exists()) {
@@ -221,15 +221,23 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static ZipOutputStream openNewZipOutputStream(final File destinationZipFile) throws IOException {
+	public static ZipOutputStream openNewZipOutputStream(final File destinationZipFile, final char[] password, Charset fileNameEncodingCharset) throws IOException {
 		if (destinationZipFile.exists()) {
 			throw new IOException("DestinationFile already exists");
 		} else if (!destinationZipFile.getParentFile().exists()) {
 			throw new IOException("DestinationDirectory does not exist");
 		}
 
+		if (fileNameEncodingCharset == null) {
+			fileNameEncodingCharset = Charset.forName("Cp437");
+		}
+
 		try {
-			return new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(destinationZipFile)));
+			if (password == null) {
+				return new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(destinationZipFile)));
+			} else {
+				return new ZipOutputStream(new ZipEncryptOutputStream(new BufferedOutputStream(new FileOutputStream(destinationZipFile)), password), fileNameEncodingCharset);
+			}
 		} catch (final IOException e) {
 			if (destinationZipFile.exists()) {
 				destinationZipFile.delete();
@@ -328,7 +336,7 @@ public class ZipUtilities {
 		if (zipFile.exists()) {
 			return openExistingZipFileForExtension(zipFile);
 		} else {
-			return openNewZipOutputStream(zipFile);
+			return openNewZipOutputStream(zipFile, null, null);
 		}
 	}
 
