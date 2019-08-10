@@ -4,10 +4,6 @@ import java.util.Map;
 
 /**
  * Generic String keyed Map that ignores the String case
- *
- * @author Andreas
- *
- * @param <V>
  */
 public class CaseInsensitiveOrderedMap<V> extends AbstractLinkedHashMap<String, V> {
 	private static final long serialVersionUID = 7467218114617744333L;
@@ -20,25 +16,25 @@ public class CaseInsensitiveOrderedMap<V> extends AbstractLinkedHashMap<String, 
 		super();
 	}
 
-	public CaseInsensitiveOrderedMap(int initialCapacity, float loadFactor, boolean accessOrder) {
+	public CaseInsensitiveOrderedMap(final int initialCapacity, final float loadFactor, final boolean accessOrder) {
 		super(initialCapacity, loadFactor, accessOrder);
 	}
 
-	public CaseInsensitiveOrderedMap(int initialCapacity, float loadFactor) {
+	public CaseInsensitiveOrderedMap(final int initialCapacity, final float loadFactor) {
 		super(initialCapacity, loadFactor);
 	}
 
-	public CaseInsensitiveOrderedMap(int initialCapacity) {
+	public CaseInsensitiveOrderedMap(final int initialCapacity) {
 		super(initialCapacity);
 	}
 
-	public CaseInsensitiveOrderedMap(Map<? extends String, ? extends V> map) {
+	public CaseInsensitiveOrderedMap(final Map<? extends String, ? extends V> map) {
 		super(map.size());
 		putAll(map);
 	}
 
 	@Override
-	protected String convertKey(Object key) {
+	protected String convertKey(final Object key) {
 		return key == null ? null : key.toString().toLowerCase();
 	}
 }

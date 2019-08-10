@@ -5,9 +5,6 @@ import java.util.Locale;
 
 /**
  * real value = value * 10 ^ dimension
- *
- * @author andreas
- *
  */
 public class ExactNumber {
 	private long value;
@@ -17,15 +14,15 @@ public class ExactNumber {
 		value = 0;
 	}
 
-	public ExactNumber(long value) {
+	public ExactNumber(final long value) {
 		this.value = value;
 	}
 
-	public ExactNumber(String valueString) throws Exception {
+	public ExactNumber(final String valueString) throws Exception {
 		if (Utilities.isBlank(valueString)) {
 			value = 0;
 		} else {
-			Tuple<Long, Integer> data = parseNumber(valueString);
+			final Tuple<Long, Integer> data = parseNumber(valueString);
 			value = data.getFirst();
 			dimension = data.getSecond();
 		}
@@ -76,24 +73,24 @@ public class ExactNumber {
 		return toString(Locale.getDefault());
 	}
 
-	public String toString(Locale locale) {
+	public String toString(final Locale locale) {
 		String returnValue = Long.toString(value);
 		if (dimension > 0) {
-			char separator = DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
+			final char separator = DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
 			returnValue = returnValue.substring(0, returnValue.length() - dimension) + separator + returnValue.substring(returnValue.length() - dimension);
 		}
 		return returnValue;
 	}
 
-	public void add(long valueToAdd) {
+	public void add(final long valueToAdd) {
 		value += valueToAdd * Math.pow(10, dimension);
 	}
 
-	public ExactNumber add(String valueToAdd) throws Exception {
+	public ExactNumber add(final String valueToAdd) throws Exception {
 		if (!Utilities.isBlank(valueToAdd)) {
-			Tuple<Long, Integer> valueData = parseNumber(valueToAdd);
+			final Tuple<Long, Integer> valueData = parseNumber(valueToAdd);
 			long valueToAddValue = valueData.getFirst();
-			int valueToAddDimension = valueData.getSecond();
+			final int valueToAddDimension = valueData.getSecond();
 			if (valueToAddDimension < dimension) {
 				valueToAddValue *= Math.pow(10, dimension - valueToAddDimension);
 			} else if (valueToAddDimension > dimension) {

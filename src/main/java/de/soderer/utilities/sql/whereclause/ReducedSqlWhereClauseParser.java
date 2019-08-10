@@ -23,28 +23,25 @@ import de.soderer.utilities.sql.whereclause.token.Value.Type;
  * Supported functionality: String-values ( 'abc' ) Number-values ( 1, 2.5 ) Date-values ( date('01.02.2001', 'dd.mm.yyyy') ) Date-conversions ( char(datefield, 'dd.mm.yyyy') ) Systemtime-values (
  * sysdate ) Equations and Comparisons ( =, <, >, >=, <=, !=, <> ) Regular Expressions ( ... like '...' / ... not like '...' ) NullChecks ( ... is null / ... is not null ) ListChecks ( ... in (1, 2,
  * 3) ) Boolean operators ( and, or ) Brackets around expressions Modulo operator ( ... mod 3 = 0 )
- *
- * @author Andreas
- *
  */
 public class ReducedSqlWhereClauseParser {
-	public RulePart parse(String formula, Map<String, Value.Type> descriptors) {
-		Map<String, Value.Type> fieldDescriptors = new HashMap<>();
-		for (String value : descriptors.keySet()) {
+	public RulePart parse(final String formula, final Map<String, Value.Type> descriptors) {
+		final Map<String, Value.Type> fieldDescriptors = new HashMap<>();
+		for (final String value : descriptors.keySet()) {
 			fieldDescriptors.put(value.toLowerCase(), descriptors.get(value));
 		}
-		for (String value : Expression.SYSDATE_VALUES) {
+		for (final String value : Expression.SYSDATE_VALUES) {
 			fieldDescriptors.put(value, Value.Type.Date);
 		}
 
 		int charIndex = 0;
-		int length = formula.length();
-		String lowerFormula = formula.toLowerCase();
-		List<RulePart> parts = new ArrayList<>();
+		final int length = formula.length();
+		final String lowerFormula = formula.toLowerCase();
+		final List<RulePart> parts = new ArrayList<>();
 		boolean readingString = false;
 		StringBuilder currentString = new StringBuilder();
 
-		Set<String> operators = new HashSet<>();
+		final Set<String> operators = new HashSet<>();
 		operators.addAll(Expression.BOOL_UNARY_POSTFIX_OPERATOR_SIGNS);
 		operators.addAll(Expression.COMPARE_OPERATOR_SIGNS);
 		operators.addAll(Expression.CALCULATION_OPERATOR_SIGNS);
@@ -57,14 +54,14 @@ public class ReducedSqlWhereClauseParser {
 		operators.addAll(Expression.SINGLE_PARAMETER_STRING_FUNCTION_SIGNS);
 		operators.addAll(ListExpression.SIGNS);
 
-		Set<String> texts = new HashSet<>();
+		final Set<String> texts = new HashSet<>();
 		texts.addAll(operators);
 		texts.addAll(fieldDescriptors.keySet());
 
 		int openBrackets = 0;
 
 		while (charIndex < length) {
-			char current = formula.charAt(charIndex);
+			final char current = formula.charAt(charIndex);
 
 			if (current == '\'') {
 				if (charIndex + 1 < length && formula.charAt(charIndex + 1) == '\'') {
@@ -110,7 +107,7 @@ public class ReducedSqlWhereClauseParser {
 					boolean pointSeen = current == '.';
 
 					while (end < length) {
-						char next = formula.charAt(end);
+						final char next = formula.charAt(end);
 						if (Character.isDigit(next)) {
 							end++;
 						} else if (next == '.' && !pointSeen) {
@@ -126,7 +123,7 @@ public class ReducedSqlWhereClauseParser {
 				} else {
 					int bestLength = 0;
 
-					for (String check : texts) {
+					for (final String check : texts) {
 						if (lowerFormula.startsWith(check, charIndex)) {
 							if (check.length() > bestLength) {
 								bestLength = check.length();
@@ -138,7 +135,7 @@ public class ReducedSqlWhereClauseParser {
 						if (parts.size() > 2 && parts.get(parts.size() - 2) instanceof Operator
 								&& (((Operator) parts.get(parts.size() - 2)).sign.equalsIgnoreCase("in") || ((Operator) parts.get(parts.size() - 2)).sign.equalsIgnoreCase("not in"))
 								&& parts.get(parts.size() - 1) instanceof SupplementalPart && ((SupplementalPart) parts.get(parts.size() - 1)).type == SupplementalPart.Type.OpeningBracket) {
-							SubSelect subSelect = searchSubselect(formula, charIndex);
+							final SubSelect subSelect = searchSubselect(formula, charIndex);
 							if (subSelect != null) {
 								parts.add(subSelect);
 								charIndex += subSelect.value.length();
@@ -149,7 +146,7 @@ public class ReducedSqlWhereClauseParser {
 							throw new IllegalArgumentException("Invalid data found at position " + charIndex + " starting with " + current);
 						}
 					} else {
-						String value = formula.substring(charIndex, charIndex + bestLength);
+						final String value = formula.substring(charIndex, charIndex + bestLength);
 						if (operators.contains(value.toLowerCase())) {
 							parts.add(new Operator(value));
 						} else if (fieldDescriptors.keySet().contains(value.toLowerCase())) {
@@ -183,16 +180,16 @@ public class ReducedSqlWhereClauseParser {
 		}
 	}
 
-	private static boolean parseLevel1Expressions(List<RulePart> parts) {
+	private static boolean parseLevel1Expressions(final List<RulePart> parts) {
 		boolean changed = false;
 		for (int i = parts.size() - 1; i >= 0; i--) {
 			if (parts.get(i) instanceof Operator) {
-				Operator operator = (Operator) parts.get(i);
+				final Operator operator = (Operator) parts.get(i);
 				if (Expression.BEANSHELL_MOD_SIGN.equals(operator.sign)) {
 					if (i - 1 < 0 || i + 1 >= parts.size() || !(parts.get(i - 1) instanceof Value) || !(parts.get(i + 1) instanceof Value)) {
 						throw new IllegalArgumentException("Invalid definition for operator: " + operator.sign);
 					} else {
-						Expression newValue = new Expression(new Operator(Expression.MOD_FUNCTION_SIGN), ((Value) (parts.get(i - 1))), ((Value) (parts.get(i + 1))));
+						final Expression newValue = new Expression(new Operator(Expression.MOD_FUNCTION_SIGN), ((Value) (parts.get(i - 1))), ((Value) (parts.get(i + 1))));
 						parts.remove(i + 1);
 						parts.remove(i);
 						parts.set(i - 1, newValue);
@@ -202,7 +199,7 @@ public class ReducedSqlWhereClauseParser {
 					if (i - 1 < 0 || i + 1 >= parts.size() || !(parts.get(i - 1) instanceof Value) || !(parts.get(i + 1) instanceof Value)) {
 						throw new IllegalArgumentException("Invalid definition for operator: " + operator.sign);
 					} else {
-						Expression newValue = new Expression(((Value) (parts.get(i - 1))), operator, ((Value) (parts.get(i + 1))));
+						final Expression newValue = new Expression(((Value) (parts.get(i - 1))), operator, ((Value) (parts.get(i + 1))));
 						parts.remove(i + 1);
 						parts.remove(i);
 						parts.set(i - 1, newValue);
@@ -215,7 +212,7 @@ public class ReducedSqlWhereClauseParser {
 							|| ((SupplementalPart) parts.get(i + 5)).type != SupplementalPart.Type.ClosingBracket) {
 						throw new IllegalArgumentException("Invalid definition for function: " + operator.sign);
 					} else {
-						Expression newValue = new Expression(operator, (Value) (parts.get(i + 2)), (Value) (parts.get(i + 4)));
+						final Expression newValue = new Expression(operator, (Value) (parts.get(i + 2)), (Value) (parts.get(i + 4)));
 						parts.remove(i + 5);
 						parts.remove(i + 4);
 						parts.remove(i + 3);
@@ -230,7 +227,7 @@ public class ReducedSqlWhereClauseParser {
 							|| ((SupplementalPart) parts.get(i + 3)).type != SupplementalPart.Type.ClosingBracket) {
 						throw new IllegalArgumentException("Invalid definition for function: " + operator.sign);
 					} else {
-						Expression newValue = new Expression(operator, (Value) parts.get(i + 2));
+						final Expression newValue = new Expression(operator, (Value) parts.get(i + 2));
 						parts.remove(i + 3);
 						parts.remove(i + 2);
 						parts.remove(i + 1);
@@ -241,7 +238,7 @@ public class ReducedSqlWhereClauseParser {
 					if (i - 1 < 0 || !(parts.get(i - 1) instanceof Value)) {
 						throw new IllegalArgumentException("Invalid definition for unary operator: " + operator.sign);
 					} else {
-						Expression newValue = new Expression(((Value) (parts.get(i - 1))), operator);
+						final Expression newValue = new Expression(((Value) (parts.get(i - 1))), operator);
 						parts.remove(i);
 						parts.set(i - 1, newValue);
 						changed = true;
@@ -252,16 +249,16 @@ public class ReducedSqlWhereClauseParser {
 		return changed;
 	}
 
-	private static boolean parseLevel2Expressions(List<RulePart> parts) {
+	private static boolean parseLevel2Expressions(final List<RulePart> parts) {
 		boolean changed = false;
 		for (int i = parts.size() - 1; i >= 0; i--) {
 			if (parts.get(i) instanceof Operator) {
-				Operator operator = (Operator) parts.get(i);
+				final Operator operator = (Operator) parts.get(i);
 				if (Expression.STRING_ONLY_COMPARE_OPERATOR_SIGNS.contains(operator.sign) || Expression.COMPARE_OPERATOR_SIGNS.contains(operator.sign)) {
 					if (i - 1 < 0 || i + 1 >= parts.size() || !(parts.get(i - 1) instanceof Value) || !(parts.get(i + 1) instanceof Value)) {
 						throw new IllegalArgumentException("Invalid definition for operator: " + operator.sign);
 					} else {
-						Expression newValue = new Expression(((Value) (parts.get(i - 1))), operator, ((Value) (parts.get(i + 1))));
+						final Expression newValue = new Expression(((Value) (parts.get(i - 1))), operator, ((Value) (parts.get(i + 1))));
 						parts.remove(i + 1);
 						parts.remove(i);
 						parts.set(i - 1, newValue);
@@ -273,7 +270,7 @@ public class ReducedSqlWhereClauseParser {
 						throw new IllegalArgumentException("Invalid definition for list operator: " + operator.sign);
 					} else {
 						int closingPosition = -1;
-						List<Value> values = new ArrayList<>();
+						final List<Value> values = new ArrayList<>();
 						for (int j = i + 2; j < parts.size(); j++) {
 							if (parts.get(j) instanceof SupplementalPart && ((SupplementalPart) parts.get(j)).type == SupplementalPart.Type.ClosingBracket) {
 								closingPosition = j;
@@ -288,7 +285,7 @@ public class ReducedSqlWhereClauseParser {
 						if (closingPosition < 0) {
 							throw new IllegalArgumentException("Invalid list definition");
 						} else {
-							ListExpression newValue = new ListExpression((Value) parts.get(i - 1), (Operator) parts.get(i), values);
+							final ListExpression newValue = new ListExpression((Value) parts.get(i - 1), (Operator) parts.get(i), values);
 							for (int j = closingPosition; j > i; j--) {
 								parts.remove(j);
 							}
@@ -302,7 +299,7 @@ public class ReducedSqlWhereClauseParser {
 		return changed;
 	}
 
-	private static boolean removeUnusedBrackets(List<RulePart> parts) {
+	private static boolean removeUnusedBrackets(final List<RulePart> parts) {
 		boolean changed = false;
 		for (int i = parts.size() - 1; i >= 0; i--) {
 			if (parts.get(i) instanceof SupplementalPart && ((SupplementalPart) parts.get(i)).type == SupplementalPart.Type.OpeningBracket) {
@@ -320,7 +317,7 @@ public class ReducedSqlWhereClauseParser {
 		return changed;
 	}
 
-	private static boolean parseConditions(List<RulePart> parts) {
+	private static boolean parseConditions(final List<RulePart> parts) {
 		boolean changed = false;
 		int bracketlevel = -1;
 		int arithmeticLevel = -1;
@@ -336,7 +333,7 @@ public class ReducedSqlWhereClauseParser {
 			} else if (parts.get(i) instanceof Operator && Expression.BOOL_ONLY_OPERATOR_SIGNS.contains(((Operator) parts.get(i)).sign.toLowerCase())) {
 				if (i - 1 >= 0 && i + 1 < parts.size() && parts.get(i - 1) instanceof Value && ((Value) parts.get(i - 1)).type == Type.Bool && parts.get(i + 1) instanceof Value
 						&& ((Value) parts.get(i + 1)).type == Type.Bool) {
-					int nextArithmeticLevel = Expression.BOOL_ONLY_OPERATOR_SIGNS.indexOf(((Operator) parts.get(i)).sign);
+					final int nextArithmeticLevel = Expression.BOOL_ONLY_OPERATOR_SIGNS.indexOf(((Operator) parts.get(i)).sign);
 					if (bracketlevel < currentBracketLevel || (currentBracketLevel == bracketlevel && arithmeticLevel <= nextArithmeticLevel)) {
 						arithmeticLevel = nextArithmeticLevel;
 						bracketlevel = currentBracketLevel;
@@ -347,7 +344,7 @@ public class ReducedSqlWhereClauseParser {
 		}
 
 		if (position >= 0) {
-			Expression newValue = new Expression((Value) parts.get(position - 1), (Operator) parts.get(position), (Value) parts.get(position + 1));
+			final Expression newValue = new Expression((Value) parts.get(position - 1), (Operator) parts.get(position), (Value) parts.get(position + 1));
 			parts.remove(position + 1);
 			parts.remove(position);
 			parts.set(position - 1, newValue);
@@ -356,13 +353,13 @@ public class ReducedSqlWhereClauseParser {
 		return changed;
 	}
 
-	private static SubSelect searchSubselect(String text, int startIndex) {
+	private static SubSelect searchSubselect(final String text, final int startIndex) {
 		int openBrackets = 0;
 		int charIndex = startIndex;
-		StringBuilder subSelectString = new StringBuilder();
+		final StringBuilder subSelectString = new StringBuilder();
 
 		while (charIndex < text.length()) {
-			char currentChar = text.charAt(charIndex);
+			final char currentChar = text.charAt(charIndex);
 			if (currentChar == '(') {
 				openBrackets++;
 			} else if (currentChar == ')') {
@@ -384,10 +381,10 @@ public class ReducedSqlWhereClauseParser {
 	 *
 	 * @param tokens
 	 */
-	public static void printJoinedParts(List<RulePart> tokens) {
-		StringBuilder countBuilder = new StringBuilder();
-		StringBuilder builder = new StringBuilder();
-		for (Object token : tokens) {
+	public static void printJoinedParts(final List<RulePart> tokens) {
+		final StringBuilder countBuilder = new StringBuilder();
+		final StringBuilder builder = new StringBuilder();
+		for (final Object token : tokens) {
 			if (builder.length() > 0) {
 				countBuilder.append(" ");
 				builder.append(" ");
