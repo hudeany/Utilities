@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -64,10 +65,10 @@ public class ZipUtilities {
 	}
 
 	public static void unzipFile(final File zipFile, final File destinationDirectory) throws IOException {
-		unzipFile(zipFile, destinationDirectory, null);
+		unzipFile(zipFile, destinationDirectory, null, null);
 	}
 
-	public static void unzipFile(final File zipFile, final File destinationDirectory, Charset fileNameEncodingCharset) throws IOException {
+	public static void unzipFile(final File zipFile, final File destinationDirectory, final char[] password, Charset fileNameEncodingCharset) throws IOException {
 		if (!zipFile.exists()) {
 			throw new IOException("ZipFile '" + zipFile.getAbsolutePath() + "' does not exist");
 		} else if (!zipFile.isFile()) {
@@ -84,7 +85,8 @@ public class ZipUtilities {
 
 		final String destinationDirectoryPath = destinationDirectory.getCanonicalPath();
 		final byte[] buffer = new byte[1024];
-		try (final ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile), fileNameEncodingCharset)) {
+		try (final InputStream inputStream = (password == null ? new FileInputStream(zipFile) : new ZipDecryptInputStream(new FileInputStream(zipFile), password));
+				final ZipInputStream zis = new ZipInputStream(inputStream, fileNameEncodingCharset)) {
 			ZipEntry zipEntry = zis.getNextEntry();
 			while (zipEntry != null) {
 				if (zipEntry.getName().endsWith("/")) {
