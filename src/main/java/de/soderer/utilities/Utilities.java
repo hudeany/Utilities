@@ -1514,4 +1514,50 @@ public class Utilities {
 				.replace("$HOME", homePath)
 				.replace("${HOME}", homePath);
 	}
+
+	public static String substring(String text, int startIndex) {
+		if (text == null) {
+			return null;
+		} else {
+			if (text.length() < startIndex) {
+				return "";
+			} else {
+				return text.substring(startIndex);
+			}
+		}
+	}
+
+	public static String substring(String text, int startIndex, int endIndex) {
+		if (text == null) {
+			return null;
+		} else {
+			if (text.length() < startIndex) {
+				return "";
+			} else if (text.length() < endIndex) {
+				return text.substring(startIndex);
+			} else {
+				return text.substring(startIndex, endIndex);
+			}
+		}
+	}
+
+	public static boolean contains(String text, String searchText) {
+		if (text == null) {
+			return false;
+		} else {
+			return text.contains(searchText);
+		}
+	}
+	
+	public static long skipInputStreamData(InputStream inputStream, long bytesToSkip) throws Exception {
+		long bytesSkipped = 0;
+		while (bytesSkipped < bytesToSkip) {
+			final long newBytesSkipped = inputStream.skip(bytesToSkip - bytesSkipped);
+			if (newBytesSkipped == 0) {
+				throw new Exception("Cannot skip data while reading stream");
+			}
+			bytesSkipped += newBytesSkipped;
+		}
+		return bytesSkipped;
+	}
 }

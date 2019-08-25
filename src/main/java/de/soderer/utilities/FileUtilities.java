@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -458,6 +459,59 @@ public class FileUtilities {
 
 	public static String readFileToString(final File dataFile, final String encoding) throws Exception {
 		return new String(readFileToByteArray(dataFile), encoding);
+	}
+	
+	public static List<String> readLinesFromFile(File textFile, boolean keepLinebreakInLines, String encoding) throws Exception {
+		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(textFile))) {
+			return readLinesFromStream(inputStream, keepLinebreakInLines, encoding);
+		}
+	}
+
+	public static List<String> readLinesFromStream(InputStream inputStream, boolean keepLinebreakInLines, String encoding) throws Exception {
+		final List<String> dataLines = new ArrayList<>();
+		final ByteArrayOutputStream readData = new ByteArrayOutputStream();
+		int nextByte;
+		int lastByte = 0;
+		while ((nextByte = inputStream.read()) != -1) {
+			boolean isNewLine = false;
+			if (nextByte == '\r') {
+				// new linebreak (Mac style, possibly Windows style)
+				if (keepLinebreakInLines) {
+					readData.write(nextByte);
+				}
+				isNewLine = true;
+			} else if (nextByte == '\n') {
+				if (lastByte == '\r') {
+					// second part of linebreak (Windows style)
+					// ignore but extend latest page end index
+					if (keepLinebreakInLines) {
+						dataLines.set(dataLines.size() - 1, dataLines.get(dataLines.size() - 1) + '\r');
+					}
+				} else {
+					// new linebreak (Unix style)
+					if (keepLinebreakInLines) {
+						readData.write(nextByte);
+					}
+					isNewLine = true;
+				}
+			} else {
+				readData.write(nextByte);
+			}
+
+			if (isNewLine) {
+				dataLines.add(new String(readData.toByteArray(), encoding));
+				readData.reset();
+			}
+
+			lastByte = nextByte;
+		}
+
+		if (readData.size() > 0) {
+			dataLines.add(new String(readData.toByteArray(), encoding));
+			readData.reset();
+		}
+
+		return dataLines;
 	}
 
 	public static void append(final File fileToAppend, final String textToAppend, final String encoding) throws Exception {
