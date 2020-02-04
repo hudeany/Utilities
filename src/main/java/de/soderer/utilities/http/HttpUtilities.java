@@ -266,6 +266,7 @@ public class HttpUtilities {
 			urlConnection.connect();
 
 			final int httpResponseCode = urlConnection.getResponseCode();
+			// TODO: Optionally follow redirections like HttpCodes 301 and 302
 			if (httpResponseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
 				final Map<String, String> headers = new CaseInsensitiveMap<>();
 				for (final String headerName : urlConnection.getHeaderFields().keySet()) {
