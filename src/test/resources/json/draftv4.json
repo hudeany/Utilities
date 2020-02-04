@@ -712,7 +712,7 @@
         }, 
         "description": "valid definition schema", 
         "schema": {
-            "$ref": "http://json-schema.org/draft-04/schema#"
+            "$ref": "https://json-schema.org/draft-04/schema#"
         }, 
         "valid": true
     }, 
@@ -726,7 +726,7 @@
         }, 
         "description": "invalid definition schema", 
         "schema": {
-            "$ref": "http://json-schema.org/draft-04/schema#"
+            "$ref": "https://json-schema.org/draft-04/schema#"
         }, 
         "valid": false
     }, 
@@ -3239,7 +3239,7 @@
         }, 
         "description": "remote ref valid", 
         "schema": {
-            "$ref": "http://json-schema.org/draft-04/schema#"
+            "$ref": "https://json-schema.org/draft-04/schema#"
         }, 
         "valid": true
     }, 
@@ -3249,7 +3249,7 @@
         }, 
         "description": "remote ref invalid", 
         "schema": {
-            "$ref": "http://json-schema.org/draft-04/schema#"
+            "$ref": "https://json-schema.org/draft-04/schema#"
         }, 
         "valid": false
     }, 

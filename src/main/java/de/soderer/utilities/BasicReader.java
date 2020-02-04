@@ -122,11 +122,11 @@ public class BasicReader implements Closeable {
 			if (currentChar == null) {
 				return returnValue.toString();
 			} else if (!escapeNextCharacter) {
-				if (escapeCharacter != null && escapeCharacter == currentChar) {
+				if (escapeCharacter != null && equals(escapeCharacter, currentChar)) {
 					escapeNextCharacter = true;
 				} else {
 					for (final char endChar : endChars) {
-						if (endChar == currentChar) {
+						if (equals(endChar, currentChar)) {
 							if (includeLimitChars) {
 								returnValue.append(currentChar);
 							} else {
@@ -139,26 +139,26 @@ public class BasicReader implements Closeable {
 				}
 			} else {
 				escapeNextCharacter = false;
-				if (escapeCharacter == currentChar) {
+				if (equals(escapeCharacter, currentChar)) {
 					currentChar = escapeCharacter;
-				} else if ('"' == currentChar) {
+				} else if (equals('"', currentChar)) {
 					currentChar = '"';
-				} else if ('\'' == currentChar) {
+				} else if (equals('\'', currentChar)) {
 					// Single quotes should not be escaped, but we allow them here for user convenience
 					currentChar = '\'';
-				} else if ('/' == currentChar) {
+				} else if (equals('/', currentChar)) {
 					currentChar = '/';
-				} else if ('b' == currentChar) {
+				} else if (equals('b', currentChar)) {
 					currentChar = '\b';
-				} else if ('f' == currentChar) {
+				} else if (equals('f', currentChar)) {
 					currentChar = '\f';
-				} else if ('n' == currentChar) {
+				} else if (equals('n', currentChar)) {
 					currentChar = '\n';
-				} else if ('r' == currentChar) {
+				} else if (equals('r', currentChar)) {
 					currentChar = '\r';
-				} else if ('t' == currentChar) {
+				} else if (equals('t', currentChar)) {
 					currentChar = '\t';
-				} else if ('u' == currentChar) {
+				} else if (equals('u', currentChar)) {
 					// Java encoded character
 					final StringBuilder unicode = new StringBuilder();
 					for (int i = 0; i < 4; i++) {
@@ -270,5 +270,21 @@ public class BasicReader implements Closeable {
 		}
 
 		return false;
+	}
+
+	private static boolean equals(final char char1, final Character character2) {
+		if (character2 == null) {
+			return false;
+		} else {
+			return character2.charValue() == char1;
+		}
+	}
+
+	private static boolean equals(final Character character1, final Character character2) {
+		if (character1 == character2) {
+			return true;
+		} else {
+			return character1 != null && character1.equals(character2);
+		}
 	}
 }
