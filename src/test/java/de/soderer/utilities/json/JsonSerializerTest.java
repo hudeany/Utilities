@@ -8,53 +8,51 @@ import org.junit.Test;
 
 import de.soderer.utilities.csv.TestObjectComplex;
 import de.soderer.utilities.csv.TestObjectSimple;
-import de.soderer.utilities.json.JsonNode;
-import de.soderer.utilities.json.JsonSerializer;
-import de.soderer.utilities.json.JsonWriter;
 
 public class JsonSerializerTest {
 	@Test
 	public void testSimple() throws Exception {
-		JsonNode dataNode = JsonSerializer.serialize(new TestObjectSimple());
+		final JsonNode dataNode = JsonSerializer.serialize(new TestObjectSimple());
 		JsonWriter.getJsonItemString(dataNode);
 	}
-	
+
 	@Test
 	public void testSimpleWithTypeData() throws Exception {
-		JsonNode dataNodeOriginal = JsonSerializer.serialize(new TestObjectSimple(), false, false, false, true);
-		String jsonStringOriginal = JsonWriter.getJsonItemString(dataNodeOriginal);
-		TestObjectSimple deserializedObject = (TestObjectSimple) JsonSerializer.deserialize(dataNodeOriginal);
-		JsonNode dataNodeSerialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
-		String jsonStringSerialized = JsonWriter.getJsonItemString(dataNodeSerialized);
+		final JsonNode dataNodeOriginal = JsonSerializer.serialize(new TestObjectSimple(), false, false, false, true);
+		final String jsonStringOriginal = JsonWriter.getJsonItemString(dataNodeOriginal);
+		final TestObjectSimple deserializedObject = (TestObjectSimple) JsonSerializer.deserialize(dataNodeOriginal);
+		final JsonNode dataNodeSerialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
+		final String jsonStringSerialized = JsonWriter.getJsonItemString(dataNodeSerialized);
 		Assert.assertEquals(jsonStringOriginal, jsonStringSerialized);
-		TestObjectSimple deserializedObject2 = (TestObjectSimple) JsonSerializer.deserialize((JsonObject) JsonReader.readJsonItemString(jsonStringOriginal).getValue());
-		JsonNode dataNodeSerialized2 = JsonSerializer.serialize(deserializedObject2, false, false, false, true);
-		String jsonStringSerialized2 = JsonWriter.getJsonItemString(dataNodeSerialized2);
+		final TestObjectSimple deserializedObject2 = (TestObjectSimple) JsonSerializer.deserialize((JsonObject) JsonReader.readJsonItemString(jsonStringOriginal).getValue());
+		final JsonNode dataNodeSerialized2 = JsonSerializer.serialize(deserializedObject2, false, false, false, true);
+		final String jsonStringSerialized2 = JsonWriter.getJsonItemString(dataNodeSerialized2);
 		Assert.assertEquals(jsonStringOriginal, jsonStringSerialized2);
 	}
-	
+
 	@Test
 	public void testAllFields() throws Exception {
-		JsonNode dataNode = JsonSerializer.serialize(new TestObjectComplex(), true, true, true, true);
+		final JsonNode dataNode = JsonSerializer.serialize(new TestObjectComplex(), true, true, true, true);
 		JsonWriter.getJsonItemString(dataNode);
 	}
-	
+
 	@Test
 	public void testComplexWithTypeData() throws Exception {
-		JsonNode dataNodeOriginal = JsonSerializer.serialize(new TestObjectComplex(), false, false, false, true);
-		String jsonStringOriginal = JsonWriter.getJsonItemString(dataNodeOriginal);
-		TestObjectComplex deserializedObject = (TestObjectComplex) JsonSerializer.deserialize(JsonReader.readJsonItemString(jsonStringOriginal));
-		JsonNode dataNodeSerialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
+		final JsonNode dataNodeOriginal = JsonSerializer.serialize(new TestObjectComplex(), false, false, false, true);
+		final String jsonStringOriginal = JsonWriter.getJsonItemString(dataNodeOriginal);
+		final TestObjectComplex deserializedObject = (TestObjectComplex) JsonSerializer.deserialize(JsonReader.readJsonItemString(jsonStringOriginal));
+		final JsonNode dataNodeSerialized = JsonSerializer.serialize(deserializedObject, false, false, false, true);
 		@SuppressWarnings("unused")
+		final
 		String jsonStringDeserialized = JsonWriter.getJsonItemString(dataNodeSerialized);
 		// Hashset item order may have changed
 		//Assert.assertEquals(jsonStringOriginal, jsonStringDeserialized);
 	}
-	
+
 	@Test
 	public void testCylic1() throws Exception {
 		try {
-			List<Object> list = new ArrayList<>();
+			final List<Object> list = new ArrayList<>();
 			list.add(1);
 			list.add(2);
 			list.add(3);
@@ -62,20 +60,20 @@ public class JsonSerializerTest {
 			list.add(4);
 			JsonSerializer.serialize(list);
 			Assert.fail("Missing expected Exception");
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			// Expected Exception
 			Assert.assertTrue(e.getMessage().contains("Cyclic reference detected"));
 		}
 	}
-	
+
 	@Test
 	public void testCylic2() throws Exception {
 		try {
-			TestObjectComplex someObject = new TestObjectComplex();
-			
-			List<Object> list1 = new ArrayList<>();
-			List<Object> list2 = new ArrayList<>();
-			
+			final TestObjectComplex someObject = new TestObjectComplex();
+
+			final List<Object> list1 = new ArrayList<>();
+			final List<Object> list2 = new ArrayList<>();
+
 			list1.add(1);
 			list1.add(2);
 			list1.add(someObject);
@@ -89,17 +87,17 @@ public class JsonSerializerTest {
 			list2.add(someObject);
 			JsonSerializer.serialize(list1);
 			Assert.fail("Missing expected Exception");
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			// Expected Exception
 			Assert.assertTrue(e.getMessage().contains("Cyclic reference detected"));
 		}
 	}
-	
+
 	@Test
 	public void testNonCylic() throws Exception {
-		TestObjectComplex someObject = new TestObjectComplex();
-		
-		List<Object> list = new ArrayList<>();
+		final TestObjectComplex someObject = new TestObjectComplex();
+
+		final List<Object> list = new ArrayList<>();
 		list.add(1);
 		list.add(2);
 		list.add(someObject);
@@ -107,14 +105,14 @@ public class JsonSerializerTest {
 		list.add(4);
 		JsonSerializer.serialize(list);
 	}
-	
+
 	@Test
 	public void testNonCylic2() throws Exception {
-		TestObjectComplex someObject = new TestObjectComplex();
-		
-		List<Object> list1 = new ArrayList<>();
-		List<Object> list2 = new ArrayList<>();
-		
+		final TestObjectComplex someObject = new TestObjectComplex();
+
+		final List<Object> list1 = new ArrayList<>();
+		final List<Object> list2 = new ArrayList<>();
+
 		list1.add(1);
 		list1.add(2);
 		list1.add(someObject);

@@ -6,7 +6,7 @@ public class CsvFormat {
 
 	/** The Constant DEFAULT_STRING_QUOTE. */
 	public static final char DEFAULT_STRING_QUOTE = '"';
-	
+
 	/** Default output linebreak. */
 	public static final String DEFAULT_LINEBREAK = "\n";
 
@@ -32,16 +32,19 @@ public class CsvFormat {
 
 	/** Allow lines with less than the expected number of data entries per line. */
 	private boolean fillMissingTrailingColumnsWithNull = false;
-	
+
+	/** Allow lines with more than the expected number of data entries per line, if those are empty. */
+	private boolean removeSurplusEmptyTrailingColumns = false;
+
 	/** Trim all data values */
 	private boolean alwaysTrim = false;
 
 	/** Quote data entries. */
 	private QuoteMode quoteMode = QuoteMode.QUOTE_IF_NEEDED;
-	
+
 	/** Linebreak for output only. */
 	private String lineBreak = DEFAULT_LINEBREAK;
-	
+
 	/** Ignore empty lines */
 	private boolean ignoreEmptyLines = false;
 
@@ -51,18 +54,18 @@ public class CsvFormat {
 	public enum QuoteMode {
 		/** Throw an error, when any quotation is needed */
 		NO_QUOTE,
-		
+
 		/** Do only quote, when a quotation is needed */
 		QUOTE_IF_NEEDED,
-		
+
 		/** Quote all strings, quote other data, when a quotation is needed */
 		QUOTE_STRINGS,
-		
+
 		/** Quote all data */
 		QUOTE_ALL_DATA;
 
-		public static QuoteMode getFromString(String quoteModeString) throws Exception {
-			for (QuoteMode quoteMode : QuoteMode.values()) {
+		public static QuoteMode getFromString(final String quoteModeString) throws Exception {
+			for (final QuoteMode quoteMode : QuoteMode.values()) {
 				if (quoteMode.toString().equalsIgnoreCase(quoteModeString)) {
 					return quoteMode;
 				}
@@ -70,21 +73,22 @@ public class CsvFormat {
 			throw new Exception("Invalid quote mode: " + quoteModeString);
 		}
 	}
-	
+
 	public CsvFormat() {
 	}
-	
-	public CsvFormat(char separator, char stringQuote, char stringQuoteEscapeCharacter, boolean lineBreakInDataAllowed, boolean escapedStringQuoteInDataAllowed, boolean fillMissingTrailingColumnsWithNull, boolean alwaysTrim, QuoteMode quoteMode, String lineBreak) {
+
+	public CsvFormat(final char separator, final char stringQuote, final char stringQuoteEscapeCharacter, final boolean lineBreakInDataAllowed, final boolean escapedStringQuoteInDataAllowed, final boolean fillMissingTrailingColumnsWithNull, final boolean removeSurplusEmptyTrailingColumns, final boolean alwaysTrim, final QuoteMode quoteMode, final String lineBreak) {
 		this.separator = separator;
 		this.stringQuote = stringQuote;
 		this.stringQuoteEscapeCharacter = stringQuoteEscapeCharacter;
 		this.lineBreakInDataAllowed = lineBreakInDataAllowed;
 		this.escapedStringQuoteInDataAllowed = escapedStringQuoteInDataAllowed;
 		this.fillMissingTrailingColumnsWithNull = fillMissingTrailingColumnsWithNull;
+		this.removeSurplusEmptyTrailingColumns = removeSurplusEmptyTrailingColumns;
 		this.alwaysTrim = alwaysTrim;
 		this.quoteMode = quoteMode;
 		this.lineBreak = lineBreak;
-		
+
 		// Use setters to validate parameters
 		setSeparator(separator);
 		setStringQuote(stringQuote);
@@ -101,7 +105,7 @@ public class CsvFormat {
 		return separator;
 	}
 
-	public CsvFormat setSeparator(char separator) {
+	public CsvFormat setSeparator(final char separator) {
 		if (separator == '\r' || separator == '\n') {
 			throw new IllegalArgumentException("Separator '" + separator + "' is invalid");
 		} else if (quoteMode != QuoteMode.NO_QUOTE && separator == stringQuote) {
@@ -119,10 +123,10 @@ public class CsvFormat {
 	/**
 	 * Setter for stringQuote character.
 	 * Also sets stringQuoteEscape character.
-	 * 
+	 *
 	 * @param stringQuote
 	 */
-	public CsvFormat setStringQuote(Character stringQuote) {
+	public CsvFormat setStringQuote(final Character stringQuote) {
 		if (stringQuote != null) {
 			if (stringQuote == '\r' || stringQuote == '\n' || separator == stringQuote) {
 				throw new IllegalArgumentException("StringQuote '" + stringQuote + "' is invalid");
@@ -142,7 +146,7 @@ public class CsvFormat {
 		return stringQuoteEscapeCharacter;
 	}
 
-	public CsvFormat setStringQuoteEscapeCharacter(char stringQuoteEscapeCharacter) {
+	public CsvFormat setStringQuoteEscapeCharacter(final char stringQuoteEscapeCharacter) {
 		if (stringQuoteEscapeCharacter == separator || stringQuoteEscapeCharacter == '\r' || stringQuoteEscapeCharacter == '\n') {
 			throw new IllegalArgumentException("Stringquote escape character '" + stringQuoteEscapeCharacter + "' is invalid");
 		} else {
@@ -155,7 +159,7 @@ public class CsvFormat {
 		return lineBreakInDataAllowed;
 	}
 
-	public CsvFormat setLineBreakInDataAllowed(boolean lineBreakInDataAllowed) {
+	public CsvFormat setLineBreakInDataAllowed(final boolean lineBreakInDataAllowed) {
 		this.lineBreakInDataAllowed = lineBreakInDataAllowed;
 		return this;
 	}
@@ -164,7 +168,7 @@ public class CsvFormat {
 		return escapedStringQuoteInDataAllowed;
 	}
 
-	public CsvFormat setEscapedStringQuoteInDataAllowed(boolean escapedStringQuoteInDataAllowed) {
+	public CsvFormat setEscapedStringQuoteInDataAllowed(final boolean escapedStringQuoteInDataAllowed) {
 		this.escapedStringQuoteInDataAllowed = escapedStringQuoteInDataAllowed;
 		return this;
 	}
@@ -173,8 +177,17 @@ public class CsvFormat {
 		return fillMissingTrailingColumnsWithNull;
 	}
 
-	public CsvFormat setFillMissingTrailingColumnsWithNull(boolean fillMissingTrailingColumnsWithNull) {
+	public CsvFormat setFillMissingTrailingColumnsWithNull(final boolean fillMissingTrailingColumnsWithNull) {
 		this.fillMissingTrailingColumnsWithNull = fillMissingTrailingColumnsWithNull;
+		return this;
+	}
+
+	public boolean isRemoveSurplusEmptyTrailingColumns() {
+		return removeSurplusEmptyTrailingColumns;
+	}
+
+	public CsvFormat setRemoveSurplusEmptyTrailingColumns(final boolean removeSurplusEmptyTrailingColumns) {
+		this.removeSurplusEmptyTrailingColumns = removeSurplusEmptyTrailingColumns;
 		return this;
 	}
 
@@ -182,7 +195,7 @@ public class CsvFormat {
 		return alwaysTrim;
 	}
 
-	public CsvFormat setAlwaysTrim(boolean alwaysTrim) {
+	public CsvFormat setAlwaysTrim(final boolean alwaysTrim) {
 		this.alwaysTrim = alwaysTrim;
 		return this;
 	}
@@ -191,7 +204,7 @@ public class CsvFormat {
 		return ignoreEmptyLines;
 	}
 
-	public CsvFormat setIgnoreEmptyLines(boolean ignoreEmptyLines) {
+	public CsvFormat setIgnoreEmptyLines(final boolean ignoreEmptyLines) {
 		this.ignoreEmptyLines = ignoreEmptyLines;
 		return this;
 	}
@@ -200,7 +213,7 @@ public class CsvFormat {
 		return quoteMode;
 	}
 
-	public CsvFormat setQuoteMode(QuoteMode quoteMode) {
+	public CsvFormat setQuoteMode(final QuoteMode quoteMode) {
 		if (quoteMode != QuoteMode.NO_QUOTE && separator == stringQuote) {
 			throw new IllegalArgumentException("StringQuote '" + stringQuote + "' is invalid");
 		} else {
@@ -213,7 +226,7 @@ public class CsvFormat {
 		return lineBreak;
 	}
 
-	public CsvFormat setLineBreak(String lineBreak) {
+	public CsvFormat setLineBreak(final String lineBreak) {
 		if (!lineBreak.equals("\r") && !lineBreak.equals("\n") && !lineBreak.equals("\r\n")) {
 			throw new IllegalArgumentException("Given linebreak is invalid");
 		} else {
