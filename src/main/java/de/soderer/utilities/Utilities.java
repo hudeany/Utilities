@@ -1171,7 +1171,7 @@ public class Utilities {
 			final int speed = (int) (itemsDone / elapsedSeconds);
 			speedString = getHumanReadableNumber(speed, "", true) + "/s";
 			final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
-			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(estimatedEnd.getTime() - now.getTime(), false);
+			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(estimatedEnd.getTime() - now.getTime(), false, true);
 		} else if (itemsToDo > 0) {
 			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
 		}
@@ -1515,7 +1515,7 @@ public class Utilities {
 				.replace("${HOME}", homePath);
 	}
 
-	public static String substring(String text, int startIndex) {
+	public static String substring(final String text, final int startIndex) {
 		if (text == null) {
 			return null;
 		} else {
@@ -1527,7 +1527,7 @@ public class Utilities {
 		}
 	}
 
-	public static String substring(String text, int startIndex, int endIndex) {
+	public static String substring(final String text, final int startIndex, final int endIndex) {
 		if (text == null) {
 			return null;
 		} else {
@@ -1541,15 +1541,15 @@ public class Utilities {
 		}
 	}
 
-	public static boolean contains(String text, String searchText) {
+	public static boolean contains(final String text, final String searchText) {
 		if (text == null) {
 			return false;
 		} else {
 			return text.contains(searchText);
 		}
 	}
-	
-	public static long skipInputStreamData(InputStream inputStream, long bytesToSkip) throws Exception {
+
+	public static long skipInputStreamData(final InputStream inputStream, final long bytesToSkip) throws Exception {
 		long bytesSkipped = 0;
 		while (bytesSkipped < bytesToSkip) {
 			final long newBytesSkipped = inputStream.skip(bytesToSkip - bytesSkipped);

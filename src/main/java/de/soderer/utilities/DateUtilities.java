@@ -27,9 +27,9 @@ public class DateUtilities {
 	public static final String YYYY_MM_DD_HHMMSS = "yyyy-MM-dd HH:mm:ss";
 	public static final String YYYYMMDD_HHMMSS = "yyyyMMdd-HHmmss";
 	public static final String HHMM = "HHmm";
-//	public static final String EE_DD_MM_YYYY = "EE dd.MM.yyyy", Locale.GERMAN); // EE => Weekday
-//	public static final String DD_MMM_YYYY_ENG = "dd-MMM-yy", Locale.ENGLISH);
-//	public static final String DD_MMM_YYYY_GER = "dd-MMM-yy", Locale.GERMAN);
+	//	public static final String EE_DD_MM_YYYY = "EE dd.MM.yyyy", Locale.GERMAN); // EE => Weekday
+	//	public static final String DD_MMM_YYYY_ENG = "dd-MMM-yy", Locale.ENGLISH);
+	//	public static final String DD_MMM_YYYY_GER = "dd-MMM-yy", Locale.GERMAN);
 
 	/** Date format for SOAP Webservices (ISO 8601) */
 	public static final String ISO_8601_DATE_FORMAT_NO_TIMEZONE = "yyyy-MM-dd";
@@ -39,13 +39,13 @@ public class DateUtilities {
 	public static final String ISO_8601_DATETIME_FORMAT_NO_TIMEZONE = "yyyy-MM-dd'T'HH:mm:ss";
 	/** DateTime format for SOAP Webservices (ISO 8601) */
 	public static final String ISO_8601_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssX";
-	
+
 	/** ANSI SQL standard date format */
 	public static final String ANSI_SQL_DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
-	public static String getWochenTagNamensKuerzel(GregorianCalendar datum) {
-		int tagesInt = datum.get(Calendar.DAY_OF_WEEK);
-		String dayString = DateFormatSymbols.getInstance().getWeekdays()[tagesInt];
+	public static String getWochenTagNamensKuerzel(final GregorianCalendar datum) {
+		final int tagesInt = datum.get(Calendar.DAY_OF_WEEK);
+		final String dayString = DateFormatSymbols.getInstance().getWeekdays()[tagesInt];
 		return dayString.substring(0, 2);
 	}
 
@@ -54,7 +54,7 @@ public class DateUtilities {
 			return -1;
 		} else {
 			weekday = weekday.toLowerCase().trim();
-			String[] localeWeekdays = DateFormatSymbols.getInstance().getWeekdays();
+			final String[] localeWeekdays = DateFormatSymbols.getInstance().getWeekdays();
 			for (int i = 0; i < localeWeekdays.length; i++) {
 				if (localeWeekdays[i].toLowerCase().startsWith(weekday)) {
 					return i;
@@ -88,11 +88,11 @@ public class DateUtilities {
 	 *            a Timestamp
 	 * @return a String in format 'yyyy-mm-dd HH:MM:SS.NNNNNN'
 	 */
-	public static String formatTimestamp_yyyyMMdd_HHmmssNNNNNN(Timestamp ts) {
+	public static String formatTimestamp_yyyyMMdd_HHmmssNNNNNN(final Timestamp ts) {
 		String returnString = "";
 
 		if (ts != null) {
-			String s = new SimpleDateFormat(YYYY_MM_DD_HHMMSS).format(ts);
+			final String s = new SimpleDateFormat(YYYY_MM_DD_HHMMSS).format(ts);
 			String nanosString = Integer.toString(ts.getNanos());
 
 			if (nanosString.length() > 6) {
@@ -115,7 +115,7 @@ public class DateUtilities {
 	 * @param ddMMyyyyString
 	 * @return
 	 */
-	public static String convert_ddMMyyyy_to_yyyyMMdd(String ddMMyyyyString) {
+	public static String convert_ddMMyyyy_to_yyyyMMdd(final String ddMMyyyyString) {
 		return ddMMyyyyString.substring(6, 10) + "-" + ddMMyyyyString.substring(3, 5) + "-" + ddMMyyyyString.substring(0, 2);
 	}
 
@@ -125,12 +125,12 @@ public class DateUtilities {
 	 * @param ddMMyyyyString
 	 * @return
 	 */
-	public static String convert_yyyyMMdd_to_ddMMyyyy(String yyyyMMddString) {
+	public static String convert_yyyyMMdd_to_ddMMyyyy(final String yyyyMMddString) {
 		return yyyyMMddString.substring(8, 10) + "." + yyyyMMddString.substring(5, 7) + "." + yyyyMMddString.substring(0, 4);
 	}
 
-	public static Date getDay(int daysToAdd) {
-		GregorianCalendar returnValue = new GregorianCalendar();
+	public static Date getDay(final int daysToAdd) {
+		final GregorianCalendar returnValue = new GregorianCalendar();
 		returnValue.set(Calendar.HOUR_OF_DAY, 0);
 		returnValue.set(Calendar.MINUTE, 0);
 		returnValue.set(Calendar.SECOND, 0);
@@ -141,7 +141,7 @@ public class DateUtilities {
 		return returnValue.getTime();
 	}
 
-	public static String replaceDatePatternInString(String stringWithPatter, Date date) {
+	public static String replaceDatePatternInString(final String stringWithPatter, final Date date) {
 		String returnString = stringWithPatter;
 		returnString = returnString.replace("yyyy", new SimpleDateFormat("yyyy").format(date));
 		returnString = returnString.replace("YYYY", new SimpleDateFormat("yyyy").format(date));
@@ -156,89 +156,120 @@ public class DateUtilities {
 		return returnString;
 	}
 
-	public static Date calculateETA(Date start, long itemsToDo, long itemsDone) {
+	public static Date calculateETA(final Date start, final long itemsToDo, final long itemsDone) {
 		if (start == null || itemsToDo <= 0 || itemsDone <= 0) {
 			return null;
 		} else {
-			Date now = new Date();
-			long millisStartToNow = now.getTime() - start.getTime();
-			long millisStartToEnd = itemsToDo * millisStartToNow / itemsDone;
+			final Date now = new Date();
+			final long millisStartToNow = now.getTime() - start.getTime();
+			final long millisStartToEnd = itemsToDo * millisStartToNow / itemsDone;
 			return new Date(start.getTime() + millisStartToEnd);
 		}
 	}
 
-	public static String getShortHumanReadableTimespan(long valueInMillis, boolean showMillis) {
-		String returnValue = "";
+	public static String getShortHumanReadableTimespan(final long valueInMillis, final boolean showMillis, final boolean showLeadingZeros) {
+		final StringBuilder returnValue = new StringBuilder();
 		long rest = valueInMillis;
 
-		long millis = rest % 1000;
+		final long millis = rest % 1000;
 		rest = rest / 1000;
 
-		long seconds = rest % 60;
+		final long seconds = rest % 60;
 		rest = rest / 60;
 
-		long minutes = rest % 60;
+		final long minutes = rest % 60;
 		rest = rest / 60;
 
-		long hours = rest % 24;
+		final long hours = rest % 24;
 		rest = rest / 24;
 
-		long days = rest % 7;
+		final long days = rest % 7;
 		rest = rest / 7;
 
-		long weeks = rest % 52;
+		final long weeks = rest % 52;
 		rest = rest / 52;
 
-		long years = rest;
+		final long years = rest;
 
 		if (millis != 0 && showMillis) {
-			returnValue = millis + "ms";
+			returnValue.insert(0, "ms");
+			if (showLeadingZeros) {
+				returnValue.insert(0, String.format("%03d", millis));
+			} else {
+				returnValue.insert(0, millis);
+			}
 		}
 
 		if (seconds != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = seconds + "s" + returnValue;
+			returnValue.insert(0, "s");
+			if (showLeadingZeros) {
+				returnValue.insert(0, String.format("%02d", seconds));
+			} else {
+				returnValue.insert(0, seconds);
+			}
 		}
 
 		if (minutes != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = minutes + "m" + returnValue;
+			returnValue.insert(0, "m");
+			if (showLeadingZeros) {
+				returnValue.insert(0, String.format("%02d", minutes));
+			} else {
+				returnValue.insert(0, minutes);
+			}
 		}
 
 		if (hours != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = hours + "h" + returnValue;
+			returnValue.insert(0, "h");
+			if (showLeadingZeros) {
+				returnValue.insert(0, String.format("%02d", hours));
+			} else {
+				returnValue.insert(0, hours);
+			}
 		}
 
 		if (days != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = days + "d" + returnValue;
+			returnValue.insert(0, "d");
+			if (showLeadingZeros) {
+				returnValue.insert(0, String.format("%02d", days));
+			} else {
+				returnValue.insert(0, days);
+			}
 		}
 
 		if (weeks != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = weeks + "w" + returnValue;
+			returnValue.insert(0, "w");
+			if (showLeadingZeros) {
+				returnValue.insert(0, String.format("%02d", weeks));
+			} else {
+				returnValue.insert(0, weeks);
+			}
 		}
 
 		if (years != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = years + "y" + returnValue;
+			returnValue.insert(0, "y");
+			returnValue.insert(0, years);
 		}
 
 		if (returnValue.length() > 0) {
-			return returnValue;
+			return returnValue.toString();
 		} else if (!showMillis) {
 			return "0s";
 		} else {
@@ -246,78 +277,85 @@ public class DateUtilities {
 		}
 	}
 
-	public static String getHumanReadableTimespan(long valueInMillis, boolean showMillis) {
-		String returnValue = "";
+	public static String getHumanReadableTimespan(final long valueInMillis, final boolean showMillis) {
+		final StringBuilder returnValue = new StringBuilder();
 		long rest = valueInMillis;
 
-		long millis = rest % 1000;
+		final long millis = rest % 1000;
 		rest = rest / 1000;
 
-		long seconds = rest % 60;
+		final long seconds = rest % 60;
 		rest = rest / 60;
 
-		long minutes = rest % 60;
+		final long minutes = rest % 60;
 		rest = rest / 60;
 
-		long hours = rest % 24;
+		final long hours = rest % 24;
 		rest = rest / 24;
 
-		long days = rest % 7;
+		final long days = rest % 7;
 		rest = rest / 7;
 
-		long weeks = rest % 52;
+		final long weeks = rest % 52;
 		rest = rest / 52;
 
-		long years = rest;
+		final long years = rest;
 
 		if (millis != 0 && showMillis) {
-			returnValue = millis + " millis";
+			returnValue.insert(0, " millis");
+			returnValue.insert(0, millis);
 		}
 
 		if (seconds != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = seconds + " seconds" + returnValue;
+			returnValue.insert(0, " seconds");
+			returnValue.insert(0, seconds);
 		}
 
 		if (minutes != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = minutes + " minutes" + returnValue;
+			returnValue.insert(0, " minutes");
+			returnValue.insert(0, minutes);
 		}
 
 		if (hours != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = hours + " hours" + returnValue;
+			returnValue.insert(0, " hours");
+			returnValue.insert(0, hours);
 		}
 
 		if (days != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = days + " days" + returnValue;
+			returnValue.insert(0, " days");
+			returnValue.insert(0, days);
 		}
 
 		if (weeks != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = weeks + " weeks" + returnValue;
+			returnValue.insert(0, " weeks");
+			returnValue.insert(0, weeks);
 		}
 
 		if (years != 0) {
 			if (returnValue.length() > 0) {
-				returnValue = " " + returnValue;
+				returnValue.insert(0, "");
 			}
-			returnValue = years + " years" + returnValue;
+			returnValue.insert(0, " years");
+			returnValue.insert(0, years);
 		}
 
 		if (returnValue.length() > 0) {
-			return returnValue;
+			return returnValue.toString();
 		} else if (!showMillis) {
 			return "0s";
 		} else {
@@ -332,13 +370,13 @@ public class DateUtilities {
 	 * @param endTime
 	 * @return
 	 */
-	public static String getDuration(Calendar startTime, Calendar endTime) {
-		int durationInMilliSeconds = (int) (endTime.getTimeInMillis() - startTime.getTimeInMillis());
-		int milliSecondsPart = durationInMilliSeconds % 1000;
-		int secondsPart = durationInMilliSeconds / 1000 % 60;
-		int minutesPart = durationInMilliSeconds / 1000 / 60 % 60;
-		int hoursPart = durationInMilliSeconds / 1000 / 60 / 60 % 24;
-		int days = durationInMilliSeconds / 1000 / 60 / 60 % 24;
+	public static String getDuration(final Calendar startTime, final Calendar endTime) {
+		final int durationInMilliSeconds = (int) (endTime.getTimeInMillis() - startTime.getTimeInMillis());
+		final int milliSecondsPart = durationInMilliSeconds % 1000;
+		final int secondsPart = durationInMilliSeconds / 1000 % 60;
+		final int minutesPart = durationInMilliSeconds / 1000 / 60 % 60;
+		final int hoursPart = durationInMilliSeconds / 1000 / 60 / 60 % 24;
+		final int days = durationInMilliSeconds / 1000 / 60 / 60 % 24;
 
 		String returnString = milliSecondsPart + "ms";
 		if (secondsPart > 0) {
@@ -356,8 +394,8 @@ public class DateUtilities {
 		return returnString;
 	}
 
-	public static Date calculateNextJobStart(String timingString) throws Exception {
-		GregorianCalendar now = new GregorianCalendar();
+	public static Date calculateNextJobStart(final String timingString) throws Exception {
+		final GregorianCalendar now = new GregorianCalendar();
 		return calculateNextJobStart(now, timingString);
 	}
 
@@ -375,32 +413,32 @@ public class DateUtilities {
 	 * @throws ParseException
 	 * @throws Exception
 	 */
-	public static Date calculateNextJobStart(GregorianCalendar now, String timingString) throws Exception {
+	public static Date calculateNextJobStart(final GregorianCalendar now, final String timingString) throws Exception {
 		GregorianCalendar returnStart = new GregorianCalendar();
 		returnStart.add(Calendar.YEAR, 1);
 
 		// Holidays to exclude
-		List<GregorianCalendar> excludedDays = new ArrayList<>();
+		final List<GregorianCalendar> excludedDays = new ArrayList<>();
 
 		if (timingString.equalsIgnoreCase("once")) {
 			return null;
 		}
 
-		String[] timingParameterList = timingString.split(";|,| ");
-		for (String timingParameter : timingParameterList) {
+		final String[] timingParameterList = timingString.split(";|,| ");
+		for (final String timingParameter : timingParameterList) {
 			if (timingParameter.startsWith("!")) {
 				try {
-					GregorianCalendar exclusionDate = new GregorianCalendar();
+					final GregorianCalendar exclusionDate = new GregorianCalendar();
 					exclusionDate.setTime(new SimpleDateFormat("ddMMyyyy").parse(timingParameter.substring(1)));
 					excludedDays.add(exclusionDate);
-				} catch (ParseException e) {
+				} catch (final ParseException e) {
 					throw e;
 				}
 			}
 		}
 
-		for (String timingParameter : timingParameterList) {
-			GregorianCalendar nextStartByThisParameter = new GregorianCalendar();
+		for (final String timingParameter : timingParameterList) {
+			final GregorianCalendar nextStartByThisParameter = new GregorianCalendar();
 			nextStartByThisParameter.setTime(now.getTime());
 
 			if (timingParameter.startsWith("!")) {
@@ -434,8 +472,8 @@ public class DateUtilities {
 					// Fr: weekly execution on Friday at 00:00 Uhr
 					boolean onlyWithinOddWeeks = false;
 					boolean onlyWithinEvenWeeks = false;
-					List<Integer> weekdayIndexes = new ArrayList<>();
-					for (String weekDay : TextUtilities.chopToChunks(timingParameter, 2)) {
+					final List<Integer> weekdayIndexes = new ArrayList<>();
+					for (final String weekDay : TextUtilities.chopToChunks(timingParameter, 2)) {
 						if (weekDay.equalsIgnoreCase("ev")) {
 							onlyWithinEvenWeeks = true;
 						} else if (weekDay.equalsIgnoreCase("od")) {
@@ -459,8 +497,8 @@ public class DateUtilities {
 				}
 			} else if (timingParameter.startsWith("M") && timingParameter.length() == 8 && timingParameter.indexOf(":") == 3) {
 				// month rule "M01:1700"
-				String tag = timingParameter.substring(1, timingParameter.indexOf(":"));
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
+				final String tag = timingParameter.substring(1, timingParameter.indexOf(":"));
+				final String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
 				if (tag.equals("99")) {
 					// special day ultimo
 					nextStartByThisParameter.set(Calendar.DAY_OF_MONTH, nextStartByThisParameter.getActualMaximum(Calendar.DAY_OF_MONTH));
@@ -502,7 +540,7 @@ public class DateUtilities {
 				}
 
 				nextStartByThisParameter.set(Calendar.DAY_OF_MONTH, 1);
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
+				final String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
 				nextStartByThisParameter.set(Calendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
 				nextStartByThisParameter.set(Calendar.MINUTE, Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(Calendar.SECOND, 0);
@@ -533,19 +571,19 @@ public class DateUtilities {
 					nextStartByThisParameter.add(Calendar.DAY_OF_MONTH, 1);
 				}
 
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
+				final String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
 				nextStartByThisParameter.set(Calendar.HOUR_OF_DAY, Integer.parseInt(zeit.substring(0, 2)));
 				nextStartByThisParameter.set(Calendar.MINUTE, Integer.parseInt(zeit.substring(2)));
 				nextStartByThisParameter.set(Calendar.SECOND, 0);
 				nextStartByThisParameter.set(Calendar.MILLISECOND, 0);
 			} else {
 				// weekday execution (also allowes workingday execution Werktagssteuerung)
-				String wochenTage = timingParameter.substring(0, timingParameter.indexOf(":"));
+				final String wochenTage = timingParameter.substring(0, timingParameter.indexOf(":"));
 				boolean onlyWithinOddWeeks = false;
 				boolean onlyWithinEvenWeeks = false;
-				String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				List<Integer> weekdayIndexes = new ArrayList<>();
-				for (String weekDay : TextUtilities.chopToChunks(wochenTage, 2)) {
+				final String zeit = timingParameter.substring(timingParameter.indexOf(":") + 1);
+				final List<Integer> weekdayIndexes = new ArrayList<>();
+				for (final String weekDay : TextUtilities.chopToChunks(wochenTage, 2)) {
 					if (weekDay.equalsIgnoreCase("ev")) {
 						onlyWithinEvenWeeks = true;
 					} else if (weekDay.equalsIgnoreCase("od")) {
@@ -576,9 +614,9 @@ public class DateUtilities {
 		return returnStart.getTime();
 	}
 
-	public static boolean checkTimeMatchesPattern(String pattern, Date time) {
-		Pattern timePattern = Pattern.compile(pattern.replace("*", "."));
-		String timeString = new SimpleDateFormat(HHMM).format(time);
+	public static boolean checkTimeMatchesPattern(final String pattern, final Date time) {
+		final Pattern timePattern = Pattern.compile(pattern.replace("*", "."));
+		final String timeString = new SimpleDateFormat(HHMM).format(time);
 		return timePattern.matcher(timeString).matches();
 	}
 
@@ -588,7 +626,7 @@ public class DateUtilities {
 	 * @param value
 	 * @return
 	 */
-	public static GregorianCalendar getDayWithoutTime(GregorianCalendar value) {
+	public static GregorianCalendar getDayWithoutTime(final GregorianCalendar value) {
 		return new GregorianCalendar(value.get(Calendar.YEAR), value.get(Calendar.MONTH), value.get(Calendar.DAY_OF_MONTH));
 	}
 
@@ -599,34 +637,34 @@ public class DateUtilities {
 	 * @param day
 	 * @return
 	 */
-	public static boolean dayListIncludes(List<GregorianCalendar> listOfDays, GregorianCalendar day) {
-		for (GregorianCalendar listDay : listOfDays) {
+	public static boolean dayListIncludes(final List<GregorianCalendar> listOfDays, final GregorianCalendar day) {
+		for (final GregorianCalendar listDay : listOfDays) {
 			if (listDay.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR)) {
 				return true;
 			}
 		}
 		return false;
 	}
-    
-    public static Date parseUnknownDateFormat(String value) throws Exception {
+
+	public static Date parseUnknownDateFormat(final String value) throws Exception {
 		try {
 			return new SimpleDateFormat(DD_MM_YYYY_HH_MM_SS).parse(value);
-		} catch (ParseException e1) {
+		} catch (final ParseException e1) {
 			try {
 				return new SimpleDateFormat(DD_MM_YYYY_HH_MM).parse(value);
-			} catch (ParseException e2) {
+			} catch (final ParseException e2) {
 				try {
 					return new SimpleDateFormat(DD_MM_YYYY).parse(value);
-				} catch (ParseException e3) {
+				} catch (final ParseException e3) {
 					try {
 						return new SimpleDateFormat(YYYY_MM_DD_HH_MM).parse(value);
-					} catch (ParseException e4) {
+					} catch (final ParseException e4) {
 						try {
 							return new SimpleDateFormat(YYYYMMDDHHMMSS).parse(value);
-						} catch (ParseException e5) {
+						} catch (final ParseException e5) {
 							try {
 								return new SimpleDateFormat(DDMMYYYY).parse(value);
-							} catch (ParseException e6) {
+							} catch (final ParseException e6) {
 								throw new Exception("Unknown date format");
 							}
 						}
@@ -634,46 +672,46 @@ public class DateUtilities {
 				}
 			}
 		}
-    }
+	}
 
-    /**
-     * Parse DateTime strings for SOAP Webservices (ISO 8601)
-     * 
-     * @param dateValue
-     * @return
-     * @throws Exception
-     */
-    public static Date parseIso8601DateTimeString(String dateValue) throws Exception {
-    	if (Utilities.isBlank(dateValue)) {
-    		return null;
-    	}
-    	
-    	dateValue = dateValue.toUpperCase();
-    	
-    	if (dateValue.endsWith("Z")) {
-    		// Standardize UTC time
-    		dateValue = dateValue.replace("Z", "+00:00");
-    	}
-    	
-    	boolean hasTimezone = false;
-    	if (dateValue.length() > 6 && dateValue.charAt(dateValue.length() - 3) == ':' && (dateValue.charAt(dateValue.length() - 6) == '+' || dateValue.charAt(dateValue.length() - 6) == '-')) {
-    		hasTimezone = true;
-    	}
-    	
-    	if (dateValue.contains("T")) {
-    		// Date with time
-    		if (hasTimezone) {
-    			return new SimpleDateFormat(ISO_8601_DATETIME_FORMAT).parse(dateValue);
-    		} else {
-    			return new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_NO_TIMEZONE).parse(dateValue);
-    		}
-    	} else {
-    		// Date only
-    		if (hasTimezone) {
-    			return new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateValue);
-    		} else {
-    			return new SimpleDateFormat(ISO_8601_DATE_FORMAT_NO_TIMEZONE).parse(dateValue);
-    		}
-    	}
-    }
+	/**
+	 * Parse DateTime strings for SOAP Webservices (ISO 8601)
+	 *
+	 * @param dateValue
+	 * @return
+	 * @throws Exception
+	 */
+	public static Date parseIso8601DateTimeString(String dateValue) throws Exception {
+		if (Utilities.isBlank(dateValue)) {
+			return null;
+		}
+
+		dateValue = dateValue.toUpperCase();
+
+		if (dateValue.endsWith("Z")) {
+			// Standardize UTC time
+			dateValue = dateValue.replace("Z", "+00:00");
+		}
+
+		boolean hasTimezone = false;
+		if (dateValue.length() > 6 && dateValue.charAt(dateValue.length() - 3) == ':' && (dateValue.charAt(dateValue.length() - 6) == '+' || dateValue.charAt(dateValue.length() - 6) == '-')) {
+			hasTimezone = true;
+		}
+
+		if (dateValue.contains("T")) {
+			// Date with time
+			if (hasTimezone) {
+				return new SimpleDateFormat(ISO_8601_DATETIME_FORMAT).parse(dateValue);
+			} else {
+				return new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_NO_TIMEZONE).parse(dateValue);
+			}
+		} else {
+			// Date only
+			if (hasTimezone) {
+				return new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateValue);
+			} else {
+				return new SimpleDateFormat(ISO_8601_DATE_FORMAT_NO_TIMEZONE).parse(dateValue);
+			}
+		}
+	}
 }
