@@ -7,17 +7,17 @@ import java.util.Date;
 import java.util.Locale;
 
 public class BasicUpdateableConsoleApplication implements UpdateParent {
-	private String applicationName;
-	private Version applicationVersion;
-	
-	public BasicUpdateableConsoleApplication(String applicationName, Version applicationVersion) throws HeadlessException {
+	private final String applicationName;
+	private final Version applicationVersion;
+
+	public BasicUpdateableConsoleApplication(final String applicationName, final Version applicationVersion) throws HeadlessException {
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
 	}
 
 	@Override
-	public boolean askForUpdate(String availableNewVersion) throws Exception {
-		Console console = System.console();
+	public boolean askForUpdate(final String availableNewVersion) throws Exception {
+		final Console console = System.console();
 		if (console == null) {
 			throw new Exception("Couldn't get Console instance");
 		}
@@ -27,22 +27,22 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 			return false;
 		} else {
 			System.out.println(getI18NString("newVersion", availableNewVersion, applicationName, applicationVersion.toString()));
-			String input = console.readLine(getI18NString("installUpdate") + ": ");
+			final String input = console.readLine(getI18NString("installUpdate") + ": ");
 			System.out.println();
 			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j"));
 		}
 	}
 
 	@Override
-	public Credentials aquireCredentials(String text, boolean aquireUsername, boolean aquirePassword) throws Exception {
-		Console console = System.console();
+	public Credentials aquireCredentials(final String text, final boolean aquireUsername, final boolean aquirePassword) throws Exception {
+		final Console console = System.console();
 		if (console == null) {
 			throw new Exception("Couldn't get Console instance");
 		}
 
 		String userName = null;
 		char[] password = null;
-		
+
 		if (aquireUsername && aquirePassword) {
 			userName = console.readLine(getI18NString("enterUsername") + ": ");
 			password = console.readPassword(getI18NString("enterPassword") + ": ");
@@ -51,7 +51,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 		} else if (aquirePassword) {
 			password = console.readPassword(getI18NString("enterPassword") + ": ");
 		}
-		
+
 		if (Utilities.isBlank(userName) && Utilities.isBlank(password)) {
 			return null;
 		} else {
@@ -60,13 +60,13 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 	}
 
 	@Override
-	public void showUpdateError(String errorText) {
+	public void showUpdateError(final String errorText) {
 		System.err.println(errorText);
 	}
 
 	@Override
-	public void showUpdateProgress(Date itemStart, long itemsToDo, long itemsDone) {
-		System.out.print("\r" + Utilities.getConsoleProgressString(80, itemStart, itemsToDo, itemsDone));
+	public void showUpdateProgress(final Date itemStart, final long itemsToDo, final long itemsDone) {
+		System.out.print(Utilities.getConsoleProgressString(80 - 1, itemStart, itemsToDo, itemsDone) + "\r");
 	}
 
 	@Override
@@ -85,8 +85,8 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 	public void showUpdateDownloadEnd() {
 		// Do nothing
 	}
-	
-	private String getI18NString(String resourceKey, Object... arguments) {
+
+	private String getI18NString(final String resourceKey, final Object... arguments) {
 		if (LangResources.existsKey(resourceKey)) {
 			return LangResources.get(resourceKey, arguments);
 		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {

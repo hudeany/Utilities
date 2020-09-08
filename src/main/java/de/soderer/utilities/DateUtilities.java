@@ -271,9 +271,17 @@ public class DateUtilities {
 		if (returnValue.length() > 0) {
 			return returnValue.toString();
 		} else if (!showMillis) {
-			return "0s";
+			if (showLeadingZeros) {
+				return "00s";
+			} else {
+				return "0s";
+			}
 		} else {
-			return "0ms";
+			if (showLeadingZeros) {
+				return "000ms";
+			} else {
+				return "0ms";
+			}
 		}
 	}
 
