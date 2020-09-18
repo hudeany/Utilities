@@ -447,47 +447,46 @@ public class CryptographicUtilities {
 		}
 	}
 
-	/**
-	 * Generates Private Key from BASE64 encoded string
-	 */
-	public static PrivateKey getPrivateKeyFromString(final String keyString) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
 
-		try (PEMParser pemReader = new PEMParser(new StringReader(keyString))) {
-			final Object readObject = pemReader.readObject();
-			pemReader.close();
-			if (readObject instanceof KeyPair) {
-				final KeyPair keyPair = (KeyPair) readObject;
-				return keyPair.getPrivate();
-			} else if (readObject instanceof PrivateKey) {
-				return (PrivateKey) readObject;
-			} else {
-				return null;
-			}
-		} catch (final Exception e) {
-			throw new Exception("Cannot read private key", e);
-		}
-	}
 
 	/**
 	 * Generates Public Key from BASE64 encoded string
 	 */
-	public static PublicKey getPublicKeyFromString(final String keyString) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try (PEMParser pemReader = new PEMParser(new StringReader(keyString))) {
-			final Object readObject = pemReader.readObject();
-			pemReader.close();
-			if (readObject instanceof KeyPair) {
-				final KeyPair keyPair = (KeyPair) readObject;
-				return keyPair.getPublic();
-			} else if (readObject instanceof PublicKey) {
-				return (PublicKey) readObject;
-			} else {
-				return null;
-			}
+	public static PublicKey getPublicKeyFromString(final String key) throws Exception {
+		try {
+			Security.addProvider(new BouncyCastleProvider());
+			String publicKeyPEM = key;
+			publicKeyPEM = publicKeyPEM.replace("-----BEGIN PUBLICKEY-----", "");
+			publicKeyPEM = publicKeyPEM.replace("\r", "");
+			publicKeyPEM = publicKeyPEM.replace("\n", "");
+			publicKeyPEM = publicKeyPEM.replace("-----END PUBLICKEY-----", "");
+			final byte[] publicKeyData = Base64.getDecoder().decode(publicKeyPEM);
+			final KeyFactory kf = KeyFactory.getInstance("RSA");
+			final RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(publicKeyData));
+			return pubKey;
 		} catch (final Exception e) {
 			throw new Exception("Cannot read public key", e);
+		}
+	}
+
+	/**
+	 * Generates Private Key from BASE64 encoded string
+	 */
+	public static PrivateKey getPrivateKeyFromString(final String key) throws Exception {
+		try {
+			Security.addProvider(new BouncyCastleProvider());
+			String privateKeyPEM = key;
+			privateKeyPEM = privateKeyPEM.replace("-----BEGIN RSAPRIVATE KEY-----", "");
+			privateKeyPEM = privateKeyPEM.replace("\r", "");
+			privateKeyPEM = privateKeyPEM.replace("\n", "");
+			privateKeyPEM = privateKeyPEM.replace("-----END RSA PRIVATEKEY-----", "");
+			final byte[] privateKeyData = Base64.getDecoder().decode(privateKeyPEM);
+			final PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyData);
+			final KeyFactory kf = KeyFactory.getInstance("RSA");
+			final PrivateKey privKey = kf.generatePrivate(keySpec);
+			return privKey;
+		} catch (final Exception e) {
+			throw new Exception("Cannot read private key", e);
 		}
 	}
 
