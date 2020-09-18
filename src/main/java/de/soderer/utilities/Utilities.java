@@ -888,8 +888,7 @@ public class Utilities {
 
 	public static <T> T[] revertArray(final T[] array) {
 		@SuppressWarnings("unchecked")
-		final
-		T[] returnValue = (T[]) new Object[array.length];
+		final T[] returnValue = (T[]) new Object[array.length];
 		for (int i = 0; i < array.length; i++) {
 			returnValue[i] = array[array.length - 1 - i];
 		}
@@ -1086,8 +1085,7 @@ public class Utilities {
 
 		if (indexToRemove >= 0) {
 			@SuppressWarnings("unchecked")
-			final
-			T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length - 1);
+			final T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length - 1);
 			if (indexToRemove > 0) {
 				System.arraycopy(array, 0, result, 0, indexToRemove);
 			}
@@ -1097,8 +1095,7 @@ public class Utilities {
 			return result;
 		} else {
 			@SuppressWarnings("unchecked")
-			final
-			T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length);
+			final T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length);
 			System.arraycopy(array, 0, result, 0, array.length);
 			return result;
 		}

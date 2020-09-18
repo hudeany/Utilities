@@ -19,17 +19,17 @@ import de.soderer.utilities.TestSecureDataStoreEntry.TestEnum;
 public class SecureDataStoreTest {
 	public static final String TEST_PASSWORD = "test@PasswordÄÖÜäöüß";
 	public static final String TEST_SALT = "testSalt";
-	
+
 	public static final String TEST_ENTRYNAME = "entry Näme";
-	
+
 	@Test
 	public void test() throws Exception {
-		File testStoreFile = File.createTempFile("test", ".secpref");
+		final File testStoreFile = File.createTempFile("test", ".secpref");
 		try {
-			Date now = DateUtils.truncate(new Date(), Calendar.SECOND);
-			SecureDataStore testKeyStore_ForSave = new SecureDataStore();
-			
-			TestSecureDataStoreEntry secureDataEntry = new TestSecureDataStoreEntry();
+			final Date now = DateUtils.truncate(new Date(), Calendar.SECOND);
+			final SecureDataStore testKeyStore_ForSave = new SecureDataStore();
+
+			final TestSecureDataStoreEntry secureDataEntry = new TestSecureDataStoreEntry();
 			secureDataEntry.valueBooleanPrimitive = true;
 			secureDataEntry.valueBooleanPrimitiveArray = new boolean[] { true, false };
 			secureDataEntry.valueBoolean = Boolean.TRUE;
@@ -105,26 +105,26 @@ public class SecureDataStoreTest {
 			secureDataEntry.valueMapIntegerString.put(1, "abc");
 			secureDataEntry.valueMapIntegerString.put(2, "def");
 			secureDataEntry.testSecureDataStoreEntry = new TestSecureDataStoreEntry();
-			
+
 			testKeyStore_ForSave.addEntry(TEST_ENTRYNAME, secureDataEntry);
 			testKeyStore_ForSave.save(testStoreFile, TEST_PASSWORD.toCharArray(), TEST_SALT.getBytes("UTF-8"));
-			
-			SecureDataStore testKeyStore_ForLoad = new SecureDataStore();
+
+			final SecureDataStore testKeyStore_ForLoad = new SecureDataStore();
 			testKeyStore_ForLoad.load(testStoreFile, TEST_PASSWORD.toCharArray(), TEST_SALT.getBytes("UTF-8"));
 
-			Set<String> loadedSecureDataEntryNames = testKeyStore_ForLoad.getEntryNames(TestSecureDataStoreEntry.class);
+			final Set<String> loadedSecureDataEntryNames = testKeyStore_ForLoad.getEntryNames(TestSecureDataStoreEntry.class);
 			Assert.assertEquals(1, loadedSecureDataEntryNames.size());
 			Assert.assertTrue(loadedSecureDataEntryNames.contains(TEST_ENTRYNAME));
-			
-			TestSecureDataStoreEntry loadedSecureDataEntry = testKeyStore_ForLoad.getEntry(TestSecureDataStoreEntry.class, TEST_ENTRYNAME);
+
+			final TestSecureDataStoreEntry loadedSecureDataEntry = testKeyStore_ForLoad.getEntry(TestSecureDataStoreEntry.class, TEST_ENTRYNAME);
 			assertEquals(secureDataEntry, loadedSecureDataEntry);
-		
+
 			try {
 				new SecureDataStore().load(testStoreFile, "abc".toCharArray(), TEST_SALT.getBytes("UTF-8"));
 				Assert.fail("Missing expected exception");
-			} catch (WrongPasswordException e) {
+			} catch (final WrongPasswordException e) {
 				Assert.assertNull(e.getMessage());
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				Assert.fail("Other than expected exception");
 			}
 		} finally {
@@ -134,7 +134,7 @@ public class SecureDataStoreTest {
 		}
 	}
 
-	private void assertEquals(TestSecureDataStoreEntry expectedObject, TestSecureDataStoreEntry actualObject) throws Exception {
+	private void assertEquals(final TestSecureDataStoreEntry expectedObject, final TestSecureDataStoreEntry actualObject) throws Exception {
 		if (expectedObject != actualObject) {
 			assertArrayEquals(expectedObject.valueBooleanPrimitiveArray, actualObject.valueBooleanPrimitiveArray);
 			Assert.assertArrayEquals(expectedObject.valueBytePrimitiveArray, actualObject.valueBytePrimitiveArray);
@@ -147,14 +147,14 @@ public class SecureDataStoreTest {
 			Assert.assertArrayEquals(expectedObject.valueStringArray, actualObject.valueStringArray);
 			Assert.assertArrayEquals(expectedObject.valueDateArray, actualObject.valueDateArray);
 			Assert.assertArrayEquals(expectedObject.valueTestEnumArray, actualObject.valueTestEnumArray);
-			for (Field field : TestSecureDataStoreEntry.class.getDeclaredFields()) {
+			for (final Field field : TestSecureDataStoreEntry.class.getDeclaredFields()) {
 				field.setAccessible(true);
 				if (field.getType() == TestSecureDataStoreEntry.class) {
 					assertEquals((TestSecureDataStoreEntry) field.get(expectedObject), (TestSecureDataStoreEntry) field.get(actualObject));
 				} else if (!field.getType().isArray()) {
 					if (field.getType().getComponentType() == TestSecureDataStoreEntry.class) {
-						TestSecureDataStoreEntry[] expectedArray = (TestSecureDataStoreEntry[]) field.get(expectedObject);
-						TestSecureDataStoreEntry[] actualArray = (TestSecureDataStoreEntry[]) field.get(actualObject);
+						final TestSecureDataStoreEntry[] expectedArray = (TestSecureDataStoreEntry[]) field.get(expectedObject);
+						final TestSecureDataStoreEntry[] actualArray = (TestSecureDataStoreEntry[]) field.get(actualObject);
 						Assert.assertEquals(expectedArray.length, actualArray.length);
 						for (int i = 0; i < expectedArray.length; i++) {
 							assertEquals(expectedArray[i], actualArray[i]);
@@ -167,7 +167,7 @@ public class SecureDataStoreTest {
 		}
 	}
 
-	private void assertArrayEquals(boolean[] expectedArray, boolean[] actualArray) {
+	private void assertArrayEquals(final boolean[] expectedArray, final boolean[] actualArray) {
 		if (expectedArray != actualArray) {
 			if (expectedArray == null || expectedArray.length != actualArray.length) {
 				Assert.fail();
@@ -181,7 +181,7 @@ public class SecureDataStoreTest {
 		}
 	}
 
-	private void assertArrayEquals(float[] expectedArray, float[] actualArray) {
+	private void assertArrayEquals(final float[] expectedArray, final float[] actualArray) {
 		if (expectedArray != actualArray) {
 			if (expectedArray == null || expectedArray.length != actualArray.length) {
 				Assert.fail();
@@ -195,7 +195,7 @@ public class SecureDataStoreTest {
 		}
 	}
 
-	private void assertArrayEquals(double[] expectedArray, double[] actualArray) {
+	private void assertArrayEquals(final double[] expectedArray, final double[] actualArray) {
 		if (expectedArray != actualArray) {
 			if (expectedArray == null || expectedArray.length != actualArray.length) {
 				Assert.fail();

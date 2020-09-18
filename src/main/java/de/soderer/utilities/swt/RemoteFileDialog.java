@@ -166,7 +166,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 				public void widgetSelected(final SelectionEvent event) {
 					if (keyStore != null) {
 						keyStore.removeEntry(ServerAccessData.class, serverEntriesCombo.getText());
-						serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
+						final String[] data = keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]);
+						serverEntriesCombo.setItems(data);
 						serverEntriesCombo.clearSelection();
 						serverEntriesCombo.setText("");
 					}

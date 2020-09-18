@@ -144,8 +144,7 @@ public class SecureDataStore {
 			return null;
 		}
 		@SuppressWarnings("unchecked")
-		final
-		T returnValue = (T) dataEntries.get(classType.getName()).get(entryName);
+		final T returnValue = (T) dataEntries.get(classType.getName()).get(entryName);
 		return returnValue;
 	}
 

@@ -136,7 +136,6 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private void updateApplication() {
 		try {
 			String jarFilePath = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
@@ -165,14 +164,14 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			final boolean downloadSuccess = getNewApplicationVersionFile(downloadTempFile);
 			if (downloadSuccess) {
 				if (Utilities.isNotEmpty(trustedCaCertificateFileName)) {
-					Collection<X509Certificate> trustedCerts = null;
+					Collection<? extends Certificate> trustedCerts = null;
 					final ClassLoader applicationClassLoader = getClass().getClassLoader();
 					if (applicationClassLoader == null) {
 						showUpdateError("Update error:\n" + "Applications classloader is not readable");
 						return;
 					}
 					try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
-						trustedCerts = (Collection<X509Certificate>) CertificateFactory.getInstance("X.509").generateCertificates(trustedUpdateCertificatesStream);
+						trustedCerts = CertificateFactory.getInstance("X.509").generateCertificates(trustedUpdateCertificatesStream);
 					} catch (final Exception e) {
 						showUpdateError("Update error:\n" + "Trusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
 						return;
@@ -524,7 +523,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		// do nothing
 	}
 
-	public static boolean verifyJarSignature(final File jarFile, final Collection<X509Certificate> trustedCerts) throws Exception {
+	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCerts) throws Exception {
 		if (trustedCerts == null || trustedCerts.size() == 0) {
 			return false;
 		}
@@ -582,14 +581,14 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	public static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<X509Certificate> trustedCerts) throws Exception {
+	public static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<? extends Certificate> trustedCerts) throws Exception {
 		final CertPathBuilder certifier = CertPathBuilder.getInstance("PKIX");
 		final X509CertSelector targetConstraints = new X509CertSelector();
 		targetConstraints.setCertificate(cert);
 
 		final Set<TrustAnchor> trustAnchors = new HashSet<>();
-		for (final X509Certificate trustedRootCert : trustedCerts) {
-			trustAnchors.add(new TrustAnchor(trustedRootCert, null));
+		for (final Certificate trustedRootCert : trustedCerts) {
+			trustAnchors.add(new TrustAnchor((X509Certificate) trustedRootCert, null));
 		}
 
 		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);

@@ -628,12 +628,10 @@ public class PGPUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final List<Map<String, Object>> signersData = new ArrayList<>();
-		@SuppressWarnings("unchecked")
-		final
-		Iterator<PGPSignature> signerIterator = publicKey.getSignatures();
+		final Iterator<?> signerIterator = publicKey.getSignatures();
 		while (signerIterator.hasNext()) {
 			final Map<String, Object> signatureData = new HashMap<>();
-			final PGPSignature signature = signerIterator.next();
+			final PGPSignature signature = (PGPSignature) signerIterator.next();
 
 			final long id = signature.getKeyID();
 			signatureData.put("id", id);
@@ -690,11 +688,9 @@ public class PGPUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final List<String> signatureIDs = new ArrayList<>();
-		@SuppressWarnings("unchecked")
-		final
-		Iterator<PGPSignature> signerIterator = publicKey.getSignatures();
+		final Iterator<?> signerIterator = publicKey.getSignatures();
 		while (signerIterator.hasNext()) {
-			final PGPSignature signature = signerIterator.next();
+			final PGPSignature signature = (PGPSignature) signerIterator.next();
 			final long id = signature.getKeyID();
 			signatureIDs.add(Long.toHexString(id).toUpperCase());
 		}

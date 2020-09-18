@@ -730,7 +730,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static boolean verifyJarSignature(final File jarFile, final Collection<X509Certificate> trustedCerts) throws Exception {
+	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCerts) throws Exception {
 		if (trustedCerts == null || trustedCerts.size() == 0) {
 			return false;
 		}
@@ -788,14 +788,14 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<X509Certificate> trustedCerts) throws Exception {
+	public static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<? extends Certificate> trustedCerts) throws Exception {
 		final CertPathBuilder certifier = CertPathBuilder.getInstance("PKIX");
 		final X509CertSelector targetConstraints = new X509CertSelector();
 		targetConstraints.setCertificate(cert);
 
 		final Set<TrustAnchor> trustAnchors = new HashSet<>();
-		for (final X509Certificate trustedRootCert : trustedCerts) {
-			trustAnchors.add(new TrustAnchor(trustedRootCert, null));
+		for (final Certificate trustedRootCert : trustedCerts) {
+			trustAnchors.add(new TrustAnchor((X509Certificate) trustedRootCert, null));
 		}
 
 		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
@@ -835,9 +835,8 @@ public class CryptographicUtilities {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public static Collection<X509Certificate> loadCertificatesFromPemStream(final InputStream pemInputStream) throws Exception {
-		return (Collection<X509Certificate>) CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(pemInputStream));
+	public static Collection<? extends Certificate> loadCertificatesFromPemStream(final InputStream pemInputStream) throws Exception {
+		return CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(pemInputStream));
 
 		//		Security.addProvider(new BouncyCastleProvider());
 		//

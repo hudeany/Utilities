@@ -3,7 +3,7 @@ package de.soderer.utilities.swt;
 import java.io.File;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.security.cert.X509Certificate;
+import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
@@ -26,8 +26,8 @@ import de.soderer.utilities.SimpleCredentialsData;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.UserError.Reason;
-import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.crypto.CryptographicUtilities;
 
 public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {
 	private static final transient Logger logger = Logger.getLogger(UpdateApplicationDialog.class);
@@ -35,7 +35,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private final String text;
 	private final String downloadUrl;
 	private boolean dailyUpdateCheck;
-	private final Collection<X509Certificate> trustedCertificates;
+	private final Collection<? extends Certificate> trustedCertificates;
 	private SecureDataStore secureDataStore = null;
 	private File keystoreFile = null;
 	private static final byte[] keystoreFileSalt = "q34;kUGh@78".getBytes(Charset.forName("UTF-8"));
@@ -43,7 +43,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private char[] keyStorePassword = null;
 	private boolean storedCredentialsChanged = false;
 
-	public UpdateApplicationDialog(final Shell shell, final String title, final String text, final String downloadUrl, final boolean dailyUpdateCheck, final Collection<X509Certificate> trustedCertificates) {
+	public UpdateApplicationDialog(final Shell shell, final String title, final String text, final String downloadUrl, final boolean dailyUpdateCheck, final Collection<? extends Certificate> trustedCertificates) {
 		super(shell, title);
 
 		this.text = text;
@@ -52,7 +52,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		this.trustedCertificates = trustedCertificates;
 	}
 
-	public UpdateApplicationDialog(final Shell shell, final String title, final String text, final String downloadUrl, final boolean dailyUpdateCheck, final Collection<X509Certificate> trustedCertificates, final File keystoreFile,
+	public UpdateApplicationDialog(final Shell shell, final String title, final String text, final String downloadUrl, final boolean dailyUpdateCheck, final Collection<? extends Certificate> trustedCertificates, final File keystoreFile,
 			final char[] keystorePassword) throws Exception {
 		super(shell, title);
 

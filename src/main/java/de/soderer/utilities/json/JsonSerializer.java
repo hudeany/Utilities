@@ -303,9 +303,7 @@ public class JsonSerializer {
 				return DateUtilities.parseIso8601DateTimeString((String) value);
 			} else if (value instanceof JsonObject) {
 				Object object;
-				@SuppressWarnings("unchecked")
-				final
-				Constructor<Object> constructor = (Constructor<Object>) clazz.getDeclaredConstructor();
+				final Constructor<?> constructor = clazz.getDeclaredConstructor();
 				if (!constructor.isAccessible()) {
 					constructor.setAccessible(true);
 				}
@@ -434,8 +432,7 @@ public class JsonSerializer {
 					}
 				} else if (Map.class.isAssignableFrom(clazz)) {
 					@SuppressWarnings("unchecked")
-					final
-					Map<Object, Object> mapObject = (Map<Object, Object>) clazz.newInstance();
+					final Map<Object, Object> mapObject = (Map<Object, Object>) clazz.newInstance();
 					for (final Object keyValueObject : (JsonArray) value) {
 						if (!(keyValueObject instanceof JsonObject)) {
 							throw new Exception("Invalid value type serialization value");
