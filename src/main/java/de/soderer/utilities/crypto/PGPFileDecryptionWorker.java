@@ -9,6 +9,7 @@ import java.util.Iterator;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPCompressedData;
+import org.bouncycastle.openpgp.PGPEncryptedData;
 import org.bouncycastle.openpgp.PGPEncryptedDataList;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPLiteralData;
@@ -38,7 +39,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 	private PGPSecretKey secretKey = null;
 	private char[] password = null;
 
-	public PGPFileDecryptionWorker(ProgressShowingModalDialog<?> parent, InputStream encryptedData, OutputStream decryptedData, PGPSecretKey secretKey, char[] password) throws IOException {
+	public PGPFileDecryptionWorker(final ProgressShowingModalDialog<?> parent, final InputStream encryptedData, final OutputStream decryptedData, final PGPSecretKey secretKey, final char[] password) throws IOException {
 		super(parent);
 		this.encryptedData = encryptedData;
 		this.decryptedData = decryptedData;
@@ -54,27 +55,26 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		InputStream decodedInputStream = null;
 		try {
 			itemsToDo = encryptedData.available();
-			
+
 			Security.addProvider(new BouncyCastleProvider());
-			
-			PGPPrivateKey privateKey = PGPUtilities.readPGPPrivateKey(secretKey, password);
+
+			final PGPPrivateKey privateKey = PGPUtilities.readPGPPrivateKey(secretKey, password);
 			encryptedData = PGPUtil.getDecoderStream(encryptedData);
 
-			PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(encryptedData, new JcaKeyFingerprintCalculator());
+			final PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(encryptedData, new JcaKeyFingerprintCalculator());
 			PGPEncryptedDataList encodedDataList;
-			Object encodedDataObject = pgpObjectFactory.nextObject();
+			final Object encodedDataObject = pgpObjectFactory.nextObject();
 			if (encodedDataObject instanceof PGPEncryptedDataList) {
 				encodedDataList = (PGPEncryptedDataList) encodedDataObject;
 			} else {
 				encodedDataList = (PGPEncryptedDataList) pgpObjectFactory.nextObject();
 			}
 
-			@SuppressWarnings("unchecked")
-			Iterator<PGPPublicKeyEncryptedData> dataIterator = encodedDataList.getEncryptedDataObjects();
+			final Iterator<PGPEncryptedData> dataIterator = encodedDataList.getEncryptedDataObjects();
 			PGPPublicKeyEncryptedData publicKeyEncryptedData = null;
 
 			while (dataIterator.hasNext()) {
-				publicKeyEncryptedData = dataIterator.next();
+				publicKeyEncryptedData = (PGPPublicKeyEncryptedData) dataIterator.next();
 			}
 
 			if (privateKey == null) {
@@ -95,12 +95,13 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			}
 
 			if (message instanceof PGPLiteralData) {
-				PGPLiteralData literalData = (PGPLiteralData) message;
+				final PGPLiteralData literalData = (PGPLiteralData) message;
 				@SuppressWarnings("unused")
+				final
 				String outFileName = literalData.getFileName();
 				decodedInputStream = literalData.getInputStream();
 
-				byte[] buffer = new byte[4096];
+				final byte[] buffer = new byte[4096];
 				int bytesRead;
 				while ((bytesRead = decodedInputStream.read(buffer)) >= 0) {
 					if (cancel) {
@@ -126,14 +127,14 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			}
 
 			return true;
-		} catch (PGPException pgpe) {
+		} catch (final PGPException pgpe) {
 			if (pgpe.getUnderlyingException() != null && pgpe.getUnderlyingException() instanceof InvalidKeyException
 					&& TextUtilities.containsIgnoreCase(((InvalidKeyException) pgpe.getUnderlyingException()).getMessage(), "Illegal key size") && !SystemUtilities.isunlimitedKeyStrengthAllowed()) {
 				throw new UserError(LangResources.get("keystrengthExceedsAllowedJCE"), pgpe);
 			} else {
 				throw pgpe;
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error while decrypting", e);
 		} finally {
 			Utilities.closeQuietly(decodedInputStream);

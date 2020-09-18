@@ -20,12 +20,8 @@
 	<repositories>
 		<repository>
 			<id>bouncycastle</id>
-			<url>http://repo2.maven.org/maven2/org/bouncycastle/</url>
+			<url>https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on</url>
 		</repository>
-		<!--repository>
-			<id>central</id>
-			<url>http://central.maven.org/maven2/</url>
-		</repository-->
 		<repository>
 			<id>snapshots</id>
 			<url>https://repository.apache.org/content/repositories/snapshots</url>
@@ -98,22 +94,22 @@
 			<version>1.7.25</version>
 		</dependency>
 		<dependency>
-			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on -->
+			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk15on</artifactId>
-			<version>1.61</version>
+			<version>1.66</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpg-jdk15on</artifactId>
-			<version>1.61</version>
+			<version>1.66</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpkix-jdk15on</artifactId>
-			<version>1.61</version>
+			<version>1.66</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>
