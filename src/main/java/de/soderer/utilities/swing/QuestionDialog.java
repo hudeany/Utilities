@@ -58,13 +58,13 @@ public class QuestionDialog extends JDialog {
 					buttonPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 				}
 				
-				final int answerButtonIndex = i;
+				final int answerButtonIndexFinal = i;
 				
 				JButton someButton = new JButton(buttonTexts[i]);
 				someButton.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent event) {
-						questionDialog.setAnswerButtonIndex(answerButtonIndex);
+						questionDialog.setAnswerButtonIndex(answerButtonIndexFinal);
 						questionDialog.dispose();
 					}
 				});

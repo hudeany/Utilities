@@ -140,7 +140,7 @@ public class SmbConnection implements RemoteConnection {
 			for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderParentPath, folderName)) {
 				return EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
 			}
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
 		return false;
@@ -187,7 +187,7 @@ public class SmbConnection implements RemoteConnection {
 			for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, fileName)) {
 				return !EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
 			}
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
 		return false;
@@ -216,6 +216,7 @@ public class SmbConnection implements RemoteConnection {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public InputStream getFile(String filePath) throws Exception {
 		checkForConnection();
@@ -274,7 +275,7 @@ public class SmbConnection implements RemoteConnection {
 		if (diskShare != null) {
 			try {
 				diskShare.close();
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				// do nothing
 			}
 			diskShare = null;
@@ -283,7 +284,7 @@ public class SmbConnection implements RemoteConnection {
 		if (session != null) {
 			try {
 				session.close();
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				// do nothing
 			}
 			session = null;
@@ -292,7 +293,7 @@ public class SmbConnection implements RemoteConnection {
 		if (connection != null) {
 			try {
 				connection.close();
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				// do nothing
 			}
 			connection = null;
@@ -301,7 +302,7 @@ public class SmbConnection implements RemoteConnection {
 		if (client != null) {
 			try {
 				client.close();
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				// do nothing
 			}
 			client = null;

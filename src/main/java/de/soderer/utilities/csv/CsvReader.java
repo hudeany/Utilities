@@ -322,7 +322,7 @@ public class CsvReader extends BasicReader {
 		return returnValue;
 	}
 
-	private boolean isBlank(final List<String> list) {
+	private static boolean isBlank(final List<String> list) {
 		if (list != null) {
 			for (final String item : list) {
 				if (item != null && item.length() > 0 && item.trim().length() > 0) {

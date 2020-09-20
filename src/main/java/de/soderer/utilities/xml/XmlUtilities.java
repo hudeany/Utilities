@@ -117,7 +117,7 @@ public class XmlUtilities {
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return null;
 		}
 	}
@@ -144,7 +144,7 @@ public class XmlUtilities {
 				} else {
 					return null;
 				}
-			} catch (final XPathExpressionException e) {
+			} catch (@SuppressWarnings("unused") final XPathExpressionException e) {
 				return null;
 			}
 		}
@@ -593,9 +593,9 @@ public class XmlUtilities {
 			domSource = new DOMSource(pDocument);
 			try (StringWriter writer = new java.io.StringWriter()) {
 				result = new StreamResult(writer);
-	
+
 				transformer.transform(domSource, result);
-	
+
 				return writer.toString();
 			}
 		} catch (final TransformerFactoryConfigurationError e) {
@@ -644,9 +644,9 @@ public class XmlUtilities {
 			domSource = new DOMSource(pDocument);
 			try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 				result = new StreamResult(outputStream);
-	
+
 				transformer.transform(domSource, result);
-	
+
 				return outputStream.toByteArray();
 			}
 		} catch (final TransformerFactoryConfigurationError e) {
@@ -912,7 +912,7 @@ public class XmlUtilities {
 				throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 			}
 		} catch (final UnsupportedEncodingException e) {
-			throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
+			throw new Exception("XmlByteArray-Encoding nicht ermittelbar", e);
 		}
 	}
 

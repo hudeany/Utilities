@@ -7,7 +7,7 @@ public class SupplementalPart extends RulePart {
 
 	public Type type;
 
-	public SupplementalPart(Type type) {
+	public SupplementalPart(final Type type) {
 		this.type = type;
 	}
 
@@ -18,18 +18,22 @@ public class SupplementalPart extends RulePart {
 				return "(";
 			case ClosingBracket:
 				return ")";
+			case Separator:
+				return ", ";
 			default:
 				return ", ";
 		}
 	}
 
 	@Override
-	public String toString(RulePart.StringType stringType) {
+	public String toString(final RulePart.StringType stringType) {
 		switch (type) {
 			case OpeningBracket:
 				return "(";
 			case ClosingBracket:
 				return ")";
+			case Separator:
+				return ", ";
 			default:
 				return ", ";
 		}

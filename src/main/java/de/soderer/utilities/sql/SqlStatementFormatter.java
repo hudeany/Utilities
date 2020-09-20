@@ -427,9 +427,9 @@ public class SqlStatementFormatter {
 						indentationLevel.pop();
 					}
 				}
-			} else if (line.equals("SELECT") && indentationLevel.size() > 0 && indentationLevel.peek() == IndentationType.With) {
+			} else if ("SELECT".equals(line) && indentationLevel.size() > 0 && indentationLevel.peek() == IndentationType.With) {
 				indentationLevel.pop();
-			} else if (line.equals("WHEN")) {
+			} else if ("WHEN".equals(line)) {
 				while (indentationLevel.peek() != IndentationType.Case) {
 					indentationLevel.pop();
 				}

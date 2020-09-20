@@ -250,7 +250,7 @@ public class BitUtilities {
 	/**
 	 * This padding type can be removed after an encryption
 	 */
-	public static byte[] addLengthCodedPadding(byte[] data, final int paddingSize) {
+	public static byte[] addLengthCodedPadding(final byte[] data, final int paddingSize) {
 		final byte[] dataPadded;
 		if (data.length % paddingSize != 0) {
 			dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];
@@ -264,14 +264,13 @@ public class BitUtilities {
 		for (int i = data.length; i < dataPadded.length; i++) {
 			dataPadded[i] = padValue;
 		}
-		data = dataPadded;
-		return data;
+		return dataPadded;
 	}
 
 	/**
 	 * This padding type is irremovable
 	 */
-	public byte[] addRandomPadding(final byte[] data, final int paddingSize) {
+	public static byte[] addRandomPadding(final byte[] data, final int paddingSize) {
 		if (data.length % paddingSize != 0) {
 			final byte[] dataPadded;
 			dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];

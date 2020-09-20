@@ -483,6 +483,7 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public InputStream getFile(final String filePath) throws Exception {
 		Channel channel = null;
@@ -796,7 +797,7 @@ public class SftpConnection implements RemoteConnection {
 					lineListener.addLineData(nextLineData);
 				}
 			}
-		} catch (final java.io.InterruptedIOException e) {
+		} catch (@SuppressWarnings("unused") final java.io.InterruptedIOException e) {
 			// do nothing
 		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
@@ -961,7 +962,7 @@ public class SftpConnection implements RemoteConnection {
 		if (session != null) {
 			try {
 				session.disconnect();
-			} catch (final Exception f) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				// do nothing
 			}
 			session = null;
@@ -1054,7 +1055,7 @@ public class SftpConnection implements RemoteConnection {
 			if (channel != null) {
 				channel.disconnect();
 			}
-		} catch (final Exception ioe) {
+		} catch (@SuppressWarnings("unused") final Exception ioe) {
 			// ignore
 		}
 	}

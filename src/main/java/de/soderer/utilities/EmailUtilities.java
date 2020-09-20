@@ -153,14 +153,14 @@ public class EmailUtilities {
 					if (Program.launch(mailtoString)) {
 						return true;
 					}
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					// Try some other method of mail creation
 				}
 			} else {
 				try {
 					Runtime.getRuntime().exec("xdg-open " + mailtoString);
 					return true;
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					// Try some other method of mail creation
 				}
 
@@ -171,7 +171,7 @@ public class EmailUtilities {
 					if (Program.launch(mailtoString)) {
 						return true;
 					}
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					// Try some other method of mail creation
 				}
 			}

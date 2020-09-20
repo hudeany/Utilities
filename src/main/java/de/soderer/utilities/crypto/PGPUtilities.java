@@ -29,7 +29,6 @@ import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.params.DSAKeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openpgp.PGPEncryptedData;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPKeyPair;
 import org.bouncycastle.openpgp.PGPKeyRingGenerator;
@@ -289,7 +288,7 @@ public class PGPUtilities {
 		final PGPDigestCalculator sha1Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA1);
 		final PGPDigestCalculator sha256Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA256);
 
-		final PBESecretKeyEncryptor pske = (new BcPBESecretKeyEncryptorBuilder(PGPEncryptedData.AES_256, sha256Calc, 0xc0)).build(password);
+		final PBESecretKeyEncryptor pske = (new BcPBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256, sha256Calc, 0xc0)).build(password);
 
 		final PGPKeyRingGenerator keyRingGen = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, keyPair, identity, sha1Calc, subpacketGenerator.generate(), null, new BcPGPContentSignerBuilder(keyPair.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pske);
 
@@ -347,9 +346,9 @@ public class PGPUtilities {
 		keyPairGenerator.init(new RSAKeyGenerationParameters(BigInteger.valueOf(0x10001), new SecureRandom(), keyStrength, 80));
 
 		// First create the master (signing) key with the generator.
-		final PGPKeyPair rsakp_sign = new BcPGPKeyPair(PGPPublicKey.RSA_SIGN, keyPairGenerator.generateKeyPair(), new Date());
+		final PGPKeyPair rsakp_sign = new BcPGPKeyPair(PublicKeyAlgorithmTags.RSA_SIGN, keyPairGenerator.generateKeyPair(), new Date());
 		// Then an encryption subkey.
-		final PGPKeyPair rsakp_enc = new BcPGPKeyPair(PGPPublicKey.RSA_ENCRYPT, keyPairGenerator.generateKeyPair(), new Date());
+		final PGPKeyPair rsakp_enc = new BcPGPKeyPair(PublicKeyAlgorithmTags.RSA_ENCRYPT, keyPairGenerator.generateKeyPair(), new Date());
 
 		// Add a self-signature on the id
 		final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
@@ -390,7 +389,7 @@ public class PGPUtilities {
 		final PGPDigestCalculator sha256Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA256);
 
 		// bcpg 1.48 exposes this API that includes s2kcount. Earlier versions use a default of 0x60.
-		final PBESecretKeyEncryptor pske = (new BcPBESecretKeyEncryptorBuilder(PGPEncryptedData.AES_256, sha256Calc, 0xc0)).build(password);
+		final PBESecretKeyEncryptor pske = (new BcPBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256, sha256Calc, 0xc0)).build(password);
 
 		// Finally, create the keyring itself. The constructor takes parameters that allow it to generate the self signature.
 		final PGPKeyRingGenerator keyRingGen = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, rsakp_sign, identity, sha1Calc, subpacketGenerator.generate(), null, new BcPGPContentSignerBuilder(rsakp_sign.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pske);
@@ -411,66 +410,34 @@ public class PGPUtilities {
 	public static byte[] exportPGPSecretKey(final PGPSecretKey pgpSecretKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		ByteArrayOutputStream secretKeyStream = null;
-		OutputStream outputStream = null;
-		try {
-			final boolean armor = true;
-
-			secretKeyStream = new ByteArrayOutputStream();
-
-			outputStream = secretKeyStream;
-			if (armor) {
-				outputStream = new ArmoredOutputStream(secretKeyStream);
+		try (ByteArrayOutputStream secretKeyStream = new ByteArrayOutputStream()) {
+			try (OutputStream outputStream = new ArmoredOutputStream(secretKeyStream)) {
+				pgpSecretKey.encode(outputStream);
 			}
-
-			pgpSecretKey.encode(outputStream);
-
-			outputStream.close();
-			outputStream = null;
-
 			return secretKeyStream.toByteArray();
 		} catch (final Exception e) {
 			throw new Exception("Cannot export PGP key", e);
-		} finally {
-			Utilities.closeQuietly(outputStream);
-			Utilities.closeQuietly(secretKeyStream);
 		}
 	}
 
 	public static byte[] exportPGPPublicKey(final PGPPublicKey pgpPublicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		ByteArrayOutputStream secretKeyStream = null;
-		OutputStream outputStream = null;
-		try {
-			final boolean armor = true;
-
-			secretKeyStream = new ByteArrayOutputStream();
-
-			outputStream = secretKeyStream;
-			if (armor) {
-				outputStream = new ArmoredOutputStream(secretKeyStream);
+		try (ByteArrayOutputStream secretKeyStream = new ByteArrayOutputStream()) {
+			try (OutputStream outputStream = new ArmoredOutputStream(secretKeyStream)) {
+				pgpPublicKey.encode(outputStream);
 			}
-
-			pgpPublicKey.encode(outputStream);
-
-			outputStream.close();
-			outputStream = null;
-
 			return secretKeyStream.toByteArray();
 		} catch (final Exception e) {
 			throw new Exception("Cannot export PGP key", e);
-		} finally {
-			Utilities.closeQuietly(outputStream);
-			Utilities.closeQuietly(secretKeyStream);
 		}
 	}
 
 	public static PGPPublicKey readPGPPublicKey(final InputStream inputStream) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try {
-			final PGPPublicKeyRingCollection pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(PGPUtil.getDecoderStream(new PGPKeyStorageStringSplitter(inputStream).getPublicKeyInputStream()), new JcaKeyFingerprintCalculator());
+		try (InputStream decoderStream = PGPUtil.getDecoderStream(new PGPKeyStorageStringSplitter(inputStream).getPublicKeyInputStream())) {
+			final PGPPublicKeyRingCollection pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(decoderStream, new JcaKeyFingerprintCalculator());
 			@SuppressWarnings("rawtypes")
 			final
 			Iterator keyRingIterator = pgpPublicKeyRingCollection.getKeyRings();
@@ -489,7 +456,7 @@ public class PGPUtilities {
 
 			// key not found
 			return null;
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return null;
 		}
 	}
@@ -497,8 +464,8 @@ public class PGPUtilities {
 	public static PGPSecretKey readPGPSecretKey(final InputStream inputStream) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try {
-			final PGPSecretKeyRingCollection pgpSecretKeyRingCollection = new PGPSecretKeyRingCollection(PGPUtil.getDecoderStream(new PGPKeyStorageStringSplitter(inputStream).getPrivateKeyInputStream()), new JcaKeyFingerprintCalculator());
+		try (InputStream decoderStream = PGPUtil.getDecoderStream(new PGPKeyStorageStringSplitter(inputStream).getPrivateKeyInputStream())) {
+			final PGPSecretKeyRingCollection pgpSecretKeyRingCollection = new PGPSecretKeyRingCollection(decoderStream, new JcaKeyFingerprintCalculator());
 			@SuppressWarnings("rawtypes")
 			final
 			Iterator keyRingIterator = pgpSecretKeyRingCollection.getKeyRings();
@@ -517,7 +484,7 @@ public class PGPUtilities {
 
 			// key not found
 			return null;
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return null;
 		}
 	}
@@ -642,7 +609,7 @@ public class PGPUtilities {
 			String encryptionAlgorithm;
 			try {
 				encryptionAlgorithm = PgpPublicEncryptionMethod.getById(signature.getKeyAlgorithm()).name();
-			} catch (final Exception e1) {
+			} catch (@SuppressWarnings("unused") final Exception e1) {
 				encryptionAlgorithm = LangResources.get("Unknown");
 			}
 			signatureData.put("encryptionalgorithm", encryptionAlgorithm);
@@ -650,7 +617,7 @@ public class PGPUtilities {
 			String hashingAlgorithm;
 			try {
 				hashingAlgorithm = PgpHashMethod.getById(signature.getHashAlgorithm()).name();
-			} catch (final Exception e1) {
+			} catch (@SuppressWarnings("unused") final Exception e1) {
 				hashingAlgorithm = LangResources.get("Unknown");
 			}
 			signatureData.put("hashingalgorithm", hashingAlgorithm);
@@ -666,7 +633,7 @@ public class PGPUtilities {
 				}
 				identity += notationData[i].getNotationValue();
 			}
-			if (publicKey != null && id == publicKey.getKeyID()) {
+			if (id == publicKey.getKeyID()) {
 				if (Utilities.isNotBlank(identity)) {
 					identity += " ";
 				}

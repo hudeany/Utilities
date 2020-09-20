@@ -1,7 +1,6 @@
 package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.Security;
@@ -31,18 +30,19 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 	private OutputStream encryptedData = null;
 	private PGPPublicKey publicKey = null;
 
-	public PGPFileEncryptionWorker(ProgressShowingModalDialog<?> parent, InputStream dataToEncrypt, OutputStream encryptedData, PGPPublicKey publicKey) throws IOException {
+	public PGPFileEncryptionWorker(final ProgressShowingModalDialog<?> parent, final InputStream dataToEncrypt, final OutputStream encryptedData, final PGPPublicKey publicKey) {
 		super(parent);
 		this.dataToEncrypt = dataToEncrypt;
 		this.encryptedData = encryptedData;
 		this.publicKey = publicKey;
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
 		showProgress();
 
-		boolean armor = true;
+		final boolean armor = true;
 
 		PGPEncryptedDataGenerator encryptedDataGenerator = null;
 		OutputStream encryptedDataGeneratorStream = null;
@@ -52,7 +52,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		OutputStream literalDataGeneratorStream = null;
 		try {
 			itemsToDo = dataToEncrypt.available();
-			
+
 			Security.addProvider(new BouncyCastleProvider());
 
 			dataToEncrypt = new BufferedInputStream(dataToEncrypt);
@@ -61,19 +61,19 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 				encryptedData = new ArmoredOutputStream(encryptedData);
 			}
 
-			BcPGPDataEncryptorBuilder builder = new BcPGPDataEncryptorBuilder(PgpSymmetricEncryptionMethod.getByName(PGPUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).getId());
+			final BcPGPDataEncryptorBuilder builder = new BcPGPDataEncryptorBuilder(PgpSymmetricEncryptionMethod.getByName(PGPUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).getId());
 			encryptedDataGenerator = new PGPEncryptedDataGenerator(builder);
-			BcPublicKeyKeyEncryptionMethodGenerator encryptionMethodGenerator = new BcPublicKeyKeyEncryptionMethodGenerator(publicKey);
+			final BcPublicKeyKeyEncryptionMethodGenerator encryptionMethodGenerator = new BcPublicKeyKeyEncryptionMethodGenerator(publicKey);
 			encryptedDataGenerator.addMethod(encryptionMethodGenerator);
 			encryptedDataGeneratorStream = encryptedDataGenerator.open(encryptedData, new byte[4096]);
-			
+
 			compressedDataGenerator = new PGPCompressedDataGenerator(CompressionAlgorithmTags.ZIP);
 			compressedDataGeneratorStream = compressedDataGenerator.open(encryptedDataGeneratorStream);
 
 			literalDataGenerator = new PGPLiteralDataGenerator();
 			literalDataGeneratorStream = literalDataGenerator.open(compressedDataGeneratorStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE, dataToEncrypt.available(), new Date());
-			
-			byte[] buffer = new byte[4096];
+
+			final byte[] buffer = new byte[4096];
 			int bytesRead;
 			while ((bytesRead = dataToEncrypt.read(buffer)) >= 0) {
 				if (cancel) {
@@ -91,7 +91,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 			encryptedDataGenerator.close();
 
 			return true;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Error while encrypting", e);
 		} finally {
 			if (literalDataGenerator != null) {

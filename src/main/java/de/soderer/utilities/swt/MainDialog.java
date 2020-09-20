@@ -7,29 +7,28 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public abstract class MainDialog extends Shell {
-	private Display display;
+	private final Display display;
 
-	public MainDialog(Display display) throws Exception {
+	public MainDialog(final Display display) throws Exception {
 		super(display, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MIN | SWT.MAX);
 
 		this.display = display;
 	}
 
 	@Override
-	public Display getDisplay() {
+	public final Display getDisplay() {
 		return display;
 	}
 
 	public void run() throws Exception {
 		try {
 			open();
-			Display display = getDisplay();
 			while (!isDisposed()) {
 				if (!display.readAndDispatch()) {
 					display.sleep();
 				}
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 			throw e;
 		}
@@ -40,11 +39,11 @@ public abstract class MainDialog extends Shell {
 		// do nothing
 	}
 
-	public boolean showQuestion(String text, String... buttonTextProperties) {
+	public boolean showQuestion(final String text, final String... buttonTextProperties) {
 		if (buttonTextProperties == null) {
 			return new QuestionDialog(getShell(), text, LangResources.get("ok"), LangResources.get("cancel")).open() == 0;
 		} else {
-			String[] buttonTexts = new String[buttonTextProperties.length];
+			final String[] buttonTexts = new String[buttonTextProperties.length];
 			for (int i = 0; i < buttonTextProperties.length; i++) {
 				buttonTexts[i] = LangResources.get(buttonTextProperties[i]);
 			}

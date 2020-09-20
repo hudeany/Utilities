@@ -78,7 +78,7 @@ public class HttpUtilities {
 				connection.setDoOutput(false);
 				downloadStream = connection.getInputStream();
 			}
-		} catch (final SocketTimeoutException stex) {
+		} catch (@SuppressWarnings("unused") final SocketTimeoutException stex) {
 			// This Exception is expected for the real short timeout
 		} finally {
 			Utilities.closeQuietly(downloadStream);
@@ -210,7 +210,7 @@ public class HttpUtilities {
 
 	public static HttpResponse executeHttpRequest(final RequestMethod requestMethod, String urlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final String httpRequestBody, String requestEncoding, final boolean checkSslServerCert, final Proxy proxy) throws Exception {
 		if (Utilities.isBlank(urlString)) {
-			throw new RuntimeException("Invalid empty URL for http request");
+			throw new Exception("Invalid empty URL for http request");
 		}
 
 		// Check for protocol "https://" or "http://" (fallback: "http://")
@@ -290,7 +290,7 @@ public class HttpUtilities {
 						httpResponseContent.append("\n");
 					}
 					return new HttpResponse(httpResponseCode, httpResponseContent.toString(), urlConnection.getContentType(), headers);
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					return new HttpResponse(httpResponseCode, null, null, null);
 				}
 			} else {
@@ -316,7 +316,7 @@ public class HttpUtilities {
 						httpResponseContent.append("\n");
 					}
 					return new HttpResponse(httpResponseCode, httpResponseContent.toString(), urlConnection.getContentType(), headers);
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					return new HttpResponse(httpResponseCode, null, null, null);
 				}
 			}
@@ -378,7 +378,7 @@ public class HttpUtilities {
 		URL netUrl;
 		try {
 			netUrl = new URL(url);
-		} catch (final MalformedURLException e) {
+		} catch (@SuppressWarnings("unused") final MalformedURLException e) {
 			return null;
 		}
 		return netUrl.getHost();
@@ -424,7 +424,7 @@ public class HttpUtilities {
 		return addUrlParameter(url, escapedParameterNameAndValue.toString());
 	}
 
-	public static String addPathParameter(final String url, final String escapedParameterNameAndValue) throws UnsupportedEncodingException {
+	public static String addPathParameter(final String url, final String escapedParameterNameAndValue) {
 		final StringBuilder newUrl = new StringBuilder();
 		int insertPosition = url.indexOf('?');
 		if (insertPosition < 0) {
@@ -445,7 +445,7 @@ public class HttpUtilities {
 		return newUrl.toString();
 	}
 
-	public static String addUrlParameter(final String url, final String escapedParameterNameAndValue) throws UnsupportedEncodingException {
+	public static String addUrlParameter(final String url, final String escapedParameterNameAndValue) {
 		final StringBuilder newUrl = new StringBuilder();
 		final int insertPosition = url.indexOf('#');
 

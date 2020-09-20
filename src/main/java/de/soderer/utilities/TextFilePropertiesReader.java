@@ -66,7 +66,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			dataString = decodeByteArray(data, encodingData);
 
 			// Check for invalid UTF-8 character
-			if (encodingData != null && encodingData.getFirst().equalsIgnoreCase("UTF-8") && dataString.contains("�")) {
+			if (encodingData != null && "UTF-8".equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
 				// If encoding was UTF-8 (detected or default) but contains illegal chars, then try most common other encoding
 				encodingData = new Tuple<>("ISO-8859-1", false);
 				dataString = decodeByteArray(data, encodingData);
@@ -111,7 +111,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 				dataString = decodeByteArray(subdata, encodingData);
 
 				// Check for invalid UTF-8 character
-				if (encodingData != null && encodingData.getFirst().equalsIgnoreCase("UTF-8") && dataString.contains("�")) {
+				if (encodingData != null && "UTF-8".equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
 					// If encoding was UTF-8 (detected or default) but contains illegal chars, then try most common other encoding
 					encodingData = new Tuple<>("ISO-8859-1", false);
 					dataString = decodeByteArray(subdata, encodingData);
@@ -151,7 +151,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 				dataString = decodeByteArray(subdata, encodingData);
 
 				// Check for invalid UTF-8 character
-				if (encodingData != null && encodingData.getFirst().equalsIgnoreCase("UTF-8") && dataString.contains("�")) {
+				if (encodingData != null && "UTF-8".equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
 					// If encoding was UTF-8 (detected or default) but contains illegal chars, then try most common other encoding
 					encodingData = new Tuple<>("ISO-8859-1", false);
 					dataString = decodeByteArray(subdata, encodingData);
@@ -262,27 +262,27 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 
-	public List<Long> scanLineStartIndexes() {
+	public List<Long> scanLineStartIndexes() throws Exception {
 		if (file != null) {
 			try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(file))) {
 				return TextUtilities.scanLineStartIndexes(input);
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				return null;
 			}
 		} else {
-			throw new RuntimeException("Not implemented");
+			throw new Exception("Not implemented");
 		}
 	}
 
-	public List<Long> scanLinebreakIndexes() {
+	public List<Long> scanLinebreakIndexes() throws Exception {
 		if (file != null) {
 			try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(file))) {
 				return TextUtilities.scanLinebreakIndexes(input);
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				return null;
 			}
 		} else {
-			throw new RuntimeException("Not implemented");
+			throw new Exception("Not implemented");
 		}
 	}
 }

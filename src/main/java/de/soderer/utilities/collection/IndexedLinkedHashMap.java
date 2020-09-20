@@ -10,20 +10,21 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 
 	private List<K> keyList = null;
 
+	@SuppressWarnings("unlikely-arg-type")
 	@Override
-	public V remove(Object key) {
+	public V remove(final Object key) {
 		keyList = null;
 		return super.remove(key);
 	}
 
 	@Override
-	public V put(K key, V value) {
+	public V put(final K key, final V value) {
 		keyList = null;
 		return super.put(key, value);
 	}
 
 	@Override
-	public void putAll(Map<? extends K, ? extends V> map) {
+	public void putAll(final Map<? extends K, ? extends V> map) {
 		keyList = null;
 		super.putAll(map);
 	}
@@ -36,11 +37,11 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 		return keyList;
 	}
 
-	public K getKey(int i) {
+	public K getKey(final int i) {
 		return getKeyList().get(i);
 	}
 
-	public V getValue(int i) {
+	public V getValue(final int i) {
 		return get(getKey(i));
 	}
 }

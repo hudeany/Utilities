@@ -115,6 +115,7 @@ public class FileEncryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
 		showProgress();

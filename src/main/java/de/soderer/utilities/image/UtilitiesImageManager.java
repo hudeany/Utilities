@@ -1,5 +1,7 @@
 package de.soderer.utilities.image;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,23 +13,25 @@ import de.soderer.utilities.VisibleException;
 public class UtilitiesImageManager {
 	private static UtilitiesImageManager instance = null;
 
-	private Shell shell;
-	private Map<String, Image> store = new HashMap<>();
+	private final Shell shell;
+	private final Map<String, Image> store = new HashMap<>();
 
-	public UtilitiesImageManager(Shell shell) {
+	public UtilitiesImageManager(final Shell shell) {
 		this.shell = shell;
 		instance = this;
 	}
 
-	private Image getImageFromString(String name) {
+	private Image getImageFromString(final String name) throws IOException {
 		if (!store.containsKey(name)) {
-			store.put(name, new Image(shell.getDisplay(), getClass().getResourceAsStream(name)));
+			try (InputStream inputStream = getClass().getResourceAsStream(name)) {
+				store.put(name, new Image(shell.getDisplay(), inputStream));
+			}
 		}
 
 		return store.get(name);
 	}
 
-	public static Image getImage(String name) throws VisibleException {
+	public static Image getImage(final String name) throws VisibleException, IOException {
 		if (instance == null) {
 			throw new VisibleException("ImageManager needs to be initialized before usage");
 		}

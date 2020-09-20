@@ -19,19 +19,19 @@ import de.soderer.utilities.worker.WorkerParentDual;
 
 public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressDialog<T> implements WorkerParentDual {
 	private static final long serialVersionUID = 1891862599169713021L;
-	
+
 	private JLabel label;
 	private JProgressBar subItemProgressBar;
 
-	public DualProgressDialog(WorkerParentDual parent, String title) {
+	public DualProgressDialog(final WorkerParentDual parent, final String title) {
 		this((Window) parent, title, null);
 	}
 
-	public DualProgressDialog(Window parent, String title, T worker) {
+	public DualProgressDialog(final Window parent, final String title, final T worker) {
 		super(parent);
-		
+
 		setTitle(title);
-		
+
 		this.worker = worker;
 		if (worker != null) {
 			worker.setParent(this);
@@ -39,23 +39,23 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 
 		setResizable(false);
 
-		JPanel panel = new JPanel();
+		final JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 
-		JPanel itemPanel = new JPanel();
+		final JPanel itemPanel = new JPanel();
 		itemPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		progressBar = new JProgressBar(0, 100);
 		progressBar.setPreferredSize(new Dimension(380, 19));
 		itemPanel.add(progressBar);
 		panel.add(itemPanel);
 
-		JPanel labelPanel = new JPanel();
+		final JPanel labelPanel = new JPanel();
 		labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		label = new JLabel("Item");
 		labelPanel.add(label);
 		panel.add(labelPanel);
 
-		JPanel subItemPanel = new JPanel();
+		final JPanel subItemPanel = new JPanel();
 		subItemPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		subItemProgressBar = new JProgressBar(0, 100);
 		subItemProgressBar.setPreferredSize(new Dimension(380, 19));
@@ -63,12 +63,12 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 		panel.add(subItemPanel);
 
 		// Cancel Button
-		JPanel buttonPanel = new JPanel();
+		final JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		JButton cancelButton = new JButton("Cancel");
+		final JButton cancelButton = new JButton("Cancel");
 		cancelButton.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent event) {
+			public void actionPerformed(final ActionEvent event) {
 				cancel();
 			}
 		});
@@ -79,11 +79,9 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 
 		pack();
 
-        setLocationRelativeTo(parent);
-		
-		if (cancelButton != null) {
-			getRootPane().setDefaultButton(cancelButton);
-		}
+		setLocationRelativeTo(parent);
+
+		getRootPane().setDefaultButton(cancelButton);
 	}
 
 	@Override
@@ -105,8 +103,8 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 	public void showItemStart(final String itemName) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			label.setText(itemName);
-			
-			int value = 0;
+
+			final int value = 0;
 			subItemProgressBar.setIndeterminate(false);
 			subItemProgressBar.setValue(value);
 			subItemProgressBar.setString(value + "%");
@@ -138,7 +136,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressD
 	@Override
 	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
-			int value = 100;
+			final int value = 100;
 			subItemProgressBar.setIndeterminate(false);
 			subItemProgressBar.setValue(value);
 			subItemProgressBar.setString(value + "%");

@@ -227,7 +227,7 @@ public class CsvFormat {
 	}
 
 	public CsvFormat setLineBreak(final String lineBreak) {
-		if (!lineBreak.equals("\r") && !lineBreak.equals("\n") && !lineBreak.equals("\r\n")) {
+		if (!"\r".equals(lineBreak) && !"\n".equals(lineBreak) && !"\r\n".equals(lineBreak)) {
 			throw new IllegalArgumentException("Given linebreak is invalid");
 		} else {
 			this.lineBreak = lineBreak;

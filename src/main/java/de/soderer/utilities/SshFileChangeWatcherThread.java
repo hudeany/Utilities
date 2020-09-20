@@ -28,7 +28,7 @@ public class SshFileChangeWatcherThread extends Thread {
 				e.printStackTrace();
 				running = false;
 			}
-		} catch (final InterruptedException ie) {
+		} catch (@SuppressWarnings("unused") final InterruptedException ie) {
 			handleInterrupt();
 		} catch (final Exception e) {
 			e.printStackTrace();

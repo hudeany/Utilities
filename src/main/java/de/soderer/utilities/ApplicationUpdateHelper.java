@@ -148,7 +148,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				try {
 					final String currentJarUrlPath = getClass().getResource(getClass().getSimpleName() + ".class").toString();
 					jarFilePath = currentJarUrlPath.substring(0, currentJarUrlPath.lastIndexOf("!")).replaceFirst("jar:file:", "");
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					jarFilePath = null;
 				}
 			}
@@ -183,7 +183,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 						showUpdateError("Update error:\n" + "Signature of updatefile is invalid");
 						return;
 					}
-				} else if (Utilities.isNotEmpty(updateFileMd5Checksum) && !updateFileMd5Checksum.equalsIgnoreCase("NONE")) {
+				} else if (Utilities.isNotEmpty(updateFileMd5Checksum) && !"NONE".equalsIgnoreCase(updateFileMd5Checksum)) {
 					final String downloadTempFileMd5Checksum = createMd5Checksum(downloadTempFile);
 					if (!updateFileMd5Checksum.equalsIgnoreCase(downloadTempFileMd5Checksum)) {
 						showUpdateError("Update error:\n" + "MD5-Checksum of updatefile is invalid (expected: " + updateFileMd5Checksum + ", actual: " + downloadTempFileMd5Checksum + ")");
@@ -384,7 +384,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	private String replacePlaceholders(String value) {
+	private static String replacePlaceholders(String value) {
 		if (value == null) {
 			return null;
 		} else {
@@ -412,7 +412,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	private void writeFile(final File file, final String string) throws Exception {
+	private static void writeFile(final File file, final String string) throws Exception {
 		try (FileOutputStream out = new FileOutputStream(file)) {
 			out.write(string.getBytes("UTF-8"));
 		} catch (final Exception e) {
@@ -448,7 +448,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	private String createMd5Checksum(final File file) {
+	private static String createMd5Checksum(final File file) {
 		try {
 			final MessageDigest messageDigest = MessageDigest.getInstance("MD5");
 			try (InputStream inputStream = new FileInputStream(file)) {
@@ -459,7 +459,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				}
 			}
 			return bytesToHexString(messageDigest.digest());
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return null;
 		}
 	}
@@ -576,7 +576,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			}
 
 			return true;
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
 	}
@@ -596,7 +596,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		try {
 			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) certifier.build(params);
 			return result != null;
-		} catch (final Exception cpbe) {
+		} catch (@SuppressWarnings("unused") final Exception cpbe) {
 			return false;
 		}
 	}

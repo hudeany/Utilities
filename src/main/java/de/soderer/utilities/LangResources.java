@@ -42,7 +42,7 @@ public class LangResources {
 		if (propertyResourceBundle == null) {
 			try {
 				propertyResourceBundle = (PropertyResourceBundle) ResourceBundle.getBundle("LanguageProperties");
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				// Do nothing
 			}
 		}

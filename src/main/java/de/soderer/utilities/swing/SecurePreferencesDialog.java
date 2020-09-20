@@ -403,7 +403,7 @@ public class SecurePreferencesDialog extends JDialog {
 					try {
 						secureDataStore = new SecureDataStore();
 						secureDataStore.load(securePreferencesFile, getPassword(), salt);
-					} catch (final WrongPasswordException e) {
+					} catch (@SuppressWarnings("unused") final WrongPasswordException e) {
 						secureDataStore = null;
 						final CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
 						credentialsDialog.setVisible(true);

@@ -80,19 +80,19 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 		return this;
 	}
 
-	private void recursiveUpload(final File localDirectory, final FolderInfo localFolderInfo, final String destinationDirectory) throws Exception {
+	private void recursiveUpload(final File localUploadDirectory, final FolderInfo localFolderInfo, final String destinationDirectory) throws Exception {
 		if (!cancel) {
 			for (final FolderInfo subFolderInfo : localFolderInfo.getSubFolders()) {
 				if (!cancel) {
 					connection.createFolder(destinationDirectory, subFolderInfo.getFolderName());
-					recursiveUpload(new File(localDirectory, subFolderInfo.getFolderName()), subFolderInfo, destinationDirectory + "/" + subFolderInfo.getFolderName());
+					recursiveUpload(new File(localUploadDirectory, subFolderInfo.getFolderName()), subFolderInfo, destinationDirectory + "/" + subFolderInfo.getFolderName());
 				}
 			}
 		}
 		if (!cancel) {
 			for (final FileInfo fileInfo : localFolderInfo.getFiles()) {
 				if (!cancel) {
-					final File nextLocalFile = new File(localDirectory, fileInfo.getFileName());
+					final File nextLocalFile = new File(localUploadDirectory, fileInfo.getFileName());
 					final String nextRemoteFile = destinationDirectory + "/" + fileInfo.getFileName();
 					subItemsDone = 0;
 					subItemsToDo = fileInfo.getFileSize();

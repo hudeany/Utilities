@@ -2,7 +2,6 @@ package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
 
@@ -26,11 +25,11 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 	private char[] password = null;
 	private String hashingMethod = null;
 
-	public PGPFileSignatureWorker(ProgressShowingModalDialog<?> parent, InputStream dataToSign, PGPSecretKey secretKey, char[] password) throws IOException {
+	public PGPFileSignatureWorker(final ProgressShowingModalDialog<?> parent, final InputStream dataToSign, final PGPSecretKey secretKey, final char[] password) {
 		this(parent, dataToSign, secretKey, password, null);
 	}
 
-	public PGPFileSignatureWorker(ProgressShowingModalDialog<?> parent, InputStream dataToSign, PGPSecretKey secretKey, char[] password, String hashingMethod) throws IOException {
+	public PGPFileSignatureWorker(final ProgressShowingModalDialog<?> parent, final InputStream dataToSign, final PGPSecretKey secretKey, final char[] password, final String hashingMethod) {
 		super(parent);
 		this.dataToSign = dataToSign;
 		this.secretKey = secretKey;
@@ -42,11 +41,12 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public byte[] work() throws Exception {
 		showProgress();
 
-		PGPPrivateKey privateKey = PGPUtilities.readPGPPrivateKey(secretKey, password);
+		final PGPPrivateKey privateKey = PGPUtilities.readPGPPrivateKey(secretKey, password);
 		ByteArrayOutputStream outputStream = null;
 		ArmoredOutputStream outputStream2 = null;
 		BufferedInputStream dataStream = null;
@@ -54,21 +54,21 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 
 		try {
 			itemsToDo = dataToSign.available();
-			
+
 			showProgress();
 
 			Security.addProvider(new BouncyCastleProvider());
 
 			outputStream = new ByteArrayOutputStream();
 			outputStream2 = new ArmoredOutputStream(outputStream);
-			BcPGPContentSignerBuilder contentSignerBuilder = new BcPGPContentSignerBuilder(secretKey.getPublicKey().getAlgorithm(), PgpHashMethod.getByName(hashingMethod).getId());
-			PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(contentSignerBuilder);
+			final BcPGPContentSignerBuilder contentSignerBuilder = new BcPGPContentSignerBuilder(secretKey.getPublicKey().getAlgorithm(), PgpHashMethod.getByName(hashingMethod).getId());
+			final PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(contentSignerBuilder);
 			pgpSignatureGenerator.init(PGPSignature.BINARY_DOCUMENT, privateKey);
 
 			bcpgOutputStream = new BCPGOutputStream(outputStream2);
 			dataStream = new BufferedInputStream(dataToSign);
 
-			byte[] buffer = new byte[4096];
+			final byte[] buffer = new byte[4096];
 			int bytesRead;
 			while ((bytesRead = dataStream.read(buffer)) >= 0) {
 				if (cancel) {
@@ -86,7 +86,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 			outputStream2.close();
 
 			return outputStream.toByteArray();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot create signature", e);
 		} finally {
 			Utilities.closeQuietly(dataStream);

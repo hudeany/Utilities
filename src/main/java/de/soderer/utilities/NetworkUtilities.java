@@ -109,7 +109,7 @@ public class NetworkUtilities {
 			} else {
 				return InetAddress.getByName(getHostnameFromRequestString(ipOrHostname)).isReachable(5000);
 			}
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
 	}
@@ -131,7 +131,7 @@ public class NetworkUtilities {
 			}
 			return bytes;
 		} catch (final NumberFormatException e) {
-			throw new IllegalArgumentException("Invalid hex digit in MAC address.");
+			throw new IllegalArgumentException("Invalid hex digit in MAC address.", e);
 		}
 	}
 
@@ -149,7 +149,7 @@ public class NetworkUtilities {
 			}
 
 			return true;
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
 	}
@@ -192,7 +192,7 @@ public class NetworkUtilities {
 	public static String getHostName() {
 		try {
 			return InetAddress.getLocalHost().getHostName();
-		} catch (final UnknownHostException e) {
+		} catch (@SuppressWarnings("unused") final UnknownHostException e) {
 			return "unbekannter Rechnername";
 		}
 	}
@@ -201,7 +201,7 @@ public class NetworkUtilities {
 		String asciiDomainName;
 		try {
 			asciiDomainName = java.net.IDN.toASCII(domain);
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			// invalid domain name like abc@.ch
 			return false;
 		}
@@ -247,7 +247,7 @@ public class NetworkUtilities {
 		try {
 			InetAddress.getByName(value);
 			return true;
-		} catch (final UnknownHostException e) {
+		} catch (@SuppressWarnings("unused") final UnknownHostException e) {
 			return false;
 		}
 	}
@@ -264,7 +264,7 @@ public class NetworkUtilities {
 		try {
 			new URL(uri).toURI();
 			return true;
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
 	}

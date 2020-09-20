@@ -73,10 +73,10 @@ public class RadioButtonGroup extends Composite {
 		}
 	}
 
-	public void addModifyListener(final ModifyListener listener) {
+	public void addModifyListener(final ModifyListener listener) throws Exception {
 		checkWidget();
 		if (listener == null) {
-			throw new RuntimeException("Missing listener");
+			throw new Exception("Missing listener");
 		} else {
 			final TypedListener typedListener = new TypedListener(listener);
 			addListener(SWT.Modify, typedListener);

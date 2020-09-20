@@ -28,11 +28,11 @@ public enum HashAlgorithm {
 		throw new Exception("Unknown HashAlgorithm name: " + algorithmName);
 	}
 
-	public MessageDigest getMessageDigest() {
+	public MessageDigest getMessageDigest() throws Exception {
 		try {
 			return MessageDigest.getInstance(getAlgorithmName());
 		} catch (final NoSuchAlgorithmException e) {
-			throw new RuntimeException("NoSuchAlgorithm: " + getAlgorithmName(), e);
+			throw new Exception("NoSuchAlgorithm: " + getAlgorithmName(), e);
 		}
 	}
 }

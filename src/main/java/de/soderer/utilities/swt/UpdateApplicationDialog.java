@@ -207,21 +207,21 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		}
 	}
 
-	public boolean downloadUpdateFile(final File downloadTempFile, String downloadUrl) throws Exception {
+	public boolean downloadUpdateFile(final File downloadTempFile, String updateFileUrl) throws Exception {
 		try {
 			downloadTempFile.delete();
-			if (downloadUrl.contains("<username>") && downloadUrl.contains("<password>")) {
+			if (updateFileUrl.contains("<username>") && updateFileUrl.contains("<password>")) {
 				if (storedDownloadCredentials != null) {
-					downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(storedDownloadCredentials.getUserName(), "UTF-8"));
-					downloadUrl = downloadUrl.replace("<password>", URLEncoder.encode(new String(storedDownloadCredentials.getPassword()), "UTF-8"));
+					updateFileUrl = updateFileUrl.replace("<username>", URLEncoder.encode(storedDownloadCredentials.getUserName(), "UTF-8"));
+					updateFileUrl = updateFileUrl.replace("<password>", URLEncoder.encode(new String(storedDownloadCredentials.getPassword()), "UTF-8"));
 				} else {
 					final CredentialsDialog credentialsDialog = new CredentialsDialog(getParent(), getText(), LangResources.get("enterDownloadCredentials"));
 					credentialsDialog.setKeepInMemoryText(LangResources.get("storeUpdateAccount"));
 					final Boolean success = credentialsDialog.open();
 					if (success) {
 						storedCredentialsChanged = true;
-						downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(credentialsDialog.getUsername(), "UTF-8"));
-						downloadUrl = downloadUrl.replace("<password>", URLEncoder.encode(new String(credentialsDialog.getPassword()), "UTF-8"));
+						updateFileUrl = updateFileUrl.replace("<username>", URLEncoder.encode(credentialsDialog.getUsername(), "UTF-8"));
+						updateFileUrl = updateFileUrl.replace("<password>", URLEncoder.encode(new String(credentialsDialog.getPassword()), "UTF-8"));
 						if (credentialsDialog.keepInMemory()) {
 							storedDownloadCredentials = new SimpleCredentialsData(credentialsDialog.getUsername(), credentialsDialog.getPassword());
 						} else {
@@ -233,49 +233,49 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					}
 				}
 			} else {
-				if (downloadUrl.contains("<username>")) {
+				if (updateFileUrl.contains("<username>")) {
 					if (storedDownloadCredentials != null) {
-						downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(storedDownloadCredentials.getUserName(), "UTF-8"));
+						updateFileUrl = updateFileUrl.replace("<username>", URLEncoder.encode(storedDownloadCredentials.getUserName(), "UTF-8"));
 					} else {
 						final SimpleInputDialog usernameDialog = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterDownloadUserName"));
 						final String username = usernameDialog.open();
 						if (Utilities.isNotBlank(username)) {
-							downloadUrl = downloadUrl.replace("<username>", URLEncoder.encode(username, "UTF-8"));
+							updateFileUrl = updateFileUrl.replace("<username>", URLEncoder.encode(username, "UTF-8"));
 						} else {
 							return false;
 						}
 					}
 				}
-				if (downloadUrl.contains("<password>")) {
+				if (updateFileUrl.contains("<password>")) {
 					if (storedDownloadCredentials != null) {
-						downloadUrl = downloadUrl.replace("<password>", URLEncoder.encode(new String(storedDownloadCredentials.getPassword()), "UTF-8"));
+						updateFileUrl = updateFileUrl.replace("<password>", URLEncoder.encode(new String(storedDownloadCredentials.getPassword()), "UTF-8"));
 					} else {
 						final PasswordDialog passwordDialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterDownloadPassword"));
 						final char[] password = passwordDialog.open();
 						if (password != null) {
-							downloadUrl = downloadUrl.replace("<password>", URLEncoder.encode(new String(password), "UTF-8"));
+							updateFileUrl = updateFileUrl.replace("<password>", URLEncoder.encode(new String(password), "UTF-8"));
 						} else {
 							return false;
 						}
 					}
 				}
 			}
-			if (downloadUrl.contains("<system>")) {
+			if (updateFileUrl.contains("<system>")) {
 				if (SystemUtilities.isWindowsSystem()) {
-					downloadUrl = downloadUrl.replace("<system>", "Windows");
+					updateFileUrl = updateFileUrl.replace("<system>", "Windows");
 				} else if (SystemUtilities.isLinuxSystem()) {
-					downloadUrl = downloadUrl.replace("<system>", "Linux");
+					updateFileUrl = updateFileUrl.replace("<system>", "Linux");
 				}
 			}
-			if (downloadUrl.contains("<bitmode>")) {
+			if (updateFileUrl.contains("<bitmode>")) {
 				if (System.getProperty("os.arch") != null && System.getProperty("os.arch").contains("64")) {
-					downloadUrl = downloadUrl.replace("<bitmode>", "64");
+					updateFileUrl = updateFileUrl.replace("<bitmode>", "64");
 				} else if (SystemUtilities.isLinuxSystem()) {
-					downloadUrl = downloadUrl.replace("<bitmode>", "32");
+					updateFileUrl = updateFileUrl.replace("<bitmode>", "32");
 				}
 			}
 
-			final FileDownloadWorker worker = new FileDownloadWorker(this, downloadUrl, downloadTempFile);
+			final FileDownloadWorker worker = new FileDownloadWorker(this, updateFileUrl, downloadTempFile);
 			progressDialog = new ProgressDialog(getParent(), LangResources.get("menu.updateFileDownload"), LangResources.get("menu.updateFileDownload"));
 			new Thread(worker).start();
 			if (progressDialog.open()) {
@@ -288,9 +288,9 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				if (storedCredentialsChanged) {
 					if (secureDataStore != null) {
 						if (storedDownloadCredentials != null) {
-							secureDataStore.addEntry(Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials", storedDownloadCredentials);
+							secureDataStore.addEntry(Utilities.getDomainFromUrl(updateFileUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials", storedDownloadCredentials);
 						} else {
-							secureDataStore.removeEntry(SimpleCredentialsData.class, Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
+							secureDataStore.removeEntry(SimpleCredentialsData.class, Utilities.getDomainFromUrl(updateFileUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials");
 						}
 						keyStorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 						secureDataStore.save(keystoreFile, keyStorePassword, keystoreFileSalt);
@@ -298,7 +298,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 						if (storedDownloadCredentials != null) {
 							secureDataStore = new SecureDataStore();
 
-							secureDataStore.addEntry(Utilities.getDomainFromUrl(downloadUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials", storedDownloadCredentials);
+							secureDataStore.addEntry(Utilities.getDomainFromUrl(updateFileUrl.replace("<username>", "").replace("<password>", "").replace("<system>", "").replace("<bitmode>", "")) + "_Credentials", storedDownloadCredentials);
 
 							keyStorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
 							secureDataStore.save(keystoreFile, keyStorePassword, keystoreFileSalt);
@@ -318,8 +318,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 		}
 	}
 
-	public SecureDataStore openKeyStore(final Shell shell, final File keystoreFile, char[] password) {
-		if (keystoreFile != null && keystoreFile.exists()) {
+	public SecureDataStore openKeyStore(final Shell shell, final File keystoreFileToOpen, char[] password) {
+		if (keystoreFileToOpen != null && keystoreFileToOpen.exists()) {
 			SecureDataStore keyStore = null;
 
 			if (password == null) {
@@ -327,8 +327,8 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				try {
 					password = "".toCharArray();
 					keyStore = new SecureDataStore();
-					keyStore.load(keystoreFile, password, keystoreFileSalt);
-				} catch (final Exception e1) {
+					keyStore.load(keystoreFileToOpen, password, keystoreFileSalt);
+				} catch (@SuppressWarnings("unused") final Exception e1) {
 					password = null;
 					keyStore = null;
 				}
@@ -346,7 +346,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			if (password != null && keyStore == null) {
 				try {
 					keyStore = new SecureDataStore();
-					keyStore.load(keystoreFile, password, keystoreFileSalt);
+					keyStore.load(keystoreFileToOpen, password, keystoreFileSalt);
 				} catch (final Exception e) {
 					e.printStackTrace();
 					new QuestionDialog(shell, getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).open();

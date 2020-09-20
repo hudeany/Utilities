@@ -143,54 +143,54 @@ public class JsonSchema {
 		jsonSchemaDependencyResolver.setUseDraftV4Mode(useDraftV4Mode);
 	}
 
-	private void readSchemaData(final JsonObject jsonSchemaDefinition) throws JsonSchemaDefinitionError {
-		if (jsonSchemaDefinition == null) {
+	private void readSchemaData(final JsonObject jsonSchemaDefinitionObject) throws JsonSchemaDefinitionError {
+		if (jsonSchemaDefinitionObject == null) {
 			throw new JsonSchemaDefinitionError("Contains null data", null);
 		} else {
-			this.jsonSchemaDefinition = jsonSchemaDefinition;
+			this.jsonSchemaDefinition = jsonSchemaDefinitionObject;
 		}
 
-		if (jsonSchemaDefinition.containsPropertyKey("id")) {
-			if (jsonSchemaDefinition.get("id") == null) {
+		if (jsonSchemaDefinitionObject.containsPropertyKey("id")) {
+			if (jsonSchemaDefinitionObject.get("id") == null) {
 				throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'id'", "$");
-			} else if (!(jsonSchemaDefinition.get("id") instanceof String)) {
-				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("id").getClass().getSimpleName() + "' for key 'id'", "$");
+			} else if (!(jsonSchemaDefinitionObject.get("id") instanceof String)) {
+				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinitionObject.get("id").getClass().getSimpleName() + "' for key 'id'", "$");
 			} else {
-				id = (String) jsonSchemaDefinition.get("id");
+				id = (String) jsonSchemaDefinitionObject.get("id");
 			}
 		}
 
-		if (jsonSchemaDefinition.containsPropertyKey("$schema")) {
-			if (jsonSchemaDefinition.get("$schema") == null) {
+		if (jsonSchemaDefinitionObject.containsPropertyKey("$schema")) {
+			if (jsonSchemaDefinitionObject.get("$schema") == null) {
 				throw new JsonSchemaDefinitionError("Invalid data type 'null' for key '$schema'", "$");
-			} else if (!(jsonSchemaDefinition.get("$schema") instanceof String)) {
-				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("$schema").getClass().getSimpleName() + "' for key '$schema'", "$");
+			} else if (!(jsonSchemaDefinitionObject.get("$schema") instanceof String)) {
+				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinitionObject.get("$schema").getClass().getSimpleName() + "' for key '$schema'", "$");
 			} else {
-				schemaVersionUrl = (String) jsonSchemaDefinition.get("$schema");
+				schemaVersionUrl = (String) jsonSchemaDefinitionObject.get("$schema");
 			}
 		}
 
-		if (jsonSchemaDefinition.containsPropertyKey("title")) {
-			if (jsonSchemaDefinition.get("title") == null) {
+		if (jsonSchemaDefinitionObject.containsPropertyKey("title")) {
+			if (jsonSchemaDefinitionObject.get("title") == null) {
 				throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'title'", "$");
-			} else if (!(jsonSchemaDefinition.get("title") instanceof String)) {
-				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("title").getClass().getSimpleName() + "' for key 'title'", "$");
+			} else if (!(jsonSchemaDefinitionObject.get("title") instanceof String)) {
+				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinitionObject.get("title").getClass().getSimpleName() + "' for key 'title'", "$");
 			} else {
-				title = (String) jsonSchemaDefinition.get("title");
+				title = (String) jsonSchemaDefinitionObject.get("title");
 			}
 		}
 
-		if (jsonSchemaDefinition.containsPropertyKey("description")) {
-			if (jsonSchemaDefinition.get("description") == null) {
+		if (jsonSchemaDefinitionObject.containsPropertyKey("description")) {
+			if (jsonSchemaDefinitionObject.get("description") == null) {
 				throw new JsonSchemaDefinitionError("Invalid data type 'null' for key 'description'", "$");
-			} else if (!(jsonSchemaDefinition.get("description") instanceof String)) {
-				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinition.get("title").getClass().getSimpleName() + "' for key 'description'", "$");
+			} else if (!(jsonSchemaDefinitionObject.get("description") instanceof String)) {
+				throw new JsonSchemaDefinitionError("Invalid data type '" + jsonSchemaDefinitionObject.get("title").getClass().getSimpleName() + "' for key 'description'", "$");
 			} else {
-				description = (String) jsonSchemaDefinition.get("description");
+				description = (String) jsonSchemaDefinitionObject.get("description");
 			}
 		}
 
-		jsonSchemaDependencyResolver = new JsonSchemaDependencyResolver(jsonSchemaDefinition);
+		jsonSchemaDependencyResolver = new JsonSchemaDependencyResolver(jsonSchemaDefinitionObject);
 	}
 
 	/**

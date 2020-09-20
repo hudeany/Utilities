@@ -28,7 +28,7 @@ public class ExactNumber {
 		}
 	}
 
-	private Tuple<Long, Integer> parseNumber(String value) throws Exception {
+	private static Tuple<Long, Integer> parseNumber(String value) throws Exception {
 		value = value.replace(" ", "").replace("\t", "");
 
 		String preDecimalSeparator;

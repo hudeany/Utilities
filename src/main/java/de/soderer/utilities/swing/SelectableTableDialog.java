@@ -24,64 +24,64 @@ import de.soderer.utilities.Utilities;
 
 public class SelectableTableDialog extends JDialog {
 	private static final long serialVersionUID = -718203702968699038L;
-	
+
 	private JTable table;
-	
+
 	private List<List<String>> selectedItems;
-	
-	public SelectableTableDialog(Window parent, String title, String text, final List<String> headers, List<List<String>> items, boolean defaultState, String selectAllButtonText, String selectNoneButtonText, String selectButtonText, String cancelButtonText) {
+
+	public SelectableTableDialog(final Window parent, final String title, final String text, final List<String> headers, final List<List<String>> items, final boolean defaultState, final String selectAllButtonText, final String selectNoneButtonText, final String selectButtonText, final String cancelButtonText) {
 		super(parent, title, Dialog.ModalityType.DOCUMENT_MODAL);
-		
+
 		final SelectableTableDialog dialog = this;
 
 		setResizable(false);
 
-		JPanel panel = new JPanel();
+		final JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 
 		if (Utilities.isNotBlank(text)) {
-			JTextArea textField = new JTextArea();
+			final JTextArea textField = new JTextArea();
 			textField.setText(text);
 			textField.setEditable(false);
 			textField.setBackground(Color.LIGHT_GRAY);
-	
-			JScrollPane textScrollpane = new JScrollPane(textField);
+
+			final JScrollPane textScrollpane = new JScrollPane(textField);
 			textScrollpane.setPreferredSize(new Dimension(textField.getPreferredSize().width + 5, textField.getPreferredSize().height + 5));
-			
+
 			// Text Panel
-			JPanel textPanel = new JPanel();
+			final JPanel textPanel = new JPanel();
 			textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.LINE_AXIS));
-	
+
 			textPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 			textPanel.add(textScrollpane);
 			textPanel.add(Box.createRigidArea(new Dimension(5, 0)));
-			
+
 			panel.add(Box.createRigidArea(new Dimension(0, 5)));
 			panel.add(textPanel);
 		}
-		
+
 		// table area
-		Object[] headerArray = new Object[headers.size() + 1];
+		final Object[] headerArray = new Object[headers.size() + 1];
 		headerArray[0] = "";
 		for (int i = 0; i < headers.size(); i++) {
 			headerArray[i + 1] = headers.get(i);
 		}
-		
-		Object[][] itemsArray = new Object[items.size()][];
+
+		final Object[][] itemsArray = new Object[items.size()][];
 		for (int i = 0; i < items.size(); i++) {
-			Object[] itemArray = new Object[items.get(i).size() + 1];
+			final Object[] itemArray = new Object[items.get(i).size() + 1];
 			itemArray[0] = defaultState;
 			for (int j = 0; j < items.get(i).size(); j++) {
 				itemArray[j + 1] = items.get(i).get(j);
 			}
 			itemsArray[i] = itemArray;
 		}
-		
-		DefaultTableModel tableModel = new DefaultTableModel(itemsArray, headerArray) {
+
+		final DefaultTableModel tableModel = new DefaultTableModel(itemsArray, headerArray) {
 			private static final long serialVersionUID = -372185535503984868L;
 
 			@Override
-			public Class<?> getColumnClass(int columnIndex) {
+			public Class<?> getColumnClass(final int columnIndex) {
 				if (columnIndex == 0) {
 					return Boolean.class;
 				} else {
@@ -91,11 +91,11 @@ public class SelectableTableDialog extends JDialog {
 		};
 		table = new JTable(tableModel);
 		table.setBackground(Color.LIGHT_GRAY);
-		
-		JScrollPane tableScrollpane = new JScrollPane(table);
+
+		final JScrollPane tableScrollpane = new JScrollPane(table);
 		tableScrollpane.setPreferredSize(new Dimension(table.getPreferredSize().width + 5, 100));
-		
-		JPanel tablePanel = new JPanel();
+
+		final JPanel tablePanel = new JPanel();
 		tablePanel.setLayout(new BoxLayout(tablePanel, BoxLayout.LINE_AXIS));
 
 		tablePanel.add(Box.createRigidArea(new Dimension(5, 0)));
@@ -103,21 +103,19 @@ public class SelectableTableDialog extends JDialog {
 		tablePanel.add(Box.createRigidArea(new Dimension(5, 0)));
 
 		// Button Panel 1
-		JPanel buttonPanel1 = new JPanel();
+		final JPanel buttonPanel1 = new JPanel();
 		buttonPanel1.setLayout(new BoxLayout(buttonPanel1, BoxLayout.LINE_AXIS));
 
 		buttonPanel1.add(Box.createRigidArea(new Dimension(5, 0)));
-		
-		JButton focusButton = null;
 
 		if (Utilities.isNotBlank(selectAllButtonText)) {
-			JButton selectAllButton = new JButton(selectAllButtonText);
+			final JButton selectAllButton = new JButton(selectAllButtonText);
 			selectAllButton.addActionListener(new ActionListener() {
 				@Override
-				public void actionPerformed(ActionEvent event) {
+				public void actionPerformed(final ActionEvent event) {
 					for (int rowIndex = 0; rowIndex < table.getRowCount(); rowIndex++) {
 						for (int searchIndex = 0; searchIndex < table.getColumnCount(); searchIndex++) {
-							TableColumn column = table.getColumnModel().getColumn(searchIndex);
+							final TableColumn column = table.getColumnModel().getColumn(searchIndex);
 							if ("".equals(column.getHeaderValue())) {
 								table.getModel().setValueAt(true, rowIndex, searchIndex);
 							}
@@ -129,15 +127,15 @@ public class SelectableTableDialog extends JDialog {
 
 			buttonPanel1.add(Box.createRigidArea(new Dimension(5, 0)));
 		}
-		
+
 		if (Utilities.isNotBlank(selectNoneButtonText)) {
-			JButton selectNoneButton = new JButton(selectNoneButtonText);
+			final JButton selectNoneButton = new JButton(selectNoneButtonText);
 			selectNoneButton.addActionListener(new ActionListener() {
 				@Override
-				public void actionPerformed(ActionEvent event) {
+				public void actionPerformed(final ActionEvent event) {
 					for (int rowIndex = 0; rowIndex < table.getRowCount(); rowIndex++) {
 						for (int searchIndex = 0; searchIndex < table.getColumnCount(); searchIndex++) {
-							TableColumn column = table.getColumnModel().getColumn(searchIndex);
+							final TableColumn column = table.getColumnModel().getColumn(searchIndex);
 							if ("".equals(column.getHeaderValue())) {
 								table.getModel().setValueAt(false, rowIndex, searchIndex);
 							}
@@ -149,33 +147,33 @@ public class SelectableTableDialog extends JDialog {
 
 			buttonPanel1.add(Box.createRigidArea(new Dimension(5, 0)));
 		}
-		
+
 		// Button Panel 2
-		JPanel buttonPanel2 = new JPanel();
+		final JPanel buttonPanel2 = new JPanel();
 		buttonPanel2.setLayout(new BoxLayout(buttonPanel2, BoxLayout.LINE_AXIS));
 
 		buttonPanel2.add(Box.createRigidArea(new Dimension(5, 0)));
-		
-		JButton selectButton = new JButton(selectButtonText);
+
+		final JButton selectButton = new JButton(selectButtonText);
 		selectButton.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent event) {
+			public void actionPerformed(final ActionEvent event) {
 				selectedItems = new ArrayList<>();
 				for (int rowIndex = 0; rowIndex < table.getRowCount(); rowIndex++) {
 					boolean selected = false;
 					for (int searchIndex = 0; searchIndex < table.getColumnCount(); searchIndex++) {
-						TableColumn column = table.getColumnModel().getColumn(searchIndex);
+						final TableColumn column = table.getColumnModel().getColumn(searchIndex);
 						if ("".equals(column.getHeaderValue())) {
 							selected = (Boolean) table.getModel().getValueAt(rowIndex, searchIndex);
 						}
 					}
 					if (selected) {
-						List<String> item = new ArrayList<>();
-						for (String columnName : headers) {
+						final List<String> item = new ArrayList<>();
+						for (final String columnName : headers) {
 							int columnIndex = 0;
 							for (int searchIndex = 0; searchIndex < table.getColumnCount(); searchIndex++) {
-								TableColumn column = table.getColumnModel().getColumn(searchIndex);
-								 if (columnName.equals(column.getHeaderValue())) {
+								final TableColumn column = table.getColumnModel().getColumn(searchIndex);
+								if (columnName.equals(column.getHeaderValue())) {
 									columnIndex = searchIndex;
 									break;
 								}
@@ -187,18 +185,18 @@ public class SelectableTableDialog extends JDialog {
 						selectedItems.add(item);
 					}
 				}
-				
+
 				dialog.dispose();
 			}
 		});
 		buttonPanel2.add(selectButton);
 
 		buttonPanel2.add(Box.createRigidArea(new Dimension(5, 0)));
-		
-		JButton cancelButton = new JButton(cancelButtonText);
+
+		final JButton cancelButton = new JButton(cancelButtonText);
 		cancelButton.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent event) {
+			public void actionPerformed(final ActionEvent event) {
 				selectedItems = null;
 				dialog.dispose();
 			}
@@ -206,8 +204,6 @@ public class SelectableTableDialog extends JDialog {
 		buttonPanel2.add(cancelButton);
 
 		buttonPanel2.add(Box.createRigidArea(new Dimension(5, 0)));
-		
-		focusButton = selectButton;
 
 		panel.add(Box.createRigidArea(new Dimension(0, 5)));
 		panel.add(tablePanel);
@@ -222,10 +218,8 @@ public class SelectableTableDialog extends JDialog {
 		pack();
 
 		setLocationRelativeTo(parent);
-		
-		if (focusButton != null) {
-			getRootPane().setDefaultButton(focusButton);
-		}
+
+		getRootPane().setDefaultButton(selectButton);
 	}
 
 	public List<List<String>> getSelectedItems() {

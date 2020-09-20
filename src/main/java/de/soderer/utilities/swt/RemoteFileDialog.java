@@ -174,10 +174,10 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 
 					serverEntriesCombo.setText("");
 
-					final char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
-					if (password != null) {
+					final char[] keystorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
+					if (keystorePassword != null) {
 						try {
-							keyStore.save(keystoreFile, password, keystoreFileSalt);
+							keyStore.save(keystoreFile, keystorePassword, keystoreFileSalt);
 						} catch (final Exception e) {
 							e.printStackTrace();
 						}
@@ -197,10 +197,10 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 					}
 					final String newEntryName = serverEntriesCombo.getText();
 					keyStore.addEntry(serverEntriesCombo.getText(), getServerEntry());
-					final char[] password = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
-					if (password != null) {
+					final char[] keystorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
+					if (keystorePassword != null) {
 						try {
-							keyStore.save(keystoreFile, password, keystoreFileSalt);
+							keyStore.save(keystoreFile, keystorePassword, keystoreFileSalt);
 						} catch (final Exception e) {
 							e.printStackTrace();
 						}
@@ -223,7 +223,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			@Override
 			public void modifyText(final ModifyEvent event) {
 				protocol = PROTOCOL_LIST.get(((LabeledCombo) event.widget).getSelectedItemIndex());
-				if (portField.getText().equals("21") || portField.getText().equals("22") || portField.getText().equals("445") || portField.getText().equals("80") || portField.getText().equals("443")) {
+				if ("21".equals(portField.getText()) || "22".equals(portField.getText()) || "445".equals(portField.getText()) || "80".equals(portField.getText()) || "443".equals(portField.getText())) {
 					if ("ssh".equalsIgnoreCase(protocol) || "sftp".equalsIgnoreCase(protocol)) {
 						portField.setText("22");
 					} else if ("ftp".equalsIgnoreCase(protocol)) {
@@ -264,7 +264,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			public void modifyText(final ModifyEvent event) {
 				try {
 					port = Integer.parseInt(((LabeledText) event.widget).getText());
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					port = 0;
 				}
 				checkButtonStatus();
@@ -907,12 +907,12 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 		if (keystoreFile.exists()) {
 			boolean passwordWasWrong = false;
 
-			char[] password = inMemoryPassword == null ? "".toCharArray() : Arrays.copyOf(inMemoryPassword, inMemoryPassword.length);
+			char[] passwordToUse = inMemoryPassword == null ? "".toCharArray() : Arrays.copyOf(inMemoryPassword, inMemoryPassword.length);
 			try {
 				keyStore = new SecureDataStore();
-				keyStore.load(keystoreFile, password, keystoreFileSalt);
-			} catch (final Exception e) {
-				password = null;
+				keyStore.load(keystoreFile, passwordToUse, keystoreFileSalt);
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				passwordToUse = null;
 				keyStore = null;
 				if (inMemoryPassword != null) {
 					Arrays.fill(inMemoryPassword, '\u0000');
@@ -924,15 +924,15 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			while (passwordWasWrong) {
 				final PasswordDialog dialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"));
 				dialog.setKeepInMemoryText(LangResources.get("keepPasswordInMemory"));
-				password = dialog.open();
-				if (password != null) {
+				passwordToUse = dialog.open();
+				if (passwordToUse != null) {
 					if (dialog.keepInMemory()) {
-						inMemoryPassword = Arrays.copyOf(password, password.length);
+						inMemoryPassword = Arrays.copyOf(passwordToUse, passwordToUse.length);
 					}
 					try {
 						keyStore = new SecureDataStore();
 						// Kills the password after usage
-						keyStore.load(keystoreFile, password, keystoreFileSalt);
+						keyStore.load(keystoreFile, passwordToUse, keystoreFileSalt);
 						passwordWasWrong = false;
 					} catch (final Exception e) {
 						e.printStackTrace();
@@ -970,8 +970,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 
 	private void setServerAccessData(final ServerAccessData entry) {
 		for (int i = 0; i < PROTOCOL_LIST.size(); i++) {
-			final String protocol = PROTOCOL_LIST.get(i);
-			if (protocol.equalsIgnoreCase(entry.getProtocol())) {
+			final String protocolItem = PROTOCOL_LIST.get(i);
+			if (protocolItem.equalsIgnoreCase(entry.getProtocol())) {
 				protocolField.setSelectedItemIndex(i);
 			}
 		}

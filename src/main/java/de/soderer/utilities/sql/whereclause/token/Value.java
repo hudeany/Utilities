@@ -19,17 +19,17 @@ public class Value extends RulePart {
 	protected Value() {
 	}
 
-	public Value(String stringValue) {
+	public Value(final String stringValue) {
 		type = Type.String;
 		this.stringValue = stringValue;
 	}
 
-	public Value(double numberValue) {
+	public Value(final double numberValue) {
 		type = Type.Number;
 		this.numberValue = numberValue;
 	}
 
-	public Value(String fieldName, Type fieldType) {
+	public Value(final String fieldName, final Type fieldType) {
 		this.fieldName = fieldName.toLowerCase();
 		type = fieldType;
 	}
@@ -41,13 +41,17 @@ public class Value extends RulePart {
 		} else {
 			switch (type) {
 				case String:
-					StringBuilder returnValue = new StringBuilder();
+					final StringBuilder returnValue = new StringBuilder();
 					returnValue.append("'");
 					returnValue.append(stringValue.replace("'", "''"));
 					returnValue.append("'");
 					return returnValue.toString();
 				case Number:
 					return NumberFormat.getNumberInstance().format(numberValue);
+				case Bool:
+					throw new RuntimeException("Invalid value type for output: " + type);
+				case Date:
+					throw new RuntimeException("Invalid value type for output: " + type);
 				default:
 					throw new RuntimeException("Invalid value type for output: " + type);
 			}
@@ -55,7 +59,7 @@ public class Value extends RulePart {
 	}
 
 	@Override
-	public String toString(RulePart.StringType stringType) {
+	public String toString(final RulePart.StringType stringType) {
 		if (Utilities.isNotEmpty(fieldName) && Expression.SYSDATE_VALUES.contains(fieldName)) {
 			if (stringType == StringType.Oracle) {
 				return "SYSDATE";

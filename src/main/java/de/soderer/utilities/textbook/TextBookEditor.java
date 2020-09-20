@@ -201,7 +201,7 @@ public class TextBookEditor implements AutoCloseable {
 		}
 	}
 
-	private OutputStream getTextFileOutputStream(final File textFile) throws Exception {
+	private static OutputStream getTextFileOutputStream(final File textFile) throws Exception {
 		if (textFile.getName().toLowerCase().endsWith(".zip")) {
 			final ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(textFile)));
 			outputStream.putNextEntry(new ZipEntry(textFile.getName().substring(0, textFile.getName().length() - 4)));

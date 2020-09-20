@@ -16,38 +16,38 @@ import de.soderer.utilities.Version;
 
 public class BasicUpdateableGuiApplication extends JFrame implements UpdateParent {
 	private static final long serialVersionUID = 1869492889654406822L;
-	
-	private String applicationName;
-	private Version applicationVersion;
-	
+
+	private final String applicationName;
+	private final Version applicationVersion;
+
 	private SimpleProgressDialog<?> updateProgressDialog;
-	
-	public BasicUpdateableGuiApplication(String applicationName, Version applicationVersion) throws HeadlessException {
+
+	public BasicUpdateableGuiApplication(final String applicationName, final Version applicationVersion) throws HeadlessException {
 		super(applicationName + " (Version " + applicationVersion.toString() + ")");
-		
+
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
 	}
 
 	@Override
-	public Credentials aquireCredentials(String text, boolean aquireUsername, boolean aquirePassword) throws Exception {
-		CredentialsDialog credentialsDialog = new CredentialsDialog(this, "Update " + applicationName, text, aquireUsername, aquirePassword);
+	public Credentials aquireCredentials(final String text, final boolean aquireUsername, final boolean aquirePassword) throws Exception {
+		final CredentialsDialog credentialsDialog = new CredentialsDialog(this, "Update " + applicationName, text, aquireUsername, aquirePassword);
 		credentialsDialog.setVisible(true);
 		return credentialsDialog.getCredentials();
 	}
 
 	@Override
-	public void showUpdateError(String errorText) {
+	public void showUpdateError(final String errorText) {
 		if (updateProgressDialog != null) {
 			updateProgressDialog.dispose();
 			updateProgressDialog = null;
 		}
-		
+
 		new TextDialog(this, "Update Error", errorText, getI18NString("close"), false, Color.PINK).setVisible(true);
 	}
 
 	@Override
-	public void showUpdateProgress(Date itemStart, long itemsToDo, long itemsDone) {
+	public void showUpdateProgress(final Date itemStart, final long itemsToDo, final long itemsDone) {
 		if (updateProgressDialog != null) {
 			updateProgressDialog.showProgress(itemStart, itemsToDo, itemsDone);
 		}
@@ -59,18 +59,18 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 			updateProgressDialog.dispose();
 			updateProgressDialog = null;
 		}
-		
+
 		new QuestionDialog(this, "Update", getI18NString("updateDone"), getI18NString("restartNow")).setVisible(true);
 	}
 
 	@Override
-	public boolean askForUpdate(String availableNewVersion) throws Exception {
+	public boolean askForUpdate(final String availableNewVersion) throws Exception {
 		if (availableNewVersion == null) {
-			TextDialog textDialog = new TextDialog(this, "Update", getI18NString("noNewerVersion", applicationName, applicationVersion.toString()), getI18NString("close"));
+			final TextDialog textDialog = new TextDialog(this, "Update", getI18NString("noNewerVersion", applicationName, applicationVersion.toString()), getI18NString("close"));
 			textDialog.setVisible(true);
 			return false;
 		} else {
-			QuestionDialog questionDialog = new QuestionDialog(this, "Update", getI18NString("newVersion", availableNewVersion, applicationName, applicationVersion.toString()) + "\n" + getI18NString("installUpdate"), getI18NString("yes"), getI18NString("no"));
+			final QuestionDialog questionDialog = new QuestionDialog(this, "Update", getI18NString("newVersion", availableNewVersion, applicationName, applicationVersion.toString()) + "\n" + getI18NString("installUpdate"), getI18NString("yes"), getI18NString("no"));
 			questionDialog.setVisible(true);
 			return questionDialog.getAnswerButtonIndex() == 0;
 		}
@@ -89,8 +89,8 @@ public class BasicUpdateableGuiApplication extends JFrame implements UpdateParen
 			updateProgressDialog = null;
 		}
 	}
-	
-	private String getI18NString(String resourceKey, Object... arguments) {
+
+	private static String getI18NString(final String resourceKey, final Object... arguments) {
 		if (LangResources.existsKey(resourceKey)) {
 			return LangResources.get(resourceKey, arguments);
 		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {

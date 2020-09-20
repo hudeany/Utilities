@@ -442,7 +442,7 @@ public class DbUtilities {
 				if (hostParts.length == 2) {
 					try {
 						port = Integer.parseInt(hostParts[1]);
-					} catch (final Exception e) {
+					} catch (@SuppressWarnings("unused") final Exception e) {
 						throw new Exception("Invalid port: " + hostParts[1]);
 					}
 				} else {
@@ -460,7 +460,7 @@ public class DbUtilities {
 				if (hostParts.length == 2) {
 					try {
 						port = Integer.parseInt(hostParts[1]);
-					} catch (final Exception e) {
+					} catch (@SuppressWarnings("unused") final Exception e) {
 						throw new Exception("Invalid port: " + hostParts[1]);
 					}
 				} else {
@@ -475,12 +475,11 @@ public class DbUtilities {
 				//					// securerandom.source=file:/dev/./urandom
 				//				}
 
-				Connection connection;
 				try {
-					connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+					return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
 				} catch (final Exception e) {
 					if (retryOnError && e.getCause() != null && e.getCause() instanceof SQLRecoverableException) {
-						connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+						return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
 					} else {
 						throw e;
 					}
@@ -490,8 +489,6 @@ public class DbUtilities {
 				//					// Reset the alternative random generator
 				//					System.clearProperty("java.security.egd");
 				//				}
-
-				return connection;
 			}
 		} catch (final DbNotExistsException e) {
 			throw e;
@@ -502,7 +499,7 @@ public class DbUtilities {
 					if (hostname.contains(":")) {
 						try {
 							port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
-						} catch (final Exception e1) {
+						} catch (@SuppressWarnings("unused") final Exception e1) {
 							throw new Exception("Invalid port: " + hostname.substring(hostname.indexOf(":") + 1));
 						}
 						NetworkUtilities.testConnection(hostname.substring(0, hostname.indexOf(":")), port);
@@ -555,7 +552,7 @@ public class DbUtilities {
 								} else {
 									values.add("");
 								}
-							} catch (final Exception e) {
+							} catch (@SuppressWarnings("unused") final Exception e) {
 								// NULL blobs throw a NullpointerException in SQLite
 								values.add("");
 							}
@@ -633,7 +630,7 @@ public class DbUtilities {
 		try (Connection connection = dataSource.getConnection()) {
 			return getDbVendor(connection);
 		} catch (final SQLException e) {
-			throw new RuntimeException("Cannot check db vendor: " + e.getMessage(), e);
+			throw new Exception("Cannot check db vendor: " + e.getMessage(), e);
 		}
 	}
 
@@ -685,7 +682,7 @@ public class DbUtilities {
 			} else {
 				return null;
 			}
-		} catch (final SQLException e) {
+		} catch (@SuppressWarnings("unused") final SQLException e) {
 			return null;
 		}
 	}
@@ -725,7 +722,7 @@ public class DbUtilities {
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0")) {
 			return true;
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			if (throwExceptionOnError) {
 				throw new Exception("Table '" + tableName + "' does not exist");
 			} else {
@@ -758,7 +755,7 @@ public class DbUtilities {
 			}
 		}
 
-		StringBuffer dbmsOutput;
+		final StringBuffer dbmsOutput = new StringBuffer(1024);
 		try (CallableStatement callableStatement = connection.prepareCall(
 				"declare "
 						+ "    l_line varchar2(255); "
@@ -775,7 +772,6 @@ public class DbUtilities {
 						+ "end;")) {
 			callableStatement.registerOutParameter(2, Types.INTEGER);
 			callableStatement.registerOutParameter(3, Types.VARCHAR);
-			dbmsOutput = new StringBuffer(1024);
 			while (true) {
 				callableStatement.setInt(1, 32000);
 				callableStatement.executeUpdate();
@@ -790,7 +786,7 @@ public class DbUtilities {
 			callableStatement.executeUpdate();
 		}
 
-		return dbmsOutput == null ? null : dbmsOutput.toString();
+		return dbmsOutput.toString();
 	}
 
 	public static String getResultAsTextTable(final DataSource datasource, final String selectString) throws Exception {
@@ -823,7 +819,7 @@ public class DbUtilities {
 		try (Connection connection = dataSource.getConnection()) {
 			return getColumnNames(connection, tableName);
 		} catch (final SQLException e) {
-			throw new RuntimeException("Cannot read columns for table " + tableName + ": " + e.getMessage(), e);
+			throw new Exception("Cannot read columns for table " + tableName + ": " + e.getMessage(), e);
 		}
 	}
 
@@ -883,7 +879,7 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							final boolean isNullable = resultSet.getString("nullable").equalsIgnoreCase("y");
+							final boolean isNullable = "y".equalsIgnoreCase(resultSet.getString("nullable"));
 
 							// TODO AutoIncrements will be introduced with Oracle 12
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, false));
@@ -908,8 +904,8 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							final boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
-							final boolean isAutoIncrement = resultSet.getString("extra").equalsIgnoreCase("auto_increment");
+							final boolean isNullable = "yes".equalsIgnoreCase(resultSet.getString("is_nullable"));
+							final boolean isAutoIncrement = "auto_increment".equalsIgnoreCase(resultSet.getString("extra"));
 
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
@@ -933,8 +929,8 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							final boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
-							final boolean isAutoIncrement = resultSet.getString("extra").equalsIgnoreCase("auto_increment");
+							final boolean isNullable = "yes".equalsIgnoreCase(resultSet.getString("is_nullable"));
+							final boolean isAutoIncrement = "auto_increment".equalsIgnoreCase(resultSet.getString("extra"));
 
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
@@ -958,8 +954,8 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							final boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
-							final boolean isAutoIncrement = resultSet.getString("is_autoincrement").equalsIgnoreCase("yes");
+							final boolean isNullable = "yes".equalsIgnoreCase(resultSet.getString("is_nullable"));
+							final boolean isAutoIncrement = "yes".equalsIgnoreCase(resultSet.getString("is_autoincrement"));
 
 							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("type_name"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
@@ -1107,7 +1103,7 @@ public class DbUtilities {
 							if (resultSet.wasNull()) {
 								numericScale = -1;
 							}
-							final boolean isNullable = resultSet.getString("is_nullable").equalsIgnoreCase("yes");
+							final boolean isNullable = "yes".equalsIgnoreCase(resultSet.getString("is_nullable"));
 
 							final String defaultValue = resultSet.getString("column_default");
 							boolean isAutoIncrement = false;
@@ -1223,7 +1219,7 @@ public class DbUtilities {
 
 	public static String getDateDefaultValue(final DataSource dataSource, final String fieldDefault) throws Exception {
 		final DbVendor dbVendor = getDbVendor(dataSource);
-		if (fieldDefault.equalsIgnoreCase("sysdate") || fieldDefault.equalsIgnoreCase("sysdate()") || fieldDefault.equalsIgnoreCase("current_timestamp")) {
+		if ("sysdate".equalsIgnoreCase(fieldDefault) || "sysdate()".equalsIgnoreCase(fieldDefault) || "current_timestamp".equalsIgnoreCase(fieldDefault)) {
 			if (dbVendor == DbVendor.Oracle) {
 				return "current_timestamp";
 			} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
@@ -1270,7 +1266,7 @@ public class DbUtilities {
 			if (Utilities.isNotEmpty(fieldDefault)) {
 				if (fieldType.startsWith("VARCHAR")) {
 					addColumnStatement += " DEFAULT '" + fieldDefault + "'";
-				} else if (fieldType.equalsIgnoreCase("DATE")) {
+				} else if ("DATE".equalsIgnoreCase(fieldType)) {
 					addColumnStatement += " DEFAULT " + getDateDefaultValue(dataSource, fieldDefault);
 				} else {
 					addColumnStatement += " DEFAULT " + fieldDefault;
@@ -1288,7 +1284,7 @@ public class DbUtilities {
 					Statement statement = connection.createStatement()) {
 				statement.executeUpdate(addColumnStatement);
 				return true;
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				return false;
 			}
 		}
@@ -1320,9 +1316,9 @@ public class DbUtilities {
 
 			// Default Value
 			if (Utilities.isNotEmpty(fieldDefault)) {
-				if (fieldType.equalsIgnoreCase("VARCHAR")) {
+				if ("VARCHAR".equalsIgnoreCase(fieldType)) {
 					changeColumnStatementPart += " DEFAULT '" + fieldDefault + "'";
-				} else if (fieldType.equalsIgnoreCase("DATE")) {
+				} else if ("DATE".equalsIgnoreCase(fieldType)) {
 					changeColumnStatementPart += " DEFAULT " + getDateDefaultValue(dataSource, fieldDefault);
 				} else {
 					changeColumnStatementPart += " DEFAULT " + fieldDefault;
@@ -1350,7 +1346,7 @@ public class DbUtilities {
 					Statement statement = connection.createStatement()) {
 				statement.executeUpdate(changeColumnStatement);
 				return true;
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				return false;
 			}
 		}
@@ -1389,7 +1385,7 @@ public class DbUtilities {
 					return resultSet.getInt(1) > 0;
 				}
 			} catch (final Exception e) {
-				throw new RuntimeException("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
+				throw new Exception("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
 			}
 		} else {
 			return false;
@@ -1404,7 +1400,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static CaseInsensitiveSet getPrimaryKeyColumns(final Connection connection, String tableName) {
+	public static CaseInsensitiveSet getPrimaryKeyColumns(final Connection connection, String tableName) throws Exception {
 		if (Utilities.isBlank(tableName)) {
 			return null;
 		} else {
@@ -1422,12 +1418,12 @@ public class DbUtilities {
 					return returnList;
 				}
 			} catch (final Exception e) {
-				throw new RuntimeException("Cannot read primarykey columns for table " + tableName + ": " + e.getMessage(), e);
+				throw new Exception("Cannot read primarykey columns for table " + tableName + ": " + e.getMessage(), e);
 			}
 		}
 	}
 
-	public static List<List<String>> getForeignKeys(final Connection connection, String tableName) {
+	public static List<List<String>> getForeignKeys(final Connection connection, String tableName) throws Exception {
 		if (Utilities.isBlank(tableName)) {
 			return null;
 		} else {
@@ -1450,7 +1446,7 @@ public class DbUtilities {
 					return returnList;
 				}
 			} catch (final Exception e) {
-				throw new RuntimeException("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
+				throw new Exception("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
 			}
 		}
 	}
@@ -2012,7 +2008,7 @@ public class DbUtilities {
 					try {
 						final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
 						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), keyColumns) + ")");
-					} catch (final Exception e) {
+					} catch (@SuppressWarnings("unused") final Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
 					}
 				}
@@ -2049,7 +2045,7 @@ public class DbUtilities {
 					try {
 						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ")");
 						connection.commit();
-					} catch (final Exception e) {
+					} catch (@SuppressWarnings("unused") final Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
 					}
 				}
@@ -2572,9 +2568,9 @@ public class DbUtilities {
 		} else if (!new File(dbName).isDirectory()) {
 			throw new Exception("Derby db directory '" + dbName + "' is not a directory");
 		}
-		try {
-			DriverManager.getConnection("jdbc:derby:" + Utilities.replaceHomeTilde(dbName) + ";shutdown=true");
-		} catch (final SQLNonTransientConnectionException e) {
+		try (Connection connection = DriverManager.getConnection("jdbc:derby:" + Utilities.replaceHomeTilde(dbName) + ";shutdown=true")) {
+			// do nothing
+		} catch (@SuppressWarnings("unused") final SQLNonTransientConnectionException e) {
 			// Derby shutdown ALWAYS throws a SQLNonTransientConnectionException by intention (see also: http://db.apache.org/derby/docs/10.3/devguide/tdevdvlp20349.html)
 		}
 	}

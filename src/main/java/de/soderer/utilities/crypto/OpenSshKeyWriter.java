@@ -1,7 +1,6 @@
 package de.soderer.utilities.crypto;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -32,7 +31,7 @@ public class OpenSshKeyWriter implements Closeable {
 
 	private final OutputStream outputStream;
 
-	public OpenSshKeyWriter(final OutputStream outputStream) throws IOException {
+	public OpenSshKeyWriter(final OutputStream outputStream) {
 		this.outputStream = outputStream;
 	}
 

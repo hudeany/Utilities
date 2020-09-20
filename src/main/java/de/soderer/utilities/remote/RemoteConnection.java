@@ -26,6 +26,4 @@ public interface RemoteConnection extends Closeable {
 	InputStream getFile(String filePath) throws Exception;
 
 	void uploadFile(String filePath, InputStream fileInputStream) throws Exception;
-
-	void close();
 }

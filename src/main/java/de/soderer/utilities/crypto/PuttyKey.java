@@ -32,9 +32,9 @@ public class PuttyKey {
 	 */
 	public PuttyKey(final String comment, final KeyPair keyPair) throws Exception {
 		this.comment = comment;
-		if (!keyPair.getPublic().getAlgorithm().equals("RSA")
-				&& !keyPair.getPublic().getAlgorithm().equals("DSA")
-				&& !keyPair.getPublic().getAlgorithm().equals("EC")) {
+		if (!"RSA".equals(keyPair.getPublic().getAlgorithm())
+				&& !"DSA".equals(keyPair.getPublic().getAlgorithm())
+				&& !"EC".equals(keyPair.getPublic().getAlgorithm())) {
 			throw new IllegalArgumentException("Invalid public key algorithm for PuTTY key (only supports RSA / DSA / EC): " + keyPair.getPublic().getAlgorithm());
 		}
 		this.keyPair = keyPair;

@@ -71,7 +71,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			while (!isDone()) {
 				try {
 					Thread.sleep(500);
-				} catch (final InterruptedException e) {
+				} catch (@SuppressWarnings("unused") final InterruptedException e) {
 					// do nothing
 				}
 			}

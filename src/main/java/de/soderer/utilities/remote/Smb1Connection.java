@@ -63,6 +63,7 @@ public class Smb1Connection implements RemoteConnection {
 	/**
 	 * Connect.
 	 */
+	@SuppressWarnings("unused")
 	private void connect() throws Exception {
 		try {
 			if (Utilities.isNotBlank(username)) {

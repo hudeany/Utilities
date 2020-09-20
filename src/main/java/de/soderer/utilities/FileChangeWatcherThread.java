@@ -11,7 +11,7 @@ public class FileChangeWatcherThread extends Thread {
 	private static final long delay = 1000L;
 	protected boolean running = true;
 
-	public FileChangeWatcherThread(File file, NotificationListener listener) {
+	public FileChangeWatcherThread(final File file, final NotificationListener listener) {
 		this.file = file;
 		this.listener = listener;
 		setDaemon(true);
@@ -34,7 +34,7 @@ public class FileChangeWatcherThread extends Thread {
 					Thread.sleep(delay);
 				}
 			}
-		} catch (InterruptedException IE) {
+		} catch (@SuppressWarnings("unused") final InterruptedException ie) {
 			handleInterrupt();
 		}
 	}
@@ -51,8 +51,8 @@ public class FileChangeWatcherThread extends Thread {
 	}
 
 	public interface NotificationListener {
-		public void noticeFileChanged();
+		void noticeFileChanged();
 
-		public void noticeFileNotExists();
+		void noticeFileNotExists();
 	}
 }

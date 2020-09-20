@@ -162,7 +162,13 @@ public class ZipEncryptOutputStream extends OutputStream {
 					writeDecryptHeader();
 					fileSize = decode(crcAndSize.get(crcAndSize.size() - 1)[1]);
 					state = State.DATA;
-					// intentionally no break
+
+					b = encrypt(b);
+					fileSize--;
+					if (fileSize == 0) {
+						state = State.NEW_SECTION;
+					}
+					break;
 				case DATA:
 					b = encrypt(b);
 					fileSize--;
@@ -236,6 +242,8 @@ public class ZipEncryptOutputStream extends OutputStream {
 					state = State.TAIL;
 					return;
 				case TAIL:
+					break;
+				default:
 					break;
 			}
 		} else {
@@ -345,12 +353,12 @@ public class ZipEncryptOutputStream extends OutputStream {
 		}
 	}
 
-	private void buffer(final int[] values, final State state, final int... knownValues) {
+	private void buffer(final int[] values, final State bufferState, final int... knownValues) {
 		System.arraycopy(knownValues, 0, values, 0, knownValues.length);
 		buffer = values;
 		bufOffset = knownValues.length;
 		this.state = State.BUFFER;
-		futureState = state;
+		futureState = bufferState;
 	}
 
 	private void flushBuffer() throws IOException {
@@ -359,16 +367,16 @@ public class ZipEncryptOutputStream extends OutputStream {
 		}
 	}
 
-	private void copyBytesUntil(final State state, final int[]... condition) {
-		futureState = state;
-		this.condition = condition;
+	private void copyBytesUntil(final State bufferState, final int[]... bufferCondition) {
+		futureState = bufferState;
+		this.condition = bufferCondition;
 		bufOffset = 0;
-		buffer = new int[condition[0].length];
+		buffer = new int[bufferCondition[0].length];
 		this.state = State.BUFFER_COPY;
 	}
 
-	private void bufferUntil(final State state, final int[]... condition) {
-		copyBytesUntil(state, condition);
+	private void bufferUntil(final State bufferState, final int[]... bufferCondition) {
+		copyBytesUntil(bufferState, bufferCondition);
 		fileData = new ArrayList<>();
 		fileSize = 0;
 		this.state = State.BUFFER_UNTIL;
@@ -395,14 +403,14 @@ public class ZipEncryptOutputStream extends OutputStream {
 		return equals && (buffer.length == bufOffset);
 	}
 
-	private void updateKeys(final byte charAt, final int[] keys) {
+	private static void updateKeys(final byte charAt, final int[] keys) {
 		keys[0] = crc32(keys[0], charAt);
 		keys[1] += keys[0] & 0xff;
 		keys[1] = keys[1] * 134775813 + 1;
 		keys[2] = crc32(keys[2], (byte) (keys[1] >> 24));
 	}
 
-	private int crc32(final int oldCrc, final byte charAt) {
+	private static int crc32(final int oldCrc, final byte charAt) {
 		return ((oldCrc >>> 8) ^ CRC_TABLE[(oldCrc ^ charAt) & 0xff]);
 	}
 }

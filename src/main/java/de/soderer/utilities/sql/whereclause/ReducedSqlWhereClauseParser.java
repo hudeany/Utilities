@@ -25,7 +25,7 @@ import de.soderer.utilities.sql.whereclause.token.Value.Type;
  * 3) ) Boolean operators ( and, or ) Brackets around expressions Modulo operator ( ... mod 3 = 0 )
  */
 public class ReducedSqlWhereClauseParser {
-	public RulePart parse(final String formula, final Map<String, Value.Type> descriptors) {
+	public static RulePart parse(final String formula, final Map<String, Value.Type> descriptors) {
 		final Map<String, Value.Type> fieldDescriptors = new HashMap<>();
 		for (final String value : descriptors.keySet()) {
 			fieldDescriptors.put(value.toLowerCase(), descriptors.get(value));
@@ -133,7 +133,7 @@ public class ReducedSqlWhereClauseParser {
 
 					if (bestLength == 0) {
 						if (parts.size() > 2 && parts.get(parts.size() - 2) instanceof Operator
-								&& (((Operator) parts.get(parts.size() - 2)).sign.equalsIgnoreCase("in") || ((Operator) parts.get(parts.size() - 2)).sign.equalsIgnoreCase("not in"))
+								&& ("in".equalsIgnoreCase(((Operator) parts.get(parts.size() - 2)).sign) || "not in".equalsIgnoreCase(((Operator) parts.get(parts.size() - 2)).sign))
 								&& parts.get(parts.size() - 1) instanceof SupplementalPart && ((SupplementalPart) parts.get(parts.size() - 1)).type == SupplementalPart.Type.OpeningBracket) {
 							final SubSelect subSelect = searchSubselect(formula, charIndex);
 							if (subSelect != null) {
@@ -384,7 +384,7 @@ public class ReducedSqlWhereClauseParser {
 	public static void printJoinedParts(final List<RulePart> tokens) {
 		final StringBuilder countBuilder = new StringBuilder();
 		final StringBuilder builder = new StringBuilder();
-		for (final Object token : tokens) {
+		for (final RulePart token : tokens) {
 			if (builder.length() > 0) {
 				countBuilder.append(" ");
 				builder.append(" ");

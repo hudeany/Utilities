@@ -39,7 +39,7 @@ public class TextFileScanner implements Iterator<String> {
 	private int position;
 
 	// Internal matcher used for finding delimiters
-	private Matcher matcher;
+	private final Matcher matcher;
 
 	// Pattern used to delimit tokens
 	private Pattern delimPattern;
@@ -87,7 +87,7 @@ public class TextFileScanner implements Iterator<String> {
 	private Locale locale = null;
 
 	// A cache of the last few recently used Patterns
-	private LRUCache<String, Pattern> patternCache = new LRUCache<>(7);
+	private final LRUCache<String, Pattern> patternCache = new LRUCache<>(7);
 
 	// A holder of the last IOException encountered
 	private IOException lastException;
@@ -133,30 +133,30 @@ public class TextFileScanner implements Iterator<String> {
 	 * Fields and methods to match bytes, shorts, ints, and longs
 	 */
 	private Pattern integerPattern;
-	private String digits = "0123456789abcdefghijklmnopqrstuvwxyz";
-	private String non0Digit = "[\\p{javaDigit}&&[^0]]";
-	private int SIMPLE_GROUP_INDEX = 5;
+	private final String digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+	private final String non0Digit = "[\\p{javaDigit}&&[^0]]";
+	private final int SIMPLE_GROUP_INDEX = 5;
 
 	private String buildIntegerPatternString() {
-		String radixDigits = digits.substring(0, radix);
+		final String radixDigits = digits.substring(0, radix);
 		// \\p{javaDigit} is not guaranteed to be appropriate
 		// here but what can we do? The final authority will be
 		// whatever parse method is invoked, so ultimately the
 		// Scanner will do the right thing
-		String digit = "((?i)[" + radixDigits + "]|\\p{javaDigit})";
-		String groupedNumeral = "(" + non0Digit + digit + "?" + digit + "?(" + groupSeparator + digit + digit + digit + ")+)";
+		final String digit = "((?i)[" + radixDigits + "]|\\p{javaDigit})";
+		final String groupedNumeral = "(" + non0Digit + digit + "?" + digit + "?(" + groupSeparator + digit + digit + digit + ")+)";
 		// digit++ is the possessive form which is necessary for reducing
 		// backtracking that would otherwise cause unacceptable performance
-		String numeral = "((" + digit + "++)|" + groupedNumeral + ")";
-		String javaStyleInteger = "([-+]?(" + numeral + "))";
-		String negativeInteger = negativePrefix + numeral + negativeSuffix;
-		String positiveInteger = positivePrefix + numeral + positiveSuffix;
+		final String numeral = "((" + digit + "++)|" + groupedNumeral + ")";
+		final String javaStyleInteger = "([-+]?(" + numeral + "))";
+		final String negativeInteger = negativePrefix + numeral + negativeSuffix;
+		final String positiveInteger = positivePrefix + numeral + positiveSuffix;
 		return "(" + javaStyleInteger + ")|(" + positiveInteger + ")|(" + negativeInteger + ")";
 	}
 
 	private Pattern integerPattern() {
 		if (integerPattern == null) {
-			String patternString = buildIntegerPatternString();
+			final String patternString = buildIntegerPatternString();
 			integerPattern = patternCache.get(patternString);
 			if (integerPattern == null) {
 				integerPattern = Pattern.compile(patternString);
@@ -198,20 +198,20 @@ public class TextFileScanner implements Iterator<String> {
 
 	private void buildFloatAndDecimalPattern() {
 		// \\p{javaDigit} may not be perfect, see above
-		String digit = "([0-9]|(\\p{javaDigit}))";
-		String exponent = "([eE][+-]?" + digit + "+)?";
-		String groupedNumeral = "(" + non0Digit + digit + "?" + digit + "?(" + groupSeparator + digit + digit + digit + ")+)";
+		final String digit = "([0-9]|(\\p{javaDigit}))";
+		final String exponent = "([eE][+-]?" + digit + "+)?";
+		final String groupedNumeral = "(" + non0Digit + digit + "?" + digit + "?(" + groupSeparator + digit + digit + digit + ")+)";
 		// Once again digit++ is used for performance, as above
-		String numeral = "((" + digit + "++)|" + groupedNumeral + ")";
-		String decimalNumeral = "(" + numeral + "|" + numeral + decimalSeparator + digit + "*+|" + decimalSeparator + digit + "++)";
-		String nonNumber = "(NaN|" + nanString + "|Infinity|" + infinityString + ")";
-		String positiveFloat = "(" + positivePrefix + decimalNumeral + positiveSuffix + exponent + ")";
-		String negativeFloat = "(" + negativePrefix + decimalNumeral + negativeSuffix + exponent + ")";
-		String decimal = "(([-+]?" + decimalNumeral + exponent + ")|" + positiveFloat + "|" + negativeFloat + ")";
-		String hexFloat = "[-+]?0[xX][0-9a-fA-F]*\\.[0-9a-fA-F]+([pP][-+]?[0-9]+)?";
-		String positiveNonNumber = "(" + positivePrefix + nonNumber + positiveSuffix + ")";
-		String negativeNonNumber = "(" + negativePrefix + nonNumber + negativeSuffix + ")";
-		String signedNonNumber = "(([-+]?" + nonNumber + ")|" + positiveNonNumber + "|" + negativeNonNumber + ")";
+		final String numeral = "((" + digit + "++)|" + groupedNumeral + ")";
+		final String decimalNumeral = "(" + numeral + "|" + numeral + decimalSeparator + digit + "*+|" + decimalSeparator + digit + "++)";
+		final String nonNumber = "(NaN|" + nanString + "|Infinity|" + infinityString + ")";
+		final String positiveFloat = "(" + positivePrefix + decimalNumeral + positiveSuffix + exponent + ")";
+		final String negativeFloat = "(" + negativePrefix + decimalNumeral + negativeSuffix + exponent + ")";
+		final String decimal = "(([-+]?" + decimalNumeral + exponent + ")|" + positiveFloat + "|" + negativeFloat + ")";
+		final String hexFloat = "[-+]?0[xX][0-9a-fA-F]*\\.[0-9a-fA-F]+([pP][-+]?[0-9]+)?";
+		final String positiveNonNumber = "(" + positivePrefix + nonNumber + positiveSuffix + ")";
+		final String negativeNonNumber = "(" + negativePrefix + nonNumber + negativeSuffix + ")";
+		final String signedNonNumber = "(([-+]?" + nonNumber + ")|" + positiveNonNumber + "|" + negativeNonNumber + ")";
 		floatPattern = Pattern.compile(decimal + "|" + hexFloat + "|" + signedNonNumber);
 		decimalPattern = Pattern.compile(decimal);
 	}
@@ -241,7 +241,7 @@ public class TextFileScanner implements Iterator<String> {
 	 *            A delimiting pattern
 	 * @return A scanner with the specified source and pattern
 	 */
-	private TextFileScanner(Readable source, Pattern pattern) {
+	private TextFileScanner(final Readable source, final Pattern pattern) {
 		if (source == null) {
 			throw new NullPointerException("source");
 		}
@@ -264,7 +264,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @param source
 	 *            A character source implementing the {@link Readable} interface
 	 */
-	public TextFileScanner(Readable source) {
+	public TextFileScanner(final Readable source) {
 		this(source, WHITESPACE_PATTERN);
 	}
 
@@ -275,7 +275,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @param source
 	 *            An input stream to be scanned
 	 */
-	public TextFileScanner(InputStream source) {
+	public TextFileScanner(final InputStream source) {
 		this(new InputStreamReader(source), WHITESPACE_PATTERN);
 	}
 
@@ -289,19 +289,19 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalArgumentException
 	 *             if the specified character set does not exist
 	 */
-	public TextFileScanner(InputStream source, String charsetName) {
+	public TextFileScanner(final InputStream source, final String charsetName) {
 		this(makeReadable(source, charsetName), WHITESPACE_PATTERN);
 	}
 
-	private static Readable makeReadable(InputStream source, String charsetName) {
+	private static Readable makeReadable(final InputStream source, final String charsetName) {
 		if (source == null) {
 			throw new NullPointerException("source");
 		}
 		InputStreamReader isr = null;
 		try {
 			isr = new InputStreamReader(source, charsetName);
-		} catch (UnsupportedEncodingException uee) {
-			IllegalArgumentException iae = new IllegalArgumentException();
+		} catch (final UnsupportedEncodingException uee) {
+			final IllegalArgumentException iae = new IllegalArgumentException();
 			iae.initCause(uee);
 			throw iae;
 		}
@@ -318,7 +318,7 @@ public class TextFileScanner implements Iterator<String> {
 	 *             if source is not found
 	 */
 	@SuppressWarnings("resource")
-	public TextFileScanner(File source) throws FileNotFoundException {
+	public TextFileScanner(final File source) throws FileNotFoundException {
 		this((new FileInputStream(source).getChannel()));
 	}
 
@@ -335,7 +335,7 @@ public class TextFileScanner implements Iterator<String> {
 	 *             if the specified encoding is not found
 	 */
 	@SuppressWarnings("resource")
-	public TextFileScanner(File source, String charsetName) throws FileNotFoundException {
+	public TextFileScanner(final File source, final String charsetName) throws FileNotFoundException {
 		this((new FileInputStream(source).getChannel()), charsetName);
 	}
 
@@ -345,7 +345,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @param source
 	 *            A string to scan
 	 */
-	public TextFileScanner(String source) {
+	public TextFileScanner(final String source) {
 		this(new StringReader(source), WHITESPACE_PATTERN);
 	}
 
@@ -356,15 +356,16 @@ public class TextFileScanner implements Iterator<String> {
 	 * @param source
 	 *            A channel to scan
 	 */
-	public TextFileScanner(ReadableByteChannel source) {
+	public TextFileScanner(final ReadableByteChannel source) {
 		this(makeReadable(source), WHITESPACE_PATTERN);
 	}
 
-	private static Readable makeReadable(ReadableByteChannel source) {
+	private static Readable makeReadable(final ReadableByteChannel source) {
 		if (source == null) {
 			throw new NullPointerException("source");
 		}
 		@SuppressWarnings("unused")
+		final
 		String defaultCharsetName = java.nio.charset.Charset.defaultCharset().name();
 		return Channels.newReader(source, java.nio.charset.Charset.defaultCharset().name());
 	}
@@ -379,11 +380,11 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalArgumentException
 	 *             if the specified character set does not exist
 	 */
-	public TextFileScanner(ReadableByteChannel source, String charsetName) {
+	public TextFileScanner(final ReadableByteChannel source, final String charsetName) {
 		this(makeReadable(source, charsetName), WHITESPACE_PATTERN);
 	}
 
-	private static Readable makeReadable(ReadableByteChannel source, String charsetName) {
+	private static Readable makeReadable(final ReadableByteChannel source, final String charsetName) {
 		if (source == null) {
 			throw new NullPointerException("source");
 		}
@@ -405,7 +406,7 @@ public class TextFileScanner implements Iterator<String> {
 		skipped = false;
 	}
 
-	private boolean revertState(boolean b) {
+	private boolean revertState(final boolean b) {
 		position = savedScannerPosition;
 		savedScannerPosition = -1;
 		skipped = false;
@@ -418,7 +419,7 @@ public class TextFileScanner implements Iterator<String> {
 		hasNextPattern = matcher.pattern();
 	}
 
-	private void cacheResult(String result) {
+	private void cacheResult(final String result) {
 		hasNextResult = result;
 		hasNextPosition = matcher.end();
 		hasNextPattern = matcher.pattern();
@@ -455,7 +456,7 @@ public class TextFileScanner implements Iterator<String> {
 		}
 
 		// Prepare to receive data
-		int p = buf.position();
+		final int p = buf.position();
 		buf.position(buf.limit());
 		buf.limit(buf.capacity());
 
@@ -463,7 +464,7 @@ public class TextFileScanner implements Iterator<String> {
 		try {
 			n = source.read(buf);
 			dataRead += n;
-		} catch (IOException ioe) {
+		} catch (final IOException ioe) {
 			lastException = ioe;
 			n = -1;
 		}
@@ -486,7 +487,7 @@ public class TextFileScanner implements Iterator<String> {
 	// or else there will be space in the buffer
 	private boolean makeSpace() {
 		clearCaches();
-		int offset = savedScannerPosition == -1 ? position : savedScannerPosition;
+		final int offset = savedScannerPosition == -1 ? position : savedScannerPosition;
 		buf.position(offset);
 		// Gain space by compacting buffer
 		if (offset > 0) {
@@ -497,8 +498,8 @@ public class TextFileScanner implements Iterator<String> {
 			return true;
 		}
 		// Gain space by growing buffer
-		int newSize = buf.capacity() * 2;
-		CharBuffer newBuf = CharBuffer.allocate(newSize);
+		final int newSize = buf.capacity() * 2;
+		final CharBuffer newBuf = CharBuffer.allocate(newSize);
 		newBuf.put(buf);
 		newBuf.flip();
 		translateSavedIndexes(offset);
@@ -510,7 +511,7 @@ public class TextFileScanner implements Iterator<String> {
 
 	// When a buffer compaction/reallocation occurs the saved indexes must
 	// be modified appropriately
-	private void translateSavedIndexes(int offset) {
+	private void translateSavedIndexes(final int offset) {
 		if (savedScannerPosition != -1) {
 			savedScannerPosition -= offset;
 		}
@@ -550,11 +551,11 @@ public class TextFileScanner implements Iterator<String> {
 
 	/*
 	 * Returns a "complete token" that matches the specified pattern
-	 * 
+	 *
 	 * A token is complete if surrounded by delims; a partial token is prefixed by delims but not postfixed by them
-	 * 
+	 *
 	 * The position is advanced to the end of that complete token
-	 * 
+	 *
 	 * Pattern == null means accept any token at all
 	 *
 	 * Triple return: 1. valid string means it was found 2. null with needInput=false means we won't ever find it 3. null with needInput=true means try again after readInput
@@ -613,7 +614,7 @@ public class TextFileScanner implements Iterator<String> {
 				needInput = true;
 				return null;
 			}
-			int tokenEnd = matcher.start();
+			final int tokenEnd = matcher.start();
 			// There is a complete token.
 			if (pattern == null) {
 				// Must continue with match to provide valid MatchResult
@@ -623,7 +624,7 @@ public class TextFileScanner implements Iterator<String> {
 			matcher.usePattern(pattern);
 			matcher.region(position, tokenEnd);
 			if (matcher.matches()) {
-				String s = matcher.group();
+				final String s = matcher.group();
 				position = matcher.end();
 				return s;
 			} else { // Complete token but it does not match
@@ -642,7 +643,7 @@ public class TextFileScanner implements Iterator<String> {
 			matcher.usePattern(pattern);
 			matcher.region(position, buf.limit());
 			if (matcher.matches()) {
-				String s = matcher.group();
+				final String s = matcher.group();
 				position = matcher.end();
 				return s;
 			}
@@ -658,10 +659,10 @@ public class TextFileScanner implements Iterator<String> {
 
 	// Finds the specified pattern in the buffer up to horizon.
 	// Returns a match for the specified input pattern.
-	private String findPatternInBuffer(Pattern pattern, int horizon) {
+	private String findPatternInBuffer(final Pattern pattern, final int horizon) {
 		matchValid = false;
 		matcher.usePattern(pattern);
-		int bufferLimit = buf.limit();
+		final int bufferLimit = buf.limit();
 		int horizonLimit = -1;
 		int searchLimit = bufferLimit;
 		if (horizon > 0) {
@@ -707,7 +708,7 @@ public class TextFileScanner implements Iterator<String> {
 
 	// Returns a match for the specified input pattern anchored at
 	// the current position
-	private String matchPatternInBuffer(Pattern pattern) {
+	private String matchPatternInBuffer(final Pattern pattern) {
 		matchValid = false;
 		matcher.usePattern(pattern);
 		matcher.region(position, buf.limit());
@@ -745,7 +746,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * <p>
 	 * If this scanner has not yet been closed then if its underlying {@linkplain java.lang.Readable readable} also implements the {@link java.io.Closeable} interface then the readable's
 	 * <tt>close</tt> method will be invoked. If this scanner is already closed then invoking this method will have no effect.
-	 * 
+	 *
 	 * <p>
 	 * Attempting to perform search operations after a scanner has been closed will result in an {@link IllegalStateException}.
 	 *
@@ -757,7 +758,7 @@ public class TextFileScanner implements Iterator<String> {
 		if (source instanceof Closeable) {
 			try {
 				((Closeable) source).close();
-			} catch (IOException ioe) {
+			} catch (final IOException ioe) {
 				lastException = ioe;
 			}
 		}
@@ -791,7 +792,7 @@ public class TextFileScanner implements Iterator<String> {
 	 *            A delimiting pattern
 	 * @return this scanner
 	 */
-	public TextFileScanner useDelimiter(Pattern pattern) {
+	public TextFileScanner useDelimiter(final Pattern pattern) {
 		delimPattern = pattern;
 		return this;
 	}
@@ -809,7 +810,7 @@ public class TextFileScanner implements Iterator<String> {
 	 *            A string specifying a delimiting pattern
 	 * @return this scanner
 	 */
-	public TextFileScanner useDelimiter(String patternString) {
+	public TextFileScanner useDelimiter(final String patternString) {
 		delimPattern = patternCache.get(patternString);
 		if (delimPattern == null) {
 			delimPattern = Pattern.compile(patternString);
@@ -839,18 +840,18 @@ public class TextFileScanner implements Iterator<String> {
 	 * <p>
 	 * Invoking the {@link #reset} method will set the scanner's locale to the <a href= "#initial-locale">initial locale</a>.
 	 *
-	 * @param locale
+	 * @param localeToUse
 	 *            A string specifying the locale to use
 	 * @return this scanner
 	 */
-	public TextFileScanner useLocale(Locale locale) {
-		if (locale.equals(this.locale)) {
+	public TextFileScanner useLocale(final Locale localeToUse) {
+		if (localeToUse.equals(locale)) {
 			return this;
 		}
 
-		this.locale = locale;
-		DecimalFormat df = (DecimalFormat) NumberFormat.getNumberInstance(locale);
-		DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(locale);
+		locale = localeToUse;
+		final DecimalFormat df = (DecimalFormat) NumberFormat.getNumberInstance(localeToUse);
+		final DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(localeToUse);
 
 		// These must be literalized to avoid collision with regex
 		// metacharacters such as dot or parenthesis
@@ -910,21 +911,21 @@ public class TextFileScanner implements Iterator<String> {
 	 * <p>
 	 * Invoking the {@link #reset} method will set the scanner's radix to <code>10</code>.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            The radix to use when scanning numbers
 	 * @return this scanner
 	 * @throws IllegalArgumentException
 	 *             if radix is out of range
 	 */
-	public TextFileScanner useRadix(int radix) {
-		if ((radix < Character.MIN_RADIX) || (radix > Character.MAX_RADIX)) {
-			throw new IllegalArgumentException("radix:" + radix);
+	public TextFileScanner useRadix(final int radixToUse) {
+		if ((radixToUse < Character.MIN_RADIX) || (radixToUse > Character.MAX_RADIX)) {
+			throw new IllegalArgumentException("radix:" + radixToUse);
 		}
 
-		if (defaultRadix == radix) {
+		if (defaultRadix == radixToUse) {
 			return this;
 		}
-		defaultRadix = radix;
+		defaultRadix = radixToUse;
 		// Force rebuilding and recompilation of radix dependent patterns
 		integerPattern = null;
 		return this;
@@ -932,7 +933,7 @@ public class TextFileScanner implements Iterator<String> {
 
 	// The next operation should occur in the specified radix but
 	// the default is left untouched.
-	private void setRadix(int radix) {
+	private void setRadix(final int radix) {
 		if (this.radix != radix) {
 			// Force rebuilding and recompilation of radix dependent patterns
 			integerPattern = null;
@@ -969,7 +970,7 @@ public class TextFileScanner implements Iterator<String> {
 	 */
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		sb.append("java.util.Scanner");
 		sb.append("[delimiters=" + delimPattern + "]");
 		sb.append("[position=" + position + "]");
@@ -1006,7 +1007,7 @@ public class TextFileScanner implements Iterator<String> {
 			}
 			readInput();
 		}
-		boolean result = hasTokenInBuffer();
+		final boolean result = hasTokenInBuffer();
 		return revertState(result);
 	}
 
@@ -1027,7 +1028,7 @@ public class TextFileScanner implements Iterator<String> {
 		clearCaches();
 
 		while (true) {
-			String token = getCompleteTokenInBuffer(null);
+			final String token = getCompleteTokenInBuffer(null);
 			if (token != null) {
 				matchValid = true;
 				skipped = false;
@@ -1065,7 +1066,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public boolean hasNext(String patternString) {
+	public boolean hasNext(final String patternString) {
 		Pattern pattern = patternCache.get(patternString);
 		if (pattern == null) {
 			pattern = Pattern.compile(patternString);
@@ -1088,7 +1089,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public String next(String patternString) {
+	public String next(final String patternString) {
 		Pattern pattern = patternCache.get(patternString);
 		if (pattern == null) {
 			pattern = Pattern.compile(patternString);
@@ -1107,7 +1108,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public boolean hasNext(Pattern pattern) {
+	public boolean hasNext(final Pattern pattern) {
 		ensureOpen();
 		if (pattern == null) {
 			throw new NullPointerException();
@@ -1141,7 +1142,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public String next(Pattern pattern) {
+	public String next(final Pattern pattern) {
 		ensureOpen();
 		if (pattern == null) {
 			throw new NullPointerException();
@@ -1155,7 +1156,7 @@ public class TextFileScanner implements Iterator<String> {
 
 		// Search for the pattern
 		while (true) {
-			String token = getCompleteTokenInBuffer(pattern);
+			final String token = getCompleteTokenInBuffer(pattern);
 			if (token != null) {
 				matchValid = true;
 				skipped = false;
@@ -1181,8 +1182,8 @@ public class TextFileScanner implements Iterator<String> {
 
 		String result = findWithinHorizon(linePattern(), 0);
 		if (result != null) {
-			MatchResult mr = match();
-			String lineSep = mr.group(1);
+			final MatchResult mr = match();
+			final String lineSep = mr.group(1);
 			if (lineSep != null) {
 				result = result.substring(0, result.length() - lineSep.length());
 				cacheResult(result);
@@ -1219,8 +1220,8 @@ public class TextFileScanner implements Iterator<String> {
 		if (result == null) {
 			throw new NoSuchElementException("No line found");
 		}
-		MatchResult mr = match();
-		String lineSep = mr.group(1);
+		final MatchResult mr = match();
+		final String lineSep = mr.group(1);
 		if (lineSep != null) {
 			result = result.substring(0, result.length() - lineSep.length());
 		}
@@ -1245,7 +1246,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public String findInLine(String patternString) {
+	public String findInLine(final String patternString) {
 		Pattern pattern = patternCache.get(patternString);
 		if (pattern == null) {
 			pattern = Pattern.compile(patternString);
@@ -1268,7 +1269,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public String findInLine(Pattern pattern) {
+	public String findInLine(final Pattern pattern) {
 		ensureOpen();
 		if (pattern == null) {
 			throw new NullPointerException();
@@ -1278,7 +1279,7 @@ public class TextFileScanner implements Iterator<String> {
 		int endPosition = 0;
 		saveState();
 		while (true) {
-			String token = findPatternInBuffer(separatorPattern(), 0);
+			final String token = findPatternInBuffer(separatorPattern(), 0);
 			if (token != null) {
 				endPosition = matcher.start();
 				break; // up to next newline
@@ -1291,7 +1292,7 @@ public class TextFileScanner implements Iterator<String> {
 			}
 		}
 		revertState();
-		int horizonForLine = endPosition - position;
+		final int horizonForLine = endPosition - position;
 		// If there is nothing between the current pos and the next
 		// newline simply return null, invoking findWithinHorizon
 		// with "horizon=0" will scan beyond the line bound.
@@ -1316,7 +1317,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalArgumentException
 	 *             if horizon is negative
 	 */
-	public String findWithinHorizon(String patternString, int horizon) {
+	public String findWithinHorizon(final String patternString, final int horizon) {
 		Pattern pattern = patternCache.get(patternString);
 		if (pattern == null) {
 			pattern = Pattern.compile(patternString);
@@ -1353,7 +1354,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalArgumentException
 	 *             if horizon is negative
 	 */
-	public String findWithinHorizon(Pattern pattern, int horizon) {
+	public String findWithinHorizon(final Pattern pattern, final int horizon) {
 		ensureOpen();
 		if (pattern == null) {
 			throw new NullPointerException();
@@ -1365,7 +1366,7 @@ public class TextFileScanner implements Iterator<String> {
 
 		// Search for the pattern
 		while (true) {
-			String token = findPatternInBuffer(pattern, horizon);
+			final String token = findPatternInBuffer(pattern, horizon);
 			if (token != null) {
 				matchValid = true;
 				return token;
@@ -1400,7 +1401,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public TextFileScanner skip(Pattern pattern) {
+	public TextFileScanner skip(final Pattern pattern) {
 		ensureOpen();
 		if (pattern == null) {
 			throw new NullPointerException();
@@ -1409,7 +1410,7 @@ public class TextFileScanner implements Iterator<String> {
 
 		// Search for the pattern
 		while (true) {
-			String token = matchPatternInBuffer(pattern);
+			final String token = matchPatternInBuffer(pattern);
 			if (token != null) {
 				matchValid = true;
 				position = matcher.end();
@@ -1435,7 +1436,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public TextFileScanner skip(String patternString) {
+	public TextFileScanner skip(final String patternString) {
 		Pattern pattern = patternCache.get(patternString);
 		if (pattern == null) {
 			pattern = Pattern.compile(patternString);
@@ -1489,20 +1490,20 @@ public class TextFileScanner implements Iterator<String> {
 	/**
 	 * Returns true if the next token in this scanner's input can be interpreted as a byte value in the specified radix using the {@link #nextByte} method. The scanner does not advance past any input.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as a byte value
 	 * @return true if and only if this scanner's next token is a valid byte value
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public boolean hasNextByte(int radix) {
-		setRadix(radix);
+	public boolean hasNextByte(final int radixToUse) {
+		setRadix(radixToUse);
 		boolean result = hasNext(integerPattern());
 		if (result) { // Cache it
 			try {
-				String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
-				typeCache = Byte.parseByte(s, radix);
-			} catch (NumberFormatException nfe) {
+				final String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
+				typeCache = Byte.parseByte(s, radixToUse);
+			} catch (@SuppressWarnings("unused") final NumberFormatException nfe) {
 				result = false;
 			}
 		}
@@ -1537,7 +1538,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Byte#parseByte(String, int) Byte.parseByte} with the specified radix.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as a byte value
 	 * @return the <tt>byte</tt> scanned from the input
 	 * @throws InputMismatchException
@@ -1547,14 +1548,14 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public byte nextByte(int radix) {
+	public byte nextByte(final int radixToUse) {
 		// Check cached result
-		if ((typeCache != null) && (typeCache instanceof Byte) && this.radix == radix) {
-			byte val = ((Byte) typeCache).byteValue();
+		if ((typeCache != null) && (typeCache instanceof Byte) && radix == radixToUse) {
+			final byte val = ((Byte) typeCache).byteValue();
 			useTypeCache();
 			return val;
 		}
-		setRadix(radix);
+		setRadix(radixToUse);
 		clearCaches();
 		// Search for next byte
 		try {
@@ -1562,8 +1563,8 @@ public class TextFileScanner implements Iterator<String> {
 			if (matcher.group(SIMPLE_GROUP_INDEX) == null) {
 				s = processIntegerToken(s);
 			}
-			return Byte.parseByte(s, radix);
-		} catch (NumberFormatException nfe) {
+			return Byte.parseByte(s, radixToUse);
+		} catch (final NumberFormatException nfe) {
 			position = matcher.start(); // don't skip bad token
 			throw new InputMismatchException(nfe.getMessage());
 		}
@@ -1584,20 +1585,20 @@ public class TextFileScanner implements Iterator<String> {
 	 * Returns true if the next token in this scanner's input can be interpreted as a short value in the specified radix using the {@link #nextShort} method. The scanner does not advance past any
 	 * input.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as a short value
 	 * @return true if and only if this scanner's next token is a valid short value in the specified radix
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public boolean hasNextShort(int radix) {
-		setRadix(radix);
+	public boolean hasNextShort(final int radixToUse) {
+		setRadix(radixToUse);
 		boolean result = hasNext(integerPattern());
 		if (result) { // Cache it
 			try {
-				String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
-				typeCache = Short.parseShort(s, radix);
-			} catch (NumberFormatException nfe) {
+				final String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
+				typeCache = Short.parseShort(s, radixToUse);
+			} catch (@SuppressWarnings("unused") final NumberFormatException nfe) {
 				result = false;
 			}
 		}
@@ -1632,7 +1633,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Short#parseShort(String, int) Short.parseShort} with the specified radix.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as a short value
 	 * @return the <tt>short</tt> scanned from the input
 	 * @throws InputMismatchException
@@ -1642,14 +1643,14 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public short nextShort(int radix) {
+	public short nextShort(final int radixToUse) {
 		// Check cached result
-		if ((typeCache != null) && (typeCache instanceof Short) && this.radix == radix) {
-			short val = ((Short) typeCache).shortValue();
+		if ((typeCache != null) && (typeCache instanceof Short) && radix == radixToUse) {
+			final short val = ((Short) typeCache).shortValue();
 			useTypeCache();
 			return val;
 		}
-		setRadix(radix);
+		setRadix(radixToUse);
 		clearCaches();
 		// Search for next short
 		try {
@@ -1657,8 +1658,8 @@ public class TextFileScanner implements Iterator<String> {
 			if (matcher.group(SIMPLE_GROUP_INDEX) == null) {
 				s = processIntegerToken(s);
 			}
-			return Short.parseShort(s, radix);
-		} catch (NumberFormatException nfe) {
+			return Short.parseShort(s, radixToUse);
+		} catch (final NumberFormatException nfe) {
 			position = matcher.start(); // don't skip bad token
 			throw new InputMismatchException(nfe.getMessage());
 		}
@@ -1678,20 +1679,20 @@ public class TextFileScanner implements Iterator<String> {
 	/**
 	 * Returns true if the next token in this scanner's input can be interpreted as an int value in the specified radix using the {@link #nextInt} method. The scanner does not advance past any input.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as an int value
 	 * @return true if and only if this scanner's next token is a valid int value
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public boolean hasNextInt(int radix) {
-		setRadix(radix);
+	public boolean hasNextInt(final int radixToUse) {
+		setRadix(radixToUse);
 		boolean result = hasNext(integerPattern());
 		if (result) { // Cache it
 			try {
-				String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
-				typeCache = Integer.parseInt(s, radix);
-			} catch (NumberFormatException nfe) {
+				final String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
+				typeCache = Integer.parseInt(s, radixToUse);
+			} catch (@SuppressWarnings("unused") final NumberFormatException nfe) {
 				result = false;
 			}
 		}
@@ -1701,15 +1702,15 @@ public class TextFileScanner implements Iterator<String> {
 	/**
 	 * The integer token must be stripped of prefixes, group separators, and suffixes, non ascii digits must be converted into ascii digits before parse will accept it.
 	 */
-	private String processIntegerToken(String token) {
+	private String processIntegerToken(final String token) {
 		String result = token.replaceAll("" + groupSeparator, "");
 		boolean isNegative = false;
-		int preLen = negativePrefix.length();
+		final int preLen = negativePrefix.length();
 		if ((preLen > 0) && result.startsWith(negativePrefix)) {
 			isNegative = true;
 			result = result.substring(preLen);
 		}
-		int sufLen = negativeSuffix.length();
+		final int sufLen = negativeSuffix.length();
 		if ((sufLen > 0) && result.endsWith(negativeSuffix)) {
 			isNegative = true;
 			result = result.substring(result.length() - sufLen, result.length());
@@ -1748,7 +1749,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Integer#parseInt(String, int) Integer.parseInt} with the specified radix.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as an int value
 	 * @return the <tt>int</tt> scanned from the input
 	 * @throws InputMismatchException
@@ -1758,14 +1759,14 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public int nextInt(int radix) {
+	public int nextInt(final int radixToUse) {
 		// Check cached result
-		if ((typeCache != null) && (typeCache instanceof Integer) && this.radix == radix) {
-			int val = ((Integer) typeCache).intValue();
+		if ((typeCache != null) && (typeCache instanceof Integer) && radix == radixToUse) {
+			final int val = ((Integer) typeCache).intValue();
 			useTypeCache();
 			return val;
 		}
-		setRadix(radix);
+		setRadix(radixToUse);
 		clearCaches();
 		// Search for next int
 		try {
@@ -1773,8 +1774,8 @@ public class TextFileScanner implements Iterator<String> {
 			if (matcher.group(SIMPLE_GROUP_INDEX) == null) {
 				s = processIntegerToken(s);
 			}
-			return Integer.parseInt(s, radix);
-		} catch (NumberFormatException nfe) {
+			return Integer.parseInt(s, radixToUse);
+		} catch (final NumberFormatException nfe) {
 			position = matcher.start(); // don't skip bad token
 			throw new InputMismatchException(nfe.getMessage());
 		}
@@ -1794,20 +1795,20 @@ public class TextFileScanner implements Iterator<String> {
 	/**
 	 * Returns true if the next token in this scanner's input can be interpreted as a long value in the specified radix using the {@link #nextLong} method. The scanner does not advance past any input.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as a long value
 	 * @return true if and only if this scanner's next token is a valid long value
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public boolean hasNextLong(int radix) {
-		setRadix(radix);
+	public boolean hasNextLong(final int radixToUse) {
+		setRadix(radixToUse);
 		boolean result = hasNext(integerPattern());
 		if (result) { // Cache it
 			try {
-				String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
-				typeCache = Long.parseLong(s, radix);
-			} catch (NumberFormatException nfe) {
+				final String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
+				typeCache = Long.parseLong(s, radixToUse);
+			} catch (@SuppressWarnings("unused") final NumberFormatException nfe) {
 				result = false;
 			}
 		}
@@ -1842,7 +1843,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Long#parseLong(String, int) Long.parseLong} with the specified radix.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as an int value
 	 * @return the <tt>long</tt> scanned from the input
 	 * @throws InputMismatchException
@@ -1852,22 +1853,22 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public long nextLong(int radix) {
+	public long nextLong(final int radixToUse) {
 		// Check cached result
-		if ((typeCache != null) && (typeCache instanceof Long) && this.radix == radix) {
-			long val = ((Long) typeCache).longValue();
+		if ((typeCache != null) && (typeCache instanceof Long) && radix == radixToUse) {
+			final long val = ((Long) typeCache).longValue();
 			useTypeCache();
 			return val;
 		}
-		setRadix(radix);
+		setRadix(radixToUse);
 		clearCaches();
 		try {
 			String s = next(integerPattern());
 			if (matcher.group(SIMPLE_GROUP_INDEX) == null) {
 				s = processIntegerToken(s);
 			}
-			return Long.parseLong(s, radix);
-		} catch (NumberFormatException nfe) {
+			return Long.parseLong(s, radixToUse);
+		} catch (final NumberFormatException nfe) {
 			position = matcher.start(); // don't skip bad token
 			throw new InputMismatchException(nfe.getMessage());
 		}
@@ -1878,18 +1879,18 @@ public class TextFileScanner implements Iterator<String> {
 	 *
 	 * If there are non-ascii digits in the token these digits must be processed before the token is passed to parseFloat.
 	 */
-	private String processFloatToken(String token) {
+	private String processFloatToken(final String token) {
 		String result = token.replaceAll(groupSeparator, "");
-		if (!decimalSeparator.equals("\\.")) {
+		if (!"\\.".equals(decimalSeparator)) {
 			result = result.replaceAll(decimalSeparator, ".");
 		}
 		boolean isNegative = false;
-		int preLen = negativePrefix.length();
+		final int preLen = negativePrefix.length();
 		if ((preLen > 0) && result.startsWith(negativePrefix)) {
 			isNegative = true;
 			result = result.substring(preLen);
 		}
-		int sufLen = negativeSuffix.length();
+		final int sufLen = negativeSuffix.length();
 		if ((sufLen > 0) && result.endsWith(negativeSuffix)) {
 			isNegative = true;
 			result = result.substring(result.length() - sufLen, result.length());
@@ -1905,13 +1906,13 @@ public class TextFileScanner implements Iterator<String> {
 		}
 
 		// Translate non-ASCII digits
-		Matcher m = NON_ASCII_DIGIT.matcher(result);
+		final Matcher m = NON_ASCII_DIGIT.matcher(result);
 		if (m.find()) {
-			StringBuilder inASCII = new StringBuilder();
+			final StringBuilder inASCII = new StringBuilder();
 			for (int i = 0; i < result.length(); i++) {
-				char nextChar = result.charAt(i);
+				final char nextChar = result.charAt(i);
 				if (Character.isDigit(nextChar)) {
-					int d = Character.digit(nextChar, 10);
+					final int d = Character.digit(nextChar, 10);
 					if (d != -1) {
 						inASCII.append(d);
 					} else {
@@ -1939,9 +1940,9 @@ public class TextFileScanner implements Iterator<String> {
 		boolean result = hasNext(floatPattern());
 		if (result) { // Cache it
 			try {
-				String s = processFloatToken(hasNextResult);
+				final String s = processFloatToken(hasNextResult);
 				typeCache = Float.valueOf(Float.parseFloat(s));
-			} catch (NumberFormatException nfe) {
+			} catch (@SuppressWarnings("unused") final NumberFormatException nfe) {
 				result = false;
 			}
 		}
@@ -1969,7 +1970,7 @@ public class TextFileScanner implements Iterator<String> {
 	public float nextFloat() {
 		// Check cached result
 		if ((typeCache != null) && (typeCache instanceof Float)) {
-			float val = ((Float) typeCache).floatValue();
+			final float val = ((Float) typeCache).floatValue();
 			useTypeCache();
 			return val;
 		}
@@ -1977,7 +1978,7 @@ public class TextFileScanner implements Iterator<String> {
 		clearCaches();
 		try {
 			return Float.parseFloat(processFloatToken(next(floatPattern())));
-		} catch (NumberFormatException nfe) {
+		} catch (final NumberFormatException nfe) {
 			position = matcher.start(); // don't skip bad token
 			throw new InputMismatchException(nfe.getMessage());
 		}
@@ -1995,9 +1996,9 @@ public class TextFileScanner implements Iterator<String> {
 		boolean result = hasNext(floatPattern());
 		if (result) { // Cache it
 			try {
-				String s = processFloatToken(hasNextResult);
+				final String s = processFloatToken(hasNextResult);
 				typeCache = Double.valueOf(Double.parseDouble(s));
-			} catch (NumberFormatException nfe) {
+			} catch (@SuppressWarnings("unused") final NumberFormatException nfe) {
 				result = false;
 			}
 		}
@@ -2025,7 +2026,7 @@ public class TextFileScanner implements Iterator<String> {
 	public double nextDouble() {
 		// Check cached result
 		if ((typeCache != null) && (typeCache instanceof Double)) {
-			double val = ((Double) typeCache).doubleValue();
+			final double val = ((Double) typeCache).doubleValue();
 			useTypeCache();
 			return val;
 		}
@@ -2034,7 +2035,7 @@ public class TextFileScanner implements Iterator<String> {
 		// Search for next float
 		try {
 			return Double.parseDouble(processFloatToken(next(floatPattern())));
-		} catch (NumberFormatException nfe) {
+		} catch (final NumberFormatException nfe) {
 			position = matcher.start(); // don't skip bad token
 			throw new InputMismatchException(nfe.getMessage());
 		}
@@ -2058,20 +2059,20 @@ public class TextFileScanner implements Iterator<String> {
 	 * Returns true if the next token in this scanner's input can be interpreted as a <code>BigInteger</code> in the specified radix using the {@link #nextBigInteger} method. The scanner does not
 	 * advance past any input.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token as an integer
 	 * @return true if and only if this scanner's next token is a valid <code>BigInteger</code>
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public boolean hasNextBigInteger(int radix) {
-		setRadix(radix);
+	public boolean hasNextBigInteger(final int radixToUse) {
+		setRadix(radixToUse);
 		boolean result = hasNext(integerPattern());
 		if (result) { // Cache it
 			try {
-				String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
-				typeCache = new BigInteger(s, radix);
-			} catch (NumberFormatException nfe) {
+				final String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ? processIntegerToken(hasNextResult) : hasNextResult;
+				typeCache = new BigInteger(s, radixToUse);
+			} catch (@SuppressWarnings("unused") final NumberFormatException nfe) {
 				result = false;
 			}
 		}
@@ -2105,7 +2106,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * group separators, mapping non-ASCII digits into ASCII digits via the {@link Character#digit Character.digit}, and passing the resulting string to the
 	 * {@link java.math.BigInteger#BigInteger(java.lang.String) BigInteger(String, int)} constructor with the specified radix.
 	 *
-	 * @param radix
+	 * @param radixToUse
 	 *            the radix used to interpret the token
 	 * @return the <tt>BigInteger</tt> scanned from the input
 	 * @throws InputMismatchException
@@ -2115,14 +2116,14 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
 	 */
-	public BigInteger nextBigInteger(int radix) {
+	public BigInteger nextBigInteger(final int radixToUse) {
 		// Check cached result
-		if ((typeCache != null) && (typeCache instanceof BigInteger) && this.radix == radix) {
-			BigInteger val = (BigInteger) typeCache;
+		if ((typeCache != null) && (typeCache instanceof BigInteger) && radix == radixToUse) {
+			final BigInteger val = (BigInteger) typeCache;
 			useTypeCache();
 			return val;
 		}
-		setRadix(radix);
+		setRadix(radixToUse);
 		clearCaches();
 		// Search for next int
 		try {
@@ -2130,8 +2131,8 @@ public class TextFileScanner implements Iterator<String> {
 			if (matcher.group(SIMPLE_GROUP_INDEX) == null) {
 				s = processIntegerToken(s);
 			}
-			return new BigInteger(s, radix);
-		} catch (NumberFormatException nfe) {
+			return new BigInteger(s, radixToUse);
+		} catch (final NumberFormatException nfe) {
 			position = matcher.start(); // don't skip bad token
 			throw new InputMismatchException(nfe.getMessage());
 		}
@@ -2149,9 +2150,9 @@ public class TextFileScanner implements Iterator<String> {
 		boolean result = hasNext(decimalPattern());
 		if (result) { // Cache it
 			try {
-				String s = processFloatToken(hasNextResult);
+				final String s = processFloatToken(hasNextResult);
 				typeCache = new BigDecimal(s);
-			} catch (NumberFormatException nfe) {
+			} catch (@SuppressWarnings("unused") final NumberFormatException nfe) {
 				result = false;
 			}
 		}
@@ -2177,7 +2178,7 @@ public class TextFileScanner implements Iterator<String> {
 	public BigDecimal nextBigDecimal() {
 		// Check cached result
 		if ((typeCache != null) && (typeCache instanceof BigDecimal)) {
-			BigDecimal val = (BigDecimal) typeCache;
+			final BigDecimal val = (BigDecimal) typeCache;
 			useTypeCache();
 			return val;
 		}
@@ -2185,9 +2186,9 @@ public class TextFileScanner implements Iterator<String> {
 		clearCaches();
 		// Search for next float
 		try {
-			String s = processFloatToken(next(decimalPattern()));
+			final String s = processFloatToken(next(decimalPattern()));
 			return new BigDecimal(s);
-		} catch (NumberFormatException nfe) {
+		} catch (final NumberFormatException nfe) {
 			position = matcher.start(); // don't skip bad token
 			throw new InputMismatchException(nfe.getMessage());
 		}
@@ -2203,11 +2204,11 @@ public class TextFileScanner implements Iterator<String> {
 	 * An invocation of this method of the form <tt>scanner.reset()</tt> behaves in exactly the same way as the invocation
 	 *
 	 * <blockquote>
-	 * 
+	 *
 	 * <pre>
 	 * scanner.useDelimiter("\\p{javaWhitespace}+").useLocale(Locale.getDefault()).useRadix(10);
 	 * </pre>
-	 * 
+	 *
 	 * </blockquote>
 	 *
 	 * @return this scanner

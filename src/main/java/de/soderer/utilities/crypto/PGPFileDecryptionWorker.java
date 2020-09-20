@@ -1,6 +1,5 @@
 package de.soderer.utilities.crypto;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
@@ -39,7 +38,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 	private PGPSecretKey secretKey = null;
 	private char[] password = null;
 
-	public PGPFileDecryptionWorker(final ProgressShowingModalDialog<?> parent, final InputStream encryptedData, final OutputStream decryptedData, final PGPSecretKey secretKey, final char[] password) throws IOException {
+	public PGPFileDecryptionWorker(final ProgressShowingModalDialog<?> parent, final InputStream encryptedData, final OutputStream decryptedData, final PGPSecretKey secretKey, final char[] password) {
 		super(parent);
 		this.encryptedData = encryptedData;
 		this.decryptedData = decryptedData;
@@ -47,12 +46,14 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		this.password = password;
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
 		showProgress();
 
 		InputStream decryptedPacketInputStream = null;
 		InputStream decodedInputStream = null;
+		InputStream interimInputStream = null;
 		try {
 			itemsToDo = encryptedData.available();
 
@@ -91,7 +92,8 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			Object message = new PGPObjectFactory(decryptedPacketInputStream, new JcaKeyFingerprintCalculator()).nextObject();
 
 			if (message instanceof PGPCompressedData) {
-				message = new PGPObjectFactory(((PGPCompressedData) message).getDataStream(), new JcaKeyFingerprintCalculator()).nextObject();
+				interimInputStream = ((PGPCompressedData) message).getDataStream();
+				message = new PGPObjectFactory(interimInputStream, new JcaKeyFingerprintCalculator()).nextObject();
 			}
 
 			if (message instanceof PGPLiteralData) {
@@ -137,6 +139,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		} catch (final Exception e) {
 			throw new Exception("Error while decrypting", e);
 		} finally {
+			Utilities.closeQuietly(interimInputStream);
 			Utilities.closeQuietly(decodedInputStream);
 			Utilities.closeQuietly(decryptedPacketInputStream);
 		}

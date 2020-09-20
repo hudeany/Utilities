@@ -99,7 +99,7 @@ public class JschFileData {
 			if (fileType == JschFileType.RegularFile) {
 				try {
 					fileSize = Long.parseLong(sizeString);
-				} catch (final Exception e2) {
+				} catch (@SuppressWarnings("unused") final Exception e2) {
 					throw new Exception("Invalid file fileSize");
 				}
 			}
@@ -143,10 +143,10 @@ public class JschFileData {
 				final String changeDateString = dateString1 + " " + dateString2 + " " + dateString3;
 				try {
 					changeDate = new SimpleDateFormat("MMM d HH:mm", Locale.ENGLISH).parse(changeDateString);
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					try {
 						changeDate = new SimpleDateFormat("MMM d yyyy", Locale.ENGLISH).parse(changeDateString);
-					} catch (final Exception e1) {
+					} catch (@SuppressWarnings("unused") final Exception e1) {
 						throw new Exception("Invalid changeDate");
 					}
 				}
@@ -171,7 +171,7 @@ public class JschFileData {
 					fileName = fileName.substring(0, fileName.indexOf(" ->"));
 				}
 			}
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			throw new Exception("Invalid file data string: " + dataString);
 		}
 	}

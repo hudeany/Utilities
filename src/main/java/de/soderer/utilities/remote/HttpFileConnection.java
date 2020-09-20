@@ -321,7 +321,7 @@ public class HttpFileConnection implements RemoteConnection {
 				);
 	}
 
-	private List<String> getEntryLines(final byte[] data) throws Exception {
+	private static List<String> getEntryLines(final byte[] data) throws Exception {
 		final String rawDataString = new String(data, "UTF-8");
 		final int dataStart = rawDataString.indexOf("<pre>");
 		if (dataStart >= 0) {
@@ -345,7 +345,7 @@ public class HttpFileConnection implements RemoteConnection {
 		}
 	}
 
-	private String getEntryNameFromLine(final String line) {
+	private static String getEntryNameFromLine(final String line) {
 		final int entryNameStart = line.indexOf("<a href=\"");
 		if (entryNameStart >= 0) {
 			final int entryNameEnd = line.indexOf("\"", entryNameStart + 9);
@@ -359,7 +359,7 @@ public class HttpFileConnection implements RemoteConnection {
 		}
 	}
 
-	private List<String> getFileLines(final byte[] data) throws Exception {
+	private static List<String> getFileLines(final byte[] data) throws Exception {
 		final List<String> fileLines = new ArrayList<>();
 		for (final String nextLine : getEntryLines(data)) {
 			if (nextLine.contains("alt=") && !nextLine.contains("alt=\"[DIR]\">")) {
@@ -369,7 +369,7 @@ public class HttpFileConnection implements RemoteConnection {
 		return fileLines;
 	}
 
-	private List<String> getFolderNames(final byte[] data) throws Exception {
+	private static List<String> getFolderNames(final byte[] data) throws Exception {
 		final List<String> folderLines = new ArrayList<>();
 		for (final String nextLine : getEntryLines(data)) {
 			if (nextLine.contains("alt=\"[DIR]\">")) {
@@ -383,7 +383,7 @@ public class HttpFileConnection implements RemoteConnection {
 	/**
 	 * This size data is very imprecise
 	 */
-	private long getFileSize(final String sizeString) {
+	private static long getFileSize(final String sizeString) {
 		long fileSize;
 		if (sizeString.endsWith("k")) {
 			fileSize = (long) (Double.parseDouble(sizeString.substring(0, sizeString.length() - 1)) * 1024);

@@ -25,20 +25,20 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 	protected T worker;
 	protected JProgressBar progressBar;
 	protected boolean canceledByUser = false;
-	
-	protected SimpleProgressDialog(Window parent) {
+
+	protected SimpleProgressDialog(final Window parent) {
 		super(parent, Dialog.ModalityType.DOCUMENT_MODAL);
 	}
-	
-	public SimpleProgressDialog(WorkerParentSimple parent, String title) {
+
+	public SimpleProgressDialog(final WorkerParentSimple parent, final String title) {
 		this((Window) parent, title, (T) null);
 	}
 
-	public SimpleProgressDialog(Window parent, String title, T worker) {
+	public SimpleProgressDialog(final Window parent, final String title, final T worker) {
 		this(parent);
-		
+
 		setTitle(title);
-		
+
 		this.worker = worker;
 		if (worker != null) {
 			worker.setParent(this);
@@ -46,10 +46,10 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 
 		setResizable(false);
 
-		JPanel panel = new JPanel();
+		final JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 
-		JPanel itemPanel = new JPanel();
+		final JPanel itemPanel = new JPanel();
 		itemPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		progressBar = new JProgressBar(0, 100);
 		progressBar.setPreferredSize(new Dimension(380, 19));
@@ -57,12 +57,12 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 		panel.add(itemPanel);
 
 		// Cancel Button
-		JPanel buttonPanel = new JPanel();
+		final JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		JButton cancelButton = new JButton("Cancel");
+		final JButton cancelButton = new JButton("Cancel");
 		cancelButton.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent event) {
+			public void actionPerformed(final ActionEvent event) {
 				cancel();
 			}
 		});
@@ -74,40 +74,38 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 		pack();
 
 		setLocationRelativeTo(parent);
-		
-		if (cancelButton != null) {
-			getRootPane().setDefaultButton(cancelButton);
-		}
+
+		getRootPane().setDefaultButton(cancelButton);
 	}
-	
+
 	public T getWorker() {
 		return worker;
 	}
 
-    public Result showDialog() {
-    	if (worker != null) {
-    		new Thread(worker).start();
-    	}
-    	
-        setVisible(true);
-        
-        if (canceledByUser) {
-    		return Result.CANCELED;
-    	} else if (worker == null || worker.getError() == null) {
-			return Result.OK;
-    	} else {
-        	return Result.ERROR;
-    	}
-    }
+	public Result showDialog() {
+		if (worker != null) {
+			new Thread(worker).start();
+		}
 
-    /**
-     * @deprecated use method "showDialog()" instead
-     */
+		setVisible(true);
+
+		if (canceledByUser) {
+			return Result.CANCELED;
+		} else if (worker == null || worker.getError() == null) {
+			return Result.OK;
+		} else {
+			return Result.ERROR;
+		}
+	}
+
+	/**
+	 * @deprecated use method "showDialog()" instead
+	 */
 	@Override
 	@Deprecated
-    public void setVisible(boolean value) {
-        super.setVisible(value);
-    }
+	public void setVisible(final boolean value) {
+		super.setVisible(value);
+	}
 
 	@Override
 	public void showUnlimitedProgress() {
@@ -173,26 +171,26 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 		}
 	}
 
-	protected void updateProgressBar(JProgressBar progressBar, Date start, long itemsToDo, long itemsDone) {
+	protected static void updateProgressBar(final JProgressBar progressBar, final Date start, final long itemsToDo, final long itemsDone) {
 		int value;
 		if (itemsToDo > 0) {
 			value = (int) (itemsDone * 100 / itemsToDo);
 		} else {
 			value = 0;
 		}
-		
+
 		if (value < 0) {
 			value = 0;
 		} else if (value > 100) {
 			value = 100;
 		}
-		
+
 		progressBar.setIndeterminate(false);
 		progressBar.setValue(value);
 		progressBar.setString(value + "%");
 		progressBar.setStringPainted(true);
-		
-		Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
+
+		final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 		if (estimatedEnd != null) {
 			progressBar.setToolTipText(estimatedEnd.toString());
 		} else {
@@ -201,7 +199,7 @@ public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog imp
 	}
 
 	@Override
-	public void changeTitle(String newTitle) {
+	public void changeTitle(final String newTitle) {
 		setTitle(newTitle);
 	}
 }

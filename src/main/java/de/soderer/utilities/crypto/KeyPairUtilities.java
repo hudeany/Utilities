@@ -128,11 +128,11 @@ public class KeyPairUtilities {
 	public static String getAlgorithm(final PublicKey publicKey) throws Exception {
 		if (publicKey == null){
 			throw new Exception("Invalid empty publicKey parameter");
-		} else if (publicKey.getAlgorithm().equals("RSA")){
+		} else if ("RSA".equals(publicKey.getAlgorithm())){
 			return SSH_ALGORITHM_NAME_RSA;
-		} else if(publicKey.getAlgorithm().equals("DSA")){
+		} else if("DSA".equals(publicKey.getAlgorithm())){
 			return SSH_ALGORITHM_NAME_DSA;
-		} else if(publicKey.getAlgorithm().equals("EC") || publicKey.getAlgorithm().equals("ECDSA")){
+		} else if("EC".equals(publicKey.getAlgorithm()) || "ECDSA".equals(publicKey.getAlgorithm())){
 			final int bitLength = ((ECPublicKey) publicKey).getW().getAffineX().bitLength();
 			if (bitLength <= 256) {
 				return SSH_ALGORITHM_NAME_ECDSA_NISTP256;

@@ -27,6 +27,10 @@
 			<url>https://repository.apache.org/content/repositories/snapshots</url>
 		</repository>
 		<repository>
+			<id>jakarta.mail</id>
+			<url>https://mvnrepository.com/artifact/jakarta.mail/jakarta.mail-api</url>
+		</repository>
+		<repository>
 			<name>SWT Repository</name>
 			<id>maven-eclipse-github-repo</id>
 			<url>http://maven-eclipse.github.io/maven</url>
@@ -74,9 +78,9 @@
 			<version>1.7.25</version>
 		</dependency>
 		<dependency>
-			<groupId>javax.mail</groupId>
-			<artifactId>mail</artifactId>
-			<version>1.4.7</version>
+			<groupId>jakarta.mail</groupId>
+			<artifactId>jakarta.mail-api</artifactId>
+			<version>1.6.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.jcraft</groupId>

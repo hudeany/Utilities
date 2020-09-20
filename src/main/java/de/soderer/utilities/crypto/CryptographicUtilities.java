@@ -178,7 +178,7 @@ public class CryptographicUtilities {
 	public static KeyPair generatePlainRsaKeyPair(final int keyStrength) throws Exception {
 		try {
 			final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-			keyPairGenerator.initialize(2048);
+			keyPairGenerator.initialize(keyStrength);
 			final KeyPair keyPair = keyPairGenerator.generateKeyPair();
 			return keyPair;
 		} catch (final Exception e) {
@@ -783,7 +783,7 @@ public class CryptographicUtilities {
 			}
 
 			return true;
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
 	}
@@ -803,7 +803,7 @@ public class CryptographicUtilities {
 		try {
 			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) certifier.build(params);
 			return result != null;
-		} catch (final Exception cpbe) {
+		} catch (@SuppressWarnings("unused") final Exception cpbe) {
 			return false;
 		}
 	}
@@ -862,7 +862,7 @@ public class CryptographicUtilities {
 		final LdapName ln = new LdapName(dn);
 
 		for (final Rdn rdn : ln.getRdns()) {
-			if (rdn.getType().equalsIgnoreCase("CN")) {
+			if ("CN".equalsIgnoreCase(rdn.getType())) {
 				return (String) rdn.getValue();
 			}
 		}
@@ -874,11 +874,11 @@ public class CryptographicUtilities {
 		return certificate.getBasicConstraints() != 1;
 	}
 
-	public static String getMd5FingerPrint(final X509Certificate certificate) throws InvalidNameException, CertificateEncodingException {
+	public static String getMd5FingerPrint(final X509Certificate certificate) throws CertificateEncodingException {
 		return DigestUtils.md5Hex(certificate.getEncoded()).toUpperCase();
 	}
 
-	public static String getSha1FingerPrint(final X509Certificate certificate) throws InvalidNameException, CertificateEncodingException {
+	public static String getSha1FingerPrint(final X509Certificate certificate) throws CertificateEncodingException {
 		return DigestUtils.sha1Hex(certificate.getEncoded()).toUpperCase();
 	}
 
@@ -911,7 +911,8 @@ public class CryptographicUtilities {
 	 *   default is "AES-128-CBC"<br />
 	 *   other value may be "DES-EDE3-CBC"<br />
 	 */
-	public static String writeKeyPairToProtectedPrivateOpenSshKey(final KeyPair keyPair, final boolean includePublicKeyData, String keyEncryptionCipherName, final String exportedKeyPassword) throws Exception {
+	public static String writeKeyPairToProtectedPrivateOpenSshKey(final KeyPair keyPair, final boolean includePublicKeyData, final String keyEncryptionCipherNameParam, final String exportedKeyPassword) throws Exception {
+		String keyEncryptionCipherName = keyEncryptionCipherNameParam;
 		Security.addProvider(new BouncyCastleProvider());
 
 		if (keyEncryptionCipherName == null || "".equals(keyEncryptionCipherName.trim())) {
@@ -940,7 +941,7 @@ public class CryptographicUtilities {
 	public static String encodePublicKeyForAuthorizedKeys(final KeyPair keyPair) throws IOException {
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
-		if (keyPair.getPublic().getAlgorithm().equals("RSA")){
+		if ("RSA".equals(keyPair.getPublic().getAlgorithm())){
 			final String algorithmName = "ssh-rsa";
 			final RSAPublicKey publicKey = ((RSAPublicKey) keyPair.getPublic());
 			dataOutputStream.writeInt(algorithmName.getBytes().length);
@@ -950,7 +951,7 @@ public class CryptographicUtilities {
 			dataOutputStream.writeInt(publicKey.getModulus().toByteArray().length);
 			dataOutputStream.write(publicKey.getModulus().toByteArray());
 			return algorithmName + " " + new String(Base64.getEncoder().encode(outputStream.toByteArray()));
-		} else if(keyPair.getPublic().getAlgorithm().equals("DSA")){
+		} else if("DSA".equals(keyPair.getPublic().getAlgorithm())){
 			final String algorithmName = "ssh-dss";
 			final DSAPublicKey publicKey = ((DSAPublicKey) keyPair.getPublic());
 			dataOutputStream.writeInt(algorithmName.getBytes().length);

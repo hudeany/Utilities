@@ -86,7 +86,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 		// Do nothing
 	}
 
-	private String getI18NString(final String resourceKey, final Object... arguments) {
+	private static String getI18NString(final String resourceKey, final Object... arguments) {
 		if (LangResources.existsKey(resourceKey)) {
 			return LangResources.get(resourceKey, arguments);
 		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {

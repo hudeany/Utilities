@@ -136,7 +136,7 @@ public class FtpConnection implements RemoteConnection {
 			ftpClient.setListHiddenFiles(true);
 		} catch (final Exception e) {
 			close();
-			throw new Exception("Connection failed");
+			throw new Exception("Connection failed", e);
 		}
 	}
 
@@ -223,6 +223,7 @@ public class FtpConnection implements RemoteConnection {
 	 * @param name the name
 	 * @return the input stream
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	public InputStream getFile(final String filePath) throws Exception {
 		checkForConnection();
@@ -253,7 +254,7 @@ public class FtpConnection implements RemoteConnection {
 			if (ftpClient.isConnected()) {
 				try {
 					ftpClient.disconnect();
-				} catch (final Exception f) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					// do nothing
 				}
 			}
@@ -266,7 +267,7 @@ public class FtpConnection implements RemoteConnection {
 			if (ftpClient.isConnected()) {
 				try {
 					return ftpClient.completePendingCommand();
-				} catch (final Exception f) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					// do nothing
 				}
 			}

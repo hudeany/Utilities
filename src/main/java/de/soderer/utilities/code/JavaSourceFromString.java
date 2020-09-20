@@ -18,58 +18,60 @@ import javax.tools.ToolProvider;
 public class JavaSourceFromString extends SimpleJavaFileObject {
 	private final String code;
 
-	public JavaSourceFromString(String name, String code) {
+	public JavaSourceFromString(final String name, final String code) {
 		super(URI.create("string:///" + name.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
 		this.code = code;
 	}
 
 	@Override
-	public CharSequence getCharContent(boolean ignoreEncodingErrors) {
+	public CharSequence getCharContent(final boolean ignoreEncodingErrors) {
 		return code;
 	}
 
-	public static void main(String[] args) {
+	public static void main(final String[] args) {
 		try {
-			JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
+			final JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
 			if (javaCompiler == null) {
 				throw new Exception("Compiler unavailable");
 			}
 
-			String code = "package de.soderer.test;\n" + "public class SimpleWorker {\n" + "public void runJob() throws Exception {\n" + "System.out.println(\"SimpleJobWorker worked\");\n" + "}\n"
+			final String code = "package de.soderer.test;\n" + "public class SimpleWorker {\n" + "public void runJob() throws Exception {\n" + "System.out.println(\"SimpleJobWorker worked\");\n" + "}\n"
 					+ "}\n";
 
-			JavaSourceFromString javaSourceFromString = new JavaSourceFromString("de.soderer.test.SimpleWorker", code);
+			final JavaSourceFromString javaSourceFromString = new JavaSourceFromString("de.soderer.test.SimpleWorker", code);
 
-			Iterable<? extends JavaFileObject> fileObjects = Arrays.asList(javaSourceFromString);
+			final Iterable<? extends JavaFileObject> fileObjects = Arrays.asList(javaSourceFromString);
 
-			String compilationPath = System.getProperty("user.home") + "/tmp/jitClasses";
-			File compilationPathFile = new File(compilationPath);
+			final String compilationPath = System.getProperty("user.home") + "/tmp/jitClasses";
+			final File compilationPathFile = new File(compilationPath);
 			compilationPathFile.mkdirs();
 
-			List<String> options = new ArrayList<>();
+			final List<String> options = new ArrayList<>();
 			options.add("-d");
 			options.add(compilationPath);
 			options.add("-classpath");
-			URLClassLoader urlClassLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
-			StringBuilder stringBuilder = new StringBuilder();
-			for (URL url : urlClassLoader.getURLs()) {
-				stringBuilder.append(url.getFile()).append(File.pathSeparator);
-			}
-			stringBuilder.append(compilationPath);
-			options.add(stringBuilder.toString());
+			try (URLClassLoader urlClassLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader()) {
+				final StringBuilder stringBuilder = new StringBuilder();
+				for (final URL url : urlClassLoader.getURLs()) {
+					stringBuilder.append(url.getFile()).append(File.pathSeparator);
+				}
+				stringBuilder.append(compilationPath);
+				options.add(stringBuilder.toString());
 
-			StringWriter output = new StringWriter();
-			boolean success = javaCompiler.getTask(output, null, null, options, null, fileObjects).call();
-			if (success) {
-				URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { new File(compilationPath).toURI().toURL() });
-				Class<?> clazz = Class.forName("de.soderer.test.SimpleWorker", true, classLoader);
-				Object instance = clazz.newInstance();
-				Method method = clazz.getMethod("runJob");
-				method.invoke(instance);
-			} else {
-				throw new Exception("Compilation failed :" + output);
+				final StringWriter output = new StringWriter();
+				final boolean success = javaCompiler.getTask(output, null, null, options, null, fileObjects).call();
+				if (success) {
+					try (URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { new File(compilationPath).toURI().toURL() })) {
+						final Class<?> clazz = Class.forName("de.soderer.test.SimpleWorker", true, classLoader);
+						final Object instance = clazz.newInstance();
+						final Method method = clazz.getMethod("runJob");
+						method.invoke(instance);
+					}
+				} else {
+					throw new Exception("Compilation failed :" + output);
+				}
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 		}
 	}

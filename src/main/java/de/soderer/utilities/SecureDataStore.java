@@ -122,7 +122,7 @@ public class SecureDataStore {
 		}
 	}
 
-	private byte[] stretchPassword(final char[] password, final byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
+	private static byte[] stretchPassword(final char[] password, final byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
 		final String algorithm = "PBKDF2WithHmacSHA512";
 		final int derivedKeyLength = 128;
 		final int iterations = 5000;

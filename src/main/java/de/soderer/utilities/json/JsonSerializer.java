@@ -317,7 +317,7 @@ public class JsonSerializer {
 					Field field;
 					try {
 						field = clazz.getDeclaredField(entry.getKey());
-					} catch (final Exception e) {
+					} catch (@SuppressWarnings("unused") final Exception e) {
 						throw new Exception("Invalid field name serialization value");
 					}
 					field.setAccessible(true);
@@ -487,7 +487,7 @@ public class JsonSerializer {
 				Field field;
 				try {
 					field = classType.getDeclaredField(entry.getKey());
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					throw new Exception("Invalid serialization field name '" + entry.getKey() + "' for class '" + classType.toString() + "'");
 				}
 				field.setAccessible(true);

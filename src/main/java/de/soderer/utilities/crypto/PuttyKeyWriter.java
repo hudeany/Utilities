@@ -39,7 +39,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class PuttyKeyWriter implements Closeable {
 	private final OutputStream outputStream;
 
-	public PuttyKeyWriter(final OutputStream outputStream) throws IOException {
+	public PuttyKeyWriter(final OutputStream outputStream) {
 		this.outputStream = outputStream;
 	}
 
@@ -80,7 +80,7 @@ public class PuttyKeyWriter implements Closeable {
 		outputStream.write(content.toString().getBytes("ISO-8859-1"));
 	}
 
-	private byte[] addRandomPadding(final byte[] data, final int paddingSize) {
+	private static byte[] addRandomPadding(final byte[] data, final int paddingSize) {
 		if (data.length % paddingSize != 0) {
 			final byte[] dataPadded;
 			dataPadded = new byte[((data.length / paddingSize) + 1) * paddingSize];

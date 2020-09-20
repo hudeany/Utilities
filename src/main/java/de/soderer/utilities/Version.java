@@ -30,7 +30,7 @@ public class Version implements Comparable<Version> {
 	 * @param microVersionNumber
 	 *            the micro version number
 	 */
-	public Version(int majorVersionNumber, int minorVersionNumber, int microVersionNumber) {
+	public Version(final int majorVersionNumber, final int minorVersionNumber, final int microVersionNumber) {
 		this.majorVersionNumber = majorVersionNumber;
 		this.minorVersionNumber = minorVersionNumber;
 		this.microVersionNumber = microVersionNumber;
@@ -44,8 +44,8 @@ public class Version implements Comparable<Version> {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public Version(String versionString) throws Exception {
-		Matcher matcher = VERSIONPATTERN.matcher(versionString);
+	public Version(final String versionString) throws Exception {
+		final Matcher matcher = VERSIONPATTERN.matcher(versionString);
 		if (matcher.find()) {
 			majorVersionNumber = Integer.parseInt(matcher.group(1));
 			minorVersionNumber = Integer.parseInt(matcher.group(2));
@@ -84,7 +84,7 @@ public class Version implements Comparable<Version> {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
@@ -99,16 +99,16 @@ public class Version implements Comparable<Version> {
 	 *            the data
 	 * @return the first full version from a text
 	 */
-	public static Version getFirstFullVersionNumberFromText(String data) {
+	public static Version getFirstFullVersionNumberFromText(final String data) {
 		if (Utilities.isBlank(data)) {
 			return null;
 		} else {
-			Pattern versionPattern = Pattern.compile("\\d+\\.\\d+\\.\\d+");
-			Matcher matcher = versionPattern.matcher(data);
+			final Pattern versionPattern = Pattern.compile("\\d+\\.\\d+\\.\\d+");
+			final Matcher matcher = versionPattern.matcher(data);
 			if (matcher.find()) {
 				try {
 					return new Version(matcher.group());
-				} catch (Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					return null;
 				}
 			} else {
@@ -123,7 +123,7 @@ public class Version implements Comparable<Version> {
 	 *          -1: thisVersion < otherVersion
 	 */
 	@Override
-	public int compareTo(Version otherVersion) {
+	public int compareTo(final Version otherVersion) {
 		if (otherVersion == null || majorVersionNumber > otherVersion.getMajorVersionNumber()) {
 			return 1;
 		} else if (majorVersionNumber == otherVersion.getMajorVersionNumber()) {

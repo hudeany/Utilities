@@ -33,10 +33,10 @@ public class TextTable {
 		columnNames.add(new ArrayList<String>());
 	}
 
-	public TextTable(String... columnNames) {
+	public TextTable(final String... columnNames) {
 		this();
 
-		for (String columnName : columnNames) {
+		for (final String columnName : columnNames) {
 			addColumn(columnName);
 		}
 	}
@@ -45,15 +45,15 @@ public class TextTable {
 		return currentLineIndex >= 0;
 	}
 
-	public void addColumn(String columnName) {
+	public void addColumn(final String columnName) {
 		addColumn(columnName, null, false);
 	}
 
-	public void addColumn(String columnName, String columnNameLine2, boolean alignRight) {
+	public void addColumn(final String columnName, final String columnNameLine2, final boolean alignRight) {
 		addColumn(columnName, columnNameLine2, alignRight, null);
 	}
 
-	public void addColumn(String columnName, String columnNameLine2, boolean alignRight, String farbe) {
+	public void addColumn(final String columnName, final String columnNameLine2, final boolean alignRight, final String farbe) {
 		columnNames.get(0).add(columnName);
 		columnColors.add(farbe);
 
@@ -77,14 +77,14 @@ public class TextTable {
 		columnRightAligned.add(alignRight);
 
 		// Adjust existing columns of lines to header length
-		for (List<String> line : content) {
+		for (final List<String> line : content) {
 			while (line.size() < columnNames.get(0).size()) {
 				line.add("");
 			}
 		}
 	}
 
-	public void dropColumn(int index) {
+	public void dropColumn(final int index) {
 		columnNames.get(0).remove(index);
 		columnColors.remove(index);
 
@@ -95,12 +95,12 @@ public class TextTable {
 		columnRightAligned.remove(index);
 
 		// Adjust existing columns of lines to header lengths
-		for (List<String> line : content) {
+		for (final List<String> line : content) {
 			line.remove(index);
 		}
 	}
 
-	public void setAlignmentForColumn(int columnIndex, boolean alignRight) throws Exception {
+	public void setAlignmentForColumn(final int columnIndex, final boolean alignRight) throws Exception {
 		if (columnIndex < 0 || columnIndex >= columnNames.get(0).size()) {
 			throw new Exception("Invalid column index: " + columnIndex);
 		}
@@ -112,7 +112,7 @@ public class TextTable {
 		startNewLine(null);
 	}
 
-	public void startNewLine(String farbe) {
+	public void startNewLine(final String farbe) {
 		content.add(new ArrayList<String>());
 		lineColors.add(farbe);
 		currentLineIndex++;
@@ -124,7 +124,7 @@ public class TextTable {
 		}
 	}
 
-	public void addValueToCurrentLine(int value) throws Exception {
+	public void addValueToCurrentLine(final int value) throws Exception {
 		addValueToCurrentLine(Integer.toString(value));
 	}
 
@@ -145,7 +145,7 @@ public class TextTable {
 	public void setNumericColumnsRightALigned() {
 		for (int columnIndex = 0; columnIndex < columnRightAligned.size(); columnIndex++) {
 			boolean isNumeric = true;
-			for (List<String> line : content) {
+			for (final List<String> line : content) {
 				if (Utilities.isNotBlank(line.get(columnIndex)) && !NumberUtilities.isInteger(line.get(columnIndex))) {
 					isNumeric = false;
 					break;
@@ -157,19 +157,19 @@ public class TextTable {
 
 	@Override
 	public String toString() {
-		List<StringBuilder> columnNamesLines = new ArrayList<>();
+		final List<StringBuilder> columnNamesLines = new ArrayList<>();
 		for (int lineIndex = 0; lineIndex < columnNames.size(); lineIndex++) {
 			columnNamesLines.add(new StringBuilder());
 		}
 
-		List<StringBuilder> contentLines = new ArrayList<>();
+		final List<StringBuilder> contentLines = new ArrayList<>();
 		for (int lineIndex = 0; lineIndex < content.size(); lineIndex++) {
 			contentLines.add(new StringBuilder());
 		}
 
 		// Iterate over all columns
 		for (int columnIndex = 0; columnIndex < columnNames.get(0).size(); columnIndex++) {
-			int size = getMaxSizeOfColumn(columnIndex);
+			final int size = getMaxSizeOfColumn(columnIndex);
 
 			for (int lineIndex = 0; lineIndex < columnNames.size(); lineIndex++) {
 				if (columnIndex > 0) {
@@ -193,7 +193,7 @@ public class TextTable {
 			}
 		}
 
-		StringBuilder text = new StringBuilder();
+		final StringBuilder text = new StringBuilder();
 		for (int lineIndex = 0; lineIndex < columnNamesLines.size(); lineIndex++) {
 			text.append(columnNamesLines.get(lineIndex) + "\n");
 		}
@@ -207,7 +207,7 @@ public class TextTable {
 	}
 
 	public String toCsvString() {
-		StringBuilder csvText = new StringBuilder();
+		final StringBuilder csvText = new StringBuilder();
 
 		// Write columnheader first
 		// Iterate over all header lines
@@ -233,7 +233,7 @@ public class TextTable {
 	}
 
 	public String toCsvStringWithMetaData() {
-		StringBuilder csvText = new StringBuilder();
+		final StringBuilder csvText = new StringBuilder();
 
 		// Write columnheader first
 		// Iterate over all header lines
@@ -279,15 +279,15 @@ public class TextTable {
 		return csvText.toString();
 	}
 
-	public static String getHtmlHeader(String title) {
+	public static String getHtmlHeader(final String title) {
 		return getHtmlHeader(title, true, null);
 	}
 
-	public static String getHtmlHeader(String title, boolean mitZeit) {
+	public static String getHtmlHeader(final String title, final boolean mitZeit) {
 		return getHtmlHeader(title, mitZeit, null);
 	}
 
-	public static String getHtmlHeader(String title, boolean mitZeit, String inlineCssStyleSheet) {
+	public static String getHtmlHeader(final String title, final boolean mitZeit, final String inlineCssStyleSheet) {
 		return "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n" + "<html>\n" + "<head>\n<title>" + title + "</title>\n"
 				+ (Utilities.isEmpty(inlineCssStyleSheet) ? "" : inlineCssStyleSheet) + "</head>\n" + "<body>\n" + "<h2>" + title + "</h2>\n"
 				+ (mitZeit ? "<h4>Stand: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(new GregorianCalendar().getTime()) + "</h4>\n" : "");
@@ -297,12 +297,12 @@ public class TextTable {
 		return "<body>\n" + "<html>\n";
 	}
 
-	public String toHtmlString(String tableTitle) {
+	public String toHtmlString(final String tableTitle) {
 		return toHtmlString(tableTitle, 0);
 	}
 
-	public String toHtmlString(String tableTitle, int fontsizeInPt) {
-		StringBuilder htmlTableStringBuffer = new StringBuilder();
+	public String toHtmlString(final String tableTitle, final int fontsizeInPt) {
+		final StringBuilder htmlTableStringBuffer = new StringBuilder();
 		htmlTableStringBuffer.append(htmlEncodeString(tableTitle) + "<br><br>\n");
 		if (fontsizeInPt > 0) {
 			htmlTableStringBuffer.append("<STYLE TYPE=\"text/css\"><!--TD{font-family: Arial; font-size: " + fontsizeInPt + "pt;}---></STYLE>");
@@ -360,18 +360,18 @@ public class TextTable {
 		return htmlTableStringBuffer.toString();
 	}
 
-	protected int getMaxSizeOfColumn(int index) {
+	protected int getMaxSizeOfColumn(final int index) {
 		int maxSize = 0;
-		for (List<String> line : columnNames) {
+		for (final List<String> line : columnNames) {
 			maxSize = Math.max(line.get(index).length(), maxSize);
 		}
-		for (List<String> line : content) {
+		for (final List<String> line : content) {
 			maxSize = Math.max(line.get(index).length(), maxSize);
 		}
 		return maxSize;
 	}
 
-	public static String convertXlsColor2HtmlColor(String xlsColor) {
+	public static String convertXlsColor2HtmlColor(final String xlsColor) {
 		if ("VERY_LIGHT_YELLOW".equalsIgnoreCase(xlsColor)) {
 			return "yellow";
 		} else if ("LIGHT_GREEN".equalsIgnoreCase(xlsColor)) {
@@ -398,7 +398,7 @@ public class TextTable {
 		}
 	}
 
-	public void loadCsvWithMetadataFile(byte[] csvWithMetadata) throws IOException {
+	public void loadCsvWithMetadataFile(final byte[] csvWithMetadata) throws IOException {
 		columnNames.clear();
 		content.clear();
 		columnColors.clear();
@@ -413,7 +413,7 @@ public class TextTable {
 			fileReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(csvWithMetadata), "UTF-8"));
 			String fileLine = null;
 			while ((fileLine = fileReader.readLine()) != null) {
-				String[] lineParts = fileLine.split(";");
+				final String[] lineParts = fileLine.split(";");
 				for (int i = 0; i < lineParts.length; i++) {
 					if (lineParts[i].startsWith("\"")) {
 						lineParts[i] = lineParts[i].substring(1);
@@ -423,14 +423,14 @@ public class TextTable {
 					}
 				}
 				if (METADATA_HEADER.equals(lineParts[0])) {
-					List<String> headerLine = new ArrayList<>();
+					final List<String> headerLine = new ArrayList<>();
 					columnNames.add(headerLine);
 					for (int i = 1; i < lineParts.length; i++) {
 						headerLine.add(lineParts[i]);
 					}
 				} else if (METADATA_COLOR.equals(lineParts[0])) {
 					for (int i = 1; i < lineParts.length; i++) {
-						if (lineParts[i].equalsIgnoreCase("null")) {
+						if ("null".equalsIgnoreCase(lineParts[i])) {
 							columnColors.add(null);
 						} else {
 							columnColors.add(lineParts[i]);
@@ -438,19 +438,19 @@ public class TextTable {
 					}
 				} else if (METADATA_RIGHTALIGNMENT.equals(lineParts[0])) {
 					for (int i = 1; i < lineParts.length; i++) {
-						if (lineParts[i].equalsIgnoreCase("true")) {
+						if ("true".equalsIgnoreCase(lineParts[i])) {
 							columnRightAligned.add(true);
 						} else {
 							columnRightAligned.add(false);
 						}
 					}
 				} else {
-					if (lineParts[0].equalsIgnoreCase("null")) {
+					if ("null".equalsIgnoreCase(lineParts[0])) {
 						lineColors.add(null);
 					} else {
 						lineColors.add(lineParts[0]);
 					}
-					List<String> contentLine = new ArrayList<>();
+					final List<String> contentLine = new ArrayList<>();
 					content.add(contentLine);
 					for (int i = 1; i < lineParts.length; i++) {
 						contentLine.add(lineParts[i]);
@@ -461,7 +461,7 @@ public class TextTable {
 			if (fileReader != null) {
 				try {
 					fileReader.close();
-				} catch (IOException e) {
+				} catch (final IOException e) {
 					e.printStackTrace();
 				}
 			}
@@ -469,13 +469,13 @@ public class TextTable {
 		}
 	}
 
-	public void keepOnlyLastRows(int numberOfLastRows) {
+	public void keepOnlyLastRows(final int numberOfLastRows) {
 		while (content.size() > numberOfLastRows) {
 			content.remove(0);
 		}
 	}
 
-	public void keepOnlyFirstRows(int numberOfFirstRows) {
+	public void keepOnlyFirstRows(final int numberOfFirstRows) {
 		while (content.size() > numberOfFirstRows) {
 			content.remove(content.size() - 1);
 		}
@@ -493,29 +493,29 @@ public class TextTable {
 		return content.size();
 	}
 
-	public String getHeader(int headerLineIndex, int columnIndex) throws Exception {
+	public String getHeader(final int headerLineIndex, final int columnIndex) throws Exception {
 		if (columnNames.size() <= headerLineIndex || columnNames.get(headerLineIndex).size() <= columnIndex) {
 			throw new Exception("Invalid data request at columnheaders line index " + headerLineIndex + " column index " + columnIndex);
 		}
 		return columnNames.get(headerLineIndex).get(columnIndex);
 	}
 
-	public String getHeaderColor(int columnIndex) {
+	public String getHeaderColor(final int columnIndex) {
 		return columnColors.get(columnIndex);
 	}
 
-	public String getLineColor(int lineIndex) {
+	public String getLineColor(final int lineIndex) {
 		return lineColors.get(lineIndex);
 	}
 
-	public String getData(int lineIndex, int columnIndex) throws Exception {
+	public String getData(final int lineIndex, final int columnIndex) throws Exception {
 		if (content.size() <= lineIndex || content.get(lineIndex).size() <= columnIndex) {
 			throw new Exception("Invalid data request at line index " + lineIndex + " column index " + columnIndex);
 		}
 		return content.get(lineIndex).get(columnIndex);
 	}
 
-	public static String htmlEncodeString(String value) {
+	public static String htmlEncodeString(final String value) {
 		return value.replace("&", "&amp;").replace("<", "&lt;").replace("Ä", "&Auml;").replace("ä", "&auml;").replace("Ö", "&Ouml;").replace("ö", "&ouml;").replace("Ü", "&Uuml;")
 				.replace("ü", "&uuml;").replace("ß", "&slig;");
 	}

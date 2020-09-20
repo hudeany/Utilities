@@ -1026,6 +1026,7 @@ public class TextUtilities {
 	public static String mapToStringWithSortedKeys(final Map<? extends String, ? extends Object> map) {
 		final StringBuilder returnValue = new StringBuilder();
 		for (String key : Utilities.asSortedList(map.keySet())) {
+			@SuppressWarnings("unlikely-arg-type")
 			Object value = map.get(key);
 			if (returnValue.length() > 0) {
 				returnValue.append("\n");

@@ -26,11 +26,11 @@ public class ConfigurationProperties {
 	private final String applicationName;
 	private boolean useSubDirectory = false;
 
-	public ConfigurationProperties(final String applicationName) {
+	public ConfigurationProperties(final String applicationName) throws Exception {
 		this(applicationName, false);
 	}
 
-	public ConfigurationProperties(final String applicationName, final boolean useSubDirectory) {
+	public ConfigurationProperties(final String applicationName, final boolean useSubDirectory) throws Exception {
 		this.applicationName = applicationName;
 		this.useSubDirectory = useSubDirectory;
 		final File configFile = new File(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config");
@@ -43,7 +43,7 @@ public class ConfigurationProperties {
 				}
 			} catch (final IOException e) {
 				e.printStackTrace();
-				throw new RuntimeException("Cannot load configuration", e);
+				throw new Exception("Cannot load configuration", e);
 			}
 		}
 	}
@@ -134,7 +134,7 @@ public class ConfigurationProperties {
 			} else {
 				return null;
 			}
-		} catch (final ParseException e) {
+		} catch (@SuppressWarnings("unused") final ParseException e) {
 			return null;
 		}
 	}
@@ -147,7 +147,7 @@ public class ConfigurationProperties {
 		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			try {
 				return CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"'), properties.getProperty(name));
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				return new ArrayList<>();
 			}
 		} else {
@@ -162,7 +162,7 @@ public class ConfigurationProperties {
 				final boolean removedValue = currentList.remove(value);
 				set(name, currentList);
 				return removedValue;
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				return false;
 			}
 		} else {

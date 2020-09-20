@@ -13,10 +13,10 @@ import de.soderer.utilities.Utilities;
 
 public class JsonReader extends BasicReader {
 	protected Object currentObject = null;
-	
+
 	protected Stack<JsonToken> openJsonItems = new Stack<>();
 	protected Stack<String> currentJsonPath = new Stack<>();
-	
+
 	public enum JsonToken {
 		JsonObject_Open,
 		JsonObject_PropertyKey,
@@ -26,34 +26,34 @@ public class JsonReader extends BasicReader {
 		JsonSimpleValue,
 	}
 
-	public JsonReader(InputStream inputStream) throws Exception {
+	public JsonReader(final InputStream inputStream) throws Exception {
 		super(inputStream, (String) null);
 	}
-	
-	public JsonReader(InputStream inputStream, String encoding) throws Exception {
+
+	public JsonReader(final InputStream inputStream, final String encoding) throws Exception {
 		super(inputStream, encoding);
 	}
-	
-	public JsonReader(InputStream inputStream, Charset encodingCharset) throws Exception {
+
+	public JsonReader(final InputStream inputStream, final Charset encodingCharset) throws Exception {
 		super(inputStream, encodingCharset);
 	}
-	
+
 	public Object getCurrentObject() {
 		return currentObject;
 	}
-	
+
 	public JsonToken getCurrentToken() {
 		return openJsonItems.peek();
 	}
 
 	public JsonToken readNextToken() throws Exception {
-		JsonToken jsonToken = readNextTokenInternal();
-		
+		final JsonToken jsonToken = readNextTokenInternal();
+
 		updateJsonPath(jsonToken);
-		
+
 		return jsonToken;
 	}
-	
+
 	protected JsonToken readNextTokenInternal() throws Exception {
 		currentObject = null;
 		Character currentChar = readNextNonWhitespace();
@@ -64,7 +64,7 @@ public class JsonReader extends BasicReader {
 				return null;
 			}
 		}
-		
+
 		JsonToken jsonToken;
 		switch (currentChar) {
 			case '{': // Open JsonObject
@@ -161,18 +161,18 @@ public class JsonReader extends BasicReader {
 				}
 				break;
 		}
-		
+
 		updateJsonPath(jsonToken);
-		
+
 		return jsonToken;
 	}
-	
+
 	public boolean readNextJsonNode() throws Exception {
 		if (getReadCharacters() == 0) {
 			throw new Exception("JsonReader position was not initialized for readNextJsonItem()");
 		}
-		
-		JsonToken nextToken = readNextToken();
+
+		final JsonToken nextToken = readNextToken();
 		if (nextToken == JsonToken.JsonObject_Open) {
 			currentObject = readJsonObject();
 			return true;
@@ -192,13 +192,13 @@ public class JsonReader extends BasicReader {
 			return false;
 		} else {
 			throw new Exception("Invalid data in line " + getReadLines() + " at overall index " + getReadCharacters());
-		} 
+		}
 	}
-	
+
 	/**
 	 * Read all available Json data from the input stream at once.
 	 * This can only be done once and as the first action on a JsonReader.
-	 * 
+	 *
 	 * @return JsonObject or JsonArray
 	 * @throws Exception
 	 */
@@ -206,8 +206,8 @@ public class JsonReader extends BasicReader {
 		if (getReadCharacters() != 0) {
 			throw new Exception("JsonReader position was already initialized for other read operation");
 		}
-		
-		JsonToken nextToken = readNextToken();
+
+		final JsonToken nextToken = readNextToken();
 		if (nextToken == JsonToken.JsonObject_Open) {
 			return new JsonNode(readJsonObject());
 		} else if (nextToken == JsonToken.JsonArray_Open) {
@@ -218,16 +218,16 @@ public class JsonReader extends BasicReader {
 			throw new Exception("Invalid json data: No JSON data found at root");
 		}
 	}
-	
+
 	private JsonObject readJsonObject() throws Exception {
 		if (openJsonItems.peek() != JsonToken.JsonObject_Open) {
 			throw new Exception("Invalid read position for JsonArray in line " + getReadLines() + " at overall index " + getReadCharacters());
 		} else {
-			JsonObject returnObject = new JsonObject();
+			final JsonObject returnObject = new JsonObject();
 			JsonToken nextToken = readNextToken();
 			while (nextToken != JsonToken.JsonObject_Close) {
 				if (nextToken == JsonToken.JsonObject_PropertyKey && currentObject instanceof String) {
-					String propertyKey = (String) currentObject;
+					final String propertyKey = (String) currentObject;
 					nextToken = readNextToken();
 					if (nextToken == JsonToken.JsonArray_Open) {
 						returnObject.add(propertyKey, readJsonArray());
@@ -246,7 +246,7 @@ public class JsonReader extends BasicReader {
 			return returnObject;
 		}
 	}
-	
+
 	private JsonArray readJsonArray() throws Exception {
 		if (openJsonItems.peek() != JsonToken.JsonArray_Open) {
 			throw new Exception("Invalid read position for JsonArray in line " + getReadLines() + " at overall index " + getReadCharacters());
@@ -256,7 +256,7 @@ public class JsonReader extends BasicReader {
 					|| nextToken == JsonToken.JsonObject_Open
 					|| nextToken == JsonToken.JsonArray_Open
 					|| nextToken == JsonToken.JsonSimpleValue) {
-				JsonArray returnArray = new JsonArray();
+				final JsonArray returnArray = new JsonArray();
 				while (nextToken != JsonToken.JsonArray_Close) {
 					if (nextToken == JsonToken.JsonArray_Open) {
 						returnArray.add(readJsonArray());
@@ -274,16 +274,16 @@ public class JsonReader extends BasicReader {
 		}
 	}
 
-	private Object readSimpleJsonValue(String valueString) throws Exception {
+	private Object readSimpleJsonValue(final String valueString) throws Exception {
 		if (valueString == null) {
 			throw new Exception("Invalid empty json data");
 		} else if (valueString.startsWith("\"")) {
 			return readQuotedText('"', '\\');
-		} else if (valueString.equalsIgnoreCase("null")) {
+		} else if ("null".equalsIgnoreCase(valueString)) {
 			return null;
-		} else if (valueString.equalsIgnoreCase("true")) {
+		} else if ("true".equalsIgnoreCase(valueString)) {
 			return true;
-		} else if (valueString.equalsIgnoreCase("false")) {
+		} else if ("false".equalsIgnoreCase(valueString)) {
 			return false;
 		} else if (NumberUtilities.isNumber(valueString)) {
 			return NumberUtilities.parseNumber(valueString);
@@ -291,24 +291,24 @@ public class JsonReader extends BasicReader {
 			throw new Exception("Invalid json data in line " + getReadLines() + " at overall index " + getReadCharacters());
 		}
 	}
-	
+
 	/**
 	 * This method should only be used to read small Json items
-	 * 
+	 *
 	 * @param data
 	 * @return
-	 * @throws IOException 
-	 * @throws UnsupportedEncodingException 
+	 * @throws IOException
+	 * @throws UnsupportedEncodingException
 	 */
-	public static JsonNode readJsonItemString(String data) throws Exception {
+	public static JsonNode readJsonItemString(final String data) throws Exception {
 		try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data.getBytes("UTF-8"))) {
 			try (JsonReader jsonReader = new JsonReader(inputStream)) {
 				return jsonReader.read();
 			}
 		}
 	}
-	
-	protected void updateJsonPath(JsonToken jsonToken) throws Exception {
+
+	protected void updateJsonPath(final JsonToken jsonToken) throws Exception {
 		if (jsonToken != null) {
 			switch(jsonToken) {
 				case JsonArray_Open:
@@ -362,9 +362,9 @@ public class JsonReader extends BasicReader {
 		}
 		currentJsonPath.push("[" + newArrayIndex + "]");
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * JsonPath syntax:<br />
 	 *	$ : root<br />
 	 *	. : child separator<br />

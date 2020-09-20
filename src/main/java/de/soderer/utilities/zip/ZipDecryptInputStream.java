@@ -160,7 +160,20 @@ public class ZipDecryptInputStream extends InputStream {
 					}
 					compressedSize -= DECRYPT_HEADER_SIZE;
 					state = State.DATA;
-					// intentionally no break
+
+					if (compressedSize == -1 && peekAheadEquals(DD_SIGNATURE)) {
+						section = Section.DATA_DESCRIPTOR;
+						skipBytes = 5;
+						state = State.CRC;
+					} else {
+						result = (result ^ decryptByte()) & 0xff;
+						updateKeys((byte) result, keys);
+						compressedSize--;
+						if (compressedSize == 0) {
+							state = State.SIGNATURE;
+						}
+					}
+					break;
 				case DATA:
 					if (compressedSize == -1 && peekAheadEquals(DD_SIGNATURE)) {
 						section = Section.DATA_DESCRIPTOR;
@@ -177,6 +190,10 @@ public class ZipDecryptInputStream extends InputStream {
 					break;
 				case TAIL:
 					// do nothing
+					break;
+				default:
+					// do nothing
+					break;
 			}
 		} else {
 			skipBytes--;
@@ -243,14 +260,14 @@ public class ZipDecryptInputStream extends InputStream {
 		return (byte) ((temp * (temp ^ 1)) >>> 8);
 	}
 
-	private void updateKeys(final byte charAt, final int[] keys) {
+	private static void updateKeys(final byte charAt, final int[] keys) {
 		keys[0] = crc32(keys[0], charAt);
 		keys[1] += keys[0] & 0xff;
 		keys[1] = keys[1] * 134775813 + 1;
 		keys[2] = crc32(keys[2], (byte) (keys[1] >> 24));
 	}
 
-	private int crc32(final int oldCrc, final byte charAt) {
+	private static int crc32(final int oldCrc, final byte charAt) {
 		return ((oldCrc >>> 8) ^ CRC_TABLE[(oldCrc ^ charAt) & 0xff]);
 	}
 }

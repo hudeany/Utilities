@@ -221,6 +221,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
+	@SuppressWarnings("resource")
 	public static ZipOutputStream openNewZipOutputStream(final File destinationZipFile, final char[] password, Charset fileNameEncodingCharset) throws IOException {
 		if (destinationZipFile.exists()) {
 			throw new IOException("DestinationFile already exists");
@@ -348,6 +349,7 @@ public class ZipUtilities {
 	 * @throws IOException
 	 * @throws ZipException
 	 */
+	@SuppressWarnings("resource")
 	public static ZipOutputStream openExistingZipFileForExtension(final File zipFile) throws IOException {
 		final File originalFileTemp = new File(zipFile.getParentFile().getAbsolutePath() + "/" + String.valueOf(System.currentTimeMillis()));
 		zipFile.renameTo(originalFileTemp);

@@ -388,7 +388,7 @@ public class CosmosDbRestfulClient {
 	/**
 	 * Get the current date as in RFC 7231, e.g. "Tue, 01 Nov 1994 08:12:31 GMT"
 	 */
-	private String getCurrentDateRFC7231() {
+	private static String getCurrentDateRFC7231() {
 		final Calendar calendar = Calendar.getInstance();
 		final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
 		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));

@@ -1,5 +1,6 @@
 package de.soderer.utilities.xml;
 
+import java.io.IOException;
 import java.io.OutputStream;
 
 import javax.xml.namespace.NamespaceContext;
@@ -19,6 +20,8 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 
 	private final String indentationString;
 
+	private final OutputStream outputStream;
+
 	private final XMLStreamWriter writer;
 
 	private final String encoding;
@@ -28,27 +31,16 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 	private boolean closeElementInNewLine = false;
 
 	public IndentedXMLStreamWriter(final OutputStream outputStream) throws Exception {
-		this(XMLOutputFactory.newInstance().createXMLStreamWriter(outputStream, DEFAULT_ENCODING), DEFAULT_ENCODING, DEFAULT_INDENTATION);
-	}
-
-	public IndentedXMLStreamWriter(final XMLStreamWriter writer) {
-		this(writer, DEFAULT_ENCODING, DEFAULT_INDENTATION);
+		this(outputStream, DEFAULT_ENCODING, DEFAULT_INDENTATION);
 	}
 
 	public IndentedXMLStreamWriter(final OutputStream outputStream, final String encoding, final char indentationCharacter, final int characterCountPerIndentation) throws Exception {
-		this(XMLOutputFactory.newInstance().createXMLStreamWriter(outputStream, encoding), encoding, multiplyCharacter(indentationCharacter, characterCountPerIndentation));
-	}
-
-	public IndentedXMLStreamWriter(final XMLStreamWriter writer, final String encoding, final char indentationCharacter, final int characterCountPerIndentation) throws Exception {
-		this(writer, encoding, multiplyCharacter(indentationCharacter, characterCountPerIndentation));
+		this(outputStream, encoding, multiplyCharacter(indentationCharacter, characterCountPerIndentation));
 	}
 
 	public IndentedXMLStreamWriter(final OutputStream outputStream, final String encoding, final String indentationString) throws Exception {
-		this(XMLOutputFactory.newInstance().createXMLStreamWriter(outputStream, encoding), encoding, indentationString);
-	}
-
-	public IndentedXMLStreamWriter(final XMLStreamWriter writer, final String encoding, final String indentationString) {
-		this.writer = writer;
+		this.outputStream = outputStream;
+		writer = XMLOutputFactory.newInstance().createXMLStreamWriter(outputStream, encoding);
 		this.encoding = encoding;
 		this.indentationString = indentationString;
 	}
@@ -72,23 +64,27 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 	}
 
 	@Override
-	public void writeStartDocument(final String encoding, final String version) throws XMLStreamException {
-		writeStartDocument(null, encoding, version);
+	public void writeStartDocument(final String xmlDeclarationEncoding, final String version) throws XMLStreamException {
+		writeStartDocument(null, xmlDeclarationEncoding, version);
 	}
 
-	public void writeStartDocument(final Boolean standAlone, final String encoding, final String version) throws XMLStreamException {
+	public void writeStartDocument(final Boolean standAlone, final String xmlDeclarationEncoding, final String version) throws XMLStreamException {
 		final StringBuilder xmlDeclBuilder = new StringBuilder("<?xml");
 		if (version != null) {
 			xmlDeclBuilder.append(" version=\"").append(version).append("\"");
 		}
-		if (encoding != null) {
-			xmlDeclBuilder.append(" encoding=\"").append(encoding).append("\"");
+		if (xmlDeclarationEncoding != null) {
+			xmlDeclBuilder.append(" encoding=\"").append(xmlDeclarationEncoding).append("\"");
 		}
 		if (standAlone != null) {
 			xmlDeclBuilder.append(" standalone=\"").append(standAlone).append("\"");
 		}
 		xmlDeclBuilder.append("?>\n");
-		writer.writeCharacters(xmlDeclBuilder.toString());
+		try {
+			outputStream.write(xmlDeclBuilder.toString().getBytes("UTF-8"));
+		} catch (final IOException e) {
+			throw new XMLStreamException(e);
+		}
 	}
 
 	@Override
@@ -311,7 +307,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 		}
 	}
 
-	private boolean isBlank(final String value) {
+	private static boolean isBlank(final String value) {
 		if (value == null || value.length() == 0) {
 			return true;
 		}

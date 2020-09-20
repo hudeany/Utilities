@@ -115,7 +115,7 @@ public class Utilities {
 			gzipCompresser.write(clearData);
 			gzipCompresser.close();
 			return encoded.toByteArray();
-		} catch (final IOException e) {
+		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
 		}
 	}
@@ -133,7 +133,7 @@ public class Utilities {
 			final ByteArrayInputStream encoded = new ByteArrayInputStream(zippedData);
 			copy(new GZIPInputStream(encoded), decoded);
 			return decoded.toByteArray();
-		} catch (final IOException e) {
+		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
 		}
 	}
@@ -157,7 +157,7 @@ public class Utilities {
 	public static byte[] decodeBase64(final String base64String) {
 		try {
 			return Base64.getDecoder().decode(base64String.getBytes("UTF-8"));
-		} catch (final UnsupportedEncodingException e) {
+		} catch (@SuppressWarnings("unused") final UnsupportedEncodingException e) {
 			return null;
 		}
 	}
@@ -441,8 +441,8 @@ public class Utilities {
 	public static boolean interpretAsBool(String value) {
 		if (isNotEmpty(value)) {
 			value = value.trim();
-			return value.equalsIgnoreCase("true") || value.equalsIgnoreCase("+") || value.equalsIgnoreCase("yes") || value.equalsIgnoreCase("ja") || value.equalsIgnoreCase("ok")
-					|| value.equalsIgnoreCase("on") || value.equalsIgnoreCase("an");
+			return "true".equalsIgnoreCase(value) || "+".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value) || "ja".equalsIgnoreCase(value) || "ok".equalsIgnoreCase(value)
+					|| "on".equalsIgnoreCase(value) || "an".equalsIgnoreCase(value);
 		} else {
 			return false;
 		}
@@ -618,7 +618,7 @@ public class Utilities {
 					} else {
 						propertiesMap.put("os.distribution.version", "Unknown");
 					}
-				} catch (final Exception e) {
+				} catch (@SuppressWarnings("unused") final Exception e) {
 					propertiesMap.put("os.distribution.name", "Unknown");
 					propertiesMap.put("os.distribution.version", "Unknown");
 				}
@@ -646,7 +646,7 @@ public class Utilities {
 		}
 
 		final StringBuilder builder = new StringBuilder();
-		for (final Object key : keyList) {
+		for (final String key : keyList) {
 			if (builder.length() > 0) {
 				builder.append(entrySeparator);
 			}
@@ -954,7 +954,7 @@ public class Utilities {
 		if (closeable != null) {
 			try {
 				closeable.close();
-			} catch (final IOException e) {
+			} catch (@SuppressWarnings("unused") final IOException e) {
 				// Do nothing
 			}
 		}
@@ -968,14 +968,14 @@ public class Utilities {
 		if (closeable != null) {
 			try {
 				closeable.close();
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				// Do nothing
 			}
 		}
 		if (inputStream != null) {
 			try {
 				inputStream.close();
-			} catch (final Exception e) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				// Do nothing
 			}
 		}
@@ -1195,7 +1195,7 @@ public class Utilities {
 	public static String leftPad(final String value, final int minimumLength) {
 		try {
 			return String.format("%1$" + minimumLength + "s", value);
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return value;
 		}
 	}
@@ -1210,7 +1210,7 @@ public class Utilities {
 	public static String rightPad(final String value, final int minimumLength) {
 		try {
 			return String.format("%1$-" + minimumLength + "s", value);
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return value;
 		}
 	}

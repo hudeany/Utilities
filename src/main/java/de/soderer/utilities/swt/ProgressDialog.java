@@ -132,11 +132,11 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 
 							try {
 								Thread.sleep(100);
-							} catch (final InterruptedException e) {
+							} catch (@SuppressWarnings("unused") final InterruptedException e) {
 								// do nothing
 							}
 						}
-					} catch (final Throwable e) {
+					} catch (@SuppressWarnings("unused") final Throwable e) {
 						// do nothing
 					}
 				}
