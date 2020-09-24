@@ -3,6 +3,7 @@ package de.soderer.utilities.jarinjarloader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.Attributes;
+import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
@@ -24,6 +26,7 @@ public class JarInJarLoader {
 	}
 
 	public static void main(final String[] args) throws Exception {
+		// Fill an environment variable with the path of the executed jar file
 		try {
 			final String currentJarUrlPath = JarInJarLoader.class.getResource(JarInJarLoader.class.getSimpleName() + ".class").toString();
 			if (currentJarUrlPath != null && currentJarUrlPath.length() > 0) {
@@ -49,7 +52,7 @@ public class JarInJarLoader {
 				rsrcUrls[i] = new URL("jar:rsrc:" + rsrcPath + "!/");
 			}
 		}
-		try (URLClassLoader jceClassLoader = new URLClassLoader(rsrcUrls, null)) {
+		try (URLClassLoader jceClassLoader = new URLClassLoader(rsrcUrls, getParentClassLoader())) {
 			Thread.currentThread().setContextClassLoader(jceClassLoader);
 			final Class<?> mainClass = Class.forName(manifestInfo.rsrcMainClass, true, jceClassLoader);
 			final Method main = mainClass.getMethod("main", new Class[] { args.getClass() });
@@ -57,8 +60,19 @@ public class JarInJarLoader {
 		}
 	}
 
+	private static ClassLoader getParentClassLoader() throws InvocationTargetException, IllegalAccessException {
+		try {
+			// We use reflection here because the method ClassLoader.getPlatformClassLoader() is only present starting from Java 9
+			final Method platformClassLoader = ClassLoader.class.getMethod("getPlatformClassLoader", (Class[]) null);
+			return (ClassLoader) platformClassLoader.invoke(null, (Object[]) null);
+		} catch (@SuppressWarnings("unused") final NoSuchMethodException e) {
+			// This is a safe value to be used on Java 8 and previous versions
+			return null;
+		}
+	}
+
 	private static ManifestInfo getManifestInfo() throws IOException {
-		final Enumeration<URL> manifestFileUrls = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF");
+		final Enumeration<URL> manifestFileUrls = Thread.currentThread().getContextClassLoader().getResources(JarFile.MANIFEST_NAME);
 		while (manifestFileUrls.hasMoreElements()) {
 			final URL manifestFileUrl = manifestFileUrls.nextElement();
 			try (InputStream is = manifestFileUrl.openStream()) {

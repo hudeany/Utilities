@@ -2,7 +2,6 @@ package de.soderer.utilities.jarinjarloader;
 
 import java.io.IOException;
 import java.net.URL;
-import java.net.URLConnection;
 
 public class JarInJarURLStreamHandler extends java.net.URLStreamHandler {
 	private final ClassLoader classLoader;
@@ -12,22 +11,23 @@ public class JarInJarURLStreamHandler extends java.net.URLStreamHandler {
 	}
 
 	@Override
-	protected URLConnection openConnection(final URL url) throws IOException {
-		return new JarInJarURLConnection(url, classLoader);
+	protected java.net.URLConnection openConnection(final URL u) throws IOException {
+		return new JarInJarURLConnection(u, classLoader);
 	}
 
 	@Override
 	protected void parseURL(final URL url, final String spec, final int start, final int limit) {
 		String file;
-		if (spec.startsWith("rsrc:")) {
+		if (spec.startsWith("rsrc:"))
 			file = spec.substring(5);
-		} else if ("./".equals(url.getFile())) {
+		else if (url.getFile().equals("./"))
 			file = spec;
-		} else if (url.getFile().endsWith("/")) {
+		else if (url.getFile().endsWith("/"))
 			file = url.getFile() + spec;
-		} else {
+		else if ("#runtime".equals(spec))
+			file = url.getFile();
+		else
 			file = spec;
-		}
 		setURL(url, "rsrc", "", -1, null, null, file, null, null);
 	}
 }

@@ -4,25 +4,23 @@ import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 
 public class JarInJarURLStreamHandlerFactory implements URLStreamHandlerFactory {
-	private ClassLoader classLoader;
+	private final ClassLoader classLoader;
 	private URLStreamHandlerFactory chainFac;
 
-	public JarInJarURLStreamHandlerFactory(ClassLoader classLoader) {
-		this.classLoader = classLoader;
+	public JarInJarURLStreamHandlerFactory(final ClassLoader cl) {
+		classLoader = cl;
 	}
 
 	@Override
-	public URLStreamHandler createURLStreamHandler(String protocol) {
-		if ("rsrc".equals(protocol)) {
+	public URLStreamHandler createURLStreamHandler(final String protocol) {
+		if ("rsrc".equals(protocol))
 			return new JarInJarURLStreamHandler(classLoader);
-		} else if (chainFac != null) {
+		if (chainFac != null)
 			return chainFac.createURLStreamHandler(protocol);
-		} else {
-			return null;
-		}
+		return null;
 	}
 
-	public void setURLStreamHandlerFactory(URLStreamHandlerFactory fac) {
+	public void setURLStreamHandlerFactory(final URLStreamHandlerFactory fac) {
 		chainFac = fac;
 	}
 }
