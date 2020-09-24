@@ -27,7 +27,8 @@ public class JarInJarURLConnection extends URLConnection {
 		final InputStream result= classLoader.getResourceAsStream(file);
 		if (result == null) {
 			throw new MalformedURLException("Could not open InputStream for URL '" + url + "'");
+		} else {
+			return result;
 		}
-		return result;
 	}
 }

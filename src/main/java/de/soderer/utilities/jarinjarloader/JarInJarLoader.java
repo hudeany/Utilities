@@ -21,8 +21,8 @@ public class JarInJarLoader {
 	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
 
 	private static class ManifestInfo {
-		String rsrcMainClass;
-		String[] rsrcClassPath;
+		String mainClass;
+		String[] classPath;
 	}
 
 	public static void main(final String[] args) throws Exception {
@@ -41,22 +41,22 @@ public class JarInJarLoader {
 		}
 
 		final ManifestInfo manifestInfo = getManifestInfo();
-		final ClassLoader cl = Thread.currentThread().getContextClassLoader();
-		URL.setURLStreamHandlerFactory(new JarInJarURLStreamHandlerFactory(cl));
-		final URL[] rsrcUrls = new URL[manifestInfo.rsrcClassPath.length];
-		for (int i = 0; i < manifestInfo.rsrcClassPath.length; i++) {
-			final String rsrcPath = manifestInfo.rsrcClassPath[i];
-			if (rsrcPath.endsWith("/")) {
-				rsrcUrls[i] = new URL("rsrc:" + rsrcPath);
+		final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		URL.setURLStreamHandlerFactory(new JarInJarURLStreamHandlerFactory(classLoader));
+		final URL[] classPathUrls = new URL[manifestInfo.classPath.length];
+		for (int i = 0; i < manifestInfo.classPath.length; i++) {
+			final String classPath = manifestInfo.classPath[i];
+			if (classPath.endsWith("/")) {
+				classPathUrls[i] = new URL("rsrc:" + classPath);
 			} else {
-				rsrcUrls[i] = new URL("jar:rsrc:" + rsrcPath + "!/");
+				classPathUrls[i] = new URL("jar:rsrc:" + classPath + "!/");
 			}
 		}
-		try (URLClassLoader jceClassLoader = new URLClassLoader(rsrcUrls, getParentClassLoader())) {
+		try (URLClassLoader jceClassLoader = new URLClassLoader(classPathUrls, getParentClassLoader())) {
 			Thread.currentThread().setContextClassLoader(jceClassLoader);
-			final Class<?> mainClass = Class.forName(manifestInfo.rsrcMainClass, true, jceClassLoader);
-			final Method main = mainClass.getMethod("main", new Class[] { args.getClass() });
-			main.invoke((Object) null, new Object[] { args });
+			final Class<?> mainClass = Class.forName(manifestInfo.mainClass, true, jceClassLoader);
+			final Method mainMethod = mainClass.getMethod("main", new Class[] { args.getClass() });
+			mainMethod.invoke((Object) null, new Object[] { args });
 		}
 	}
 
@@ -75,12 +75,12 @@ public class JarInJarLoader {
 		final Enumeration<URL> manifestFileUrls = Thread.currentThread().getContextClassLoader().getResources(JarFile.MANIFEST_NAME);
 		while (manifestFileUrls.hasMoreElements()) {
 			final URL manifestFileUrl = manifestFileUrls.nextElement();
-			try (InputStream is = manifestFileUrl.openStream()) {
-				if (is != null) {
-					final ManifestInfo result = new ManifestInfo();
-					final Attributes mainAttribs = new Manifest(is).getMainAttributes();
-					result.rsrcMainClass = mainAttribs.getValue("Rsrc-Main-Class");
-					String rsrcClassPath = mainAttribs.getValue("Rsrc-Class-Path");
+			try (InputStream inputStream = manifestFileUrl.openStream()) {
+				if (inputStream != null) {
+					final ManifestInfo manifestInfo = new ManifestInfo();
+					final Attributes mainAttributes = new Manifest(inputStream).getMainAttributes();
+					manifestInfo.mainClass = mainAttributes.getValue("Rsrc-Main-Class");
+					String rsrcClassPath = mainAttributes.getValue("Rsrc-Class-Path");
 					if (rsrcClassPath == null) {
 						// find all jar files included in the jar and add them to the classpath
 						rsrcClassPath = "./";
@@ -98,9 +98,9 @@ public class JarInJarLoader {
 							e.printStackTrace();
 						}
 					}
-					result.rsrcClassPath = rsrcClassPath.split(" ");
-					if (isNotBlank(result.rsrcMainClass)) {
-						return result;
+					manifestInfo.classPath = rsrcClassPath.split(" ");
+					if (isNotBlank(manifestInfo.mainClass)) {
+						return manifestInfo;
 					}
 				}
 			} catch (@SuppressWarnings("unused") final Exception e) {

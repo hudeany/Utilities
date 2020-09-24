@@ -11,23 +11,24 @@ public class JarInJarURLStreamHandler extends java.net.URLStreamHandler {
 	}
 
 	@Override
-	protected java.net.URLConnection openConnection(final URL u) throws IOException {
-		return new JarInJarURLConnection(u, classLoader);
+	protected java.net.URLConnection openConnection(final URL url) throws IOException {
+		return new JarInJarURLConnection(url, classLoader);
 	}
 
 	@Override
 	protected void parseURL(final URL url, final String spec, final int start, final int limit) {
 		String file;
-		if (spec.startsWith("rsrc:"))
+		if (spec.startsWith("rsrc:")) {
 			file = spec.substring(5);
-		else if (url.getFile().equals("./"))
+		} else if ("./".equals(url.getFile())) {
 			file = spec;
-		else if (url.getFile().endsWith("/"))
+		} else if (url.getFile().endsWith("/")) {
 			file = url.getFile() + spec;
-		else if ("#runtime".equals(spec))
+		} else if ("#runtime".equals(spec)) {
 			file = url.getFile();
-		else
+		} else {
 			file = spec;
+		}
 		setURL(url, "rsrc", "", -1, null, null, file, null, null);
 	}
 }
