@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,9 +17,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.log4j.Logger;
 
+import de.soderer.utilities.http.HttpRequest;
+import de.soderer.utilities.http.HttpRequest.HttpMethod;
 import de.soderer.utilities.http.HttpResponse;
 import de.soderer.utilities.http.HttpUtilities;
-import de.soderer.utilities.http.HttpUtilities.RequestMethod;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
@@ -100,32 +100,33 @@ public class CosmosDbRestfulClient {
 	 * @throws Exception
 	 */
 	public boolean storeDocument(final String documentJsonContent, final boolean overwriteIfExists, final Map<String, String> additionalHeaders) throws Exception {
+		final HttpRequest request = new HttpRequest(HttpMethod.POST, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs");
+		request.setRequestBody(documentJsonContent);
+
 		final String authDate = getCurrentDateRFC7231();
 
 		// Mandatory parameters
-		final Map<String, String> headers = new HashMap<>();
-		headers.put("x-ms-version", COSMOSDB_API_VERSION);
-		headers.put("x-ms-date", authDate);
-		headers.put("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
+		request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
+		request.addHeader("x-ms-date", authDate);
+		request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
 
 		// Optional parameters
 		if (additionalHeaders != null && additionalHeaders.size() > 0) {
 			for (final Entry<String, String> entry : additionalHeaders.entrySet()) {
-				headers.put(entry.getKey(), entry.getValue());
+				request.addHeader(entry.getKey(), entry.getValue());
 			}
 		}
 		if (overwriteIfExists) {
-			headers.put("x-ms-documentdb-is-upsert", "true");
+			request.addHeader("x-ms-documentdb-is-upsert", "true");
 		}
 
 		// Other optional parameters (unused by now)
-		//		headers.put("x-ms-documentdb-isquery", "TRUE");
-		//		headers.put("x-ms-indexing-directive", "Include");
-		//		headers.put("x-ms-documentdb-pre-trigger-include", "CreateNewDocument");
-		//		headers.put("content-type", "application/json");
+		//		request.addHeader("x-ms-documentdb-isquery", "TRUE");
+		//		request.addHeader("x-ms-indexing-directive", "Include");
+		//		request.addHeader("x-ms-documentdb-pre-trigger-include", "CreateNewDocument");
+		//		request.addHeader("content-type", "application/json");
 
-		final String contextPath = "/dbs/" + databaseID + "/colls/" + collectionID + "/docs";
-		final HttpResponse response = HttpUtilities.executeHttpRequest(null, cosmosDbEndpoint + contextPath, headers, null, documentJsonContent, false);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("HttpCode: " + response.getHttpCode());
@@ -177,15 +178,15 @@ public class CosmosDbRestfulClient {
 	 * @throws Exception
 	 */
 	public boolean removeDocument(final String documentID, final boolean throwExceptionIfNotExists) throws Exception {
+		final HttpRequest request = new HttpRequest(HttpMethod.DELETE, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID);
+
 		final String authDate = getCurrentDateRFC7231();
 
-		final Map<String, String> headers = new HashMap<>();
-		headers.put("x-ms-version", COSMOSDB_API_VERSION);
-		headers.put("x-ms-date", authDate);
-		headers.put("authorization", URLEncoder.encode(generateAuthSignature("DELETE", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), "UTF-8"));
+		request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
+		request.addHeader("x-ms-date", authDate);
+		request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("DELETE", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), "UTF-8"));
 
-		final String contextPath = "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID;
-		final HttpResponse response = HttpUtilities.executeHttpRequest(RequestMethod.DELETE, cosmosDbEndpoint + contextPath, headers, null, null, false);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("HttpCode: " + response.getHttpCode());
@@ -218,15 +219,15 @@ public class CosmosDbRestfulClient {
 	 * Get a specific document by its id
 	 */
 	public String getDocument(final String documentID) throws Exception {
+		final HttpRequest request = new HttpRequest(HttpMethod.GET, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID);
+
 		final String authDate = getCurrentDateRFC7231();
 
-		final Map<String, String> headers = new HashMap<>();
-		headers.put("x-ms-version", COSMOSDB_API_VERSION);
-		headers.put("x-ms-date", authDate);
-		headers.put("authorization", URLEncoder.encode(generateAuthSignature("GET", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), "UTF-8"));
+		request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
+		request.addHeader("x-ms-date", authDate);
+		request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("GET", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), "UTF-8"));
 
-		final String contextPath = "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID;
-		final HttpResponse response = HttpUtilities.executeHttpRequest(RequestMethod.GET, cosmosDbEndpoint + contextPath, headers, null, null, false);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("HttpCode: " + response.getHttpCode());
@@ -272,16 +273,16 @@ public class CosmosDbRestfulClient {
 	 *     "@idname" = "abc"
 	 */
 	public String executeSqlQuery(final String sqlQuery, final Map<String, Object> parameters) throws Exception {
+		final HttpRequest request = new HttpRequest(HttpMethod.POST, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs");
+
 		final String authDate = getCurrentDateRFC7231();
 
-		final Map<String, String> headers = new HashMap<>();
-		headers.put("x-ms-version", COSMOSDB_API_VERSION);
-		headers.put("x-ms-date", authDate);
-		headers.put("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
-		headers.put("Content-Type", "application/query+json");
-		headers.put("x-ms-documentdb-isquery", "true");
+		request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
+		request.addHeader("x-ms-date", authDate);
+		request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
+		request.addHeader("Content-Type", "application/query+json");
+		request.addHeader("x-ms-documentdb-isquery", "true");
 
-		final String contextPath = "/dbs/" + databaseID + "/colls/" + collectionID + "/docs";
 
 		final JsonObject requestObject = new JsonObject();
 		requestObject.add("query", sqlQuery);
@@ -296,7 +297,9 @@ public class CosmosDbRestfulClient {
 			requestObject.add("parameters", parameterArray);
 		}
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(RequestMethod.POST, cosmosDbEndpoint + contextPath, headers, null, JsonWriter.getJsonItemString(requestObject), false);
+		request.setRequestBody(JsonWriter.getJsonItemString(requestObject));
+
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("HttpCode: " + response.getHttpCode());
@@ -334,25 +337,26 @@ public class CosmosDbRestfulClient {
 		String continuationID = null;
 
 		do {
+			final HttpRequest request = new HttpRequest(HttpMethod.POST, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs");
+
 			final String authDate = getCurrentDateRFC7231();
 
-			final Map<String, String> headers = new HashMap<>();
-			headers.put("x-ms-version", COSMOSDB_API_VERSION);
-			headers.put("x-ms-date", authDate);
-			headers.put("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
-			headers.put("Content-Type", "application/query+json");
-			headers.put("x-ms-documentdb-isquery", "true");
-			headers.put("x-ms-max-item-count", "1000000");
+			request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
+			request.addHeader("x-ms-date", authDate);
+			request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
+			request.addHeader("Content-Type", "application/query+json");
+			request.addHeader("x-ms-documentdb-isquery", "true");
+			request.addHeader("x-ms-max-item-count", "1000000");
 			if (continuationID != null) {
-				headers.put("x-ms-continuation", continuationID);
+				request.addHeader("x-ms-continuation", continuationID);
 			}
-
-			final String contextPath = "/dbs/" + databaseID + "/colls/" + collectionID + "/docs";
 
 			final JsonObject requestObject = new JsonObject();
 			requestObject.add("query", "SELECT root.id FROM root");
 
-			final HttpResponse response = HttpUtilities.executeHttpRequest(RequestMethod.POST, cosmosDbEndpoint + contextPath, headers, null, JsonWriter.getJsonItemString(requestObject), false);
+			request.setRequestBody(JsonWriter.getJsonItemString(requestObject));
+
+			final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
 			if (logger.isDebugEnabled()) {
 				logger.debug("HttpCode: " + response.getHttpCode());

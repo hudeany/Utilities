@@ -134,8 +134,7 @@ public class OpenSshKeyReader implements Closeable {
 						}
 					} else if (currentKeyName.toLowerCase().contains("public")) {
 						if (keyPair.getPublic() != null) {
-							// keep the first found public key, but check if the new public key fits the old one
-							// TODO
+							// TODO: keep the first found public key, but check if the new public key fits the old one
 						} else {
 							keyPair = readPkcs1PublicKey(keyPair, currentKeyName, keyData);
 						}

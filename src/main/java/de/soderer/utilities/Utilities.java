@@ -642,7 +642,12 @@ public class Utilities {
 	public static String getStringFromMap(final Map<String, ? extends Object> map, final String entrySeparator, final String keySeparator, final boolean sort) {
 		final List<String> keyList = new ArrayList<>(map.keySet());
 		if (sort) {
-			Collections.sort(keyList);
+			Collections.sort(keyList, new Comparator<String>() {
+				@Override
+				public int compare(final String o1, final String o2) {
+					return Comparator.nullsFirst(String::compareTo).compare(o1, o2);
+				}
+			});
 		}
 
 		final StringBuilder builder = new StringBuilder();

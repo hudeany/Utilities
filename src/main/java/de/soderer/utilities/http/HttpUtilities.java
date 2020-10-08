@@ -35,74 +35,6 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class HttpUtilities {
-	public static void pingUrlWithoutSslCheckNoWaitForAnswer(final String pingUrl) throws IOException, NoSuchAlgorithmException, KeyManagementException {
-		InputStream downloadStream = null;
-		try {
-			if (pingUrl.startsWith("https")) {
-				// Deactivate SSL-Certificates check
-				final SSLContext sslContext = SSLContext.getInstance("TLS");
-				final TrustManager[] tms = new TrustManager[] {
-						new X509TrustManager() {
-							@Override
-							public X509Certificate[] getAcceptedIssuers() {
-								return null;
-							}
-
-							@Override
-							public void checkServerTrusted(final X509Certificate[] arg0, final String arg1) throws CertificateException {
-								// nothing to do
-							}
-
-							@Override
-							public void checkClientTrusted(final X509Certificate[] arg0, final String arg1) throws CertificateException {
-								// nothing to do
-							}
-						}
-				};
-				sslContext.init(null, tms, null);
-				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-				final HttpsURLConnection connection = (HttpsURLConnection) new URL(pingUrl).openConnection();
-				connection.setSSLSocketFactory(sslSocketFactory);
-				connection.setRequestMethod("POST");
-				connection.setConnectTimeout(5000);
-				connection.setReadTimeout(100);
-				connection.setDoInput(true);
-				connection.setDoOutput(false);
-				downloadStream = connection.getInputStream();
-			} else {
-				final HttpURLConnection connection = (HttpURLConnection) new URL(pingUrl).openConnection();
-				connection.setRequestMethod("POST");
-				connection.setConnectTimeout(5000);
-				connection.setReadTimeout(100);
-				connection.setDoInput(true);
-				connection.setDoOutput(false);
-				downloadStream = connection.getInputStream();
-			}
-		} catch (@SuppressWarnings("unused") final SocketTimeoutException stex) {
-			// This Exception is expected for the real short timeout
-		} finally {
-			Utilities.closeQuietly(downloadStream);
-		}
-	}
-
-	public enum RequestMethod {
-		GET,
-		POST,
-		PUT,
-		DELETE
-	}
-
-	public static final String CONTENT_ENCODING = "UTF-8";
-
-	public static final String CONTENT_TYPE_JAVASCRIPT = "application/javascript";
-	public static final String CONTENT_TYPE_JSON = "application/json";
-	public static final String APPLICATION_JSON_UTF8 = CONTENT_TYPE_JSON + ";charset=" + CONTENT_ENCODING;
-	public static final String IMAGE_CONTENT_TYPE = "image";
-
-	public static final String SECURE_HTTP_PROTOCOL_SIGN = "https://";
-	public static final String HTTP_PROTOCOL_SIGN = "http://";
-
-
 	private static TrustManager TRUSTALLCERTS_TRUSTMANAGER = new X509TrustManager() {
 		@Override
 		public java.security.cert.X509Certificate[] getAcceptedIssuers() {
@@ -122,122 +54,60 @@ public class HttpUtilities {
 
 	private static HostnameVerifier TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER = (hostname, session) -> true;
 
-	public static String convertToParameterString(final Map<String, Object> parameterMap, String encoding) throws UnsupportedEncodingException {
-		if (parameterMap == null) {
-			return null;
-		} else {
-			if (Utilities.isBlank(encoding)) {
-				encoding = "UTF-8";
-			}
-			final StringBuilder returnValue = new StringBuilder();
-			try {
-				for (final Entry<String, Object> entry : parameterMap.entrySet()) {
-					if (returnValue.length() > 0) {
-						returnValue.append("&");
-					}
-					returnValue.append(URLEncoder.encode(entry.getKey(), encoding));
-					returnValue.append("=");
-					if (entry.getValue() != null) {
-						returnValue.append(URLEncoder.encode(entry.getValue().toString(), encoding));
-					}
-				}
-			} catch (final UnsupportedEncodingException e) {
-				throw e;
-			}
-
-			return returnValue.toString();
-		}
+	/**
+	 * Use systems default proxy, if set on JVM start.
+	 * To override default proxy usage use "executeHttpRequest(httpRequest, Proxy.NO_PROXY)"
+	 *
+	 * @param httpRequest
+	 * @return
+	 * @throws Exception
+	 */
+	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest) throws Exception {
+		return executeHttpRequest(httpRequest, null);
 	}
 
-	public static Tuple<String, String> createHtmlFormMimetypeHeader(final String encoding) {
-		if (Utilities.isBlank(encoding)) {
-			return new Tuple<>("content-type", "application/x-www-form-urlencoded");
-		} else {
-			return new Tuple<>("content-type", "application/x-www-form-urlencoded; charset=" + encoding.toLowerCase());
-		}
-	}
-
-	public static String executeHttpGetRequest(final String httpUrl) throws Exception {
-		return executeHttpRequest(httpUrl, null, null);
-	}
-
-	public static String executeHttpGetRequest(final String httpUrl, final Map<String, Object> httpUrlParameter) throws Exception {
-		return executeHttpRequest(httpUrl, httpUrlParameter, null);
-	}
-
-	public static String executeHttpGetRequest(final String httpUrl, final Map<String, Object> httpUrlParameter, final boolean checkSslServerCert) throws Exception {
-		return executeHttpRequest(httpUrl, httpUrlParameter, null, checkSslServerCert);
-	}
-
-	public static String executeHttpPostRequest(final String httpUrl, final Map<String, Object> httpPostParameter) throws Exception {
-		return executeHttpRequest(httpUrl, null, httpPostParameter);
-	}
-
-	public static String executeHttpPostRequest(final String httpUrl, final Map<String, Object> httpPostParameter, final boolean checkSslServerCert) throws Exception {
-		return executeHttpRequest(httpUrl, null, httpPostParameter, checkSslServerCert);
-	}
-
-	public static String executeHttpRequest(final String httpUrlString, final Map<String, Object> httpUrlParameter, final Map<String, Object> httpPostParameter) throws Exception {
-		return executeHttpRequest(httpUrlString, httpUrlParameter, httpPostParameter, true);
-	}
-
-	public static String executeHttpRequest(final String httpUrlString, final Map<String, Object> httpUrlParameter, final Map<String, Object> httpPostParameter, final boolean checkSslServerCert) throws Exception {
-		return executeHttpRequest(httpUrlString, null, httpUrlParameter, httpPostParameter, checkSslServerCert);
-	}
-
-	public static String executeHttpRequest(final String httpUrlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final Map<String, Object> httpPostParameter, final boolean checkSslServerCert) throws Exception {
-		String httpRequestBody = null;
-		if (httpPostParameter != null && httpPostParameter.size() > 0) {
-			httpRequestBody = convertToParameterString(httpPostParameter, null);
-		}
-
-		final HttpResponse response = executeHttpRequest(null, httpUrlString, httpRequestHeaders, httpUrlParameter, httpRequestBody, checkSslServerCert);
-
-		if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
-			return response.getContent();
-		} else {
-			throw new HttpException(httpUrlString, response.getHttpCode());
-		}
-	}
-
-	public static HttpResponse executeHttpRequest(final RequestMethod requestMethod, final String httpUrlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final String httpRequestBody, final boolean checkSslServerCert) throws Exception {
-		return executeHttpRequest(requestMethod, httpUrlString, httpRequestHeaders, httpUrlParameter, httpRequestBody, null, checkSslServerCert);
-	}
-
-	public static HttpResponse executeHttpRequest(final RequestMethod requestMethod, final String urlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final String httpRequestBody, final String requestEncoding, final boolean checkSslServerCert) throws Exception {
-		return executeHttpRequest(requestMethod, urlString, httpRequestHeaders,httpUrlParameter, httpRequestBody, requestEncoding, checkSslServerCert, null);
-	}
-
-	public static HttpResponse executeHttpRequest(final RequestMethod requestMethod, String urlString, final Map<String, String> httpRequestHeaders, final Map<String, Object> httpUrlParameter, final String httpRequestBody, String requestEncoding, final boolean checkSslServerCert, final Proxy proxy) throws Exception {
-		if (Utilities.isBlank(urlString)) {
-			throw new Exception("Invalid empty URL for http request");
-		}
-
-		// Check for protocol "https://" or "http://" (fallback: "http://")
-		if (!urlString.startsWith(SECURE_HTTP_PROTOCOL_SIGN) && !urlString.startsWith(HTTP_PROTOCOL_SIGN)) {
-			urlString = HTTP_PROTOCOL_SIGN + urlString;
-		}
-
+	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy) throws Exception {
 		try {
-			if (httpUrlParameter != null && httpUrlParameter.size() > 0) {
-				// Prepare Get parameter data
-				final String getParameterString = convertToParameterString(httpUrlParameter, requestEncoding);
-				urlString += "?" + getParameterString;
+			String requestedUrl = httpRequest.getUrlWithProtocol();
+
+			// Check for already in URL included GET parameters
+			String parametersFromUrl;
+			if (requestedUrl.contains("?")) {
+				if (requestedUrl.contains("#")) {
+					parametersFromUrl = requestedUrl.substring(requestedUrl.indexOf("?") + 1, requestedUrl.indexOf("#"));
+					requestedUrl = requestedUrl.substring(0, requestedUrl.indexOf("?"));
+				} else {
+					parametersFromUrl = requestedUrl.substring(requestedUrl.indexOf("?") + 1);
+					requestedUrl = requestedUrl.substring(0, requestedUrl.indexOf("?"));
+				}
+			} else {
+				parametersFromUrl = "";
+			}
+
+			// Prepare GET parameters data
+			if (httpRequest.getUrlParameters() != null && httpRequest.getUrlParameters().size() > 0) {
+				final String getParameterString = convertToParameterString(httpRequest.getUrlParameters(), httpRequest.getEncoding());
+				if (parametersFromUrl.length() > 0) {
+					requestedUrl += "?" + parametersFromUrl + "&" + getParameterString;
+				} else {
+					requestedUrl += "?" + getParameterString;
+				}
+			} else if (parametersFromUrl.length() > 0) {
+				requestedUrl += "?" + parametersFromUrl;
 			}
 
 			HttpURLConnection urlConnection;
 			if (proxy == null) {
-				// Use systems default proxy, if set on JVM start. To override default proxy usage use "Proxy.NO_PROXY"
-				urlConnection = (HttpURLConnection) new URL(urlString).openConnection(getProxyFromSystem(urlString));
+				urlConnection = (HttpURLConnection) new URL(requestedUrl).openConnection(getProxyFromSystem(requestedUrl));
 			} else {
-				urlConnection = (HttpURLConnection) new URL(urlString).openConnection(proxy);
+				urlConnection = (HttpURLConnection) new URL(requestedUrl).openConnection(proxy);
 			}
 
-			if (requestMethod != null) {
-				urlConnection.setRequestMethod(requestMethod.name());
+			if (httpRequest.getRequestMethod() != null) {
+				urlConnection.setRequestMethod(httpRequest.getRequestMethod().name());
 			}
 
-			if (urlString.startsWith(SECURE_HTTP_PROTOCOL_SIGN) && !checkSslServerCert) {
+			if (requestedUrl.startsWith(HttpRequest.SECURE_HTTP_PROTOCOL_SIGN) && !httpRequest.isCheckSslCertificates()) {
 				final SSLContext sslContext = SSLContext.getInstance("SSL");
 				sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new java.security.SecureRandom());
 				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
@@ -245,22 +115,26 @@ public class HttpUtilities {
 				((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
 			}
 
-			if (httpRequestHeaders != null) {
-				for (final Entry<String, String> headerEntry : httpRequestHeaders.entrySet()) {
+			if (httpRequest.getHeaders() != null) {
+				for (final Entry<String, String> headerEntry : httpRequest.getHeaders().entrySet()) {
 					urlConnection.setRequestProperty(headerEntry.getKey(), headerEntry.getValue());
 				}
 			}
 
-			if (httpRequestBody != null) {
+			// TODO: Add fileuploads
+
+			String httpRequestBody = null;
+			if (httpRequest.getPostParameters() != null && httpRequest.getPostParameters().size() > 0) {
+				httpRequestBody = convertToParameterString(httpRequest.getPostParameters(), null);
+
 				// Send post parameter data
 				urlConnection.setDoOutput(true);
-				if (Utilities.isBlank(requestEncoding)) {
-					requestEncoding = "UTF-8";
-				}
-				try (OutputStreamWriter out = new OutputStreamWriter(urlConnection.getOutputStream(), requestEncoding)) {
+				try (OutputStreamWriter out = new OutputStreamWriter(urlConnection.getOutputStream(), Utilities.isBlank(httpRequest.getEncoding()) ? "UTF-8" : httpRequest.getEncoding())) {
 					out.write(httpRequestBody);
 					out.flush();
 				}
+			} else if (httpRequest.getRequestBody() != null) {
+				httpRequestBody = httpRequest.getRequestBody();
 			}
 
 			urlConnection.connect();
@@ -325,6 +199,33 @@ public class HttpUtilities {
 		}
 	}
 
+	public static String convertToParameterString(final Map<String, Object> parameterMap, String encoding) throws UnsupportedEncodingException {
+		if (parameterMap == null) {
+			return null;
+		} else {
+			if (Utilities.isBlank(encoding)) {
+				encoding = "UTF-8";
+			}
+			final StringBuilder returnValue = new StringBuilder();
+			try {
+				for (final Entry<String, Object> entry : parameterMap.entrySet()) {
+					if (returnValue.length() > 0) {
+						returnValue.append("&");
+					}
+					returnValue.append(URLEncoder.encode(entry.getKey(), encoding));
+					returnValue.append("=");
+					if (entry.getValue() != null) {
+						returnValue.append(URLEncoder.encode(entry.getValue().toString(), encoding));
+					}
+				}
+			} catch (final UnsupportedEncodingException e) {
+				throw e;
+			}
+
+			return returnValue.toString();
+		}
+	}
+
 	/**
 	 * This proxy will be used as default proxy.
 	 * To override default proxy usage use "Proxy.NO_PROXY"
@@ -384,6 +285,64 @@ public class HttpUtilities {
 		return netUrl.getHost();
 	}
 
+	public static void pingUrlWithoutSslCheckNoWaitForAnswer(final String pingUrl) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+		InputStream downloadStream = null;
+		try {
+			if (pingUrl.startsWith("https")) {
+				// Deactivate SSL-Certificates check
+				final SSLContext sslContext = SSLContext.getInstance("TLS");
+				final TrustManager[] tms = new TrustManager[] {
+						new X509TrustManager() {
+							@Override
+							public X509Certificate[] getAcceptedIssuers() {
+								return null;
+							}
+
+							@Override
+							public void checkServerTrusted(final X509Certificate[] arg0, final String arg1) throws CertificateException {
+								// nothing to do
+							}
+
+							@Override
+							public void checkClientTrusted(final X509Certificate[] arg0, final String arg1) throws CertificateException {
+								// nothing to do
+							}
+						}
+				};
+				sslContext.init(null, tms, null);
+				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+				final HttpsURLConnection connection = (HttpsURLConnection) new URL(pingUrl).openConnection();
+				connection.setSSLSocketFactory(sslSocketFactory);
+				connection.setRequestMethod("POST");
+				connection.setConnectTimeout(5000);
+				connection.setReadTimeout(100);
+				connection.setDoInput(true);
+				connection.setDoOutput(false);
+				downloadStream = connection.getInputStream();
+			} else {
+				final HttpURLConnection connection = (HttpURLConnection) new URL(pingUrl).openConnection();
+				connection.setRequestMethod("POST");
+				connection.setConnectTimeout(5000);
+				connection.setReadTimeout(100);
+				connection.setDoInput(true);
+				connection.setDoOutput(false);
+				downloadStream = connection.getInputStream();
+			}
+		} catch (@SuppressWarnings("unused") final SocketTimeoutException stex) {
+			// This Exception is expected for the real short timeout
+		} finally {
+			Utilities.closeQuietly(downloadStream);
+		}
+	}
+
+	public static Tuple<String, String> createHtmlFormMimetypeHeader(final String encoding) {
+		if (Utilities.isBlank(encoding)) {
+			return new Tuple<>("content-type", "application/x-www-form-urlencoded");
+		} else {
+			return new Tuple<>("content-type", "application/x-www-form-urlencoded; charset=" + encoding.toLowerCase());
+		}
+	}
+
 	public static String addUrlParameter(final String url, final String parameterName, final Object parameterValue, final String encodingCharSet) throws UnsupportedEncodingException {
 		final StringBuilder escapedParameterNameAndValue = new StringBuilder();
 
@@ -424,6 +383,24 @@ public class HttpUtilities {
 		return addUrlParameter(url, escapedParameterNameAndValue.toString());
 	}
 
+	public static String addUrlParameter(final String url, final String escapedParameterNameAndValue) {
+		final StringBuilder newUrl = new StringBuilder();
+		final int insertPosition = url.indexOf('#');
+
+		if (insertPosition < 0) {
+			newUrl.append(url);
+			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
+			newUrl.append(escapedParameterNameAndValue);
+		} else {
+			newUrl.append(url.substring(0, insertPosition));
+			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
+			newUrl.append(escapedParameterNameAndValue);
+			newUrl.append(url.substring(insertPosition));
+		}
+
+		return newUrl.toString();
+	}
+
 	public static String addPathParameter(final String url, final String escapedParameterNameAndValue) {
 		final StringBuilder newUrl = new StringBuilder();
 		int insertPosition = url.indexOf('?');
@@ -438,24 +415,6 @@ public class HttpUtilities {
 		} else {
 			newUrl.append(url.substring(0, insertPosition));
 			newUrl.append(";");
-			newUrl.append(escapedParameterNameAndValue);
-			newUrl.append(url.substring(insertPosition));
-		}
-
-		return newUrl.toString();
-	}
-
-	public static String addUrlParameter(final String url, final String escapedParameterNameAndValue) {
-		final StringBuilder newUrl = new StringBuilder();
-		final int insertPosition = url.indexOf('#');
-
-		if (insertPosition < 0) {
-			newUrl.append(url);
-			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
-			newUrl.append(escapedParameterNameAndValue);
-		} else {
-			newUrl.append(url.substring(0, insertPosition));
-			newUrl.append(url.indexOf('?') <= -1 ? '?' : '&');
 			newUrl.append(escapedParameterNameAndValue);
 			newUrl.append(url.substring(insertPosition));
 		}
@@ -603,4 +562,3 @@ public class HttpUtilities {
 		}
 	}
 }
-
