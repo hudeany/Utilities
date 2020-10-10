@@ -1,6 +1,7 @@
 package de.soderer.utilities.http;
 
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,11 +13,15 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
@@ -29,11 +34,14 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import de.soderer.utilities.NumberUtilities;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.collection.CaseInsensitiveMap;
 
+// TODO: Add fileuploads
 public class HttpUtilities {
 	private static TrustManager TRUSTALLCERTS_TRUSTMANAGER = new X509TrustManager() {
 		@Override
@@ -66,6 +74,7 @@ public class HttpUtilities {
 		return executeHttpRequest(httpRequest, null);
 	}
 
+	@SuppressWarnings("resource")
 	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy) throws Exception {
 		try {
 			String requestedUrl = httpRequest.getUrlWithProtocol();
@@ -115,13 +124,23 @@ public class HttpUtilities {
 				((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
 			}
 
-			if (httpRequest.getHeaders() != null) {
+			if (httpRequest.getHeaders() != null && httpRequest.getHeaders().size() > 0) {
 				for (final Entry<String, String> headerEntry : httpRequest.getHeaders().entrySet()) {
 					urlConnection.setRequestProperty(headerEntry.getKey(), headerEntry.getValue());
 				}
 			}
 
-			// TODO: Add fileuploads
+			if (httpRequest.getCookieData() != null && httpRequest.getCookieData().size() > 0) {
+				final StringBuilder cookieValue = new StringBuilder();
+				for (final Entry<String, String> cookieEntry : httpRequest.getCookieData().entrySet()) {
+					if (cookieValue.length() > 0) {
+						cookieValue.append("; ");
+					}
+					cookieValue.append(encodeForCookie(cookieEntry.getKey()) + "=" + encodeForCookie(cookieEntry.getValue()));
+				}
+
+				urlConnection.setRequestProperty(HttpRequest.HEADER_NAME_UPLOAD_COOKIE, cookieValue.toString());
+			}
 
 			String httpRequestBody = null;
 			if (httpRequest.getPostParameters() != null && httpRequest.getPostParameters().size() > 0) {
@@ -139,59 +158,87 @@ public class HttpUtilities {
 
 			urlConnection.connect();
 
+			final Map<String, String> headers = new LinkedHashMap<>();
+			for (final String headerName : urlConnection.getHeaderFields().keySet()) {
+				headers.put(headerName, urlConnection.getHeaderField(headerName));
+			}
+
+			String encoding = "UTF-8";
+			if (headers.containsKey("content-type")) {
+				String contentType = headers.get("content-type");
+				if (contentType != null && contentType.toLowerCase().contains("charset="))  {
+					contentType = contentType.toLowerCase();
+					encoding = contentType.substring(contentType.indexOf("charset=") + 8).trim();
+				}
+			}
+
+			Map<String, String> cookiesMap = null;
+			if (headers.containsKey(HttpRequest.HEADER_NAME_DOWNLOAD_COOKIE)) {
+				final String cookiesData = headers.get(HttpRequest.HEADER_NAME_DOWNLOAD_COOKIE);
+				if (cookiesData != null)  {
+					cookiesMap = new LinkedHashMap<>();
+					for (final String cookie : cookiesData.split(";")) {
+						final String[] cookieParts = cookie.split("=");
+						if (cookieParts.length == 2) {
+							cookiesMap.put(URLDecoder.decode(cookieParts[0].trim(), "UTF-8"), URLDecoder.decode(cookieParts[1].trim(), "UTF-8"));
+						}
+					}
+				}
+			}
+
 			final int httpResponseCode = urlConnection.getResponseCode();
-			// TODO: Optionally follow redirections like HttpCodes 301 and 302
 			if (httpResponseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
-				final Map<String, String> headers = new CaseInsensitiveMap<>();
-				for (final String headerName : urlConnection.getHeaderFields().keySet()) {
-					headers.put(headerName, urlConnection.getHeaderField(headerName));
-				}
-
-				String encoding = "UTF-8";
-				if (headers.containsKey("content-type")) {
-					String contentType = headers.get("content-type");
-					if (contentType != null && contentType.toLowerCase().contains("charset="))  {
-						contentType = contentType.toLowerCase();
-						encoding = contentType.substring(contentType.indexOf("charset=") + 8).trim();
+				if (httpRequest.getDownloadStream() != null && 200 <= httpResponseCode && httpResponseCode <= 299) {
+					IOUtils.copy(urlConnection.getInputStream(), httpRequest.getDownloadStream());
+					return new HttpResponse(httpResponseCode, "File downloaded", urlConnection.getContentType(), headers, cookiesMap);
+				} else if (httpRequest.getDownloadFile() != null && 200 <= httpResponseCode && httpResponseCode <= 299) {
+					try (FileOutputStream downloadFileOutputStream = new FileOutputStream(httpRequest.getDownloadFile())) {
+						IOUtils.copy(urlConnection.getInputStream(), downloadFileOutputStream);
+						return new HttpResponse(httpResponseCode, "File downloaded", urlConnection.getContentType(), headers, cookiesMap);
+					} catch (final Exception e) {
+						if (httpRequest.getDownloadFile().exists()) {
+							httpRequest.getDownloadFile().delete();
+						}
+						throw e;
+					}
+				} else {
+					try (BufferedReader httpResponseContentReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), encoding))) {
+						final StringBuilder httpResponseContent = new StringBuilder();
+						String httpResponseContentLine;
+						while ((httpResponseContentLine = httpResponseContentReader.readLine()) != null) {
+							if (httpResponseContent.length() > 0) {
+								httpResponseContent.append("\n");
+							}
+							httpResponseContent.append(httpResponseContentLine);
+						}
+						return new HttpResponse(httpResponseCode, httpResponseContent.toString(), urlConnection.getContentType(), headers, cookiesMap);
+					} catch (@SuppressWarnings("unused") final Exception e) {
+						return new HttpResponse(httpResponseCode, null, null, headers, cookiesMap);
 					}
 				}
-
-				try (BufferedReader httpResponseContentReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), encoding))) {
-					final StringBuilder httpResponseContent = new StringBuilder();
-					String httpResponseContentLine;
-					while ((httpResponseContentLine = httpResponseContentReader.readLine()) != null) {
-						httpResponseContent.append(httpResponseContentLine);
-						httpResponseContent.append("\n");
-					}
-					return new HttpResponse(httpResponseCode, httpResponseContent.toString(), urlConnection.getContentType(), headers);
-				} catch (@SuppressWarnings("unused") final Exception e) {
-					return new HttpResponse(httpResponseCode, null, null, null);
+			} else if (httpResponseCode == HttpURLConnection.HTTP_MOVED_TEMP || httpResponseCode == HttpURLConnection.HTTP_MOVED_PERM) {
+				// Optionally follow redirections (HttpCodes 301 and 302)
+				final String redirectUrl = urlConnection.getHeaderField("Location");
+				if (StringUtils.isNotBlank(redirectUrl)) {
+					final HttpRequest redirectedHttpRequest = new HttpRequest(httpRequest.getRequestMethod(), redirectUrl);
+					// TODO: set other request params
+					return executeHttpRequest(redirectedHttpRequest);
+				} else {
+					throw new Exception("Redirection url was empty");
 				}
 			} else {
-				final Map<String, String> headers = new CaseInsensitiveMap<>();
-				for (final String headerName : urlConnection.getHeaderFields().keySet()) {
-					headers.put(headerName, urlConnection.getHeaderField(headerName));
-				}
-
-				String encoding = "UTF-8";
-				if (headers.containsKey("content-type")) {
-					String contentType = headers.get("content-type");
-					if (contentType != null && contentType.toLowerCase().contains("charset="))  {
-						contentType = contentType.toLowerCase();
-						encoding = contentType.substring(contentType.indexOf("charset=") + 8).trim();
-					}
-				}
-
 				try (BufferedReader httpResponseContentReader = new BufferedReader(new InputStreamReader(urlConnection.getErrorStream(), encoding))) {
 					final StringBuilder httpResponseContent = new StringBuilder();
 					String httpResponseContentLine;
 					while ((httpResponseContentLine = httpResponseContentReader.readLine()) != null) {
+						if (httpResponseContent.length() > 0) {
+							httpResponseContent.append("\n");
+						}
 						httpResponseContent.append(httpResponseContentLine);
-						httpResponseContent.append("\n");
 					}
-					return new HttpResponse(httpResponseCode, httpResponseContent.toString(), urlConnection.getContentType(), headers);
+					return new HttpResponse(httpResponseCode, httpResponseContent.toString(), urlConnection.getContentType(), headers, cookiesMap);
 				} catch (@SuppressWarnings("unused") final Exception e) {
-					return new HttpResponse(httpResponseCode, null, null, null);
+					return new HttpResponse(httpResponseCode, null, null, headers, cookiesMap);
 				}
 			}
 		} catch (final Exception e) {
@@ -559,6 +606,18 @@ public class HttpUtilities {
 				return "HTTP Version Not Supported";
 			default:
 				return "Unknown Http Status Code (" + httpStatusCode + ")";
+		}
+	}
+
+	public static String createBasicAuthenticationHeaderValue(final String username, final String password) {
+		return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
+	}
+
+	private static String encodeForCookie(final String value) {
+		if (value == null) {
+			return value;
+		} else {
+			return value.replace(";", "%3B").replace("=", "%3D");
 		}
 	}
 }

@@ -3,16 +3,18 @@ package de.soderer.utilities.http;
 import java.util.Map;
 
 public class HttpResponse {
-	private int httpCode;
-	private String content;
-	private String contentType;
-	private Map<String, String> headers;
-	
-	public HttpResponse(int httpCode, String content, String contentType, Map<String, String> headers) {
+	private final int httpCode;
+	private final String content;
+	private final String contentType;
+	private final Map<String, String> headers;
+	private final Map<String, String> cookieData;
+
+	public HttpResponse(final int httpCode, final String content, final String contentType, final Map<String, String> headers, final Map<String, String> cookieData) {
 		this.httpCode = httpCode;
 		this.content = content;
 		this.contentType = contentType;
 		this.headers = headers;
+		this.cookieData = cookieData;
 	}
 
 	public int getHttpCode() {
@@ -29,5 +31,9 @@ public class HttpResponse {
 
 	public Map<String, String> getHeaders() {
 		return headers;
+	}
+
+	public Map<String, String> getCookies() {
+		return cookieData;
 	}
 }

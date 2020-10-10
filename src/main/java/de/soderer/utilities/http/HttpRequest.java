@@ -1,6 +1,8 @@
 package de.soderer.utilities.http;
 
-import java.util.HashMap;
+import java.io.File;
+import java.io.OutputStream;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import de.soderer.utilities.Utilities;
@@ -8,6 +10,11 @@ import de.soderer.utilities.Utilities;
 public class HttpRequest {
 	public static final String SECURE_HTTP_PROTOCOL_SIGN = "https://";
 	public static final String HTTP_PROTOCOL_SIGN = "http://";
+
+	public static final String HEADER_NAME_BASIC_AUTHENTICATION = "Authorization";
+	public static final String HEADER_NAME_USER_AGENT = "User-Agent";
+	public static final String HEADER_NAME_DOWNLOAD_COOKIE = "Set-Cookie";
+	public static final String HEADER_NAME_UPLOAD_COOKIE = "Cookie";
 
 	public enum HttpMethod {
 		GET,
@@ -25,15 +32,18 @@ public class HttpRequest {
 	private final String url;
 	private String encoding = "UTF-8";
 
-	private final Map<String, String> headers = new HashMap<>();
-	private final Map<String, Object> urlParameters = new HashMap<>();
-	private final Map<String, Object> postParameters= new HashMap<>();
+	private final Map<String, String> headers = new LinkedHashMap<>();
+	private final Map<String, Object> urlParameters = new LinkedHashMap<>();
+	private final Map<String, Object> postParameters= new LinkedHashMap<>();
 	private String requestBody = null;
-	private final Map<String, byte[]> fileAttachments= new HashMap<>();
-	private final Map<String, Object> pathParameterData= new HashMap<>();
-	private final Map<String, String> cookieData= new HashMap<>();
+	private final Map<String, byte[]> uploadFileAttachments = new LinkedHashMap<>();
+	private OutputStream downloadStream = null;
+	private File downloadFile = null;
+	private final Map<String, Object> pathParameterData = new LinkedHashMap<>();
+	private final Map<String, String> cookieData = new LinkedHashMap<>();
 
 	private boolean checkSslCertificates = true;
+	private boolean followRedirects = false;
 
 	/**
 	 * Http POST Request
@@ -97,6 +107,26 @@ public class HttpRequest {
 		return this;
 	}
 
+	public HttpRequest addUserAgentHeader(final String userAgent) throws Exception {
+		if (headers.containsKey(HEADER_NAME_USER_AGENT)) {
+			throw new Exception("Request already contains a UserAgentHeader");
+		} else {
+			addHeader(HttpRequest.HEADER_NAME_USER_AGENT, userAgent);
+
+			return this;
+		}
+	}
+
+	public HttpRequest addBasicAuthenticationHeader(final String username, final String password) throws Exception {
+		if (headers.containsKey(HEADER_NAME_BASIC_AUTHENTICATION)) {
+			throw new Exception("Request already contains a BasicAuthenticationHeader");
+		} else {
+			addHeader(HttpRequest.HEADER_NAME_BASIC_AUTHENTICATION, HttpUtilities.createBasicAuthenticationHeaderValue(username, password));
+
+			return this;
+		}
+	}
+
 	public Map<String, Object> getUrlParameters() {
 		return urlParameters;
 	}
@@ -121,14 +151,42 @@ public class HttpRequest {
 		}
 	}
 
-	public Map<String, byte[]> getFileAttachments() {
-		return fileAttachments;
+	public Map<String, byte[]> getUploadFileAttachments() {
+		return uploadFileAttachments;
 	}
 
-	public HttpRequest addFileData(final String name, final byte[] data) {
-		fileAttachments.put(name, data);
+	public HttpRequest addUploadFileData(final String name, final byte[] data) {
+		uploadFileAttachments.put(name, data);
 
 		return this;
+	}
+
+	public OutputStream getDownloadStream() {
+		return downloadStream;
+	}
+
+	public HttpRequest setDownloadStream(final OutputStream downloadStream) throws Exception {
+		if (downloadFile != null) {
+			throw new Exception("DownloadFile is already set. DownloadStream cannot be set therefore");
+		} else {
+			this.downloadStream = downloadStream;
+
+			return this;
+		}
+	}
+
+	public File getDownloadFile() {
+		return downloadFile;
+	}
+
+	public HttpRequest setDownloadFile(final File downloadFile) throws Exception {
+		if (downloadStream != null) {
+			throw new Exception("DownloadStream is already set. DownloadFile cannot be set therefore");
+		} else {
+			this.downloadFile = downloadFile;
+
+			return this;
+		}
 	}
 
 	public Map<String, Object> getPathParameterData() {
@@ -173,5 +231,15 @@ public class HttpRequest {
 
 			return this;
 		}
+	}
+
+	public boolean isFollowRedirects() {
+		return followRedirects;
+	}
+
+	public HttpRequest setFollowRedirects(final boolean followRedirects) {
+		this.followRedirects = followRedirects;
+
+		return this;
 	}
 }
