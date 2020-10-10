@@ -216,12 +216,11 @@ public class HttpUtilities {
 						return new HttpResponse(httpResponseCode, null, null, headers, cookiesMap);
 					}
 				}
-			} else if (httpResponseCode == HttpURLConnection.HTTP_MOVED_TEMP || httpResponseCode == HttpURLConnection.HTTP_MOVED_PERM) {
+			} else if ((httpResponseCode == HttpURLConnection.HTTP_MOVED_TEMP || httpResponseCode == HttpURLConnection.HTTP_MOVED_PERM) && httpRequest.isFollowRedirects()) {
 				// Optionally follow redirections (HttpCodes 301 and 302)
 				final String redirectUrl = urlConnection.getHeaderField("Location");
 				if (StringUtils.isNotBlank(redirectUrl)) {
 					final HttpRequest redirectedHttpRequest = new HttpRequest(httpRequest.getRequestMethod(), redirectUrl);
-					// TODO: set other request params
 					return executeHttpRequest(redirectedHttpRequest);
 				} else {
 					throw new Exception("Redirection url was empty");
