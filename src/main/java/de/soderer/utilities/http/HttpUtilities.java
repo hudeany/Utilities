@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -22,6 +23,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
@@ -38,6 +40,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import de.soderer.utilities.NumberUtilities;
+import de.soderer.utilities.Triple;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
@@ -142,8 +145,46 @@ public class HttpUtilities {
 				urlConnection.setRequestProperty(HttpRequest.HEADER_NAME_UPLOAD_COOKIE, cookieValue.toString());
 			}
 
+			final String boundary = Utilities.generateUUID();
+
 			String httpRequestBody = null;
-			if (httpRequest.getPostParameters() != null && httpRequest.getPostParameters().size() > 0) {
+			if (httpRequest.getRequestBody() != null) {
+				urlConnection.setDoOutput(true);
+				final OutputStream outputStream = urlConnection.getOutputStream();
+				httpRequestBody = httpRequest.getRequestBody();
+				outputStream.write(httpRequestBody.getBytes(StandardCharsets.UTF_8));
+				outputStream.flush();
+			} else if (httpRequest.getUploadFileAttachments() != null && httpRequest.getUploadFileAttachments().size() > 0) {
+				urlConnection.setDoOutput(true);
+				urlConnection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+				final OutputStream outputStream = urlConnection.getOutputStream();
+
+				if (httpRequest.getPostParameters() != null && httpRequest.getPostParameters().size() > 0) {
+					for (final Tuple<String, Object> postParameter : httpRequest.getPostParameters()) {
+						outputStream.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+						outputStream.write(("Content-Disposition: form-data; name=\"" + URLEncoder.encode(postParameter.getFirst(), "UTF-8") + "\"\r\n").getBytes(StandardCharsets.UTF_8));
+						outputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
+						if (postParameter.getSecond() != null) {
+							outputStream.write(postParameter.getSecond().toString().getBytes(StandardCharsets.UTF_8));
+						}
+						outputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
+					}
+				}
+
+				for (final Triple<String, String, byte[]> uploadFileAttachment : httpRequest.getUploadFileAttachments()) {
+					outputStream.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+					outputStream.write(("Content-Disposition: form-data; name=\"" + uploadFileAttachment.getFirst() + "\"; filename=\"" + uploadFileAttachment.getSecond() + "\"\r\n").getBytes(StandardCharsets.UTF_8));
+					outputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
+
+					outputStream.write(uploadFileAttachment.getThird());
+
+					outputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
+				}
+
+				outputStream.write(("--" + boundary + "--" + "\r\n").getBytes(StandardCharsets.UTF_8));
+				outputStream.flush();
+			} else if (httpRequest.getPostParameters() != null && httpRequest.getPostParameters().size() > 0) {
+				urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 				httpRequestBody = convertToParameterString(httpRequest.getPostParameters(), null);
 
 				// Send post parameter data
@@ -152,8 +193,6 @@ public class HttpUtilities {
 					out.write(httpRequestBody);
 					out.flush();
 				}
-			} else if (httpRequest.getRequestBody() != null) {
-				httpRequestBody = httpRequest.getRequestBody();
 			}
 
 			urlConnection.connect();
@@ -245,8 +284,8 @@ public class HttpUtilities {
 		}
 	}
 
-	public static String convertToParameterString(final Map<String, Object> parameterMap, String encoding) throws UnsupportedEncodingException {
-		if (parameterMap == null) {
+	public static String convertToParameterString(final List<Tuple<String, Object>> parameters, String encoding) throws UnsupportedEncodingException {
+		if (parameters == null) {
 			return null;
 		} else {
 			if (Utilities.isBlank(encoding)) {
@@ -254,14 +293,14 @@ public class HttpUtilities {
 			}
 			final StringBuilder returnValue = new StringBuilder();
 			try {
-				for (final Entry<String, Object> entry : parameterMap.entrySet()) {
+				for (final Tuple<String, Object> entry : parameters) {
 					if (returnValue.length() > 0) {
 						returnValue.append("&");
 					}
-					returnValue.append(URLEncoder.encode(entry.getKey(), encoding));
+					returnValue.append(URLEncoder.encode(entry.getFirst(), encoding));
 					returnValue.append("=");
-					if (entry.getValue() != null) {
-						returnValue.append(URLEncoder.encode(entry.getValue().toString(), encoding));
+					if (entry.getSecond() != null) {
+						returnValue.append(URLEncoder.encode(entry.getSecond().toString(), encoding));
 					}
 				}
 			} catch (final UnsupportedEncodingException e) {

@@ -2,9 +2,13 @@ package de.soderer.utilities.http;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
+import de.soderer.utilities.Triple;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 public class HttpRequest {
@@ -33,10 +37,10 @@ public class HttpRequest {
 	private String encoding = "UTF-8";
 
 	private final Map<String, String> headers = new LinkedHashMap<>();
-	private final Map<String, Object> urlParameters = new LinkedHashMap<>();
-	private final Map<String, Object> postParameters= new LinkedHashMap<>();
+	private final List<Tuple<String, Object>> urlParameters = new ArrayList<>();
+	private final List<Tuple<String, Object>> postParameters= new ArrayList<>();
 	private String requestBody = null;
-	private final Map<String, byte[]> uploadFileAttachments = new LinkedHashMap<>();
+	private final List<Triple<String, String, byte[]>> uploadFileAttachments = new ArrayList<>();
 	private OutputStream downloadStream = null;
 	private File downloadFile = null;
 	private final Map<String, Object> pathParameterData = new LinkedHashMap<>();
@@ -127,17 +131,17 @@ public class HttpRequest {
 		}
 	}
 
-	public Map<String, Object> getUrlParameters() {
+	public List<Tuple<String, Object>> getUrlParameters() {
 		return urlParameters;
 	}
 
 	public HttpRequest addUrlParameter(final String key, final Object value) {
-		urlParameters.put(key, value);
+		urlParameters.add(new Tuple<>(key, value));
 
 		return this;
 	}
 
-	public Map<String, Object> getPostParameters() {
+	public List<Tuple<String, Object>> getPostParameters() {
 		return postParameters;
 	}
 
@@ -145,20 +149,24 @@ public class HttpRequest {
 		if (requestBody != null) {
 			throw new Exception("RequestBody is already set. Post parameters cannot be set therefore");
 		} else {
-			postParameters.put(key, value);
+			postParameters.add(new Tuple<>(key, value));
 
 			return this;
 		}
 	}
 
-	public Map<String, byte[]> getUploadFileAttachments() {
+	public List<Triple<String, String, byte[]>> getUploadFileAttachments() {
 		return uploadFileAttachments;
 	}
 
-	public HttpRequest addUploadFileData(final String name, final byte[] data) {
-		uploadFileAttachments.put(name, data);
+	public HttpRequest addUploadFileData(final String htmlInputName, final String fileName, final byte[] data) throws Exception {
+		if (requestBody != null) {
+			throw new Exception("RequestBody is already set. UploadFileAttachments cannot be set therefore");
+		} else {
+			uploadFileAttachments.add(new Triple<>(htmlInputName, fileName, data));
 
-		return this;
+			return this;
+		}
 	}
 
 	public OutputStream getDownloadStream() {
@@ -226,6 +234,8 @@ public class HttpRequest {
 	public HttpRequest setRequestBody(final String requestBody) throws Exception {
 		if (postParameters.size() > 0) {
 			throw new Exception("Post parameters are already set. RequestBody cannot be set therefore");
+		} else if (uploadFileAttachments.size() > 0) {
+			throw new Exception("UploadFileAttachments are already set. RequestBody cannot be set therefore");
 		} else {
 			this.requestBody = requestBody;
 
