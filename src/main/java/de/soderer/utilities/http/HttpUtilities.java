@@ -44,7 +44,6 @@ import de.soderer.utilities.Triple;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
-// TODO: Add fileuploads
 public class HttpUtilities {
 	private static TrustManager TRUSTALLCERTS_TRUSTMANAGER = new X509TrustManager() {
 		@Override
