@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class DateUtilities {
 	public static final String DD_MM_YYYY_HH_MM_SS = "dd.MM.yyyy HH:mm:ss";
 	public static final String DD_MM_YYYY_HH_MM_SS_Z = "dd.MM.yyyy HH:mm:ss z";
@@ -416,7 +414,7 @@ public class DateUtilities {
 	public static Date calculateNextJobStart(final String timingString, final String timeZone) throws Exception {
 		final GregorianCalendar now = new GregorianCalendar();
 		TimeZone zone;
-		if (!StringUtils.isEmpty(timeZone)) {
+		if (!Utilities.isEmpty(timeZone)) {
 			zone = TimeZone.getTimeZone(timeZone);
 		} else {
 			zone = TimeZone.getDefault();
@@ -444,7 +442,7 @@ public class DateUtilities {
 	 * @throws Exception
 	 */
 	public static Date calculateNextJobStart(final GregorianCalendar now, final String timingString, final TimeZone timeZone) throws Exception {
-		if (StringUtils.isBlank(timingString) || "once".equalsIgnoreCase(timingString)) {
+		if (Utilities.isBlank(timingString) || "once".equalsIgnoreCase(timingString)) {
 			return null;
 		}
 

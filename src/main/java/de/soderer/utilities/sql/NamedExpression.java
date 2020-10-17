@@ -1,6 +1,6 @@
 package de.soderer.utilities.sql;
 
-import org.apache.commons.lang3.StringUtils;
+import de.soderer.utilities.Utilities;
 
 public class NamedExpression {
 	private Object expression;
@@ -18,7 +18,7 @@ public class NamedExpression {
 
 	public void setExpression(final Object expression) throws Exception {
 		if (expression instanceof String) {
-			this.expression = StringUtils.trim((String) expression);
+			this.expression = Utilities.trim((String) expression);
 		} else if (expression instanceof SelectStatement) {
 			this.expression = expression;
 		} else {
@@ -31,6 +31,6 @@ public class NamedExpression {
 	}
 
 	public void setName(final String name) {
-		this.name = StringUtils.trim(name);
+		this.name = Utilities.trim(name);
 	}
 }

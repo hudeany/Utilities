@@ -37,7 +37,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import de.soderer.utilities.NumberUtilities;
 import de.soderer.utilities.Triple;
@@ -257,7 +256,7 @@ public class HttpUtilities {
 			} else if ((httpResponseCode == HttpURLConnection.HTTP_MOVED_TEMP || httpResponseCode == HttpURLConnection.HTTP_MOVED_PERM) && httpRequest.isFollowRedirects()) {
 				// Optionally follow redirections (HttpCodes 301 and 302)
 				final String redirectUrl = urlConnection.getHeaderField("Location");
-				if (StringUtils.isNotBlank(redirectUrl)) {
+				if (Utilities.isNotBlank(redirectUrl)) {
 					final HttpRequest redirectedHttpRequest = new HttpRequest(httpRequest.getRequestMethod(), redirectUrl);
 					return executeHttpRequest(redirectedHttpRequest);
 				} else {

@@ -1,6 +1,6 @@
 package de.soderer.utilities.sql;
 
-import org.apache.commons.lang3.StringUtils;
+import de.soderer.utilities.Utilities;
 
 public class NamedTableDefinition {
 	private String definition;
@@ -17,7 +17,7 @@ public class NamedTableDefinition {
 	}
 
 	public void setDefinition(final String definition) {
-		this.definition = StringUtils.trim(definition);
+		this.definition = Utilities.trim(definition);
 	}
 
 	public String getName() {
@@ -25,13 +25,13 @@ public class NamedTableDefinition {
 	}
 
 	public void setName(final String name) {
-		this.name = StringUtils.trim(name);
+		this.name = Utilities.trim(name);
 	}
 
 	@Override
 	public String toString() {
 		final StringBuilder returnValue = new StringBuilder(definition);
-		if (StringUtils.isNotBlank(name)) {
+		if (Utilities.isNotBlank(name)) {
 			returnValue.append(" ").append(name);
 		}
 		return returnValue.toString();

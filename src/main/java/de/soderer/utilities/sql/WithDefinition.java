@@ -1,6 +1,6 @@
 package de.soderer.utilities.sql;
 
-import org.apache.commons.lang3.StringUtils;
+import de.soderer.utilities.Utilities;
 
 public class WithDefinition {
 	private String name;
@@ -17,7 +17,7 @@ public class WithDefinition {
 	}
 
 	public void setDefinition(final String definition) {
-		this.definition = StringUtils.trim(definition);
+		this.definition = Utilities.trim(definition);
 	}
 
 	public String getName() {
@@ -25,7 +25,7 @@ public class WithDefinition {
 	}
 
 	public void setName(final String name) {
-		this.name = StringUtils.trim(name);
+		this.name = Utilities.trim(name);
 	}
 
 	@Override

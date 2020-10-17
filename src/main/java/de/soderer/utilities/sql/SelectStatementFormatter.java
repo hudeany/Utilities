@@ -1,6 +1,6 @@
 package de.soderer.utilities.sql;
 
-import org.apache.commons.lang3.StringUtils;
+import de.soderer.utilities.Utilities;
 
 public class SelectStatementFormatter {
 	private final String indentation;
@@ -16,11 +16,11 @@ public class SelectStatementFormatter {
 	}
 
 	public String format(final SelectStatement selectStatement) {
-		if (StringUtils.isEmpty(indentation) && StringUtils.isEmpty(lineBreak)) {
+		if (Utilities.isEmpty(indentation) && Utilities.isEmpty(lineBreak)) {
 			final StringBuilder returnValue = new StringBuilder();
 			if (selectStatement.getWithClauses() != null && selectStatement.getWithClauses().size() > 0) {
 				returnValue.append("WITH ");
-				returnValue.append(StringUtils.join(selectStatement.getWithClauses(), ","));
+				returnValue.append(Utilities.join(selectStatement.getWithClauses(), ","));
 				returnValue.append(" ");
 			}
 			returnValue.append("SELECT ");
@@ -33,25 +33,25 @@ public class SelectStatementFormatter {
 				isFirstNamedExpression = false;
 			}
 			returnValue.append(" FROM ");
-			returnValue.append(StringUtils.join(selectStatement.getFromTables(), ","));
+			returnValue.append(Utilities.join(selectStatement.getFromTables(), ","));
 			if (selectStatement.getJoinClauses() != null && selectStatement.getJoinClauses().size() > 0) {
-				returnValue.append(StringUtils.join(selectStatement.getJoinClauses(), " "));
+				returnValue.append(Utilities.join(selectStatement.getJoinClauses(), " "));
 			}
-			if (StringUtils.isNotBlank(selectStatement.getWhereClause())) {
+			if (Utilities.isNotBlank(selectStatement.getWhereClause())) {
 				returnValue.append(" WHERE ");
 				returnValue.append(selectStatement.getWhereClause());
 			}
 			if (selectStatement.getGroupBy() != null && selectStatement.getGroupBy().size() > 0) {
 				returnValue.append(" GROUP BY ");
-				returnValue.append(StringUtils.join(selectStatement.getGroupBy(), ", "));
+				returnValue.append(Utilities.join(selectStatement.getGroupBy(), ", "));
 			}
-			if (StringUtils.isNotBlank(selectStatement.getHavingClause())) {
+			if (Utilities.isNotBlank(selectStatement.getHavingClause())) {
 				returnValue.append(" HAVING ");
 				returnValue.append(selectStatement.getHavingClause());
 			}
 			if (selectStatement.getOrderBy() != null && selectStatement.getOrderBy().size() > 0) {
 				returnValue.append(" SORT BY ");
-				returnValue.append(StringUtils.join(selectStatement.getOrderBy(), ", "));
+				returnValue.append(Utilities.join(selectStatement.getOrderBy(), ", "));
 			}
 			return returnValue.toString();
 		} else {
@@ -60,7 +60,7 @@ public class SelectStatementFormatter {
 				returnValue.append("WITH");
 				returnValue.append(lineBreak);
 				returnValue.append(indentation);
-				returnValue.append(StringUtils.join(selectStatement.getWithClauses(), ",\n" + indentation));
+				returnValue.append(Utilities.join(selectStatement.getWithClauses(), ",\n" + indentation));
 				returnValue.append(lineBreak);
 			}
 			returnValue.append("SELECT");
@@ -78,12 +78,12 @@ public class SelectStatementFormatter {
 			returnValue.append("FROM");
 			returnValue.append(lineBreak);
 			returnValue.append(indentation);
-			returnValue.append(StringUtils.join(selectStatement.getFromTables(), "," + lineBreak + indentation));
+			returnValue.append(Utilities.join(selectStatement.getFromTables(), "," + lineBreak + indentation));
 			if (selectStatement.getJoinClauses() != null && selectStatement.getJoinClauses().size() > 0) {
 				returnValue.append(lineBreak);
-				returnValue.append(StringUtils.join(selectStatement.getJoinClauses(), lineBreak));
+				returnValue.append(Utilities.join(selectStatement.getJoinClauses(), lineBreak));
 			}
-			if (StringUtils.isNotBlank(selectStatement.getWhereClause())) {
+			if (Utilities.isNotBlank(selectStatement.getWhereClause())) {
 				returnValue.append(lineBreak);
 				returnValue.append("WHERE ");
 				returnValue.append(selectStatement.getWhereClause());
@@ -93,9 +93,9 @@ public class SelectStatementFormatter {
 				returnValue.append("GROUP BY");
 				returnValue.append(lineBreak);
 				returnValue.append(indentation);
-				returnValue.append(StringUtils.join(selectStatement.getGroupBy(), "," + lineBreak + indentation));
+				returnValue.append(Utilities.join(selectStatement.getGroupBy(), "," + lineBreak + indentation));
 			}
-			if (StringUtils.isNotBlank(selectStatement.getHavingClause())) {
+			if (Utilities.isNotBlank(selectStatement.getHavingClause())) {
 				returnValue.append(lineBreak);
 				returnValue.append("HAVING ");
 				returnValue.append(selectStatement.getHavingClause());
@@ -105,7 +105,7 @@ public class SelectStatementFormatter {
 				returnValue.append("SORT BY");
 				returnValue.append(lineBreak);
 				returnValue.append(indentation);
-				returnValue.append(StringUtils.join(selectStatement.getOrderBy(), "," + lineBreak + indentation));
+				returnValue.append(Utilities.join(selectStatement.getOrderBy(), "," + lineBreak + indentation));
 			}
 			return returnValue.toString();
 		}
@@ -119,7 +119,7 @@ public class SelectStatementFormatter {
 			expressionString = (String) namedFieldDefinition.getExpression();
 		}
 		final StringBuilder returnValue = new StringBuilder(expressionString);
-		if (StringUtils.isNotBlank(namedFieldDefinition.getName())) {
+		if (Utilities.isNotBlank(namedFieldDefinition.getName())) {
 			returnValue.append(" AS \"").append(namedFieldDefinition.getName()).append("\"");
 		}
 		return returnValue.toString();

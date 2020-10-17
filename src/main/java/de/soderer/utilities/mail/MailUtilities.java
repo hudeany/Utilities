@@ -24,10 +24,10 @@ import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimeUtility;
 import javax.mail.util.ByteArrayDataSource;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import de.soderer.utilities.NetworkUtilities;
+import de.soderer.utilities.Utilities;
 
 public class MailUtilities {
 	/** The logger. */
@@ -133,24 +133,24 @@ public class MailUtilities {
 	 * For pure textmails leave bodyHtml empty or null
 	 */
 	public static boolean sendEmail(String smtpMailRelayHostname, String fromAddress, String fromName, final String replyToAddress, final String replyToName, final String bounceAddress, final String toAddressList, final String ccAddressList, final String subject, final String bodyText, final String bodyHtml, String charset, final JavaMailAttachment... attachments) {
-		if (StringUtils.isBlank(smtpMailRelayHostname)) {
+		if (Utilities.isBlank(smtpMailRelayHostname)) {
 			logger.error("smtpMailRelayHostname is missing, so no mail was sent. emailSubject: " + subject);
 			return false;
 		}
 
-		if (StringUtils.isBlank(smtpMailRelayHostname)) {
+		if (Utilities.isBlank(smtpMailRelayHostname)) {
 			logger.warn("STMP mail relay hostname is not set, using localhost as fallback");
 			smtpMailRelayHostname = "localhost";
 		}
 
-		if (StringUtils.isBlank(fromAddress)) {
-			if (StringUtils.isBlank(fromAddress)) {
+		if (Utilities.isBlank(fromAddress)) {
+			if (Utilities.isBlank(fromAddress)) {
 				fromAddress = System.getProperty("user.name") + "@" + NetworkUtilities.getHostName();
 				fromName = "EMM";
 			}
 		}
 
-		if (StringUtils.isBlank(charset)) {
+		if (Utilities.isBlank(charset)) {
 			charset = "UTF-8";
 		}
 
@@ -165,7 +165,7 @@ public class MailUtilities {
 			props.put("mail.smtp.ssl.trust", smtpMailRelayHostname);
 
 			// Set bounce address
-			if (StringUtils.isNotBlank(bounceAddress)) {
+			if (Utilities.isNotBlank(bounceAddress)) {
 				props.put("mail.smtp.from", bounceAddress);
 			} else {
 				// Use fromAddress as fallback
@@ -176,7 +176,7 @@ public class MailUtilities {
 
 			// create a message
 			final MimeMessage msg = new MimeMessage(session);
-			if (StringUtils.isBlank(fromName)) {
+			if (Utilities.isBlank(fromName)) {
 				msg.setFrom(new InternetAddress(fromAddress));
 			} else {
 				msg.setFrom(new InternetAddress(fromAddress, fromName));
@@ -185,15 +185,15 @@ public class MailUtilities {
 			msg.setSentDate(new Date());
 
 			// Set reply-to address
-			if (StringUtils.isNotBlank(replyToAddress)) {
-				if (StringUtils.isBlank(replyToName)) {
+			if (Utilities.isNotBlank(replyToAddress)) {
+				if (Utilities.isBlank(replyToName)) {
 					msg.setReplyTo(new Address[] { new InternetAddress(replyToAddress) });
 				} else {
 					msg.setReplyTo(new Address[] { new InternetAddress(replyToAddress, replyToName) });
 				}
 			} else {
 				// Use fromAddress as fallback
-				if (StringUtils.isBlank(fromName)) {
+				if (Utilities.isBlank(fromName)) {
 					msg.setReplyTo(new Address[] { new InternetAddress(fromAddress) });
 				} else {
 					msg.setReplyTo(new Address[] { new InternetAddress(fromAddress, fromName) });
@@ -213,14 +213,14 @@ public class MailUtilities {
 			}
 
 			if (attachments == null || attachments.length <= 0) {
-				if (StringUtils.isBlank(bodyText) && StringUtils.isBlank(bodyHtml)) {
+				if (Utilities.isBlank(bodyText) && Utilities.isBlank(bodyHtml)) {
 					// Use a simple text email with only text content
 					// Set to a single space. If body is totally empty, Commons Emails rejects sending email with exception "Invalid message supplied" (-> EMM-4133)
 					msg.setText(" ", charset);
-				} else if (StringUtils.isBlank(bodyHtml)) {
+				} else if (Utilities.isBlank(bodyHtml)) {
 					// Use a simple text email with only text content
 					msg.setText(bodyText, charset);
-				} else if (StringUtils.isBlank(bodyText)) {
+				} else if (Utilities.isBlank(bodyText)) {
 					// Use a simple html email with only html content
 					msg.setContent(bodyHtml, "text/html; charset=" + charset);
 				} else {
@@ -240,18 +240,18 @@ public class MailUtilities {
 			} else {
 				final Multipart multipartMixed = new MimeMultipart("mixed");
 
-				if (StringUtils.isBlank(bodyText) && StringUtils.isBlank(bodyHtml)) {
+				if (Utilities.isBlank(bodyText) && Utilities.isBlank(bodyHtml)) {
 					// Use a multipart text email with only text content and attachements
 					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
 					// Set to a single space. If body is totally empty, Commons Emails rejects sending email with exception "Invalid message supplied" (-> EMM-4133)
 					textMimeBodyPart.setText(" ", charset);
 					multipartMixed.addBodyPart(textMimeBodyPart);
-				} else if (StringUtils.isBlank(bodyHtml)) {
+				} else if (Utilities.isBlank(bodyHtml)) {
 					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
 					// Use a multipart text email with only text content and attachements
 					textMimeBodyPart.setText(bodyText, charset);
 					multipartMixed.addBodyPart(textMimeBodyPart);
-				} else if (StringUtils.isBlank(bodyText)) {
+				} else if (Utilities.isBlank(bodyText)) {
 					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
 					// Use a multipart html email with only html content and attachements
 					textMimeBodyPart.setContent(bodyHtml, "text/html; charset=" + charset);
@@ -295,7 +295,7 @@ public class MailUtilities {
 				return true;
 			}
 		} catch (final Exception e) {
-			logger.error("Error sending email via " + smtpMailRelayHostname + ": " + e.getMessage() + " \nemailSubject: " + subject + " \nemailContent: " + (StringUtils.isBlank(bodyText) ? bodyHtml : bodyText), e);
+			logger.error("Error sending email via " + smtpMailRelayHostname + ": " + e.getMessage() + " \nemailSubject: " + subject + " \nemailContent: " + (Utilities.isBlank(bodyText) ? bodyHtml : bodyText), e);
 			return false;
 		}
 	}
@@ -303,7 +303,7 @@ public class MailUtilities {
 	private static InternetAddress[] getEmailAddressesFromList(final String listString) {
 		final List<InternetAddress> emailAddresses = new ArrayList<>();
 		for (String address : splitAndNormalizeEmails(listString)) {
-			address = StringUtils.trimToEmpty(address);
+			address = address == null ? "" : Utilities.trim(address);
 			if(MailUtilities.isEmailValid(address)) {
 				try {
 					final InternetAddress nextAddress = new InternetAddress(address);
@@ -319,7 +319,7 @@ public class MailUtilities {
 	}
 
 	private static Set<String> splitAndNormalizeEmails(final String emails) {
-		if (StringUtils.isBlank(emails)) {
+		if (Utilities.isBlank(emails)) {
 			return Collections.emptySet();
 		}
 
@@ -328,7 +328,7 @@ public class MailUtilities {
 		for (final String part : emails.split(";|,| ")) {
 			final String address = normalizeEmail(part);
 
-			if (StringUtils.isNotEmpty(address)) {
+			if (Utilities.isNotEmpty(address)) {
 				addresses.add(address);
 			}
 		}
@@ -345,7 +345,7 @@ public class MailUtilities {
 	 * @return
 	 */
 	public static String normalizeEmail(final String email) {
-		if (StringUtils.isBlank(email)) {
+		if (Utilities.isBlank(email)) {
 			return null;
 		} else {
 			return email.toLowerCase().trim();

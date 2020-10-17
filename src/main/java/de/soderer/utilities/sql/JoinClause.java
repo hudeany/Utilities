@@ -1,6 +1,6 @@
 package de.soderer.utilities.sql;
 
-import org.apache.commons.lang3.StringUtils;
+import de.soderer.utilities.Utilities;
 
 public class JoinClause {
 	public enum JoinType {
@@ -77,11 +77,11 @@ public class JoinClause {
 
 		returnValue.append(" ");
 		returnValue.append(joinTable);
-		if (StringUtils.isNotBlank(joinTableAlias)) {
+		if (Utilities.isNotBlank(joinTableAlias)) {
 			returnValue.append(" ");
 			returnValue.append(joinTableAlias);
 		}
-		if (StringUtils.isNotBlank(joinCondition)) {
+		if (Utilities.isNotBlank(joinCondition)) {
 			returnValue.append(" ON ");
 			returnValue.append(joinCondition);
 		}

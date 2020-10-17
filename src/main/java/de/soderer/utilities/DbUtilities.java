@@ -34,8 +34,6 @@ import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
 
-import org.apache.commons.lang3.StringUtils;
-
 import de.soderer.utilities.DbColumnType.SimpleDataType;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 import de.soderer.utilities.collection.CaseInsensitiveSet;
@@ -2531,7 +2529,7 @@ public class DbUtilities {
 	}
 
 	public static String escapeVendorReservedNames(final DbVendor dbVendor, final String value) {
-		if (StringUtils.isBlank(value)) {
+		if (Utilities.isBlank(value)) {
 			return value;
 		} else if ((dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) && RESERVED_WORDS_MYSSQL_MARIADB.contains(value.toLowerCase())) {
 			return "`" + value + "`";
