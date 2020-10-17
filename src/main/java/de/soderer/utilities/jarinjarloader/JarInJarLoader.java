@@ -52,12 +52,12 @@ public class JarInJarLoader {
 				classPathUrls[i] = new URL("jar:rsrc:" + classPath + "!/");
 			}
 		}
-		try (URLClassLoader jceClassLoader = new URLClassLoader(classPathUrls, getParentClassLoader())) {
-			Thread.currentThread().setContextClassLoader(jceClassLoader);
-			final Class<?> mainClass = Class.forName(manifestInfo.mainClass, true, jceClassLoader);
-			final Method mainMethod = mainClass.getMethod("main", new Class[] { args.getClass() });
-			mainMethod.invoke((Object) null, new Object[] { args });
-		}
+		@SuppressWarnings("resource")
+		final URLClassLoader jceClassLoader = new URLClassLoader(classPathUrls, getParentClassLoader());
+		Thread.currentThread().setContextClassLoader(jceClassLoader);
+		final Class<?> mainClass = Class.forName(manifestInfo.mainClass, true, jceClassLoader);
+		final Method mainMethod = mainClass.getMethod("main", new Class[] { args.getClass() });
+		mainMethod.invoke((Object) null, new Object[] { args });
 	}
 
 	private static ClassLoader getParentClassLoader() throws InvocationTargetException, IllegalAccessException {
@@ -88,14 +88,32 @@ public class JarInJarLoader {
 						if (jarFilePath.startsWith("file:")) {
 							jarFilePath = jarFilePath.substring(5);
 						}
+						boolean swtFound = false;
+						boolean swtLoaded = false;
+						final String osName = System.getProperty("os.name").toLowerCase();
+						final String osArch = System.getProperty("os.arch").toLowerCase();
 						try {
 							for (final String entryName : getZipFileEntries(new File(jarFilePath))) {
 								if (entryName.toLowerCase().endsWith(".jar")) {
-									rsrcClassPath += " " + entryName;
+									if (entryName.startsWith("org.eclipse.swt")) {
+										swtFound = true;
+										if (osArch.contains("64") && osName.contains("win") && entryName.contains("win32.win32.x86_64")) {
+											rsrcClassPath += " " + entryName;
+											swtLoaded = true;
+										} else if (osArch.contains("64") && (osName.contains("linux") || osName.contains("nix")) && entryName.contains("gtk.linux.x86_64")) {
+											rsrcClassPath += " " + entryName;
+											swtLoaded = true;
+										}
+									} else {
+										rsrcClassPath += " " + entryName;
+									}
 								}
 							}
 						} catch (final Exception e) {
 							e.printStackTrace();
+						}
+						if (swtFound && !swtLoaded) {
+							throw new Exception("Unsupported OS name or architecture for this SWT application: " + osName + " / " + osArch);
 						}
 					}
 					manifestInfo.classPath = rsrcClassPath.split(" ");
