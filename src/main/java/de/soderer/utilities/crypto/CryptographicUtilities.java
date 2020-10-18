@@ -17,6 +17,8 @@ import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -61,8 +63,8 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
+import javax.xml.bind.DatatypeConverter;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -874,12 +876,16 @@ public class CryptographicUtilities {
 		return certificate.getBasicConstraints() != 1;
 	}
 
-	public static String getMd5FingerPrint(final X509Certificate certificate) throws CertificateEncodingException {
-		return DigestUtils.md5Hex(certificate.getEncoded()).toUpperCase();
+	public static String getMd5FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("MD5");
+		md.update(certificate.getEncoded());
+		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
 	}
 
-	public static String getSha1FingerPrint(final X509Certificate certificate) throws CertificateEncodingException {
-		return DigestUtils.sha1Hex(certificate.getEncoded()).toUpperCase();
+	public static String getSha1FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-1");
+		md.update(certificate.getEncoded());
+		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
 	}
 
 	public static int getKeySize(final X509Certificate certificate) {
