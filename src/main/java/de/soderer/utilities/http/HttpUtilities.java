@@ -36,8 +36,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.commons.io.IOUtils;
-
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.NumberUtilities;
 import de.soderer.utilities.Triple;
 import de.soderer.utilities.Tuple;
@@ -226,11 +225,11 @@ public class HttpUtilities {
 			final int httpResponseCode = urlConnection.getResponseCode();
 			if (httpResponseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
 				if (httpRequest.getDownloadStream() != null && 200 <= httpResponseCode && httpResponseCode <= 299) {
-					IOUtils.copy(urlConnection.getInputStream(), httpRequest.getDownloadStream());
+					IoUtilities.copy(urlConnection.getInputStream(), httpRequest.getDownloadStream());
 					return new HttpResponse(httpResponseCode, "File downloaded", urlConnection.getContentType(), headers, cookiesMap);
 				} else if (httpRequest.getDownloadFile() != null && 200 <= httpResponseCode && httpResponseCode <= 299) {
 					try (FileOutputStream downloadFileOutputStream = new FileOutputStream(httpRequest.getDownloadFile())) {
-						IOUtils.copy(urlConnection.getInputStream(), downloadFileOutputStream);
+						IoUtilities.copy(urlConnection.getInputStream(), downloadFileOutputStream);
 						return new HttpResponse(httpResponseCode, "File downloaded", urlConnection.getContentType(), headers, cookiesMap);
 					} catch (final Exception e) {
 						if (httpRequest.getDownloadFile().exists()) {

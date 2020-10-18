@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.io.FileUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.ModifyEvent;
@@ -29,6 +28,7 @@ import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.ConfigurationProperties;
+import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
@@ -195,7 +195,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							}
 
 							if (iconImageDataWindows != null) {
-								FileUtils.writeByteArrayToFile(new File(iconPath), iconImageDataWindows);
+								FileUtilities.write(new File(iconPath), iconImageDataWindows);
 							}
 
 							final StringBuilder data = new StringBuilder();
@@ -211,7 +211,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							data.append("shortcut.Save\n");
 
 							try {
-								FileUtils.writeStringToFile(new File(tempScriptFile), data.toString(), "UTF-8");
+								FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), "UTF-8");
 
 								Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
 
@@ -268,7 +268,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							data.append("StartupWMClass=" + applicationName + "\n");
 
 							try {
-								FileUtils.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
+								FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
 
 								new File(desktopLinkFilePath).setExecutable(true);
 

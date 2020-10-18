@@ -8,7 +8,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -24,7 +23,7 @@ public class ZipEncryptionTest {
 			final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			final OutputStream zipOutputStream = new ZipOutputStream(new ZipEncryptOutputStream(outputStream, "Test".toCharArray()));
 			((ZipOutputStream) zipOutputStream).putNextEntry(new ZipEntry("Test.txt"));
-			IOUtils.copy(new ByteArrayInputStream(testString.getBytes("UTF-8")), zipOutputStream);
+			IoUtilities.copy(new ByteArrayInputStream(testString.getBytes("UTF-8")), zipOutputStream);
 			((ZipOutputStream) zipOutputStream).closeEntry();
 			zipOutputStream.close();
 
@@ -33,7 +32,7 @@ public class ZipEncryptionTest {
 			final InputStream inputStream = new ZipInputStream(new ZipDecryptInputStream(new ByteArrayInputStream(data), "Test".toCharArray()));
 			((ZipInputStream) inputStream).getNextEntry();
 
-			data = IOUtils.toByteArray(inputStream);
+			data = IoUtilities.toByteArray(inputStream);
 
 			Assert.assertEquals(testString, new String(data, "UTF-8"));
 		} catch (final Exception e) {

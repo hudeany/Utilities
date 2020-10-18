@@ -10,7 +10,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import com.hierynomus.msdtyp.AccessMask;
@@ -30,6 +29,7 @@ import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
 
 import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Utilities;
 
@@ -231,7 +231,7 @@ public class SmbConnection implements RemoteConnection {
 		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		try (final File newFile = diskShare.openFile(filePath, new HashSet<>(Arrays.asList(new AccessMask[]{AccessMask.GENERIC_ALL})), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_CREATE, null)) {
 			try (OutputStream outputStream = newFile.getOutputStream()) {
-				IOUtils.copy(fileInputStream, outputStream);
+				IoUtilities.copy(fileInputStream, outputStream);
 			}
 		}
 	}

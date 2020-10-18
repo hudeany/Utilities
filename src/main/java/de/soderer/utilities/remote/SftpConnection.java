@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
-
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelSftp;
@@ -76,7 +74,7 @@ public class SftpConnection implements RemoteConnection {
 		} else {
 			hostname = serverEntry.getHostname();
 			username = serverEntry.getUsername();
-			keyFileData = FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile()));
+			keyFileData = FileUtilities.readFileToByteArray(new File(serverEntry.getKeyFile()));
 			password = serverEntry.getPassword();
 			port = serverEntry.getPort();
 			hostKey = serverEntry.getHostKey();

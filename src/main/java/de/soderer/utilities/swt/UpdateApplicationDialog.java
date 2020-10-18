@@ -7,7 +7,6 @@ import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -20,6 +19,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.FileDownloadWorker;
+import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.SimpleCredentialsData;
@@ -176,7 +176,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
 
 					// Create Batchfile
-					FileUtils.write(batchFile,
+					FileUtilities.writeStringToFile(batchFile,
 							"@echo off\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n"
 									+ "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n"
 									+ "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + ")\r\n" + ")\r\n" + ")\r\n" + "ren \"" + downloadTempFile.getAbsolutePath() + "\" \""
@@ -189,7 +189,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 					final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".sh");
 
 					// Create Batchfile
-					FileUtils.write(batchFile,
+					FileUtilities.writeStringToFile(batchFile,
 							"#!/bin/bash\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath
 							+ "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n"
 							+ "fi\n" + "fi\n" + "fi\n" + "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n" + "if ! [ -f \"" + downloadTempFile.getAbsolutePath()

@@ -63,8 +63,6 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -105,6 +103,8 @@ import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.Utilities;
 
 /**
@@ -389,7 +389,7 @@ public class CryptographicUtilities {
 	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(final InputStream inputStream) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final PEMKeyPair keyPair = getPEMKeyPairFromString(IOUtils.toString(inputStream, "UTF-8"));
+		final PEMKeyPair keyPair = getPEMKeyPairFromString(IoUtilities.toString(inputStream, "UTF-8"));
 		final AsymmetricKeyParameter privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
 		final AsymmetricKeyParameter publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
 
@@ -513,21 +513,21 @@ public class CryptographicUtilities {
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PublicKey readRSAPublicKey(final InputStream inputStream) throws Exception {
-		return getPublicKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
+		return getPublicKeyFromString(IoUtilities.toString(inputStream, "UTF-8"));
 	}
 
 	/**
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PrivateKey readRSAPrivateKey(final InputStream inputStream) throws Exception {
-		return getPrivateKeyFromString(IOUtils.toString(inputStream, "UTF-8"));
+		return getPrivateKeyFromString(IoUtilities.toString(inputStream, "UTF-8"));
 	}
 
 	/**
 	 * Read a certificate file
 	 */
 	public static X509Certificate getCertificateFromFile(final File certificateFile) throws Exception {
-		final String certificateFileString = FileUtils.readFileToString(certificateFile, "UTF-8");
+		final String certificateFileString = FileUtilities.readFileToString(certificateFile, "UTF-8");
 		return getCertificateFromString(certificateFileString);
 	}
 
@@ -544,7 +544,7 @@ public class CryptographicUtilities {
 			final Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			try (CipherOutputStream cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher)) {
-				IOUtils.copy(dataStream, cipherOutputStream);
+				IoUtilities.copy(dataStream, cipherOutputStream);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Error while encrypting: " + e.getMessage(), e);
@@ -564,7 +564,7 @@ public class CryptographicUtilities {
 			final Cipher decryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
 			try (CipherInputStream cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher)) {
-				IOUtils.copy(cipherInputStream, dataOutputStream);
+				IoUtilities.copy(cipherInputStream, dataOutputStream);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Error while decrypting: " + e.getMessage(), e);

@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Utilities;
 import jcifs.smb.NtlmPasswordAuthentication;
@@ -173,7 +173,7 @@ public class Smb1Connection implements RemoteConnection {
 		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		try (OutputStream outputStream = smbFile.getOutputStream()) {
-			IOUtils.copy(fileInputStream, outputStream);
+			IoUtilities.copy(fileInputStream, outputStream);
 		}
 	}
 

@@ -8,7 +8,6 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.ModifyEvent;
@@ -745,7 +744,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 					if (new QuestionDialog(getParent(), getText(), LangResources.get("confirmNewHostKey", e.getHostnameOrIp(), e.getHostKeyFingerPrint()), LangResources.get("yes"), LangResources.get("no")).open() == 0) {
 						final ByteArrayOutputStream newKnownHosts = new ByteArrayOutputStream();
 						final ServerAccessData serverEntry = getServerEntry();
-						connection = new SftpConnection(serverEntry.getHostname(), serverEntry.getUsername(), FileUtils.readFileToByteArray(new File(serverEntry.getKeyFile())), serverEntry.getPassword(), serverEntry.getPort(), e.getHostKeyFingerPrint(), newKnownHosts);
+						connection = new SftpConnection(serverEntry.getHostname(), serverEntry.getUsername(), FileUtilities.readFileToByteArray(new File(serverEntry.getKeyFile())), serverEntry.getPassword(), serverEntry.getPort(), e.getHostKeyFingerPrint(), newKnownHosts);
 						if ("".equals(hostKey.trim())) {
 							hostKey = STANDARD_KNOWNHOSTS_FILE;
 						}

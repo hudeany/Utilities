@@ -7,9 +7,9 @@ import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
 
-import org.apache.commons.io.FileUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.swt.ProgressShowingModalDialog;
@@ -60,7 +60,7 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 				}
 			}
 
-			final byte[] signatureData = FileUtils.readFileToByteArray(signatureFile);
+			final byte[] signatureData = FileUtilities.readFileToByteArray(signatureFile);
 
 			return signature.verify(signatureData);
 		} catch (final Exception e) {

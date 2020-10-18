@@ -223,7 +223,7 @@ public class FileUtilities {
 				}
 
 				if (foundAndReplaced) {
-					FileUtils.writeStringToFile(searchFile, dataString, encodingData.getFirst());
+					FileUtilities.writeStringToFile(searchFile, dataString, encodingData.getFirst());
 				}
 			}
 			return foundAndReplaced;
@@ -446,6 +446,10 @@ public class FileUtilities {
 		}
 	}
 
+	public static void writeStringToFile(final File file, final String dataString, final String encoding) throws Exception {
+		write(file, dataString.getBytes(encoding));
+	}
+
 	public static byte[] readFileToByteArray(final File dataFile) throws Exception {
 		ByteArrayOutputStream output = null;
 		try (FileInputStream input = new FileInputStream(dataFile)) {
@@ -460,14 +464,14 @@ public class FileUtilities {
 	public static String readFileToString(final File dataFile, final String encoding) throws Exception {
 		return new String(readFileToByteArray(dataFile), encoding);
 	}
-	
-	public static List<String> readLinesFromFile(File textFile, boolean keepLinebreakInLines, String encoding) throws Exception {
+
+	public static List<String> readLinesFromFile(final File textFile, final boolean keepLinebreakInLines, final String encoding) throws Exception {
 		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(textFile))) {
 			return readLinesFromStream(inputStream, keepLinebreakInLines, encoding);
 		}
 	}
 
-	public static List<String> readLinesFromStream(InputStream inputStream, boolean keepLinebreakInLines, String encoding) throws Exception {
+	public static List<String> readLinesFromStream(final InputStream inputStream, final boolean keepLinebreakInLines, final String encoding) throws Exception {
 		final List<String> dataLines = new ArrayList<>();
 		final ByteArrayOutputStream readData = new ByteArrayOutputStream();
 		int nextByte;
