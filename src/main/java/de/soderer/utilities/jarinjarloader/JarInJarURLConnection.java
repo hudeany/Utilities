@@ -23,8 +23,8 @@ public class JarInJarURLConnection extends URLConnection {
 
 	@Override
 	public InputStream getInputStream() throws IOException {
-		final String file= URLDecoder.decode(url.getFile(), StandardCharsets.UTF_8.name());
-		final InputStream result= classLoader.getResourceAsStream(file);
+		final String file = URLDecoder.decode(url.getFile(), StandardCharsets.UTF_8.name());
+		final InputStream result = classLoader.getResourceAsStream(file);
 		if (result == null) {
 			throw new MalformedURLException("Could not open InputStream for URL '" + url + "'");
 		} else {
