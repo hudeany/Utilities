@@ -3,16 +3,13 @@ package de.soderer.utilities;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MapStringReader extends BasicReader {
 	public MapStringReader(final InputStream inputStream) throws Exception {
-		super(inputStream, (String) null);
-	}
-
-	public MapStringReader(final InputStream inputStream, final String encoding) throws Exception {
-		super(inputStream, encoding);
+		super(inputStream, null);
 	}
 
 	public MapStringReader(final InputStream inputStream, final Charset encodingCharset) throws Exception {
@@ -99,7 +96,7 @@ public class MapStringReader extends BasicReader {
 	}
 
 	public static Map<String, String> readMap(final String mapString) throws Exception {
-		try (MapStringReader mapStringReader = new MapStringReader(new ByteArrayInputStream(mapString.getBytes("UTF-8")), "UTF-8")) {
+		try (MapStringReader mapStringReader = new MapStringReader(new ByteArrayInputStream(mapString.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8)) {
 			return mapStringReader.readMap();
 		}
 	}

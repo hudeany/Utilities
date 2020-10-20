@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.LineNumberReader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -611,20 +611,19 @@ public class TextUtilities {
 	 *
 	 * @param data
 	 * @return
-	 * @throws UnsupportedEncodingException
 	 */
-	public static Tuple<String, Boolean> detectEncoding(final byte[] data) throws UnsupportedEncodingException {
+	public static Tuple<String, Boolean> detectEncoding(final byte[] data) {
 		if (data.length > 2 && data[0] == Utilities.BOM_UTF_16_BIG_ENDIAN[0] && data[1] == Utilities.BOM_UTF_16_BIG_ENDIAN[1]) {
 			return new Tuple<>("UTF-16BE", true);
 		} else if (data.length > 2 && data[0] == Utilities.BOM_UTF_16_LOW_ENDIAN[0] && data[1] == Utilities.BOM_UTF_16_LOW_ENDIAN[1]) {
 			return new Tuple<>("UTF-16LE", true);
 		} else if (data.length > 3 && data[0] == Utilities.BOM_UTF_8[0] && data[1] == Utilities.BOM_UTF_8[1] && data[2] == Utilities.BOM_UTF_8[2]) {
-			return new Tuple<>("UTF-8", true);
+			return new Tuple<>(StandardCharsets.UTF_8.name(), true);
 		} else {
 			// Detect Xml Encoding
 			try {
 				// Use first data part only to speed up
-				final String interimString = new String(data, 0, Math.min(data.length, 100), "UTF-8").toLowerCase();
+				final String interimString = new String(data, 0, Math.min(data.length, 100), StandardCharsets.UTF_8).toLowerCase();
 				final String reducedInterimString = interimString.replace("\u0000", "");
 				int encodingStart = reducedInterimString.indexOf("encoding");
 				if (encodingStart >= 0) {
@@ -657,7 +656,7 @@ public class TextUtilities {
 				e.printStackTrace();
 			}
 
-			final String interimString = new String(data, "UTF-8").toLowerCase();
+			final String interimString = new String(data, StandardCharsets.UTF_8).toLowerCase();
 
 			final int zeroIndex = interimString.indexOf('\u0000');
 			if (zeroIndex >= 0 && zeroIndex <= 100) {
@@ -669,7 +668,7 @@ public class TextUtilities {
 			}
 
 			if (interimString.contains("ä") || interimString.contains("ö") || interimString.contains("ü") || interimString.contains("Ä") || interimString.contains("Ö") || interimString.contains("Ü") || interimString.contains("ß")) {
-				return new Tuple<>("UTF-8", false);
+				return new Tuple<>(StandardCharsets.UTF_8.name(), false);
 			}
 
 			return null;

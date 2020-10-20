@@ -1,5 +1,8 @@
 package de.soderer.utilities.swt;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -26,7 +29,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 	protected boolean showContainsHeadersInFirstRowButton = false;
 	protected boolean containsHeadersInFirstRow = true;
 	protected boolean showEncodingField = false;
-	protected String encoding = "UTF-8";
+	protected Charset encoding = StandardCharsets.UTF_8;
 
 	protected RadioButtonGroup quoteTypeRadioButtonGroup;
 	protected RadioButtonGroup underfilledLinesRadioButtonGroup;
@@ -97,12 +100,12 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			encodingLabel.setText(LangResources.get("encoding") + ": ");
 
 			final Combo encodingText = new Combo(encodingComposite, SWT.BORDER);
-			encodingText.setItems(new String[] { "UTF-8", "ISO-8859-1", "ISO-8859-15" });
-			encodingText.setText(encoding);
+			encodingText.setItems(new String[] { StandardCharsets.UTF_8.name(), StandardCharsets.ISO_8859_1.name(), "ISO-8859-15" });
+			encodingText.setText(encoding.name());
 			encodingText.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(final ModifyEvent e) {
-					encoding = ((Combo) e.widget).getText();
+					encoding = Charset.forName(((Combo) e.widget).getText());
 					checkStatus();
 				}
 			});
@@ -198,11 +201,11 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		showEncodingField = value;
 	}
 
-	public void setEncoding(final String value) {
+	public void setEncoding(final Charset value) {
 		encoding = value;
 	}
 
-	public String getEncoding() {
+	public Charset getEncoding() {
 		return encoding;
 	}
 }

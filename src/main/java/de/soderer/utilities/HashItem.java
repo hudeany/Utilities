@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +28,7 @@ public class HashItem {
 			}
 
 			final MessageDigest messageDigest = hashAlgorithm.getMessageDigest();
-			return messageDigest.digest(directoryContentData.toString().getBytes("UTF-8"));
+			return messageDigest.digest(directoryContentData.toString().getBytes(StandardCharsets.UTF_8));
 		} else {
 			return hash;
 		}

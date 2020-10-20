@@ -2,6 +2,7 @@ package de.soderer.utilities;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -107,10 +108,10 @@ public class SecureDataStoreTest {
 			secureDataEntry.testSecureDataStoreEntry = new TestSecureDataStoreEntry();
 
 			testKeyStore_ForSave.addEntry(TEST_ENTRYNAME, secureDataEntry);
-			testKeyStore_ForSave.save(testStoreFile, TEST_PASSWORD.toCharArray(), TEST_SALT.getBytes("UTF-8"));
+			testKeyStore_ForSave.save(testStoreFile, TEST_PASSWORD.toCharArray(), TEST_SALT.getBytes(StandardCharsets.UTF_8));
 
 			final SecureDataStore testKeyStore_ForLoad = new SecureDataStore();
-			testKeyStore_ForLoad.load(testStoreFile, TEST_PASSWORD.toCharArray(), TEST_SALT.getBytes("UTF-8"));
+			testKeyStore_ForLoad.load(testStoreFile, TEST_PASSWORD.toCharArray(), TEST_SALT.getBytes(StandardCharsets.UTF_8));
 
 			final Set<String> loadedSecureDataEntryNames = testKeyStore_ForLoad.getEntryNames(TestSecureDataStoreEntry.class);
 			Assert.assertEquals(1, loadedSecureDataEntryNames.size());
@@ -120,7 +121,7 @@ public class SecureDataStoreTest {
 			assertEquals(secureDataEntry, loadedSecureDataEntry);
 
 			try {
-				new SecureDataStore().load(testStoreFile, "abc".toCharArray(), TEST_SALT.getBytes("UTF-8"));
+				new SecureDataStore().load(testStoreFile, "abc".toCharArray(), TEST_SALT.getBytes(StandardCharsets.UTF_8));
 				Assert.fail("Missing expected exception");
 			} catch (final WrongPasswordException e) {
 				Assert.assertNull(e.getMessage());

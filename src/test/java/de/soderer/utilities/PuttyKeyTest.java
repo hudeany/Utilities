@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 
 import org.junit.Assert;
@@ -118,7 +119,7 @@ public class PuttyKeyTest {
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
 			Assert.fail();
 		}
 
@@ -146,7 +147,7 @@ public class PuttyKeyTest {
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
 			Assert.fail();
 		}
 
@@ -174,7 +175,7 @@ public class PuttyKeyTest {
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
 			Assert.fail();
 		}
 
@@ -202,7 +203,7 @@ public class PuttyKeyTest {
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
 			Assert.fail();
 		}
 
@@ -230,7 +231,7 @@ public class PuttyKeyTest {
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, "UTF-8").contains("PuTTY-User-Key-File-2")) {
+		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
 			Assert.fail();
 		}
 

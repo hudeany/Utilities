@@ -3,6 +3,7 @@ package de.soderer.utilities.swt;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -211,7 +212,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							data.append("shortcut.Save\n");
 
 							try {
-								FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), "UTF-8");
+								FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), StandardCharsets.UTF_8);
 
 								Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
 
@@ -268,7 +269,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							data.append("StartupWMClass=" + applicationName + "\n");
 
 							try {
-								FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), "UTF-8");
+								FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), StandardCharsets.UTF_8);
 
 								new File(desktopLinkFilePath).setExecutable(true);
 

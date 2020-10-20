@@ -16,6 +16,7 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -159,7 +160,7 @@ public class HttpUtilities {
 				if (httpRequest.getPostParameters() != null && httpRequest.getPostParameters().size() > 0) {
 					for (final Tuple<String, Object> postParameter : httpRequest.getPostParameters()) {
 						outputStream.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
-						outputStream.write(("Content-Disposition: form-data; name=\"" + URLEncoder.encode(postParameter.getFirst(), "UTF-8") + "\"\r\n").getBytes(StandardCharsets.UTF_8));
+						outputStream.write(("Content-Disposition: form-data; name=\"" + urlEncode(postParameter.getFirst(), StandardCharsets.UTF_8) + "\"\r\n").getBytes(StandardCharsets.UTF_8));
 						outputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
 						if (postParameter.getSecond() != null) {
 							outputStream.write(postParameter.getSecond().toString().getBytes(StandardCharsets.UTF_8));
@@ -186,7 +187,7 @@ public class HttpUtilities {
 
 				// Send post parameter data
 				urlConnection.setDoOutput(true);
-				try (OutputStreamWriter out = new OutputStreamWriter(urlConnection.getOutputStream(), Utilities.isBlank(httpRequest.getEncoding()) ? "UTF-8" : httpRequest.getEncoding())) {
+				try (OutputStreamWriter out = new OutputStreamWriter(urlConnection.getOutputStream(), httpRequest.getEncoding() == null ? StandardCharsets.UTF_8 : httpRequest.getEncoding())) {
 					out.write(httpRequestBody);
 					out.flush();
 				}
@@ -199,12 +200,12 @@ public class HttpUtilities {
 				headers.put(headerName, urlConnection.getHeaderField(headerName));
 			}
 
-			String encoding = "UTF-8";
+			Charset encoding = StandardCharsets.UTF_8;
 			if (headers.containsKey("content-type")) {
 				String contentType = headers.get("content-type");
 				if (contentType != null && contentType.toLowerCase().contains("charset="))  {
 					contentType = contentType.toLowerCase();
-					encoding = contentType.substring(contentType.indexOf("charset=") + 8).trim();
+					encoding = Charset.forName(contentType.substring(contentType.indexOf("charset=") + 8).trim());
 				}
 			}
 
@@ -216,7 +217,7 @@ public class HttpUtilities {
 					for (final String cookie : cookiesData.split(";")) {
 						final String[] cookieParts = cookie.split("=");
 						if (cookieParts.length == 2) {
-							cookiesMap.put(URLDecoder.decode(cookieParts[0].trim(), "UTF-8"), URLDecoder.decode(cookieParts[1].trim(), "UTF-8"));
+							cookiesMap.put(urlDecode(cookieParts[0].trim(), StandardCharsets.UTF_8), urlDecode(cookieParts[1].trim(), StandardCharsets.UTF_8));
 						}
 					}
 				}
@@ -281,30 +282,44 @@ public class HttpUtilities {
 		}
 	}
 
-	public static String convertToParameterString(final List<Tuple<String, Object>> parameters, String encoding) throws UnsupportedEncodingException {
+	public static String convertToParameterString(final List<Tuple<String, Object>> parameters, Charset encoding) {
 		if (parameters == null) {
 			return null;
 		} else {
-			if (Utilities.isBlank(encoding)) {
-				encoding = "UTF-8";
+			if (encoding == null) {
+				encoding = StandardCharsets.UTF_8;
 			}
 			final StringBuilder returnValue = new StringBuilder();
-			try {
-				for (final Tuple<String, Object> entry : parameters) {
-					if (returnValue.length() > 0) {
-						returnValue.append("&");
-					}
-					returnValue.append(URLEncoder.encode(entry.getFirst(), encoding));
-					returnValue.append("=");
-					if (entry.getSecond() != null) {
-						returnValue.append(URLEncoder.encode(entry.getSecond().toString(), encoding));
-					}
+			for (final Tuple<String, Object> entry : parameters) {
+				if (returnValue.length() > 0) {
+					returnValue.append("&");
 				}
-			} catch (final UnsupportedEncodingException e) {
-				throw e;
+				returnValue.append(urlEncode(entry.getFirst(), encoding));
+				returnValue.append("=");
+				if (entry.getSecond() != null) {
+					returnValue.append(urlEncode(entry.getSecond().toString(), encoding));
+				}
 			}
 
 			return returnValue.toString();
+		}
+	}
+
+	public static String urlEncode(final String data, final Charset charset) {
+		try {
+			return URLEncoder.encode(data, charset.name());
+		} catch (final UnsupportedEncodingException e) {
+			// Cannot occur, because of the usage of Charset class
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static String urlDecode(final String data, final Charset charset) {
+		try {
+			return URLDecoder.decode(data, charset.name());
+		} catch (final UnsupportedEncodingException e) {
+			// Cannot occur, because of the usage of Charset class
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -417,30 +432,30 @@ public class HttpUtilities {
 		}
 	}
 
-	public static Tuple<String, String> createHtmlFormMimetypeHeader(final String encoding) {
-		if (Utilities.isBlank(encoding)) {
+	public static Tuple<String, String> createHtmlFormMimetypeHeader(final Charset encoding) {
+		if (encoding == null) {
 			return new Tuple<>("content-type", "application/x-www-form-urlencoded");
 		} else {
-			return new Tuple<>("content-type", "application/x-www-form-urlencoded; charset=" + encoding.toLowerCase());
+			return new Tuple<>("content-type", "application/x-www-form-urlencoded; charset=" + encoding.name().toLowerCase());
 		}
 	}
 
-	public static String addUrlParameter(final String url, final String parameterName, final Object parameterValue, final String encodingCharSet) throws UnsupportedEncodingException {
+	public static String addUrlParameter(final String url, final String parameterName, final Object parameterValue, final Charset encodingCharSet) {
 		final StringBuilder escapedParameterNameAndValue = new StringBuilder();
 
-		if (Utilities.isEmpty(encodingCharSet)) {
+		if (encodingCharSet == null) {
 			escapedParameterNameAndValue.append(parameterName);
 		} else {
-			escapedParameterNameAndValue.append(URLEncoder.encode(parameterName, encodingCharSet));
+			escapedParameterNameAndValue.append(urlEncode(parameterName, encodingCharSet));
 		}
 
 		escapedParameterNameAndValue.append('=');
 
 		if (parameterValue instanceof char[]) {
-			if (Utilities.isEmpty(encodingCharSet)) {
+			if (encodingCharSet == null) {
 				escapedParameterNameAndValue.append(new String((char[]) parameterValue));
 			} else {
-				escapedParameterNameAndValue.append(URLEncoder.encode(new String((char[]) parameterValue), encodingCharSet));
+				escapedParameterNameAndValue.append(urlEncode(new String((char[]) parameterValue), encodingCharSet));
 			}
 		} else if (parameterValue instanceof Object[]) {
 			boolean isFirstValue = true;
@@ -448,18 +463,18 @@ public class HttpUtilities {
 				if (!isFirstValue) {
 					escapedParameterNameAndValue.append(",");
 				}
-				if (Utilities.isEmpty(encodingCharSet)) {
+				if (encodingCharSet == null) {
 					escapedParameterNameAndValue.append(String.valueOf(value));
 				} else {
-					escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(value), encodingCharSet));
+					escapedParameterNameAndValue.append(urlEncode(String.valueOf(value), encodingCharSet));
 				}
 				isFirstValue = false;
 			}
 		} else {
-			if (Utilities.isEmpty(encodingCharSet)) {
+			if (encodingCharSet == null) {
 				escapedParameterNameAndValue.append(String.valueOf(parameterValue));
 			} else {
-				escapedParameterNameAndValue.append(URLEncoder.encode(String.valueOf(parameterValue), encodingCharSet));
+				escapedParameterNameAndValue.append(urlEncode(String.valueOf(parameterValue), encodingCharSet));
 			}
 		}
 		return addUrlParameter(url, escapedParameterNameAndValue.toString());

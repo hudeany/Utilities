@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class VersionInfo {
 	private static Version APPLICATION_VERSION = null;
@@ -14,7 +15,7 @@ public class VersionInfo {
 
 	public static String getVersionInfoText() {
 		try (InputStream inputStream = VersionInfo.class.getClassLoader().getResourceAsStream("VersionInfo.txt")) {
-			return new String(Utilities.toByteArray(inputStream), "UTF-8");
+			return new String(Utilities.toByteArray(inputStream), StandardCharsets.UTF_8);
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return "VersionInfo not found";
 		}

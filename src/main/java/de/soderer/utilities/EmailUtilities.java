@@ -2,7 +2,7 @@ package de.soderer.utilities;
 
 import java.awt.Desktop;
 import java.net.URI;
-import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -19,6 +19,8 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
 import org.eclipse.swt.program.Program;
+
+import de.soderer.utilities.http.HttpUtilities;
 
 public class EmailUtilities {
 	/**
@@ -188,7 +190,7 @@ public class EmailUtilities {
 			throw new Exception("TO address is missing or empty");
 		}
 
-		String mailtoString = "mailto:" + URLEncoder.encode(toAdress, "UTF-8");
+		String mailtoString = "mailto:" + HttpUtilities.urlEncode(toAdress, StandardCharsets.UTF_8);
 
 		boolean isFirstParameter = true;
 
@@ -198,7 +200,7 @@ public class EmailUtilities {
 			} else {
 				mailtoString += "&";
 			}
-			mailtoString += "cc=" + URLEncoder.encode(ccAdress, "UTF-8");
+			mailtoString += "cc=" + HttpUtilities.urlEncode(ccAdress, StandardCharsets.UTF_8);
 			isFirstParameter = false;
 		}
 
@@ -208,7 +210,7 @@ public class EmailUtilities {
 			} else {
 				mailtoString += "&";
 			}
-			mailtoString += "subject=" + URLEncoder.encode(subject, "UTF-8").replace("+", "%20");
+			mailtoString += "subject=" + HttpUtilities.urlEncode(subject, StandardCharsets.UTF_8).replace("+", "%20");
 			isFirstParameter = false;
 		}
 
@@ -218,10 +220,10 @@ public class EmailUtilities {
 			} else {
 				mailtoString += "&";
 			}
-			mailtoString += "body=" + URLEncoder.encode(body, "UTF-8").replace("+", "%20");
+			mailtoString += "body=" + HttpUtilities.urlEncode(body, StandardCharsets.UTF_8).replace("+", "%20");
 			isFirstParameter = false;
 		}
-		// + (attachmentFile != null ? "&attachment=" + URLEncoder.encode(attachmentFile.getAbsolutePath(), "UTF-8") : ""); // maybe it is "&attach="
+		// + (attachmentFile != null ? "&attachment=" + urlEncode(attachmentFile.getAbsolutePath(), StandardCharsets.UTF_8) : ""); // maybe it is "&attach="
 
 		return mailtoString;
 	}

@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,19 +36,7 @@ public class CsvReader extends BasicReader {
 	 *            the input stream
 	 */
 	public CsvReader(final InputStream inputStream) throws Exception {
-		this(inputStream, Charset.forName(DEFAULT_ENCODING));
-	}
-
-	/**
-	 * CSV Reader derived constructor.
-	 *
-	 * @param inputStream
-	 *            the input stream
-	 * @param encoding
-	 *            the encoding
-	 */
-	public CsvReader(final InputStream inputStream, final String encoding) throws Exception {
-		this(inputStream, Charset.forName(encoding));
+		this(inputStream, DEFAULT_ENCODING);
 	}
 
 	/**
@@ -71,21 +60,7 @@ public class CsvReader extends BasicReader {
 	 *            the separator
 	 */
 	public CsvReader(final InputStream inputStream, final CsvFormat csvFormat) throws Exception {
-		this(inputStream, Charset.forName(DEFAULT_ENCODING), csvFormat);
-	}
-
-	/**
-	 * CSV Reader derived constructor.
-	 *
-	 * @param inputStream
-	 *            the input stream
-	 * @param encoding
-	 *            the encoding
-	 * @param separator
-	 *            the separator
-	 */
-	public CsvReader(final InputStream inputStream, final String encoding, final CsvFormat csvFormat) throws Exception {
-		this(inputStream, Charset.forName(encoding), csvFormat);
+		this(inputStream, DEFAULT_ENCODING, csvFormat);
 	}
 
 	/**
@@ -381,7 +356,7 @@ public class CsvReader extends BasicReader {
 	public static List<String> parseCsvLine(final CsvFormat csvFormat, final String csvLine) throws Exception {
 		CsvReader reader = null;
 		try {
-			reader = new CsvReader(new ByteArrayInputStream(csvLine.getBytes("UTF-8")), "UTF-8", csvFormat);
+			reader = new CsvReader(new ByteArrayInputStream(csvLine.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8, csvFormat);
 			final List<List<String>> fullData = reader.readAll();
 			if (fullData.size() != 1) {
 				throw new Exception("Too many csv lines in data");

@@ -1,7 +1,7 @@
 
 package de.soderer.utilities;
 
-import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -108,7 +108,7 @@ public class CosmosDbRestfulClient {
 		// Mandatory parameters
 		request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
 		request.addHeader("x-ms-date", authDate);
-		request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
+		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), StandardCharsets.UTF_8));
 
 		// Optional parameters
 		if (additionalHeaders != null && additionalHeaders.size() > 0) {
@@ -184,7 +184,7 @@ public class CosmosDbRestfulClient {
 
 		request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
 		request.addHeader("x-ms-date", authDate);
-		request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("DELETE", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), "UTF-8"));
+		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("DELETE", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), StandardCharsets.UTF_8));
 
 		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
@@ -225,7 +225,7 @@ public class CosmosDbRestfulClient {
 
 		request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
 		request.addHeader("x-ms-date", authDate);
-		request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("GET", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), "UTF-8"));
+		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("GET", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), StandardCharsets.UTF_8));
 
 		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
@@ -279,7 +279,7 @@ public class CosmosDbRestfulClient {
 
 		request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
 		request.addHeader("x-ms-date", authDate);
-		request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
+		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), StandardCharsets.UTF_8));
 		request.addHeader("Content-Type", "application/query+json");
 		request.addHeader("x-ms-documentdb-isquery", "true");
 
@@ -343,7 +343,7 @@ public class CosmosDbRestfulClient {
 
 			request.addHeader("x-ms-version", COSMOSDB_API_VERSION);
 			request.addHeader("x-ms-date", authDate);
-			request.addHeader("authorization", URLEncoder.encode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), "UTF-8"));
+			request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("POST", "docs", "dbs/" + databaseID + "/colls/" + collectionID, authDate), StandardCharsets.UTF_8));
 			request.addHeader("Content-Type", "application/query+json");
 			request.addHeader("x-ms-documentdb-isquery", "true");
 			request.addHeader("x-ms-max-item-count", "1000000");
@@ -416,7 +416,7 @@ public class CosmosDbRestfulClient {
 				""
 				);
 
-		final String base64AuthHashSignature = Base64.getEncoder().encodeToString(sha256HMAC.doFinal(authSignaturePayLoad.getBytes("UTF-8")));
+		final String base64AuthHashSignature = Base64.getEncoder().encodeToString(sha256HMAC.doFinal(authSignaturePayLoad.getBytes(StandardCharsets.UTF_8)));
 
 		final String authHashSignature = String.format("type=%s&ver=%s&sig=%s",
 				AUTH_TOKEN_TYPE,

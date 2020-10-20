@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 public class IoUtilities {
 	public static long copy(final InputStream input, final OutputStream output) throws IOException {
@@ -19,7 +20,7 @@ public class IoUtilities {
 		return count;
 	}
 
-	public static String toString(final InputStream inputStream, final String encoding) throws IOException {
+	public static String toString(final InputStream inputStream, final Charset encoding) throws IOException {
 		return new String(toByteArray(inputStream), encoding);
 	}
 

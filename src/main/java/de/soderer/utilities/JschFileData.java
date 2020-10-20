@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -32,7 +33,7 @@ public class JschFileData {
 		// drwx------ 2 root root 4096 Feb 2 21:19 dirname
 		// lrwxrwxrwx 1 root root 33 Jun 29 06:23 //initrd.img -> boot/initrd.img-4.4.0-154-generic
 
-		try (BasicReader reader = new BasicReader(new ByteArrayInputStream(dataString.getBytes("UTF-8")))) {
+		try (BasicReader reader = new BasicReader(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)))) {
 			reader.readNextNonWhitespace();
 			final String fileTypeAndRights = reader.readUpToNext(false, null, ' ');
 

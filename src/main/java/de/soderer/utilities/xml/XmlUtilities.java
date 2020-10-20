@@ -10,9 +10,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -309,7 +310,7 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static String getNodeAsString(final Node pNode, final String encoding, final boolean pRemoveXmlLine) throws Exception {
+	public static String getNodeAsString(final Node pNode, final Charset encoding, final boolean pRemoveXmlLine) throws Exception {
 		final StringWriter writer = new StringWriter();
 		final StreamResult result = new StreamResult(writer);
 		transformNode(pNode, encoding, pRemoveXmlLine, result);
@@ -329,7 +330,7 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static byte[] getNodeAsRaw(final Node pNode, final String encoding, final boolean pRemoveXmlLine) throws Exception {
+	public static byte[] getNodeAsRaw(final Node pNode, final Charset encoding, final boolean pRemoveXmlLine) throws Exception {
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		final StreamResult result = new StreamResult(outputStream);
 		transformNode(pNode, encoding, pRemoveXmlLine, result);
@@ -348,7 +349,7 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static void writeDocumentToFile(final Document document, final String encoding, final File file) throws Exception {
+	public static void writeDocumentToFile(final Document document, final Charset encoding, final File file) throws Exception {
 		try (OutputStream outputStream = new FileOutputStream(file)) {
 			final StreamResult result = new StreamResult(outputStream);
 			transformNode(document, encoding, false, result);
@@ -369,7 +370,7 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	private static void transformNode(final Node node, final String encoding, final boolean removeXmlHeader, final StreamResult result) throws Exception {
+	private static void transformNode(final Node node, final Charset encoding, final boolean removeXmlHeader, final StreamResult result) throws Exception {
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource source = null;
@@ -385,7 +386,7 @@ public class XmlUtilities {
 				throw new Exception("Transformer error");
 			}
 
-			transformer.setOutputProperty(OutputKeys.ENCODING, encoding);
+			transformer.setOutputProperty(OutputKeys.ENCODING, encoding.name());
 			if (removeXmlHeader) {
 				transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
 			} else {
@@ -426,7 +427,7 @@ public class XmlUtilities {
 			}
 
 			if (pData[pData.length - 1] == 0) {
-				pData = new String(pData, "UTF-8").trim().getBytes("UTF-8");
+				pData = new String(pData, StandardCharsets.UTF_8).trim().getBytes(StandardCharsets.UTF_8);
 			}
 
 			final DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -567,7 +568,7 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static String convertXML2String(final Document pDocument, final String encoding) throws Exception {
+	public static String convertXML2String(final Document pDocument, final Charset encoding) throws Exception {
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource domSource = null;
@@ -585,9 +586,9 @@ public class XmlUtilities {
 			}
 
 			if (encoding != null) {
-				transformer.setOutputProperty(OutputKeys.ENCODING, encoding);
+				transformer.setOutputProperty(OutputKeys.ENCODING, encoding.name());
 			} else {
-				transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+				transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
 			}
 
 			domSource = new DOMSource(pDocument);
@@ -618,7 +619,7 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static byte[] convertXML2ByteArray(final Node pDocument, final String encoding) throws Exception {
+	public static byte[] convertXML2ByteArray(final Node pDocument, final Charset encoding) throws Exception {
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource domSource = null;
@@ -636,9 +637,9 @@ public class XmlUtilities {
 			}
 
 			if (encoding != null) {
-				transformer.setOutputProperty(OutputKeys.ENCODING, encoding);
+				transformer.setOutputProperty(OutputKeys.ENCODING, encoding.name());
 			} else {
-				transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+				transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
 			}
 
 			domSource = new DOMSource(pDocument);
@@ -663,7 +664,7 @@ public class XmlUtilities {
 	// if (pUploadXmlDocumentArray == null || pUploadXmlDocumentArray.length == 0) {
 	// throw new Exception(ErrorConstAtsGlobals.UPLOAD_XML_EMPTY);
 	// }
-	// if (pUploadXmlDocumentArray[0] != "<".getBytes("UTF-8")[0]) {
+	// if (pUploadXmlDocumentArray[0] != "<".getBytes(StandardCharsets.UTF_8)[0]) {
 	// throw new Exception(ErrorConstAtsGlobals.INVALID_XML_DATA, "XML data is invalid");
 	// }
 	//
@@ -878,41 +879,37 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public static String getEncodingOfXmlByteArray(final byte[] xmlData) throws Exception {
+	public static Charset getEncodingOfXmlByteArray(final byte[] xmlData) throws Exception {
 		final String encodingAttributeName = "ENCODING";
-		try {
-			final String first50CharactersInUtf8UpperCase = new String(xmlData, "UTF-8").substring(0, 50).toUpperCase();
-			if (first50CharactersInUtf8UpperCase.contains(encodingAttributeName)) {
-				final int encodingstart = first50CharactersInUtf8UpperCase.indexOf(encodingAttributeName) + encodingAttributeName.length();
+		final String first50CharactersInUtf8UpperCase = new String(xmlData, StandardCharsets.UTF_8).substring(0, 50).toUpperCase();
+		if (first50CharactersInUtf8UpperCase.contains(encodingAttributeName)) {
+			final int encodingstart = first50CharactersInUtf8UpperCase.indexOf(encodingAttributeName) + encodingAttributeName.length();
 
-				final int contentStartEinfach = first50CharactersInUtf8UpperCase.indexOf("'", encodingstart);
-				final int contentStartDoppelt = first50CharactersInUtf8UpperCase.indexOf("\"", encodingstart);
-				int contentStart = Math.min(contentStartEinfach, contentStartDoppelt);
-				if (contentStartEinfach < 0) {
-					contentStart = contentStartDoppelt;
-				}
-				if (contentStart < 0) {
-					throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
-				}
-				contentStart = contentStart + 1;
-
-				final int contentEndSingle = first50CharactersInUtf8UpperCase.indexOf("'", contentStart);
-				final int contentEndDouble = first50CharactersInUtf8UpperCase.indexOf("\"", contentStart);
-				int contentEnd = Math.min(contentEndSingle, contentEndDouble);
-				if (contentEndSingle < 0) {
-					contentEnd = contentEndDouble;
-				}
-				if (contentEnd < 0) {
-					throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
-				}
-
-				final String encodingString = first50CharactersInUtf8UpperCase.substring(contentStart, contentEnd);
-				return encodingString;
-			} else {
+			final int contentStartEinfach = first50CharactersInUtf8UpperCase.indexOf("'", encodingstart);
+			final int contentStartDoppelt = first50CharactersInUtf8UpperCase.indexOf("\"", encodingstart);
+			int contentStart = Math.min(contentStartEinfach, contentStartDoppelt);
+			if (contentStartEinfach < 0) {
+				contentStart = contentStartDoppelt;
+			}
+			if (contentStart < 0) {
 				throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 			}
-		} catch (final UnsupportedEncodingException e) {
-			throw new Exception("XmlByteArray-Encoding nicht ermittelbar", e);
+			contentStart = contentStart + 1;
+
+			final int contentEndSingle = first50CharactersInUtf8UpperCase.indexOf("'", contentStart);
+			final int contentEndDouble = first50CharactersInUtf8UpperCase.indexOf("\"", contentStart);
+			int contentEnd = Math.min(contentEndSingle, contentEndDouble);
+			if (contentEndSingle < 0) {
+				contentEnd = contentEndDouble;
+			}
+			if (contentEnd < 0) {
+				throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
+			}
+
+			final String encodingString = first50CharactersInUtf8UpperCase.substring(contentStart, contentEnd);
+			return Charset.forName(encodingString);
+		} else {
+			throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 		}
 	}
 
@@ -989,7 +986,7 @@ public class XmlUtilities {
 				final Node rootNode = getRootNodeFromDocument(xmlDocument);
 				final List<Node> childNodes = getChildNodes(rootNode);
 				if (childNodes.size() > 0) {
-					return getNodeAsString(childNodes.get(0), "UTF-8", true);
+					return getNodeAsString(childNodes.get(0), StandardCharsets.UTF_8, true);
 				} else {
 					return getNodeValue(rootNode);
 				}
@@ -1017,13 +1014,13 @@ public class XmlUtilities {
 		return returnList;
 	}
 
-	public static String formatXmlDocument(final Document xmlDocument, final String encoding, final boolean throwExceptionOnError) throws Exception {
+	public static String formatXmlDocument(final Document xmlDocument, final Charset encoding, final boolean throwExceptionOnError) throws Exception {
 		try {
 			final StringBuilder result = new StringBuilder();
 			result.append("<?xml version=\"");
 			result.append(xmlDocument.getXmlVersion());
 			result.append("\" encoding=\"");
-			result.append(encoding.toUpperCase());
+			result.append(encoding.name().toUpperCase());
 			result.append("\" standalone=\"");
 			result.append(xmlDocument.getXmlStandalone() ? "yes" : "no");
 			result.append("\"?>\n");
@@ -1048,7 +1045,7 @@ public class XmlUtilities {
 			result.append("<?xml version=\"");
 			result.append(xmlDocument.getXmlVersion());
 			result.append("\" encoding=\"");
-			result.append(xmlDocument.getXmlEncoding() == null ? "UTF-8" : xmlDocument.getXmlEncoding());
+			result.append(xmlDocument.getXmlEncoding() == null ? StandardCharsets.UTF_8 : xmlDocument.getXmlEncoding());
 			result.append("\" standalone=\"");
 			result.append(xmlDocument.getXmlStandalone() ? "yes" : "no");
 			result.append("\"?>\n");

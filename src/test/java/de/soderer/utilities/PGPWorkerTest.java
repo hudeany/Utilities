@@ -2,6 +2,7 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 import org.bouncycastle.openpgp.PGPSecretKey;
@@ -31,23 +32,23 @@ public class PGPWorkerTest {
 		ByteArrayInputStream in = null;
 		ByteArrayOutputStream out = null;
 		try {
-			in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
+			in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			out = new ByteArrayOutputStream();
-			
-			PGPFileEncryptionWorker encryptionWorker = new PGPFileEncryptionWorker(null, in, out, getPgpSecretKey().getPublicKey());
+
+			final PGPFileEncryptionWorker encryptionWorker = new PGPFileEncryptionWorker(null, in, out, getPgpSecretKey().getPublicKey());
 			encryptionWorker.run();
-			
-			byte[] encryptedData = out.toByteArray();
-			
+
+			final byte[] encryptedData = out.toByteArray();
+
 			in = new ByteArrayInputStream(encryptedData);
 			out = new ByteArrayOutputStream();
 
-			PGPFileDecryptionWorker decryptionWorker = new PGPFileDecryptionWorker(null, in, out, getPgpSecretKey(), password);
+			final PGPFileDecryptionWorker decryptionWorker = new PGPFileDecryptionWorker(null, in, out, getPgpSecretKey(), password);
 			decryptionWorker.run();
-			
-			byte[] decryptedData = out.toByteArray();
-			Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), decryptedData);
-		} catch (Exception e) {
+
+			final byte[] decryptedData = out.toByteArray();
+			Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
+		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
 	}
@@ -59,36 +60,36 @@ public class PGPWorkerTest {
 		ByteArrayInputStream signatureInputStream = null;
 		try {
 			// Create 2 different signatures
-			in1 = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
-			
-			PGPFileSignatureWorker signatureWorker1 = new PGPFileSignatureWorker(null, in1, getPgpSecretKey(), password);
+			in1 = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+
+			final PGPFileSignatureWorker signatureWorker1 = new PGPFileSignatureWorker(null, in1, getPgpSecretKey(), password);
 			signatureWorker1.run();
-			
-			byte[] signature1 = signatureWorker1.get();
-			
-			in2 = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + "x").getBytes("UTF-8"));
-			
-			PGPFileSignatureWorker signatureWorker2 = new PGPFileSignatureWorker(null, in2, getPgpSecretKey(), password);
+
+			final byte[] signature1 = signatureWorker1.get();
+
+			in2 = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + "x").getBytes(StandardCharsets.UTF_8));
+
+			final PGPFileSignatureWorker signatureWorker2 = new PGPFileSignatureWorker(null, in2, getPgpSecretKey(), password);
 			signatureWorker2.run();
-			
+
 			// Check first valid signature
 			signatureInputStream = new ByteArrayInputStream(signature1);
 			in1.reset();
 
-			PGPFileVerificationWorker verificationWorker1 = new PGPFileVerificationWorker(null, in1, getPgpSecretKey().getPublicKey(), signatureInputStream);
+			final PGPFileVerificationWorker verificationWorker1 = new PGPFileVerificationWorker(null, in1, getPgpSecretKey().getPublicKey(), signatureInputStream);
 			verificationWorker1.run();
-			
+
 			Assert.assertTrue(verificationWorker1.get());
 
 			// Check second invalid signature
 			signatureInputStream.reset();
 			in2.reset();
 
-			PGPFileVerificationWorker verificationWorker2 = new PGPFileVerificationWorker(null, in2, getPgpSecretKey().getPublicKey(), signatureInputStream);
+			final PGPFileVerificationWorker verificationWorker2 = new PGPFileVerificationWorker(null, in2, getPgpSecretKey().getPublicKey(), signatureInputStream);
 			verificationWorker2.run();
-			
+
 			Assert.assertFalse(verificationWorker2.get());
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
 	}

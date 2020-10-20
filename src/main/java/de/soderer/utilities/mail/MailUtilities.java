@@ -1,5 +1,7 @@
 package de.soderer.utilities.mail;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -132,7 +134,7 @@ public class MailUtilities {
 	 *
 	 * For pure textmails leave bodyHtml empty or null
 	 */
-	public static boolean sendEmail(String smtpMailRelayHostname, String fromAddress, String fromName, final String replyToAddress, final String replyToName, final String bounceAddress, final String toAddressList, final String ccAddressList, final String subject, final String bodyText, final String bodyHtml, String charset, final JavaMailAttachment... attachments) {
+	public static boolean sendEmail(String smtpMailRelayHostname, String fromAddress, String fromName, final String replyToAddress, final String replyToName, final String bounceAddress, final String toAddressList, final String ccAddressList, final String subject, final String bodyText, final String bodyHtml, Charset charset, final JavaMailAttachment... attachments) {
 		if (Utilities.isBlank(smtpMailRelayHostname)) {
 			logger.error("smtpMailRelayHostname is missing, so no mail was sent. emailSubject: " + subject);
 			return false;
@@ -150,8 +152,8 @@ public class MailUtilities {
 			}
 		}
 
-		if (Utilities.isBlank(charset)) {
-			charset = "UTF-8";
+		if (charset == null) {
+			charset = StandardCharsets.UTF_8;
 		}
 
 		try {
@@ -181,7 +183,7 @@ public class MailUtilities {
 			} else {
 				msg.setFrom(new InternetAddress(fromAddress, fromName));
 			}
-			msg.setSubject(subject, charset);
+			msg.setSubject(subject, charset.name());
 			msg.setSentDate(new Date());
 
 			// Set reply-to address
@@ -216,10 +218,10 @@ public class MailUtilities {
 				if (Utilities.isBlank(bodyText) && Utilities.isBlank(bodyHtml)) {
 					// Use a simple text email with only text content
 					// Set to a single space. If body is totally empty, Commons Emails rejects sending email with exception "Invalid message supplied" (-> EMM-4133)
-					msg.setText(" ", charset);
+					msg.setText(" ", charset.name());
 				} else if (Utilities.isBlank(bodyHtml)) {
 					// Use a simple text email with only text content
-					msg.setText(bodyText, charset);
+					msg.setText(bodyText, charset.name());
 				} else if (Utilities.isBlank(bodyText)) {
 					// Use a simple html email with only html content
 					msg.setContent(bodyHtml, "text/html; charset=" + charset);
@@ -228,7 +230,7 @@ public class MailUtilities {
 					final Multipart multipart = new MimeMultipart("alternative");
 
 					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
-					textMimeBodyPart.setText(bodyText, charset);
+					textMimeBodyPart.setText(bodyText, charset.name());
 					multipart.addBodyPart(textMimeBodyPart);
 
 					final MimeBodyPart htmlMimeBodyPart = new MimeBodyPart();
@@ -244,12 +246,12 @@ public class MailUtilities {
 					// Use a multipart text email with only text content and attachements
 					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
 					// Set to a single space. If body is totally empty, Commons Emails rejects sending email with exception "Invalid message supplied" (-> EMM-4133)
-					textMimeBodyPart.setText(" ", charset);
+					textMimeBodyPart.setText(" ", charset.name());
 					multipartMixed.addBodyPart(textMimeBodyPart);
 				} else if (Utilities.isBlank(bodyHtml)) {
 					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
 					// Use a multipart text email with only text content and attachements
-					textMimeBodyPart.setText(bodyText, charset);
+					textMimeBodyPart.setText(bodyText, charset.name());
 					multipartMixed.addBodyPart(textMimeBodyPart);
 				} else if (Utilities.isBlank(bodyText)) {
 					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
@@ -261,7 +263,7 @@ public class MailUtilities {
 					final Multipart multipartTextContent = new MimeMultipart("alternative");
 
 					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
-					textMimeBodyPart.setText(bodyText, charset);
+					textMimeBodyPart.setText(bodyText, charset.name());
 					multipartTextContent.addBodyPart(textMimeBodyPart);
 
 					final MimeBodyPart htmlMimeBodyPart = new MimeBodyPart();
@@ -275,7 +277,7 @@ public class MailUtilities {
 
 				for (final JavaMailAttachment attachment : attachments) {
 					final MimeBodyPart attachmentMimeBodyPart = new MimeBodyPart();
-					attachmentMimeBodyPart.setFileName(MimeUtility.encodeText(attachment.getName(), "UTF-8", null));
+					attachmentMimeBodyPart.setFileName(MimeUtility.encodeText(attachment.getName(), StandardCharsets.UTF_8.name(), null));
 					final ByteArrayDataSource bds = new ByteArrayDataSource(attachment.getData(), attachment.getMimeType());
 					attachmentMimeBodyPart.setDataHandler(new DataHandler(bds));
 					multipartMixed.addBodyPart(attachmentMimeBodyPart);

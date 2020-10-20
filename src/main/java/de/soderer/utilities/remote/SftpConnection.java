@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -109,7 +110,7 @@ public class SftpConnection implements RemoteConnection {
 			session = jsch.getSession(username, hostname, port);
 
 			if (keyFileData != null) {
-				jsch.addIdentity(username, keyFileData, null, password == null ? new byte[0] : new String(password).getBytes("UTF-8"));
+				jsch.addIdentity(username, keyFileData, null, password == null ? new byte[0] : new String(password).getBytes(StandardCharsets.UTF_8));
 			} else {
 				session.setPassword(new String(password));
 			}
@@ -166,7 +167,7 @@ public class SftpConnection implements RemoteConnection {
 					final HostKey[] hostKeys = hostKeyRepository.getHostKey();
 					if (hostKeys != null) {
 						for (final HostKey hostKeyItem : hostKeys) {
-							newKnownHosts.write((hostKeyItem.getHost() + " " + hostKeyItem.getType() + " " + hostKeyItem.getKey() + "\n").getBytes("UTF-8"));
+							newKnownHosts.write((hostKeyItem.getHost() + " " + hostKeyItem.getType() + " " + hostKeyItem.getKey() + "\n").getBytes(StandardCharsets.UTF_8));
 						}
 					}
 				}
@@ -206,7 +207,7 @@ public class SftpConnection implements RemoteConnection {
 				channel.connect();
 
 				final byte[] successData = Utilities.toByteArray(inStream);
-				final String successString = new String(successData, "UTF-8");
+				final String successString = new String(successData, StandardCharsets.UTF_8);
 
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
 
@@ -234,7 +235,7 @@ public class SftpConnection implements RemoteConnection {
 				channel.connect();
 
 				final byte[] successData = Utilities.toByteArray(inStream);
-				final String successString = new String(successData, "UTF-8");
+				final String successString = new String(successData, StandardCharsets.UTF_8);
 
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
 
@@ -263,13 +264,13 @@ public class SftpConnection implements RemoteConnection {
 					InputStream inErrorStream = channel.getExtInputStream()) {
 				channel.connect();
 
-				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+				for (final String folderLine : Utilities.readLines(inStream, StandardCharsets.UTF_8)) {
 					folderList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
 				}
 
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
 				if (errorData != null && errorData.length > 0) {
-					throw new Exception(new String(errorData, "UTF-8"));
+					throw new Exception(new String(errorData, StandardCharsets.UTF_8));
 				}
 			}
 		} finally {
@@ -295,13 +296,13 @@ public class SftpConnection implements RemoteConnection {
 					InputStream inErrorStream = channel.getExtInputStream()) {
 				channel.connect();
 
-				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+				for (final String folderLine : Utilities.readLines(inStream, StandardCharsets.UTF_8)) {
 					fileList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
 				}
 
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
 				if (errorData != null && errorData.length > 0) {
-					throw new Exception(new String(errorData, "UTF-8"));
+					throw new Exception(new String(errorData, StandardCharsets.UTF_8));
 				}
 			}
 		} finally {
@@ -328,13 +329,13 @@ public class SftpConnection implements RemoteConnection {
 
 				channel.connect();
 
-				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+				for (final String folderLine : Utilities.readLines(inStream, StandardCharsets.UTF_8)) {
 					linkList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
 				}
 
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
 				if (errorData != null && errorData.length > 0) {
-					throw new Exception(new String(errorData, "UTF-8"));
+					throw new Exception(new String(errorData, StandardCharsets.UTF_8));
 				}
 			}
 		} finally {
@@ -366,13 +367,13 @@ public class SftpConnection implements RemoteConnection {
 
 				channel.connect();
 
-				for (final String folderLine : Utilities.readLines(inStream, "UTF-8")) {
+				for (final String folderLine : Utilities.readLines(inStream, StandardCharsets.UTF_8)) {
 					linkList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
 				}
 
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
 				if (errorData != null && errorData.length > 0) {
-					throw new Exception(new String(errorData, "UTF-8"));
+					throw new Exception(new String(errorData, StandardCharsets.UTF_8));
 				}
 			}
 		} finally {
@@ -425,7 +426,7 @@ public class SftpConnection implements RemoteConnection {
 				// send command "C0664 filesize filename"
 				final String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
 				command = "C0664 " + fileData.length + " \"" + fileName + "\"\n";
-				outStream.write(command.getBytes("UTF-8"));
+				outStream.write(command.getBytes(StandardCharsets.UTF_8));
 				outStream.flush();
 
 				checkAcknowledge(inStream);
@@ -465,7 +466,7 @@ public class SftpConnection implements RemoteConnection {
 				channel.connect();
 
 				final byte[] successData = Utilities.toByteArray(inStream);
-				final String successString = new String(successData, "UTF-8");
+				final String successString = new String(successData, StandardCharsets.UTF_8);
 
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
 
@@ -503,7 +504,7 @@ public class SftpConnection implements RemoteConnection {
 			@SuppressWarnings("unused")
 			String rights = null;
 			if (rightsData != null && rightsData.length > 0) {
-				rights = new String(rightsData, "UTF-8");
+				rights = new String(rightsData, StandardCharsets.UTF_8);
 			}
 
 			// read filesize (if empty filesize read until no more data)
@@ -518,7 +519,7 @@ public class SftpConnection implements RemoteConnection {
 			@SuppressWarnings("unused")
 			String filename = null;
 			if (filenameData != null && filenameData.length > 0) {
-				filename = new String(filenameData, "UTF-8");
+				filename = new String(filenameData, StandardCharsets.UTF_8);
 			}
 
 			// send '\0' to start data transfer
@@ -648,7 +649,7 @@ public class SftpConnection implements RemoteConnection {
 				// send "C0664 filesize filename", where filename should not include '/'
 				final long filesize = new File(localPathAndFileName).length();
 				command = "C0664 " + filesize + " " + remoteHostFileName + "\n";
-				out.write(command.getBytes("UTF-8"));
+				out.write(command.getBytes(StandardCharsets.UTF_8));
 				out.flush();
 				checkAcknowledge(in);
 
@@ -705,7 +706,7 @@ public class SftpConnection implements RemoteConnection {
 
 				// send command "C0664 filesize filename"
 				command = "C0664 " + fileData.length + " " + remoteHostFileName + "\n";
-				out.write(command.getBytes("UTF-8"));
+				out.write(command.getBytes(StandardCharsets.UTF_8));
 				out.flush();
 				checkAcknowledge(in);
 
@@ -908,7 +909,7 @@ public class SftpConnection implements RemoteConnection {
 				channel.connect();
 
 				final byte[] successData = Utilities.toByteArray(inStream);
-				final String successString = new String(successData, "UTF-8");
+				final String successString = new String(successData, StandardCharsets.UTF_8);
 
 				final byte[] errorData = Utilities.toByteArray(inErrorStream);
 

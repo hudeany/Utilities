@@ -2,6 +2,8 @@ package de.soderer.utilities.xml;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.stream.XMLOutputFactory;
@@ -15,7 +17,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
-	public static final String DEFAULT_ENCODING = "UTF-8";
+	public static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
 	public static final String DEFAULT_INDENTATION = "\t";
 
 	private final String indentationString;
@@ -24,7 +26,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 
 	private final XMLStreamWriter writer;
 
-	private final String encoding;
+	private final Charset encoding;
 
 	// Internal status
 	private int currentDepth = 0;
@@ -34,13 +36,13 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 		this(outputStream, DEFAULT_ENCODING, DEFAULT_INDENTATION);
 	}
 
-	public IndentedXMLStreamWriter(final OutputStream outputStream, final String encoding, final char indentationCharacter, final int characterCountPerIndentation) throws Exception {
+	public IndentedXMLStreamWriter(final OutputStream outputStream, final Charset encoding, final char indentationCharacter, final int characterCountPerIndentation) throws Exception {
 		this(outputStream, encoding, multiplyCharacter(indentationCharacter, characterCountPerIndentation));
 	}
 
-	public IndentedXMLStreamWriter(final OutputStream outputStream, final String encoding, final String indentationString) throws Exception {
+	public IndentedXMLStreamWriter(final OutputStream outputStream, final Charset encoding, final String indentationString) throws Exception {
 		this.outputStream = outputStream;
-		writer = XMLOutputFactory.newInstance().createXMLStreamWriter(outputStream, encoding);
+		writer = XMLOutputFactory.newInstance().createXMLStreamWriter(outputStream, encoding.name());
 		this.encoding = encoding;
 		this.indentationString = indentationString;
 	}
@@ -65,10 +67,10 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 
 	@Override
 	public void writeStartDocument(final String xmlDeclarationEncoding, final String version) throws XMLStreamException {
-		writeStartDocument(null, xmlDeclarationEncoding, version);
+		writeStartDocument(null, Charset.forName(xmlDeclarationEncoding), version);
 	}
 
-	public void writeStartDocument(final Boolean standAlone, final String xmlDeclarationEncoding, final String version) throws XMLStreamException {
+	public void writeStartDocument(final Boolean standAlone, final Charset xmlDeclarationEncoding, final String version) throws XMLStreamException {
 		final StringBuilder xmlDeclBuilder = new StringBuilder("<?xml");
 		if (version != null) {
 			xmlDeclBuilder.append(" version=\"").append(version).append("\"");
@@ -81,7 +83,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 		}
 		xmlDeclBuilder.append("?>\n");
 		try {
-			outputStream.write(xmlDeclBuilder.toString().getBytes("UTF-8"));
+			outputStream.write(xmlDeclBuilder.toString().getBytes(StandardCharsets.UTF_8));
 		} catch (final IOException e) {
 			throw new XMLStreamException(e);
 		}
@@ -249,7 +251,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 		if (document.getXmlStandalone()) {
 			writeStartDocument(true, encoding, "1.0");
 		} else {
-			writeStartDocument(encoding, "1.0");
+			writeStartDocument(encoding.name(), "1.0");
 		}
 		final NodeList childList = document.getChildNodes();
 		for (int childNodeIndex = 0; childNodeIndex < childList.getLength(); childNodeIndex++) {

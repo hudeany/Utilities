@@ -391,7 +391,7 @@ public class CryptographicUtilities {
 	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(final InputStream inputStream) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final PEMKeyPair keyPair = getPEMKeyPairFromString(IoUtilities.toString(inputStream, "UTF-8"));
+		final PEMKeyPair keyPair = getPEMKeyPairFromString(IoUtilities.toString(inputStream, StandardCharsets.UTF_8));
 		final AsymmetricKeyParameter privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
 		final AsymmetricKeyParameter publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
 
@@ -515,21 +515,21 @@ public class CryptographicUtilities {
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PublicKey readRSAPublicKey(final InputStream inputStream) throws Exception {
-		return getPublicKeyFromString(IoUtilities.toString(inputStream, "UTF-8"));
+		return getPublicKeyFromString(IoUtilities.toString(inputStream, StandardCharsets.UTF_8));
 	}
 
 	/**
 	 * Read a keyfile generated with 'openssl genrsa...'
 	 */
 	public static PrivateKey readRSAPrivateKey(final InputStream inputStream) throws Exception {
-		return getPrivateKeyFromString(IoUtilities.toString(inputStream, "UTF-8"));
+		return getPrivateKeyFromString(IoUtilities.toString(inputStream, StandardCharsets.UTF_8));
 	}
 
 	/**
 	 * Read a certificate file
 	 */
 	public static X509Certificate getCertificateFromFile(final File certificateFile) throws Exception {
-		final String certificateFileString = FileUtilities.readFileToString(certificateFile, "UTF-8");
+		final String certificateFileString = FileUtilities.readFileToString(certificateFile, StandardCharsets.UTF_8);
 		return getCertificateFromString(certificateFileString);
 	}
 
@@ -941,7 +941,7 @@ public class CryptographicUtilities {
 
 			jcaPEMWriter.flush();
 		}
-		return new String(outputStream.toByteArray(), "UTF-8");
+		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
 	}
 
 	public static String encodePublicKeyForAuthorizedKeys(final KeyPair keyPair) throws IOException {

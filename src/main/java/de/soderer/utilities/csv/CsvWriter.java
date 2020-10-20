@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class CsvWriter implements Closeable {
 	private CsvFormat csvFormat;
 
 	/** Default output encoding. */
-	public static final String DEFAULT_ENCODING = "UTF-8";
+	public static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
 
 	/** Current output separator as string for internal use. */
 	private final String separatorString;
@@ -58,19 +59,7 @@ public class CsvWriter implements Closeable {
 	 *            the output stream
 	 */
 	public CsvWriter(final OutputStream outputStream) {
-		this(outputStream, Charset.forName(DEFAULT_ENCODING));
-	}
-
-	/**
-	 * CSV Writer derived constructor.
-	 *
-	 * @param outputStream
-	 *            the output stream
-	 * @param encoding
-	 *            the encoding
-	 */
-	public CsvWriter(final OutputStream outputStream, final String encoding) {
-		this(outputStream, Charset.forName(encoding));
+		this(outputStream, DEFAULT_ENCODING);
 	}
 
 	/**
@@ -94,21 +83,7 @@ public class CsvWriter implements Closeable {
 	 *            the separator
 	 */
 	public CsvWriter(final OutputStream outputStream, final CsvFormat csvFormat) {
-		this(outputStream, Charset.forName(DEFAULT_ENCODING), csvFormat);
-	}
-
-	/**
-	 * CSV Writer derived constructor.
-	 *
-	 * @param outputStream
-	 *            the output stream
-	 * @param encoding
-	 *            the encoding
-	 * @param separator
-	 *            the separator
-	 */
-	public CsvWriter(final OutputStream outputStream, final String encoding, final CsvFormat csvFormat) {
-		this(outputStream, Charset.forName(encoding), csvFormat);
+		this(outputStream, DEFAULT_ENCODING, csvFormat);
 	}
 
 	/**

@@ -8,6 +8,7 @@ import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -500,7 +501,7 @@ public class KeyPairUtilities {
 		}
 
 		private void writeString(final String stringData) throws Exception {
-			writeData(stringData.getBytes("ISO-8859-1"));
+			writeData(stringData.getBytes(StandardCharsets.ISO_8859_1));
 		}
 
 		private void writeData(final byte[] data) throws IOException, Exception {
@@ -533,7 +534,7 @@ public class KeyPairUtilities {
 		}
 
 		private String readString() throws Exception {
-			return new String(readData(), "ISO-8859-1");
+			return new String(readData(), StandardCharsets.ISO_8859_1);
 		}
 
 		private byte[] readData() throws IOException, Exception {

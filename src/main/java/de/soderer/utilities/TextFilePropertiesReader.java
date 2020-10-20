@@ -5,12 +5,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class TextFilePropertiesReader extends TextPropertiesReader {
 	private File file;
 	private byte[] data;
-	private Tuple<String, Boolean> defaultEncoding = new Tuple<>("UTF-8", false);
+	private Tuple<String, Boolean> defaultEncoding = new Tuple<>(StandardCharsets.UTF_8.name(), false);
 	private Tuple<String, Boolean> encodingData = null;
 	private long filesize = -1;
 
@@ -66,9 +67,9 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			dataString = decodeByteArray(data, encodingData);
 
 			// Check for invalid UTF-8 character
-			if (encodingData != null && "UTF-8".equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
+			if (encodingData != null && StandardCharsets.UTF_8.name().equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
 				// If encoding was UTF-8 (detected or default) but contains illegal chars, then try most common other encoding
-				encodingData = new Tuple<>("ISO-8859-1", false);
+				encodingData = new Tuple<>(StandardCharsets.ISO_8859_1.name(), false);
 				dataString = decodeByteArray(data, encodingData);
 			}
 		} else {
@@ -111,9 +112,9 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 				dataString = decodeByteArray(subdata, encodingData);
 
 				// Check for invalid UTF-8 character
-				if (encodingData != null && "UTF-8".equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
+				if (encodingData != null && StandardCharsets.UTF_8.name().equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
 					// If encoding was UTF-8 (detected or default) but contains illegal chars, then try most common other encoding
-					encodingData = new Tuple<>("ISO-8859-1", false);
+					encodingData = new Tuple<>(StandardCharsets.ISO_8859_1.name(), false);
 					dataString = decodeByteArray(subdata, encodingData);
 				}
 			} else {
@@ -151,9 +152,9 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 				dataString = decodeByteArray(subdata, encodingData);
 
 				// Check for invalid UTF-8 character
-				if (encodingData != null && "UTF-8".equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
+				if (encodingData != null && StandardCharsets.UTF_8.name().equalsIgnoreCase(encodingData.getFirst()) && dataString.contains("�")) {
 					// If encoding was UTF-8 (detected or default) but contains illegal chars, then try most common other encoding
-					encodingData = new Tuple<>("ISO-8859-1", false);
+					encodingData = new Tuple<>(StandardCharsets.ISO_8859_1.name(), false);
 					dataString = decodeByteArray(subdata, encodingData);
 				}
 			} else {
@@ -236,7 +237,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			} else if ("UnicodeLittle".equalsIgnoreCase(encodingData.getFirst()) || ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())) {
 				output.write(Utilities.BOM_UTF_16_LOW_ENDIAN);
 				encoding = "UTF-16LE";
-			} else if ("UTF-8".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+			} else if (StandardCharsets.UTF_8.name().equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
 				output.write(Utilities.BOM_UTF_8);
 			}
 			output.write(text.getBytes(encoding));

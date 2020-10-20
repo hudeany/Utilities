@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -515,13 +517,13 @@ public class DbUtilities {
 		}
 	}
 
-	public static int readoutInOutputStream(final DataSource dataSource, final String statementString, final OutputStream outputStream, final String encoding, final char separator, final Character stringQuote) throws Exception {
+	public static int readoutInOutputStream(final DataSource dataSource, final String statementString, final OutputStream outputStream, final Charset encoding, final char separator, final Character stringQuote) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			return readoutInOutputStream(connection, statementString, outputStream, encoding, separator, stringQuote);
 		}
 	}
 
-	public static int readoutInOutputStream(final Connection connection, final String statementString, final OutputStream outputStream, final String encoding, final char separator, final Character stringQuote) throws Exception {
+	public static int readoutInOutputStream(final Connection connection, final String statementString, final OutputStream outputStream, final Charset encoding, final char separator, final Character stringQuote) throws Exception {
 		final DbVendor dbVendor = getDbVendor(connection);
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery(statementString);
@@ -584,8 +586,8 @@ public class DbUtilities {
 
 	public static String readout(final Connection connection, final String statementString, final char separator, final Character stringQuote) throws Exception {
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		readoutInOutputStream(connection, statementString, outputStream, "UTF-8", separator, stringQuote);
-		return new String(outputStream.toByteArray(), "UTF-8");
+		readoutInOutputStream(connection, statementString, outputStream, StandardCharsets.UTF_8, separator, stringQuote);
+		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
 	}
 
 	public static String readoutTable(final DataSource dataSource, final String tableName, final char separator, final Character stringQuote) throws Exception {

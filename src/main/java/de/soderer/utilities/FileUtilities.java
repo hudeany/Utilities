@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -101,7 +102,7 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileSearchText(final File searchFile, final String searchText, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final String defaultEncoding) throws Exception {
+	public static boolean fileSearchText(final File searchFile, final String searchText, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final Charset defaultEncoding) throws Exception {
 		final List<String> searchTexts = new ArrayList<>();
 		searchTexts.add(searchText);
 		return fileSearchText(searchFile, searchTexts, searchCaseSensitive, searchTextIsRegularExpression, defaultEncoding);
@@ -118,17 +119,17 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileSearchText(final File searchFile, final List<String> searchTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final String defaultEncoding) throws Exception {
+	public static boolean fileSearchText(final File searchFile, final List<String> searchTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final Charset defaultEncoding) throws Exception {
 		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
 			final byte[] encodingBuffer = readFirstFileData(searchFile, 100);
 			Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
 			if (encodingData == null) {
-				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
+				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding.name());
 			}
 
 			final String dataString;
 			try (FileInputStream fileInputStream = new FileInputStream(searchFile)) {
-				dataString = Utilities.toString(fileInputStream, encodingData.getFirst());
+				dataString = Utilities.toString(fileInputStream, Charset.forName(encodingData.getFirst()));
 			}
 
 			for (int i = 0; i < searchTexts.size(); i++) {
@@ -167,7 +168,7 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileReplaceText(final File searchFile, final String searchText, final String replacementText, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final String defaultEncoding)
+	public static boolean fileReplaceText(final File searchFile, final String searchText, final String replacementText, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final Charset defaultEncoding)
 			throws Exception {
 		final List<String> searchTexts = new ArrayList<>();
 		searchTexts.add(searchText);
@@ -188,17 +189,17 @@ public class FileUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean fileReplaceText(final File searchFile, final List<String> searchTexts, final List<String> replacementTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final String defaultEncoding) throws Exception {
+	public static boolean fileReplaceText(final File searchFile, final List<String> searchTexts, final List<String> replacementTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final Charset defaultEncoding) throws Exception {
 		try (FileInputStream fileInputStream = new FileInputStream(searchFile)) {
 			boolean foundAndReplaced = false;
 			if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0 && replacementTexts != null && replacementTexts.size() > 0) {
 				final byte[] encodingBuffer = readFirstFileData(searchFile, 100);
 				Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
 				if (encodingData == null) {
-					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding);
+					encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding.name());
 				}
 
-				String dataString = Utilities.toString(fileInputStream, encodingData.getFirst());
+				String dataString = Utilities.toString(fileInputStream, Charset.forName(encodingData.getFirst()));
 
 				for (int i = 0; i < searchTexts.size(); i++) {
 					Pattern searchPattern;
@@ -223,7 +224,7 @@ public class FileUtilities {
 				}
 
 				if (foundAndReplaced) {
-					FileUtilities.writeStringToFile(searchFile, dataString, encodingData.getFirst());
+					FileUtilities.writeStringToFile(searchFile, dataString, Charset.forName(encodingData.getFirst()));
 				}
 			}
 			return foundAndReplaced;
@@ -446,7 +447,7 @@ public class FileUtilities {
 		}
 	}
 
-	public static void writeStringToFile(final File file, final String dataString, final String encoding) throws Exception {
+	public static void writeStringToFile(final File file, final String dataString, final Charset encoding) throws Exception {
 		write(file, dataString.getBytes(encoding));
 	}
 
@@ -461,17 +462,17 @@ public class FileUtilities {
 		}
 	}
 
-	public static String readFileToString(final File dataFile, final String encoding) throws Exception {
+	public static String readFileToString(final File dataFile, final Charset encoding) throws Exception {
 		return new String(readFileToByteArray(dataFile), encoding);
 	}
 
-	public static List<String> readLinesFromFile(final File textFile, final boolean keepLinebreakInLines, final String encoding) throws Exception {
+	public static List<String> readLinesFromFile(final File textFile, final boolean keepLinebreakInLines, final Charset encoding) throws Exception {
 		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(textFile))) {
 			return readLinesFromStream(inputStream, keepLinebreakInLines, encoding);
 		}
 	}
 
-	public static List<String> readLinesFromStream(final InputStream inputStream, final boolean keepLinebreakInLines, final String encoding) throws Exception {
+	public static List<String> readLinesFromStream(final InputStream inputStream, final boolean keepLinebreakInLines, final Charset encoding) throws Exception {
 		final List<String> dataLines = new ArrayList<>();
 		final ByteArrayOutputStream readData = new ByteArrayOutputStream();
 		int nextByte;
@@ -518,7 +519,7 @@ public class FileUtilities {
 		return dataLines;
 	}
 
-	public static void append(final File fileToAppend, final String textToAppend, final String encoding) throws Exception {
+	public static void append(final File fileToAppend, final String textToAppend, final Charset encoding) throws Exception {
 		try (OutputStream os = new FileOutputStream(fileToAppend, true)) {
 			os.write(textToAppend.getBytes(encoding));
 		}

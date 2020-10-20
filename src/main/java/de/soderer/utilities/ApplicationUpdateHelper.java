@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.cert.CertPathBuilder;
@@ -414,7 +415,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 
 	private static void writeFile(final File file, final String string) throws Exception {
 		try (FileOutputStream out = new FileOutputStream(file)) {
-			out.write(string.getBytes("UTF-8"));
+			out.write(string.getBytes(StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			throw new Exception("Cannot write file " + file.getAbsolutePath(), e);
 		}

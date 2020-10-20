@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.Security;
 
@@ -57,11 +58,11 @@ public class OpenSshKeyTestWithBC {
 		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
 
 		// Create BouncyCastle encrypted PKCS8 data
-		final byte[] privateKeyPkcs8DataByBc = CryptographicUtilities.getStringFromKeyPair(keyPair, "password".toCharArray()).getBytes("UTF-8");
+		final byte[] privateKeyPkcs8DataByBc = CryptographicUtilities.getStringFromKeyPair(keyPair, "password".toCharArray()).getBytes(StandardCharsets.UTF_8);
 
 		// Check BouncyCastle encrypted PKCS8 data with BouncyCastle
 		final KeyPair readKeyPair2;
-		try (PEMParser pemParser = new PEMParser(new StringReader(new String(privateKeyPkcs8DataByBc, "UTF-8")))) {
+		try (PEMParser pemParser = new PEMParser(new StringReader(new String(privateKeyPkcs8DataByBc, StandardCharsets.UTF_8)))) {
 			final PEMEncryptedKeyPair pemEncryptedKeyPair = (PEMEncryptedKeyPair) pemParser.readObject();
 			final PEMDecryptorProvider keyDecryptorProvider = new BcPEMDecryptorProvider("password".toCharArray());
 			final PEMKeyPair pemKeyPair = pemEncryptedKeyPair.decryptKeyPair(keyDecryptorProvider);
@@ -88,13 +89,13 @@ public class OpenSshKeyTestWithBC {
 			privateKeyPkcs8DataByOpenSshKeyWriter = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(privateKeyPkcs8DataByOpenSshKeyWriter, "UTF-8").contains("----BEGIN ")) {
+		if (!new String(privateKeyPkcs8DataByOpenSshKeyWriter, StandardCharsets.UTF_8).contains("----BEGIN ")) {
 			Assert.fail();
 		}
 
 		// Check OpenSshKeyWriter encrypted PKCS8 data with BouncyCastle
 		final KeyPair readKeyPair3;
-		try (PEMParser pemParser = new PEMParser(new StringReader(new String(privateKeyPkcs8DataByOpenSshKeyWriter, "UTF-8")))) {
+		try (PEMParser pemParser = new PEMParser(new StringReader(new String(privateKeyPkcs8DataByOpenSshKeyWriter, StandardCharsets.UTF_8)))) {
 			final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 			final PEMEncryptedKeyPair pemEncryptedKeyPair = (PEMEncryptedKeyPair) pemParser.readObject();
 			final PEMDecryptorProvider keyDecryptorProvider = new BcPEMDecryptorProvider("password".toCharArray());

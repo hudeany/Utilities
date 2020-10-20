@@ -2,6 +2,8 @@ package de.soderer.utilities.http;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,7 +36,7 @@ public class HttpRequest {
 
 	private final HttpMethod requestMethod;
 	private final String url;
-	private String encoding = "UTF-8";
+	private Charset encoding = StandardCharsets.UTF_8;
 
 	private final Map<String, String> headers = new LinkedHashMap<>();
 	private final List<Tuple<String, Object>> urlParameters = new ArrayList<>();
@@ -217,11 +219,11 @@ public class HttpRequest {
 		return this;
 	}
 
-	public String getEncoding() {
+	public Charset getEncoding() {
 		return encoding;
 	}
 
-	public HttpRequest setEncoding(final String encoding) {
+	public HttpRequest setEncoding(final Charset encoding) {
 		this.encoding = encoding;
 
 		return this;

@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -43,8 +44,8 @@ public class OpenSshKeyReader implements Closeable {
 
 	private final BufferedReader dataReader;
 
-	public OpenSshKeyReader(final InputStream inputStream) throws IOException {
-		dataReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+	public OpenSshKeyReader(final InputStream inputStream) {
+		dataReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 	}
 
 	public KeyPair readKey(final char[] password) throws Exception {
@@ -347,7 +348,7 @@ public class OpenSshKeyReader implements Closeable {
 	}
 
 	private static byte[] stretchPasswordForOpenSsl(final char[] password, final byte[] iv, final int usingIvSize, final int keySize) throws Exception {
-		final byte[] passphraseBytes = toBytes(password, "ISO-8859-1");
+		final byte[] passphraseBytes = toBytes(password, StandardCharsets.ISO_8859_1);
 		final MessageDigest hash = MessageDigest.getInstance("MD5");
 		final byte[] key = new byte[keySize];
 		int hashesSize = keySize & 0XFFFFFFF0;
@@ -370,8 +371,8 @@ public class OpenSshKeyReader implements Closeable {
 		return key;
 	}
 
-	private static byte[] toBytes(final char[] chars, final String encoding) {
-		final ByteBuffer byteBuffer = Charset.forName(encoding).encode(CharBuffer.wrap(chars));
+	private static byte[] toBytes(final char[] chars, final Charset encoding) {
+		final ByteBuffer byteBuffer = encoding.encode(CharBuffer.wrap(chars));
 		final byte[] bytes = Arrays.copyOfRange(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
 		Arrays.fill(byteBuffer.array(), (byte) 0); // clear sensitive data
 		return bytes;

@@ -8,7 +8,7 @@ import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -21,6 +21,7 @@ import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.http.HttpUtilities;
 
 /**
  * HttpFileConnection
@@ -317,12 +318,12 @@ public class HttpFileConnection implements RemoteConnection {
 				+ (useTLS ? (port == 443 ? "" : ":" + port) : (port == 80 ? "" : ":" + port))
 				+ (startPath != null ? "/" + startPath : "")
 				+ "/" + path
-				+ (username != null ? "?username=" + URLEncoder.encode(username, "UTF-8") + (password != null ? "&password=" + URLEncoder.encode(password, "UTF-8") : "") : "")
+				+ (username != null ? "?username=" + HttpUtilities.urlEncode(username, StandardCharsets.UTF_8) + (password != null ? "&password=" + HttpUtilities.urlEncode(password, StandardCharsets.UTF_8) : "") : "")
 				);
 	}
 
 	private static List<String> getEntryLines(final byte[] data) throws Exception {
-		final String rawDataString = new String(data, "UTF-8");
+		final String rawDataString = new String(data, StandardCharsets.UTF_8);
 		final int dataStart = rawDataString.indexOf("<pre>");
 		if (dataStart >= 0) {
 			final int dataEnd = rawDataString.indexOf("</pre>", dataStart + 5);

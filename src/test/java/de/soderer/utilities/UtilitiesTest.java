@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,9 +32,9 @@ public class UtilitiesTest {
 	@Test
 	public void test_Gzipping() {
 		try {
-			final byte[] zippedData = Utilities.gzipByteArray(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
+			final byte[] zippedData = Utilities.gzipByteArray(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			final byte[] unzippedData = Utilities.gunzipByteArray(zippedData);
-			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(unzippedData, "UTF-8"));
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(unzippedData, StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -42,9 +43,9 @@ public class UtilitiesTest {
 	@Test
 	public void test_Base64() {
 		try {
-			final String encodedData = Utilities.encodeBase64(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
+			final String encodedData = Utilities.encodeBase64(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			final byte[] decodedData = Utilities.decodeBase64(encodedData);
-			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(decodedData, "UTF-8"));
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(decodedData, StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -139,10 +140,10 @@ public class UtilitiesTest {
 	@Test
 	public void test_copy() {
 		try {
-			final InputStream in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
+			final InputStream in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			final OutputStream out = new ByteArrayOutputStream();
-			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8").length, Utilities.copy(in, out));
-			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(((ByteArrayOutputStream) out).toByteArray(), "UTF-8"));
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8).length, Utilities.copy(in, out));
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(((ByteArrayOutputStream) out).toByteArray(), StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -540,15 +541,15 @@ public class UtilitiesTest {
 	//	public void testEncodingUTF_8() {
 	//		try {
 	//			List<Charset> encodingsToCheck = new ArrayList<Charset>();
-	//			encodingsToCheck.add(Charset.forName("UTF-8"));
-	//			encodingsToCheck.add(Charset.forName("ISO-8859-1"));
+	//			encodingsToCheck.add(StandardCharsets.UTF_8);
+	//			encodingsToCheck.add(Charset.forName(StandardCharsets.ISO_8859_1));
 	//			encodingsToCheck.add(Charset.forName("UTF-16"));
 	//			encodingsToCheck.add(Charset.forName("ISO-8859-15"));
 	//			encodingsToCheck.add(Charset.forName("ASCII"));
 	//
-	//			byte[] data = TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8");
+	//			byte[] data = TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8);
 	//			List<Charset> encodings = TextFilePropertiesReader.detectTextEncoding(data, encodingsToCheck);
-	//			Assert.assertTrue(encodings.size() == 1 && encodings.contains(Charset.forName("UTF-8")));
+	//			Assert.assertTrue(encodings.size() == 1 && encodings.contains(StandardCharsets.UTF_8));
 	//		} catch (Exception e) {
 	//			Assert.fail(e.getMessage());
 	//		}
@@ -558,15 +559,15 @@ public class UtilitiesTest {
 	//	public void testEncodingISO_8859_1() {
 	//		try {
 	//			List<Charset> encodingsToCheck = new ArrayList<Charset>();
-	//			encodingsToCheck.add(Charset.forName("UTF-8"));
-	//			encodingsToCheck.add(Charset.forName("ISO-8859-1"));
+	//			encodingsToCheck.add(StandardCharsets.UTF_8);
+	//			encodingsToCheck.add(Charset.forName(StandardCharsets.ISO_8859_1));
 	//			encodingsToCheck.add(Charset.forName("UTF-16"));
 	//			encodingsToCheck.add(Charset.forName("ISO-8859-15"));
 	//			encodingsToCheck.add(Charset.forName("ASCII"));
 	//
-	//			byte[] data = Utilities.GERMAN_TEST_STRING.getBytes("ISO-8859-1");
+	//			byte[] data = Utilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.ISO_8859_1);
 	//			List<Charset> encodings = TextFilePropertiesReader.detectTextEncoding(data, encodingsToCheck);
-	//			Assert.assertTrue(encodings.size() == 1 && encodings.contains(Charset.forName("ISO-8859-1")));
+	//			Assert.assertTrue(encodings.size() == 1 && encodings.contains(Charset.forName(StandardCharsets.ISO_8859_1)));
 	//		} catch (Exception e) {
 	//			Assert.fail(e.getMessage());
 	//		}
@@ -576,8 +577,8 @@ public class UtilitiesTest {
 	//	public void testEncodingUTF_16() {
 	//		try {
 	//			List<Charset> encodingsToCheck = new ArrayList<Charset>();
-	//			encodingsToCheck.add(Charset.forName("UTF-8"));
-	//			encodingsToCheck.add(Charset.forName("ISO-8859-1"));
+	//			encodingsToCheck.add(StandardCharsets.UTF_8);
+	//			encodingsToCheck.add(Charset.forName(StandardCharsets.ISO_8859_1));
 	//			encodingsToCheck.add(Charset.forName("UTF-16"));
 	//			encodingsToCheck.add(Charset.forName("ISO-8859-15"));
 	//			encodingsToCheck.add(Charset.forName("ASCII"));
@@ -594,8 +595,8 @@ public class UtilitiesTest {
 	//	public void testEncodingISO_8859_15() {
 	//		try {
 	//			List<Charset> encodingsToCheck = new ArrayList<Charset>();
-	//			encodingsToCheck.add(Charset.forName("UTF-8"));
-	//			encodingsToCheck.add(Charset.forName("ISO-8859-1"));
+	//			encodingsToCheck.add(StandardCharsets.UTF_8);
+	//			encodingsToCheck.add(Charset.forName(StandardCharsets.ISO_8859_1));
 	//			encodingsToCheck.add(Charset.forName("UTF-16"));
 	//			encodingsToCheck.add(Charset.forName("ISO-8859-15"));
 	//			encodingsToCheck.add(Charset.forName("ASCII"));
@@ -612,8 +613,8 @@ public class UtilitiesTest {
 	//	public void testEncodingASCII() {
 	//		try {
 	//			List<Charset> encodingsToCheck = new ArrayList<Charset>();
-	//			encodingsToCheck.add(Charset.forName("UTF-8"));
-	//			encodingsToCheck.add(Charset.forName("ISO-8859-1"));
+	//			encodingsToCheck.add(StandardCharsets.UTF_8);
+	//			encodingsToCheck.add(Charset.forName(StandardCharsets.ISO_8859_1));
 	//			encodingsToCheck.add(Charset.forName("UTF-16"));
 	//			encodingsToCheck.add(Charset.forName("ISO-8859-15"));
 	//			encodingsToCheck.add(Charset.forName("ASCII"));

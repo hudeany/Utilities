@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 
 import org.junit.Assert;
@@ -106,7 +107,7 @@ public class OpenSshKeyTest {
 			privateKeyPkcs8Data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(privateKeyPkcs8Data, "UTF-8").contains("----BEGIN ")) {
+		if (!new String(privateKeyPkcs8Data, StandardCharsets.UTF_8).contains("----BEGIN ")) {
 			Assert.fail();
 		}
 
@@ -127,7 +128,7 @@ public class OpenSshKeyTest {
 			publicKeyPkcs1Data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(publicKeyPkcs1Data, "UTF-8").contains("---- BEGIN SSH2 PUBLIC KEY ----")) {
+		if (!new String(publicKeyPkcs1Data, StandardCharsets.UTF_8).contains("---- BEGIN SSH2 PUBLIC KEY ----")) {
 			Assert.fail();
 		}
 		KeyPair readKeyPair2;
@@ -147,7 +148,7 @@ public class OpenSshKeyTest {
 			keypairPkcs1Data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(keypairPkcs1Data, "UTF-8").contains("---- BEGIN SSH2 PUBLIC KEY ----")) {
+		if (!new String(keypairPkcs1Data, StandardCharsets.UTF_8).contains("---- BEGIN SSH2 PUBLIC KEY ----")) {
 			Assert.fail();
 		}
 		KeyPair readKeyPair3;

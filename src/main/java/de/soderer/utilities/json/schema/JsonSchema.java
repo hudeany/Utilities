@@ -1,6 +1,8 @@
 package de.soderer.utilities.json.schema;
 
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -70,7 +72,7 @@ public class JsonSchema {
 	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
 	 */
 	public JsonSchema(final InputStream jsonSchemaInputStream) throws JsonSchemaDefinitionError  {
-		this(jsonSchemaInputStream, "UTF-8", false);
+		this(jsonSchemaInputStream, StandardCharsets.UTF_8, false);
 	}
 
 	/**
@@ -80,7 +82,7 @@ public class JsonSchema {
 	 * This is useful in detection of schema definition errors.<br />
 	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
 	 */
-	public JsonSchema(final InputStream jsonSchemaInputStream, final String encoding) throws JsonSchemaDefinitionError  {
+	public JsonSchema(final InputStream jsonSchemaInputStream, final Charset encoding) throws JsonSchemaDefinitionError  {
 		this(jsonSchemaInputStream, encoding, false);
 	}
 
@@ -92,7 +94,7 @@ public class JsonSchema {
 	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
 	 */
 	public JsonSchema(final InputStream jsonSchemaInputStream, final boolean useDraftV4Mode) throws JsonSchemaDefinitionError  {
-		this(jsonSchemaInputStream, "UTF-8", useDraftV4Mode);
+		this(jsonSchemaInputStream, StandardCharsets.UTF_8, useDraftV4Mode);
 	}
 
 	/**
@@ -102,7 +104,7 @@ public class JsonSchema {
 	 * This is useful in detection of schema definition errors.<br />
 	 * Nontheless you can switch to the Draf V4 standard behaviour<br />
 	 */
-	public JsonSchema(final InputStream jsonSchemaInputStream, final String encoding, final boolean useDraftV4Mode) throws JsonSchemaDefinitionError  {
+	public JsonSchema(final InputStream jsonSchemaInputStream, final Charset encoding, final boolean useDraftV4Mode) throws JsonSchemaDefinitionError  {
 		JsonNode jsonNode;
 		try (JsonReader jsonReader = new Json5Reader(jsonSchemaInputStream, encoding)) {
 			jsonNode = jsonReader.read();
@@ -147,7 +149,7 @@ public class JsonSchema {
 		if (jsonSchemaDefinitionObject == null) {
 			throw new JsonSchemaDefinitionError("Contains null data", null);
 		} else {
-			this.jsonSchemaDefinition = jsonSchemaDefinitionObject;
+			jsonSchemaDefinition = jsonSchemaDefinitionObject;
 		}
 
 		if (jsonSchemaDefinitionObject.containsPropertyKey("id")) {
@@ -228,7 +230,7 @@ public class JsonSchema {
 		return description;
 	}
 
-	public JsonNode validate(final InputStream jsonDataInputStream, final String encoding) throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
+	public JsonNode validate(final InputStream jsonDataInputStream, final Charset encoding) throws JsonSchemaDefinitionError, JsonSchemaDataValidationError {
 		JsonNode jsonDataNode;
 		try (JsonReader jsonReader = new Json5Reader(jsonDataInputStream, encoding)) {
 			jsonDataNode = jsonReader.read();

@@ -1,10 +1,9 @@
 package de.soderer.utilities.json;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Stack;
 
 import de.soderer.utilities.BasicReader;
@@ -27,11 +26,7 @@ public class JsonReader extends BasicReader {
 	}
 
 	public JsonReader(final InputStream inputStream) throws Exception {
-		super(inputStream, (String) null);
-	}
-
-	public JsonReader(final InputStream inputStream, final String encoding) throws Exception {
-		super(inputStream, encoding);
+		super(inputStream, null);
 	}
 
 	public JsonReader(final InputStream inputStream, final Charset encodingCharset) throws Exception {
@@ -297,11 +292,10 @@ public class JsonReader extends BasicReader {
 	 *
 	 * @param data
 	 * @return
-	 * @throws IOException
-	 * @throws UnsupportedEncodingException
+	 * @throws Exception
 	 */
 	public static JsonNode readJsonItemString(final String data) throws Exception {
-		try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data.getBytes("UTF-8"))) {
+		try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8))) {
 			try (JsonReader jsonReader = new JsonReader(inputStream)) {
 				return jsonReader.read();
 			}

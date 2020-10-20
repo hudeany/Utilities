@@ -2,6 +2,7 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -71,9 +72,9 @@ public class NetworkUtilitiesTest {
 					+ "Ob8VZRzI9neWagqNdwvYkQsEjgfbKbYK7p2CNTUQ\n"
 					+ "-----END CERTIFICATE-----";
 
-			try (InputStream dataStream = NetworkUtilities.openHttpsDataInputStreamWithPemCertificate("https://soderer.de", new ByteArrayInputStream(dst_CA_PemString.getBytes("UTF-8")))) {
+			try (InputStream dataStream = NetworkUtilities.openHttpsDataInputStreamWithPemCertificate("https://soderer.de", new ByteArrayInputStream(dst_CA_PemString.getBytes(StandardCharsets.UTF_8)))) {
 				Assert.assertTrue(dataStream != null);
-				final String data = IoUtilities.toString(dataStream, "UTF-8");
+				final String data = IoUtilities.toString(dataStream, StandardCharsets.UTF_8);
 				Assert.assertTrue(data != null && data.length() > 10);
 			}
 		} catch (final Exception e) {

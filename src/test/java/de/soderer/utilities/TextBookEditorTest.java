@@ -4,7 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.junit.Assert;
@@ -21,12 +21,12 @@ public class TextBookEditorTest {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
 				for (int i = 0; i < 20; i++) {
-					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes("UTF-8"));
-					outputStream.write(("\n").getBytes("UTF-8"));
+					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes(StandardCharsets.UTF_8));
+					outputStream.write(("\n").getBytes(StandardCharsets.UTF_8));
 				}
 			}
 
-			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, Charset.forName("UTF-8"))) {
+			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, StandardCharsets.UTF_8)) {
 				textBookEditor.read();
 
 				Assert.assertEquals(20, textBookEditor.countEmptyLines());
@@ -60,12 +60,12 @@ public class TextBookEditorTest {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
 				for (int i = 0; i < 20; i++) {
-					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes("UTF-8"));
-					outputStream.write((" \n").getBytes("UTF-8"));
+					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes(StandardCharsets.UTF_8));
+					outputStream.write((" \n").getBytes(StandardCharsets.UTF_8));
 				}
 			}
 
-			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, Charset.forName("UTF-8"))) {
+			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, StandardCharsets.UTF_8)) {
 				textBookEditor.read();
 
 				Assert.assertEquals(20, textBookEditor.countBlankLines());
@@ -99,11 +99,11 @@ public class TextBookEditorTest {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
 				for (int i = 0; i < 20; i++) {
-					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes("UTF-8"));
+					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes(StandardCharsets.UTF_8));
 				}
 			}
 
-			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, Charset.forName("UTF-8"))) {
+			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, StandardCharsets.UTF_8)) {
 				textBookEditor.read();
 
 				Assert.assertEquals(17, textBookEditor.search("Line 17").getLine());
@@ -137,11 +137,11 @@ public class TextBookEditorTest {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
 				for (int i = 0; i < 20; i++) {
-					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes("UTF-8"));
+					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes(StandardCharsets.UTF_8));
 				}
 			}
 
-			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, Charset.forName("UTF-8"))) {
+			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, StandardCharsets.UTF_8)) {
 				textBookEditor.read();
 
 				textBookEditor.insertLine(6, "NewLineX");
@@ -176,11 +176,11 @@ public class TextBookEditorTest {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
 				for (int i = 0; i < 100000; i++) {
-					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes("UTF-8"));
+					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes(StandardCharsets.UTF_8));
 				}
 			}
 
-			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, Charset.forName("UTF-8"))) {
+			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, StandardCharsets.UTF_8)) {
 				textBookEditor.read();
 
 				Assert.assertEquals(200000, textBookEditor.searchAndReplace("abcde", "Replaced"));
@@ -206,7 +206,7 @@ public class TextBookEditorTest {
 	public void testNewEmptyTextBookEditor() {
 		File tempTextFile_dest = null;
 		try {
-			try (TextBookEditor textBookEditor = new TextBookEditor(Charset.forName("UTF-8"))) {
+			try (TextBookEditor textBookEditor = new TextBookEditor(StandardCharsets.UTF_8)) {
 				textBookEditor.insertLine(0, TextUtilities.GERMAN_TEST_STRING);
 
 				tempTextFile_dest = File.createTempFile("TextBookEditorTest" + "_", ".txt");
@@ -214,7 +214,7 @@ public class TextBookEditorTest {
 				textBookEditor.write(tempTextFile_dest);
 			}
 
-			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING + "\n", FileUtilities.readFileToString(tempTextFile_dest, "UTF-8"));
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING + "\n", FileUtilities.readFileToString(tempTextFile_dest, StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());

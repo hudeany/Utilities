@@ -1,7 +1,7 @@
 package de.soderer.utilities.json;
 
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Stack;
 
 import de.soderer.utilities.BasicReader;
@@ -23,7 +23,6 @@ public class JsonPath {
 	 *
 	 * @param jsonPathString
 	 * @throws Exception
-	 * @throws UnsupportedEncodingException
 	 */
 	public JsonPath(final String jsonPathString) throws Exception {
 		try (JsonPathReader jsonPathReader = new JsonPathReader(jsonPathString)) {
@@ -82,7 +81,7 @@ public class JsonPath {
 
 	private class JsonPathReader extends BasicReader {
 		public JsonPathReader(final String jsonPathString) throws Exception {
-			super(new ByteArrayInputStream(jsonPathString.getBytes("UTF-8")));
+			super(new ByteArrayInputStream(jsonPathString.getBytes(StandardCharsets.UTF_8)));
 
 			pathParts = new Stack<>();
 

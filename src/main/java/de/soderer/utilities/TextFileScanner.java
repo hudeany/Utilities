@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
@@ -289,22 +288,15 @@ public class TextFileScanner implements Iterator<String> {
 	 * @throws IllegalArgumentException
 	 *             if the specified character set does not exist
 	 */
-	public TextFileScanner(final InputStream source, final String charsetName) {
+	public TextFileScanner(final InputStream source, final Charset charsetName) {
 		this(makeReadable(source, charsetName), WHITESPACE_PATTERN);
 	}
 
-	private static Readable makeReadable(final InputStream source, final String charsetName) {
+	private static Readable makeReadable(final InputStream source, final Charset charsetName) {
 		if (source == null) {
 			throw new NullPointerException("source");
 		}
-		InputStreamReader isr = null;
-		try {
-			isr = new InputStreamReader(source, charsetName);
-		} catch (final UnsupportedEncodingException uee) {
-			final IllegalArgumentException iae = new IllegalArgumentException();
-			iae.initCause(uee);
-			throw iae;
-		}
+		final InputStreamReader isr = new InputStreamReader(source, charsetName);
 		return isr;
 	}
 

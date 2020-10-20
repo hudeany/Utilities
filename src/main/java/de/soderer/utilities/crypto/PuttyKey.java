@@ -5,6 +5,7 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -190,7 +191,7 @@ public class PuttyKey {
 		}
 
 		private String readString() throws Exception {
-			return new String(readData(), "ISO-8859-1");
+			return new String(readData(), StandardCharsets.ISO_8859_1);
 		}
 
 		private byte[] readData() throws IOException, Exception {

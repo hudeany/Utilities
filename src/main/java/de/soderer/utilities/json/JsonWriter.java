@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map.Entry;
@@ -17,7 +18,7 @@ import de.soderer.utilities.Utilities;
 
 public class JsonWriter implements Closeable {
 	/** Default output encoding. */
-	public static final String DEFAULT_ENCODING = "UTF-8";
+	public static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
 
 	/** Output stream. */
 	private OutputStream outputStream;
@@ -48,9 +49,9 @@ public class JsonWriter implements Closeable {
 		this(outputStream, null);
 	}
 
-	public JsonWriter(final OutputStream outputStream, final String encoding) {
+	public JsonWriter(final OutputStream outputStream, final Charset encoding) {
 		this.outputStream = outputStream;
-		this.encoding = isBlank(encoding) ? Charset.forName(DEFAULT_ENCODING) : Charset.forName(encoding);
+		this.encoding = encoding == null ? DEFAULT_ENCODING : encoding;
 	}
 
 	public void setIndentation(final String indentation) {
@@ -371,17 +372,6 @@ public class JsonWriter implements Closeable {
 	}
 
 	/**
-	 * Check if String value is null or contains only whitespace characters.
-	 *
-	 * @param value
-	 *            the value
-	 * @return true, if is blank
-	 */
-	private static boolean isBlank(final String value) {
-		return value == null || value.trim().length() == 0;
-	}
-
-	/**
 	 * Close a Closable item and ignore any Exception thrown by its close method.
 	 *
 	 * @param closeableItem
@@ -406,12 +396,12 @@ public class JsonWriter implements Closeable {
 	 */
 	public static String getJsonItemString(final JsonObject jsonObject) throws Exception {
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try (JsonWriter jsonWriter = new JsonWriter(outputStream, "UTF-8")) {
+		try (JsonWriter jsonWriter = new JsonWriter(outputStream, StandardCharsets.UTF_8)) {
 			jsonWriter.add(jsonObject);
 			jsonWriter.close();
 		}
 
-		return outputStream.toString("UTF-8");
+		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
 	}
 
 	/**
@@ -423,12 +413,12 @@ public class JsonWriter implements Closeable {
 	 */
 	public static String getJsonItemString(final JsonArray jsonArray) throws Exception {
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try (JsonWriter jsonWriter = new JsonWriter(outputStream, "UTF-8")) {
+		try (JsonWriter jsonWriter = new JsonWriter(outputStream, StandardCharsets.UTF_8)) {
 			jsonWriter.add(jsonArray);
 			jsonWriter.close();
 		}
 
-		return outputStream.toString("UTF-8");
+		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
 	}
 
 	/**
@@ -440,7 +430,7 @@ public class JsonWriter implements Closeable {
 	 */
 	public static String getJsonItemString(final JsonObject jsonObject, final String linebreak, final String indentation, final String separator) throws Exception {
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try (JsonWriter jsonWriter = new JsonWriter(outputStream, "UTF-8")) {
+		try (JsonWriter jsonWriter = new JsonWriter(outputStream, StandardCharsets.UTF_8)) {
 			jsonWriter.setLinebreak(linebreak);
 			jsonWriter.setIndentation(indentation);
 			jsonWriter.setSeparator(separator);
@@ -448,7 +438,7 @@ public class JsonWriter implements Closeable {
 			jsonWriter.close();
 		}
 
-		return outputStream.toString("UTF-8");
+		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
 	}
 
 	/**
@@ -460,7 +450,7 @@ public class JsonWriter implements Closeable {
 	 */
 	public static String getJsonItemString(final JsonArray jsonArray, final String linebreak, final String indentation, final String separator) throws Exception {
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try (JsonWriter jsonWriter = new JsonWriter(outputStream, "UTF-8")) {
+		try (JsonWriter jsonWriter = new JsonWriter(outputStream, StandardCharsets.UTF_8)) {
 			jsonWriter.setLinebreak(linebreak);
 			jsonWriter.setIndentation(indentation);
 			jsonWriter.setSeparator(separator);
@@ -468,7 +458,7 @@ public class JsonWriter implements Closeable {
 			jsonWriter.close();
 		}
 
-		return outputStream.toString("UTF-8");
+		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
 	}
 
 	public static String getJsonItemString(final JsonNode jsonNode) throws Exception {

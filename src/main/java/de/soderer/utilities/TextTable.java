@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
@@ -410,7 +411,7 @@ public class TextTable {
 		BufferedReader fileReader = null;
 
 		try {
-			fileReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(csvWithMetadata), "UTF-8"));
+			fileReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(csvWithMetadata), StandardCharsets.UTF_8));
 			String fileLine = null;
 			while ((fileLine = fileReader.readLine()) != null) {
 				final String[] lineParts = fileLine.split(";");

@@ -14,12 +14,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -155,11 +156,7 @@ public class Utilities {
 	 * @return
 	 */
 	public static byte[] decodeBase64(final String base64String) {
-		try {
-			return Base64.getDecoder().decode(base64String.getBytes("UTF-8"));
-		} catch (@SuppressWarnings("unused") final UnsupportedEncodingException e) {
-			return null;
-		}
+		return Base64.getDecoder().decode(base64String.getBytes(StandardCharsets.UTF_8));
 	}
 
 	/**
@@ -738,7 +735,7 @@ public class Utilities {
 	 */
 	public static byte[] getMD5Hash(final String data) throws Exception {
 		try {
-			return MessageDigest.getInstance("MD5").digest(data.getBytes("UTF-8"));
+			return MessageDigest.getInstance("MD5").digest(data.getBytes(StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			throw new Exception("Error while MD5 hashing", e);
 		}
@@ -753,7 +750,7 @@ public class Utilities {
 	 */
 	public static byte[] getSHA1Hash(final String data) throws Exception {
 		try {
-			return MessageDigest.getInstance("SHA-1").digest(data.getBytes("UTF-8"));
+			return MessageDigest.getInstance("SHA-1").digest(data.getBytes(StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			throw new Exception("Error while SHA-1 hashing", e);
 		}
@@ -768,7 +765,7 @@ public class Utilities {
 	 */
 	public static byte[] getSHA256Hash(final String data) throws Exception {
 		try {
-			return MessageDigest.getInstance("SHA-256").digest(data.getBytes("UTF-8"));
+			return MessageDigest.getInstance("SHA-256").digest(data.getBytes(StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			throw new Exception("Error while SHA-256 hashing", e);
 		}
@@ -783,7 +780,7 @@ public class Utilities {
 	 */
 	public static byte[] getSHA512Hash(final String data) throws Exception {
 		try {
-			return MessageDigest.getInstance("SHA-512").digest(data.getBytes("UTF-8"));
+			return MessageDigest.getInstance("SHA-512").digest(data.getBytes(StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			throw new Exception("Error while SHA-512 hashing", e);
 		}
@@ -1126,7 +1123,7 @@ public class Utilities {
 		return bytesCopied;
 	}
 
-	public static long copy(final Reader inputReader, final OutputStream outputStream, final String encoding) throws UnsupportedEncodingException, IOException {
+	public static long copy(final Reader inputReader, final OutputStream outputStream, final Charset encoding) throws IOException {
 		final char[] buffer = new char[4096];
 		int lengthRead = -1;
 		long bytesCopied = 0;
@@ -1246,7 +1243,7 @@ public class Utilities {
 		}
 	}
 
-	public static String toString(final InputStream inputStream, final String encoding) throws UnsupportedEncodingException, IOException {
+	public static String toString(final InputStream inputStream, final Charset encoding) throws IOException {
 		return new String(toByteArray(inputStream), encoding);
 	}
 
@@ -1259,7 +1256,7 @@ public class Utilities {
 		return returnValue.toString();
 	}
 
-	public static List<String> readLines(final InputStream inStream, final String encoding) throws IOException {
+	public static List<String> readLines(final InputStream inStream, final Charset encoding) throws IOException {
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(inStream, encoding))) {
 			final List<String> lines = new ArrayList<>();
 			String nextLine;

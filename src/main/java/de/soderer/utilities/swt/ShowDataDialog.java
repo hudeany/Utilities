@@ -1,7 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
@@ -59,11 +59,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			buttonSave.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent e) {
-					try {
-						saveDataInteractive(getParent(), LangResources.get("savedata"), dataString.getBytes("UTF-8"));
-					} catch (final UnsupportedEncodingException e1) {
-						e1.printStackTrace();
-					}
+					saveDataInteractive(getParent(), LangResources.get("savedata"), dataString.getBytes(StandardCharsets.UTF_8));
 				}
 			});
 		}

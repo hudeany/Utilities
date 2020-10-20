@@ -2,6 +2,7 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -41,7 +42,7 @@ public class CryptographicUtilitiesTest {
 		ByteArrayOutputStream out = null;
 		try {
 			final char[] password = Utilities.getRandomString(12).toCharArray();
-			in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
+			in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			out = new ByteArrayOutputStream();
 			CryptographicUtilities.encryptSymmetric(in, out, password);
 			final byte[] encryptedData = out.toByteArray();
@@ -49,7 +50,7 @@ public class CryptographicUtilitiesTest {
 			out = new ByteArrayOutputStream();
 			CryptographicUtilities.decryptSymmetric(in, out, password);
 			final byte[] decryptedData = out.toByteArray();
-			Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), decryptedData);
+			Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -58,11 +59,11 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testSignatureRSA() {
 		try {
-			final byte[] signature = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPrivateKeyFromKeyPair(getRsaKeyPair()));
-			final ByteArrayInputStream stream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"));
-			final byte[] signatureStreamed = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPrivateKeyFromKeyPair(getRsaKeyPair()));
+			final byte[] signature = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), CryptographicUtilities.getPrivateKeyFromKeyPair(getRsaKeyPair()));
+			final ByteArrayInputStream stream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+			final byte[] signatureStreamed = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), CryptographicUtilities.getPrivateKeyFromKeyPair(getRsaKeyPair()));
 			Assert.assertArrayEquals(signature, signatureStreamed);
-			final boolean result = CryptographicUtilities.verifyData(TextUtilities.GERMAN_TEST_STRING.getBytes("UTF-8"), CryptographicUtilities.getPublicKeyFromKeyPair(getRsaKeyPair()), signature);
+			final boolean result = CryptographicUtilities.verifyData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), CryptographicUtilities.getPublicKeyFromKeyPair(getRsaKeyPair()), signature);
 			Assert.assertTrue(result);
 			final boolean resultStreamed = CryptographicUtilities.verifyStream(stream, CryptographicUtilities.getPublicKeyFromKeyPair(getRsaKeyPair()), signature);
 			Assert.assertTrue(resultStreamed);
@@ -74,7 +75,7 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testEncryption_RSA_PKCS1() {
 		try {
-			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes("UTF-8"));
+			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
 			final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
 			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getRsaKeyPair().getPublic(), "RSA/PKCS1");
 			final byte[] encryptedDataStreamed = encryptedStream.toByteArray();
@@ -82,7 +83,7 @@ public class CryptographicUtilitiesTest {
 			final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
 			final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
 			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getRsaKeyPair().getPrivate(), "RSA/PKCS1");
-			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes("UTF-8"), decryptedStream.toByteArray());
+			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -91,7 +92,7 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testEncryption_RSA_OAEP() {
 		try {
-			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes("UTF-8"));
+			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
 			final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
 			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getRsaKeyPair().getPublic(), "RSA/OAEP");
 			final byte[] encryptedDataStreamed = encryptedStream.toByteArray();
@@ -99,7 +100,7 @@ public class CryptographicUtilitiesTest {
 			final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
 			final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
 			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getRsaKeyPair().getPrivate(), "RSA/OAEP");
-			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes("UTF-8"), decryptedStream.toByteArray());
+			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -108,7 +109,7 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testEncryption_ELGAMAL_PKCS1() {
 		try {
-			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes("UTF-8"));
+			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
 			final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
 			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getElGamalKeyPair().getPublic(), "ELGAMAL/PKCS1");
 			final byte[] encryptedDataStreamed = encryptedStream.toByteArray();
@@ -116,7 +117,7 @@ public class CryptographicUtilitiesTest {
 			final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
 			final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
 			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getElGamalKeyPair().getPrivate(), "ELGAMAL/PKCS1");
-			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes("UTF-8"), decryptedStream.toByteArray());
+			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -146,12 +147,12 @@ public class CryptographicUtilitiesTest {
 		final Cipher cipher1 = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
 		cipher1.init(Cipher.ENCRYPT_MODE, publicKey);
 
-		final byte[] encrypted = cipher1.doFinal("This is a secret message Aöü".getBytes("UTF-8"));
+		final byte[] encrypted = cipher1.doFinal("This is a secret message Aöü".getBytes(StandardCharsets.UTF_8));
 
 		final Cipher cipher2 = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
 		cipher2.init(Cipher.DECRYPT_MODE, privateKey);
 
 		final byte[] decrypted =  cipher2.doFinal(encrypted);
-		Assert.assertEquals(new String(decrypted, "UTF-8"), "This is a secret message Aöü");
+		Assert.assertEquals(new String(decrypted, StandardCharsets.UTF_8), "This is a secret message Aöü");
 	}
 }

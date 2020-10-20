@@ -12,7 +12,7 @@ import java.util.Arrays;
  * Example:<br />
  * OutputStream zipOutputStream = new ZipOutputStream(new ZipEncryptOutputStream(new FileOutputStream(new File("path to zip file")), "password".toCharArray()));<br />
  * ((ZipOutputStream) zipOutputStream).putNextEntry(new ZipEntry("zipped file name"));<br />
- * IOUtils.copy(new ByteArrayInputStream(testString.getBytes("UTF-8")), zipOutputStream);<br />
+ * IOUtils.copy(new ByteArrayInputStream(testString.getBytes(StandardCharsets.UTF_8)), zipOutputStream);<br />
  * ((ZipOutputStream) zipOutputStream).closeEntry();<br />
  * zipOutputStream.close();<br />
  */

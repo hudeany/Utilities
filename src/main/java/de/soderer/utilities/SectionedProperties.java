@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,7 +38,7 @@ public class SectionedProperties {
 			entries = new LinkedHashMap<>();
 		}
 
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 		String rawLine = null;
 		String currentSectionName = null;
 		int lineCount = 0;
@@ -83,11 +84,11 @@ public class SectionedProperties {
 
 	public void save(final OutputStream outputStream) throws Exception {
 		for (final Entry<String, Map<String, String>> sectionEntry : entries.entrySet()) {
-			outputStream.write((SECTION_PREFIX + sectionEntry.getKey().trim() + SECTION_SUFFIX + "\n").getBytes("UTF-8"));
+			outputStream.write((SECTION_PREFIX + sectionEntry.getKey().trim() + SECTION_SUFFIX + "\n").getBytes(StandardCharsets.UTF_8));
 			for (final Entry<String, String> keyValueEntry : sectionEntry.getValue().entrySet()) {
-				outputStream.write((keyValueEntry.getKey().trim() + KEY_VALUE_SEPARATOR + escapeValue(keyValueEntry.getValue().trim())+ "\n").getBytes("UTF-8"));
+				outputStream.write((keyValueEntry.getKey().trim() + KEY_VALUE_SEPARATOR + escapeValue(keyValueEntry.getValue().trim())+ "\n").getBytes(StandardCharsets.UTF_8));
 			}
-			outputStream.write("\n".getBytes("UTF-8"));
+			outputStream.write("\n".getBytes(StandardCharsets.UTF_8));
 		}
 	}
 

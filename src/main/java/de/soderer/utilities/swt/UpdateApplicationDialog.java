@@ -1,8 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.io.File;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -28,6 +27,7 @@ import de.soderer.utilities.UserError;
 import de.soderer.utilities.UserError.Reason;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
+import de.soderer.utilities.http.HttpUtilities;
 
 public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean> {
 	private static final transient Logger logger = Logger.getLogger(UpdateApplicationDialog.class);
@@ -38,7 +38,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 	private final Collection<? extends Certificate> trustedCertificates;
 	private SecureDataStore secureDataStore = null;
 	private File keystoreFile = null;
-	private static final byte[] keystoreFileSalt = "q34;kUGh@78".getBytes(Charset.forName("UTF-8"));
+	private static final byte[] keystoreFileSalt = "q34;kUGh@78".getBytes(StandardCharsets.UTF_8);
 	private SimpleCredentialsData storedDownloadCredentials = null;
 	private char[] keyStorePassword = null;
 	private boolean storedCredentialsChanged = false;
@@ -181,7 +181,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 									+ "if exist \"" + jarFilePath + "\" (\r\n" + "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + "if exist \"" + jarFilePath + "\" (\r\n"
 									+ "ping -n 3 127.0.0.1 >nul\r\n" + "del \"" + jarFilePath + "\"\r\n" + ")\r\n" + ")\r\n" + ")\r\n" + "ren \"" + downloadTempFile.getAbsolutePath() + "\" \""
 									+ new File(jarFilePath).getName() + "\"\r\n" + "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n" + "java -jar \"" + jarFilePath + "\"\r\n"
-									+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n" + ")\r\n", "ISO-8859-1");
+									+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n" + ")\r\n", StandardCharsets.ISO_8859_1);
 
 					Runtime.getRuntime().exec("cmd /c start /B " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
@@ -193,7 +193,7 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 							"#!/bin/bash\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath
 							+ "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n" + "if [ -f \"" + jarFilePath + "\" ]; then\n" + "sleep 3\n" + "rm \"" + jarFilePath + "\"\n"
 							+ "fi\n" + "fi\n" + "fi\n" + "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n" + "if ! [ -f \"" + downloadTempFile.getAbsolutePath()
-							+ "\" ]; then\n" + "java -jar \"" + jarFilePath + "\"\n" + "rm \"" + batchFile.getAbsolutePath() + "\"\n" + "fi\n", "ISO-8859-1");
+							+ "\" ]; then\n" + "java -jar \"" + jarFilePath + "\"\n" + "rm \"" + batchFile.getAbsolutePath() + "\"\n" + "fi\n", StandardCharsets.ISO_8859_1);
 
 					Runtime.getRuntime().exec("sh " + batchFile.getAbsolutePath());
 					Runtime.getRuntime().exit(0);
@@ -212,16 +212,16 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			downloadTempFile.delete();
 			if (updateFileUrl.contains("<username>") && updateFileUrl.contains("<password>")) {
 				if (storedDownloadCredentials != null) {
-					updateFileUrl = updateFileUrl.replace("<username>", URLEncoder.encode(storedDownloadCredentials.getUserName(), "UTF-8"));
-					updateFileUrl = updateFileUrl.replace("<password>", URLEncoder.encode(new String(storedDownloadCredentials.getPassword()), "UTF-8"));
+					updateFileUrl = updateFileUrl.replace("<username>", HttpUtilities.urlEncode(storedDownloadCredentials.getUserName(), StandardCharsets.UTF_8));
+					updateFileUrl = updateFileUrl.replace("<password>", HttpUtilities.urlEncode(new String(storedDownloadCredentials.getPassword()), StandardCharsets.UTF_8));
 				} else {
 					final CredentialsDialog credentialsDialog = new CredentialsDialog(getParent(), getText(), LangResources.get("enterDownloadCredentials"));
 					credentialsDialog.setKeepInMemoryText(LangResources.get("storeUpdateAccount"));
 					final Boolean success = credentialsDialog.open();
 					if (success) {
 						storedCredentialsChanged = true;
-						updateFileUrl = updateFileUrl.replace("<username>", URLEncoder.encode(credentialsDialog.getUsername(), "UTF-8"));
-						updateFileUrl = updateFileUrl.replace("<password>", URLEncoder.encode(new String(credentialsDialog.getPassword()), "UTF-8"));
+						updateFileUrl = updateFileUrl.replace("<username>", HttpUtilities.urlEncode(credentialsDialog.getUsername(), StandardCharsets.UTF_8));
+						updateFileUrl = updateFileUrl.replace("<password>", HttpUtilities.urlEncode(new String(credentialsDialog.getPassword()), StandardCharsets.UTF_8));
 						if (credentialsDialog.keepInMemory()) {
 							storedDownloadCredentials = new SimpleCredentialsData(credentialsDialog.getUsername(), credentialsDialog.getPassword());
 						} else {
@@ -235,12 +235,12 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 			} else {
 				if (updateFileUrl.contains("<username>")) {
 					if (storedDownloadCredentials != null) {
-						updateFileUrl = updateFileUrl.replace("<username>", URLEncoder.encode(storedDownloadCredentials.getUserName(), "UTF-8"));
+						updateFileUrl = updateFileUrl.replace("<username>", HttpUtilities.urlEncode(storedDownloadCredentials.getUserName(), StandardCharsets.UTF_8));
 					} else {
 						final SimpleInputDialog usernameDialog = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterDownloadUserName"));
 						final String username = usernameDialog.open();
 						if (Utilities.isNotBlank(username)) {
-							updateFileUrl = updateFileUrl.replace("<username>", URLEncoder.encode(username, "UTF-8"));
+							updateFileUrl = updateFileUrl.replace("<username>", HttpUtilities.urlEncode(username, StandardCharsets.UTF_8));
 						} else {
 							return false;
 						}
@@ -248,12 +248,12 @@ public class UpdateApplicationDialog extends ProgressShowingModalDialog<Boolean>
 				}
 				if (updateFileUrl.contains("<password>")) {
 					if (storedDownloadCredentials != null) {
-						updateFileUrl = updateFileUrl.replace("<password>", URLEncoder.encode(new String(storedDownloadCredentials.getPassword()), "UTF-8"));
+						updateFileUrl = updateFileUrl.replace("<password>", HttpUtilities.urlEncode(new String(storedDownloadCredentials.getPassword()), StandardCharsets.UTF_8));
 					} else {
 						final PasswordDialog passwordDialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterDownloadPassword"));
 						final char[] password = passwordDialog.open();
 						if (password != null) {
-							updateFileUrl = updateFileUrl.replace("<password>", URLEncoder.encode(new String(password), "UTF-8"));
+							updateFileUrl = updateFileUrl.replace("<password>", HttpUtilities.urlEncode(new String(password), StandardCharsets.UTF_8));
 						} else {
 							return false;
 						}

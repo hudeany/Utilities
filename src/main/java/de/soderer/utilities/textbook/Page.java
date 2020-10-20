@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -64,7 +65,7 @@ public class Page {
 		if (interimStorageFile != null) {
 			try (ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(interimStorageFile)))) {
 				inputStream.getNextEntry();
-				return FileUtilities.readLinesFromStream(inputStream, true, "UTF-8");
+				return FileUtilities.readLinesFromStream(inputStream, true, StandardCharsets.UTF_8);
 			}
 		} else {
 			return newContentLines;
@@ -95,7 +96,7 @@ public class Page {
 			interimStorageFile = File.createTempFile(getParentTextBookEditor().getInterimStorageKey() + "_", ".tmp.zip");
 			try (ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(interimStorageFile)))) {
 				outputStream.putNextEntry(new ZipEntry("InterimStorageFile.tmp"));
-				outputStream.write(Utilities.join(newContentLines, null).getBytes("UTF-8"));
+				outputStream.write(Utilities.join(newContentLines, null).getBytes(StandardCharsets.UTF_8));
 			}
 			newContentLines = null;
 			getParentTextBookEditor().setNumberOfPagesWithNewContent(getParentTextBookEditor().getNumberOfPagesWithNewContent() - 1);
