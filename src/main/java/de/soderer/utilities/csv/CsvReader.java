@@ -189,7 +189,7 @@ public class CsvReader extends BasicReader {
 							while (returnList.size() > numberOfColumns) {
 								final String lastItem = returnList.remove(returnList.size() - 1);
 								if (!"".equals(lastItem)) {
-									throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readCsvLines);
+									throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + (returnList.size() + 1) + ")", readCsvLines);
 								}
 							}
 							return returnList;
@@ -245,7 +245,7 @@ public class CsvReader extends BasicReader {
 					while (returnList.size() > numberOfColumns) {
 						final String lastItem = returnList.remove(returnList.size() - 1);
 						if (!"".equals(lastItem)) {
-							throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + returnList.size() + ")", readCsvLines);
+							throw new CsvDataException("Inconsistent number of values in line " + readCsvLines + " (expected: " + numberOfColumns + " actually: " + (returnList.size() + 1) + ")", readCsvLines);
 						}
 					}
 					return returnList;
