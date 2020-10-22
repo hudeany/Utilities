@@ -643,9 +643,9 @@ public class TextUtilities {
 							encodingStart++;
 						}
 						Charset.forName(encodingString.toString());
-						if (encodingString.toString().startsWith("utf-16") && data[0] == 0) {
+						if (encodingString.toString().toLowerCase().startsWith("utf-16") && data[0] == 0) {
 							return new Tuple<>("UTF-16BE", false);
-						} else if (encodingString.toString().startsWith("utf-16") && data[1] == 0) {
+						} else if (encodingString.toString().toLowerCase().startsWith("utf-16") && data[1] == 0) {
 							return new Tuple<>("UTF-16LE", false);
 						} else {
 							return new Tuple<>(encodingString.toString().toUpperCase(), false);
