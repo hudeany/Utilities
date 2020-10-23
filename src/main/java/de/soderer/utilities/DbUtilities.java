@@ -2169,7 +2169,7 @@ public class DbUtilities {
 		if (connection != null && tableName != null && columnName != null && checkTableAndColumnsExist(connection, tableName, columnName)) {
 			final DbVendor dbVendor = getDbVendor(connection);
 			if (dbVendor == DbVendor.SQLite) {
-				// SQLite cannot drop colmns
+				// SQLite cannot drop columns
 				try (Statement statement = connection.createStatement()) {
 					final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
 
