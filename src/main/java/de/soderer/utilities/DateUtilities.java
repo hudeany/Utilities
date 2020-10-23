@@ -835,4 +835,35 @@ public class DateUtilities {
 		final int ordinalInt = (int) Math.round(Math.ceil(ordinalFloat));
 		return ordinalInt;
 	}
+
+	public static Date changeDateTimeZone(final Date date, TimeZone timeZoneOfDate, TimeZone destinationTimezone) {
+		if (date == null) {
+			return null;
+		} else {
+			if (timeZoneOfDate == null) {
+				timeZoneOfDate = TimeZone.getDefault();
+			}
+			if (destinationTimezone == null) {
+				destinationTimezone = TimeZone.getDefault();
+			}
+			if (timeZoneOfDate.equals(destinationTimezone)) {
+				return date;
+			} else {
+				long fromTZDst = 0;
+				if (timeZoneOfDate.inDaylightTime(date)) {
+					fromTZDst = timeZoneOfDate.getDSTSavings();
+				}
+
+				final long fromTZOffset = timeZoneOfDate.getRawOffset() + fromTZDst;
+
+				long toTZDst = 0;
+				if (destinationTimezone.inDaylightTime(date)) {
+					toTZDst = destinationTimezone.getDSTSavings();
+				}
+				final long toTZOffset = destinationTimezone.getRawOffset() + toTZDst;
+
+				return new Date(date.getTime() + (toTZOffset - fromTZOffset));
+			}
+		}
+	}
 }
