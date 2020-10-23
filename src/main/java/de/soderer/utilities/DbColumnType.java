@@ -2,7 +2,7 @@ package de.soderer.utilities;
 
 public class DbColumnType {
 	public enum SimpleDataType {
-		String, Date, Integer, Double, Blob, Clob
+		String, Date, DateTime, Integer, Double, Blob, Clob
 	}
 
 	private final String typeName;
@@ -46,7 +46,9 @@ public class DbColumnType {
 	}
 
 	public SimpleDataType getSimpleDataType() {
-		if (typeName.toLowerCase().startsWith("date") || typeName.toLowerCase().startsWith("time")) {
+		if (typeName.toLowerCase().contains("time")) {
+			return SimpleDataType.DateTime;
+		} else if (typeName.toLowerCase().contains("date")) {
 			return SimpleDataType.Date;
 		} else if ("clob".equals(typeName.toLowerCase()) || "longtext".equals(typeName.toLowerCase())) {
 			return SimpleDataType.Clob;
