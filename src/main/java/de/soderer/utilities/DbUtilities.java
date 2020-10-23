@@ -1683,7 +1683,8 @@ public class DbUtilities {
 			switch (simpleDataType) {
 				case Blob: return "BLOB";
 				case Clob: return "CLOB";
-				case Date: return "TIMESTAMP";
+				case DateTime: return "TIMESTAMP";
+				case Date: return "DATE";
 				case Integer: return "NUMBER";
 				case Double: return "NUMBER";
 				case String: return "VARCHAR2";
@@ -1693,7 +1694,8 @@ public class DbUtilities {
 			switch (simpleDataType) {
 				case Blob: return "LONGBLOB";
 				case Clob: return "LONGTEXT";
-				case Date: return "TIMESTAMP NULL";
+				case DateTime: return "TIMESTAMP NULL";
+				case Date: return "DATE";
 				case Integer: return "INT";
 				case Double: return "DOUBLE";
 				case String: return "VARCHAR";
@@ -1703,7 +1705,8 @@ public class DbUtilities {
 			switch (simpleDataType) {
 				case Blob: return "LONGBLOB";
 				case Clob: return "LONGTEXT";
-				case Date: return "TIMESTAMP NULL";
+				case DateTime: return "TIMESTAMP NULL";
+				case Date: return "DATE";
 				case Integer: return "INT";
 				case Double: return "DOUBLE";
 				case String: return "VARCHAR";
@@ -1713,7 +1716,8 @@ public class DbUtilities {
 			switch (simpleDataType) {
 				case Blob: return "BLOB";
 				case Clob: return "CLOB";
-				case Date: return "TIMESTAMP";
+				case DateTime: return "TIMESTAMP";
+				case Date: return "DATE";
 				case Integer: return "INTEGER";
 				case Double: return "DOUBLE";
 				case String: return "VARCHAR";
@@ -1723,7 +1727,8 @@ public class DbUtilities {
 			switch (simpleDataType) {
 				case Blob: return "BYTEA";
 				case Clob: return "TEXT";
-				case Date: return "TIMESTAMP";
+				case DateTime: return "TIMESTAMP";
+				case Date: return "DATE";
 				case Integer: return "INTEGER";
 				case Double: return "REAL";
 				case String: return "VARCHAR";
@@ -1733,7 +1738,8 @@ public class DbUtilities {
 			switch (simpleDataType) {
 				case Blob: return "BLOB";
 				case Clob: return "CLOB";
-				case Date: return "TIMESTAMP";
+				case DateTime: return "TIMESTAMP";
+				case Date: return "DATE";
 				case Integer: return "INTEGER";
 				case Double: return "DOUBLE";
 				case String: return "VARCHAR";
@@ -1743,7 +1749,8 @@ public class DbUtilities {
 			switch (simpleDataType) {
 				case Blob: return "BLOB";
 				case Clob: return "CLOB";
-				case Date: return "TIMESTAMP";
+				case DateTime: return "TIMESTAMP";
+				case Date: return "DATE";
 				case Integer: return "INTEGER";
 				case Double: return "DOUBLE";
 				case String: return "VARCHAR";
@@ -1753,7 +1760,8 @@ public class DbUtilities {
 			switch (simpleDataType) {
 				case Blob: return "BLOB SUB_TYPE BINARY";
 				case Clob: return "BLOB SUB_TYPE TEXT";
-				case Date: return "TIMESTAMP";
+				case DateTime: return "TIMESTAMP";
+				case Date: return "DATE";
 				case Integer: return "INTEGER";
 				case Double: return "DOUBLE PRECISION";
 				case String: return "VARCHAR";
