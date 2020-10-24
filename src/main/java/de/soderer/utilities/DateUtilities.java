@@ -4,6 +4,10 @@ import java.sql.Timestamp;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -863,6 +867,37 @@ public class DateUtilities {
 				final long toTZOffset = destinationTimezone.getRawOffset() + toTZDst;
 
 				return new Date(date.getTime() + (toTZOffset - fromTZOffset));
+			}
+		}
+	}
+
+	public static Date changeDateTimeZone(final Date date, ZoneId timeZoneOfDate, ZoneId destinationTimezone) {
+		if (date == null) {
+			return null;
+		} else {
+			if (timeZoneOfDate == null) {
+				timeZoneOfDate = ZoneId.systemDefault();
+			}
+			if (destinationTimezone == null) {
+				destinationTimezone = ZoneId.systemDefault();
+			}
+			if (timeZoneOfDate.equals(destinationTimezone)) {
+				return date;
+			} else {
+				final String interimPattern = "yyyy-MM-dd HH:mm:ss.SSS";
+
+				final SimpleDateFormat format = new SimpleDateFormat(interimPattern);
+				final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(interimPattern);
+
+				final LocalDateTime localDateTime = LocalDateTime.parse(format.format(date), formatter);
+				final ZonedDateTime zonedDateTime = localDateTime.atZone(timeZoneOfDate);
+				final ZonedDateTime reZonedDateTime = zonedDateTime.withZoneSameInstant(destinationTimezone);
+				try {
+					return format.parse(formatter.format(reZonedDateTime));
+				} catch (final ParseException e) {
+					// May not happen
+					throw new RuntimeException(e.getMessage(), e);
+				}
 			}
 		}
 	}
