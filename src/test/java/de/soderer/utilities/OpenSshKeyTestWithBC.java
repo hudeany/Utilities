@@ -16,7 +16,6 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.crypto.KeyPairUtilities;
 import de.soderer.utilities.crypto.OpenSshKeyReader;
 import de.soderer.utilities.crypto.OpenSshKeyWriter;
@@ -58,7 +57,13 @@ public class OpenSshKeyTestWithBC {
 		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
 
 		// Create BouncyCastle encrypted PKCS8 data
-		final byte[] privateKeyPkcs8DataByBc = CryptographicUtilities.getStringFromKeyPair(keyPair, "password".toCharArray()).getBytes(StandardCharsets.UTF_8);
+		byte[] privateKeyPkcs8DataByBc;
+		try (ByteArrayOutputStream bufferStream = new ByteArrayOutputStream()) {
+			try (OpenSshKeyWriter writer = new OpenSshKeyWriter(bufferStream)) {
+				writer.writePKCS8Format(keyPair, "password".toCharArray());
+			}
+			privateKeyPkcs8DataByBc = bufferStream.toByteArray();
+		}
 
 		// Check BouncyCastle encrypted PKCS8 data with BouncyCastle
 		final KeyPair readKeyPair2;

@@ -1,22 +1,16 @@
 package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
@@ -34,16 +28,13 @@ import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.RSAKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -95,13 +86,10 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jcajce.util.DefaultJcaJceHelper;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMEncryptor;
 import org.bouncycastle.openssl.PEMException;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
@@ -171,17 +159,6 @@ public class CryptographicUtilities {
 			final ElGamalKeyPairGenerator generator = new ElGamalKeyPairGenerator();
 			generator.init(new ElGamalKeyGenerationParameters(new SecureRandom(), elGamalParameters));
 			final AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
-			return keyPair;
-		} catch (final Exception e) {
-			throw new Exception("Cannot create RSA keypair", e);
-		}
-	}
-
-	public static KeyPair generatePlainRsaKeyPair(final int keyStrength) throws Exception {
-		try {
-			final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-			keyPairGenerator.initialize(keyStrength);
-			final KeyPair keyPair = keyPairGenerator.generateKeyPair();
 			return keyPair;
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);
@@ -324,29 +301,11 @@ public class CryptographicUtilities {
 		}
 	}
 
-	/**
-	 * Convert a Key to string encoded as BASE64
-	 */
-	public static String getStringFromKey(final Key key) {
-		return Base64.getEncoder().encodeToString(key.getEncoded());
-	}
-
 	public static String getStringFromKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
 		final PublicKey publicKey = getPublicKeyFromKeyPair(keyPair);
 		final PrivateKey privateKey = getPrivateKeyFromKeyPair(keyPair);
 
 		return getStringFromKeyPair(privateKey, publicKey);
-	}
-
-	public static String getStringFromKeyPair(final AsymmetricCipherKeyPair keyPair, final char[] password) throws Exception {
-		final PublicKey publicKey = getPublicKeyFromKeyPair(keyPair);
-		final PrivateKey privateKey = getPrivateKeyFromKeyPair(keyPair);
-
-		return getStringFromKeyPair(privateKey, publicKey, password);
-	}
-
-	public static String getStringFromKeyPair(final KeyPair keyPair, final char[] password) throws Exception {
-		return getStringFromKeyPair(keyPair.getPrivate(), keyPair.getPublic(), password);
 	}
 
 	public static String getStringFromKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
@@ -357,31 +316,6 @@ public class CryptographicUtilities {
 			pemWriter.writeObject(privateKey);
 			pemWriter.writeObject(publicKey);
 			pemWriter.close();
-			return stringWriter.toString();
-		} catch (final Exception e) {
-			throw new Exception("Cannot create key string: " + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * TODO: ERROR: DOES NOT WORK for ECDSA
-	 */
-	public static String getStringFromKeyPair(final PrivateKey privateKey, final PublicKey publicKey, final char[] password) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try (StringWriter stringWriter = new StringWriter();
-				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
-			if (privateKey != null) {
-				final PEMEncryptor pemEncryptor = new JcePEMEncryptorBuilder("AES-128-CBC").build(password);
-				final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(privateKey, pemEncryptor);
-				pemWriter.writeObject(pemGenerator);
-			}
-			if (publicKey != null) {
-				pemWriter.writeObject(publicKey);
-			}
-			pemWriter.flush();
-			pemWriter.close();
-
 			return stringWriter.toString();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create key string: " + e.getMessage(), e);
@@ -449,49 +383,6 @@ public class CryptographicUtilities {
 		}
 	}
 
-
-
-	/**
-	 * Generates Public Key from BASE64 encoded string
-	 */
-	public static PublicKey getPublicKeyFromString(final String key) throws Exception {
-		try {
-			Security.addProvider(new BouncyCastleProvider());
-			String publicKeyPEM = key;
-			publicKeyPEM = publicKeyPEM.replace("-----BEGIN PUBLICKEY-----", "");
-			publicKeyPEM = publicKeyPEM.replace("\r", "");
-			publicKeyPEM = publicKeyPEM.replace("\n", "");
-			publicKeyPEM = publicKeyPEM.replace("-----END PUBLICKEY-----", "");
-			final byte[] publicKeyData = Base64.getDecoder().decode(publicKeyPEM);
-			final KeyFactory kf = KeyFactory.getInstance("RSA");
-			final RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(publicKeyData));
-			return pubKey;
-		} catch (final Exception e) {
-			throw new Exception("Cannot read public key", e);
-		}
-	}
-
-	/**
-	 * Generates Private Key from BASE64 encoded string
-	 */
-	public static PrivateKey getPrivateKeyFromString(final String key) throws Exception {
-		try {
-			Security.addProvider(new BouncyCastleProvider());
-			String privateKeyPEM = key;
-			privateKeyPEM = privateKeyPEM.replace("-----BEGIN RSAPRIVATE KEY-----", "");
-			privateKeyPEM = privateKeyPEM.replace("\r", "");
-			privateKeyPEM = privateKeyPEM.replace("\n", "");
-			privateKeyPEM = privateKeyPEM.replace("-----END RSA PRIVATEKEY-----", "");
-			final byte[] privateKeyData = Base64.getDecoder().decode(privateKeyPEM);
-			final PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyData);
-			final KeyFactory kf = KeyFactory.getInstance("RSA");
-			final PrivateKey privKey = kf.generatePrivate(keySpec);
-			return privKey;
-		} catch (final Exception e) {
-			throw new Exception("Cannot read private key", e);
-		}
-	}
-
 	/**
 	 * Generates X509Certificate from BASE64 encoded string
 	 */
@@ -509,20 +400,6 @@ public class CryptographicUtilities {
 		} catch (final Exception e) {
 			throw new Exception("Cannot read certificate", e);
 		}
-	}
-
-	/**
-	 * Read a keyfile generated with 'openssl genrsa...'
-	 */
-	public static PublicKey readRSAPublicKey(final InputStream inputStream) throws Exception {
-		return getPublicKeyFromString(IoUtilities.toString(inputStream, StandardCharsets.UTF_8));
-	}
-
-	/**
-	 * Read a keyfile generated with 'openssl genrsa...'
-	 */
-	public static PrivateKey readRSAPrivateKey(final InputStream inputStream) throws Exception {
-		return getPrivateKeyFromString(IoUtilities.toString(inputStream, StandardCharsets.UTF_8));
 	}
 
 	/**
@@ -907,72 +784,6 @@ public class CryptographicUtilities {
 					keyFactory.generatePrivate(new PKCS8EncodedKeySpec(keyPair.getPrivateKeyInfo().getEncoded())));
 		} catch (final Exception e) {
 			throw new PEMException("Unable to convert key pair: " + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Write password protected pem file (PKCS#8)<br />
-	 * <br />
-	 * keyEncryptionCipherName:<br />
-	 *   default is "AES-128-CBC"<br />
-	 *   other value may be "DES-EDE3-CBC"<br />
-	 */
-	public static String writeKeyPairToProtectedPrivateOpenSshKey(final KeyPair keyPair, final boolean includePublicKeyData, final String keyEncryptionCipherNameParam, final String exportedKeyPassword) throws Exception {
-		String keyEncryptionCipherName = keyEncryptionCipherNameParam;
-		Security.addProvider(new BouncyCastleProvider());
-
-		if (keyEncryptionCipherName == null || "".equals(keyEncryptionCipherName.trim())) {
-			keyEncryptionCipherName = "AES-128-CBC";
-		}
-
-		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try (final JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.US_ASCII))) {
-			if (exportedKeyPassword != null && !"".equals(exportedKeyPassword)) {
-				final PEMEncryptor pemEncryptor = new JcePEMEncryptorBuilder(keyEncryptionCipherName).build(exportedKeyPassword.toCharArray());
-				final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(keyPair.getPrivate(), pemEncryptor);
-				jcaPEMWriter.writeObject(pemGenerator);
-			} else {
-				final JcaMiscPEMGenerator pemGenerator = new JcaMiscPEMGenerator(keyPair.getPrivate(), null);
-				jcaPEMWriter.writeObject(pemGenerator);
-				if (includePublicKeyData) {
-					// Do nothing
-				}
-			}
-
-			jcaPEMWriter.flush();
-		}
-		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
-	}
-
-	public static String encodePublicKeyForAuthorizedKeys(final KeyPair keyPair) throws IOException {
-		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
-		if ("RSA".equals(keyPair.getPublic().getAlgorithm())){
-			final String algorithmName = "ssh-rsa";
-			final RSAPublicKey publicKey = ((RSAPublicKey) keyPair.getPublic());
-			dataOutputStream.writeInt(algorithmName.getBytes().length);
-			dataOutputStream.write(algorithmName.getBytes());
-			dataOutputStream.writeInt(publicKey.getPublicExponent().toByteArray().length);
-			dataOutputStream.write(publicKey.getPublicExponent().toByteArray());
-			dataOutputStream.writeInt(publicKey.getModulus().toByteArray().length);
-			dataOutputStream.write(publicKey.getModulus().toByteArray());
-			return algorithmName + " " + new String(Base64.getEncoder().encode(outputStream.toByteArray()));
-		} else if("DSA".equals(keyPair.getPublic().getAlgorithm())){
-			final String algorithmName = "ssh-dss";
-			final DSAPublicKey publicKey = ((DSAPublicKey) keyPair.getPublic());
-			dataOutputStream.writeInt(algorithmName.getBytes().length);
-			dataOutputStream.write(algorithmName.getBytes());
-			dataOutputStream.writeInt(publicKey.getParams().getP().toByteArray().length);
-			dataOutputStream.write(publicKey.getParams().getP().toByteArray());
-			dataOutputStream.writeInt(publicKey.getParams().getQ().toByteArray().length);
-			dataOutputStream.write(publicKey.getParams().getQ().toByteArray());
-			dataOutputStream.writeInt(publicKey.getParams().getG().toByteArray().length);
-			dataOutputStream.write(publicKey.getParams().getG().toByteArray());
-			dataOutputStream.writeInt(publicKey.getY().toByteArray().length);
-			dataOutputStream.write(publicKey.getY().toByteArray());
-			return algorithmName + " " + new String(Base64.getEncoder().encode(outputStream.toByteArray()));
-		} else{
-			throw new IllegalArgumentException("Unknown public key encoding: " + keyPair.getPublic().getAlgorithm());
 		}
 	}
 }

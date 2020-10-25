@@ -10,7 +10,6 @@ import java.security.KeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.crypto.KeyPairUtilities;
 import de.soderer.utilities.crypto.OpenSshKeyWriter;
 import de.soderer.utilities.crypto.PuttyKey;
@@ -81,11 +80,6 @@ public class PuttyKeyTest {
 			writer.writePKCS8Format(puttyKey2.getKeyPair(), null);
 		}
 		if (output2.toByteArray() == null || output2.toByteArray().length == 0) {
-			Assert.fail();
-		}
-
-		final String pemString = CryptographicUtilities.writeKeyPairToProtectedPrivateOpenSshKey(puttyKey.getKeyPair(), false, null, "passwörd");
-		if (pemString == null || pemString.length() == 0) {
 			Assert.fail();
 		}
 
