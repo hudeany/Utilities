@@ -2,6 +2,7 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
@@ -1508,17 +1509,28 @@ public class DbUtilities {
 				}
 			} else if (DbVendor.MariaDB == dbVendor) {
 				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema')";
+				final List<String> positivePatterns = new ArrayList<>();
+				final List<String> negativePatterns = new ArrayList<>();
 				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
 					if (Utilities.isNotBlank(tablePattern)) {
 						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						if (tablePattern.startsWith("!")) {
-							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "'";
+							negativePatterns.add(tablePattern.substring(1));
 						} else {
-							tableQuery += " AND table_name LIKE '" + tablePattern + "'";
+							positivePatterns.add(tablePattern);
 						}
 					}
 				}
-				tableQuery += " ORDER BY table_name";
+				if (positivePatterns.size() > 0) {
+					tableQuery += " AND (";
+					tableQuery += "table_name LIKE '" + Utilities.join(positivePatterns, "' OR table_name LIKE '") + "'";
+					tableQuery += ")";
+				}
+				if (negativePatterns.size() > 0) {
+					tableQuery += " AND (";
+					tableQuery += "table_name NOT LIKE '" + Utilities.join(negativePatterns, "' OR table_name LIKE '") + "'";
+					tableQuery += ")";
+				}
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
 					final List<String> tableNamesToExport = new ArrayList<>();
@@ -2607,5 +2619,16 @@ public class DbUtilities {
 	public static boolean isValidAlias(final String alias) {
 		final Pattern pattern = Pattern.compile("[0-9A-Za-z_]{1,30}");
 		return pattern.matcher(alias).matches();
+	}
+
+	public static void updateBlob(final DbVendor dbVendor, final String hostname, final String dbName, final String userName, final char[] password, final String sqlUpdateStatementWithPlaceholder, final String filePath) throws Exception {
+		try (Connection connection = createConnection(dbVendor, hostname, dbName, userName, password)) {
+			try (FileInputStream inputStream = new FileInputStream(new File(filePath))) {
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sqlUpdateStatementWithPlaceholder)) {
+					preparedStatement.setBinaryStream(1, inputStream);
+					preparedStatement.execute();
+				}
+			}
+		}
 	}
 }
