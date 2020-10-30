@@ -47,6 +47,10 @@ public class DateUtilities {
 	public static final String ISO_8601_DATETIME_FORMAT_NO_TIMEZONE = "yyyy-MM-dd'T'HH:mm:ss";
 	/** DateTime format for SOAP Webservices (ISO 8601) */
 	public static final String ISO_8601_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssX";
+	/** DateTime format for SOAP Webservices (ISO 8601) */
+	public static final String ISO_8601_DATETIME_FORMAT_WITH_MILLIS_NO_TIMEZONE = "yyyy-MM-dd'T'HH:mm:ss.SSS";
+	/** DateTime format for SOAP Webservices (ISO 8601) */
+	public static final String ISO_8601_DATETIME_FORMAT_WITH_MILLIS = "yyyy-MM-dd'T'HH:mm:ss.SSSX";
 
 	/** ANSI SQL standard date format */
 	public static final String ANSI_SQL_DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
@@ -813,18 +817,54 @@ public class DateUtilities {
 		}
 
 		if (dateValue.contains("T")) {
-			// Date with time
-			if (hasTimezone) {
-				return new SimpleDateFormat(ISO_8601_DATETIME_FORMAT).parse(dateValue);
+			if (dateValue.contains(".")) {
+				if (hasTimezone) {
+					if (dateValue.substring(dateValue.indexOf(".")).length() > 10 ) {
+						// Date with time and fractals
+						final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSSXXXXX");
+						final LocalDateTime dateTime = LocalDateTime.parse(dateValue, formatter);
+						return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+					} else {
+						// Date with time and milliseconds
+						final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_WITH_MILLIS);
+						dateFormat.setLenient(false);
+						return dateFormat.parse(dateValue);
+					}
+				} else {
+					if (dateValue.substring(dateValue.indexOf(".")).length() > 4 ) {
+						// Date with time and fractals
+						final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSS");
+						final LocalDateTime dateTime = LocalDateTime.parse(dateValue, formatter);
+						return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+					} else {
+						// Date with time and milliseconds
+						final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_WITH_MILLIS_NO_TIMEZONE);
+						dateFormat.setLenient(false);
+						return dateFormat.parse(dateValue);
+					}
+				}
 			} else {
-				return new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_NO_TIMEZONE).parse(dateValue);
+				// Date with time
+				if (hasTimezone) {
+					final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATETIME_FORMAT);
+					dateFormat.setLenient(false);
+					return dateFormat.parse(dateValue);
+				} else {
+					final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_NO_TIMEZONE);
+					dateFormat.setLenient(false);
+					return dateFormat.parse(dateValue);
+				}
 			}
 		} else {
 			// Date only
 			if (hasTimezone) {
-				return new SimpleDateFormat(ISO_8601_DATE_FORMAT).parse(dateValue);
+				final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATE_FORMAT);
+				dateFormat.setLenient(false);
+				return dateFormat.parse(dateValue);
 			} else {
-				return new SimpleDateFormat(ISO_8601_DATE_FORMAT_NO_TIMEZONE).parse(dateValue);
+				final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATE_FORMAT_NO_TIMEZONE);
+				dateFormat.setLenient(false);
+				return dateFormat.parse(dateValue);
 			}
 		}
 	}

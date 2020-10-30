@@ -2631,4 +2631,43 @@ public class DbUtilities {
 			}
 		}
 	}
+
+	/**
+	 * Demand recalculation of Oracle Table stats to enable table indices after creation of big temp tables
+	 *
+	 * @param connection
+	 * @param tableName
+	 * @throws Exception
+	 */
+	public static void gatherTableStats(final Connection connection, final String tableName) throws Exception {
+		if (getDbVendor(connection) == DbVendor.Oracle) {
+			try (Statement statement = connection.createStatement()) {
+				String username;
+				try (ResultSet resultSet = statement.executeQuery("SELECT USER FROM DUAL")) {
+					if (resultSet.next()) {
+						username = resultSet.getString(1);
+					} else {
+						throw new Exception("Cannot detect oracle db username");
+					}
+				}
+
+				final String executeStatement =
+						"begin\n"
+								+ " dbms_stats.gather_table_stats(\n"
+								+ " ownname => '" + username.toUpperCase() + "',\n"
+								+ " tabname => '" + tableName.toUpperCase() + "',\n"
+								+ " estimate_percent => 30,\n"
+								+ " method_opt => 'for all columns size 254',\n"
+								+ " cascade => true,\n"
+								+ " no_invalidate => FALSE\n"
+								+ " );\n"
+								+ " end;";
+
+				final boolean success = statement.execute(executeStatement);
+				if (!success) {
+					throw new Exception("Cannot gatherTableStats");
+				}
+			}
+		}
+	}
 }
