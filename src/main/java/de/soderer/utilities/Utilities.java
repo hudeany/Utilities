@@ -24,18 +24,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -994,6 +991,10 @@ public class Utilities {
 		}
 	}
 
+	public static String repeat(final char valueChar, final int count) {
+		return repeat(Character.toString(valueChar), count, null);
+	}
+
 	public static String repeat(final String value, final int count) {
 		return repeat(value, count, null);
 	}
@@ -1141,50 +1142,6 @@ public class Utilities {
 			copy(inputStream, byteArrayOutputStream);
 			return byteArrayOutputStream.toByteArray();
 		}
-	}
-
-	/**
-	 * Create a progress string for terminal output e.g.: "65% [=================================>                   ] 103.234 200/s eta 5m"
-	 *
-	 * @param start
-	 * @param itemsToDo
-	 * @param itemsDone
-	 * @return
-	 */
-	public static String getConsoleProgressString(final int lineLength, final Date start, final long itemsToDo, final long itemsDone) {
-		final Date now = new Date();
-		String itemsToDoString = "??";
-		String percentageString = " 0%";
-		String speedString = "???/s";
-		String etaString = "eta ???";
-		int percentageDone = 0;
-		if (itemsToDo > 0 && itemsDone > 0) {
-			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
-			percentageDone = (int) (itemsDone * 100 / itemsToDo);
-			percentageString = leftPad(percentageDone + "%", 3);
-			long elapsedSeconds = (now.getTime() - start.getTime()) / 1000;
-			// Prevent division by zero, when start is fast
-			if (elapsedSeconds == 0) {
-				elapsedSeconds = 1;
-			}
-			final int speed = (int) (itemsDone / elapsedSeconds);
-			speedString = getHumanReadableNumber(speed, "", true) + "/s";
-			final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
-			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(estimatedEnd.getTime() - now.getTime(), false, true);
-		} else if (itemsToDo > 0) {
-			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
-		}
-
-		final String leftPart = percentageString + " [";
-		final String rightPart = "] " + itemsToDoString + " " + speedString + " " + etaString;
-		final int barWith = lineLength - (leftPart.length() + rightPart.length());
-		int barDone = barWith * percentageDone / 100;
-		if (barDone < 1) {
-			barDone = 1;
-		} else if (barDone >= barWith) {
-			barDone = barWith;
-		}
-		return leftPart + repeat("=", barDone - 1) + ">" + repeat(" ", barWith - barDone) + rightPart;
 	}
 
 	/**
