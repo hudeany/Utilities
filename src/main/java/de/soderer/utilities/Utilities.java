@@ -1104,6 +1104,19 @@ public class Utilities {
 		}
 	}
 
+	public static <T> T[] removeItemAtIndex(final T[] array, final int itemIndexToRemove) {
+		@SuppressWarnings("unchecked")
+		final T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length - 1);
+		for (int i = 0; i < array.length; i++) {
+			if (i < itemIndexToRemove) {
+				result[i] = array[i];
+			} else if (i > itemIndexToRemove) {
+				result[i - 1] = array[i];
+			}
+		}
+		return result;
+	}
+
 	public static byte[] readFileToByteArray(final File file) throws FileNotFoundException, IOException {
 		try (FileInputStream in = new FileInputStream(file)) {
 			final byte[] returnArray = new byte[(int) file.length()];
