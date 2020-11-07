@@ -14,6 +14,9 @@ import javax.crypto.Cipher;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class SystemUtilities {
+	private static final boolean isWindows = getOsName().toLowerCase().contains("windows");
+	private static final boolean isLinux = getOsName().toLowerCase().contains("unix") || getOsName().toLowerCase().contains("linux");
+
 	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
 
 	public static String getOsName() {
@@ -21,11 +24,11 @@ public class SystemUtilities {
 	}
 
 	public static boolean isWindowsSystem() {
-		return getOsName().toLowerCase().contains("windows");
+		return isWindows;
 	}
 
 	public static boolean isLinuxSystem() {
-		return getOsName().toLowerCase().contains("unix") || getOsName().toLowerCase().contains("linux");
+		return isLinux;
 	}
 
 	public static int getProcessId() {

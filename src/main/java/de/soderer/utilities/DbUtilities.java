@@ -288,13 +288,13 @@ public class DbUtilities {
 		} else if (DbVendor.PostgreSQL == dbVendor) {
 			return "jdbc:postgresql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName;
 		} else if (DbVendor.SQLite == dbVendor) {
-			return "jdbc:sqlite:" + Utilities.replaceHomeTilde(dbName);
+			return "jdbc:sqlite:" + Utilities.replaceUsersHome(dbName);
 		} else if (DbVendor.Derby == dbVendor) {
-			return "jdbc:derby:" + Utilities.replaceHomeTilde(dbName);
+			return "jdbc:derby:" + Utilities.replaceUsersHome(dbName);
 		} else if (DbVendor.Firebird == dbVendor) {
-			return "jdbc:firebirdsql:" + dbServerHostname + "/" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + ":" + Utilities.replaceHomeTilde(dbName);
+			return "jdbc:firebirdsql:" + dbServerHostname + "/" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + ":" + Utilities.replaceUsersHome(dbName);
 		} else if (DbVendor.HSQL == dbVendor) {
-			dbName = Utilities.replaceHomeTilde(dbName);
+			dbName = Utilities.replaceUsersHome(dbName);
 			if (dbName.startsWith("/")) {
 				return "jdbc:hsqldb:file:" + dbName + ";shutdown=true";
 			} else if (Utilities.isNotBlank(dbServerHostname)) {
@@ -330,19 +330,19 @@ public class DbUtilities {
 		Class.forName(dbVendor.getDriverClassName());
 
 		if (dbVendor == DbVendor.SQLite) {
-			dbPath = Utilities.replaceHomeTilde(dbPath);
+			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
 				throw new Exception("SQLite db file '" + dbPath + "' already exists");
 			}
 			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath));
 		} else if (dbVendor == DbVendor.Derby) {
-			dbPath = Utilities.replaceHomeTilde(dbPath);
+			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
 				throw new Exception("Derby db directory '" + dbPath + "' already exists");
 			}
 			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath) + ";create=true");
 		} else if (dbVendor == DbVendor.HSQL) {
-			dbPath = Utilities.replaceHomeTilde(dbPath);
+			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (dbPath.startsWith("/")) {
 				if (FileUtilities.getFilesByPattern(new File(dbPath.substring(0, dbPath.lastIndexOf("/"))), dbPath.substring(dbPath.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() > 0) {
 					throw new Exception("HSQL db '" + dbPath + "' already exists");
@@ -365,17 +365,17 @@ public class DbUtilities {
 		}
 
 		if (dbVendor == DbVendor.SQLite) {
-			dbPath = Utilities.replaceHomeTilde(dbPath);
+			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
 				new File(dbPath).delete();
 			}
 		} else if (dbVendor == DbVendor.Derby) {
-			dbPath = Utilities.replaceHomeTilde(dbPath);
+			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
 				Utilities.delete(new File(dbPath));
 			}
 		} else if (dbVendor == DbVendor.HSQL) {
-			dbPath = Utilities.replaceHomeTilde(dbPath);
+			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (dbPath.startsWith("/")) {
 				final File baseDirectory = new File(dbPath.substring(0, dbPath.lastIndexOf("/")));
 				final String basename = dbPath.substring(dbPath.lastIndexOf("/") + 1);
@@ -416,7 +416,7 @@ public class DbUtilities {
 
 		try {
 			if (dbVendor == DbVendor.SQLite) {
-				dbName = Utilities.replaceHomeTilde(dbName);
+				dbName = Utilities.replaceUsersHome(dbName);
 				if (!new File(dbName).exists()) {
 					throw new DbNotExistsException("SQLite db file '" + dbName + "' is not available");
 				} else if (!new File(dbName).isFile()) {
@@ -424,7 +424,7 @@ public class DbUtilities {
 				}
 				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName));
 			} else if (dbVendor == DbVendor.Derby) {
-				dbName = Utilities.replaceHomeTilde(dbName);
+				dbName = Utilities.replaceUsersHome(dbName);
 				if (!new File(dbName).exists()) {
 					throw new DbNotExistsException("Derby db directory '" + dbName + "' is not available");
 				} else if (!new File(dbName).isDirectory()) {
@@ -432,7 +432,7 @@ public class DbUtilities {
 				}
 				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName));
 			} else if (dbVendor == DbVendor.HSQL) {
-				dbName = Utilities.replaceHomeTilde(dbName);
+				dbName = Utilities.replaceUsersHome(dbName);
 				if (dbName.startsWith("/")) {
 					if (FileUtilities.getFilesByPattern(new File(dbName.substring(0, dbName.lastIndexOf("/"))), dbName.substring(dbName.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() <= 0) {
 						throw new DbNotExistsException("HSQL db '" + dbName + "' is not available");
@@ -2582,13 +2582,13 @@ public class DbUtilities {
 	 * @throws Exception
 	 */
 	public static void shutDownDerbyDb(String dbName) throws Exception {
-		dbName = Utilities.replaceHomeTilde(dbName);
+		dbName = Utilities.replaceUsersHome(dbName);
 		if (!new File(dbName).exists()) {
 			throw new DbNotExistsException("Derby db directory '" + dbName + "' is not available");
 		} else if (!new File(dbName).isDirectory()) {
 			throw new Exception("Derby db directory '" + dbName + "' is not a directory");
 		}
-		try (Connection connection = DriverManager.getConnection("jdbc:derby:" + Utilities.replaceHomeTilde(dbName) + ";shutdown=true")) {
+		try (Connection connection = DriverManager.getConnection("jdbc:derby:" + Utilities.replaceUsersHome(dbName) + ";shutdown=true")) {
 			// do nothing
 		} catch (@SuppressWarnings("unused") final SQLNonTransientConnectionException e) {
 			// Derby shutdown ALWAYS throws a SQLNonTransientConnectionException by intention (see also: http://db.apache.org/derby/docs/10.3/devguide/tdevdvlp20349.html)

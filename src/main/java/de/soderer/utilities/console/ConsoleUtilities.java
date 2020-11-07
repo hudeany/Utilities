@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ConsoleUtilities {
@@ -109,8 +110,7 @@ public class ConsoleUtilities {
 	}
 
 	public static void clearScreen() {
-		final String os = System.getProperty("os.name");
-		if (os.contains("Windows")) {
+		if (SystemUtilities.isWindowsSystem()) {
 			try {
 				new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
 			} catch (@SuppressWarnings("unused") final Exception e) {

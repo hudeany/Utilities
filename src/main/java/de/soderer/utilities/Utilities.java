@@ -1451,13 +1451,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Replace ~ by user.home
-	 */
-	public static String replaceHomeTilde(final String filePath) {
-		return filePath.replace("~", System.getProperty("user.home"));
-	}
-
-	/**
 	 * Check whether an iterable collection contains a special object
 	 *
 	 * @param hayshack
@@ -1482,6 +1475,14 @@ public class Utilities {
 				.replace("~", homePath)
 				.replace("$HOME", homePath)
 				.replace("${HOME}", homePath);
+	}
+
+	public static String replaceUsersHomeByTilde(final String filePath) {
+		if (filePath == null) {
+			return filePath;
+		}
+		final String homePath = System.getProperty("user.home");
+		return filePath.replace(homePath, "~");
 	}
 
 	public static String substring(final String text, final int startIndex) {

@@ -21,13 +21,13 @@ import de.soderer.utilities.Utilities;
 
 public class LabeledFileText extends LabeledText {
 	private boolean selectDirectory = false;
-	private Button dataBrowseButton;
+	private final Button dataBrowseButton;
 
-	public LabeledFileText(Shell shell, Composite parent, int style, String labelText, boolean openExisting) throws Exception {
+	public LabeledFileText(final Shell shell, final Composite parent, final int style, final String labelText, final boolean openExisting) throws Exception {
 		this(shell, parent, style, labelText, openExisting, null);
 	}
 
-	public LabeledFileText(Shell shell, Composite parent, int style, String labelText, final boolean openExisting, ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledFileText(final Shell shell, final Composite parent, final int style, final String labelText, final boolean openExisting, ArrangementStyle arrangementStyle) throws Exception {
 		super(parent, style);
 
 		final LabeledFileText labeledFileText = this;
@@ -38,13 +38,13 @@ public class LabeledFileText extends LabeledText {
 			arrangementStyle = ArrangementStyle.Vertical;
 		}
 
-		GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : (labelText == null ? 2 : 3), false);
+		final GridLayout gridLayout = SwtUtilities.createNoMarginGridLayout(arrangementStyle == ArrangementStyle.Vertical ? 1 : (labelText == null ? 2 : 3), false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		setLayout(gridLayout);
 
 		if (labelText != null) {
-			Label label = new Label(this, SWT.NONE);
+			final Label label = new Label(this, SWT.NONE);
 			label.setText(labelText);
 		}
 
@@ -53,8 +53,8 @@ public class LabeledFileText extends LabeledText {
 		textField.setText("");
 		textField.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(ModifyEvent arg0) {
-				Event event = new Event();
+			public void modifyText(final ModifyEvent arg0) {
+				final Event event = new Event();
 				event.widget = labeledFileText;
 				labeledFileText.notifyListeners(SWT.Modify, event);
 			}
@@ -65,10 +65,10 @@ public class LabeledFileText extends LabeledText {
 		if (selectDirectory) {
 			dataBrowseButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(SelectionEvent e) {
-					DirectoryDialog dialog = new DirectoryDialog(shellForFileDialog, openExisting ? SWT.OPEN : SWT.SAVE);
+				public void widgetSelected(final SelectionEvent e) {
+					final DirectoryDialog dialog = new DirectoryDialog(shellForFileDialog, openExisting ? SWT.OPEN : SWT.SAVE);
 					dialog.setText(LangResources.get("openDataDirectory"));
-					String fileName = dialog.open();
+					final String fileName = dialog.open();
 					if (Utilities.isNotBlank(fileName)) {
 						textField.setText(fileName);
 					}
@@ -77,10 +77,10 @@ public class LabeledFileText extends LabeledText {
 		} else {
 			dataBrowseButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(SelectionEvent e) {
-					FileDialog dialog = new FileDialog(shellForFileDialog, openExisting ? SWT.OPEN : SWT.SAVE);
+				public void widgetSelected(final SelectionEvent e) {
+					final FileDialog dialog = new FileDialog(shellForFileDialog, openExisting ? SWT.OPEN : SWT.SAVE);
 					dialog.setText(LangResources.get("openFileDirectory"));
-					String fileName = dialog.open();
+					final String fileName = dialog.open();
 					if (Utilities.isNotBlank(fileName)) {
 						textField.setText(fileName);
 					}
@@ -89,18 +89,18 @@ public class LabeledFileText extends LabeledText {
 		}
 	}
 
-	public void setSelectDirectory(boolean selectDirectory) {
+	public void setSelectDirectory(final boolean selectDirectory) {
 		this.selectDirectory = selectDirectory;
 	}
 
 	@Override
-	public void setEnabled(boolean enabled) {
+	public void setEnabled(final boolean enabled) {
 		textField.setEnabled(enabled);
 		dataBrowseButton.setEnabled(enabled);
 	}
 
 	@Override
 	public String getText() {
-		return Utilities.replaceHomeTilde(super.getText());
+		return Utilities.replaceUsersHome(super.getText());
 	}
 }
