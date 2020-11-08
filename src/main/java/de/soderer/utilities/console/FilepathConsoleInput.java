@@ -45,7 +45,7 @@ public class FilepathConsoleInput extends SimpleConsoleInput {
 						}
 					}
 				}
-			} else {
+			} else if (autoCompletionStrings != null) {
 				returnList.addAll(autoCompletionStrings);
 			}
 		} else {
@@ -66,7 +66,7 @@ public class FilepathConsoleInput extends SimpleConsoleInput {
 						}
 					}
 				}
-			} else {
+			} else if (autoCompletionStrings != null) {
 				returnList.addAll(autoCompletionStrings);
 			}
 		}
