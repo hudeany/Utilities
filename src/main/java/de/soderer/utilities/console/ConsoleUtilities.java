@@ -18,7 +18,7 @@ public class ConsoleUtilities {
 		Positive(no negative) 27
 		Default 0
 	 */
-	public enum ConsoleColor {
+	public enum TextColor {
 		Black(30, 40),
 		Red(31, 41),
 		Green(32, 42),
@@ -39,7 +39,7 @@ public class ConsoleUtilities {
 		private final int foreGroundColorCode;
 		private final int backGroundColorCode;
 
-		ConsoleColor(final int foreGroundColorCode,final int backGroundColorCode) {
+		TextColor(final int foreGroundColorCode, final int backGroundColorCode) {
 			this.foreGroundColorCode = foreGroundColorCode;
 			this.backGroundColorCode = backGroundColorCode;
 		}
@@ -51,6 +51,54 @@ public class ConsoleUtilities {
 		public int getBackGroundColorCode() {
 			return backGroundColorCode;
 		}
+	}
+
+	public enum TextAttribute {
+		/**
+		 * Reset Text decoration
+		 */
+		RESET("\033[0m"),
+
+		HIGH_INTENSITY("\033[1m"),
+
+		/**
+		 * Not supported by Windows console
+		 */
+		LOW_INTENSITY("\033[2m"),
+
+		/**
+		 * Not supported by Windows console
+		 */
+		ITALIC("\033[3m"),
+
+		UNDERLINE("\033[4m"),
+
+		/**
+		 * Not supported by Windows console
+		 */
+		BLINK("\033[5m"),
+		/**
+		 * Not supported by Windows console
+		 */
+		RAPID_BLINK("\033[6m"),
+
+		REVERSE_VIDEO("\033[7m"),
+
+		INVISIBLE_TEXT("\033[8m");
+
+		private final String ansiCode;
+
+		TextAttribute(final String ansiCode) {
+			this.ansiCode = ansiCode;
+		}
+
+		public String getAnsiCode() {
+			return ansiCode;
+		}
+	}
+
+	public static boolean consoleSupportsAnsiCodes() {
+		return SystemUtilities.isWindowsSystem() || (System.console() != null && System.getenv().get("TERM") != null);
 	}
 
 	/**
@@ -122,11 +170,49 @@ public class ConsoleUtilities {
 		}
 	}
 
-	public static void printColoredText(final ConsoleColor foreGroundColor, final String text) {
-		System.out.println("\033[" + foreGroundColor.getForeGroundColorCode() + "m" + text + "\033[0m");
+	public static String getAnsiColoredText(final String text, final TextColor foreGroundColor) {
+		return getAnsiFormattedText(text, foreGroundColor, null);
 	}
 
-	public static void printColoredText(final ConsoleColor foreGroundColor, final ConsoleColor backGroundColor, final String text) {
-		System.out.println("\033[" + foreGroundColor.getForeGroundColorCode() + "m\033[" + backGroundColor.getBackGroundColorCode() + "m" + text + "\033[0m");
+	public static String getAnsiColoredText(final TextColor foreGroundColor, final TextColor backGroundColor, final String text) {
+		return getAnsiFormattedText(text, foreGroundColor, backGroundColor);
+	}
+
+	public static String getAnsiFormattedText(final String text, final TextColor foreGroundColor, final TextColor backGroundColor, final TextAttribute... attributes) {
+		final StringBuilder builder = new StringBuilder();
+		if (foreGroundColor != null) {
+			builder.append("\033[" + foreGroundColor.getForeGroundColorCode() + "m");
+		}
+		if (backGroundColor != null) {
+			builder.append("\033[" + backGroundColor.getBackGroundColorCode() + "m");
+		}
+		if (attributes != null) {
+			for (final TextAttribute attribute : attributes) {
+				builder.append(attribute.getAnsiCode());
+			}
+		}
+		builder.append(text);
+		builder.append(TextAttribute.RESET.getAnsiCode());
+		return builder.toString();
+	}
+
+	public static void saveCurrentCursorPosition() {
+		System.out.print("\033[s");
+	}
+
+	public static void moveCursorToSavedPosition() {
+		System.out.print("\033[u");
+	}
+
+	public static void clearLineContentAfterCursor() {
+		System.out.print("\033[K");
+	}
+
+	public static void hideCursor() {
+		System.out.print("\033[?25l");
+	}
+
+	public static void showCursor() {
+		System.out.print("\033[?25h");
 	}
 }

@@ -9,14 +9,21 @@ import de.soderer.utilities.Utilities;
 
 public class FilepathConsoleInput extends SimpleConsoleInput {
 	@Override
+	public SimpleConsoleInput setPresetContent(final String presetContent) {
+		this.presetContent = (presetContent == null ? "" : presetContent.replace("/", File.separator).replace("\\", File.separator));
+		return this;
+	}
+
+	@Override
 	protected List<String> getAutoCompletionStrings(String checkContent, final int keyCode) {
 		boolean useTilde = false;
 		if (checkContent.contains("~")) {
 			checkContent = Utilities.replaceUsersHome(checkContent);
 			useTilde = true;
 		}
+		checkContent = checkContent.replace("/", File.separator).replace("\\", File.separator);
 		final List<String> returnList = new ArrayList<>();
-		if (keyCode == JnaKeyStrokeReader.KeyCode_Tab) {
+		if (keyCode == KeyStrokeReader.KeyCode_Tab) {
 			// Tab for auto completing or downstepping to child file
 			if (Utilities.isNotBlank(checkContent) && checkContent.contains(File.separator)) {
 				if (!new File(checkContent).exists()) {

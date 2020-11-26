@@ -2,11 +2,6 @@ package de.soderer.utilities.console;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.List;
 
@@ -18,26 +13,44 @@ import com.sun.jna.Structure;
 import com.sun.jna.ptr.IntByReference;
 
 import de.soderer.utilities.SystemUtilities;
+import de.soderer.utilities.Utilities;
 
-public class JnaKeyStrokeReader {
-	public static int KeyCode_CtrlC = 3;
+public class KeyStrokeReader {
+	/**
+	 * Detection of Ctrl-C only works on Windows systems, because it ends Linux Java VM immediatelly
+	 */
+	public static final int KeyCode_CtrlC = 3;
+	public static final int KeyCode_CtrlV = 22;
+	public static final int KeyCode_CtrlX = 24;
 
+	/**
+	 * Detection of contextmenu insert. Only works on Linux systems
+	 */
+	public static final int KeyCode_ContextMenu_Insert = 6513249;
+
+	public static final int KeyCode_Enter;
 	public static final int KeyCode_Backspace;
 	public static final int KeyCode_Tab = 9;
-	public static final int KeyCode_Enter;
 	public static final int KeyCode_Escape = 27;
 
-	public static final int KeyCode_Home = 57415;
-	public static final int KeyCode_PageUp = 57417;
-	public static final int KeyCode_End = 57423;
-	public static final int KeyCode_Insert = 57426;
-	public static final int KeyCode_Delete = 57427;
-	public static final int KeyCode_PageDown = 57425;
+	public static final int KeyCode_Home;
+	public static final int KeyCode_PageUp;
+	public static final int KeyCode_End;
+	public static final int KeyCode_Insert;
+	public static final int KeyCode_Delete;
+	public static final int KeyCode_PageDown;
 
-	public static final int KeyCode_Up = 57416;
-	public static final int KeyCode_Left = 57419;
-	public static final int KeyCode_Right = 57421;
-	public static final int KeyCode_Down = 57424;
+	public static final int KeyCode_Up;
+	public static final int KeyCode_Left;
+	public static final int KeyCode_Right;
+	public static final int KeyCode_Down;
+
+	public static final int KeyCode_AUml_Lower;
+	public static final int KeyCode_AUml_Upper;
+	public static final int KeyCode_OUml_Lower;
+	public static final int KeyCode_OUml_Upper;
+	public static final int KeyCode_UUml_Lower;
+	public static final int KeyCode_UUml_Upper;
 
 	private static boolean initDone;
 	private static boolean stdinIsConsole;
@@ -51,7 +64,7 @@ public class JnaKeyStrokeReader {
 
 	// Linux
 	private static Libc libc;
-	private static CharsetDecoder charsetDecoder;
+	//	private static CharsetDecoder charsetDecoder;
 	private static TerminalFlags originalTerminalFlags;
 	private static TerminalFlags rawTerminalFlags;
 	private static TerminalFlags intermediateTerminalFlags;
@@ -60,16 +73,54 @@ public class JnaKeyStrokeReader {
 		if (SystemUtilities.isWindowsSystem()) {
 			KeyCode_Enter = 13;
 			KeyCode_Backspace = 8;
+
+			KeyCode_Insert = 57426;
+			KeyCode_Home = 57415;
+			KeyCode_PageUp = 57417;
+			KeyCode_End = 57423;
+			KeyCode_Delete = 57427;
+			KeyCode_PageDown = 57425;
+
+			KeyCode_Up = 57416;
+			KeyCode_Left = 57419;
+			KeyCode_Right = 57421;
+			KeyCode_Down = 57424;
+
+			KeyCode_AUml_Lower = 228;
+			KeyCode_AUml_Upper = 196;
+			KeyCode_OUml_Lower = 246;
+			KeyCode_OUml_Upper = 214;
+			KeyCode_UUml_Lower = 252;
+			KeyCode_UUml_Upper = 220;
 		} else {
 			KeyCode_Enter = 10;
 			KeyCode_Backspace = 127;
+
+			KeyCode_Insert = 2117229339;
+			KeyCode_Home = 4741915;
+			KeyCode_PageUp = 2117425947;
+			KeyCode_Delete = 2117294875;
+			KeyCode_End = 4610843;
+			KeyCode_PageDown = 2117491483;
+
+			KeyCode_Up = 4283163;
+			KeyCode_Left = 4479771;
+			KeyCode_Right = 4414235;
+			KeyCode_Down = 4348699;
+
+			KeyCode_AUml_Lower = 42179;
+			KeyCode_AUml_Upper = 33987;
+			KeyCode_OUml_Lower = 46787;
+			KeyCode_OUml_Upper = 38595;
+			KeyCode_UUml_Lower = 48323;
+			KeyCode_UUml_Upper = 40131;
 		}
 	}
 
 	/**
 	 * Read a character from the console without echo.
 	 */
-	public static int readKey(final boolean wait) throws IOException {
+	public static int readKey(final boolean wait) throws Exception {
 		if (SystemUtilities.isWindowsSystem()) {
 			return readKeyWindows(wait);
 		} else {
@@ -204,7 +255,7 @@ public class JnaKeyStrokeReader {
 		Pointer GetStdHandle(int nStdHandle);
 	}
 
-	private static int readKeyUnix(final boolean wait) throws IOException {
+	private static int readKeyUnix(final boolean wait) throws Exception {
 		initUnix();
 		if (!stdinIsConsole) {
 			return readSingleCharFromByteStream(System.in);
@@ -245,46 +296,60 @@ public class JnaKeyStrokeReader {
 		}
 	}
 
-	private static int readSingleCharFromByteStream(final InputStream inputStream) throws IOException {
-		final byte[] inputBuffer = new byte[4];
-		int inputBufferLength = 0;
-		while (true) {
-			if (inputBufferLength >= inputBuffer.length) {
-				return 0xFFFE;
+	private static int readSingleCharFromByteStream(final InputStream inputStream) throws Exception {
+		while (inputStream.available() == 0) {
+			// wait for data
+		}
+		final byte[] buffer = new byte[4];
+		int index = 3;
+		while (inputStream.available() > 0) {
+			if (index < 0) {
+				break;
 			} else {
-				final int b = inputStream.read();
-				if (b == -1) {
-					return -1;
-				} else {
-					inputBuffer[inputBufferLength++] = (byte) b;
-					final int c = decodeCharFromBytes(inputBuffer, inputBufferLength);
-					if (c != -1) {
-						return c;
-					}
-				}
+				buffer[index--] = (byte) inputStream.read();
 			}
 		}
+		return Utilities.convertByteArrayToInt(buffer);
+
+		//			final byte[] inputBuffer = new byte[4];
+		//			int inputBufferLength = 0;
+		//			while (true) {
+		//			if (inputBufferLength >= inputBuffer.length) {
+		//				return 0xFFFE;
+		//			} else {
+		//				final int b = inputStream.read();
+		//				if (b == -1) {
+		//					return -1;
+		//				} else {
+		//					inputBuffer[inputBufferLength++] = (byte) b;
+		//					final int c = decodeCharFromBytes(inputBuffer, inputBufferLength);
+		//					if (c != -1) {
+		//						return c;
+		//					}
+		//				}
+		//			}
+		//	}
 	}
 
-	private static synchronized int decodeCharFromBytes(final byte[] inBytes, final int inLen) {
-		charsetDecoder.reset();
-		charsetDecoder.onMalformedInput(CodingErrorAction.REPLACE);
-		charsetDecoder.replaceWith(String.valueOf((char) 0xFFFE));
-		final ByteBuffer in = ByteBuffer.wrap(inBytes, 0, inLen);
-		final CharBuffer out = CharBuffer.allocate(1);
-		charsetDecoder.decode(in, out, false);
-		if (out.position() == 0) {
-			return -1;
-		} else {
-			return out.get(0);
-		}
-	}
+	//	private static synchronized int decodeCharFromBytes(final byte[] inBytes, final int inLen) {
+	//		charsetDecoder.reset();
+	//		charsetDecoder.onMalformedInput(CodingErrorAction.REPLACE);
+	//		charsetDecoder.replaceWith(String.valueOf((char) 0xFFFE));
+	//		final ByteBuffer in = ByteBuffer.wrap(inBytes, 0, inLen);
+	//		final CharBuffer out = CharBuffer.allocate(1);
+	//		charsetDecoder.decode(in, out, false);
+	//		if (out.position() == 0) {
+	//			return -1;
+	//		} else {
+	//			return out.get(0);
+	//		}
+	//	}
 
 	private static synchronized void initUnix() throws IOException {
 		if (!initDone) {
 			libc = Native.load("c", Libc.class);
 			stdinIsConsole = libc.isatty(0) == 1;
-			charsetDecoder = Charset.defaultCharset().newDecoder();
+			//			charsetDecoder = Charset.defaultCharset().newDecoder();
 			if (stdinIsConsole) {
 				originalTerminalFlags = getTerminalAttrs(0);
 				rawTerminalFlags = new TerminalFlags(originalTerminalFlags);

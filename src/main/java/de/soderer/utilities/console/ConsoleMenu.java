@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.console.ConsoleUtilities.ConsoleColor;
+import de.soderer.utilities.console.ConsoleUtilities.TextColor;
 
 public class ConsoleMenu {
 	private final String mainTitle;
@@ -66,7 +66,7 @@ public class ConsoleMenu {
 
 			if (errors.size() > 0) {
 				for (final String error : errors) {
-					ConsoleUtilities.printColoredText(ConsoleColor.Light_red, "Error: " + error);
+					System.out.println(ConsoleUtilities.getAnsiColoredText("Error: " + error, TextColor.Light_red));
 					System.out.println();
 				}
 				errors.clear();
@@ -74,7 +74,7 @@ public class ConsoleMenu {
 
 			if (warnings.size() > 0) {
 				for (final String warning : warnings) {
-					ConsoleUtilities.printColoredText(ConsoleColor.Yellow, "Warning: " + warning);
+					System.out.println(ConsoleUtilities.getAnsiColoredText("Warning: " + warning, TextColor.Yellow));
 				}
 				System.out.println();
 				messages.clear();
@@ -82,7 +82,7 @@ public class ConsoleMenu {
 
 			if (messages.size() > 0) {
 				for (final String message : messages) {
-					ConsoleUtilities.printColoredText(ConsoleColor.Green, message);
+					System.out.println(ConsoleUtilities.getAnsiColoredText(message, TextColor.Green));
 				}
 				System.out.println();
 				messages.clear();

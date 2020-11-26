@@ -3,13 +3,13 @@ package de.soderer.utilities.worker;
 import java.util.Date;
 
 public interface WorkerParentSimple {
-	public void showUnlimitedProgress();
+	void showUnlimitedProgress();
 
-	public void showProgress(Date start, long itemsToDo, long itemsDone);
+	void showProgress(Date start, long itemsToDo, long itemsDone);
 
-	public void showDone(Date start, Date end, long itemsDone);
-	
-	public void changeTitle(String text);
+	void showDone(Date start, Date end, long itemsDone);
 
-	public void cancel();
+	void changeTitle(String text);
+
+	void cancel();
 }

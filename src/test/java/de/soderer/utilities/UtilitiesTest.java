@@ -537,6 +537,23 @@ public class UtilitiesTest {
 		}
 	}
 
+	@Test
+	public void testIntToByteArrayConversion() {
+		try {
+			final int testInt1 = 123456789;
+			final byte[] testArray1 = Utilities.convertIntToByteArray(testInt1);
+			final int testResult1 = Utilities.convertByteArrayToInt(testArray1);
+			Assert.assertEquals(testInt1, testResult1);
+
+			final int testInt2 = 5;
+			final byte[] testArray2 = Utilities.convertIntToByteArray(testInt2);
+			final int testResult2 = Utilities.convertByteArrayToInt(testArray2);
+			Assert.assertEquals(testInt2, testResult2);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
 	//	@Test
 	//	public void testEncodingUTF_8() {
 	//		try {

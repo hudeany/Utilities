@@ -1,17 +1,19 @@
 package de.soderer.utilities.console;
 
 import java.awt.Toolkit;
-import java.io.IOException;
+import java.awt.datatransfer.DataFlavor;
 import java.util.ArrayList;
 import java.util.List;
 
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.console.ConsoleUtilities.TextAttribute;
 
 public class SimpleConsoleInput {
 	private boolean silent = false;
 	private Character hideCharacter = null;
+	private String allowedCharacters = null;
 	private String prompt = "";
-	private String presetContent = "";
+	protected String presetContent = "";
 	protected List<String> autoCompletionStrings = null;
 
 	/**
@@ -39,6 +41,20 @@ public class SimpleConsoleInput {
 	 */
 	public Character getHideCharacter() {
 		return hideCharacter;
+	}
+
+	/**
+	 * Get allowed Characters. Default is all chars of german keyboard layout
+	 */
+	public String getAllowedCharacters() {
+		return allowedCharacters;
+	}
+
+	/**
+	 * Set allowed Characters. Default is all chars of german keyboard layout
+	 */
+	public void setAllowedCharacters(final String allowedCharacters) {
+		this.allowedCharacters = allowedCharacters;
 	}
 
 	/**
@@ -87,146 +103,204 @@ public class SimpleConsoleInput {
 		return this;
 	}
 
-	public String readInput() throws IOException {
-		boolean insertMode = true;
-		String content = presetContent == null ? "" : presetContent;
-		int previousContentLength = content.length();
-		int cursorIndex = content.length();
+	public String readInput() throws Exception {
+		if (ConsoleUtilities.consoleSupportsAnsiCodes()) {
+			boolean insertMode = true;
+			String content = presetContent == null ? "" : presetContent;
+			int cursorIndex = content.length();
+			final int previousContentLength = content.length();
 
-		while (true) {
-			if (hideCharacter == null) {
-				System.out.print("\r" + prompt + content);
-			} else {
-				System.out.print("\r" + prompt + Utilities.repeat(hideCharacter, content.length()));
-			}
+			ConsoleUtilities.saveCurrentCursorPosition();
+			while (true) {
+				ConsoleUtilities.hideCursor();
+				ConsoleUtilities.moveCursorToSavedPosition();
 
-			if (previousContentLength > content.length()) {
-				// Cleanup after deletion of a character or autocomplete with shorter content
-				System.out.print(Utilities.repeat(" ", previousContentLength - content.length()) + Utilities.repeat("\b", previousContentLength - content.length()));
-			}
-
-			// Put cursor to its index
-			System.out.print(Utilities.repeat("\b", content.length() - cursorIndex));
-
-			previousContentLength = content.length();
-
-			final int keyCode = JnaKeyStrokeReader.readKey(true);
-
-			if (keyCode == JnaKeyStrokeReader.KeyCode_CtrlC) {
-				System.exit(1);
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Enter) {
-				return content;
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Backspace) {
-				if (cursorIndex > 0) {
-					content = content.substring(0, cursorIndex - 1) + content.substring(cursorIndex);
-					cursorIndex--;
-				} else if (!silent) {
-					Toolkit.getDefaultToolkit().beep();
+				TextAttribute[] cursorTextAttributes;
+				if (insertMode) {
+					cursorTextAttributes = new TextAttribute[] {TextAttribute.UNDERLINE, TextAttribute.HIGH_INTENSITY};
+				} else {
+					cursorTextAttributes = new TextAttribute[] {TextAttribute.REVERSE_VIDEO};
 				}
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Delete) {
-				if (cursorIndex < content.length()) {
-					content = content.substring(0, cursorIndex) + content.substring(cursorIndex + 1);
-				} else if (!silent) {
-					Toolkit.getDefaultToolkit().beep();
-				}
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Left) {
-				if (cursorIndex > 0) {
-					cursorIndex--;
-				}
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Right) {
-				if (cursorIndex < content.length()) {
-					cursorIndex++;
-				}
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Down) {
-				// do nothing
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Up) {
-				// do nothing
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_PageDown) {
-				final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
-				if (autoCompletionStringsToCheck != null) {
-					int autoCompletionIndex = -1;
-					for (int i = 0; i < autoCompletionStringsToCheck.size(); i++) {
-						if (content.equals(autoCompletionStringsToCheck.get(i))) {
-							autoCompletionIndex = i;
-							break;
-						}
+
+				System.out.print(prompt);
+				if (hideCharacter == null) {
+					System.out.print(content.substring(0, cursorIndex));
+					if (content.length() > cursorIndex) {
+						System.out.print(ConsoleUtilities.getAnsiFormattedText(content.substring(cursorIndex, cursorIndex + 1), null, null, cursorTextAttributes) + content.substring(cursorIndex + 1));
+					} else {
+						System.out.print(ConsoleUtilities.getAnsiFormattedText(" ", null, null, cursorTextAttributes));
 					}
-					if (autoCompletionIndex == autoCompletionStringsToCheck.size() - 1) {
-						content = autoCompletionStringsToCheck.get(0);
-						cursorIndex = content.length();
-					} else if (autoCompletionIndex >= 0) {
-						content = autoCompletionStringsToCheck.get(autoCompletionIndex + 1);
-						cursorIndex = content.length();
+				} else {
+					System.out.print(Utilities.repeat(hideCharacter, cursorIndex));
+					if (content.length() > cursorIndex) {
+						System.out.print(ConsoleUtilities.getAnsiFormattedText(hideCharacter.toString(), null, null, cursorTextAttributes) + Utilities.repeat(hideCharacter, content.length() - cursorIndex - 1));
+					} else {
+						System.out.print(ConsoleUtilities.getAnsiFormattedText(" ", null, null, cursorTextAttributes));
+					}
+				}
+
+				// Linux needs some extra cleared chars
+				if (content.length() - previousContentLength > 0) {
+					System.out.print(Utilities.repeat(" ", content.length() - previousContentLength));
+				}
+
+				ConsoleUtilities.clearLineContentAfterCursor();
+
+				ConsoleUtilities.moveCursorToSavedPosition();
+
+				int keyCode = KeyStrokeReader.readKey(true);
+
+				if (keyCode == KeyStrokeReader.KeyCode_CtrlC) {
+					System.exit(1);
+				} else if (keyCode == KeyStrokeReader.KeyCode_CtrlV || keyCode == KeyStrokeReader.KeyCode_ContextMenu_Insert) {
+					final String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+					if (insertMode) {
+						content = content.substring(0, cursorIndex) + data + content.substring(cursorIndex);
+					} else {
+						final String rest = content.substring(cursorIndex);
+						content = content.substring(0, cursorIndex) + data + (rest.length() > data.length() ? rest.substring(data.length()) : "");
+					}
+					cursorIndex += data.length();
+				} else if (keyCode == KeyStrokeReader.KeyCode_Escape) {
+					// do nothing
+				} else if (keyCode == KeyStrokeReader.KeyCode_Enter) {
+					ConsoleUtilities.showCursor();
+					return content;
+				} else if (keyCode == KeyStrokeReader.KeyCode_Backspace) {
+					if (cursorIndex > 0) {
+						content = content.substring(0, cursorIndex - 1) + content.substring(cursorIndex);
+						cursorIndex--;
 					} else if (!silent) {
 						Toolkit.getDefaultToolkit().beep();
 					}
-				} else if (!silent) {
-					Toolkit.getDefaultToolkit().beep();
-				}
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_PageUp) {
-				final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
-				if (autoCompletionStringsToCheck != null) {
-					int autoCompletionIndex = -1;
-					for (int i = 0; i < autoCompletionStringsToCheck.size(); i++) {
-						if (content.equals(autoCompletionStringsToCheck.get(i))) {
-							autoCompletionIndex = i;
-							break;
-						}
-					}
-					if (autoCompletionIndex == 0) {
-						content = autoCompletionStringsToCheck.get(autoCompletionStringsToCheck.size() - 1);
-						cursorIndex = content.length();
-					} else if (autoCompletionIndex > 0) {
-						content = autoCompletionStringsToCheck.get(autoCompletionIndex - 1);
-						cursorIndex = content.length();
+				} else if (keyCode == KeyStrokeReader.KeyCode_Delete) {
+					if (cursorIndex < content.length()) {
+						content = content.substring(0, cursorIndex) + content.substring(cursorIndex + 1);
 					} else if (!silent) {
 						Toolkit.getDefaultToolkit().beep();
 					}
-				} else if (!silent) {
-					Toolkit.getDefaultToolkit().beep();
-				}
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Home) {
-				cursorIndex = 0;
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_End) {
-				cursorIndex = content.length();
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Insert) {
-				insertMode = !insertMode;
-			} else if (keyCode == JnaKeyStrokeReader.KeyCode_Tab) {
-				final String prefix = content.substring(0, cursorIndex);
-				final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(prefix, keyCode);
-				if (autoCompletionStringsToCheck != null) {
-					String autoCompletionStringCandidate = null;
-					for (final String autoCompletionString : autoCompletionStringsToCheck) {
-						if (autoCompletionString != null && autoCompletionString.startsWith(prefix)) {
-							if (autoCompletionStringCandidate == null) {
-								autoCompletionStringCandidate = autoCompletionString;
-							} else {
-								autoCompletionStringCandidate = null;
-								if (!silent) {
-									Toolkit.getDefaultToolkit().beep();
-								}
+				} else if (keyCode == KeyStrokeReader.KeyCode_Left) {
+					if (cursorIndex > 0) {
+						cursorIndex--;
+					} else {
+						Toolkit.getDefaultToolkit().beep();
+					}
+				} else if (keyCode == KeyStrokeReader.KeyCode_Right) {
+					if (cursorIndex < content.length()) {
+						cursorIndex++;
+					} else {
+						Toolkit.getDefaultToolkit().beep();
+					}
+				} else if (keyCode == KeyStrokeReader.KeyCode_Down) {
+					// do nothing
+				} else if (keyCode == KeyStrokeReader.KeyCode_Up) {
+					// do nothing
+				} else if (keyCode == KeyStrokeReader.KeyCode_PageDown) {
+					final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
+					if (autoCompletionStringsToCheck != null && autoCompletionStringsToCheck.size() > 0) {
+						int autoCompletionIndex = -1;
+						for (int i = 0; i < autoCompletionStringsToCheck.size(); i++) {
+							if (content.equals(autoCompletionStringsToCheck.get(i))) {
+								autoCompletionIndex = i;
 								break;
 							}
 						}
-					}
-					if (autoCompletionStringCandidate != null) {
-						content = autoCompletionStringCandidate + content.substring(cursorIndex);
-						cursorIndex = autoCompletionStringCandidate.length();
+						if (autoCompletionIndex == autoCompletionStringsToCheck.size() - 1) {
+							content = autoCompletionStringsToCheck.get(0);
+							cursorIndex = content.length();
+						} else if (autoCompletionIndex >= 0) {
+							content = autoCompletionStringsToCheck.get(autoCompletionIndex + 1);
+							cursorIndex = content.length();
+						} else if (!silent) {
+							Toolkit.getDefaultToolkit().beep();
+						}
 					} else if (!silent) {
 						Toolkit.getDefaultToolkit().beep();
 					}
-				} else if (!silent) {
-					Toolkit.getDefaultToolkit().beep();
-				}
-			} else {
-				if (insertMode || cursorIndex == content.length()) {
-					content = content.substring(0, cursorIndex) + ((char) keyCode) + content.substring(cursorIndex);
-					cursorIndex++;
+				} else if (keyCode == KeyStrokeReader.KeyCode_PageUp) {
+					final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
+					if (autoCompletionStringsToCheck != null && autoCompletionStringsToCheck.size() > 0) {
+						int autoCompletionIndex = -1;
+						for (int i = 0; i < autoCompletionStringsToCheck.size(); i++) {
+							if (content.equals(autoCompletionStringsToCheck.get(i))) {
+								autoCompletionIndex = i;
+								break;
+							}
+						}
+						if (autoCompletionIndex == 0) {
+							content = autoCompletionStringsToCheck.get(autoCompletionStringsToCheck.size() - 1);
+							cursorIndex = content.length();
+						} else if (autoCompletionIndex > 0) {
+							content = autoCompletionStringsToCheck.get(autoCompletionIndex - 1);
+							cursorIndex = content.length();
+						} else if (!silent) {
+							Toolkit.getDefaultToolkit().beep();
+						}
+					} else if (!silent) {
+						Toolkit.getDefaultToolkit().beep();
+					}
+				} else if (keyCode == KeyStrokeReader.KeyCode_Home) {
+					cursorIndex = 0;
+				} else if (keyCode == KeyStrokeReader.KeyCode_End) {
+					cursorIndex = content.length();
+				} else if (keyCode == KeyStrokeReader.KeyCode_Insert) {
+					insertMode = !insertMode;
+				} else if (keyCode == KeyStrokeReader.KeyCode_Tab) {
+					final String prefix = content.substring(0, cursorIndex);
+					final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(prefix, keyCode);
+					if (autoCompletionStringsToCheck != null) {
+						String autoCompletionStringCandidate = null;
+						for (final String autoCompletionString : autoCompletionStringsToCheck) {
+							if (autoCompletionString != null && autoCompletionString.startsWith(prefix)) {
+								if (autoCompletionStringCandidate == null) {
+									autoCompletionStringCandidate = autoCompletionString;
+								} else {
+									autoCompletionStringCandidate = null;
+									if (!silent) {
+										Toolkit.getDefaultToolkit().beep();
+									}
+									break;
+								}
+							}
+						}
+						if (autoCompletionStringCandidate != null) {
+							content = autoCompletionStringCandidate + content.substring(cursorIndex);
+							cursorIndex = autoCompletionStringCandidate.length();
+						} else if (!silent) {
+							Toolkit.getDefaultToolkit().beep();
+						}
+					} else if (!silent) {
+						Toolkit.getDefaultToolkit().beep();
+					}
 				} else {
-					content = content.substring(0, cursorIndex) + ((char) keyCode) + content.substring(cursorIndex + 1);
-					cursorIndex++;
+					if (keyCode == KeyStrokeReader.KeyCode_AUml_Lower) {
+						keyCode = 'ä';
+					} else if (keyCode == KeyStrokeReader.KeyCode_AUml_Upper) {
+						keyCode = 'Ä';
+					} else if (keyCode == KeyStrokeReader.KeyCode_OUml_Lower) {
+						keyCode = 'ö';
+					} else if (keyCode == KeyStrokeReader.KeyCode_OUml_Upper) {
+						keyCode = 'Ö';
+					} else if (keyCode == KeyStrokeReader.KeyCode_UUml_Lower) {
+						keyCode = 'ü';
+					} else if (keyCode == KeyStrokeReader.KeyCode_UUml_Upper) {
+						keyCode = 'Ü';
+					}
+
+					// "keyCode < 1000" to prevent chinese symbols on some systems, that occur without intention
+					if ((allowedCharacters != null && allowedCharacters.contains("" + (char) keyCode)) || keyCode < 1000) {
+						if (insertMode || cursorIndex == content.length()) {
+							content = content.substring(0, cursorIndex) + ((char) keyCode) + content.substring(cursorIndex);
+							cursorIndex++;
+						} else {
+							content = content.substring(0, cursorIndex) + ((char) keyCode) + content.substring(cursorIndex + 1);
+							cursorIndex++;
+						}
+					}
 				}
 			}
+		} else {
+			return System.console().readLine(prompt);
 		}
 	}
 

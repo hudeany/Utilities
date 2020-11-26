@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -1529,5 +1530,17 @@ public class Utilities {
 			bytesSkipped += newBytesSkipped;
 		}
 		return bytesSkipped;
+	}
+
+	public static byte[] convertIntToByteArray(final int value) {
+		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8), (byte) value };
+	}
+
+	public static int convertByteArrayToInt(final byte[] bytes) throws Exception {
+		if (bytes.length > 4) {
+			throw new Exception("ByteArray is too big for int value");
+		} else {
+			return ByteBuffer.wrap(bytes).getInt();
+		}
 	}
 }
