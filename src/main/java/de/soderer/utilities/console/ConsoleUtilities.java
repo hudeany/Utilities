@@ -1,5 +1,8 @@
 package de.soderer.utilities.console;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -9,6 +12,93 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ConsoleUtilities {
+	private static Boolean consoleSupportsAnsiCodes = null;
+	private static boolean linuxConsoleActivatedRawMode = false;
+
+	/**
+	 * Detection of Ctrl-C only works on Windows systems, because it ends Linux Java VM immediatelly
+	 */
+	public static final int KeyCode_CtrlC = 3;
+	public static final int KeyCode_CtrlV = 22;
+	public static final int KeyCode_CtrlX = 24;
+
+	/**
+	 * Detection of contextmenu insert. Only works on Linux systems
+	 */
+	public static final int KeyCode_ContextMenu_Insert = 6513249;
+
+	public static final int KeyCode_Enter;
+	public static final int KeyCode_Backspace;
+	public static final int KeyCode_Tab = 9;
+	public static final int KeyCode_Escape = 27;
+
+	public static final int KeyCode_Home;
+	public static final int KeyCode_PageUp;
+	public static final int KeyCode_End;
+	public static final int KeyCode_Insert;
+	public static final int KeyCode_Delete;
+	public static final int KeyCode_PageDown;
+
+	public static final int KeyCode_Up;
+	public static final int KeyCode_Left;
+	public static final int KeyCode_Right;
+	public static final int KeyCode_Down;
+
+	public static final int KeyCode_AUml_Lower;
+	public static final int KeyCode_AUml_Upper;
+	public static final int KeyCode_OUml_Lower;
+	public static final int KeyCode_OUml_Upper;
+	public static final int KeyCode_UUml_Lower;
+	public static final int KeyCode_UUml_Upper;
+
+	static {
+		if (SystemUtilities.isWindowsSystem()) {
+			KeyCode_Enter = 13;
+			KeyCode_Backspace = 8;
+
+			KeyCode_Insert = 57426;
+			KeyCode_Home = 57415;
+			KeyCode_PageUp = 57417;
+			KeyCode_End = 57423;
+			KeyCode_Delete = 57427;
+			KeyCode_PageDown = 57425;
+
+			KeyCode_Up = 57416;
+			KeyCode_Left = 57419;
+			KeyCode_Right = 57421;
+			KeyCode_Down = 57424;
+
+			KeyCode_AUml_Lower = 228;
+			KeyCode_AUml_Upper = 196;
+			KeyCode_OUml_Lower = 246;
+			KeyCode_OUml_Upper = 214;
+			KeyCode_UUml_Lower = 252;
+			KeyCode_UUml_Upper = 220;
+		} else {
+			KeyCode_Enter = 10;
+			KeyCode_Backspace = 127;
+
+			KeyCode_Insert = 2117229339;
+			KeyCode_Home = 4741915;
+			KeyCode_PageUp = 2117425947;
+			KeyCode_Delete = 2117294875;
+			KeyCode_End = 4610843;
+			KeyCode_PageDown = 2117491483;
+
+			KeyCode_Up = 4283163;
+			KeyCode_Left = 4479771;
+			KeyCode_Right = 4414235;
+			KeyCode_Down = 4348699;
+
+			KeyCode_AUml_Lower = 42179;
+			KeyCode_AUml_Upper = 33987;
+			KeyCode_OUml_Lower = 46787;
+			KeyCode_OUml_Upper = 38595;
+			KeyCode_UUml_Lower = 48323;
+			KeyCode_UUml_Upper = 40131;
+		}
+	}
+
 	/**
 	 * Additional attributes
 		Bold 1
@@ -77,6 +167,7 @@ public class ConsoleUtilities {
 		 * Not supported by Windows console
 		 */
 		BLINK("\033[5m"),
+
 		/**
 		 * Not supported by Windows console
 		 */
@@ -98,7 +189,41 @@ public class ConsoleUtilities {
 	}
 
 	public static boolean consoleSupportsAnsiCodes() {
-		return SystemUtilities.isWindowsSystem() || (System.console() != null && System.getenv().get("TERM") != null);
+		if (consoleSupportsAnsiCodes == null) {
+			consoleSupportsAnsiCodes = SystemUtilities.isWindowsSystem() || (System.console() != null && System.getenv().get("TERM") != null);
+		}
+		return consoleSupportsAnsiCodes;
+	}
+
+	public static boolean activateLinuxConsoleRawMode() throws Exception {
+		if (!linuxConsoleActivatedRawMode) {
+			Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty raw -echo < /dev/tty" }).waitFor();
+			linuxConsoleActivatedRawMode = true;
+			registerShutdownHook();
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public static void deactivateLinuxConsoleRawMode() throws Exception {
+		if (linuxConsoleActivatedRawMode) {
+			Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty -raw echo </dev/tty" }).waitFor();
+			linuxConsoleActivatedRawMode = false;
+		}
+	}
+
+	private static void registerShutdownHook() {
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				try {
+					deactivateLinuxConsoleRawMode();
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					// do nothing
+				}
+			}
+		});
 	}
 
 	/**
@@ -200,6 +325,10 @@ public class ConsoleUtilities {
 		System.out.print("\033[s");
 	}
 
+	public static void moveCursorToPosition(final int line, final int column) {
+		System.out.print("\033[" + line + ";" + column + "H");
+	}
+
 	public static void moveCursorToSavedPosition() {
 		System.out.print("\033[u");
 	}
@@ -214,5 +343,164 @@ public class ConsoleUtilities {
 
 	public static void showCursor() {
 		System.out.print("\033[?25h");
+	}
+
+	public static Position getCursorPosition() throws Exception {
+		try {
+			final StringBuilder response = new StringBuilder();
+			saveCurrentCursorPosition();
+			try {
+				if (SystemUtilities.isWindowsSystem()) {
+					// Request current cursor position
+					System.out.print("\033[6n");
+
+					int keyBuffer;
+					while ((keyBuffer = WindowsKeyStrokeReader.readKey(false)) > 0) {
+						response.append((char) keyBuffer);
+					}
+				} else {
+					final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
+					try {
+						// Request current cursor position
+						System.out.print("\033[6n");
+
+						try (Reader inputReader = System.console().reader()) {
+							int byteBuffer;
+							while ((byteBuffer = inputReader.read()) > -1) {
+								if (byteBuffer == 3) {
+									break;
+								} else if (byteBuffer == 27) {
+									response.append("\\033");
+								} else {
+									response.append((char) byteBuffer);
+									if ('R' == byteBuffer) {
+										break;
+									}
+								}
+							}
+						}
+					} finally {
+						if (linuxConsoleMustBeReset) {
+							deactivateLinuxConsoleRawMode();
+						}
+					}
+				}
+			} finally {
+				moveCursorToSavedPosition();
+			}
+
+			if (response.lastIndexOf("[") > -1) {
+				final String lineString = response.substring(response.lastIndexOf("[") + 1, response.indexOf(";"));
+				final int line = Integer.parseInt(lineString);
+				final String columnString = response.substring(response.indexOf(";") + 1, response.indexOf("R"));
+				final int column = Integer.parseInt(columnString);
+				return new Position(line, column);
+			} else {
+				throw new Exception("Cannot detect terminal size");
+			}
+		} catch (final Exception e) {
+			throw new Exception("Cannot detect terminal size", e);
+		}
+	}
+
+	public static Size getTerminalSize() throws Exception {
+		try {
+			final StringBuilder response = new StringBuilder();
+			saveCurrentCursorPosition();
+			try {
+				moveCursorToPosition(3000, 3000);
+
+				if (SystemUtilities.isWindowsSystem()) {
+					// Request current cursor position
+					System.out.print("\033[6n");
+
+					int keyBuffer;
+					while ((keyBuffer = WindowsKeyStrokeReader.readKey(false)) > 0) {
+						response.append((char) keyBuffer);
+					}
+				} else {
+					final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
+					try {
+						// Request current cursor position
+						System.out.print("\033[6n");
+
+						try (Reader inputReader = System.console().reader()) {
+							int byteBuffer;
+							while ((byteBuffer = inputReader.read()) > -1) {
+								if (byteBuffer == 3) {
+									break;
+								} else if (byteBuffer == 27) {
+									response.append("\\033");
+								} else {
+									response.append((char) byteBuffer);
+									if ('R' == byteBuffer) {
+										break;
+									}
+								}
+							}
+						}
+					} finally {
+						if (linuxConsoleMustBeReset) {
+							deactivateLinuxConsoleRawMode();
+						}
+					}
+				}
+			} finally {
+				moveCursorToSavedPosition();
+			}
+
+			if (response.lastIndexOf("[") > -1) {
+				final String heightString = response.substring(response.lastIndexOf("[") + 1, response.indexOf(";"));
+				final int height = Integer.parseInt(heightString);
+				final String widthString = response.substring(response.indexOf(";") + 1, response.indexOf("R"));
+				final int width = Integer.parseInt(widthString);
+				return new Size(height, width);
+			} else {
+				throw new Exception("Cannot detect terminal size");
+			}
+		} catch (final Exception e) {
+			throw new Exception("Cannot detect terminal size", e);
+		}
+	}
+
+	public static Size getUnixTerminalSizeByTput() throws Exception {
+		try {
+			return new Size(Integer.parseInt(executeTputCommand("lines").trim()), Integer.parseInt(executeTputCommand("cols").trim()));
+		} catch (final Exception e) {
+			throw new Exception("Cannot detect terminal size", e);
+		}
+	}
+
+	private static String executeTputCommand(final String command) throws IOException {
+		final ProcessBuilder processBuilder = new ProcessBuilder("tput", command);
+		try (InputStream inputStream = processBuilder.start().getInputStream()) {
+			int readBuffer = 0;
+			final StringBuffer buffer = new StringBuffer();
+			while ((readBuffer = inputStream.read()) != -1) {
+				buffer.append((char) readBuffer);
+			}
+			return buffer.toString();
+		}
+	}
+
+	public static int readKey() throws Exception {
+		try {
+			if (SystemUtilities.isWindowsSystem()) {
+				return WindowsKeyStrokeReader.readKey(true);
+			} else {
+				final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
+				try {
+					try (Reader inputReader = System.console().reader()) {
+						return inputReader.read();
+					}
+				} finally {
+					if (linuxConsoleMustBeReset) {
+						deactivateLinuxConsoleRawMode();
+					}
+				}
+			}
+		} catch (final Exception e) {
+			throw new Exception("Cannot readKey", e);
+		}
 	}
 }

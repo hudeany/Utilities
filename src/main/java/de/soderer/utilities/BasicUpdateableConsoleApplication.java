@@ -68,7 +68,15 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 
 	@Override
 	public void showUpdateProgress(final Date itemStart, final long itemsToDo, final long itemsDone) {
-		System.out.print(ConsoleUtilities.getConsoleProgressString(80 - 1, itemStart, itemsToDo, itemsDone) + "\r");
+		if (ConsoleUtilities.consoleSupportsAnsiCodes()) {
+			ConsoleUtilities.saveCurrentCursorPosition();
+
+			System.out.print(ConsoleUtilities.getConsoleProgressString(80 - 1, itemStart, itemsToDo, itemsDone));
+
+			ConsoleUtilities.moveCursorToSavedPosition();
+		} else {
+			System.out.print("\r" + ConsoleUtilities.getConsoleProgressString(80 - 1, itemStart, itemsToDo, itemsDone) + "\r");
+		}
 	}
 
 	@Override

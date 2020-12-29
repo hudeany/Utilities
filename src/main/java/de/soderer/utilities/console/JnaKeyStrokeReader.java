@@ -15,7 +15,7 @@ import com.sun.jna.ptr.IntByReference;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
-public class KeyStrokeReader {
+public class JnaKeyStrokeReader {
 	/**
 	 * Detection of Ctrl-C only works on Windows systems, because it ends Linux Java VM immediatelly
 	 */
@@ -64,7 +64,6 @@ public class KeyStrokeReader {
 
 	// Linux
 	private static Libc libc;
-	//	private static CharsetDecoder charsetDecoder;
 	private static TerminalFlags originalTerminalFlags;
 	private static TerminalFlags rawTerminalFlags;
 	private static TerminalFlags intermediateTerminalFlags;

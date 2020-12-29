@@ -322,8 +322,7 @@ public class FileUtilities {
 		final List<File> files = new ArrayList<>();
 		if (startDirectory.isDirectory()) {
 			for (final File file : startDirectory.listFiles()) {
-				if (file.isDirectory()) {
-					files.add(file);
+				if (file.isDirectory() && traverseCompletely) {
 					if (traverseCompletely) {
 						files.addAll(getFilesByPattern(file, pattern, traverseCompletely));
 					}

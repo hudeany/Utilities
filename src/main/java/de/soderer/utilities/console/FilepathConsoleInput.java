@@ -23,7 +23,7 @@ public class FilepathConsoleInput extends SimpleConsoleInput {
 		}
 		checkContent = checkContent.replace("/", File.separator).replace("\\", File.separator);
 		final List<String> returnList = new ArrayList<>();
-		if (keyCode == KeyStrokeReader.KeyCode_Tab) {
+		if (keyCode == ConsoleUtilities.KeyCode_Tab) {
 			// Tab for auto completing or downstepping to child file
 			if (Utilities.isNotBlank(checkContent) && checkContent.contains(File.separator)) {
 				if (!new File(checkContent).exists()) {

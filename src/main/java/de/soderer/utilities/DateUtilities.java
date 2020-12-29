@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.sql.Timestamp;
+import java.text.DateFormat;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -13,6 +14,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
@@ -940,5 +942,35 @@ public class DateUtilities {
 				}
 			}
 		}
+	}
+
+	public static SimpleDateFormat getDateTimeFormat(final Locale locale) {
+		final SimpleDateFormat dateTimeFormat = (SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale);
+		dateTimeFormat.applyPattern(dateTimeFormat.toPattern().replaceFirst("y+", "yyyy") + " HH:mm");
+		dateTimeFormat.setLenient(false);
+		return dateTimeFormat;
+	}
+
+	public static SimpleDateFormat getDateTimeFormat(final Locale locale, final ZoneId zoneId) {
+		final SimpleDateFormat dateTimeFormat = (SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale);
+		dateTimeFormat.applyPattern(dateTimeFormat.toPattern().replaceFirst("y+", "yyyy") + " HH:mm");
+		dateTimeFormat.setTimeZone(TimeZone.getTimeZone(zoneId));
+		dateTimeFormat.setLenient(false);
+		return dateTimeFormat;
+	}
+
+	public static SimpleDateFormat getDateTimeFormatWithSeconds(final Locale locale) {
+		final SimpleDateFormat dateTimeFormat = (SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale);
+		dateTimeFormat.applyPattern(dateTimeFormat.toPattern().replaceFirst("y+", "yyyy") + " HH:mm:ss");
+		dateTimeFormat.setLenient(false);
+		return dateTimeFormat;
+	}
+
+	public static SimpleDateFormat getDateTimeFormatWithSeconds(final Locale locale, final ZoneId zoneId) {
+		final SimpleDateFormat dateTimeFormat = (SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale);
+		dateTimeFormat.applyPattern(dateTimeFormat.toPattern().replaceFirst("y+", "yyyy") + " HH:mm:ss");
+		dateTimeFormat.setTimeZone(TimeZone.getTimeZone(zoneId));
+		dateTimeFormat.setLenient(false);
+		return dateTimeFormat;
 	}
 }

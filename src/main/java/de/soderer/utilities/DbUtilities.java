@@ -254,7 +254,7 @@ public class DbUtilities {
 		private final int defaultPort;
 		private final String testStatement;
 
-		private DbVendor(final String driverClassName, final int defaultPort, final String testStatement) {
+		DbVendor(final String driverClassName, final int defaultPort, final String testStatement) {
 			this.driverClassName = driverClassName;
 			this.defaultPort = defaultPort;
 			this.testStatement = testStatement;
@@ -359,7 +359,7 @@ public class DbUtilities {
 		}
 	}
 
-	public static void deleteDatabase(final DbVendor dbVendor, String dbPath) throws Exception {
+	public static boolean deleteDatabase(final DbVendor dbVendor, String dbPath) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
 		}
@@ -368,11 +368,21 @@ public class DbUtilities {
 			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
 				new File(dbPath).delete();
+				return true;
+			} else {
+				return false;
 			}
 		} else if (dbVendor == DbVendor.Derby) {
 			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
-				Utilities.delete(new File(dbPath));
+				try {
+					DbUtilities.shutDownDerbyDb(dbPath);
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					// do nothing
+				}
+				return Utilities.delete(new File(dbPath));
+			} else {
+				return false;
 			}
 		} else if (dbVendor == DbVendor.HSQL) {
 			dbPath = Utilities.replaceUsersHome(dbPath);
@@ -381,9 +391,14 @@ public class DbUtilities {
 				final String basename = dbPath.substring(dbPath.lastIndexOf("/") + 1);
 				for (final File fileToDelete : baseDirectory.listFiles()) {
 					if (fileToDelete.getName().startsWith(basename)) {
-						Utilities.delete(fileToDelete);
+						if (!Utilities.delete(fileToDelete)) {
+							throw new Exception("Cannot delete db file '" + fileToDelete.getAbsolutePath() + "'");
+						}
 					}
 				}
+				return true;
+			} else {
+				return false;
 			}
 		} else {
 			throw new Exception("Invalid db vendor '" + dbVendor.toString() + "'. Only SQLite, HSQL or Derby db can be deleted this way.");

@@ -929,6 +929,12 @@ public class Utilities {
 		return value == null || value.length == 0;
 	}
 
+	public static void clear(final char[] array) {
+		for (int i = 0; i < array.length; i++) {
+			array[i] = 0;
+		}
+	}
+
 	public static boolean isNotEmpty(final char[] value) {
 		return !isEmpty(value);
 	}
