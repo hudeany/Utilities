@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.security.NoSuchAlgorithmException;
@@ -42,6 +43,28 @@ public class SystemUtilities {
 		}
 	}
 
+	public static String getJavaBinPath() {
+		final String javaHomePath = System.getProperty("java.home");
+		if (javaHomePath == null) {
+			return null;
+		} else {
+			File javaBinFile;
+			if (SystemUtilities.isLinuxSystem()) {
+				javaBinFile = new File(javaHomePath + File.separator + "bin" + File.separator + "java");
+			} else if (System.console() == null) {
+				javaBinFile = new File(javaHomePath + File.separator + "bin" + File.separator + "java.exe");
+			} else {
+				javaBinFile = new File(javaHomePath + File.separator + "bin" + File.separator + "javaw.exe");
+			}
+
+			if (javaBinFile.exists() && !javaBinFile.isDirectory()) {
+				return javaBinFile.getAbsolutePath();
+			} else {
+				return null;
+			}
+		}
+	}
+
 	public static long getUptimeInMillis() {
 		return ManagementFactory.getRuntimeMXBean().getUptime();
 	}
@@ -75,7 +98,7 @@ public class SystemUtilities {
 		resultMap.put("process.javastartuparguments", getJavaStartupArguments().toString());
 		resultMap.put("process.jar", System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR) == null ? "<unknown>" : System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR));
 
-		resultMap.put("cryptography.unlimitedKeyStrength", isunlimitedKeyStrengthAllowed() ? "true" : "false");
+		resultMap.put("cryptography.unlimitedKeyStrength", isUnlimitedKeyStrengthAllowed() ? "true" : "false");
 
 		return resultMap;
 	}
@@ -106,7 +129,7 @@ public class SystemUtilities {
 		return System.getProperty("javawebstart.version") != null;
 	}
 
-	public static boolean isunlimitedKeyStrengthAllowed() {
+	public static boolean isUnlimitedKeyStrengthAllowed() {
 		try {
 			return Cipher.getMaxAllowedKeyLength("AES") == Integer.MAX_VALUE;
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {

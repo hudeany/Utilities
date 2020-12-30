@@ -332,6 +332,10 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	}
 
 	private String createUpdateBatchFile(final String jarFilePath, final File downloadTempFile) throws Exception {
+		String javaBinPath = SystemUtilities.getJavaBinPath();
+		if (Utilities.isBlank(javaBinPath)) {
+			javaBinPath = "java";
+		}
 		if (SystemUtilities.isWindowsSystem()) {
 			final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
 			writeFile(batchFile,
@@ -351,7 +355,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 							+ ")\r\n"
 							+ "ren \"" + downloadTempFile.getAbsolutePath() + "\" \"" + new File(jarFilePath).getName() + "\"\r\n"
 							+ "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n"
-							+ "java -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n"
+							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n"
 							+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n"
 							+ ")\r\n");
 
@@ -375,7 +379,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 							+ "fi\n"
 							+ "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n"
 							+ "if ! [ -f \"" + downloadTempFile.getAbsolutePath() + "\" ]; then\n"
-							+ "java -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n"
+							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n"
 							+ "rm \"" + batchFile.getAbsolutePath() + "\"\n"
 							+ "fi\n");
 

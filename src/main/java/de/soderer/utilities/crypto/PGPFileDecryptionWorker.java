@@ -131,7 +131,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			return true;
 		} catch (final PGPException pgpe) {
 			if (pgpe.getUnderlyingException() != null && pgpe.getUnderlyingException() instanceof InvalidKeyException
-					&& TextUtilities.containsIgnoreCase(((InvalidKeyException) pgpe.getUnderlyingException()).getMessage(), "Illegal key size") && !SystemUtilities.isunlimitedKeyStrengthAllowed()) {
+					&& TextUtilities.containsIgnoreCase(((InvalidKeyException) pgpe.getUnderlyingException()).getMessage(), "Illegal key size") && !SystemUtilities.isUnlimitedKeyStrengthAllowed()) {
 				throw new UserError(LangResources.get("keystrengthExceedsAllowedJCE"), pgpe);
 			} else {
 				throw pgpe;
