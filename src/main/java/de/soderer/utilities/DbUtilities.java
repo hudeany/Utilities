@@ -232,7 +232,7 @@ public class DbUtilities {
 		SQLite("org.sqlite.JDBC", 0, "SELECT 1"),
 		Derby("org.apache.derby.jdbc.EmbeddedDriver", 0, "SELECT 1 FROM SYSIBM.SYSDUMMY1"),
 		HSQL("org.hsqldb.jdbc.JDBCDriver", 0, "SELECT 1 FROM SYSIBM.SYSDUMMY1"),
-		Cassandra("org.bigsql.cassandra2.jdbc.CassandraDriver", 7000, ""),
+		Cassandra("com.simba.cassandra.jdbc42.Driver", 9042, ""),
 		MsSQL("com.microsoft.sqlserver.jdbc.SQLServerDriver", 1433, "SELECT 1");
 
 		public static DbVendor getDbVendorByName(final String dbVendorName) throws Exception {
@@ -409,6 +409,7 @@ public class DbUtilities {
 		return createConnection(dbVendor, hostname, dbName, userName, password, false);
 	}
 
+	@SuppressWarnings("resource")
 	public static Connection createConnection(final DbVendor dbVendor, final String hostname, String dbName, final String userName, final char[] password, final boolean retryOnError) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
@@ -430,6 +431,7 @@ public class DbUtilities {
 		}
 
 		try {
+			Connection connection;
 			if (dbVendor == DbVendor.SQLite) {
 				dbName = Utilities.replaceUsersHome(dbName);
 				if (!new File(dbName).exists()) {
@@ -437,7 +439,7 @@ public class DbUtilities {
 				} else if (!new File(dbName).isFile()) {
 					throw new Exception("SQLite db file '" + dbName + "' is not a file");
 				}
-				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName));
+				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName));
 			} else if (dbVendor == DbVendor.Derby) {
 				dbName = Utilities.replaceUsersHome(dbName);
 				if (!new File(dbName).exists()) {
@@ -445,7 +447,7 @@ public class DbUtilities {
 				} else if (!new File(dbName).isDirectory()) {
 					throw new Exception("Derby db directory '" + dbName + "' is not a directory");
 				}
-				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName));
+				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName));
 			} else if (dbVendor == DbVendor.HSQL) {
 				dbName = Utilities.replaceUsersHome(dbName);
 				if (dbName.startsWith("/")) {
@@ -469,7 +471,7 @@ public class DbUtilities {
 				final Logger dbLogger = Logger.getLogger("hsqldb.db");
 				dbLogger.setLevel(Level.WARNING);
 
-				return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
+				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
 			} else {
 				int port;
 				final String[] hostParts = hostname.split(":");
@@ -492,10 +494,18 @@ public class DbUtilities {
 				//				}
 
 				try {
-					return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+					if (userName != null && password != null) {
+						connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+					} else {
+						connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName));
+					}
 				} catch (final Exception e) {
 					if (retryOnError && e.getCause() != null && e.getCause() instanceof SQLRecoverableException) {
-						return DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+						if (userName != null && password != null) {
+							connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+						} else {
+							connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName));
+						}
 					} else {
 						throw e;
 					}
@@ -506,6 +516,14 @@ public class DbUtilities {
 				//					System.clearProperty("java.security.egd");
 				//				}
 			}
+
+			if (dbVendor == DbVendor.Cassandra) {
+				try (Statement statement = connection.createStatement()) {
+					statement.execute("USE " + dbName);
+				}
+			}
+
+			return connection;
 		} catch (final DbNotExistsException e) {
 			throw e;
 		} catch (final Exception e) {
@@ -559,8 +577,8 @@ public class DbUtilities {
 							|| metaData.getColumnType(i) == Types.BINARY
 							|| metaData.getColumnType(i) == Types.VARBINARY
 							|| metaData.getColumnType(i) == Types.LONGVARBINARY) {
-						if (dbVendor == DbVendor.SQLite || dbVendor == DbVendor.PostgreSQL) {
-							// SQLite does not allow "resultSet.getBlob(i)"
+						if (dbVendor == DbVendor.SQLite || dbVendor == DbVendor.PostgreSQL || dbVendor == DbVendor.Cassandra) {
+							// DB vendor does not allow "resultSet.getBlob(i)"
 							try (InputStream input = resultSet.getBinaryStream(metaData.getColumnName(i))) {
 								if (input != null) {
 									final byte[] data = Utilities.toByteArray(input);
@@ -878,7 +896,7 @@ public class DbUtilities {
 			final DbVendor dbVendor = getDbVendor(connection);
 			if (DbVendor.Oracle == dbVendor) {
 				// Watchout: Oracle's timestamp datatype is "TIMESTAMP(6)", so remove the bracket value
-				final String sql = "SELECT column_name, NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) as data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE LOWER(table_name) = LOWER(?)";
+				final String sql = "SELECT column_name, NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) AS data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -1131,6 +1149,38 @@ public class DbUtilities {
 						}
 					}
 				}
+			} else if (DbVendor.Cassandra == dbVendor) {
+				if (tableName.contains(".")) {
+					final String keySpaceName = tableName.substring(0, tableName.indexOf("."));
+					final String tableNameInKeySpace = tableName.substring(tableName.indexOf(".") + 1);
+					final String sql = "SELECT column_name, kind, type FROM system_schema.columns WHERE keyspace_name = ? AND table_name = ?";
+					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+						preparedStatement.setString(1, keySpaceName);
+						preparedStatement.setString(2, tableNameInKeySpace);
+						try (ResultSet resultSet = preparedStatement.executeQuery() ) {
+							while (resultSet.next()) {
+								returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("type"), -1, -1, -1, !resultSet.getString("kind").equalsIgnoreCase("partition_key"), false));
+							}
+						}
+					}
+				} else {
+					final String sql = "SELECT keyspace_name, column_name, kind, type FROM system_schema.columns WHERE table_name = ? ALLOW FILTERING";
+					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+						preparedStatement.setString(1, tableName);
+						try (ResultSet resultSet = preparedStatement.executeQuery() ) {
+							String keyspace = null;
+							while (resultSet.next()) {
+								final String nextKeyspace = resultSet.getString("keyspace_name");
+								if (keyspace == null) {
+									keyspace = nextKeyspace;
+								} else if (!keyspace.equals(nextKeyspace)) {
+									throw new Exception("Multiple tables for table name '" + tableName + "' found. Please specify keyspace by keyspace_name prefix.");
+								}
+								returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("type"), -1, -1, -1, !resultSet.getString("kind").equalsIgnoreCase("partition_key"), false));
+							}
+						}
+					}
+				}
 			} else {
 				throw new Exception("Unsupported db vendor");
 			}
@@ -1350,9 +1400,7 @@ public class DbUtilities {
 			final DbVendor dbVendor = getDbVendor(dataSource);
 			if (DbVendor.Oracle == dbVendor) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY (" + changeColumnStatementPart + ")";
-			} else if (DbVendor.MySQL == dbVendor) {
-				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY " + changeColumnStatementPart;
-			} else if (DbVendor.MariaDB == dbVendor) {
+			} else if (DbVendor.MySQL == dbVendor || DbVendor.MariaDB == dbVendor) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY " + changeColumnStatementPart;
 			} else {
 				throw new Exception("Unsupported db vendor");
@@ -1420,18 +1468,57 @@ public class DbUtilities {
 		if (Utilities.isBlank(tableName)) {
 			return null;
 		} else {
+			final DbVendor dbVendor = getDbVendor(connection);
 			try {
-				if (getDbVendor(connection) == DbVendor.Oracle || getDbVendor(connection) == DbVendor.HSQL || getDbVendor(connection) == DbVendor.Derby) {
-					tableName = tableName.toUpperCase();
-				}
-
-				final DatabaseMetaData metaData = connection.getMetaData();
-				try (ResultSet resultSet = metaData.getPrimaryKeys(connection.getCatalog(), null, tableName)) {
-					final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
-					while (resultSet.next()) {
-						returnList.add(resultSet.getString("COLUMN_NAME"));
+				if (DbVendor.Cassandra == dbVendor) {
+					if (tableName.contains(".")) {
+						final String keySpaceName = tableName.substring(0, tableName.indexOf("."));
+						final String tableNameInKeySpace = tableName.substring(tableName.indexOf(".") + 1);
+						final String sql = "SELECT column_name FROM system_schema.columns WHERE keyspace_name = ? AND table_name = ? AND kind = 'partition_key'";
+						try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+							preparedStatement.setString(1, keySpaceName);
+							preparedStatement.setString(2, tableNameInKeySpace);
+							final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
+							try (ResultSet resultSet = preparedStatement.executeQuery() ) {
+								while (resultSet.next()) {
+									returnList.add(resultSet.getString("column_name"));
+								}
+							}
+							return returnList;
+						}
+					} else {
+						final String sql = "SELECT keyspace_name, column_name FROM system_schema.columns WHERE table_name = ? AND kind = 'partition_key' ALLOW FILTERING";
+						try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+							preparedStatement.setString(1, tableName);
+							try (ResultSet resultSet = preparedStatement.executeQuery() ) {
+								String keyspace = null;
+								final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
+								while (resultSet.next()) {
+									final String nextKeyspace = resultSet.getString("keyspace_name");
+									if (keyspace == null) {
+										keyspace = nextKeyspace;
+									} else if (!keyspace.equals(nextKeyspace)) {
+										throw new Exception("Multiple tables for table name '" + tableName + "' found. Please specify keyspace by keyspace_name prefix.");
+									}
+									returnList.add(resultSet.getString("column_name"));
+								}
+								return returnList;
+							}
+						}
 					}
-					return returnList;
+				} else {
+					if (dbVendor == DbVendor.Oracle || dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
+						tableName = tableName.toUpperCase();
+					}
+
+					final DatabaseMetaData metaData = connection.getMetaData();
+					try (ResultSet resultSet = metaData.getPrimaryKeys(connection.getCatalog(), null, tableName)) {
+						final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
+						while (resultSet.next()) {
+							returnList.add(resultSet.getString("COLUMN_NAME"));
+						}
+						return returnList;
+					}
 				}
 			} catch (final Exception e) {
 				throw new Exception("Cannot read primarykey columns for table " + tableName + ": " + e.getMessage(), e);
@@ -1443,8 +1530,9 @@ public class DbUtilities {
 		if (Utilities.isBlank(tableName)) {
 			return null;
 		} else {
+			final DbVendor dbVendor = getDbVendor(connection);
 			try {
-				if (getDbVendor(connection) == DbVendor.Oracle || getDbVendor(connection) == DbVendor.HSQL || getDbVendor(connection) == DbVendor.Derby) {
+				if (dbVendor == DbVendor.Oracle || dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
 					tableName = tableName.toUpperCase();
 				}
 
@@ -1699,7 +1787,7 @@ public class DbUtilities {
 				primaryKeyPart = ", PRIMARY KEY (" + joinColumnVendorEscaped(dbVendor, keyColumns) + ")";
 			}
 			statement.execute("CREATE TABLE " + tablename + " (" + columnPart + primaryKeyPart + ")");
-			if (getDbVendor(connection) == DbVendor.Derby) {
+			if (dbVendor == DbVendor.Derby) {
 				connection.commit();
 			}
 		}
@@ -1791,6 +1879,17 @@ public class DbUtilities {
 				case Date: return "DATE";
 				case Integer: return "INTEGER";
 				case Double: return "DOUBLE PRECISION";
+				case String: return "VARCHAR";
+				default: return "VARCHAR";
+			}
+		} else if (dbVendor == DbVendor.Cassandra) {
+			switch (simpleDataType) {
+				case Blob: return "BLOB";
+				case Clob: return "TEXT";
+				case DateTime: return "TIMESTAMP";
+				case Date: return "DATE";
+				case Integer: return "INT";
+				case Double: return "DOUBLE";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
 			}
@@ -1989,6 +2088,8 @@ public class DbUtilities {
 	}
 
 	public static String addIndexedIntegerColumn(final Connection connection, final String tableName, final String columnBaseName) throws Exception {
+		final DbVendor dbVendor = getDbVendor(connection);
+
 		String columnName = columnBaseName;
 		int i = 0;
 		while (checkTableAndColumnsExist(connection, tableName, columnName) && i < 10) {
@@ -2000,13 +2101,15 @@ public class DbUtilities {
 		}
 
 		try (Statement statement = connection.createStatement()) {
-			statement.execute("ALTER TABLE " + tableName + " ADD " + columnName + " INTEGER");
-			final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSSSSS).format(new Date());
-			try {
-				statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + columnName + ")");
-			} catch (final Exception e) {
-				e.printStackTrace();
-				// Work without index. Maybe it already exists or it is a not allowed function based index
+			statement.execute("ALTER TABLE " + tableName + " ADD " + columnName + " " + DbUtilities.getDataType(dbVendor, SimpleDataType.Integer));
+			if (dbVendor != DbVendor.Cassandra) {
+				final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSSSSS).format(new Date());
+				try {
+					statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + columnName + ")");
+				} catch (final Exception e) {
+					e.printStackTrace();
+					// Work without index. Maybe it already exists or it is a not allowed function based index
+				}
 			}
 		}
 
@@ -2032,14 +2135,16 @@ public class DbUtilities {
 
 	public static int dropDuplicates(final Connection connection, final String tableName, final Collection<String> keyColumns) throws Exception {
 		if (detectDuplicates(connection, tableName, keyColumns) > 0) {
+			final DbVendor dbVendor = getDbVendor(connection);
+
 			String originalItemIndexColumn = null;
 			String originalDuplicateIndexColumn = null;
 			try (Statement statement = connection.createStatement()) {
 				originalItemIndexColumn = createLineNumberIndexColumn(connection, tableName, "drop_idx");
 				originalDuplicateIndexColumn = addIndexedIntegerColumn(connection, tableName, "drop_dpl");
 
-				// Try to create an additional index columns
-				if (Utilities.isNotEmpty(keyColumns)) {
+				// Try to create an additional column index
+				if (Utilities.isNotEmpty(keyColumns) && dbVendor != DbVendor.Cassandra) {
 					try {
 						final String dateSuffix = new SimpleDateFormat(DateUtilities.YYYYMMDDHHMMSS).format(new Date());
 						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), keyColumns) + ")");
@@ -2076,7 +2181,7 @@ public class DbUtilities {
 			// Join all duplicates in destination table
 			try (Statement statement = connection.createStatement()) {
 				// Create additional index columns
-				if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
+				if (Utilities.isNotEmpty(keyColumnsWithFunctions) && dbVendor != DbVendor.Cassandra) {
 					try {
 						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ")");
 						connection.commit();
@@ -2100,8 +2205,11 @@ public class DbUtilities {
 					connection.rollback();
 					statement.execute("CREATE TABLE " + interimTableName + " AS SELECT * FROM " + tableName + " WHERE " + originalItemIndexColumn + " != " + originalDuplicateIndexColumn);
 				} else if (dbVendor == DbVendor.Firebird) {
-					// There is no "create table as select"-statmenet in firebird
+					// There is no "create table as select"-statement in firebird
 					createTable(connection, interimTableName, getColumnDataTypes(connection, tableName), null);
+				} else if (dbVendor == DbVendor.Cassandra) {
+					// There is no "create table as select"-statement in Cassandra
+					createTable(connection, interimTableName, getColumnDataTypes(connection, tableName), getPrimaryKeyColumns(connection, tableName));
 				} else {
 					statement.execute("CREATE TABLE " + interimTableName + " AS SELECT * FROM " + tableName + " WHERE " + originalItemIndexColumn + " != " + originalDuplicateIndexColumn);
 				}
@@ -2182,6 +2290,8 @@ public class DbUtilities {
 					statement.executeUpdate("INSERT INTO " + tableName + " (" + joinColumnVendorEscaped(dbVendor, columnsWithoutAutoIncrement) + ", " + indexColumnName + ") (SELECT " + joinColumnVendorEscaped(dbVendor, columnsWithoutAutoIncrement) + ", ROW_NUMBER() OVER() FROM " + tableName + ")");
 					statement.executeUpdate("DELETE FROM " + tableName + " WHERE " + indexColumnName + " IS NULL");
 				}
+			} else if (dbVendor == DbVendor.Cassandra) {
+				statement.execute("UPDATE " + tableName + " SET " + indexColumnName + " = " + getPrimaryKeyColumns(connection, tableName).iterator().next());
 			} else {
 				throw new Exception("Unsupported db vendor");
 			}
@@ -2225,7 +2335,7 @@ public class DbUtilities {
 				}
 			} else {
 				try (Statement statement = connection.createStatement()) {
-					statement.execute("ALTER TABLE " + tableName + " DROP COLUMN " + columnName);
+					statement.execute("ALTER TABLE " + tableName + " DROP " + (dbVendor == DbVendor.Cassandra ? "" :  "COLUMN ") + columnName);
 					connection.commit();
 					return true;
 				} catch (final Exception e) {
@@ -2258,25 +2368,30 @@ public class DbUtilities {
 				connection.rollback();
 				statement.execute("CREATE TABLE " + destinationTableName + " AS SELECT " + joinColumnVendorEscaped(dbVendor, columnNames) + " FROM " + sourceTableName + " WHERE 1 = 0");
 			} else if (dbVendor == DbVendor.Firebird) {
-				// There is no "create table as select"-statmenet in firebird
+				// There is no "create table as select"-statement in firebird
 				createTable(connection, destinationTableName, getColumnDataTypes(connection, sourceTableName), null);
+			} else if (dbVendor == DbVendor.Cassandra) {
+				// There is no "create table as select"-statement in Cassandra
+				createTable(connection, destinationTableName, getColumnDataTypes(connection, sourceTableName), getPrimaryKeyColumns(connection, sourceTableName));
 			} else {
 				statement.execute("CREATE TABLE " + destinationTableName + " AS SELECT " + joinColumnVendorEscaped(dbVendor, columnNames) + " FROM " + sourceTableName + " WHERE 1 = 0");
 			}
 
-			// Make all columns nullable
-			final CaseInsensitiveMap<DbColumnType> columnDataTypes = getColumnDataTypes(connection, destinationTableName);
-			for (final Entry<String, DbColumnType> columnDataType : columnDataTypes.entrySet()) {
-				if (!columnDataType.getValue().isNullable() && (keyColumns == null || !keyColumns.contains(columnDataType.getKey()))) {
-					String typeString = columnDataType.getValue().getTypeName();
-					if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.String) {
-						typeString += "(" + (Long.toString(columnDataType.getValue().getCharacterByteSize())) + ")";
-					} else if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.Integer) {
-						typeString += "(" + (Integer.toString(columnDataType.getValue().getNumericPrecision())) + ")";
-					} else if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.Double) {
-						typeString += "(" + (Integer.toString(columnDataType.getValue().getNumericPrecision())) + ")";
+			if (dbVendor != DbVendor.Cassandra) {
+				// Make all columns nullable
+				final CaseInsensitiveMap<DbColumnType> columnDataTypes = getColumnDataTypes(connection, destinationTableName);
+				for (final Entry<String, DbColumnType> columnDataType : columnDataTypes.entrySet()) {
+					if (!columnDataType.getValue().isNullable() && (keyColumns == null || !keyColumns.contains(columnDataType.getKey()))) {
+						String typeString = columnDataType.getValue().getTypeName();
+						if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.String) {
+							typeString += "(" + (Long.toString(columnDataType.getValue().getCharacterByteSize())) + ")";
+						} else if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.Integer) {
+							typeString += "(" + (Integer.toString(columnDataType.getValue().getNumericPrecision())) + ")";
+						} else if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.Double) {
+							typeString += "(" + (Integer.toString(columnDataType.getValue().getNumericPrecision())) + ")";
+						}
+						statement.execute("ALTER TABLE " + destinationTableName + " MODIFY " + columnDataType.getKey() + " " + typeString + " NULL");
 					}
-					statement.execute("ALTER TABLE " + destinationTableName + " MODIFY " + columnDataType.getKey() + " " + typeString + " NULL");
 				}
 			}
 
@@ -2306,6 +2421,7 @@ public class DbUtilities {
 	}
 
 	public static int insertNotExistingItems(final Connection connection, final String sourceTableName, final String destinationTableName, final List<String> insertColumns, final List<String> keyColumnsWithFunctions, final String additionalInsertValues) throws Exception {
+		final DbVendor dbVendor = getDbVendor(connection);
 		try (Statement statement = connection.createStatement()) {
 			String additionalInsertValuesSqlColumns = "";
 			String additionalInsertValuesSqlValues = "";
@@ -2318,9 +2434,9 @@ public class DbUtilities {
 				}
 			}
 
-			String insertDataStatement = "INSERT INTO " + destinationTableName + " (" + additionalInsertValuesSqlColumns + joinColumnVendorEscaped(getDbVendor(connection), insertColumns) + ") SELECT " + additionalInsertValuesSqlValues + joinColumnVendorEscaped(getDbVendor(connection), insertColumns) + " FROM " + sourceTableName + " a";
+			String insertDataStatement = "INSERT INTO " + destinationTableName + " (" + additionalInsertValuesSqlColumns + joinColumnVendorEscaped(dbVendor, insertColumns) + ") SELECT " + additionalInsertValuesSqlValues + joinColumnVendorEscaped(dbVendor, insertColumns) + " FROM " + sourceTableName + " a";
 			if (Utilities.isNotEmpty(keyColumnsWithFunctions)) {
-				insertDataStatement += " WHERE NOT EXISTS (SELECT 1 FROM " + destinationTableName + " b WHERE " + getKeyColumnEquationList(getDbVendor(connection), keyColumnsWithFunctions, "a", "b") + ")";
+				insertDataStatement += " WHERE NOT EXISTS (SELECT 1 FROM " + destinationTableName + " b WHERE " + getKeyColumnEquationList(dbVendor, keyColumnsWithFunctions, "a", "b") + ")";
 			}
 			final int numberOfInserts = statement.executeUpdate(insertDataStatement);
 			connection.commit();

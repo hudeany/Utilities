@@ -216,7 +216,7 @@ public class DateUtilities {
 
 		if (seconds != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
 			returnValue.insert(0, "s");
 			if (showLeadingZeros) {
@@ -228,7 +228,7 @@ public class DateUtilities {
 
 		if (minutes != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
 			returnValue.insert(0, "m");
 			if (showLeadingZeros) {
@@ -240,7 +240,7 @@ public class DateUtilities {
 
 		if (hours != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
 			returnValue.insert(0, "h");
 			if (showLeadingZeros) {
@@ -252,7 +252,7 @@ public class DateUtilities {
 
 		if (days != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
 			returnValue.insert(0, "d");
 			if (showLeadingZeros) {
@@ -264,7 +264,7 @@ public class DateUtilities {
 
 		if (weeks != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
 			returnValue.insert(0, "w");
 			if (showLeadingZeros) {
@@ -276,7 +276,7 @@ public class DateUtilities {
 
 		if (years != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
 			returnValue.insert(0, "y");
 			returnValue.insert(0, years);
@@ -330,58 +330,76 @@ public class DateUtilities {
 
 		if (seconds != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " seconds");
+			if (seconds > 1) {
+				returnValue.insert(0, "s");
+			}
+			returnValue.insert(0, " second");
 			returnValue.insert(0, seconds);
 		}
 
 		if (minutes != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " minutes");
+			if (minutes > 1) {
+				returnValue.insert(0, "s");
+			}
+			returnValue.insert(0, " minute");
 			returnValue.insert(0, minutes);
 		}
 
 		if (hours != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " hours");
+			if (hours > 1) {
+				returnValue.insert(0, "s");
+			}
+			returnValue.insert(0, " hour");
 			returnValue.insert(0, hours);
 		}
 
 		if (days != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " days");
+			if (days > 1) {
+				returnValue.insert(0, "s");
+			}
+			returnValue.insert(0, " day");
 			returnValue.insert(0, days);
 		}
 
 		if (weeks != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " weeks");
+			if (weeks > 1) {
+				returnValue.insert(0, "s");
+			}
+			returnValue.insert(0, " week");
 			returnValue.insert(0, weeks);
 		}
 
 		if (years != 0) {
 			if (returnValue.length() > 0) {
-				returnValue.insert(0, "");
+				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " years");
+			if (years > 1) {
+				returnValue.insert(0, "s");
+			}
+			returnValue.insert(0, " year");
 			returnValue.insert(0, years);
 		}
 
 		if (returnValue.length() > 0) {
 			return returnValue.toString();
 		} else if (!showMillis) {
-			return "0s";
+			return "0 seconds";
 		} else {
-			return "0ms";
+			return "0 millis";
 		}
 	}
 
