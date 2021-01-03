@@ -42,6 +42,8 @@ import de.soderer.utilities.collection.CaseInsensitiveMap;
 import de.soderer.utilities.collection.CaseInsensitiveSet;
 import de.soderer.utilities.csv.CsvFormat;
 import de.soderer.utilities.csv.CsvWriter;
+import de.soderer.utilities.json.JsonObject;
+import de.soderer.utilities.json.JsonReader;
 
 public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_MYSQL = "https://dev.mysql.com/downloads/connector/j";
@@ -1747,6 +1749,36 @@ public class DbUtilities {
 					}
 					return tableNamesToExport;
 				}
+			} else if (DbVendor.Cassandra == dbVendor) {
+				final List<String> systemKeySpaces = Arrays.asList(new String[] {"system", "system_auth", "system_schema", "system_distributed", "system_traces"});
+				tableQuery = "SELECT keyspace_name, table_name FROM system_schema.tables";
+
+
+				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
+					final List<String> tableNamesToExport = new ArrayList<>();
+					while (resultSet.next()) {
+						final String keySpaceName = resultSet.getString("keyspace_name");
+						if (!systemKeySpaces.contains(keySpaceName)) {
+							final String tableName = resultSet.getString("table_name");
+							boolean addTable = true;
+							for (final String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
+								if (Utilities.isNotBlank(tablePattern)) {
+									addTable = false;
+									if (Pattern.compile(tablePattern.replace(".", "\\.").replace("?", ".").replace("*", ".*").replace("_", ".").replace("%", ".*")).matcher(tableName).find()) {
+										addTable = true;
+										break;
+									}
+								}
+							}
+
+							if (addTable) {
+								tableNamesToExport.add(tableName);
+							}
+						}
+					}
+					return tableNamesToExport;
+				}
+
 			} else {
 				throw new Exception("Unknown db vendor");
 			}
@@ -1774,7 +1806,10 @@ public class DbUtilities {
 				final DbColumnType columnType = columnAndType.getValue();
 				if (columnType != null) {
 					final String dataType = getDataType(dbVendor, columnType.getSimpleDataType());
-					final int dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterByteSize() : 0;
+					int dataLength = 0;
+					if (dbVendor != DbVendor.Cassandra) {
+						dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterByteSize() : 0;
+					}
 					columnPart += escapeVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
 				} else {
 					final String dataType = getDataType(dbVendor, SimpleDataType.String);
@@ -2660,6 +2695,26 @@ public class DbUtilities {
 						if (!resultSet.next()) {
 							return false;
 						}
+					}
+				}
+				return true;
+			}
+		} else if (dbVendor == DbVendor.Cassandra) {
+			final List<String> indexedColumns = new ArrayList<>();
+			indexedColumns.addAll(getPrimaryKeyColumns(connection, tableName));
+
+			try (PreparedStatement statement = connection.prepareStatement("SELECT options FROM system_schema.indexes WHERE table_name = ? ALLOW FILTERING")) {
+				statement.setString(1, tableName);
+				try (ResultSet resultSet = statement.executeQuery()) {
+					while (resultSet.next()) {
+						final String options = resultSet.getString("options");
+						indexedColumns.add((String) ((JsonObject) JsonReader.readJsonItemString(options).getValue()).get("target"));
+					}
+				}
+
+				for (final String keyColumn : keyColumns) {
+					if (!indexedColumns.contains(keyColumn)) {
+						return false;
 					}
 				}
 				return true;
