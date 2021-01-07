@@ -251,7 +251,7 @@ public class ConsoleUtilities {
 				elapsedSeconds = 1;
 			}
 			final int speed = (int) (itemsDone / elapsedSeconds);
-			speedString = Utilities.getHumanReadableNumber(speed, "", true) + "/s";
+			speedString = Utilities.getHumanReadableNumber(speed, "", true, 5, true, Locale.ENGLISH) + "/s";
 			final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(estimatedEnd.getTime() - now.getTime(), false, true);
 		} else if (itemsToDo > 0) {

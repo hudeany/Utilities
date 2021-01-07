@@ -25,6 +25,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -34,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -659,27 +662,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Make a number human readable
-	 *
-	 * @param value
-	 * @return
-	 */
-	public static String getHumanReadableNumber(final Number value) {
-		return getHumanReadableNumber(value, null, true);
-	}
-
-	/**
-	 * Make a number with unitsign human readable
-	 *
-	 * @param value
-	 * @param unitTypeSign
-	 * @return
-	 */
-	public static String getHumanReadableNumber(final Number value, final String unitTypeSign) {
-		return getHumanReadableNumber(value, unitTypeSign, true);
-	}
-
-	/**
 	 * Make a number with unitsign human readable
 	 *
 	 * @param value
@@ -687,7 +669,7 @@ public class Utilities {
 	 * @param siUnits
 	 * @return
 	 */
-	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits) {
+	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignifiantDigits, final boolean keepTrailingZeros, final Locale locale) {
 		final int unit = siUnits ? 1000 : 1024;
 		double interimValue = value.doubleValue();
 		String unitExtension = "";
@@ -708,20 +690,35 @@ public class Utilities {
 			interimValue = interimValue / Math.pow(unit, exp);
 		}
 
-		String valueString;
-		if (interimValue >= 1000) {
-			valueString = String.format("%.1f", interimValue);
-		} else if (interimValue >= 100) {
-			valueString = String.format("%.2f", interimValue);
-		} else if (interimValue >= 10) {
-			valueString = String.format("%.3f", interimValue);
-		} else if (interimValue >= 1) {
-			valueString = String.format("%.4f", interimValue);
+		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
+		DecimalFormat numberFormat;
+		if (keepTrailingZeros) {
+			if (interimValue >= 1000) {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 4), decimalFormatSymbols);
+			} else if (interimValue >= 100) {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 3), decimalFormatSymbols);
+			} else if (interimValue >= 10) {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 2), decimalFormatSymbols);
+			} else if (interimValue >= 1) {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 1), decimalFormatSymbols);
+			} else {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits), decimalFormatSymbols);
+			}
 		} else {
-			valueString = String.format("%.5f", interimValue);
+			if (interimValue >= 1000) {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 5), decimalFormatSymbols);
+			} else if (interimValue >= 100) {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 4), decimalFormatSymbols);
+			} else if (interimValue >= 10) {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 3), decimalFormatSymbols);
+			} else if (interimValue >= 1) {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 2), decimalFormatSymbols);
+			} else {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 1), decimalFormatSymbols);
+			}
 		}
 
-		return valueString + unitExtension;
+		return numberFormat.format(interimValue) + unitExtension;
 	}
 
 	/**

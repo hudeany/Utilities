@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -259,8 +260,8 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable1() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(0.1);
-			Assert.assertEquals("0,10000", result);
+			final String result = Utilities.getHumanReadableNumber(0.1, null, true, 5, false, Locale.GERMAN);
+			Assert.assertEquals("0,1", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -269,8 +270,8 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable8() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(1.0);
-			Assert.assertEquals("1,0000", result);
+			final String result = Utilities.getHumanReadableNumber(1.0, null, true, 5, false, Locale.GERMAN);
+			Assert.assertEquals("1,0", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -279,7 +280,7 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable9() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(1, "Unit");
+			final String result = Utilities.getHumanReadableNumber(1, "Unit", true, 5, false, Locale.ENGLISH);
 			Assert.assertEquals("1 Unit", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -289,8 +290,8 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable10() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(10000, "Unit");
-			Assert.assertEquals("10,000 kUnit", result);
+			final String result = Utilities.getHumanReadableNumber(10000, "Unit", true, 5, false, Locale.GERMAN);
+			Assert.assertEquals("10,0 kUnit", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -299,7 +300,7 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable11() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(10000, "Unit", false);
+			final String result = Utilities.getHumanReadableNumber(10000, "Unit", false, 5, false, Locale.GERMAN);
 			Assert.assertEquals("9,7656 KiUnit", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -309,7 +310,7 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable2() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(1);
+			final String result = Utilities.getHumanReadableNumber(1, null, true, 5, false, Locale.ENGLISH);
 			Assert.assertEquals("1", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -319,7 +320,7 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable3() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(10);
+			final String result = Utilities.getHumanReadableNumber(10, null, true, 5, false, Locale.ENGLISH);
 			Assert.assertEquals("10", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -329,7 +330,7 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable4() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(100);
+			final String result = Utilities.getHumanReadableNumber(100, null, true, 5, false, Locale.ENGLISH);
 			Assert.assertEquals("100", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -339,8 +340,8 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable5() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(1000);
-			Assert.assertEquals("1,0000 k", result);
+			final String result = Utilities.getHumanReadableNumber(1000, null, true, 5, false, Locale.GERMAN);
+			Assert.assertEquals("1,0 k", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -349,8 +350,8 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable6() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(10000);
-			Assert.assertEquals("10,000 k", result);
+			final String result = Utilities.getHumanReadableNumber(10000, null, true, 5, false, Locale.GERMAN);
+			Assert.assertEquals("10,0 k", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -359,8 +360,8 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable7() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(100000);
-			Assert.assertEquals("100,00 k", result);
+			final String result = Utilities.getHumanReadableNumber(100000, null, true, 5, false, Locale.GERMAN);
+			Assert.assertEquals("100,0 k", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}

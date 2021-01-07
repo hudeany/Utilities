@@ -8,6 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.crypto.Cipher;
@@ -81,10 +82,10 @@ public class SystemUtilities {
 		final Runtime runtime = Runtime.getRuntime();
 		final Map<String, String> resultMap = new CaseInsensitiveMap<>();
 		if (humanReadable) {
-			resultMap.put("memory.total", Utilities.getHumanReadableNumber(runtime.totalMemory(), "B", false));
-			resultMap.put("memory.free", Utilities.getHumanReadableNumber(runtime.freeMemory(), "B", false));
-			resultMap.put("memory.used", Utilities.getHumanReadableNumber(runtime.totalMemory() - runtime.freeMemory(), "B", false));
-			resultMap.put("memory.max", Utilities.getHumanReadableNumber(runtime.maxMemory(), "B", false));
+			resultMap.put("memory.total", Utilities.getHumanReadableNumber(runtime.totalMemory(), "Byte", false, 5, false, Locale.ENGLISH));
+			resultMap.put("memory.free", Utilities.getHumanReadableNumber(runtime.freeMemory(), "Byte", false, 5, false, Locale.ENGLISH));
+			resultMap.put("memory.used", Utilities.getHumanReadableNumber(runtime.totalMemory() - runtime.freeMemory(), "Byte", false, 5, false, Locale.ENGLISH));
+			resultMap.put("memory.max", Utilities.getHumanReadableNumber(runtime.maxMemory(), "Byte", false, 5, false, Locale.ENGLISH));
 		} else {
 			resultMap.put("memory.total", Long.toString(runtime.totalMemory()));
 			resultMap.put("memory.free", Long.toString(runtime.freeMemory()));
