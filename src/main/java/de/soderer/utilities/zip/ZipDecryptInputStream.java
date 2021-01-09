@@ -6,6 +6,10 @@ import java.io.InputStream;
 /**
  * ZipDecryptInputStream<br />
  * <br />
+ * This class can only handle ZipCrypto encrypted zip files.<br/>
+ * AES-256 encrypted zip files are NOT supported.<br/>
+ * Also filenames with blanks or non ASCII characters in it cannot be handled.<br/>
+ * <br />
  * Example:<br />
  * InputStream inputStream = new ZipInputStream(new ZipDecryptInputStream(new FileInputStream(new File("path to zip file")), "password".toCharArray()));<br />
  * ((ZipInputStream) inputStream).getNextEntry();<br />
@@ -57,10 +61,14 @@ public class ZipDecryptInputStream extends InputStream {
 	private int crc;
 
 	/**
-	 * Safer constructor. Takes password as a char array that can be nulled right after
+	 * Takes password as a char array that can be nulled right after
 	 * calling this constructor instead of a string that may be visible on the heap for
 	 * the duration of application run time.
-	 *
+	 * <br />
+	 * This class can only handle ZipCrypto encrypted zip files.<br/>
+	 * AES-256 encrypted zip files are NOT supported.<br/>
+	 * Also filenames with blanks or non ASCII characters in it cannot be handled.<br/>
+	 * <br />
 	 * @param stream Input stream serving the password-protected zip file.
 	 * @param password Password to use for decrypting the zip file.
 	 */

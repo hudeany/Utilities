@@ -9,6 +9,10 @@ import java.util.Arrays;
 /**
  * ZipEncryptOutputStream<br />
  * <br />
+ * This class can only handle ZipCrypto encrypted zip files.<br/>
+ * AES-256 encrypted zip files are NOT supported.<br/>
+ * Also filenames with blanks or non ASCII characters in it cannot be handled.<br/>
+ * <br />
  * Example:<br />
  * OutputStream zipOutputStream = new ZipOutputStream(new ZipEncryptOutputStream(new FileOutputStream(new File("path to zip file")), "password".toCharArray()));<br />
  * ((ZipOutputStream) zipOutputStream).putNextEntry(new ZipEntry("zipped file name"));<br />
@@ -62,10 +66,14 @@ public class ZipEncryptOutputStream extends OutputStream {
 	private static final int ROW_SIZE = 65536;
 
 	/**
-	 * Safer version of the constructor. Takes password as a char array that can
+	 * Takes password as a char array that can
 	 * be nulled right after calling this constructor instead of a string that may
 	 * stay visible on the heap for the duration of application run time.
-	 *
+	 * <br />
+	 * This class can only handle ZipCrypto encrypted zip files.<br/>
+	 * AES-256 encrypted zip files are NOT supported.<br/>
+	 * Also filenames with blanks or non ASCII characters in it cannot be handled.<br/>
+	 * <br />
 	 * @param delegate Output stream to write the password-protected zip to.
 	 * @param password Password to use for protecting the zip.
 	 */
@@ -357,7 +365,7 @@ public class ZipEncryptOutputStream extends OutputStream {
 		System.arraycopy(knownValues, 0, values, 0, knownValues.length);
 		buffer = values;
 		bufOffset = knownValues.length;
-		this.state = State.BUFFER;
+		state = State.BUFFER;
 		futureState = bufferState;
 	}
 
@@ -369,17 +377,17 @@ public class ZipEncryptOutputStream extends OutputStream {
 
 	private void copyBytesUntil(final State bufferState, final int[]... bufferCondition) {
 		futureState = bufferState;
-		this.condition = bufferCondition;
+		condition = bufferCondition;
 		bufOffset = 0;
 		buffer = new int[bufferCondition[0].length];
-		this.state = State.BUFFER_COPY;
+		state = State.BUFFER_COPY;
 	}
 
 	private void bufferUntil(final State bufferState, final int[]... bufferCondition) {
 		copyBytesUntil(bufferState, bufferCondition);
 		fileData = new ArrayList<>();
 		fileSize = 0;
-		this.state = State.BUFFER_UNTIL;
+		state = State.BUFFER_UNTIL;
 	}
 
 	private boolean checkCondition() {
