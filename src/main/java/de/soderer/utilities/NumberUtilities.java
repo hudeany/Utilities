@@ -96,23 +96,23 @@ public class NumberUtilities {
 				exponent = Integer.parseInt(exponentString);
 			}
 			if (Float.MIN_EXPONENT < exponent && exponent < Float.MAX_EXPONENT) {
-				return new Float(numberString);
+				return Float.valueOf(numberString);
 			} else {
-				return new Double(numberString);
+				return Double.valueOf(numberString);
 			}
 		} else if (numberString.contains(".")) {
 			if (numberString.length() < 10) {
-				return new Float(numberString);
+				return Float.valueOf(numberString);
 			} else {
 				final BigDecimal value = new BigDecimal(numberString);
 				final int numberOfDecimalPoints = numberString.substring(numberString.indexOf(".") + 1).replace(",", "").length();
 				final boolean isFloat = numberOfDecimalPoints <= 7 && new BigDecimal(Float.MIN_VALUE).compareTo(value) == -1 && value.compareTo(new BigDecimal(Float.MAX_VALUE)) == -1;
 				if (isFloat) {
-					return new Float(numberString);
+					return Float.valueOf(numberString);
 				} else {
 					final boolean isDouble = new BigDecimal(Double.MIN_VALUE).compareTo(value) == -1 && value.compareTo(new BigDecimal(Double.MAX_VALUE)) == -1;
 					if (isDouble) {
-						return new Double(numberString);
+						return Double.valueOf(numberString);
 					} else {
 						return value;
 					}
@@ -120,16 +120,16 @@ public class NumberUtilities {
 			}
 		} else {
 			if (numberString.length() < 10) {
-				return new Integer(numberString);
+				return Integer.valueOf(numberString);
 			} else {
 				final BigDecimal value = new BigDecimal(numberString);
 				final boolean isInteger = new BigDecimal(Integer.MIN_VALUE).compareTo(value) == -1 && value.compareTo(new BigDecimal(Integer.MAX_VALUE)) == -1;
 				if (isInteger) {
-					return new Integer(numberString);
+					return Integer.valueOf(numberString);
 				} else {
 					final boolean isLong = new BigDecimal(Long.MIN_VALUE).compareTo(value) == -1 && value.compareTo(new BigDecimal(Long.MAX_VALUE)) == -1;
 					if (isLong) {
-						return new Long(numberString);
+						return Long.valueOf(numberString);
 					} else {
 						return value;
 					}

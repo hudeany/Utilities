@@ -277,7 +277,7 @@ public class JsonSerializer {
 				return ((Number) value).floatValue();
 			} else if (clazz == Double.TYPE || clazz == Double.class) {
 				if (value.getClass() == Float.class) {
-					return new Double(Float.toString((Float) value));
+					return Double.parseDouble(Float.toString((Float) value));
 				} else {
 					return ((Number) value).doubleValue();
 				}
@@ -303,10 +303,7 @@ public class JsonSerializer {
 				return DateUtilities.parseIso8601DateTimeString((String) value);
 			} else if (value instanceof JsonObject) {
 				Object object;
-				final Constructor<?> constructor = clazz.getDeclaredConstructor();
-				if (!constructor.isAccessible()) {
-					constructor.setAccessible(true);
-				}
+				final Constructor<?> constructor = clazz.getConstructor();
 				object = constructor.newInstance();
 
 				for (final Entry<String, Object> entry : ((JsonObject) value).entrySet()) {
@@ -431,8 +428,9 @@ public class JsonSerializer {
 						return array;
 					}
 				} else if (Map.class.isAssignableFrom(clazz)) {
+					final Constructor<?> constructor = clazz.getConstructor();
 					@SuppressWarnings("unchecked")
-					final Map<Object, Object> mapObject = (Map<Object, Object>) clazz.newInstance();
+					final Map<Object, Object> mapObject = (Map<Object, Object>) constructor.newInstance();
 					for (final Object keyValueObject : (JsonArray) value) {
 						if (!(keyValueObject instanceof JsonObject)) {
 							throw new Exception("Invalid value type serialization value");
@@ -457,7 +455,8 @@ public class JsonSerializer {
 						listOfItems.add(deserialize((JsonObject) item));
 					}
 
-					final Object object = clazz.newInstance();
+					final Constructor<?> constructor = clazz.getConstructor();
+					final Object object = constructor.newInstance();
 					if (object instanceof Collection) {
 						for (final Object item : listOfItems) {
 							@SuppressWarnings("unchecked")
@@ -482,7 +481,8 @@ public class JsonSerializer {
 		} else if (jsonObject == null) {
 			return null;
 		} else {
-			final Object object = classType.newInstance();
+			final Constructor<?> constructor = classType.getConstructor();
+			final Object object = constructor.newInstance();
 			for (final Entry<String, Object> entry : jsonObject.entrySet()) {
 				Field field;
 				try {
@@ -511,7 +511,7 @@ public class JsonSerializer {
 						field.set(object, ((Number) value).floatValue());
 					} else if (clazz == Double.TYPE || clazz == Double.class) {
 						if (value.getClass() == Float.class) {
-							field.set(object, new Double(Float.toString((Float) value)));
+							field.set(object, Double.parseDouble(Float.toString((Float) value)));
 						} else {
 							field.set(object, ((Number) value).doubleValue());
 						}

@@ -2,6 +2,7 @@ package de.soderer.utilities.code;
 
 import java.io.File;
 import java.io.StringWriter;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
@@ -63,7 +64,8 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
 				if (success) {
 					try (URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { new File(compilationPath).toURI().toURL() })) {
 						final Class<?> clazz = Class.forName("de.soderer.test.SimpleWorker", true, classLoader);
-						final Object instance = clazz.newInstance();
+						final Constructor<?> constructor = clazz.getConstructor();
+						final Object instance = constructor.newInstance();
 						final Method method = clazz.getMethod("runJob");
 						method.invoke(instance);
 					}
