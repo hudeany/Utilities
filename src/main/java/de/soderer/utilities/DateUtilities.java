@@ -157,16 +157,18 @@ public class DateUtilities {
 
 	public static String replaceDatePatternInString(final String stringWithPatter, final Date date) {
 		String returnString = stringWithPatter;
-		returnString = returnString.replace("yyyy", new SimpleDateFormat("yyyy").format(date));
-		returnString = returnString.replace("YYYY", new SimpleDateFormat("yyyy").format(date));
-		returnString = returnString.replace("MM", new SimpleDateFormat("MM").format(date));
-		returnString = returnString.replace("dd", new SimpleDateFormat("dd").format(date));
-		returnString = returnString.replace("DD", new SimpleDateFormat("dd").format(date));
-		returnString = returnString.replace("HH", new SimpleDateFormat("HH").format(date));
-		returnString = returnString.replace("hh", new SimpleDateFormat("HH").format(date));
-		returnString = returnString.replace("mm", new SimpleDateFormat("mm").format(date));
-		returnString = returnString.replace("SS", new SimpleDateFormat("ss").format(date));
-		returnString = returnString.replace("ss", new SimpleDateFormat("ss").format(date));
+		returnString = returnString.replace("[yyyy]", new SimpleDateFormat("yyyy").format(date));
+		returnString = returnString.replace("[YYYY]", new SimpleDateFormat("yyyy").format(date));
+		returnString = returnString.replace("[MM]", new SimpleDateFormat("MM").format(date));
+		returnString = returnString.replace("[dd]", new SimpleDateFormat("dd").format(date));
+		returnString = returnString.replace("[DD]", new SimpleDateFormat("dd").format(date));
+		returnString = returnString.replace("[HH]", new SimpleDateFormat("HH").format(date));
+		returnString = returnString.replace("[hh]", new SimpleDateFormat("HH").format(date));
+		returnString = returnString.replace("[mm]", new SimpleDateFormat("mm").format(date));
+		returnString = returnString.replace("[SS]", new SimpleDateFormat("ss").format(date));
+		returnString = returnString.replace("[ss]", new SimpleDateFormat("ss").format(date));
+		returnString = returnString.replace("\\[", "[");
+		returnString = returnString.replace("\\]", "]");
 		return returnString;
 	}
 
