@@ -19,9 +19,9 @@ public interface RemoteConnection extends Closeable {
 
 	boolean fileExists(String filePath) throws Exception;
 
-	void deleteFile(String filePath) throws Exception;
-
 	FileInfo getFileInfo(String filePath) throws Exception;
+
+	void deleteFile(String filePath) throws Exception;
 
 	InputStream getFile(String filePath) throws Exception;
 
