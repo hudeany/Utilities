@@ -42,6 +42,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -1545,5 +1546,27 @@ public class Utilities {
 		} else {
 			return ByteBuffer.wrap(bytes).getInt();
 		}
+	}
+
+	public static String[] split(final String text, final char delimiterChar, final char escapeChar, final int limit) {
+		final String escapeCharString = Character.toString(escapeChar);
+		final String delimiterCharString = Character.toString(delimiterChar);
+		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
+		final String[] returnParts = text.split(splitRegex, limit);
+		for (int i = 0; i < returnParts.length; i++) {
+			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
+		}
+		return returnParts;
+	}
+
+	public static String[] split(final String text, final char delimiterChar, final char escapeChar) {
+		final String escapeCharString = Character.toString(escapeChar);
+		final String delimiterCharString = Character.toString(delimiterChar);
+		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
+		final String[] returnParts = text.split(splitRegex);
+		for (int i = 0; i < returnParts.length; i++) {
+			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
+		}
+		return returnParts;
 	}
 }
