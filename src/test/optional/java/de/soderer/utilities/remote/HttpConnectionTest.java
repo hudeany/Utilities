@@ -35,7 +35,7 @@ public class HttpConnectionTest {
 	@Test
 	public void directoryRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			new DirectoryDownloadWorker(null, connection, "/tomcat/tomcat-9/v9.0.22/bin", localTestDirectory.getParentFile(), "test").work();
+			new DirectoryDownloadWorker(null, connection, "/tomcat/tomcat-9/v9.0.43/bin", localTestDirectory.getParentFile(), "test").work();
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -45,7 +45,7 @@ public class HttpConnectionTest {
 	@Test
 	public void fileRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			new RemoteFileDownloadWorker(null, connection, "/tomcat/tomcat-9/v9.0.22/bin/apache-tomcat-9.0.22.tar.gz", new File(localTestDirectory, "apache-tomcat-9.0.22.tar.gz")).work();
+			new RemoteFileDownloadWorker(null, connection, "/tomcat/tomcat-9/v9.0.43/bin/apache-tomcat-9.0.43.tar.gz", new File(localTestDirectory, "apache-tomcat-9.0.22.tar.gz")).work();
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());

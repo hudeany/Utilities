@@ -232,7 +232,7 @@ public class Smb1Connection implements RemoteConnection {
 				}
 			}
 
-			return new FolderInfo(folderName, folderInfoList, fileInfoList);
+			return new FolderInfo(folderName, folderInfoList, fileInfoList, new Date(smbFile.getDate()));
 		} else {
 			return null;
 		}

@@ -304,7 +304,7 @@ public class HttpFileConnection implements RemoteConnection {
 					final long fileSize = getFileSize(sizeString);
 					fileInfoList.add(new FileInfo(fileName, fileSize, modificationDate));
 				}
-				return new FolderInfo(folderName, folderInfoList, fileInfoList);
+				return new FolderInfo(folderName, folderInfoList, fileInfoList, null);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);

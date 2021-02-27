@@ -13,6 +13,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import com.jcraft.jsch.Channel;
@@ -898,10 +899,12 @@ public class SftpConnection implements RemoteConnection {
 			folderName = folderPath;
 		}
 
+		Date modificationDate = null;
+
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -l \"" + (Utilities.isEmpty(folderPath) ? "/" : folderPath) + "\"");
+			((ChannelExec) channel).setCommand("ls -al \"" + (Utilities.isEmpty(folderPath) ? "/" : folderPath) + "\"");
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
@@ -920,14 +923,18 @@ public class SftpConnection implements RemoteConnection {
 						String nextLine;
 						boolean isFirstLine = true;
 						while ((nextLine = reader.readLine()) != null) {
-							if (!isFirstLine || !nextLine.startsWith("total")) {
+							if (!isFirstLine || !(nextLine.startsWith("total") || nextLine.startsWith("insgesamt"))) {
 								final JschFileData fileData = new JschFileData(nextLine);
-								if (fileData.getFileType() == JschFileType.RegularFile) {
-									fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
-								} else if (fileData.getFileType() == JschFileType.SymbolicLink) {
-									fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
-								} else if (fileData.getFileType() == JschFileType.Directory) {
-									subFolderNames.add(fileData.getFileName());
+								if (".".equals(fileData.getFileName())) {
+									modificationDate = fileData.getChangeDate();
+								} else if (!"..".equals(fileData.getFileName())) {
+									if (fileData.getFileType() == JschFileType.RegularFile) {
+										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+									} else if (fileData.getFileType() == JschFileType.SymbolicLink) {
+										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+									} else if (fileData.getFileType() == JschFileType.Directory) {
+										subFolderNames.add(fileData.getFileName());
+									}
 								}
 							}
 							isFirstLine = false;
@@ -950,7 +957,7 @@ public class SftpConnection implements RemoteConnection {
 		if (Utilities.isEmpty(folderName)) {
 			folderName = "/";
 		}
-		return new FolderInfo(folderName, folderInfoList, fileInfoList);
+		return new FolderInfo(folderName, folderInfoList, fileInfoList, modificationDate);
 	}
 
 	/**

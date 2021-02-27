@@ -603,7 +603,7 @@ public class FileUtilities {
 			}
 		}
 
-		return new FolderInfo(folderName, folderInfoList, fileInfoList);
+		return new FolderInfo(folderName, folderInfoList, fileInfoList, new Date(new File(folderPath).lastModified()));
 	}
 
 	public static boolean directoriesAreEqual(final File file1, final File file2) throws Exception {

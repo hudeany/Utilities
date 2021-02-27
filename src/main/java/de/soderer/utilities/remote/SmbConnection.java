@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -251,11 +252,18 @@ public class SmbConnection implements RemoteConnection {
 			folderName = "/";
 		}
 
+		Date modificationDate = null;
+
 		final List<FolderInfo> folderInfoList = new ArrayList<>();
 		final List<FileInfo> fileInfoList = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			final String entryName = fileIdBothDirectoryInformation.getFileName();
-			if (!".".equals(entryName) && !"..".equals(entryName)) {
+			if (".".equals(entryName)) {
+				try (final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
+					modificationDate = fileAllInformation.getBasicInformation().getLastWriteTime().toDate();
+				}
+			} else if (!"..".equals(entryName)) {
 				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
 					folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
 				} else {
@@ -267,7 +275,7 @@ public class SmbConnection implements RemoteConnection {
 			}
 		}
 
-		return new FolderInfo(folderName, folderInfoList, fileInfoList);
+		return new FolderInfo(folderName, folderInfoList, fileInfoList, modificationDate);
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package de.soderer.utilities.http;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +43,7 @@ public class HttpRequest {
 	private final List<Tuple<String, Object>> urlParameters = new ArrayList<>();
 	private final List<Tuple<String, Object>> postParameters= new ArrayList<>();
 	private String requestBody = null;
+	private InputStream requestBodyContentStream = null;
 	private final List<Triple<String, String, byte[]>> uploadFileAttachments = new ArrayList<>();
 	private OutputStream downloadStream = null;
 	private File downloadFile = null;
@@ -150,6 +152,8 @@ public class HttpRequest {
 	public HttpRequest addPostParameter(final String key, final Object value) throws Exception {
 		if (requestBody != null) {
 			throw new Exception("RequestBody is already set. Post parameters cannot be set therefore");
+		} else if (requestBodyContentStream != null) {
+			throw new Exception("RequestBodyContentStream is already set. Post parameters cannot be set therefore");
 		} else {
 			postParameters.add(new Tuple<>(key, value));
 
@@ -164,6 +168,8 @@ public class HttpRequest {
 	public HttpRequest addUploadFileData(final String htmlInputName, final String fileName, final byte[] data) throws Exception {
 		if (requestBody != null) {
 			throw new Exception("RequestBody is already set. UploadFileAttachments cannot be set therefore");
+		} else if (requestBodyContentStream != null) {
+			throw new Exception("RequestBodyContentStream is already set. UploadFileAttachments cannot be set therefore");
 		} else {
 			uploadFileAttachments.add(new Triple<>(htmlInputName, fileName, data));
 
@@ -233,13 +239,33 @@ public class HttpRequest {
 		return requestBody;
 	}
 
+	public InputStream getRequestBodyContentStream() {
+		return requestBodyContentStream;
+	}
+
 	public HttpRequest setRequestBody(final String requestBody) throws Exception {
 		if (postParameters.size() > 0) {
 			throw new Exception("Post parameters are already set. RequestBody cannot be set therefore");
 		} else if (uploadFileAttachments.size() > 0) {
 			throw new Exception("UploadFileAttachments are already set. RequestBody cannot be set therefore");
+		} else if (requestBodyContentStream != null) {
+			throw new Exception("RequestBodyContentStream is already set. RequestBody cannot be set therefore");
 		} else {
 			this.requestBody = requestBody;
+
+			return this;
+		}
+	}
+
+	public HttpRequest setRequestBodyContentStream(final InputStream requestBodyContentStream) throws Exception {
+		if (postParameters.size() > 0) {
+			throw new Exception("Post parameters are already set. RequestBody cannot be set therefore");
+		} else if (uploadFileAttachments.size() > 0) {
+			throw new Exception("UploadFileAttachments are already set. RequestBody cannot be set therefore");
+		} else if (requestBody != null) {
+			throw new Exception("UploadFileAttachments are already set. RequestBody cannot be set therefore");
+		} else {
+			this.requestBodyContentStream = requestBodyContentStream;
 
 			return this;
 		}

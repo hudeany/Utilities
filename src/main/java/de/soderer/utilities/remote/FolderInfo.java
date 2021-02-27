@@ -10,11 +10,13 @@ public class FolderInfo {
 	private final String folderName;
 	private final List<FolderInfo> subFolders;
 	private final List<FileInfo> files;
+	private final Date modificationDate;
 
-	public FolderInfo(final String folderName, final List<FolderInfo> subFolders, final List<FileInfo> files) {
+	public FolderInfo(final String folderName, final List<FolderInfo> subFolders, final List<FileInfo> files, final Date modificationDate) {
 		this.folderName = folderName;
 		this.subFolders = subFolders;
 		this.files = files;
+		this.modificationDate = modificationDate;
 	}
 
 	public String getFolderName() {
@@ -65,6 +67,10 @@ public class FolderInfo {
 		return subFolders.size();
 	}
 
+	public Date getModificationDate() {
+		return modificationDate;
+	}
+
 	public int getRecursiveFolderCount() {
 		int recursiveFolderCount = 0;
 		for (final FolderInfo subFolder : subFolders) {
@@ -74,7 +80,7 @@ public class FolderInfo {
 		return recursiveFolderCount;
 	}
 
-	public Date getMinimumModificationDate() {
+	public Date getMinimumModificationDateOfFiles() {
 		Date minimumModificationDate = null;
 		for (final FileInfo file : files) {
 			if (minimumModificationDate == null || minimumModificationDate.before(file.getModificationDate())) {
@@ -84,10 +90,10 @@ public class FolderInfo {
 		return minimumModificationDate;
 	}
 
-	public Date getRecursiveMinimumModificationDate() {
+	public Date getRecursiveMinimumModificationDateOfFiles() {
 		Date minimumModificationDate = null;
 		for (final FolderInfo subFolder : subFolders) {
-			final Date minimumModificationDateSubFolder = subFolder.getRecursiveMinimumModificationDate();
+			final Date minimumModificationDateSubFolder = subFolder.getRecursiveMinimumModificationDateOfFiles();
 			if (minimumModificationDate == null || minimumModificationDate.before(minimumModificationDateSubFolder)) {
 				minimumModificationDate = minimumModificationDateSubFolder;
 			}
@@ -100,7 +106,7 @@ public class FolderInfo {
 		return minimumModificationDate;
 	}
 
-	public Date getMaximumModificationDate() {
+	public Date getMaximumModificationDateOfFiles() {
 		Date maximumModificationDate = null;
 		for (final FileInfo file : files) {
 			if (maximumModificationDate == null || maximumModificationDate.before(file.getModificationDate())) {
@@ -110,10 +116,10 @@ public class FolderInfo {
 		return maximumModificationDate;
 	}
 
-	public Date getRecursiveMaximumModificationDate() {
+	public Date getRecursiveMaximumModificationDateOfFiles() {
 		Date maximumModificationDate = null;
 		for (final FolderInfo subFolder : subFolders) {
-			final Date maximumModificationDateSubFolder = subFolder.getRecursiveMaximumModificationDate();
+			final Date maximumModificationDateSubFolder = subFolder.getRecursiveMaximumModificationDateOfFiles();
 			if (maximumModificationDate == null || maximumModificationDate.before(maximumModificationDateSubFolder)) {
 				maximumModificationDate = maximumModificationDateSubFolder;
 			}
@@ -128,6 +134,6 @@ public class FolderInfo {
 
 	@Override
 	public String toString() {
-		return folderName + " [" + getFileCount() + " Files, " + getFolderCount() + " Folders, " + getFolderDataSize() + " Byte, " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(getMinimumModificationDate()) + " - " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(getMaximumModificationDate()) + "]";
+		return folderName + " [" + getFileCount() + " Files, " + getFolderCount() + " Folders, " + getFolderDataSize() + " Byte" + (getModificationDate() != null ?  ", " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(getModificationDate()) : "")  + "]";
 	}
 }

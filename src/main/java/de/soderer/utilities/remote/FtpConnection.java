@@ -4,6 +4,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.net.ftp.FTP;
@@ -331,13 +332,17 @@ public class FtpConnection implements RemoteConnection {
 			folderName = "/";
 		}
 
+		Date modificationDate = null;
+
 		final List<FolderInfo> folderInfoList = new ArrayList<>();
 		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
 		final FTPFile[] directories = ftpClient.listDirectories(folderPath.replace(" ", "\\ "));
 		if (directories != null) {
 			for (final FTPFile directory : directories) {
 				final String directoryName = directory.getName();
-				if (!".".equals(directoryName) && !"..".equals(directoryName) && directory.isDirectory()) {
+				if (".".equals(directoryName)){
+					modificationDate = directory.getTimestamp().getTime();
+				} else if (!"..".equals(directoryName) && directory.isDirectory()) {
 					folderInfoList.add(getFolderInfo(folderPath + "/" + directoryName));
 				}
 			}
@@ -354,7 +359,7 @@ public class FtpConnection implements RemoteConnection {
 			}
 		}
 
-		return new FolderInfo(folderName, folderInfoList, fileInfoList);
+		return new FolderInfo(folderName, folderInfoList, fileInfoList, modificationDate);
 	}
 
 	class FtpInputStream extends FilterInputStream {
