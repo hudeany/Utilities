@@ -11,9 +11,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import de.soderer.utilities.BOMInputStream;
-import de.soderer.utilities.vcf.VcfCard;
-import de.soderer.utilities.vcf.VcfReader;
-import de.soderer.utilities.vcf.VcfWriter;
 
 public class VcfReaderWriterTest {
 	@Test
@@ -64,6 +61,24 @@ public class VcfReaderWriterTest {
 				tempFile.delete();
 				tempFile = null;
 			}
+		}
+	}
+
+	@Test
+	public void test2() throws Exception {
+		final File testfile = new File("C:\\Users\\Andreas\\Downloads\\Kontakte\\vcards.vcf");
+
+		final File tempFile = new File("C:\\Users\\Andreas\\Downloads\\Kontakte\\vcards2.vcf");
+
+		try (VcfReader reader = new VcfReader(new FileInputStream(testfile));
+				VcfWriter writer = new VcfWriter(new FileOutputStream(tempFile), StandardCharsets.ISO_8859_1)) {
+			VcfCard nextCard;
+			while ((nextCard = reader.readNextCard()) != null) {
+				writer.writeCard(nextCard, "2.1");
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
 		}
 	}
 }
