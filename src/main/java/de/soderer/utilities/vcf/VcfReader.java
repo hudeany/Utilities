@@ -1,7 +1,6 @@
-package de.soderer.vcf;
+package de.soderer.utilities.vcf;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,8 +12,8 @@ import java.util.List;
 
 import de.soderer.utilities.BOMInputStream;
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.QuotedPrintableCodec;
 import de.soderer.utilities.Utilities;
-import jakarta.mail.internet.MimeUtility;
 
 /**
  * Reader for vcf (vCard file) format
@@ -303,7 +302,7 @@ public class VcfReader implements AutoCloseable {
 
 		if (prefixList.contains("ENCODING=QUOTED-PRINTABLE")) {
 			for (final String value : values) {
-				valuesDecoded.add(decode(value, "UTF-8", "QUOTED-PRINTABLE", "UTF-8"));
+				valuesDecoded.add(QuotedPrintableCodec.decode(value, StandardCharsets.UTF_8));
 			}
 		} else {
 			for (final String value : values) {
@@ -312,21 +311,6 @@ public class VcfReader implements AutoCloseable {
 		}
 
 		return valuesDecoded;
-	}
-
-	private static String decode(final String text, final String textEncoding, final String encoding, final String charset) throws Exception {
-		if (text == null || text.length() == 0) {
-			return text;
-		} else {
-			final byte[] asciiBytes = text.getBytes(textEncoding);
-			try (InputStream decodedStream = MimeUtility.decode(new ByteArrayInputStream(asciiBytes), encoding)) {
-				final byte[] tmp = new byte[asciiBytes.length];
-				final int n = decodedStream.read(tmp);
-				final byte[] res = new byte[n];
-				System.arraycopy(tmp, 0, res, 0, n);
-				return new String(res, charset);
-			}
-		}
 	}
 
 	/**

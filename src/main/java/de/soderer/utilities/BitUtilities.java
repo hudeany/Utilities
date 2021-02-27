@@ -287,4 +287,16 @@ public class BitUtilities {
 			return data;
 		}
 	}
+
+	public static byte hexToByte(final String data) {
+		return BitUtilities.hexToByte(data.charAt(0), data.charAt(1));
+	}
+
+	public static byte hexToByte(final char char1, final char char2) {
+		return (byte) ((Character.digit(char1, 16) << 4) + Character.digit(char2, 16));
+	}
+
+	public static String byteToHex(final byte data) {
+		return String.format("%02X", data);
+	}
 }

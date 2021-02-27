@@ -1,4 +1,4 @@
-package de.soderer.vcf;
+package de.soderer.utilities.vcf;
 
 import java.util.List;
 

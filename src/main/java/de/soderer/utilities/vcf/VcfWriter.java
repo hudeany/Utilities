@@ -1,10 +1,10 @@
-package de.soderer.vcf;
+package de.soderer.utilities.vcf;
 
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -15,8 +15,8 @@ import java.util.TimeZone;
 
 import de.soderer.utilities.BOM;
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.QuotedPrintableCodec;
 import de.soderer.utilities.Utilities;
-import jakarta.mail.internet.MimeUtility;
 
 /**
  * Writer for vcf (vCard file) format
@@ -38,6 +38,10 @@ public class VcfWriter implements AutoCloseable {
 			outputStream.write(BOM.UTF_8.getBytes());
 		}
 		bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
+	}
+
+	public VcfWriter(final OutputStream outputStream, final Charset charset) throws Exception {
+		bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream, charset));
 	}
 
 	public String getDefaultVersion() {
@@ -239,7 +243,7 @@ public class VcfWriter implements AutoCloseable {
 
 			if (mustEncode) {
 				for (int i = 0; i < values.size(); i++) {
-					values.set(i, encodeValue(values.get(i)));
+					values.set(i, QuotedPrintableCodec.encode(values.get(i), StandardCharsets.UTF_8));
 				}
 				final List<String> parameterList = new ArrayList<>();
 				parameterList.add("CHARSET=UTF-8");
@@ -262,7 +266,7 @@ public class VcfWriter implements AutoCloseable {
 
 			if (mustEncode) {
 				for (int i = 0; i < values.size(); i++) {
-					values.set(i, encodeValue(values.get(i)));
+					values.set(i, QuotedPrintableCodec.encode(values.get(i), StandardCharsets.UTF_8));
 				}
 				final List<String> parameterList = new ArrayList<>();
 				parameterList.add("CHARSET=UTF-8");
@@ -275,14 +279,6 @@ public class VcfWriter implements AutoCloseable {
 				return null;
 			}
 		}
-	}
-
-	private static String encodeValue(final String value) throws Exception {
-		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (OutputStream encodedOut = MimeUtility.encode(baos, "QUOTED-PRINTABLE")) {
-			encodedOut.write(value.getBytes("UTF-8"));
-		}
-		return baos.toString().replace("\r", "=0D").replace("\n", "=0A").replace(";", "\\;");
 	}
 
 	/**

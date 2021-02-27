@@ -1,4 +1,4 @@
-package de.soderer.vcf;
+package de.soderer.utilities.vcf;
 
 public class VcfConstants {
 	static final String BEGIN_VCARD = "BEGIN:VCARD";

@@ -11,9 +11,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import de.soderer.utilities.BOMInputStream;
-import de.soderer.vcf.VcfCard;
-import de.soderer.vcf.VcfReader;
-import de.soderer.vcf.VcfWriter;
+import de.soderer.utilities.vcf.VcfCard;
+import de.soderer.utilities.vcf.VcfReader;
+import de.soderer.utilities.vcf.VcfWriter;
 
 public class VcfReaderWriterTest {
 	@Test
