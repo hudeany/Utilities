@@ -14,7 +14,6 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -25,8 +24,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 
-import de.soderer.utilities.remote.FileInfo;
-import de.soderer.utilities.remote.FolderInfo;
 import de.soderer.utilities.swt.worker.DirectoryHashingWorker;
 import de.soderer.utilities.swt.worker.FileHashingWorker;
 
@@ -387,7 +384,7 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Get size in bytes of all recursive subfiles of a directory
+	 * Get size in bytes of all files and all descending subdirectories of a directory
 	 *
 	 * @param directory
 	 * @return
@@ -581,29 +578,6 @@ public class FileUtilities {
 		if (!file.delete()) {
 			throw new IOException("Failed to delete " + file);
 		}
-	}
-
-	public static FolderInfo getFolderInfo(String folderPath) {
-		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
-		String folderName;
-		if (folderPath.contains("/")) {
-			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
-		} else {
-			folderName = folderPath;
-		}
-
-		final List<FolderInfo> folderInfoList = new ArrayList<>();
-		final List<FileInfo> fileInfoList = new ArrayList<>();
-		for (final File subFile : new File(folderPath).listFiles()) {
-			final String entryName = subFile.getName();
-			if (subFile.isDirectory()) {
-				folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
-			} else {
-				fileInfoList.add(new FileInfo(entryName, subFile.length(), new Date(subFile.lastModified())));
-			}
-		}
-
-		return new FolderInfo(folderName, folderInfoList, fileInfoList, new Date(new File(folderPath).lastModified()));
 	}
 
 	public static boolean directoriesAreEqual(final File file1, final File file2) throws Exception {

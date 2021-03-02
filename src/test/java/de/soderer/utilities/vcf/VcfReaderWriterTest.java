@@ -66,9 +66,9 @@ public class VcfReaderWriterTest {
 
 	@Test
 	public void test2() throws Exception {
-		final File testfile = new File("C:\\Users\\Andreas\\Downloads\\Kontakte\\vcards.vcf");
+		final File testfile = new File(System.getProperty("user.home") + "\\Downloads\\Kontakte\\vcards.vcf");
 
-		final File tempFile = new File("C:\\Users\\Andreas\\Downloads\\Kontakte\\vcards2.vcf");
+		final File tempFile = new File(System.getProperty("user.home") + "\\Downloads\\Kontakte\\vcards2.vcf");
 
 		try (VcfReader reader = new VcfReader(new FileInputStream(testfile));
 				VcfWriter writer = new VcfWriter(new FileOutputStream(tempFile), StandardCharsets.ISO_8859_1)) {

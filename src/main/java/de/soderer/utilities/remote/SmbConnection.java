@@ -32,6 +32,7 @@ import com.hierynomus.smbj.share.File;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 public class SmbConnection implements RemoteConnection {
@@ -116,38 +117,6 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	@Override
-	public List<String> getFolders(String folderPath) throws Exception {
-		checkForConnection();
-		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
-		final List<String> folderNames = new ArrayList<>();
-		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
-			final String entryName = fileIdBothDirectoryInformation.getFileName();
-			if (!".".equals(entryName) && !"..".equals(entryName)) {
-				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
-					folderNames.add(entryName);
-				}
-			}
-		}
-		return folderNames;
-	}
-
-	@Override
-	public boolean folderExists(String folderPath) throws Exception {
-		checkForConnection();
-		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
-		final String folderParentPath = FileUtilities.getParentFromPath(folderPath);
-		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
-		try {
-			for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderParentPath, folderName)) {
-				return EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
-			}
-		} catch (@SuppressWarnings("unused") final Exception e) {
-			return false;
-		}
-		return false;
-	}
-
-	@Override
 	public void deleteFolder(String folderPath) throws Exception {
 		checkForConnection();
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
@@ -159,39 +128,6 @@ public class SmbConnection implements RemoteConnection {
 		checkForConnection();
 		parentFolderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(parentFolderPath.replace("\\", "/")));
 		diskShare.mkdir((parentFolderPath != null && parentFolderPath.length() > 0 ? parentFolderPath + "/" : "") + folderName);
-	}
-
-	@Override
-	public List<String> getFiles(String folderPath) throws Exception {
-		checkForConnection();
-		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
-		final List<String> fileNames = new ArrayList<>();
-		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
-			final String entryName = fileIdBothDirectoryInformation.getFileName();
-			if (!".".equals(entryName) && !"..".equals(entryName)) {
-				if (!EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
-					fileNames.add(entryName);
-				}
-			}
-		}
-		return fileNames;
-	}
-
-	@Override
-	public boolean fileExists(String filePath) throws Exception {
-		checkForConnection();
-		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
-		final int lastPathSeparator = filePath.replace("\\", "/").lastIndexOf("/");
-		final String folderPath = lastPathSeparator >= 0 ? filePath.substring(0, lastPathSeparator) : "";
-		final String fileName = lastPathSeparator >= 0 ? filePath.substring(lastPathSeparator + 1) : filePath;
-		try {
-			for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, fileName)) {
-				return !EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY);
-			}
-		} catch (@SuppressWarnings("unused") final Exception e) {
-			return false;
-		}
-		return false;
 	}
 
 	@Override
@@ -219,7 +155,7 @@ public class SmbConnection implements RemoteConnection {
 
 	@SuppressWarnings("resource")
 	@Override
-	public InputStream getFile(String filePath) throws Exception {
+	public InputStream downloadFile(String filePath) throws Exception {
 		checkForConnection();
 		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
 		final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
@@ -254,8 +190,6 @@ public class SmbConnection implements RemoteConnection {
 
 		Date modificationDate = null;
 
-		final List<FolderInfo> folderInfoList = new ArrayList<>();
-		final List<FileInfo> fileInfoList = new ArrayList<>();
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			final String entryName = fileIdBothDirectoryInformation.getFileName();
 			if (".".equals(entryName)) {
@@ -263,19 +197,11 @@ public class SmbConnection implements RemoteConnection {
 					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
 					modificationDate = fileAllInformation.getBasicInformation().getLastWriteTime().toDate();
 				}
-			} else if (!"..".equals(entryName)) {
-				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
-					folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
-				} else {
-					try (final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
-						final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-						fileInfoList.add(new FileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
-					}
-				}
+				break;
 			}
 		}
 
-		return new FolderInfo(folderName, folderInfoList, fileInfoList, modificationDate);
+		return new FolderInfo(folderName, modificationDate);
 	}
 
 	@Override
@@ -341,5 +267,40 @@ public class SmbConnection implements RemoteConnection {
 
 			isClosed = true;
 		}
+	}
+
+	@Override
+	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String folderPath) throws Exception {
+		checkForConnection();
+
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
+		String folderName;
+		if (folderPath.contains("/")) {
+			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+		} else {
+			folderName = folderPath;
+		}
+
+		if (Utilities.isEmpty(folderName)) {
+			folderName = "/";
+		}
+
+		final List<FolderInfo> folderInfoList = new ArrayList<>();
+		final List<FileInfo> fileInfoList = new ArrayList<>();
+		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
+			final String entryName = fileIdBothDirectoryInformation.getFileName();
+			if (!".".equals(entryName) && !"..".equals(entryName)) {
+				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
+					folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
+				} else {
+					try (final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+						final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
+						fileInfoList.add(new FileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
+					}
+				}
+			}
+		}
+
+		return new Tuple<>(folderInfoList, fileInfoList);
 	}
 }

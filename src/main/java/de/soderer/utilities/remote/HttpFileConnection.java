@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.http.HttpUtilities;
 
@@ -124,84 +125,6 @@ public class HttpFileConnection implements RemoteConnection {
 		}
 	}
 
-	@Override
-	public List<String> getFiles(final String folderPath) throws Exception {
-		try {
-			final URLConnection urlConnection = getUrl(FileUtilities.trimLeadingFileSeparator(folderPath)).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-				final List<String> returnList = new ArrayList<>();
-				final byte[] data = Utilities.toByteArray(inputStream);
-				for (final String fileLine : getFileLines(data)) {
-					returnList.add(getEntryNameFromLine(fileLine));
-				}
-				return returnList;
-			}
-		} catch (final Exception e) {
-			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);
-		}
-	}
-
-	@Override
-	public List<String> getFolders(final String folderPath) throws Exception {
-		try {
-			final URLConnection urlConnection = getUrl(FileUtilities.trimLeadingFileSeparator(folderPath)).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-				final byte[] data = Utilities.toByteArray(inputStream);
-				return getFolderNames(data);
-			}
-		} catch (final Exception e) {
-			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Check if folder exists
-	 */
-	@Override
-	public boolean folderExists(String folderPath) throws Exception {
-		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
-		final String parentFolderPath = FileUtilities.getParentFromPath(folderPath);
-		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
-		try {
-			final URLConnection urlConnection = getUrl(parentFolderPath).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-				final byte[] data = Utilities.toByteArray(inputStream);
-				return getFolderNames(data).contains(folderName);
-			}
-		} catch (final Exception e) {
-			throw new Exception("Cannot check folder exists for '" + folderPath + "': " + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Check if file exists on sftp server
-	 *
-	 * @param filePath
-	 * @return
-	 * @throws Exception on invalid directory
-	 */
-	@Override
-	public boolean fileExists(String filePath) throws Exception {
-		filePath = FileUtilities.trimLeadingFileSeparator(filePath);
-		final String folderPath = FileUtilities.getParentFromPath(filePath);
-		final String fileName = FileUtilities.getFilenameFromPath(filePath);
-		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection();
-			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-				final byte[] data = Utilities.toByteArray(inputStream);
-				for (final String fileLine : getFileLines(data)) {
-					final String fileNameFromLine = getEntryNameFromLine(fileLine);
-					if (fileNameFromLine != null && fileNameFromLine.equals(fileName)) {
-						return true;
-					}
-				}
-				return false;
-			}
-		} catch (final Exception e) {
-			throw new Exception("Cannot check file exists for '" + filePath + "': " + e.getMessage(), e);
-		}
-	}
-
 	/**
 	 * Put a file on the server.
 	 *
@@ -220,7 +143,7 @@ public class HttpFileConnection implements RemoteConnection {
 	 * @return the input stream
 	 */
 	@Override
-	public InputStream getFile(String filePath) throws Exception {
+	public InputStream downloadFile(String filePath) throws Exception {
 		filePath = FileUtilities.trimLeadingFileSeparator(filePath);
 		try {
 			final URLConnection urlConnection = getUrl(filePath).openConnection();
@@ -288,23 +211,8 @@ public class HttpFileConnection implements RemoteConnection {
 		try {
 			final URLConnection urlConnection = getUrl(folderPath).openConnection();
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-				final byte[] data = Utilities.toByteArray(inputStream);
-				final List<FolderInfo> folderInfoList = new ArrayList<>();
-				for (final String subFolderName : getFolderNames(data)) {
-					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
-				}
-				final List<FileInfo> fileInfoList = new ArrayList<>();
-				for (final String fileLine : getFileLines(data)) {
-					final String fileName = getEntryNameFromLine(fileLine);
-					final String fileInfoPart = fileLine.substring(fileLine.lastIndexOf("</a>") + 4).trim();
-					final int separatorIndex = fileInfoPart.lastIndexOf(" ");
-					final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
-					final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
-					final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
-					final long fileSize = getFileSize(sizeString);
-					fileInfoList.add(new FileInfo(fileName, fileSize, modificationDate));
-				}
-				return new FolderInfo(folderName, folderInfoList, fileInfoList, null);
+				// Check existence only. Modification date is not available in general.
+				return new FolderInfo(folderName, null);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);
@@ -402,5 +310,34 @@ public class HttpFileConnection implements RemoteConnection {
 			fileSize = Long.parseLong(sizeString);
 		}
 		return fileSize;
+	}
+
+	@Override
+	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String folderPath) throws Exception {
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
+		try {
+			final URLConnection urlConnection = getUrl(folderPath).openConnection();
+			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+				final byte[] data = Utilities.toByteArray(inputStream);
+				final List<FolderInfo> folderInfoList = new ArrayList<>();
+				for (final String subFolderName : getFolderNames(data)) {
+					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
+				}
+				final List<FileInfo> fileInfoList = new ArrayList<>();
+				for (final String fileLine : getFileLines(data)) {
+					final String fileName = getEntryNameFromLine(fileLine);
+					final String fileInfoPart = fileLine.substring(fileLine.lastIndexOf("</a>") + 4).trim();
+					final int separatorIndex = fileInfoPart.lastIndexOf(" ");
+					final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
+					final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
+					final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
+					final long fileSize = getFileSize(sizeString);
+					fileInfoList.add(new FileInfo(fileName, fileSize, modificationDate));
+				}
+				return new Tuple<>(folderInfoList, fileInfoList);
+			}
+		} catch (final Exception e) {
+			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);
+		}
 	}
 }

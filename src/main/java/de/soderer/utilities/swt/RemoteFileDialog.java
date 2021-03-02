@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,8 +35,11 @@ import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.remote.FileInfo;
+import de.soderer.utilities.remote.FolderInfo;
 import de.soderer.utilities.remote.FtpConnection;
 import de.soderer.utilities.remote.HttpFileConnection;
 import de.soderer.utilities.remote.RemoteConnection;
@@ -722,13 +726,14 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			if (currentPath.endsWith("/")) {
 				currentPath = currentPath.substring(0, currentPath.length() - 1);
 			}
-			for (final String folder : connection.getFolders(currentPath)) {
-				new File(destinationPath + "/" + folder).mkdir();
-				recursiveDownload(currentPath + "/" + folder, destinationPath + "/" + folder);
+			final Tuple<List<FolderInfo>, List<FileInfo>> directory = connection.getDirectory(currentPath);
+			for (final FolderInfo folderInfo : directory.getFirst()) {
+				new File(destinationPath + "/" + folderInfo.getFolderName()).mkdir();
+				recursiveDownload(currentPath + "/" + folderInfo.getFolderName(), destinationPath + "/" + folderInfo.getFolderName());
 			}
-			for (final String file : connection.getFiles(currentPath)) {
-				try (InputStream inputStream = connection.getFile(currentPath + "/" + file);
-						OutputStream outputStream = new FileOutputStream(destinationPath + "/" + file)) {
+			for (final FileInfo fileInfo : directory.getSecond()) {
+				try (InputStream inputStream = connection.downloadFile(currentPath + "/" + fileInfo.getFileName());
+						OutputStream outputStream = new FileOutputStream(destinationPath + "/" + fileInfo.getFileName())) {
 					Utilities.copy(inputStream, outputStream);
 				}
 			}
@@ -771,18 +776,17 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 				connection = new HttpFileConnection(getServerEntry());
 			}
 
-			final List<String> folders = connection.getFolders("/");
-			final List<String> files = connection.getFiles("/");
+			final Tuple<List<FolderInfo>, List<FileInfo>> directory = connection.getDirectory("/");
 			folderTree.removeAll();
 			final TreeItem rootTreeItem = new TreeItem(folderTree, SWT.NONE);
 			rootTreeItem.setText("/");
-			for (final String folderName : folders) {
+			for (final FolderInfo folderInfo : directory.getFirst()) {
 				final TreeItem folderTreeItem = new TreeItem(rootTreeItem, SWT.NONE);
-				folderTreeItem.setText(folderName);
+				folderTreeItem.setText(folderInfo.getFolderName());
 			}
-			for (final String fileName : files) {
+			for (final FileInfo fileInfo : directory.getSecond()) {
 				final TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
-				filesTreeItem.setText(fileName);
+				filesTreeItem.setText(fileInfo.getFileName());
 			}
 			rootTreeItem.setExpanded(true);
 			folderTree.select(folderTree.getItem(0));
@@ -991,8 +995,14 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 		try {
 			final TreeItem selectedFolderItem = folderTree.getSelection()[0];
 			final String path = SwtUtilities.getAbsolutePath(selectedFolderItem);
-			final List<String> folders = connection.getFolders(path);
-			final List<String> files = connection.getFiles(path);
+
+			final Tuple<List<FolderInfo>, List<FileInfo>> directory = connection.getDirectory(path);
+
+			final List<String> folders = new ArrayList<>();
+			for (final FolderInfo folderInfo : directory.getFirst()) {
+				folders.add(folderInfo.getFolderName());
+			}
+
 			for (final TreeItem subItem : selectedFolderItem.getItems()) {
 				if (!folders.contains(subItem.getText())) {
 					subItem.dispose();
@@ -1013,11 +1023,11 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			}
 			selectedFolderItem.setExpanded(true);
 			filesTree.removeAll();
-			for (final String fileName : files) {
+			for (final FileInfo fileInfo : directory.getSecond()) {
 				final TreeItem filesTreeItem = new TreeItem(filesTree, SWT.NONE);
-				filesTreeItem.setText(fileName);
+				filesTreeItem.setText(fileInfo.getFileName());
 			}
-			if (files.size() > 0) {
+			if (directory.getSecond().size() > 0) {
 				filesTree.setSelection(filesTree.getItem(0));
 			}
 			selectedFilePath = path;

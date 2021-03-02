@@ -15,8 +15,8 @@ import de.soderer.utilities.swt.worker.RemoteFileUploadWorker;
 import de.soderer.utilities.zip.ZipUtilities;
 
 public class SftpConnectionTest {
-	private static final File localTestDirectory = new File("C:\\Users\\Andreas\\Downloads\\test");
-	private static final File localTestDirectory2 = new File("C:\\Users\\Andreas\\Downloads\\test2");
+	private static final File localTestDirectory = new File(System.getProperty("user.home") + "\\Downloads\\test");
+	private static final File localTestDirectory2 = new File(System.getProperty("user.home") + "\\Downloads\\test2");
 
 	private RemoteConnection getConnection() throws Exception {
 		final byte[] keyFileData = FileUtilities.readFileToByteArray(new File(System.getenv().get("SFTP_KEYFILE")));
@@ -48,7 +48,7 @@ public class SftpConnectionTest {
 	@Test
 	public void directoryRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			if (connection.folderExists("/home/andreas/test")) {
+			if (connection.getFolderInfo("/home/andreas/test") != null) {
 				connection.deleteFolder("/home/andreas/test");
 			}
 			try {
@@ -63,7 +63,7 @@ public class SftpConnectionTest {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
 			} finally {
-				if (connection.folderExists("/home/andreas/test")) {
+				if (connection.getFolderInfo("/home/andreas/test") != null) {
 					connection.deleteFolder("/home/andreas/test");
 				}
 			}
@@ -76,7 +76,7 @@ public class SftpConnectionTest {
 	@Test
 	public void fileRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			if (connection.folderExists("/home/andreas/test")) {
+			if (connection.getFolderInfo("/home/andreas/test") != null) {
 				connection.deleteFolder("/home/andreas/test");
 			}
 			connection.createFolder("/home/andreas", "test");
@@ -93,7 +93,7 @@ public class SftpConnectionTest {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
 			} finally {
-				if (connection.folderExists("/home/andreas/test")) {
+				if (connection.getFolderInfo("/home/andreas/test") != null) {
 					connection.deleteFolder("/home/andreas/test");
 				}
 			}

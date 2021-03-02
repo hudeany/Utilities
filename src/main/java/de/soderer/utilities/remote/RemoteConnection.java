@@ -4,10 +4,10 @@ import java.io.Closeable;
 import java.io.InputStream;
 import java.util.List;
 
-public interface RemoteConnection extends Closeable {
-	List<String> getFolders(String folderPath) throws Exception;
+import de.soderer.utilities.Tuple;
 
-	boolean folderExists(String folderPath) throws Exception;
+public interface RemoteConnection extends Closeable {
+	Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String path) throws Exception;
 
 	FolderInfo getFolderInfo(String folderPath) throws Exception;
 
@@ -15,15 +15,11 @@ public interface RemoteConnection extends Closeable {
 
 	void createFolder(String parentFolderPath, String folderName) throws Exception;
 
-	List<String> getFiles(String folderPath) throws Exception;
-
-	boolean fileExists(String filePath) throws Exception;
-
 	FileInfo getFileInfo(String filePath) throws Exception;
 
 	void deleteFile(String filePath) throws Exception;
 
-	InputStream getFile(String filePath) throws Exception;
+	InputStream downloadFile(String filePath) throws Exception;
 
 	void uploadFile(String filePath, InputStream fileInputStream) throws Exception;
 }

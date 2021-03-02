@@ -8,8 +8,6 @@ import java.io.InputStream;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.remote.FileInfo;
-import de.soderer.utilities.remote.FolderInfo;
 import de.soderer.utilities.remote.RemoteConnection;
 import de.soderer.utilities.worker.WorkerDual;
 import de.soderer.utilities.worker.WorkerParentDual;
@@ -44,7 +42,7 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 			throw new Exception("Source directory is no directory: \"" + localDirectory.getAbsolutePath() + "\"");
 		} else if (Utilities.isBlank(remoteParentDirectoryPath)) {
 			throw new Exception("No remoteParentDirectoryPath");
-		} else if (!"/".equals(remoteParentDirectoryPath) && !connection.folderExists(remoteParentDirectoryPath)) {
+		} else if (!"/".equals(remoteParentDirectoryPath) && connection.getFolderInfo(remoteParentDirectoryPath) == null) {
 			throw new Exception("Remote directory not found or is no directory: \"" + remoteParentDirectoryPath + "\"");
 		}
 
@@ -64,7 +62,7 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 		} else {
 			remotePath = remoteParentDirectoryPath + "/" + this.remoteDirectoryName;
 		}
-		if (connection.folderExists(remotePath) || connection.fileExists(remotePath)) {
+		if (connection.getFolderInfo(remotePath) != null || connection.getFileInfo(remotePath) != null) {
 			throw new Exception("Remote directory already exists: \"" + remotePath + "\"");
 		}
 	}
@@ -72,31 +70,30 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 	@Override
 	public DirectoryUploadWorker work() throws Exception {
 		showUnlimitedProgress();
-		final FolderInfo localFolderInfo = FileUtilities.getFolderInfo(localDirectory.getAbsolutePath());
-		itemsToDo = localFolderInfo.getRecursiveFolderDataSize();
+		itemsToDo = FileUtilities.getAllSubfilesSize(localDirectory);
 		showProgress(true);
-		connection.createFolder(remoteParentDirectoryPath, localFolderInfo.getFolderName());
-		recursiveUpload(localDirectory, localFolderInfo, remoteParentDirectoryPath + "/" + localFolderInfo.getFolderName());
+		connection.createFolder(remoteParentDirectoryPath, localDirectory.getName());
+		recursiveUpload(localDirectory, remoteParentDirectoryPath + "/" + localDirectory.getName());
 		return this;
 	}
 
-	private void recursiveUpload(final File localUploadDirectory, final FolderInfo localFolderInfo, final String destinationDirectory) throws Exception {
-		if (!cancel) {
-			for (final FolderInfo subFolderInfo : localFolderInfo.getSubFolders()) {
-				if (!cancel) {
-					connection.createFolder(destinationDirectory, subFolderInfo.getFolderName());
-					recursiveUpload(new File(localUploadDirectory, subFolderInfo.getFolderName()), subFolderInfo, destinationDirectory + "/" + subFolderInfo.getFolderName());
-				}
-			}
-		}
-		if (!cancel) {
-			for (final FileInfo fileInfo : localFolderInfo.getFiles()) {
-				if (!cancel) {
-					final File nextLocalFile = new File(localUploadDirectory, fileInfo.getFileName());
-					final String nextRemoteFile = destinationDirectory + "/" + fileInfo.getFileName();
+	private void recursiveUpload(final File localUploadDirectory, final String destinationDirectory) throws Exception {
+		final File[] subFiles = localUploadDirectory.listFiles();
+		if (subFiles != null) {
+			for (final File file : subFiles) {
+				if (cancel) {
+					break;
+				} else if (file.isDirectory()) {
+					if (!cancel) {
+						connection.createFolder(destinationDirectory, file.getName());
+						recursiveUpload(new File(localUploadDirectory, file.getName()), destinationDirectory + "/" + file.getName());
+					}
+				} else {
+					final File nextLocalFile = new File(localUploadDirectory, file.getName());
+					final String nextRemoteFile = destinationDirectory + "/" + file.getName();
 					subItemsDone = 0;
-					subItemsToDo = fileInfo.getFileSize();
-					showItemStart(fileInfo.getFileName());
+					subItemsToDo = file.length();
+					showItemStart(file.getName());
 					showProgress();
 					try (InputStream inputStream = new ProgressInputStream(new FileInputStream(nextLocalFile))) {
 						connection.uploadFile(nextRemoteFile, inputStream);
@@ -104,7 +101,7 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 						showProgress();
 					}
 
-					if (cancel && connection.fileExists(nextRemoteFile)) {
+					if (cancel && connection.getFileInfo(nextRemoteFile) != null) {
 						connection.deleteFile(nextRemoteFile);
 					}
 				}

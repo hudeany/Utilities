@@ -31,6 +31,7 @@ import de.soderer.utilities.JschFileData;
 import de.soderer.utilities.JschFileData.JschFileType;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
 
@@ -195,126 +196,6 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
-	@Override
-	public boolean fileExists(final String filePath) throws Exception {
-		Channel channel = null;
-		try {
-			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("test -f \"" + filePath + "\" && echo true || echo false");
-
-			// Streams must be fetched before channel connect
-			try (InputStream inStream = channel.getInputStream();
-					InputStream inErrorStream = channel.getExtInputStream()) {
-				channel.connect();
-
-				final byte[] successData = Utilities.toByteArray(inStream);
-				final String successString = new String(successData, StandardCharsets.UTF_8);
-
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
-
-				if (errorData != null && errorData.length > 0) {
-					return false;
-				} else {
-					return Utilities.interpretAsBool(successString);
-				}
-			}
-		} finally {
-			closeQuietly(channel);
-		}
-	}
-
-	@Override
-	public boolean folderExists(final String filePath) throws Exception {
-		Channel channel = null;
-		try {
-			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("test -d \"" + filePath + "\" && echo true || echo false");
-
-			// Streams must be fetched before channel connect
-			try (InputStream inStream = channel.getInputStream();
-					InputStream inErrorStream = channel.getExtInputStream()) {
-				channel.connect();
-
-				final byte[] successData = Utilities.toByteArray(inStream);
-				final String successString = new String(successData, StandardCharsets.UTF_8);
-
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
-
-				if (errorData != null && errorData.length > 0) {
-					return false;
-				} else {
-					return Utilities.interpretAsBool(successString);
-				}
-			}
-		} finally {
-			closeQuietly(channel);
-		}
-	}
-
-	@Override
-	public List<String> getFolders(final String folderPath) throws Exception {
-		final List<String> folderList = new ArrayList<>();
-		Channel channel = null;
-		try {
-			// Read folders
-			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find \"" + folderPath + (folderPath.endsWith("/") ? "" : "/") + "\" -mindepth 1 -maxdepth 1 -type d");
-
-			// Streams must be fetched before channel connect
-			try (InputStream inStream = channel.getInputStream();
-					InputStream inErrorStream = channel.getExtInputStream()) {
-				channel.connect();
-
-				for (final String folderLine : Utilities.readLines(inStream, StandardCharsets.UTF_8)) {
-					folderList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
-				}
-
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
-				if (errorData != null && errorData.length > 0) {
-					throw new Exception(new String(errorData, StandardCharsets.UTF_8));
-				}
-			}
-		} finally {
-			closeQuietly(channel);
-			channel = null;
-		}
-		folderList.addAll(getFolderLinks(folderPath));
-		Collections.sort(folderList);
-		return folderList;
-	}
-
-	@Override
-	public List<String> getFiles(final String directoryPath) throws Exception {
-		final List<String> fileList = new ArrayList<>();
-		Channel channel = null;
-		try {
-			// Read files
-			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find \"" + directoryPath + (directoryPath.endsWith("/") ? "" : "/") + "\" -mindepth 1 -maxdepth 1 -type f");
-
-			// Streams must be fetched before channel connect
-			try (InputStream inStream = channel.getInputStream();
-					InputStream inErrorStream = channel.getExtInputStream()) {
-				channel.connect();
-
-				for (final String folderLine : Utilities.readLines(inStream, StandardCharsets.UTF_8)) {
-					fileList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
-				}
-
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
-				if (errorData != null && errorData.length > 0) {
-					throw new Exception(new String(errorData, StandardCharsets.UTF_8));
-				}
-			}
-		} finally {
-			closeQuietly(channel);
-			channel = null;
-		}
-		fileList.addAll(getFileLinks(directoryPath));
-		Collections.sort(fileList);
-		return fileList;
-	}
-
 	public List<String> getFolderLinks(final String directoryPath) throws Exception {
 		final List<String> folderList = new ArrayList<>();
 		final List<String> linkList = new ArrayList<>();
@@ -345,7 +226,7 @@ public class SftpConnection implements RemoteConnection {
 		}
 
 		for (final String link : linkList) {
-			if (folderExists(directoryPath + "/" + link)) {
+			if (getFolderInfo(directoryPath + "/" + link) != null) {
 				folderList.add(link);
 			}
 		}
@@ -383,7 +264,7 @@ public class SftpConnection implements RemoteConnection {
 		}
 
 		for (final String link : linkList) {
-			if (fileExists(filePath + "/" + link)) {
+			if (getFileInfo(filePath + "/" + link) != null) {
 				fileList.add(link);
 			}
 		}
@@ -485,7 +366,7 @@ public class SftpConnection implements RemoteConnection {
 
 	@SuppressWarnings("resource")
 	@Override
-	public InputStream getFile(final String filePath) throws Exception {
+	public InputStream downloadFile(final String filePath) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
@@ -887,9 +768,6 @@ public class SftpConnection implements RemoteConnection {
 
 	@Override
 	public FolderInfo getFolderInfo(String folderPath) throws Exception {
-		final List<FileInfo> fileInfoList = new ArrayList<>();
-		final List<String> subFolderNames = new ArrayList<>();
-
 		folderPath = FileUtilities.trimTrailingFileSeparator(folderPath);
 
 		String folderName;
@@ -927,14 +805,7 @@ public class SftpConnection implements RemoteConnection {
 								final JschFileData fileData = new JschFileData(nextLine);
 								if (".".equals(fileData.getFileName())) {
 									modificationDate = fileData.getChangeDate();
-								} else if (!"..".equals(fileData.getFileName())) {
-									if (fileData.getFileType() == JschFileType.RegularFile) {
-										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
-									} else if (fileData.getFileType() == JschFileType.SymbolicLink) {
-										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
-									} else if (fileData.getFileType() == JschFileType.Directory) {
-										subFolderNames.add(fileData.getFileName());
-									}
+									break;
 								}
 							}
 							isFirstLine = false;
@@ -948,16 +819,10 @@ public class SftpConnection implements RemoteConnection {
 			closeQuietly(channel);
 		}
 
-		final List<FolderInfo> folderInfoList = new ArrayList<>();
-
-		for (final String subFolderName : subFolderNames) {
-			folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
-		}
-
 		if (Utilities.isEmpty(folderName)) {
 			folderName = "/";
 		}
-		return new FolderInfo(folderName, folderInfoList, fileInfoList, modificationDate);
+		return new FolderInfo(folderName, modificationDate);
 	}
 
 	/**
@@ -1099,5 +964,76 @@ public class SftpConnection implements RemoteConnection {
 				return -1;
 			}
 		}
+	}
+
+	@Override
+	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String folderPath) throws Exception {
+		final List<FileInfo> fileInfoList = new ArrayList<>();
+		final List<String> subFolderNames = new ArrayList<>();
+
+		folderPath = FileUtilities.trimTrailingFileSeparator(folderPath);
+
+		String folderName;
+		if (folderPath.contains("/")) {
+			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+		} else {
+			folderName = folderPath;
+		}
+
+		Channel channel = null;
+		try {
+			channel = session.openChannel("exec");
+			((ChannelExec) channel).setCommand("ls -al \"" + (Utilities.isEmpty(folderPath) ? "/" : folderPath) + "\"");
+
+			// Streams must be fetched before channel connect
+			try (InputStream inStream = channel.getInputStream();
+					InputStream inErrorStream = channel.getExtInputStream()) {
+				channel.connect();
+
+				final byte[] successData = Utilities.toByteArray(inStream);
+				final String successString = new String(successData, StandardCharsets.UTF_8);
+
+				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+
+				if (errorData != null && errorData.length > 0) {
+					return null;
+				} else {
+					try (BufferedReader reader = new BufferedReader(new StringReader(successString))) {
+						String nextLine;
+						boolean isFirstLine = true;
+						while ((nextLine = reader.readLine()) != null) {
+							if (!isFirstLine || !(nextLine.startsWith("total") || nextLine.startsWith("insgesamt"))) {
+								final JschFileData fileData = new JschFileData(nextLine);
+								if (!".".equals(fileData.getFileName()) && !"..".equals(fileData.getFileName())) {
+									if (fileData.getFileType() == JschFileType.RegularFile) {
+										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+									} else if (fileData.getFileType() == JschFileType.SymbolicLink) {
+										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+									} else if (fileData.getFileType() == JschFileType.Directory) {
+										subFolderNames.add(fileData.getFileName());
+									}
+								}
+							}
+							isFirstLine = false;
+						}
+					}
+
+
+				}
+			}
+		} finally {
+			closeQuietly(channel);
+		}
+
+		final List<FolderInfo> folderInfoList = new ArrayList<>();
+
+		for (final String subFolderName : subFolderNames) {
+			folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
+		}
+
+		if (Utilities.isEmpty(folderName)) {
+			folderName = "/";
+		}
+		return new Tuple<>(folderInfoList, fileInfoList);
 	}
 }

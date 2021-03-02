@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbFile;
@@ -79,28 +80,6 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public List<String> getFolders(final String folderPath) throws Exception {
-		checkConnection();
-		final List<String> folderNames = new ArrayList<>();
-		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
-		if (smbFile.isDirectory()) {
-			for (final SmbFile subFile : smbFile.listFiles()) {
-				if (subFile.isDirectory()) {
-					folderNames.add(FileUtilities.trimTrailingFileSeparator(subFile.getName()));
-				}
-			}
-		}
-		return folderNames;
-	}
-
-	@Override
-	public boolean folderExists(final String folderPath) throws Exception {
-		checkConnection();
-		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
-		return smbFile.isDirectory();
-	}
-
-	@Override
 	public void deleteFolder(final String folderPath) throws Exception {
 		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
@@ -112,28 +91,6 @@ public class Smb1Connection implements RemoteConnection {
 		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(parentFolderPath) + "/" + folderName, auth);
 		smbFile.mkdir();
-	}
-
-	@Override
-	public List<String> getFiles(final String folderPath) throws Exception {
-		checkConnection();
-		final List<String> fileNames = new ArrayList<>();
-		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
-		if (smbFile.isDirectory()) {
-			for (final SmbFile subFile : smbFile.listFiles()) {
-				if (subFile.isFile()) {
-					fileNames.add(subFile.getName());
-				}
-			}
-		}
-		return fileNames;
-	}
-
-	@Override
-	public boolean fileExists(final String filePath) throws Exception {
-		checkConnection();
-		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
-		return smbFile.isFile();
 	}
 
 	@Override
@@ -162,7 +119,7 @@ public class Smb1Connection implements RemoteConnection {
 	}
 
 	@Override
-	public InputStream getFile(final String filePath) throws Exception {
+	public InputStream downloadFile(final String filePath) throws Exception {
 		checkConnection();
 		final SmbFile smbFile = new SmbFile(getPath(filePath), auth);
 		return smbFile.getInputStream();
@@ -215,6 +172,30 @@ public class Smb1Connection implements RemoteConnection {
 				folderName = "/";
 			}
 
+			return new FolderInfo(folderName, new Date(smbFile.getDate()));
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String folderPath) throws Exception {
+		checkConnection();
+
+		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath.replace("\\", "/")));
+
+		final SmbFile smbFile = new SmbFile(getPath(folderPath) + "/", auth);
+		if (smbFile.isDirectory()) {
+			String folderName;
+			if (folderPath.contains("/")) {
+				folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+			} else {
+				folderName = folderPath;
+			}
+			if  ("".equals(folderName)) {
+				folderName = "/";
+			}
+
 			final List<FolderInfo> folderInfoList = new ArrayList<>();
 			final List<FileInfo> fileInfoList = new ArrayList<>();
 
@@ -232,7 +213,7 @@ public class Smb1Connection implements RemoteConnection {
 				}
 			}
 
-			return new FolderInfo(folderName, folderInfoList, fileInfoList, new Date(smbFile.getDate()));
+			return new Tuple<>(folderInfoList, fileInfoList);
 		} else {
 			return null;
 		}

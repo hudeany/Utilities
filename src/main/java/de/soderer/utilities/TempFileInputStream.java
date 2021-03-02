@@ -1,6 +1,8 @@
 package de.soderer.utilities;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +13,12 @@ import java.io.InputStream;
  */
 public class TempFileInputStream extends FilterInputStream {
 	private final File tempFile;
+
+	@SuppressWarnings("resource")
+	public TempFileInputStream(final File tempFile) throws FileNotFoundException {
+		super(new FileInputStream(tempFile));
+		this.tempFile = tempFile;
+	}
 
 	public TempFileInputStream(final InputStream inputStream, final File tempFile) {
 		super(inputStream);

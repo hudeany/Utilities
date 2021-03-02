@@ -15,8 +15,8 @@ import de.soderer.utilities.swt.worker.RemoteFileUploadWorker;
 import de.soderer.utilities.zip.ZipUtilities;
 
 public class SmbConnectionTest {
-	private static final File localTestDirectory = new File("C:\\Users\\Andreas\\Downloads\\test");
-	private static final File localTestDirectory2 = new File("C:\\Users\\Andreas\\Downloads\\test2");
+	private static final File localTestDirectory = new File(System.getProperty("user.home") + "\\Downloads\\test");
+	private static final File localTestDirectory2 = new File(System.getProperty("user.home") + "\\Downloads\\test2");
 
 	private RemoteConnection getConnection() throws Exception {
 		return new SmbConnection(System.getenv().get("SMB_HOSTNAME"), 445, System.getenv().get("SMB_USERNAME"), System.getenv().get("SMB_SHARENAME"), System.getenv().get("SMB_PASSWORD").toCharArray());
@@ -47,7 +47,7 @@ public class SmbConnectionTest {
 	@Test
 	public void directoryRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			if (connection.folderExists("/test")) {
+			if (connection.getFolderInfo("/test") != null) {
 				connection.deleteFolder("/test");
 			}
 			try {
@@ -67,7 +67,7 @@ public class SmbConnectionTest {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
 			} finally {
-				if (connection.folderExists("/test")) {
+				if (connection.getFolderInfo("/test") != null) {
 					connection.deleteFolder("/test");
 				}
 			}
@@ -80,7 +80,7 @@ public class SmbConnectionTest {
 	@Test
 	public void fileRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			if (connection.folderExists("/test")) {
+			if (connection.getFolderInfo("/test") != null) {
 				connection.deleteFolder("/test");
 			}
 			connection.createFolder("/", "test");
@@ -97,7 +97,7 @@ public class SmbConnectionTest {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
 			} finally {
-				if (connection.folderExists("/test")) {
+				if (connection.getFolderInfo("/test") != null) {
 					connection.deleteFolder("/test");
 				}
 			}

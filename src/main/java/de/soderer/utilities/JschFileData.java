@@ -3,8 +3,9 @@ package de.soderer.utilities;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
+import java.util.GregorianCalendar;
 
 public class JschFileData {
 	public enum JschFileType {
@@ -141,15 +142,19 @@ public class JschFileData {
 
 				reader.readNextNonWhitespace();
 				final String dateString3 = reader.readUpToNext(false, null, ' ');
-				final String changeDateString = dateString1 + " " + dateString2 + " " + dateString3;
 				try {
-					changeDate = new SimpleDateFormat("MMM d HH:mm", Locale.ENGLISH).parse(changeDateString);
-				} catch (@SuppressWarnings("unused") final Exception e) {
+					final String changeDateString = DateUtilities.parseThreeLetterMonth(dateString1) + " " + dateString2 + " " + dateString3;
 					try {
-						changeDate = new SimpleDateFormat("MMM d yyyy", Locale.ENGLISH).parse(changeDateString);
-					} catch (@SuppressWarnings("unused") final Exception e1) {
-						throw new Exception("Invalid changeDate");
+						changeDate = new SimpleDateFormat("MM d HH:mm yyyy").parse(changeDateString + " " + new GregorianCalendar().get(Calendar.YEAR));
+					} catch (@SuppressWarnings("unused") final Exception e) {
+						try {
+							changeDate = new SimpleDateFormat("MM d yyyy").parse(changeDateString);
+						} catch (@SuppressWarnings("unused") final Exception e1) {
+							throw new Exception("Invalid changeDate");
+						}
 					}
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					changeDate = null;
 				}
 
 				// name

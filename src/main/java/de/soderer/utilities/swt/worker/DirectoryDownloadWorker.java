@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.remote.FileInfo;
 import de.soderer.utilities.remote.FolderInfo;
@@ -52,7 +54,7 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 			this.localDirectoryName = localDirectoryName;
 		}
 
-		if (!this.connection.folderExists(this.remoteDirectoryPath)) {
+		if (this.connection.getFolderInfo(this.remoteDirectoryPath) == null) {
 			throw new Exception("Remote directory not found or is no directory: \"" + this.remoteDirectoryPath + "\"");
 		} else if (!this.localParentDirectory.exists()) {
 			throw new Exception("Destination not found: \"" + this.localParentDirectory.getAbsolutePath() + "\"");
@@ -68,56 +70,69 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 	@Override
 	public DirectoryDownloadWorker work() throws Exception {
 		showUnlimitedProgress();
-		final FolderInfo remoteFolderInfo = connection.getFolderInfo(remoteDirectoryPath);
-		itemsToDo = remoteFolderInfo.getRecursiveFolderDataSize();
+		itemsToDo = getRemoteDirectorySize(remoteDirectoryPath);
 		showProgress(true);
 		final File destinationParentDirectoryPath = new File(localParentDirectory, localDirectoryName);
 		destinationParentDirectoryPath.mkdir();
-		recursiveDownload(remoteDirectoryPath, remoteFolderInfo, destinationParentDirectoryPath);
+		recursiveDownload(remoteDirectoryPath, destinationParentDirectoryPath);
 		return this;
 	}
 
-	private void recursiveDownload(final String remoteFolderPath, final FolderInfo remoteFolderInfo, final File destinationParentDirectory) throws Exception {
-		if (!cancel) {
-			for (final FolderInfo subFolderInfo : remoteFolderInfo.getSubFolders()) {
-				if (!cancel) {
-					final File nextFolderDestination = new File(destinationParentDirectory, subFolderInfo.getFolderName());
-					nextFolderDestination.mkdir();
-					recursiveDownload(remoteFolderPath + "/" + subFolderInfo.getFolderName(), subFolderInfo, nextFolderDestination);
+	private long getRemoteDirectorySize(final String subDirectoryPath) throws Exception {
+		final Tuple<List<FolderInfo>, List<FileInfo>> directory = connection.getDirectory(subDirectoryPath);
+		long fileSizeSum = 0;
+
+		for (final FileInfo fileInfo : directory.getSecond()) {
+			fileSizeSum += fileInfo.getFileSize();
+		}
+
+		for (final FolderInfo folderInfo : directory.getFirst()) {
+			fileSizeSum += getRemoteDirectorySize(subDirectoryPath + "/" + folderInfo.getFolderName());
+		}
+
+		return fileSizeSum;
+	}
+
+	private void recursiveDownload(final String remoteFolderPath, final File destinationParentDirectory) throws Exception {
+		final Tuple<List<FolderInfo>, List<FileInfo>> directory = connection.getDirectory(remoteFolderPath);
+
+		for (final FileInfo fileInfo : directory.getSecond()) {
+			if (!cancel) {
+				final String nextRemoteFile = remoteFolderPath + "/" + fileInfo.getFileName();
+				final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
+				subItemsDone = 0;
+				subItemsToDo = fileInfo.getFileSize();
+				showItemStart(nextRemoteFile.substring(remoteDirectoryPath.length() + 1));
+				showProgress();
+				try (InputStream inputStream = connection.downloadFile(nextRemoteFile);
+						OutputStream outputStream = new FileOutputStream(nextLocalFile)) {
+
+					final byte[] buffer = new byte[4096];
+					int bytesRead;
+					while ((bytesRead = inputStream.read(buffer)) >= 0) {
+						if (cancel) {
+							break;
+						} else {
+							outputStream.write(buffer, 0, bytesRead);
+							subItemsDone += bytesRead;
+							showItemProgress();
+						}
+					}
+					itemsDone += subItemsDone;
+					showProgress();
+				}
+
+				if (cancel && nextLocalFile.exists()) {
+					nextLocalFile.delete();
 				}
 			}
 		}
-		if (!cancel) {
-			for (final FileInfo fileInfo : remoteFolderInfo.getFiles()) {
-				if (!cancel) {
-					final String nextRemoteFile = remoteFolderPath + "/" + fileInfo.getFileName();
-					final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
-					subItemsDone = 0;
-					subItemsToDo = fileInfo.getFileSize();
-					showItemStart(nextRemoteFile.substring(remoteDirectoryPath.length() + 1));
-					showProgress();
-					try (InputStream inputStream = connection.getFile(nextRemoteFile);
-							OutputStream outputStream = new FileOutputStream(nextLocalFile)) {
 
-						final byte[] buffer = new byte[4096];
-						int bytesRead;
-						while ((bytesRead = inputStream.read(buffer)) >= 0) {
-							if (cancel) {
-								break;
-							} else {
-								outputStream.write(buffer, 0, bytesRead);
-								subItemsDone += bytesRead;
-								showItemProgress();
-							}
-						}
-						itemsDone += subItemsDone;
-						showProgress();
-					}
-
-					if (cancel && nextLocalFile.exists()) {
-						nextLocalFile.delete();
-					}
-				}
+		for (final FolderInfo subFolderInfo : directory.getFirst()) {
+			if (!cancel) {
+				final File nextFolderDestination = new File(destinationParentDirectory, subFolderInfo.getFolderName());
+				nextFolderDestination.mkdir();
+				recursiveDownload(remoteFolderPath + "/" + subFolderInfo.getFolderName(), nextFolderDestination);
 			}
 		}
 	}

@@ -12,7 +12,7 @@ import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
 import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
 
 public class HttpConnectionTest {
-	private static final File localTestDirectory = new File("C:\\Users\\Andreas\\Downloads\\test");
+	private static final File localTestDirectory = new File(System.getProperty("user.home") + "\\Downloads\\test");
 
 	private RemoteConnection getConnection() throws Exception {
 		return new HttpFileConnection(true, "www-us.apache.org", "dist", null, null, 443);

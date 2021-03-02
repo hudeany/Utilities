@@ -34,9 +34,6 @@ public class DateUtilities {
 	public static final String YYYY_MM_DD_HHMMSS = "yyyy-MM-dd HH:mm:ss";
 	public static final String YYYYMMDD_HHMMSS = "yyyyMMdd-HHmmss";
 	public static final String HHMM = "HHmm";
-	//	public static final String EE_DD_MM_YYYY = "EE dd.MM.yyyy", Locale.GERMAN); // EE => Weekday
-	//	public static final String DD_MMM_YYYY_ENG = "dd-MMM-yy", Locale.ENGLISH);
-	//	public static final String DD_MMM_YYYY_GER = "dd-MMM-yy", Locale.GERMAN);
 
 	private static final Pattern MONTH_RULE_PATTERN = Pattern.compile("\\d{0,2}M\\d{2}:\\d{4}");
 	private static final Pattern WEEKDAILY_RULE_PATTERN = Pattern.compile("\\d\\D\\D:\\d{4}");
@@ -992,5 +989,58 @@ public class DateUtilities {
 		dateTimeFormat.setTimeZone(TimeZone.getTimeZone(zoneId));
 		dateTimeFormat.setLenient(false);
 		return dateTimeFormat;
+	}
+
+	public static Date addDaysToDate(final Date initDate, final int daysToAdd) {
+		final GregorianCalendar returnDate = new GregorianCalendar();
+		returnDate.setTime(initDate);
+		returnDate.add(Calendar.DAY_OF_MONTH, daysToAdd);
+		return returnDate.getTime();
+	}
+
+	public static Date addMinutesToDate(final Date initDate, final int minutesToAdd) {
+		final GregorianCalendar returnDate = new GregorianCalendar();
+		returnDate.setTime(initDate);
+		returnDate.add(Calendar.MINUTE, minutesToAdd);
+		return returnDate.getTime();
+	}
+
+	/**
+	 * OpenJDK 15 doesn't recognize german three letter months by "MMM" in SimpleDateFormat anymore.
+	 * So here is a helper to cope with that problem.
+	 */
+	public static int parseThreeLetterMonth(final String threeLetterMonth) throws Exception {
+		switch(threeLetterMonth.toUpperCase()) {
+			case "JAN":
+				return 1;
+			case "FEB":
+				return 2;
+			case "MAR":
+			case "MÄR":
+				return 3;
+			case "APR":
+				return 4;
+			case "MAY":
+			case "MAI":
+				return 5;
+			case "JUN":
+				return 6;
+			case "JUL":
+				return 7;
+			case "AUG":
+				return 8;
+			case "SEP":
+				return 9;
+			case "OCT":
+			case "OKT":
+				return 10;
+			case "NOV":
+				return 11;
+			case "DEC":
+			case "DEZ":
+				return 12;
+			default:
+				throw new Exception("Unknown three letter month: " + threeLetterMonth);
+		}
 	}
 }

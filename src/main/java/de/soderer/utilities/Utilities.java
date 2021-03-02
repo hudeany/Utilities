@@ -1218,6 +1218,18 @@ public class Utilities {
 		}
 	}
 
+	public static String trim(String value, final char trimChar) {
+		while (value != null && value.startsWith(Character.toString(trimChar))) {
+			value = value.substring(1);
+		}
+
+		while (value != null && value.endsWith(Character.toString(trimChar))) {
+			value = value.substring(0, value.length() - 1);
+		}
+
+		return value;
+	}
+
 	public static String toString(final InputStream inputStream, final Charset encoding) throws IOException {
 		return new String(toByteArray(inputStream), encoding);
 	}

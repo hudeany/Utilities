@@ -29,12 +29,14 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -56,6 +58,7 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.xml.bind.DatatypeConverter;
 
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -326,10 +329,20 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final PEMKeyPair keyPair = getPEMKeyPairFromString(IoUtilities.toString(inputStream, StandardCharsets.UTF_8));
-		final AsymmetricKeyParameter privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
-		final AsymmetricKeyParameter publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
+		AsymmetricKeyParameter privateAsymmetricKeyParameter;
+		if (keyPair.getPrivateKeyInfo() != null) {
+			privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
+		} else {
+			privateAsymmetricKeyParameter = null;
+		}
+		final AsymmetricKeyParameter publicAsymmetricKeyParameter;
+		if (keyPair.getPublicKeyInfo() != null) {
+			publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
+		} else {
+			publicAsymmetricKeyParameter = null;
+		}
 
-		return new AsymmetricCipherKeyPair(privateAsymmetricKeyParameter, publicAsymmetricKeyParameter);
+		return new AsymmetricCipherKeyPair(publicAsymmetricKeyParameter, privateAsymmetricKeyParameter);
 	}
 
 	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
@@ -353,8 +366,10 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final RSAPrivateCrtKeyParameters privateKey = (RSAPrivateCrtKeyParameters) keyPair.getPrivate();
-		final RSAKeyParameters publicKey = (RSAKeyParameters) keyPair.getPublic();
-		return KeyFactory.getInstance("RSA").generatePrivate(new RSAPrivateCrtKeySpec(privateKey.getModulus(), publicKey.getExponent(), privateKey.getExponent(), privateKey.getP(), privateKey.getQ(),
+		final BigInteger exponent = ((RSAPrivateCrtKeyParameters) keyPair.getPrivate()).getExponent();
+		//		final RSAKeyParameters publicKey = (RSAKeyParameters) keyPair.getPublic();
+		//		BigInteger exponent = publicKey.getExponent();
+		return KeyFactory.getInstance("RSA").generatePrivate(new RSAPrivateCrtKeySpec(privateKey.getModulus(), exponent, privateKey.getExponent(), privateKey.getP(), privateKey.getQ(),
 				privateKey.getDP(), privateKey.getDQ(), privateKey.getQInv()));
 	}
 
@@ -374,6 +389,9 @@ public class CryptographicUtilities {
 			//            } else
 			if (readObject instanceof PEMKeyPair) {
 				final PEMKeyPair keyPair = (PEMKeyPair) readObject;
+				return keyPair;
+			} else if (readObject instanceof PrivateKeyInfo) {
+				final PEMKeyPair keyPair = new PEMKeyPair(null, (PrivateKeyInfo) readObject);
 				return keyPair;
 			} else {
 				return null;
@@ -784,6 +802,25 @@ public class CryptographicUtilities {
 					keyFactory.generatePrivate(new PKCS8EncodedKeySpec(keyPair.getPrivateKeyInfo().getEncoded())));
 		} catch (final Exception e) {
 			throw new PEMException("Unable to convert key pair: " + e.getMessage(), e);
+		}
+	}
+
+	public static RSAPrivateKey getPrivateRsaKeyPairFromString(final String key) throws Exception {
+		try {
+			// No need for Bouncycastle
+			String privateKeyPEM = key.trim();
+			final String pemBegin = "-----BEGIN PRIVATE KEY-----";
+			final String pemEnd = "-----END PRIVATE KEY-----";
+			if (privateKeyPEM.startsWith(pemBegin) && privateKeyPEM.endsWith(pemEnd)) {
+				privateKeyPEM = privateKeyPEM.substring(pemBegin.length(), privateKeyPEM.length() - pemEnd.length()).trim();
+			}
+			privateKeyPEM = privateKeyPEM.replace("\r", "").replace("\n", "");
+			final byte[] privateKeyData = Base64.getDecoder().decode(privateKeyPEM);
+			final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+			final PrivateKey privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyData));
+			return (RSAPrivateKey) privateKey;
+		} catch (final Exception e) {
+			throw new Exception("Cannot read private key", e);
 		}
 	}
 }

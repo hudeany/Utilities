@@ -4,7 +4,6 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.net.ftp.FTP;
@@ -14,6 +13,7 @@ import org.apache.log4j.Logger;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
+import de.soderer.utilities.Tuple;
 
 /**
  * FtpConnection
@@ -141,71 +141,6 @@ public class FtpConnection implements RemoteConnection {
 		}
 	}
 
-	@Override
-	public List<String> getFiles(final String folderPath) throws Exception {
-		checkForConnection();
-		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
-		final FTPFile[] files = ftpClient.listFiles(folderPath.replace(" ", "\\ "));
-		if (files != null) {
-			final List<String> returnList = new ArrayList<>();
-			for (final FTPFile file : files) {
-				if (file.isFile()) {
-					returnList.add(file.getName());
-				}
-			}
-			return returnList;
-		} else {
-			return new ArrayList<>();
-		}
-	}
-
-	@Override
-	public List<String> getFolders(final String folderPath) throws Exception {
-		checkForConnection();
-		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
-		final FTPFile[] directories = ftpClient.listDirectories(folderPath.replace(" ", "\\ "));
-		if (directories != null) {
-			final List<String> returnList = new ArrayList<>();
-			for (final FTPFile directory : directories) {
-				final String dirctoryName = directory.getName();
-				if (!".".equals(dirctoryName) && !"..".equals(dirctoryName) && directory.isDirectory()) {
-					returnList.add(dirctoryName);
-				}
-			}
-			return returnList;
-		} else {
-			return new ArrayList<>();
-		}
-	}
-
-	/**
-	 * Check if folder exists
-	 */
-	@Override
-	public boolean folderExists(final String folderPath) throws Exception {
-		checkForConnection();
-		ftpClient.changeWorkingDirectory(folderPath);
-		final int returnCode = ftpClient.getReplyCode();
-		if (returnCode == 550) {
-			return false;
-		} else {
-			return true;
-		}
-	}
-
-	/**
-	 * Check if file exists on sftp server
-	 *
-	 * @param filePath
-	 * @return
-	 * @throws Exception on invalid directory
-	 */
-	@Override
-	public boolean fileExists(final String filePath) throws Exception {
-		checkForConnection();
-		return ftpClient.listFiles(filePath).length > 0;
-	}
-
 	/**
 	 * Put a file on the server.
 	 *
@@ -226,7 +161,7 @@ public class FtpConnection implements RemoteConnection {
 	 */
 	@SuppressWarnings("resource")
 	@Override
-	public InputStream getFile(final String filePath) throws Exception {
+	public InputStream downloadFile(final String filePath) throws Exception {
 		checkForConnection();
 		final InputStream inputStream = ftpClient.retrieveFileStream(filePath);
 		final int returnCode = ftpClient.getReplyCode();
@@ -313,53 +248,25 @@ public class FtpConnection implements RemoteConnection {
 		checkForConnection();
 
 		final FTPFile file = ftpClient.mlistFile(filePath);
-		final String fileName = FileUtilities.getFilenameFromPath(file.getName());
-		return new FileInfo(fileName, file.getSize(), file.getTimestamp().getTime());
+		if (file == null) {
+			return null;
+		} else {
+			final String fileName = FileUtilities.getFilenameFromPath(file.getName());
+			return new FileInfo(fileName, file.getSize(), file.getTimestamp().getTime());
+		}
 	}
 
 	@Override
-	public FolderInfo getFolderInfo(String folderPath) throws Exception {
+	public FolderInfo getFolderInfo(final String folderPath) throws Exception {
 		checkForConnection();
 
-		folderPath = folderPath.replace("\\", "/");
-		String folderName;
-		if (folderPath.contains("/")) {
-			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+		final FTPFile file = ftpClient.mlistFile(folderPath);
+		if (file == null) {
+			return null;
 		} else {
-			folderName = folderPath;
+			final String folderName = FileUtilities.getFilenameFromPath(file.getName());
+			return new FolderInfo(folderName, file.getTimestamp().getTime());
 		}
-		if  ("".equals(folderName)) {
-			folderName = "/";
-		}
-
-		Date modificationDate = null;
-
-		final List<FolderInfo> folderInfoList = new ArrayList<>();
-		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
-		final FTPFile[] directories = ftpClient.listDirectories(folderPath.replace(" ", "\\ "));
-		if (directories != null) {
-			for (final FTPFile directory : directories) {
-				final String directoryName = directory.getName();
-				if (".".equals(directoryName)){
-					modificationDate = directory.getTimestamp().getTime();
-				} else if (!"..".equals(directoryName) && directory.isDirectory()) {
-					folderInfoList.add(getFolderInfo(folderPath + "/" + directoryName));
-				}
-			}
-		}
-
-		final List<FileInfo> fileInfoList = new ArrayList<>();
-		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
-		final FTPFile[] files = ftpClient.listFiles(folderPath.replace(" ", "\\ "));
-		if (files != null) {
-			for (final FTPFile file : files) {
-				if (file.isFile()) {
-					fileInfoList.add(new FileInfo(file.getName(), file.getSize(), file.getTimestamp().getTime()));
-				}
-			}
-		}
-
-		return new FolderInfo(folderName, folderInfoList, fileInfoList, modificationDate);
 	}
 
 	class FtpInputStream extends FilterInputStream {
@@ -380,5 +287,46 @@ public class FtpConnection implements RemoteConnection {
 
 			isClosed = true;
 		}
+	}
+
+	@Override
+	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String folderPath) throws Exception {
+		checkForConnection();
+
+		folderPath = folderPath.replace("\\", "/");
+		String folderName;
+		if (folderPath.contains("/")) {
+			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
+		} else {
+			folderName = folderPath;
+		}
+		if  ("".equals(folderName)) {
+			folderName = "/";
+		}
+
+		final List<FolderInfo> folderInfoList = new ArrayList<>();
+		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
+		final FTPFile[] directories = ftpClient.listDirectories(folderPath.replace(" ", "\\ "));
+		if (directories != null) {
+			for (final FTPFile directory : directories) {
+				final String directoryName = directory.getName();
+				if (!".".equals(directoryName) && !"..".equals(directoryName) && directory.isDirectory()) {
+					folderInfoList.add(getFolderInfo(folderPath + "/" + directoryName));
+				}
+			}
+		}
+
+		final List<FileInfo> fileInfoList = new ArrayList<>();
+		// Replacing blanks with escaped blanks is a workaround for FtpClient bug, which returns an empty list on foldernames with blanks
+		final FTPFile[] files = ftpClient.listFiles(folderPath.replace(" ", "\\ "));
+		if (files != null) {
+			for (final FTPFile file : files) {
+				if (file.isFile()) {
+					fileInfoList.add(new FileInfo(file.getName(), file.getSize(), file.getTimestamp().getTime()));
+				}
+			}
+		}
+
+		return new Tuple<>(folderInfoList, fileInfoList);
 	}
 }

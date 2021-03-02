@@ -1,6 +1,7 @@
 package de.soderer.utilities.http;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class HttpResponse {
 	private final int httpCode;
@@ -35,5 +36,25 @@ public class HttpResponse {
 
 	public Map<String, String> getCookies() {
 		return cookieData;
+	}
+
+	@Override
+	public String toString() {
+		String returnText = "HttpCode: " + httpCode + "\n";
+		if (headers != null && headers.size() > 0) {
+			returnText += "HttpHeaders:\n";
+			for (final Entry<String, String> entry : headers.entrySet()) {
+				returnText += "\t" + entry.getKey() + ": " + entry.getValue() + "\n";
+			}
+		}
+		if (cookieData != null && cookieData.size() > 0) {
+			returnText += "HttpCookies:\n";
+			for (final Entry<String, String> entry : cookieData.entrySet()) {
+				returnText += "\t" + entry.getKey() + ": " + entry.getValue() + "\n";
+			}
+		}
+		returnText += "ContentType: " + contentType + "\n";
+		returnText += "Content: \n" + content + "\n";
+		return returnText;
 	}
 }

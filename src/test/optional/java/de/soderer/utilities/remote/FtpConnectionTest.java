@@ -15,8 +15,8 @@ import de.soderer.utilities.swt.worker.RemoteFileUploadWorker;
 import de.soderer.utilities.zip.ZipUtilities;
 
 public class FtpConnectionTest {
-	private static final File localTestDirectory = new File("C:\\Users\\Andreas\\Downloads\\test");
-	private static final File localTestDirectory2 = new File("C:\\Users\\Andreas\\Downloads\\test2");
+	private static final File localTestDirectory = new File(System.getProperty("user.home") + "\\Downloads\\test");
+	private static final File localTestDirectory2 = new File(System.getProperty("user.home") + "\\Downloads\\test2");
 
 	private RemoteConnection getConnection() throws Exception {
 		return new FtpConnection(System.getenv().get("FTP_HOSTNAME"), System.getenv().get("FTP_USERNAME"), System.getenv().get("FTP_PASSWORD").toCharArray());
@@ -58,7 +58,7 @@ public class FtpConnectionTest {
 	@Test
 	public void directoryRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			if (connection.folderExists("/soderer.de/files/download/test")) {
+			if (connection.getFolderInfo("/soderer.de/files/download/test") != null) {
 				connection.deleteFolder("/soderer.de/files/download/test");
 			}
 			try {
@@ -73,7 +73,7 @@ public class FtpConnectionTest {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
 			} finally {
-				if (connection.folderExists("/soderer.de/files/download/test")) {
+				if (connection.getFolderInfo("/soderer.de/files/download/test") != null) {
 					connection.deleteFolder("/soderer.de/files/download/test");
 				}
 			}
@@ -86,7 +86,7 @@ public class FtpConnectionTest {
 	@Test
 	public void fileRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			if (connection.folderExists("/soderer.de/files/download")) {
+			if (connection.getFolderInfo("/soderer.de/files/download") != null) {
 				connection.deleteFolder("/soderer.de/files/download/test");
 			}
 			connection.createFolder("/soderer.de/files/download", "test");
@@ -103,7 +103,7 @@ public class FtpConnectionTest {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
 			} finally {
-				if (connection.folderExists("/soderer.de/files/download/test")) {
+				if (connection.getFolderInfo("/soderer.de/files/download/test") != null) {
 					connection.deleteFolder("/soderer.de/files/download/test");
 				}
 			}
