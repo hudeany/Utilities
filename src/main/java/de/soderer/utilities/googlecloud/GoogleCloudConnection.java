@@ -240,7 +240,11 @@ public class GoogleCloudConnection implements RemoteConnection {
 						} else if (relativeObjectPath.contains("/")) {
 							// pseudo folder found
 							final String folderName = pathForExecution.getSecond().substring(pathForExecution.getSecond().lastIndexOf("/") + 1);
-							pseudoFolder = new FolderInfo(folderName, null);
+							if (Utilities.isNotEmpty(folderName)) {
+								pseudoFolder = new FolderInfo(folderName, null);
+							} else {
+								pseudoFolder = new FolderInfo(pathForExecution.getFirst(), null);
+							}
 						}
 					}
 				}
@@ -409,12 +413,18 @@ public class GoogleCloudConnection implements RemoteConnection {
 	private static Tuple<String, String> prepareFilePath(String path) throws Exception {
 		path = Utilities.trim(path, '/');
 
-		if (path == null || !path.contains("/")) {
+		if (path == null || Utilities.isEmpty(path)) {
 			throw new Exception("At least the bucketname must be part of the filepath. Extend name by leading '/<bucketname>/...'");
 		}
 
-		final String bucketName = path.substring(0, path.indexOf("/"));
-		path = path.substring(path.indexOf("/") + 1);
+		final String bucketName;
+		if (path.contains("/")) {
+			bucketName = path.substring(0, path.indexOf("/"));
+			path = path.substring(path.indexOf("/") + 1);
+		} else {
+			bucketName = path;
+			path = "";
+		}
 
 		String directoryPath;
 		final String objectName;

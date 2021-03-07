@@ -46,6 +46,8 @@ import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 public class HttpUtilities {
+	private static boolean debugLog = true;
+
 	private static TrustManager TRUSTALLCERTS_TRUSTMANAGER = new X509TrustManager() {
 		@Override
 		public java.security.cert.X509Certificate[] getAcceptedIssuers() {
@@ -108,6 +110,10 @@ public class HttpUtilities {
 				requestedUrl += "?" + parametersFromUrl;
 			}
 
+			if (debugLog) {
+				System.out.println("Requested URL: " + requestedUrl);
+			}
+
 			HttpURLConnection urlConnection;
 			if (proxy == null) {
 				urlConnection = (HttpURLConnection) new URL(requestedUrl).openConnection(getProxyFromSystem(requestedUrl));
@@ -128,8 +134,16 @@ public class HttpUtilities {
 			}
 
 			if (httpRequest.getHeaders() != null && httpRequest.getHeaders().size() > 0) {
+				if (debugLog) {
+					System.out.println("Request Headers: ");
+				}
+
 				for (final Entry<String, String> headerEntry : httpRequest.getHeaders().entrySet()) {
 					urlConnection.setRequestProperty(headerEntry.getKey(), headerEntry.getValue());
+
+					if (debugLog) {
+						System.out.println(headerEntry.getKey() + ": " + headerEntry.getValue());
+					}
 				}
 			}
 
@@ -191,6 +205,11 @@ public class HttpUtilities {
 			} else if (httpRequest.getPostParameters() != null && httpRequest.getPostParameters().size() > 0) {
 				urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 				httpRequestBody = convertToParameterString(httpRequest.getPostParameters(), null);
+
+				if (debugLog) {
+					System.out.println("Request Body: ");
+					System.out.println(httpRequestBody);
+				}
 
 				// Send post parameter data
 				urlConnection.setDoOutput(true);

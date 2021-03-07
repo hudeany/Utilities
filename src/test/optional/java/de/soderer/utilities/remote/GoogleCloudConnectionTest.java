@@ -125,8 +125,8 @@ public class GoogleCloudConnectionTest {
 	@Test
 	public void testRootFolderInfo() {
 		try (RemoteConnection connection = getConnection()) {
-			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/");
-			Assert.assertEquals("/statistiken/", remoteFolderInfo.getFolderName());
+			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/statistiken/");
+			Assert.assertEquals("statistiken", remoteFolderInfo.getFolderName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
