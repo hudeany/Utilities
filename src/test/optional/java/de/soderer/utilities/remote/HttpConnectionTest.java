@@ -1,6 +1,7 @@
 package de.soderer.utilities.remote;
 
 import java.io.File;
+import java.nio.file.Files;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -12,7 +13,7 @@ import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
 import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
 
 public class HttpConnectionTest {
-	private static final File localTestDirectory = new File(System.getProperty("user.home") + "\\Downloads\\test");
+	private File localTestDirectory;
 
 	private RemoteConnection getConnection() throws Exception {
 		return new HttpFileConnection(true, "www-us.apache.org", "dist", null, null, 443);
@@ -20,9 +21,7 @@ public class HttpConnectionTest {
 
 	@Before
 	public void setup() throws Exception {
-		if (localTestDirectory.exists()) {
-			FileUtilities.delete(localTestDirectory);
-		}
+		localTestDirectory = Files.createTempDirectory("HttpConnectionTest_").toFile();
 	}
 
 	@After
@@ -45,7 +44,7 @@ public class HttpConnectionTest {
 	@Test
 	public void fileRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			new RemoteFileDownloadWorker(null, connection, "/tomcat/tomcat-9/v9.0.43/bin/apache-tomcat-9.0.43.tar.gz", new File(localTestDirectory, "apache-tomcat-9.0.22.tar.gz")).work();
+			new RemoteFileDownloadWorker(null, connection, "/tomcat/tomcat-9/v9.0.43/bin/apache-tomcat-9.0.43.tar.gz", new File(localTestDirectory, "apache-tomcat-9.0.43.tar.gz")).work();
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());

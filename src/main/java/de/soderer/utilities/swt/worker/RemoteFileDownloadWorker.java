@@ -32,7 +32,7 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 		} else if (localFile == null) {
 			throw new Exception("No localFilePath");
 		} else if (!localFile.getParentFile().exists()) {
-			throw new Exception("Local file parent directory dow not exist: \"" + localFile.getAbsolutePath() + "\"");
+			throw new Exception("Local file parent directory does not exist: \"" + localFile.getAbsolutePath() + "\"");
 		} else if (localFile.exists()) {
 			throw new Exception("Local file already exists: \"" + localFile.getAbsolutePath() + "\"");
 		}

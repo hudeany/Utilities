@@ -117,7 +117,7 @@ public class FtpConnectionTest {
 	public void testRootFolderInfo() {
 		try (RemoteConnection connection = getConnection()) {
 			final FolderInfo remoteFolderInfo = connection.getFolderInfo("/");
-			Assert.assertEquals("/", remoteFolderInfo.getFolderName());
+			Assert.assertEquals("", remoteFolderInfo.getFolderName());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
