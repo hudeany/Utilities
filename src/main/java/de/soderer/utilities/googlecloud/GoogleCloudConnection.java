@@ -167,6 +167,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 				for (final Object itemObject : (JsonArray) itemsArrayObject) {
 					final String name = (String) ((JsonObject) itemObject).get("name");
 					if (name.startsWith(filePathToCheck)) {
+						pathExists = true;
 						final String relativeObjectPath = name.substring(filePathToCheck.length());
 						if (relativeObjectPath.length() > 0) {
 							if (!relativeObjectPath.contains("/")) {
@@ -186,8 +187,6 @@ public class GoogleCloudConnection implements RemoteConnection {
 									interimFolders.put(folderName, new FolderInfo(folderName, null));
 								}
 							}
-						} else {
-							pathExists = true;
 						}
 					}
 				}
