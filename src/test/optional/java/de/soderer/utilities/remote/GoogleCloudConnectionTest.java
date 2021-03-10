@@ -1,6 +1,7 @@
 package de.soderer.utilities.remote;
 
 import java.io.File;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -8,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.googlecloud.GoogleCloudConnection;
 import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
 import de.soderer.utilities.swt.worker.DirectoryUploadWorker;
@@ -68,6 +70,10 @@ public class GoogleCloudConnectionTest {
 			if (connection.getFolderInfo("/statistiken/provider-stats/test") != null) {
 				connection.deleteFolder("/statistiken/provider-stats/test");
 			}
+
+			final Tuple<List<FolderInfo>, List<FileInfo>> preTestDirectory = connection.getDirectory("/statistiken/provider-stats/test");
+			Assert.assertNull(preTestDirectory);
+
 			try {
 				final File testFolderZipFile = new File(getClass().getClassLoader().getResource("TestFolder.zip").getFile());
 				ZipUtilities.unzipFile(testFolderZipFile, localTestDirectory);
@@ -76,6 +82,11 @@ public class GoogleCloudConnectionTest {
 				Assert.assertEquals("test", remoteFolderInfo.getFolderName());
 				new DirectoryDownloadWorker(null, connection, "/statistiken/provider-stats/test", localTestDirectory2.getParentFile(), "test2").work();
 				Assert.assertTrue("Resulting directories differ", FileUtilities.directoriesAreEqual(localTestDirectory, localTestDirectory2));
+
+				final Tuple<List<FolderInfo>, List<FileInfo>> testDirectory = connection.getDirectory("/statistiken/provider-stats/test");
+				Assert.assertNotNull(testDirectory);
+				Assert.assertEquals(4, testDirectory.getFirst().size());
+				Assert.assertEquals(6, testDirectory.getSecond().size());
 			} catch (final Exception e) {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());
@@ -93,11 +104,13 @@ public class GoogleCloudConnectionTest {
 	@Test
 	public void fileRoundTrip() {
 		try (RemoteConnection connection = getConnection()) {
-			connection.getDirectory("/statistiken/provider-stats/test");
-
 			if (connection.getFolderInfo("/statistiken/provider-stats/test") != null) {
 				connection.deleteFolder("/statistiken/provider-stats/test");
 			}
+
+			final Tuple<List<FolderInfo>, List<FileInfo>> preTestDirectory = connection.getDirectory("/statistiken/provider-stats/test");
+			Assert.assertNull(preTestDirectory);
+
 			connection.createFolder("/statistiken/provider-stats", "test");
 			localTestDirectory2.mkdir();
 			try {
@@ -108,6 +121,11 @@ public class GoogleCloudConnectionTest {
 				Assert.assertEquals("TextFile With Umlaut Ä.txt", remoteFileInfo.getFileName());
 				new RemoteFileDownloadWorker(null, connection, "/statistiken/provider-stats/test/TextFile With Umlaut Ä.txt", new File(localTestDirectory2, "TextFileWithUmlautÄ.txt")).work();
 				Assert.assertTrue("Resulting files differ", FileUtilities.filesAreEqual(new File(localTestDirectory, "TextFileWithUmlautÄ.txt"), new File(localTestDirectory2, "TextFileWithUmlautÄ.txt")));
+
+				final Tuple<List<FolderInfo>, List<FileInfo>> testDirectory = connection.getDirectory("/statistiken/provider-stats/test");
+				Assert.assertNotNull(testDirectory);
+				Assert.assertEquals(0, testDirectory.getFirst().size());
+				Assert.assertEquals(1, testDirectory.getSecond().size());
 			} catch (final Exception e) {
 				e.printStackTrace();
 				Assert.fail(e.getMessage());

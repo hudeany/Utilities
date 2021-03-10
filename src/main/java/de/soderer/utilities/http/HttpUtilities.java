@@ -46,7 +46,7 @@ import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 public class HttpUtilities {
-	private static boolean debugLog = true;
+	private static boolean debugLog = false;
 
 	private static TrustManager TRUSTALLCERTS_TRUSTMANAGER = new X509TrustManager() {
 		@Override

@@ -163,6 +163,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 					filePathToCheck = filePathToCheck + "/";
 				}
 
+				boolean pathExists = false;
 				for (final Object itemObject : (JsonArray) itemsArrayObject) {
 					final String name = (String) ((JsonObject) itemObject).get("name");
 					if (name.startsWith(filePathToCheck)) {
@@ -185,16 +186,22 @@ public class GoogleCloudConnection implements RemoteConnection {
 									interimFolders.put(folderName, new FolderInfo(folderName, null));
 								}
 							}
+						} else {
+							pathExists = true;
 						}
 					}
 				}
 
-				final List<FolderInfo> folders = new ArrayList<>();
-				for (final FolderInfo folderInfo : interimFolders.values()) {
-					folders.add(folderInfo);
-				}
+				if (!pathExists) {
+					return null;
+				} else {
+					final List<FolderInfo> folders = new ArrayList<>();
+					for (final FolderInfo folderInfo : interimFolders.values()) {
+						folders.add(folderInfo);
+					}
 
-				return new Tuple<>(folders, files);
+					return new Tuple<>(folders, files);
+				}
 			} else {
 				throw new Exception("Request for getDirectory returned invalid data: Must be JsonArray of items, but was " + itemsArrayObject.getClass().getSimpleName());
 			}
@@ -357,7 +364,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 		final HttpResponse response;
 		final File tempFile = File.createTempFile("GoogleCloudConnection_Download_", "");
 		try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
-			final HttpRequest request = new HttpRequest(HttpMethod.GET, "https://storage.googleapis.com/upload/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond()) + "?alt=media");
+			final HttpRequest request = new HttpRequest(HttpMethod.GET, "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond()) + "?alt=media");
 			request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
 			request.setDownloadStream(outputStream);
