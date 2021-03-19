@@ -63,22 +63,4 @@ public class VcfReaderWriterTest {
 			}
 		}
 	}
-
-	@Test
-	public void test2() throws Exception {
-		final File testfile = new File(System.getProperty("user.home") + "\\Downloads\\Kontakte\\vcards.vcf");
-
-		final File tempFile = new File(System.getProperty("user.home") + "\\Downloads\\Kontakte\\vcards2.vcf");
-
-		try (VcfReader reader = new VcfReader(new FileInputStream(testfile));
-				VcfWriter writer = new VcfWriter(new FileOutputStream(tempFile), StandardCharsets.ISO_8859_1)) {
-			VcfCard nextCard;
-			while ((nextCard = reader.readNextCard()) != null) {
-				writer.writeCard(nextCard, "2.1");
-			}
-		} catch (final Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
-		}
-	}
 }

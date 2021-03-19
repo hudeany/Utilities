@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
@@ -31,7 +32,6 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -74,15 +74,9 @@ import org.bouncycastle.crypto.encodings.OAEPEncoding;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.ElGamalEngine;
 import org.bouncycastle.crypto.engines.RSAEngine;
-import org.bouncycastle.crypto.generators.ElGamalKeyPairGenerator;
-import org.bouncycastle.crypto.generators.ElGamalParametersGenerator;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
-import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.ElGamalKeyGenerationParameters;
-import org.bouncycastle.crypto.params.ElGamalParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
@@ -139,30 +133,25 @@ public class CryptographicUtilities {
 			"ElGamal/NONE/NoPadding"
 	};
 
-	public static AsymmetricCipherKeyPair generateRsaKeyPair(final int keyStrength) throws Exception {
+	public static KeyPair generateRsaKeyPair(final int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			final RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
-			generator.init(new RSAKeyGenerationParameters(RSAKeyGenParameterSpec.F4, new SecureRandom(), keyStrength, 80));
-			final AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
-			return keyPair;
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
+			keyGen.initialize(keyStrength, new SecureRandom());
+			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);
 		}
 	}
 
-	public static AsymmetricCipherKeyPair generateElGamalKeyPair(final int keyStrength) throws Exception {
+	public static KeyPair generateElGamalKeyPair(final int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			final ElGamalParametersGenerator elGamalParametersGenerator = new ElGamalParametersGenerator();
-			elGamalParametersGenerator.init(keyStrength, 80, new SecureRandom());
-			final ElGamalParameters elGamalParameters = elGamalParametersGenerator.generateParameters();
-			final ElGamalKeyPairGenerator generator = new ElGamalKeyPairGenerator();
-			generator.init(new ElGamalKeyGenerationParameters(new SecureRandom(), elGamalParameters));
-			final AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
-			return keyPair;
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ElGamal", "BC");
+			keyGen.initialize(keyStrength, new SecureRandom());
+			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);
 		}
@@ -200,8 +189,8 @@ public class CryptographicUtilities {
 			builder.addRDN(BCStyle.CN, issuerName);
 			final X500Name x500Name = builder.build();
 
-			final ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(getPrivateKeyFromKeyPair(keyPair));
-			final X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, getPublicKeyFromKeyPair(keyPair));
+			final ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(getPrivateKeyFromAsymmetricCipherKeyPair(keyPair));
+			final X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, getPublicKeyFromAsymmetricCipherKeyPair(keyPair));
 			return new JcaX509CertificateConverter().getCertificate(certGen.build(sigGen));
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA certificate", e);
@@ -221,11 +210,11 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static void encryptAsymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final AsymmetricKeyParameter publicKey) throws Exception {
+	public static void encryptAsymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final PublicKey publicKey) throws Exception {
 		encryptAsymmetric(dataStream, encryptedOutputStream, publicKey, DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD);
 	}
 
-	public static void encryptAsymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final AsymmetricKeyParameter publicKey, String encryptionMethod) throws Exception {
+	public static void encryptAsymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final PublicKey publicKey, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
@@ -250,7 +239,7 @@ public class CryptographicUtilities {
 			} else {
 				throw new Exception("Unknown asymmetric encryption padding method: " + encryptionMethod);
 			}
-			encryptCipher.init(true, publicKey);
+			encryptCipher.init(true, PublicKeyFactory.createKey(publicKey.getEncoded()));
 
 			final byte[] buffer = new byte[encryptCipher.getInputBlockSize()];
 			int readBytes;
@@ -262,11 +251,11 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static void decryptAsymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final AsymmetricKeyParameter privateKey) throws Exception {
+	public static void decryptAsymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final PrivateKey privateKey) throws Exception {
 		decryptAsymmetric(encryptedDataStream, dataOutputStream, privateKey, DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD);
 	}
 
-	public static void decryptAsymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final AsymmetricKeyParameter privateKey, String encryptionMethod) throws Exception {
+	public static void decryptAsymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final PrivateKey privateKey, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
@@ -292,7 +281,7 @@ public class CryptographicUtilities {
 				throw new Exception("Unknown asymmetric encryption padding method: " + encryptionMethod);
 			}
 
-			decryptCipher.init(false, privateKey);
+			decryptCipher.init(false, PrivateKeyFactory.createKey(privateKey.getEncoded()));
 
 			final byte[] buffer = new byte[decryptCipher.getInputBlockSize()];
 			int readBytes;
@@ -305,8 +294,15 @@ public class CryptographicUtilities {
 	}
 
 	public static String getStringFromKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
-		final PublicKey publicKey = getPublicKeyFromKeyPair(keyPair);
-		final PrivateKey privateKey = getPrivateKeyFromKeyPair(keyPair);
+		final PublicKey publicKey = getPublicKeyFromAsymmetricCipherKeyPair(keyPair);
+		final PrivateKey privateKey = getPrivateKeyFromAsymmetricCipherKeyPair(keyPair);
+
+		return getStringFromKeyPair(privateKey, publicKey);
+	}
+
+	public static String getStringFromKeyPair(final KeyPair keyPair) throws Exception {
+		final PublicKey publicKey = keyPair.getPublic();
+		final PrivateKey privateKey = keyPair.getPrivate();
 
 		return getStringFromKeyPair(privateKey, publicKey);
 	}
@@ -345,6 +341,28 @@ public class CryptographicUtilities {
 		return new AsymmetricCipherKeyPair(publicAsymmetricKeyParameter, privateAsymmetricKeyParameter);
 	}
 
+	public static KeyPair getKeyPair(final InputStream inputStream) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		final PEMKeyPair keyPair = getPEMKeyPairFromString(IoUtilities.toString(inputStream, StandardCharsets.UTF_8));
+		AsymmetricKeyParameter privateAsymmetricKeyParameter;
+		if (keyPair.getPrivateKeyInfo() != null) {
+			privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
+		} else {
+			privateAsymmetricKeyParameter = null;
+		}
+		final AsymmetricKeyParameter publicAsymmetricKeyParameter;
+		if (keyPair.getPublicKeyInfo() != null) {
+			publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
+		} else {
+			publicAsymmetricKeyParameter = null;
+		}
+
+		final AsymmetricCipherKeyPair asymmetricCipherKeyPair = new AsymmetricCipherKeyPair(publicAsymmetricKeyParameter, privateAsymmetricKeyParameter);
+
+		return new KeyPair(getPublicKeyFromAsymmetricCipherKeyPair(asymmetricCipherKeyPair), getPrivateKeyFromAsymmetricCipherKeyPair(asymmetricCipherKeyPair));
+	}
+
 	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -355,14 +373,21 @@ public class CryptographicUtilities {
 		return new AsymmetricCipherKeyPair(privateAsymmetricKeyParameter, publicAsymmetricKeyParameter);
 	}
 
-	public static PublicKey getPublicKeyFromKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
+	public static PublicKey getPublicKeyFromAsymmetricCipherKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final RSAKeyParameters publicKey = (RSAKeyParameters) keyPair.getPublic();
 		return KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(publicKey.getModulus(), publicKey.getExponent()));
 	}
 
-	public static PrivateKey getPrivateKeyFromKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
+	public static PublicKey getPublicKeyFromKeyPair(final KeyPair keyPair) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		final RSAKeyParameters publicKey = (RSAKeyParameters) keyPair.getPublic();
+		return KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(publicKey.getModulus(), publicKey.getExponent()));
+	}
+
+	public static PrivateKey getPrivateKeyFromAsymmetricCipherKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final RSAPrivateCrtKeyParameters privateKey = (RSAPrivateCrtKeyParameters) keyPair.getPrivate();

@@ -7,7 +7,7 @@
 
 	<groupId>de.soderer</groupId>
 	<artifactId>soderer-utilities</artifactId>
-	<version>21.2.1</version>
+	<version>21.3.0</version>
 	<packaging>jar</packaging>
 
 	<name>soderer-utilities</name>
@@ -116,19 +116,19 @@
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk15on</artifactId>
-			<version>1.66</version>
+			<version>1.68</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpg-jdk15on</artifactId>
-			<version>1.66</version>
+			<version>1.68</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpkix-jdk15on</artifactId>
-			<version>1.66</version>
+			<version>1.68</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>

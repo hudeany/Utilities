@@ -76,7 +76,7 @@ public class PGPUtilities {
 
 		private final int id;
 
-		private PgpSymmetricEncryptionMethod(final int id) {
+		PgpSymmetricEncryptionMethod(final int id) {
 			this.id = id;
 		}
 
@@ -136,7 +136,7 @@ public class PGPUtilities {
 
 		private final int id;
 
-		private PgpPublicEncryptionMethod(final int id) {
+		PgpPublicEncryptionMethod(final int id) {
 			this.id = id;
 		}
 
@@ -189,7 +189,7 @@ public class PGPUtilities {
 
 		private final int id;
 
-		private PgpHashMethod(final int id) {
+		PgpHashMethod(final int id) {
 			this.id = id;
 		}
 
@@ -282,7 +282,7 @@ public class PGPUtilities {
 		final long secondsUntilExpiration = (validity.getTime() - new Date().getTime()) / 1000L + 1;
 		subpacketGenerator.setKeyExpirationTime(true, secondsUntilExpiration);
 
-		subpacketGenerator.setNotationData(false, true, "identity", identity);
+		subpacketGenerator.addNotationData(false, true, "identity", identity);
 
 		// Objects used to encrypt the secret key.
 		final PGPDigestCalculator sha1Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA1);
@@ -377,7 +377,7 @@ public class PGPUtilities {
 		final long secondsUntilExpiration = (validity.getTime() - new Date().getTime()) / 1000L + 1;
 		subpacketGenerator.setKeyExpirationTime(true, secondsUntilExpiration);
 
-		subpacketGenerator.setNotationData(true, true, "identity", identity);
+		subpacketGenerator.addNotationData(true, true, "identity", identity);
 
 		// Create a signature on the encryption subkey.
 		final PGPSignatureSubpacketGenerator enchashgen = new PGPSignatureSubpacketGenerator();
@@ -533,13 +533,13 @@ public class PGPUtilities {
 
 		if (notationData == null) {
 			final PGPSignatureSubpacketGenerator pgpSignatureSubpacketGenerator = new PGPSignatureSubpacketGenerator();
-			pgpSignatureSubpacketGenerator.setNotationData(true, true, "identity", PGPUtilities.getIdentityFromPgpPublicKey(pgpSecretKey.getPublicKey()));
+			pgpSignatureSubpacketGenerator.addNotationData(true, true, "identity", PGPUtilities.getIdentityFromPgpPublicKey(pgpSecretKey.getPublicKey()));
 			final PGPSignatureSubpacketVector pgpSignatureSubpacketVector = pgpSignatureSubpacketGenerator.generate();
 			signatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
 		} else if (!notationData.isEmpty()) {
 			final PGPSignatureSubpacketGenerator pgpSignatureSubpacketGenerator = new PGPSignatureSubpacketGenerator();
 			for (final Entry<String, String> notation : notationData.entrySet()) {
-				pgpSignatureSubpacketGenerator.setNotationData(true, true, notation.getKey(), notation.getValue());
+				pgpSignatureSubpacketGenerator.addNotationData(true, true, notation.getKey(), notation.getValue());
 				final PGPSignatureSubpacketVector pgpSignatureSubpacketVector = pgpSignatureSubpacketGenerator.generate();
 				signatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
 			}
@@ -561,13 +561,13 @@ public class PGPUtilities {
 
 		if (notationData == null) {
 			final PGPSignatureSubpacketGenerator pgpSignatureSubpacketGenerator = new PGPSignatureSubpacketGenerator();
-			pgpSignatureSubpacketGenerator.setNotationData(true, true, "identity", PGPUtilities.getIdentityFromPgpPublicKey(pgpPublicKey));
+			pgpSignatureSubpacketGenerator.addNotationData(true, true, "identity", PGPUtilities.getIdentityFromPgpPublicKey(pgpPublicKey));
 			final PGPSignatureSubpacketVector pgpSignatureSubpacketVector = pgpSignatureSubpacketGenerator.generate();
 			signatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
 		} else if (!notationData.isEmpty()) {
 			final PGPSignatureSubpacketGenerator pgpSignatureSubpacketGenerator = new PGPSignatureSubpacketGenerator();
 			for (final Entry<String, String> notation : notationData.entrySet()) {
-				pgpSignatureSubpacketGenerator.setNotationData(true, true, notation.getKey(), notation.getValue());
+				pgpSignatureSubpacketGenerator.addNotationData(true, true, notation.getKey(), notation.getValue());
 				final PGPSignatureSubpacketVector pgpSignatureSubpacketVector = pgpSignatureSubpacketGenerator.generate();
 				signatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
 			}

@@ -10,17 +10,16 @@ import java.security.PublicKey;
 
 import javax.crypto.Cipher;
 
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
 import de.soderer.utilities.crypto.CryptographicUtilities;
 
 public class CryptographicUtilitiesTest {
-	private static AsymmetricCipherKeyPair rsaKeyPairCache = null;
-	private static AsymmetricCipherKeyPair elGamalKeyPairCache = null;
+	private static KeyPair rsaKeyPairCache = null;
+	private static KeyPair elGamalKeyPairCache = null;
 
-	private static AsymmetricCipherKeyPair getRsaKeyPair() throws Exception {
+	private static KeyPair getRsaKeyPair() throws Exception {
 		if (rsaKeyPairCache == null) {
 			rsaKeyPairCache = CryptographicUtilities.generateRsaKeyPair(512);
 		}
@@ -28,7 +27,7 @@ public class CryptographicUtilitiesTest {
 		return rsaKeyPairCache;
 	}
 
-	private static AsymmetricCipherKeyPair getElGamalKeyPair() throws Exception {
+	private static KeyPair getElGamalKeyPair() throws Exception {
 		if (elGamalKeyPairCache == null) {
 			elGamalKeyPairCache = CryptographicUtilities.generateElGamalKeyPair(512);
 		}
@@ -59,15 +58,16 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testSignatureRSA() {
 		try {
-			final byte[] signature = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), CryptographicUtilities.getPrivateKeyFromKeyPair(getRsaKeyPair()));
+			final byte[] signature = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), getRsaKeyPair().getPrivate());
 			final ByteArrayInputStream stream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
-			final byte[] signatureStreamed = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), CryptographicUtilities.getPrivateKeyFromKeyPair(getRsaKeyPair()));
+			final byte[] signatureStreamed = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), getRsaKeyPair().getPrivate());
 			Assert.assertArrayEquals(signature, signatureStreamed);
-			final boolean result = CryptographicUtilities.verifyData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), CryptographicUtilities.getPublicKeyFromKeyPair(getRsaKeyPair()), signature);
+			final boolean result = CryptographicUtilities.verifyData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), getRsaKeyPair().getPublic(), signature);
 			Assert.assertTrue(result);
-			final boolean resultStreamed = CryptographicUtilities.verifyStream(stream, CryptographicUtilities.getPublicKeyFromKeyPair(getRsaKeyPair()), signature);
+			final boolean resultStreamed = CryptographicUtilities.verifyStream(stream, getRsaKeyPair().getPublic(), signature);
 			Assert.assertTrue(resultStreamed);
 		} catch (final Exception e) {
+			e.printStackTrace();
 			Assert.fail(e.getMessage());
 		}
 	}
