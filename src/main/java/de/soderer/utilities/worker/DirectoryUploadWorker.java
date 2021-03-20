@@ -1,4 +1,4 @@
-package de.soderer.utilities.swt.worker;
+package de.soderer.utilities.worker;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,8 +9,6 @@ import java.io.InputStream;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.remote.RemoteConnection;
-import de.soderer.utilities.worker.WorkerDual;
-import de.soderer.utilities.worker.WorkerParentDual;
 
 public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 	private final RemoteConnection connection;

@@ -1,4 +1,4 @@
-package de.soderer.utilities.swt.worker;
+package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.File;

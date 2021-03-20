@@ -1,4 +1,4 @@
-package de.soderer.utilities.swt.worker;
+package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -19,8 +19,6 @@ import javax.crypto.spec.SecretKeySpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.crypto.CryptographicUtilities;
-import de.soderer.utilities.swt.ProgressShowingModalDialog;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
@@ -77,7 +75,7 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 	 * @param decryptedFile
 	 * @param password
 	 */
-	public FileDecryptionWorker(final ProgressShowingModalDialog<?> parent, final File fileToDecrypt, final File decryptedFile, final char[] password) {
+	public FileDecryptionWorker(final WorkerParentSimple parent, final File fileToDecrypt, final File decryptedFile, final char[] password) {
 		this(parent, fileToDecrypt, decryptedFile, password, null, null, null, true);
 	}
 
@@ -93,7 +91,7 @@ public class FileDecryptionWorker extends WorkerSimple<Boolean> {
 	 * @param initalizationVector
 	 * @param unzipAfterDecryption
 	 */
-	public FileDecryptionWorker(final ProgressShowingModalDialog<?> parent, final File fileToDecrypt, final File decryptedFile, final char[] password, final String decryptionMethod, final byte[] salt, final byte[] initalizationVector,
+	public FileDecryptionWorker(final WorkerParentSimple parent, final File fileToDecrypt, final File decryptedFile, final char[] password, final String decryptionMethod, final byte[] salt, final byte[] initalizationVector,
 			final boolean unzipAfterDecryption) {
 		super(parent);
 		this.fileToDecrypt = fileToDecrypt;

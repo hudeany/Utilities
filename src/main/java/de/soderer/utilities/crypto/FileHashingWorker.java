@@ -1,4 +1,4 @@
-package de.soderer.utilities.swt.worker;
+package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -7,14 +7,14 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 
 import de.soderer.utilities.HashAlgorithm;
-import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class FileHashingWorker extends WorkerSimple<byte[]> {
 	private final File fileToHash;
 	private final HashAlgorithm hashAlgorithm;
 
-	public FileHashingWorker(final ProgressShowingModalDialog<?> parent, final File fileToHash, final HashAlgorithm hashAlgorithm) {
+	public FileHashingWorker(final WorkerParentSimple parent, final File fileToHash, final HashAlgorithm hashAlgorithm) {
 		super(parent);
 
 		this.fileToHash = fileToHash;

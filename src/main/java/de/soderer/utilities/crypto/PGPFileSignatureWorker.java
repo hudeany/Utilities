@@ -16,7 +16,7 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
 
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.PGPUtilities.PgpHashMethod;
-import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
@@ -25,11 +25,11 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 	private char[] password = null;
 	private String hashingMethod = null;
 
-	public PGPFileSignatureWorker(final ProgressShowingModalDialog<?> parent, final InputStream dataToSign, final PGPSecretKey secretKey, final char[] password) {
+	public PGPFileSignatureWorker(final WorkerParentSimple parent, final InputStream dataToSign, final PGPSecretKey secretKey, final char[] password) {
 		this(parent, dataToSign, secretKey, password, null);
 	}
 
-	public PGPFileSignatureWorker(final ProgressShowingModalDialog<?> parent, final InputStream dataToSign, final PGPSecretKey secretKey, final char[] password, final String hashingMethod) {
+	public PGPFileSignatureWorker(final WorkerParentSimple parent, final InputStream dataToSign, final PGPSecretKey secretKey, final char[] password, final String hashingMethod) {
 		super(parent);
 		this.dataToSign = dataToSign;
 		this.secretKey = secretKey;

@@ -26,7 +26,7 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 /**
@@ -38,7 +38,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 	private PGPSecretKey secretKey = null;
 	private char[] password = null;
 
-	public PGPFileDecryptionWorker(final ProgressShowingModalDialog<?> parent, final InputStream encryptedData, final OutputStream decryptedData, final PGPSecretKey secretKey, final char[] password) {
+	public PGPFileDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedData, final OutputStream decryptedData, final PGPSecretKey secretKey, final char[] password) {
 		super(parent);
 		this.encryptedData = encryptedData;
 		this.decryptedData = decryptedData;

@@ -9,8 +9,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import de.soderer.utilities.FileUtilities;
-import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
-import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
+import de.soderer.utilities.worker.DirectoryDownloadWorker;
+import de.soderer.utilities.worker.RemoteFileDownloadWorker;
 
 public class HttpConnectionTest {
 	private File localTestDirectory;

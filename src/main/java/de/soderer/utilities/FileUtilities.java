@@ -24,8 +24,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 
-import de.soderer.utilities.swt.worker.DirectoryHashingWorker;
-import de.soderer.utilities.swt.worker.FileHashingWorker;
+import de.soderer.utilities.crypto.DirectoryHashingWorker;
+import de.soderer.utilities.crypto.FileHashingWorker;
 
 public class FileUtilities {
 	/**

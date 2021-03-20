@@ -19,7 +19,7 @@ import org.bouncycastle.openpgp.operator.bc.BcPublicKeyKeyEncryptionMethodGenera
 
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.PGPUtilities.PgpSymmetricEncryptionMethod;
-import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 /**
@@ -30,7 +30,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 	private OutputStream encryptedData = null;
 	private PGPPublicKey publicKey = null;
 
-	public PGPFileEncryptionWorker(final ProgressShowingModalDialog<?> parent, final InputStream dataToEncrypt, final OutputStream encryptedData, final PGPPublicKey publicKey) {
+	public PGPFileEncryptionWorker(final WorkerParentSimple parent, final InputStream dataToEncrypt, final OutputStream encryptedData, final PGPPublicKey publicKey) {
 		super(parent);
 		this.dataToEncrypt = dataToEncrypt;
 		this.encryptedData = encryptedData;

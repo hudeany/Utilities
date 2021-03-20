@@ -11,10 +11,10 @@ import org.junit.Test;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.googlecloud.GoogleCloudConnection;
-import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
-import de.soderer.utilities.swt.worker.DirectoryUploadWorker;
-import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
-import de.soderer.utilities.swt.worker.RemoteFileUploadWorker;
+import de.soderer.utilities.worker.DirectoryDownloadWorker;
+import de.soderer.utilities.worker.DirectoryUploadWorker;
+import de.soderer.utilities.worker.RemoteFileDownloadWorker;
+import de.soderer.utilities.worker.RemoteFileUploadWorker;
 import de.soderer.utilities.zip.ZipUtilities;
 
 public class GoogleCloudConnectionTest {

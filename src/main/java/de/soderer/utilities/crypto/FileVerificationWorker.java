@@ -1,4 +1,4 @@
-package de.soderer.utilities.swt.worker;
+package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -11,8 +11,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.crypto.CryptographicUtilities;
-import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class FileVerificationWorker extends WorkerSimple<Boolean> {
@@ -21,11 +20,11 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 	private PublicKey publicKey = null;
 	private String signatureMethod = null;
 
-	public FileVerificationWorker(final ProgressShowingModalDialog<?> parent, final File fileToVerify, final File signatureFile, final PublicKey publicKey) {
+	public FileVerificationWorker(final WorkerParentSimple parent, final File fileToVerify, final File signatureFile, final PublicKey publicKey) {
 		this(parent, fileToVerify, signatureFile, publicKey, null);
 	}
 
-	public FileVerificationWorker(final ProgressShowingModalDialog<?> parent, final File fileToVerify, final File signatureFile, final PublicKey publicKey, final String signatureMethod) {
+	public FileVerificationWorker(final WorkerParentSimple parent, final File fileToVerify, final File signatureFile, final PublicKey publicKey, final String signatureMethod) {
 		super(parent);
 		this.fileToVerify = fileToVerify;
 		this.signatureFile = signatureFile;

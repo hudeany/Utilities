@@ -13,7 +13,7 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.swt.ProgressShowingModalDialog;
+import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
@@ -22,11 +22,11 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 	private PGPPublicKey publicKey = null;
 	private String signatureMethod = null;
 
-	public PGPFileVerificationWorker(final ProgressShowingModalDialog<?> parent, final InputStream dataToVerify, final PGPPublicKey publicKey, final InputStream signatureData) {
+	public PGPFileVerificationWorker(final WorkerParentSimple parent, final InputStream dataToVerify, final PGPPublicKey publicKey, final InputStream signatureData) {
 		this(parent, dataToVerify, publicKey, signatureData, null);
 	}
 
-	public PGPFileVerificationWorker(final ProgressShowingModalDialog<?> parent, final InputStream dataToVerify, final PGPPublicKey publicKey, final InputStream signatureData, final String signatureMethod) {
+	public PGPFileVerificationWorker(final WorkerParentSimple parent, final InputStream dataToVerify, final PGPPublicKey publicKey, final InputStream signatureData, final String signatureMethod) {
 		super(parent);
 		this.dataToVerify = dataToVerify;
 		this.signatureData = signatureData;

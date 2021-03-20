@@ -46,10 +46,10 @@ import de.soderer.utilities.remote.RemoteConnection;
 import de.soderer.utilities.remote.SftpConnection;
 import de.soderer.utilities.remote.Smb1Connection;
 import de.soderer.utilities.remote.SmbConnection;
-import de.soderer.utilities.swt.worker.DirectoryDownloadWorker;
-import de.soderer.utilities.swt.worker.DirectoryUploadWorker;
-import de.soderer.utilities.swt.worker.RemoteFileDownloadWorker;
-import de.soderer.utilities.swt.worker.RemoteFileUploadWorker;
+import de.soderer.utilities.worker.DirectoryDownloadWorker;
+import de.soderer.utilities.worker.DirectoryUploadWorker;
+import de.soderer.utilities.worker.RemoteFileDownloadWorker;
+import de.soderer.utilities.worker.RemoteFileUploadWorker;
 
 public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb", "smb1", "http", "https");
