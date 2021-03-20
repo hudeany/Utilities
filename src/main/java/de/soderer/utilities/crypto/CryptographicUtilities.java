@@ -31,6 +31,7 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
@@ -102,11 +103,11 @@ public class CryptographicUtilities {
 	public static byte[] DEFAULT_SYMMETRIC_INITALIZATION_VECTOR = new byte[] { 48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107, 48, 57, 56, 107 };
 	public static final String[] SYMMETRIC_CIPHERS = {
 			// Block chiffre
-			"AES", "AESWrap", "Blowfish	", "Camellia", "CamelliaWrap", "CAST5", "CAST6", "DES", "DESede", "DESedeWrap", "GOST28147", "IDEA", "Noekeon", "RC2", "RC5", "RC5-64", "RC6", "Rijndael",
+			"AES", "AESWrap", "Blowfish	", "Camellia", "CamelliaWrap", "CAST5", "CAST6", "DES", "DESede", "TripleDES", "3DES", "DESedeWrap", "GOST28147", "IDEA", "Noekeon", "RC2", "RC5", "RC5-64", "RC6", "Rijndael",
 			"SEED", "SEEDWrap", "Serpent", "Skipjack", "TEA", "Twofish", "XTEA",
 
 			// Stream chiffre
-			"RC4	", "HC128	", "HC256	", "Salsa20	", "VMPC", "Grainv1", "Grain128" };
+			"RC4", "HC128", "HC256", "Salsa20", "VMPC", "Grainv1", "Grain128" };
 	public static String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
 	public static final String[] KNOWN_SYMMETRIC_ENCRYPTION_METHODS = new String[] { DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, "DES/CBC/PKCS5Padding", "DES/CBC/X9.23Padding", "DES/OFB8/NoPadding",
 			"DES/ECB/WithCTS", "IDEA/CBC/ISO10126Padding", "IDEA/CBC/ISO7816-4Padding", "SKIPJACK/ECB/PKCS7Padding" };
@@ -142,6 +143,19 @@ public class CryptographicUtilities {
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
+
+	public static KeyPair generateEcDsaKeyPair(final String ecCurveName) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC", "BC");
+			final ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec(ecCurveName);
+			keyGen.initialize(ecGenParameterSpec, new SecureRandom());
+			return keyGen.generateKeyPair();
+		} catch (final Exception e) {
+			throw new Exception("Cannot create ECDSA keypair", e);
 		}
 	}
 
@@ -457,10 +471,14 @@ public class CryptographicUtilities {
 		encryptSymmetric(dataStream, encryptedOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
 	}
 
-	public static void encryptSymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final char[] password, final byte[] salt, final byte[] initializationVector, final String encryptionMethod) throws Exception {
+	public static void encryptSymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final char[] password, final byte[] salt, final byte[] initializationVector, String encryptionMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
+			if ("TripleDES".equalsIgnoreCase(encryptionMethod) || "3DES".equalsIgnoreCase(encryptionMethod)) {
+				encryptionMethod = "DESede";
+			}
+
 			final byte[] keyBytes = stretchPassword(password, 128, salt);
 			final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 			final Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
