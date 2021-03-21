@@ -81,7 +81,9 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.util.DefaultJcaJceHelper;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMException;
@@ -146,6 +148,30 @@ public class CryptographicUtilities {
 
 		try {
 			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
+			keyGen.initialize(keyStrength, new SecureRandom());
+			return keyGen.generateKeyPair();
+		} catch (final Exception e) {
+			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
+
+	public static KeyPair generateDsaKeyPair(final int keyStrength) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DSA", "BC");
+			keyGen.initialize(keyStrength, new SecureRandom());
+			return keyGen.generateKeyPair();
+		} catch (final Exception e) {
+			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
+
+	public static KeyPair generateDhKeyPair(final int keyStrength) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DH", "BC");
 			keyGen.initialize(keyStrength, new SecureRandom());
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
@@ -386,6 +412,18 @@ public class CryptographicUtilities {
 		final AsymmetricCipherKeyPair asymmetricCipherKeyPair = new AsymmetricCipherKeyPair(publicAsymmetricKeyParameter, privateAsymmetricKeyParameter);
 
 		return new KeyPair(getPublicKeyFromAsymmetricCipherKeyPair(asymmetricCipherKeyPair), getPrivateKeyFromAsymmetricCipherKeyPair(asymmetricCipherKeyPair));
+	}
+
+	/**
+	 * not tested yet
+	 */
+	public static KeyPair getKeyPairFromAsymmetricCipherKeyPair(final AsymmetricCipherKeyPair asymmetricCipherKeyPair) throws Exception {
+		final byte[] pkcs8Encoded = PrivateKeyInfoFactory.createPrivateKeyInfo(asymmetricCipherKeyPair.getPrivate()).getEncoded();
+		final PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(pkcs8Encoded);
+		final byte[] spkiEncoded = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(asymmetricCipherKeyPair.getPublic()).getEncoded();
+		final X509EncodedKeySpec spkiKeySpec = new X509EncodedKeySpec(spkiEncoded);
+		final KeyFactory keyFac = KeyFactory.getInstance("RSA");
+		return new KeyPair(keyFac.generatePublic(spkiKeySpec), keyFac.generatePrivate(pkcs8KeySpec));
 	}
 
 	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {

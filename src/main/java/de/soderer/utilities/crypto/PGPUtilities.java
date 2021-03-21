@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.security.SecureRandom;
+import java.security.KeyPair;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Date;
@@ -21,13 +21,6 @@ import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
 import org.bouncycastle.bcpg.sig.NotationData;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPairGenerator;
-import org.bouncycastle.crypto.KeyGenerationParameters;
-import org.bouncycastle.crypto.generators.DSAKeyPairGenerator;
-import org.bouncycastle.crypto.generators.DSAParametersGenerator;
-import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
-import org.bouncycastle.crypto.params.DSAKeyGenerationParameters;
-import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPKeyPair;
@@ -47,13 +40,14 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.PBESecretKeyDecryptor;
 import org.bouncycastle.openpgp.operator.PBESecretKeyEncryptor;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculator;
+import org.bouncycastle.openpgp.operator.PGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyEncryptorBuilder;
-import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
-import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
-import org.bouncycastle.openpgp.operator.bc.BcPGPKeyPair;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyPair;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.UserError;
@@ -61,6 +55,11 @@ import de.soderer.utilities.Utilities;
 
 public class PGPUtilities {
 	public static final String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES-256";
+
+	/**
+	 * Fermat prime number: F4 = 65537
+	 */
+	public static final BigInteger FERMAT_PRIME_F4 = BigInteger.valueOf(0x10001);
 
 	public enum PgpSymmetricEncryptionMethod {
 		IDEA(SymmetricKeyAlgorithmTags.IDEA),
@@ -115,12 +114,10 @@ public class PGPUtilities {
 	public static final String DEFAULT_PUBLIC_ENCRYPTION_METHOD = "RSA-GENERAL";
 
 	public enum PgpPublicEncryptionMethod {
-		RSA(PublicKeyAlgorithmTags.RSA_GENERAL),
 		RSA_GENERAL(PublicKeyAlgorithmTags.RSA_GENERAL),
 		RSA_ENCRYPT(PublicKeyAlgorithmTags.RSA_ENCRYPT),
 		RSA_SIGN(PublicKeyAlgorithmTags.RSA_SIGN),
 
-		ELGAMAL(PublicKeyAlgorithmTags.ELGAMAL_GENERAL),
 		ELGAMAL_GENERAL(PublicKeyAlgorithmTags.ELGAMAL_GENERAL),
 		ELGAMAL_ENCRYPT(PublicKeyAlgorithmTags.ELGAMAL_ENCRYPT),
 
@@ -228,33 +225,21 @@ public class PGPUtilities {
 	public static PGPSecretKey generatePGPSecretKey(final int keyStrength, final PgpPublicEncryptionMethod keyType, final String identity, final char[] password, final Date validity) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		AsymmetricCipherKeyPairGenerator keyPairGenerator;
-		KeyGenerationParameters keyGenerationParameters;
-		if (keyType == PgpPublicEncryptionMethod.RSA
-				|| keyType == PgpPublicEncryptionMethod.RSA_GENERAL
+		final PGPKeyPair masterKeyPair;
+		PGPKeyPair subKeyPair = null;
+		if (keyType == PgpPublicEncryptionMethod.RSA_GENERAL
 				|| keyType == PgpPublicEncryptionMethod.RSA_ENCRYPT
 				|| keyType == PgpPublicEncryptionMethod.RSA_SIGN) {
-			keyPairGenerator = new RSAKeyPairGenerator();
-			keyGenerationParameters = new RSAKeyGenerationParameters(BigInteger.valueOf(0x10001), new SecureRandom(), keyStrength, 80);
-			//		} else if (keyType == PgpPublicEncryptionMethod.ELGAMAL
-			//				|| keyType == PgpPublicEncryptionMethod.ELGAMAL_GENERAL
-			//				|| keyType == PgpPublicEncryptionMethod.ELGAMAL_ENCRYPT) {
-			//			keyPairGenerator = new ElGamalKeyPairGenerator();
-			//			ElGamalParametersGenerator elGamalParametersGenerator = new ElGamalParametersGenerator();
-			//			elGamalParametersGenerator.init(keyStrength, 12, new SecureRandom());
-			//			keyGenerationParameters = new ElGamalKeyGenerationParameters(new SecureRandom(), elGamalParametersGenerator.generateParameters());
+			masterKeyPair = new JcaPGPKeyPair(keyType.getId(), CryptographicUtilities.generateRsaKeyPair(keyStrength), new Date());
+		} else if (keyType == PgpPublicEncryptionMethod.ELGAMAL_GENERAL
+				|| keyType == PgpPublicEncryptionMethod.ELGAMAL_ENCRYPT) {
+			masterKeyPair = new JcaPGPKeyPair(PublicKeyAlgorithmTags.DSA, CryptographicUtilities.generateDsaKeyPair(keyStrength), new Date());
+			subKeyPair = new JcaPGPKeyPair(PgpPublicEncryptionMethod.ELGAMAL_GENERAL.getId(), CryptographicUtilities.generateElGamalKeyPair(keyStrength), new Date());
 		} else if (keyType == PgpPublicEncryptionMethod.DSA) {
-			keyPairGenerator = new DSAKeyPairGenerator();
-			final DSAParametersGenerator dsaParametersGenerator = new DSAParametersGenerator();
-			dsaParametersGenerator.init(keyStrength, 80, new SecureRandom());
-			keyGenerationParameters = new DSAKeyGenerationParameters(new SecureRandom(), dsaParametersGenerator.generateParameters());
+			masterKeyPair = new JcaPGPKeyPair(keyType.getId(), CryptographicUtilities.generateDsaKeyPair(keyStrength), new Date());
 		} else {
 			throw new Exception("Unsupported keytype: " + keyType.name());
 		}
-
-		keyPairGenerator.init(keyGenerationParameters);
-
-		final PGPKeyPair keyPair = new BcPGPKeyPair(keyType.getId(), keyPairGenerator.generateKeyPair(), new Date());
 
 		final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
 
@@ -284,71 +269,41 @@ public class PGPUtilities {
 
 		subpacketGenerator.addNotationData(false, true, "identity", identity);
 
-		// Objects used to encrypt the secret key.
-		final PGPDigestCalculator sha1Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA1);
-		final PGPDigestCalculator sha256Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA256);
+		// Objects used to encrypt the secret key
+		final JcaPGPDigestCalculatorProviderBuilder builder = new JcaPGPDigestCalculatorProviderBuilder();
+		final PGPDigestCalculatorProvider pgpDigestCalculatorProvider = builder.build();
 
-		final PBESecretKeyEncryptor pske = (new BcPBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256, sha256Calc, 0xc0)).build(password);
+		final PGPDigestCalculator sha1Calc = pgpDigestCalculatorProvider.get(HashAlgorithmTags.SHA1);
+		final PGPDigestCalculator sha256Calc = pgpDigestCalculatorProvider.get(HashAlgorithmTags.SHA256);
 
-		final PGPKeyRingGenerator keyRingGen = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, keyPair, identity, sha1Calc, subpacketGenerator.generate(), null, new BcPGPContentSignerBuilder(keyPair.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pske);
+		final PBESecretKeyEncryptor pbeSecretKeyEncryptor = (new JcePBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256, sha256Calc, 0xc0)).build(password);
 
-		final PGPSecretKeyRing skr = keyRingGen.generateSecretKeyRing();
+		final PGPKeyRingGenerator pgpKeyRingGenerator = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, masterKeyPair, identity, sha1Calc, subpacketGenerator.generate(), null, new JcaPGPContentSignerBuilder(masterKeyPair.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pbeSecretKeyEncryptor);
+		if (subKeyPair != null) {
+			pgpKeyRingGenerator.addSubKey(subKeyPair);
+		}
 
-		final Iterator<PGPSecretKey> secretKeys = skr.getSecretKeys();
+		final PGPSecretKeyRing pgpSecretKeyRing = pgpKeyRingGenerator.generateSecretKeyRing();
+
+		final Iterator<PGPSecretKey> secretKeys = pgpSecretKeyRing.getSecretKeys();
 		PGPSecretKey secretKey = null;
 		while (secretKeys.hasNext()) {
+			// if available only export the subkey. For ElGamal this is the wanted key, but it cannot be used for signatures
 			secretKey = secretKeys.next();
-			break;
 		}
 		return secretKey;
-
-		// TODO
-		//		try {
-		//			RSAKeyPairGenerator keyPairGenerator = new RSAKeyPairGenerator();
-		//			keyPairGenerator.init(new RSAKeyGenerationParameters(RSAKeyGenParameterSpec.F4, new SecureRandom(), keyStrength, 80));
-		//			AsymmetricCipherKeyPair keyPair = keyPairGenerator.generateKeyPair();
-		//
-		//			PublicKeyPacket publicKeyPacket = new PublicKeyPacket(PgpPublicEncryptionMethod.getByName(DEFAULT_PUBLIC_ENCRYPTION_METHOD).getId(), new Date(), null);
-		//
-		//			PGPPublicKey publicKey = new PGPPublicKey(publicKeyPacket, new JcaKeyFingerprintCalculator());
-		//			PGPPublicKey publicKey = new PGPPublicKey(PgpPublicEncryptionMethod.getByName(DEFAULT_PUBLIC_ENCRYPTION_METHOD).getId(), keyPair.getPublic(), new Date());
-		//			PGPPrivateKey privateKey = new PGPPrivateKey(keyPair.getPrivate(), publicKey.getKeyID());
-		//			PGPKeyPair masterKeyPair = new PGPKeyPair(publicKey, privateKey);
-		//
-		//			long secondsUntilExpiration = (validity.getTime() - new Date().getTime()) / 1000L + 1;
-		//
-		//			PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
-		//			PGPSignatureSubpacketVector subpacketVector = null;
-		//			subpacketGenerator.setKeyExpirationTime(false, secondsUntilExpiration);
-		//			subpacketGenerator.setNotationData(true, true, "identity", identity);
-		//			subpacketVector = subpacketGenerator.generate();
-		//			PGPKeyRingGenerator keyringGenerator = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, masterKeyPair, identity, PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId(), password, subpacketVector, null, new SecureRandom(), BouncyCastleProvider.PROVIDER_NAME);
-		//
-		//			PGPSecretKeyRing secretKeyRing = keyringGenerator.generateSecretKeyRing();
-		//
-		//			return secretKeyRing.getSecretKey();
-		//		} catch (PGPException e) {
-		//			if (e.getUnderlyingException() != null && e.getUnderlyingException().getMessage().contains("Illegal key size")) {
-		//				throw new UserError("keystrengthExceedsAllowedJCE", e);
-		//			} else {
-		//				throw new Exception("Cannot create PGP key", e);
-		//			}
-		//		} catch (Exception e) {
-		//			e.printStackTrace();
-		//			throw new Exception("Cannot create PGP key", e);
-		//		}
 	}
 
 	public static PGPSecretKey generateDualKeyPGPSecretKey(final int keyStrength, final String identity, final char[] password, final Date validity) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final RSAKeyPairGenerator keyPairGenerator = new RSAKeyPairGenerator();
-		keyPairGenerator.init(new RSAKeyGenerationParameters(BigInteger.valueOf(0x10001), new SecureRandom(), keyStrength, 80));
+		final KeyPair keyPair1 = CryptographicUtilities.generateRsaKeyPair(keyStrength);
+		final KeyPair keyPair2 = CryptographicUtilities.generateRsaKeyPair(keyStrength);
 
 		// First create the master (signing) key with the generator.
-		final PGPKeyPair rsakp_sign = new BcPGPKeyPair(PublicKeyAlgorithmTags.RSA_SIGN, keyPairGenerator.generateKeyPair(), new Date());
+		final PGPKeyPair rsakp_sign = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_SIGN, keyPair1, new Date());
 		// Then an encryption subkey.
-		final PGPKeyPair rsakp_enc = new BcPGPKeyPair(PublicKeyAlgorithmTags.RSA_ENCRYPT, keyPairGenerator.generateKeyPair(), new Date());
+		final PGPKeyPair rsakp_enc = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_ENCRYPT, keyPair2, new Date());
 
 		// Add a self-signature on the id
 		final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
@@ -379,20 +334,22 @@ public class PGPUtilities {
 
 		subpacketGenerator.addNotationData(true, true, "identity", identity);
 
-		// Create a signature on the encryption subkey.
+		// Create a signature on the encryption subkey
 		final PGPSignatureSubpacketGenerator enchashgen = new PGPSignatureSubpacketGenerator();
 		// Add metadata to declare its purpose
 		enchashgen.setKeyFlags(false, KeyFlags.ENCRYPT_COMMS|KeyFlags.ENCRYPT_STORAGE);
 
-		// Objects used to encrypt the secret key.
-		final PGPDigestCalculator sha1Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA1);
-		final PGPDigestCalculator sha256Calc = new BcPGPDigestCalculatorProvider().get(HashAlgorithmTags.SHA256);
+		// Objects used to encrypt the secret key
+		final JcaPGPDigestCalculatorProviderBuilder builder = new JcaPGPDigestCalculatorProviderBuilder();
+		final PGPDigestCalculatorProvider pgpDigestCalculatorProvider = builder.build();
+		final PGPDigestCalculator sha1Calc = pgpDigestCalculatorProvider.get(HashAlgorithmTags.SHA1);
+		final PGPDigestCalculator sha256Calc = pgpDigestCalculatorProvider.get(HashAlgorithmTags.SHA256);
 
 		// bcpg 1.48 exposes this API that includes s2kcount. Earlier versions use a default of 0x60.
 		final PBESecretKeyEncryptor pske = (new BcPBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256, sha256Calc, 0xc0)).build(password);
 
 		// Finally, create the keyring itself. The constructor takes parameters that allow it to generate the self signature.
-		final PGPKeyRingGenerator keyRingGen = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, rsakp_sign, identity, sha1Calc, subpacketGenerator.generate(), null, new BcPGPContentSignerBuilder(rsakp_sign.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pske);
+		final PGPKeyRingGenerator keyRingGen = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, rsakp_sign, identity, sha1Calc, subpacketGenerator.generate(), null, new JcaPGPContentSignerBuilder(rsakp_sign.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pske);
 
 		// Add our encryption subkey, together with its signature.
 		keyRingGen.addSubKey(rsakp_enc, enchashgen.generate(), null);

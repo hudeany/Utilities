@@ -18,8 +18,8 @@ import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKeyEncryptedData;
 import org.bouncycastle.openpgp.PGPSecretKey;
 import org.bouncycastle.openpgp.PGPUtil;
-import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
+import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyDataDecryptorFactoryBuilder;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
@@ -87,7 +87,8 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			}
 
 			// This execution checks for the JCE allowed key strength
-			decryptedPacketInputStream = publicKeyEncryptedData.getDataStream(new BcPublicKeyDataDecryptorFactory(privateKey));
+			final JcePublicKeyDataDecryptorFactoryBuilder jcePublicKeyDataDecryptorFactoryBuilder = new JcePublicKeyDataDecryptorFactoryBuilder();
+			decryptedPacketInputStream = publicKeyEncryptedData.getDataStream(jcePublicKeyDataDecryptorFactoryBuilder.build(privateKey));
 
 			Object message = new PGPObjectFactory(decryptedPacketInputStream, new JcaKeyFingerprintCalculator()).nextObject();
 
@@ -124,8 +125,6 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 				if (!publicKeyEncryptedData.verify()) {
 					throw new Exception("message failed integrity check");
 				}
-			} else {
-				throw new Exception("no message integrity check");
 			}
 
 			return true;

@@ -9,8 +9,8 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
-import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
+import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProvider;
 
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
@@ -61,7 +61,7 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 			}
 
 			final PGPSignature signature = p3.get(0);
-			signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
+			signature.init(new JcaPGPContentVerifierBuilderProvider(), publicKey);
 
 			dataToVerify = new BufferedInputStream(dataToVerify);
 
