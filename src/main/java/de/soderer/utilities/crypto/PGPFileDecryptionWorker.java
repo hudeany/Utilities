@@ -37,6 +37,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 	private OutputStream decryptedData = null;
 	private PGPSecretKey secretKey = null;
 	private char[] password = null;
+	private boolean useIntegrityPacket = true;
 
 	public PGPFileDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedData, final OutputStream decryptedData, final PGPSecretKey secretKey, final char[] password) {
 		super(parent);
@@ -44,6 +45,15 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		this.decryptedData = decryptedData;
 		this.secretKey = secretKey;
 		this.password = password;
+	}
+
+	public boolean isUseIntegrityPacket() {
+		return useIntegrityPacket;
+	}
+
+	public PGPFileDecryptionWorker setUseIntegrityPacket(final boolean useIntegrityPacket) {
+		this.useIntegrityPacket = useIntegrityPacket;
+		return this;
 	}
 
 	@SuppressWarnings("resource")
@@ -125,6 +135,8 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 				if (!publicKeyEncryptedData.verify()) {
 					throw new Exception("message failed integrity check");
 				}
+			} else if (useIntegrityPacket) {
+				throw new Exception("message has no integrity packet. if this is intended deactivate check by using setUseIntegrityPacket(false)");
 			}
 
 			return true;
