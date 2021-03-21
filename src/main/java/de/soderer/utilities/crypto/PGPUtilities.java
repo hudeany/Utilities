@@ -41,7 +41,6 @@ import org.bouncycastle.openpgp.operator.PBESecretKeyDecryptor;
 import org.bouncycastle.openpgp.operator.PBESecretKeyEncryptor;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculator;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculatorProvider;
-import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
@@ -346,7 +345,7 @@ public class PGPUtilities {
 		final PGPDigestCalculator sha256Calc = pgpDigestCalculatorProvider.get(HashAlgorithmTags.SHA256);
 
 		// bcpg 1.48 exposes this API that includes s2kcount. Earlier versions use a default of 0x60.
-		final PBESecretKeyEncryptor pske = (new BcPBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256, sha256Calc, 0xc0)).build(password);
+		final PBESecretKeyEncryptor pske = (new JcePBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256, sha256Calc, 0xc0)).build(password);
 
 		// Finally, create the keyring itself. The constructor takes parameters that allow it to generate the self signature.
 		final PGPKeyRingGenerator keyRingGen = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, rsakp_sign, identity, sha1Calc, subpacketGenerator.generate(), null, new JcaPGPContentSignerBuilder(rsakp_sign.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1), pske);

@@ -14,8 +14,8 @@ import org.bouncycastle.openpgp.PGPEncryptedDataGenerator;
 import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.openpgp.PGPLiteralDataGenerator;
 import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.operator.bc.BcPGPDataEncryptorBuilder;
-import org.bouncycastle.openpgp.operator.bc.BcPublicKeyKeyEncryptionMethodGenerator;
+import org.bouncycastle.openpgp.operator.jcajce.JcePGPDataEncryptorBuilder;
+import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyKeyEncryptionMethodGenerator;
 
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.PGPUtilities.PgpSymmetricEncryptionMethod;
@@ -29,6 +29,16 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 	private InputStream dataToEncrypt = null;
 	private OutputStream encryptedData = null;
 	private PGPPublicKey publicKey = null;
+	private boolean useIntegrityPacket = true;
+
+	public boolean isUseIntegrityPacket() {
+		return useIntegrityPacket;
+	}
+
+	public PGPFileEncryptionWorker setUseIntegrityPacket(final boolean useIntegrityPacket) {
+		this.useIntegrityPacket = useIntegrityPacket;
+		return this;
+	}
 
 	public PGPFileEncryptionWorker(final WorkerParentSimple parent, final InputStream dataToEncrypt, final OutputStream encryptedData, final PGPPublicKey publicKey) {
 		super(parent);
@@ -61,9 +71,9 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 				encryptedData = new ArmoredOutputStream(encryptedData);
 			}
 
-			final BcPGPDataEncryptorBuilder builder = new BcPGPDataEncryptorBuilder(PgpSymmetricEncryptionMethod.getByName(PGPUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).getId());
+			final JcePGPDataEncryptorBuilder builder = new JcePGPDataEncryptorBuilder(PgpSymmetricEncryptionMethod.getByName(PGPUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).getId()).setWithIntegrityPacket(useIntegrityPacket);
 			encryptedDataGenerator = new PGPEncryptedDataGenerator(builder);
-			final BcPublicKeyKeyEncryptionMethodGenerator encryptionMethodGenerator = new BcPublicKeyKeyEncryptionMethodGenerator(publicKey);
+			final JcePublicKeyKeyEncryptionMethodGenerator encryptionMethodGenerator = new JcePublicKeyKeyEncryptionMethodGenerator(publicKey);
 			encryptedDataGenerator.addMethod(encryptionMethodGenerator);
 			encryptedDataGeneratorStream = encryptedDataGenerator.open(encryptedData, new byte[4096]);
 
