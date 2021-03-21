@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
@@ -73,53 +72,54 @@ public class CryptographicUtilitiesTest {
 	}
 
 	@Test
-	public void testEncryption_RSA_PKCS1() {
-		try {
-			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
-			final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
-			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getRsaKeyPair().getPublic(), "RSA/PKCS1");
-			final byte[] encryptedDataStreamed = encryptedStream.toByteArray();
+	public void testEncryptionRSA() {
+		for (final String encryptionMethod : CryptographicUtilities.KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA) {
+			byte[] encryptedDataStreamed = null;
+			try {
+				final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
+				final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
+				CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getRsaKeyPair().getPublic(), encryptionMethod);
+				encryptedDataStreamed = encryptedStream.toByteArray();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Encryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
 
-			final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
-			final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
-			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getRsaKeyPair().getPrivate(), "RSA/PKCS1");
-			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
-		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			try {
+				final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
+				final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
+				CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getRsaKeyPair().getPrivate(), encryptionMethod);
+				Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Decryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
 		}
 	}
 
 	@Test
-	public void testEncryption_RSA_OAEP() {
-		try {
-			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
-			final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
-			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getRsaKeyPair().getPublic(), "RSA/OAEP");
-			final byte[] encryptedDataStreamed = encryptedStream.toByteArray();
+	public void testEncryptionELGAMAL() {
+		for (final String encryptionMethod : CryptographicUtilities.KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_ELGAMAL) {
+			byte[] encryptedDataStreamed = null;
+			try {
+				final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
+				final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
+				CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getElGamalKeyPair().getPublic(), encryptionMethod);
+				encryptedDataStreamed = encryptedStream.toByteArray();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Encryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
 
-			final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
-			final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
-			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getRsaKeyPair().getPrivate(), "RSA/OAEP");
-			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
-		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
-		}
-	}
-
-	@Test
-	public void testEncryption_ELGAMAL_PKCS1() {
-		try {
-			final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
-			final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
-			CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getElGamalKeyPair().getPublic(), "ELGAMAL/PKCS1");
-			final byte[] encryptedDataStreamed = encryptedStream.toByteArray();
-
-			final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
-			final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
-			CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getElGamalKeyPair().getPrivate(), "ELGAMAL/PKCS1");
-			Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
-		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			try {
+				final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
+				final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
+				CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getElGamalKeyPair().getPrivate(), encryptionMethod);
+				Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail(e.getMessage());
+			}
 		}
 	}
 
@@ -136,10 +136,7 @@ public class CryptographicUtilitiesTest {
 
 	@Test
 	public void testEncryptionWithoutBouncyCastle() throws Exception {
-		final int keySize = 2048;
-		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-		keyPairGenerator.initialize(keySize);
-		final KeyPair keyPair = keyPairGenerator.genKeyPair();
+		final KeyPair keyPair = CryptographicUtilities.generateRsaKeyPair(2048);
 
 		final PublicKey publicKey = keyPair.getPublic();
 		final PrivateKey privateKey = keyPair.getPrivate();
@@ -152,7 +149,7 @@ public class CryptographicUtilitiesTest {
 		final Cipher cipher2 = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
 		cipher2.init(Cipher.DECRYPT_MODE, privateKey);
 
-		final byte[] decrypted =  cipher2.doFinal(encrypted);
+		final byte[] decrypted = cipher2.doFinal(encrypted);
 		Assert.assertEquals(new String(decrypted, StandardCharsets.UTF_8), "This is a secret message Aöü");
 	}
 }

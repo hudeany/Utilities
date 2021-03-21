@@ -83,7 +83,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 				throw new Exception("Mandatory credentials data is missing: private_key");
 			}
 
-			rsaPrivateKey = CryptographicUtilities.getPrivateRsaKeyPairFromString(privateKeyString);
+			rsaPrivateKey = CryptographicUtilities.getRsaPrivateKeyFromString(privateKeyString);
 		}
 
 		final Algorithm algorithm = Algorithm.RSA256(null, rsaPrivateKey);

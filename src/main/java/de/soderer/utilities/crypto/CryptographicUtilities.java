@@ -101,6 +101,7 @@ import de.soderer.utilities.Utilities;
 public class CryptographicUtilities {
 	public static byte[] DEFAULT_SALT = new byte[] { 48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107 };
 	public static byte[] DEFAULT_SYMMETRIC_INITALIZATION_VECTOR = new byte[] { 48, 57, 56, 107, 108, 102, 114, 113, 54, 64, 108, 107, 48, 57, 56, 107 };
+
 	public static final String[] SYMMETRIC_CIPHERS = {
 			// Block chiffre
 			"AES", "AESWrap", "Blowfish	", "Camellia", "CamelliaWrap", "CAST5", "CAST6", "DES", "DESede", "TripleDES", "3DES", "DESedeWrap", "GOST28147", "IDEA", "Noekeon", "RC2", "RC5", "RC5-64", "RC6", "Rijndael",
@@ -108,9 +109,11 @@ public class CryptographicUtilities {
 
 			// Stream chiffre
 			"RC4", "HC128", "HC256", "Salsa20", "VMPC", "Grainv1", "Grain128" };
+
 	public static String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
 	public static final String[] KNOWN_SYMMETRIC_ENCRYPTION_METHODS = new String[] { DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, "DES/CBC/PKCS5Padding", "DES/CBC/X9.23Padding", "DES/OFB8/NoPadding",
 			"DES/ECB/WithCTS", "IDEA/CBC/ISO10126Padding", "IDEA/CBC/ISO7816-4Padding", "SKIPJACK/ECB/PKCS7Padding" };
+
 	public static String DEFAULT_SIGNATURE_METHOD = "SHA256WithRSA";
 	public static final String[] KNOWN_SIGNATURE_METHODS = new String[] { DEFAULT_SIGNATURE_METHOD, "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
 			"GOST3411withGOST3410-2001", "MD2withRSA", "MD5withRSA", "SHA1withRSA", "RIPEMD128withRSA", "RIPEMD160withRSA", "RIPEMD160withECDSA", "RIPEMD256withRSA", "SHA1withDSA", "NONEwithDSA",
@@ -119,9 +122,9 @@ public class CryptographicUtilities {
 
 	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "ElGamal" };
 	public static String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
-	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS = new String[] {
-			"RSA/ECB/PKCS1Padding",
-			"RSA/ECB/OAEPPadding",
+	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA = new String[] {
+			"RSA/NONE/PKCS1Padding",
+			"RSA/NONE/OAEPPadding",
 			"RSA/NONE/NoPadding",
 			"RSA/NONE/PKCS1Padding",
 			"RSA/NONE/OAEPWithMD5AndMGF1Padding",
@@ -130,8 +133,12 @@ public class CryptographicUtilities {
 			"RSA/NONE/OAEPWithSHA256AndMGF1Padding",
 			"RSA/NONE/OAEPWithSHA384AndMGF1Padding",
 			"RSA/NONE/OAEPWithSHA512AndMGF1Padding",
-			"RSA/NONE/ISO9796-1Padding",
-			"ElGamal/NONE/NoPadding"
+			"RSA/NONE/ISO9796-1Padding"
+	};
+
+	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_ELGAMAL = new String[] {
+			"ELGAMAL/NONE/NoPadding",
+			"ELGAMAL/NONE/PKCS1PADDING",
 	};
 
 	public static KeyPair generateRsaKeyPair(final int keyStrength) throws Exception {
@@ -232,7 +239,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
+			if (Utilities.isBlank(encryptionMethod)) {
 				throw new Exception("Empty asymmetric encryption method");
 			}
 			encryptionMethod = encryptionMethod.toLowerCase();
@@ -250,6 +257,8 @@ public class CryptographicUtilities {
 				encryptCipher = new OAEPEncoding(encryptCipher);
 			} else if (encryptionMethod.contains("iso9796")) {
 				encryptCipher = new ISO9796d1Encoding(encryptCipher);
+			} else if (encryptionMethod.contains("nopadding")) {
+				// do no padding
 			} else {
 				throw new Exception("Unknown asymmetric encryption padding method: " + encryptionMethod);
 			}
@@ -291,6 +300,8 @@ public class CryptographicUtilities {
 				decryptCipher = new OAEPEncoding(decryptCipher);
 			} else if (encryptionMethod.contains("iso9796")) {
 				decryptCipher = new ISO9796d1Encoding(decryptCipher);
+			} else if (encryptionMethod.contains("nopadding")) {
+				// do no padding
 			} else {
 				throw new Exception("Unknown asymmetric encryption padding method: " + encryptionMethod);
 			}
@@ -848,7 +859,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static RSAPrivateKey getPrivateRsaKeyPairFromString(final String key) throws Exception {
+	public static RSAPrivateKey getRsaPrivateKeyFromString(final String key) throws Exception {
 		try {
 			// No need for Bouncycastle
 			String privateKeyPEM = key.trim();
