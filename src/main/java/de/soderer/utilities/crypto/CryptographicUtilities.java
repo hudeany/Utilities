@@ -3,12 +3,14 @@ package de.soderer.utilities.crypto;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -16,6 +18,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -23,6 +26,7 @@ import java.security.Signature;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
@@ -36,8 +40,10 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -59,10 +65,12 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.xml.bind.DatatypeConverter;
 
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -91,8 +99,10 @@ import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.Utilities;
@@ -119,7 +129,7 @@ public class CryptographicUtilities {
 	public static String DEFAULT_SIGNATURE_METHOD = "SHA256WithRSA";
 	public static final String[] KNOWN_SIGNATURE_METHODS = new String[] { DEFAULT_SIGNATURE_METHOD, "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
 			"GOST3411withGOST3410-2001", "MD2withRSA", "MD5withRSA", "SHA1withRSA", "RIPEMD128withRSA", "RIPEMD160withRSA", "RIPEMD160withECDSA", "RIPEMD256withRSA", "SHA1withDSA", "NONEwithDSA",
-			"SHA1withECDSA", "NONEwithECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA384withECDSA", "SHA512withECDSA", "SHA1withECNR", "SHA224withECNR", "SHA256withECNR", "SHA384withECNR",
+			"SHA1withECDSA", "NONEwithECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA256withRSA", "SHA384withECDSA", "SHA512withECDSA", "SHA1withECNR", "SHA224withECNR", "SHA256withECNR", "SHA384withECNR",
 			"SHA512withECNR", "SHA224withRSA", "SHA384withRSA", "SHA512withRSA", "SHA1withRSAandMGF1", "SHA256withRSAandMGF1", "SHA384withRSAandMGF1", "SHA512withRSAandMGF1" };
 
 	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "ElGamal" };
@@ -875,6 +885,30 @@ public class CryptographicUtilities {
 		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
 	}
 
+	public static String getSha256FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-256");
+		md.update(certificate.getEncoded());
+		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+	}
+
+	public static String getMd5FingerPrint(final Key key) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("MD5");
+		md.update(key.getEncoded());
+		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+	}
+
+	public static String getSha1FingerPrint(final Key key) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-1");
+		md.update(key.getEncoded());
+		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+	}
+
+	public static String getSha256FingerPrint(final Key key) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-256");
+		md.update(key.getEncoded());
+		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+	}
+
 	public static int getKeySize(final X509Certificate certificate) {
 		final RSAKey rsaKey = (RSAKey) certificate.getPublicKey();
 		return rsaKey.getModulus().bitLength();
@@ -915,4 +949,92 @@ public class CryptographicUtilities {
 			throw new Exception("Cannot read private key", e);
 		}
 	}
+
+	public static String getX509CertificateInfo(final X509Certificate certificate) throws Exception {
+		String dataOutput = "";
+		dataOutput += "CN: " + CryptographicUtilities.getCnFromCertificate(certificate);
+		dataOutput += "\n";
+		dataOutput += "Subject: " + certificate.getSubjectDN();
+		dataOutput += "\n";
+		dataOutput += "Issuer: " + certificate.getIssuerDN();
+		dataOutput += "\n";
+		dataOutput += "is CA-certificate: " + (CryptographicUtilities.checkForCaCertificate(certificate) ? "true" : "false");
+		dataOutput += "\n";
+		dataOutput += "Valid from: " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(certificate.getNotBefore());
+		dataOutput += "\n";
+		dataOutput += "Valid until: " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(certificate.getNotAfter());
+		dataOutput += "\n";
+		dataOutput += "Signature algorithm: " + certificate.getSigAlgName();
+		dataOutput += "\n";
+		dataOutput += "Type: " + certificate.getType();
+		dataOutput += "\n";
+		dataOutput += "Version: " + certificate.getVersion();
+		dataOutput += "\n";
+		dataOutput += "Serial: " + certificate.getSerialNumber();
+		dataOutput += "\n";
+		dataOutput += "Key length: " + CryptographicUtilities.getKeySize(certificate);
+		dataOutput += "\n";
+		dataOutput += "MD5 fingerprint: " + CryptographicUtilities.getMd5FingerPrint(certificate);
+		dataOutput += "\n";
+		dataOutput += "SHA1 fingerprint: " + CryptographicUtilities.getSha1FingerPrint(certificate);
+		dataOutput += "\n";
+		dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getSha256FingerPrint(certificate);
+		dataOutput += "\n";
+		return dataOutput;
+	}
+
+	public static String getKeyInfo(final Key key) {
+		String dataOutput = "";
+		dataOutput += "Algorithm: " + key.getAlgorithm();
+		dataOutput += "\n";
+
+		if (key instanceof RSAKey) {
+			dataOutput += "Key length: " + ((RSAKey) key).getModulus().bitLength();
+			dataOutput += "\n";
+		}
+
+		try {
+			dataOutput += "MD5 fingerprint: " + CryptographicUtilities.getMd5FingerPrint(key);
+		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
+			dataOutput += "MD5 fingerprint: Unknown";
+		}
+		dataOutput += "\n";
+
+		try {
+			dataOutput += "SHA1 fingerprint: " + CryptographicUtilities.getSha1FingerPrint(key);
+		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
+			dataOutput += "SHA1 fingerprint: Unknown";
+		}
+		dataOutput += "\n";
+
+		try {
+			dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getSha256FingerPrint(key);
+		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
+			dataOutput += "SHA256 fingerprint: Unknown";
+		}
+		dataOutput += "\n";
+
+		return dataOutput;
+	}
+
+	public static Certificate generateSelfsignedCertificate(final KeyPair keyPair, final int validityInDays, final String signatureAlgorithm, final String subjectDN) throws OperatorCreationException, CertificateException, IOException {
+		final Provider bcProvider = new BouncyCastleProvider();
+		Security.addProvider(bcProvider);
+		final long now = System.currentTimeMillis();
+		final Date startDate = new Date(now);
+		final X500Name dnName = new X500Name(subjectDN);
+		final BigInteger certSerialNumber = new BigInteger(Long.toString(now));
+		final Calendar calendar = Calendar.getInstance();
+		calendar.setTime(startDate);
+		calendar.add(Calendar.DAY_OF_YEAR, validityInDays);
+		final Date endDate = calendar.getTime();
+		final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
+		final JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate, dnName, keyPair.getPublic());
+		final BasicConstraints basicConstraints = new BasicConstraints(true);
+		certBuilder.addExtension(new ASN1ObjectIdentifier("2.5.29.19"), true, basicConstraints);
+		return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certBuilder.build(contentSigner));
+	}
+
+	// TODO: Read TLS CA Cert (CA Chain file with multiple CA Certs)
+	// TODO: Read TLS Key Cert
 }

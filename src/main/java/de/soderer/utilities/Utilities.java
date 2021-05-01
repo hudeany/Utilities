@@ -928,8 +928,10 @@ public class Utilities {
 	}
 
 	public static void clear(final char[] array) {
-		for (int i = 0; i < array.length; i++) {
-			array[i] = 0;
+		if (array != null) {
+			for (int i = 0; i < array.length; i++) {
+				array[i] = 0;
+			}
 		}
 	}
 
