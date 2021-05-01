@@ -176,54 +176,54 @@ public class MailUtilities {
 			final Session session = Session.getDefaultInstance(props, null);
 
 			// create a message
-			final MimeMessage msg = new MimeMessage(session);
+			final MimeMessage mimeMessage = new MimeMessage(session);
 			if (Utilities.isBlank(fromName)) {
-				msg.setFrom(new InternetAddress(fromAddress));
+				mimeMessage.setFrom(new InternetAddress(fromAddress));
 			} else {
-				msg.setFrom(new InternetAddress(fromAddress, fromName));
+				mimeMessage.setFrom(new InternetAddress(fromAddress, fromName));
 			}
-			msg.setSubject(subject, charset.name());
-			msg.setSentDate(new Date());
+			mimeMessage.setSubject(subject, charset.name());
+			mimeMessage.setSentDate(new Date());
 
 			// Set reply-to address
 			if (Utilities.isNotBlank(replyToAddress)) {
 				if (Utilities.isBlank(replyToName)) {
-					msg.setReplyTo(new Address[] { new InternetAddress(replyToAddress) });
+					mimeMessage.setReplyTo(new Address[] { new InternetAddress(replyToAddress) });
 				} else {
-					msg.setReplyTo(new Address[] { new InternetAddress(replyToAddress, replyToName) });
+					mimeMessage.setReplyTo(new Address[] { new InternetAddress(replyToAddress, replyToName) });
 				}
 			} else {
 				// Use fromAddress as fallback
 				if (Utilities.isBlank(fromName)) {
-					msg.setReplyTo(new Address[] { new InternetAddress(fromAddress) });
+					mimeMessage.setReplyTo(new Address[] { new InternetAddress(fromAddress) });
 				} else {
-					msg.setReplyTo(new Address[] { new InternetAddress(fromAddress, fromName) });
+					mimeMessage.setReplyTo(new Address[] { new InternetAddress(fromAddress, fromName) });
 				}
 			}
 
 			// Set to-recipient email addresses
 			final InternetAddress[] toAddresses = getEmailAddressesFromList(toAddressList);
 			if (toAddresses.length > 0) {
-				msg.setRecipients(Message.RecipientType.TO, toAddresses);
+				mimeMessage.setRecipients(Message.RecipientType.TO, toAddresses);
 			}
 
 			// Set cc-recipient email addresses
 			final InternetAddress[] ccAddresses = getEmailAddressesFromList(ccAddressList);
 			if (ccAddresses.length > 0) {
-				msg.setRecipients(Message.RecipientType.CC, ccAddresses);
+				mimeMessage.setRecipients(Message.RecipientType.CC, ccAddresses);
 			}
 
 			if (attachments == null || attachments.length <= 0) {
 				if (Utilities.isBlank(bodyText) && Utilities.isBlank(bodyHtml)) {
 					// Use a simple text email with only text content
 					// Set to a single space. If body is totally empty, Commons Emails rejects sending email with exception "Invalid message supplied" (-> EMM-4133)
-					msg.setText(" ", charset.name());
+					mimeMessage.setText(" ", charset.name());
 				} else if (Utilities.isBlank(bodyHtml)) {
 					// Use a simple text email with only text content
-					msg.setText(bodyText, charset.name());
+					mimeMessage.setText(bodyText, charset.name());
 				} else if (Utilities.isBlank(bodyText)) {
 					// Use a simple html email with only html content
-					msg.setContent(bodyHtml, "text/html; charset=" + charset);
+					mimeMessage.setContent(bodyHtml, "text/html; charset=" + charset);
 				} else {
 					// Use a multipart email with text and html content
 					final Multipart multipart = new MimeMultipart("alternative");
@@ -236,7 +236,7 @@ public class MailUtilities {
 					htmlMimeBodyPart.setContent(bodyHtml, "text/html; charset=" + charset);
 					multipart.addBodyPart(htmlMimeBodyPart);
 
-					msg.setContent(multipart);
+					mimeMessage.setContent(multipart);
 				}
 			} else {
 				final Multipart multipartMixed = new MimeMultipart("mixed");
@@ -282,12 +282,12 @@ public class MailUtilities {
 					multipartMixed.addBodyPart(attachmentMimeBodyPart);
 				}
 
-				msg.setContent(multipartMixed);
+				mimeMessage.setContent(multipartMixed);
 			}
 
 			try(final Transport transport = session.getTransport("smtp")) {
 				transport.connect();
-				transport.sendMessage(msg, msg.getRecipients(Message.RecipientType.TO));
+				transport.sendMessage(mimeMessage, mimeMessage.getRecipients(Message.RecipientType.TO));
 
 				if (logger.isDebugEnabled()) {
 					logger.debug("Sending java email:\nfrom: " + fromAddress + "\nto: " + toAddressList + "\nsubject: " + subject);
