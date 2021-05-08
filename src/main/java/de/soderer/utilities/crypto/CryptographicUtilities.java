@@ -933,13 +933,21 @@ public class CryptographicUtilities {
 
 	public static RSAPrivateKey getRsaPrivateKeyFromString(final String key) throws Exception {
 		try {
-			// No need for Bouncycastle
+			Security.addProvider(new BouncyCastleProvider());
+
 			String privateKeyPEM = key.trim();
+			final String pemRsaBegin = "-----BEGIN RSA PRIVATE KEY-----";
+			final String pemRsaEnd = "-----END RSA PRIVATE KEY-----";
+
 			final String pemBegin = "-----BEGIN PRIVATE KEY-----";
 			final String pemEnd = "-----END PRIVATE KEY-----";
-			if (privateKeyPEM.startsWith(pemBegin) && privateKeyPEM.endsWith(pemEnd)) {
-				privateKeyPEM = privateKeyPEM.substring(pemBegin.length(), privateKeyPEM.length() - pemEnd.length()).trim();
+
+			if (privateKeyPEM.contains(pemRsaBegin) && privateKeyPEM.contains(pemRsaEnd) && privateKeyPEM.indexOf(pemRsaBegin) < privateKeyPEM.indexOf(pemRsaEnd)) {
+				privateKeyPEM = privateKeyPEM.substring(privateKeyPEM.indexOf(pemRsaBegin) + pemRsaBegin.length(), privateKeyPEM.indexOf(pemRsaEnd)).trim();
+			} else if (privateKeyPEM.contains(pemBegin) && privateKeyPEM.contains(pemEnd) && privateKeyPEM.indexOf(pemBegin) < privateKeyPEM.indexOf(pemEnd)) {
+				privateKeyPEM = privateKeyPEM.substring(privateKeyPEM.indexOf(pemBegin) + pemBegin.length(), privateKeyPEM.indexOf(pemEnd)).trim();
 			}
+
 			privateKeyPEM = privateKeyPEM.replace("\r", "").replace("\n", "");
 			final byte[] privateKeyData = Base64.getDecoder().decode(privateKeyPEM);
 			final KeyFactory keyFactory = KeyFactory.getInstance("RSA");

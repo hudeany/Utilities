@@ -14,27 +14,16 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 
 public final class DomainKeyUtil {
-	private static final Map<String, DomainKey> DomainKey_CACHE = new HashMap<>();
-	private static final Pattern RECORD_PATTERN = Pattern.compile("(?:\"(.*?)\"(?: |$))|(?:'(.*?)'(?: |$))|(?:(.*?)(?: |$))");
+	private static final Map<String, DomainKey> DOMAINKEY_CACHE = new HashMap<>();
+	private static final Pattern RECORD_PATTERN = Pattern
+			.compile("(?:\"(.*?)\"(?: |$))|(?:'(.*?)'(?: |$))|(?:(.*?)(?: |$))");
 	private static final long DEFAULT_CACHE_TTL = 2 * 60 * 60 * 1000;
 	private static long cacheTtl = DEFAULT_CACHE_TTL;
 
-	/**
-	 * Returns the configured TTL (time to live) for retrieved {@link DomainKey}
-	 * s.
-	 *
-	 * @return The configured TTL for retrieved {@link DomainKey}s.
-	 */
 	public static synchronized long getCacheTtl() {
 		return cacheTtl;
 	}
 
-	/**
-	 * Sets the TTL (time to live) for retrieved {@link DomainKey}s.
-	 *
-	 * @param cacheTtl
-	 *            The TTL for retrieved {@link DomainKey}s.
-	 */
 	public static synchronized void setCacheTtl(long cacheTtl) {
 		if (cacheTtl < 0) {
 			cacheTtl = DEFAULT_CACHE_TTL;
@@ -43,31 +32,20 @@ public final class DomainKeyUtil {
 	}
 
 	/**
-	 * Retrieves the {@link DomainKey} for the given signing domain and
-	 * selector.
-	 *
-	 * @param signingDomain
-	 *            The signing domain.
-	 * @param selector
-	 *            The selector.
-	 * @return The retrieved {@link DomainKey}.
-	 * @throws DkimException
-	 *             If the domain key couldn't be retrieved or if either the
-	 *             version, key type or service type given in the tags of the
-	 *             retrieved domain key is incompatible to this library
-	 *             ('DKIM1', 'RSA' and 'email' respectively).
+	 * Retrieves the DomainKey for the given signing domain and selector
 	 */
-	public static synchronized DomainKey getDomainKey(final String signingDomain, final String selector) throws DkimException {
+	public static synchronized DomainKey getDomainKey(final String signingDomain, final String selector)
+			throws Exception {
 		return getDomainKey(getRecordName(signingDomain, selector));
 	}
 
-	private static synchronized DomainKey getDomainKey(final String recordName) throws DkimException {
-		DomainKey domainKey = DomainKey_CACHE.get(recordName);
+	private static synchronized DomainKey getDomainKey(final String recordName) throws Exception {
+		DomainKey domainKey = DOMAINKEY_CACHE.get(recordName);
 		if (null != domainKey && 0 != cacheTtl && isRecent(domainKey)) {
 			return domainKey;
 		} else {
 			domainKey = new DomainKey(getTags(recordName));
-			DomainKey_CACHE.put(recordName, domainKey);
+			DOMAINKEY_CACHE.put(recordName, domainKey);
 			return domainKey;
 		}
 	}
@@ -77,22 +55,13 @@ public final class DomainKeyUtil {
 	}
 
 	/**
-	 * Retrieves the tags of a domain key for the given signing domain and
-	 * selector.
-	 *
-	 * @param signingDomain
-	 *            The signing domain.
-	 * @param selector
-	 *            The selector.
-	 * @return The retrieved tags.
-	 * @throws DkimException
-	 *             If the domain key couldn't be retrieved.
+	 * Retrieves the tags of a domain key for the given signing domain and selector
 	 */
-	public static Map<Character, String> getTags(final String signingDomain, final String selector) throws DkimException {
+	public static Map<Character, String> getTags(final String signingDomain, final String selector) throws Exception {
 		return getTags(getRecordName(signingDomain, selector));
 	}
 
-	private static Map<Character, String> getTags(final String recordName) throws DkimException {
+	private static Map<Character, String> getTags(final String recordName) throws Exception {
 		final Map<Character, String> tags = new HashMap<>();
 
 		final String recordValue = getValue(recordName);
@@ -102,35 +71,27 @@ public final class DomainKeyUtil {
 				tag = tag.trim();
 				tags.put(tag.charAt(0), tag.substring(2));
 			} catch (final IndexOutOfBoundsException e) {
-				throw new DkimException("The tag " + tag + " in RR " + recordName + " couldn't be decoded.", e);
+				throw new Exception("The tag " + tag + " in RR " + recordName + " couldn't be decoded.", e);
 			}
 		}
 		return tags;
 	}
 
 	/**
-	 * Retrieves the raw domain key for the given signing domain and selector.
-	 *
-	 * @param signingDomain
-	 *            The signing domain.
-	 * @param selector
-	 *            The selector.
-	 * @return The raw domain key.
-	 * @throws DkimException
-	 *             If the domain key couldn't be retrieved.
+	 * Retrieves the raw domain key for the given signing domain and selector
 	 */
-	public static String getValue(final String signingDomain, final String selector) throws DkimException {
+	public static String getValue(final String signingDomain, final String selector) throws Exception {
 		return getValue(getRecordName(signingDomain, selector));
 	}
 
-	private static String getValue(final String recordName) throws DkimException {
+	private static String getValue(final String recordName) throws Exception {
 		try {
 			final DirContext dnsContext = new InitialDirContext(getEnvironment());
 			final Attributes attributes = dnsContext.getAttributes(recordName, new String[] { "TXT" });
 			final Attribute txtRecord = attributes.get("txt");
 
 			if (txtRecord == null) {
-				throw new DkimException("There is no TXT record available for " + recordName);
+				throw new Exception("There is no TXT record available for " + recordName);
 			}
 
 			final StringBuilder builder = new StringBuilder();
@@ -141,31 +102,17 @@ public final class DomainKeyUtil {
 
 			final String value = builder.toString();
 			if (value.isEmpty()) {
-				throw new DkimException("Value of RR " + recordName + " couldn't be retrieved");
+				throw new Exception("Value of RR " + recordName + " couldn't be retrieved");
 			}
 
 			return unquoteRecordValue(value);
 
 		} catch (final NamingException ne) {
-			throw new DkimException("Selector lookup failed", ne);
+			throw new Exception("Selector lookup failed", ne);
 		}
 	}
 
-	/*
-	 * Unquote a recordValue string.
-	 *
-	 * The Java DNS provider does something very odd. In the instance there are
-	 * multiple entries for the TXT record, the first is quoted however the
-	 * second is unquoted. That makes removing quotes difficult. In the normal
-	 * case, there should be a "\" \"" string, however, as confirmed in actual
-	 * records, the last item may not be quoted. This seems to happen if there
-	 * are no spaces.
-	 *
-	 * @param recordValue Domain record value.
-	 *
-	 * @return Domain record value unquoted.
-	 */
-	private static String unquoteRecordValue(final String recordValue) {
+	private static String unquoteRecordValue(final String recordValue) throws Exception {
 		final Matcher recordMatcher = RECORD_PATTERN.matcher(recordValue);
 
 		final StringBuilder builder = new StringBuilder();
@@ -180,7 +127,7 @@ public final class DomainKeyUtil {
 
 		final String unquotedRecordValue = builder.toString();
 		if (null == unquotedRecordValue || 0 == unquotedRecordValue.length()) {
-			throw new DkimException("Unable to parse DKIM record: " + recordValue);
+			throw new Exception("Unable to parse DKIM record: " + recordValue);
 		}
 
 		return unquotedRecordValue;
