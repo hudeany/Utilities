@@ -7,7 +7,7 @@ public class SimpleCredentialsData {
 	/**
 	 * Simple constructor is needed for serialization/deserialization
 	 */
-	public SimpleCredentialsData() {
+	protected SimpleCredentialsData() {
 	}
 
 	public SimpleCredentialsData(final String userName, final char[] password) {

@@ -16,6 +16,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import de.soderer.utilities.TestSecureDataStoreEntry.TestEnum;
+import de.soderer.utilities.code.ClassUtilities;
 
 public class SecureDataStoreTest {
 	public static final String TEST_PASSWORD = "test@PasswordÄÖÜäöüß";
@@ -148,7 +149,7 @@ public class SecureDataStoreTest {
 			Assert.assertArrayEquals(expectedObject.valueStringArray, actualObject.valueStringArray);
 			Assert.assertArrayEquals(expectedObject.valueDateArray, actualObject.valueDateArray);
 			Assert.assertArrayEquals(expectedObject.valueTestEnumArray, actualObject.valueTestEnumArray);
-			for (final Field field : TestSecureDataStoreEntry.class.getDeclaredFields()) {
+			for (final Field field : ClassUtilities.getAllFields(TestSecureDataStoreEntry.class)) {
 				field.setAccessible(true);
 				if (field.getType() == TestSecureDataStoreEntry.class) {
 					assertEquals((TestSecureDataStoreEntry) field.get(expectedObject), (TestSecureDataStoreEntry) field.get(actualObject));
