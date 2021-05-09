@@ -4,10 +4,13 @@ public class SimpleCredentialsData {
 	private String userName;
 	private char[] password;
 
-	protected SimpleCredentialsData() {
+	/**
+	 * Simple constructor is needed for serialization/deserialization
+	 */
+	public SimpleCredentialsData() {
 	}
 
-	public SimpleCredentialsData(String userName, char[] password) {
+	public SimpleCredentialsData(final String userName, final char[] password) {
 		this.userName = userName;
 		this.password = password;
 	}
