@@ -195,7 +195,7 @@ public class OTPKeyItem extends Composite {
 		if (outputStream != null) {
 			final StringBuilder keyTail = new StringBuilder();
 			keyTail.append("<datahash>" + dataHash + "</datahash>");
-			keyHash = BitUtilities.getHexString(messageDigest.digest());
+			keyHash = BitUtilities.toHexString(messageDigest.digest());
 			keyTail.append("<keyhash>" + keyHash + "</keyhash>");
 			keyTail.append("</otp>");
 			outputStream.write(keyTail.toString().getBytes(StandardCharsets.UTF_8));
@@ -227,7 +227,7 @@ public class OTPKeyItem extends Composite {
 				throw new Exception("invalid otp tail", e);
 			}
 			messageDigest.update(data, 0, restDataLength);
-			final String keyHashRead = BitUtilities.getHexString(messageDigest.digest());
+			final String keyHashRead = BitUtilities.toHexString(messageDigest.digest());
 			if (Utilities.isBlank(keyHash) || !keyHash.equals(keyHashRead)) {
 				throw new Exception("invalid key hash in key " + id);
 			}

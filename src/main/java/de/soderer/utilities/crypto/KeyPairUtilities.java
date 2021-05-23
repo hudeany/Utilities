@@ -31,6 +31,8 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
 
+import de.soderer.utilities.BitUtilities;
+
 public class KeyPairUtilities {
 	public static String SSH_ALGORITHM_NAME_RSA = "ssh-rsa";
 	public static String SSH_ALGORITHM_NAME_DSA = "ssh-dss";
@@ -131,9 +133,9 @@ public class KeyPairUtilities {
 			throw new Exception("Invalid empty publicKey parameter");
 		} else if ("RSA".equals(publicKey.getAlgorithm())){
 			return SSH_ALGORITHM_NAME_RSA;
-		} else if("DSA".equals(publicKey.getAlgorithm())){
+		} else if ("DSA".equals(publicKey.getAlgorithm())){
 			return SSH_ALGORITHM_NAME_DSA;
-		} else if("EC".equals(publicKey.getAlgorithm()) || "ECDSA".equals(publicKey.getAlgorithm())){
+		} else if ("EC".equals(publicKey.getAlgorithm()) || "ECDSA".equals(publicKey.getAlgorithm())){
 			final int bitLength = ((ECPublicKey) publicKey).getW().getAffineX().bitLength();
 			if (bitLength <= 256) {
 				return SSH_ALGORITHM_NAME_ECDSA_NISTP256;
@@ -365,7 +367,7 @@ public class KeyPairUtilities {
 			try {
 				final MessageDigest md = MessageDigest.getInstance("MD5");
 				md.update(getPublicKeyBytes(publicKey));
-				return toHexString(md.digest(), ":");
+				return BitUtilities.toHexString(md.digest(), ":");
 			} catch (final Exception e) {
 				throw new Exception("Cannot create MD5 fingerprint", e);
 			}
@@ -387,7 +389,7 @@ public class KeyPairUtilities {
 			try {
 				final MessageDigest md = MessageDigest.getInstance("SHA-1");
 				md.update(getPublicKeyBytes(publicKey));
-				return toHexString(md.digest(), ":");
+				return BitUtilities.toHexString(md.digest(), ":");
 			} catch (final Exception e) {
 				throw new Exception("Cannot create SHA256 fingerprint", e);
 			}
@@ -431,7 +433,7 @@ public class KeyPairUtilities {
 			try {
 				final MessageDigest md = MessageDigest.getInstance("SHA-256");
 				md.update(getPublicKeyBytes(publicKey));
-				return toHexString(md.digest(), ":");
+				return BitUtilities.toHexString(md.digest(), ":");
 			} catch (final Exception e) {
 				throw new Exception("Cannot create SHA256 fingerprint", e);
 			}
@@ -474,17 +476,6 @@ public class KeyPairUtilities {
 		} else {
 			return getAlgorithm(publicKey) + " " + new String(Base64.getEncoder().encode(getPublicKeyBytes(publicKey)));
 		}
-	}
-
-	private static String toHexString(final byte[] data, final String separator) {
-		final StringBuilder returnString = new StringBuilder();
-		for (final byte dataByte : data) {
-			if (returnString.length() > 0) {
-				returnString.append(separator);
-			}
-			returnString.append(String.format("%02X", dataByte));
-		}
-		return returnString.toString().toLowerCase();
 	}
 
 	private static class BlockDataWriter {

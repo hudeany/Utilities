@@ -63,7 +63,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
-import javax.xml.bind.DatatypeConverter;
 
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -102,6 +101,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import de.soderer.utilities.BitUtilities;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
@@ -876,37 +876,37 @@ public class CryptographicUtilities {
 	public static String getMd5FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("MD5");
 		md.update(certificate.getEncoded());
-		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+		return BitUtilities.toHexString(md.digest());
 	}
 
 	public static String getSha1FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-1");
 		md.update(certificate.getEncoded());
-		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+		return BitUtilities.toHexString(md.digest());
 	}
 
 	public static String getSha256FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-256");
 		md.update(certificate.getEncoded());
-		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+		return BitUtilities.toHexString(md.digest());
 	}
 
 	public static String getMd5FingerPrint(final Key key) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("MD5");
 		md.update(key.getEncoded());
-		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+		return BitUtilities.toHexString(md.digest());
 	}
 
 	public static String getSha1FingerPrint(final Key key) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-1");
 		md.update(key.getEncoded());
-		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+		return BitUtilities.toHexString(md.digest());
 	}
 
 	public static String getSha256FingerPrint(final Key key) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-256");
 		md.update(key.getEncoded());
-		return DatatypeConverter.printHexBinary(md.digest()).toUpperCase();
+		return BitUtilities.toHexString(md.digest());
 	}
 
 	public static int getKeySize(final X509Certificate certificate) {

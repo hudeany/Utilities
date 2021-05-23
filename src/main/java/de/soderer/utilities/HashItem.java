@@ -23,7 +23,7 @@ public class HashItem {
 			final StringBuilder directoryContentData = new StringBuilder();
 			for (final HashItem item : subItems) {
 				directoryContentData.append(item.getName());
-				directoryContentData.append(BitUtilities.getHexString(item.getHash()));
+				directoryContentData.append(BitUtilities.toHexString(item.getHash()));
 				directoryContentData.append("\n");
 			}
 

@@ -135,7 +135,10 @@ public class BitUtilities {
 		return result;
 	}
 
-	public static String getHexString(final byte[] data) {
+	/**
+	 * Uppercase hexadezimal display of ByteArray data
+	 */
+	public static String toHexString(final byte[] data) {
 		final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
 		final char[] hexChars = new char[data.length * 2];
@@ -145,6 +148,20 @@ public class BitUtilities {
 			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
 		}
 		return new String(hexChars);
+	}
+
+	/**
+	 * Uppercase hexadezimal display of ByteArray data with optional separator after each byte
+	 */
+	public static String toHexString(final byte[] data, final String separator) {
+		final StringBuilder returnString = new StringBuilder();
+		for (final byte dataByte : data) {
+			if (returnString.length() > 0) {
+				returnString.append(separator);
+			}
+			returnString.append(String.format("%02X", dataByte));
+		}
+		return returnString.toString().toLowerCase();
 	}
 
 	public static String getHexString(final byte[] data, final String separator, final int bytesBeforeLinebreak, final boolean insertHexLineNumber, final boolean insertAsciiText) {

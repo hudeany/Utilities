@@ -693,7 +693,7 @@ public class SftpConnection implements RemoteConnection {
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("tail -n " + numberOfLastLinesToShow + " \"" + filePath + "\"");
 
-			try(OutputStream outStream = channel.getOutputStream();
+			try (OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
 				channel.connect();
 

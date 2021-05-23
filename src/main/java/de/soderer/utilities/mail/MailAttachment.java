@@ -1,11 +1,11 @@
 package de.soderer.utilities.mail;
 
-public class JavaMailAttachment {
+public class MailAttachment {
 	private final String name;
 	private final byte[] data;
 	private final String mimeType;
 
-	public JavaMailAttachment(final String name, final byte[] data, final String mimeType) {
+	public MailAttachment(final String name, final byte[] data, final String mimeType) {
 		this.name = name;
 		this.data = data;
 		this.mimeType = mimeType;

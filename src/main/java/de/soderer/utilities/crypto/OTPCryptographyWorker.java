@@ -62,7 +62,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 				itemsDone += bytesRead;
 				showProgress();
 			}
-			final String dataHash = BitUtilities.getHexString(messageDigest.digest());
+			final String dataHash = BitUtilities.toHexString(messageDigest.digest());
 			for (int i = 0; i < outputItems.length; i++) {
 				outputItems[i].setDataHash(dataHash);
 			}
@@ -110,7 +110,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 				}
 			}
 
-			final String dataHash = BitUtilities.getHexString(messageDigest.digest());
+			final String dataHash = BitUtilities.toHexString(messageDigest.digest());
 			if (!dataHash.equals(inputItems[0].getDataHash())) {
 				throw new Exception("invalid data hash");
 			}

@@ -87,6 +87,7 @@ public final class DomainKeyUtil {
 	private static String getValue(final String recordName) throws Exception {
 		try {
 			final DirContext dnsContext = new InitialDirContext(getEnvironment());
+
 			final Attributes attributes = dnsContext.getAttributes(recordName, new String[] { "TXT" });
 			final Attribute txtRecord = attributes.get("txt");
 

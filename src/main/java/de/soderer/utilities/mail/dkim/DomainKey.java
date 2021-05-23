@@ -20,6 +20,7 @@ import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 import de.soderer.utilities.TextUtilities;
+import de.soderer.utilities.Utilities;
 
 public final class DomainKey {
 	private static final String DKIM_VERSION = "DKIM1";
@@ -54,9 +55,12 @@ public final class DomainKey {
 			throw new Exception("Incompatible service type s=" + getTagValue('s') + ".");
 		}
 
-		final String privateKeyTagValue = getTagValue('p');
-		publicKey = getPublicKey(privateKeyTagValue);
-		if (null == privateKeyTagValue) {
+		final String publicKeyTagValue = getTagValue('p');
+		if (Utilities.isBlank(publicKeyTagValue)) {
+			throw new Exception("Mandatory dkim data for public key (p=) is missing or empty.");
+		}
+		publicKey = getPublicKey(publicKeyTagValue);
+		if (null == publicKeyTagValue) {
 			throw new Exception("Incompatible public key p=" + getTagValue('p') + ".");
 		}
 	}

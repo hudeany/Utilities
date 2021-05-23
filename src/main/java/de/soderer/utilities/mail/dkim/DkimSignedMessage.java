@@ -25,16 +25,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.mail.Header;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeUtility;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.sun.mail.util.QPEncoderStream;
+import de.soderer.utilities.QuotedPrintableCodec;
+import jakarta.mail.Header;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeUtility;
 
 public class DkimSignedMessage extends MimeMessage {
 	private static final int MAXIMUM_MESSAGE_HEADER_LENGTH = 67;
@@ -149,7 +148,8 @@ public class DkimSignedMessage extends MimeMessage {
 		signatureData.put("s", selector);
 		signatureData.put("t", Long.toString(sentDate.getTime() / 1000l));
 		if (identity != null) {
-			signatureData.put("i", convertToQuotedPrintable(identity));
+			final String data = identity;
+			signatureData.put("i", QuotedPrintableCodec.encode(data, StandardCharsets.UTF_8));
 		}
 
 		boolean fromHeaderIsIncluded = false;
@@ -212,18 +212,6 @@ public class DkimSignedMessage extends MimeMessage {
 		final String signatureBase64String = Base64.getEncoder().encodeToString(signatureBytes).replace("\r", "").replace("\n", "");
 
 		return DKIM_SIGNATURE_HEADER_NAME + ": " + serializedSignature + serializeBase64String(signatureBase64String, 3, MAXIMUM_MESSAGE_HEADER_LENGTH);
-	}
-
-	private static String convertToQuotedPrintable(final String data) {
-		try {
-			final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			try (QPEncoderStream encodeStream = new QPEncoderStream(outputStream)) {
-				encodeStream.write(data.getBytes(StandardCharsets.UTF_8));
-			}
-			return outputStream.toString().replaceAll(";", "=3B").replaceAll(" ", "=20");
-		} catch (@SuppressWarnings("unused") final IOException e) {
-			return null;
-		}
 	}
 
 	private static String canonicalizeHeader(final boolean useRelaxedCanonicalization, final String headerName, final String headerValue) {

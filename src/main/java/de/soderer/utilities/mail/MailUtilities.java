@@ -1,5 +1,7 @@
 package de.soderer.utilities.mail;
 
+import java.awt.Desktop;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -13,13 +15,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
+import org.eclipse.swt.program.Program;
 
 import de.soderer.utilities.NetworkUtilities;
+import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.http.HttpUtilities;
 import jakarta.activation.DataHandler;
 import jakarta.mail.Address;
+import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
 import jakarta.mail.Multipart;
+import jakarta.mail.PasswordAuthentication;
 import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.AddressException;
@@ -64,17 +71,17 @@ public class MailUtilities {
 		final Matcher m = EMAIL_PATTERN.matcher(emailAddress);
 
 		// Check, if email address matches outline structure
-		if(!m.matches()) {
+		if (!m.matches()) {
 			return false;
 		}
 
 		// Check if user-part is valid
-		if(!isValidUser(m.group(1))) {
+		if (!isValidUser(m.group(1))) {
 			return false;
 		}
 
 		// Check if domain-part is valid
-		if(!isValidDomain(m.group(2))) {
+		if (!isValidDomain(m.group(2))) {
 			return false;
 		}
 
@@ -118,12 +125,12 @@ public class MailUtilities {
 	 *
 	 * For pure textmails leave bodyHtml empty or null
 	 */
-	public static boolean sendEmail(final String smtpMailRelayHostname, final String toAddressList, final String subject, final String bodyText, final String bodyHtml, final JavaMailAttachment... attachments) {
-		return sendEmail(smtpMailRelayHostname, null, null, null, null, null, toAddressList, null, subject, bodyText, bodyHtml, null, attachments);
+	public static boolean sendEmail(final String toAddressList, final String subject, final String bodyText, final String bodyHtml, final MailAttachment... attachments) {
+		return sendEmail(null, 0, null, null, false, null, null, null, null, null, toAddressList, null, subject, bodyText, bodyHtml, null, attachments);
 	}
 
-	public static boolean sendEmail(final String smtpMailRelayHostname, final String toAddressList, final String fromAddress, final String replyToAddress, final String subject, final String bodyText, final String bodyHtml, final JavaMailAttachment... attachments) {
-		return sendEmail(smtpMailRelayHostname, fromAddress, null, replyToAddress, null, null, toAddressList, null, subject, bodyText, bodyHtml, null, attachments);
+	public static boolean sendEmail(final String toAddressList, final String fromAddress, final String replyToAddress, final String subject, final String bodyText, final String bodyHtml, final MailAttachment... attachments) {
+		return sendEmail(null, 0, null, null, false, fromAddress, null, replyToAddress, null, null, toAddressList, null, subject, bodyText, bodyHtml, null, attachments);
 	}
 
 	/**
@@ -133,7 +140,7 @@ public class MailUtilities {
 	 *
 	 * For pure textmails leave bodyHtml empty or null
 	 */
-	public static boolean sendEmail(String smtpMailRelayHostname, String fromAddress, String fromName, final String replyToAddress, final String replyToName, final String bounceAddress, final String toAddressList, final String ccAddressList, final String subject, final String bodyText, final String bodyHtml, Charset charset, final JavaMailAttachment... attachments) {
+	public static boolean sendEmail(String smtpMailRelayHostname, final int smtpMailRelayPort, final String smtpUsername, final String smtpPassword, final boolean useStartTLS, String fromAddress, String fromName, final String replyToAddress, final String replyToName, final String bounceAddress, final String toAddressList, final String ccAddressList, final String subject, final String bodyText, final String bodyHtml, Charset charset, final MailAttachment... attachments) {
 		if (Utilities.isBlank(smtpMailRelayHostname)) {
 			logger.error("smtpMailRelayHostname is missing, so no mail was sent. emailSubject: " + subject);
 			return false;
@@ -157,23 +164,40 @@ public class MailUtilities {
 
 		try {
 			// create some properties and get the default Session
-			final Properties props = new Properties();
-			props.put("system.mail.host", smtpMailRelayHostname);
-			props.put("mail.smtp.host", smtpMailRelayHostname);
-			props.put("mail.host", smtpMailRelayHostname);
-			props.put("mail.smtp.starttls.enable", "true");
-			props.put("mail.smtp.ssl.enable", "false");
-			props.put("mail.smtp.ssl.trust", smtpMailRelayHostname);
+			final Properties mailProperties = new Properties();
+			mailProperties.put("system.mail.host", smtpMailRelayHostname);
+			mailProperties.put("mail.smtp.host", smtpMailRelayHostname);
+			if (smtpMailRelayPort > 0) {
+				mailProperties.put("mail.smtp.port", smtpMailRelayPort);
+			}
+			mailProperties.put("mail.host", smtpMailRelayHostname);
+			mailProperties.put("mail.smtp.starttls.enable", "true");
+			mailProperties.put("mail.smtp.ssl.enable", "false");
+			mailProperties.put("mail.smtp.ssl.trust", smtpMailRelayHostname);
+			if (useStartTLS) {
+				mailProperties.put("mail.smtp.starttls.enable", "true");
+			}
 
 			// Set bounce address
 			if (Utilities.isNotBlank(bounceAddress)) {
-				props.put("mail.smtp.from", bounceAddress);
+				mailProperties.put("mail.smtp.from", bounceAddress);
 			} else {
 				// Use fromAddress as fallback
-				props.put("mail.smtp.from", fromAddress);
+				mailProperties.put("mail.smtp.from", fromAddress);
 			}
 
-			final Session session = Session.getDefaultInstance(props, null);
+			Authenticator authenticator;
+			if (Utilities.isNotBlank(smtpUsername) && Utilities.isNotBlank(smtpPassword)) {
+				authenticator = new Authenticator() {
+					@Override
+					protected PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(smtpUsername, smtpPassword);
+					}
+				};
+			} else {
+				authenticator = null;
+			}
+			final Session session = Session.getInstance(mailProperties, authenticator);
 
 			// create a message
 			final MimeMessage mimeMessage = new MimeMessage(session);
@@ -274,7 +298,7 @@ public class MailUtilities {
 					alternativeMimeBodyPart.setContent(multipartTextContent);
 				}
 
-				for (final JavaMailAttachment attachment : attachments) {
+				for (final MailAttachment attachment : attachments) {
 					final MimeBodyPart attachmentMimeBodyPart = new MimeBodyPart();
 					attachmentMimeBodyPart.setFileName(MimeUtility.encodeText(attachment.getName(), StandardCharsets.UTF_8.name(), null));
 					final ByteArrayDataSource bds = new ByteArrayDataSource(attachment.getData(), attachment.getMimeType());
@@ -285,33 +309,70 @@ public class MailUtilities {
 				mimeMessage.setContent(multipartMixed);
 			}
 
-			try(final Transport transport = session.getTransport("smtp")) {
-				transport.connect();
-				transport.sendMessage(mimeMessage, mimeMessage.getRecipients(Message.RecipientType.TO));
+			Transport.send(mimeMessage);
 
-				if (logger.isDebugEnabled()) {
-					logger.debug("Sending java email:\nfrom: " + fromAddress + "\nto: " + toAddressList + "\nsubject: " + subject);
-				}
-
-				return true;
+			if (logger.isDebugEnabled()) {
+				logger.debug("Sending java email:\nfrom: " + fromAddress + "\nto: " + toAddressList + "\nsubject: " + subject);
 			}
+
+			return true;
 		} catch (final Exception e) {
-			logger.error("Error sending email via " + smtpMailRelayHostname + ": " + e.getMessage() + " \nemailSubject: " + subject + " \nemailContent: " + (Utilities.isBlank(bodyText) ? bodyHtml : bodyText), e);
+			logger.error("Error sending email via " + smtpMailRelayHostname + ": " + e.getMessage() + "\nemailSubject: " + subject + (Utilities.isNotBlank(bodyText) ? "\nemailContentText: " + bodyText : "") + (Utilities.isNotBlank(bodyHtml) ? "\nemailContentHtml: " + bodyHtml : ""), e);
 			return false;
 		}
 	}
 
-	private static InternetAddress[] getEmailAddressesFromList(final String listString) {
+	public static void sendEmail(final String body, final String subject, final String recipient) throws Exception {
+		final Properties mailProps = new Properties();
+		mailProps.put("mail.smtp.from", "andreas@soderer");
+		mailProps.put("mail.smtp.host", "smtp.mail.sasg.de");
+		mailProps.put("mail.smtp.port", 587);
+		mailProps.put("mail.smtp.auth", true);
+		mailProps.put("mail.smtp.socketFactory.port", 587);
+		mailProps.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+		mailProps.put("mail.smtp.socketFactory.fallback", "false");
+		mailProps.put("mail.smtp.starttls.enable", "true");
+
+		final Session mailSession = Session.getDefaultInstance(mailProps, new Authenticator() {
+			@Override
+			protected PasswordAuthentication getPasswordAuthentication() {
+				return new PasswordAuthentication("v08060401p0005", "kL!5gfPi3$zu");
+			}
+		});
+
+		final MimeMessage message = new MimeMessage(mailSession);
+		message.setFrom(new InternetAddress("andreas@soderer.de"));
+		final String[] emails = { recipient };
+		final InternetAddress dests[] = new InternetAddress[emails.length];
+		for (int i = 0; i < emails.length; i++) {
+			dests[i] = new InternetAddress(emails[i].trim().toLowerCase());
+		}
+		message.setRecipients(Message.RecipientType.TO, dests);
+		message.setSubject(subject, "UTF-8");
+		final Multipart mp = new MimeMultipart();
+		final MimeBodyPart mbp = new MimeBodyPart();
+		mbp.setContent(body, "text/html;charset=utf-8");
+		mp.addBodyPart(mbp);
+		message.setContent(mp);
+		message.setSentDate(new java.util.Date());
+
+		Transport.send(message);
+	}
+
+	private static InternetAddress[] getEmailAddressesFromList(final String listString) throws Exception {
 		final List<InternetAddress> emailAddresses = new ArrayList<>();
-		for (String address : splitAndNormalizeEmails(listString)) {
-			address = address == null ? "" : Utilities.trim(address);
-			if(MailUtilities.isEmailValid(address)) {
-				try {
-					final InternetAddress nextAddress = new InternetAddress(address);
-					nextAddress.validate();
-					emailAddresses.add(nextAddress);
-				} catch (final AddressException e) {
-					logger.error("Invalid Emailaddress found: " + address, e);
+
+		if (Utilities.isNotBlank(listString)) {
+			for (String address : splitAndNormalizeEmails(listString)) {
+				address = address == null ? "" : Utilities.trim(address);
+				if (Utilities.isNotBlank(address) && MailUtilities.isEmailValid(address)) {
+					try {
+						final InternetAddress nextAddress = new InternetAddress(address.trim());
+						nextAddress.validate();
+						emailAddresses.add(nextAddress);
+					} catch (final AddressException e) {
+						throw new Exception("Invalid Emailaddress found: " + address, e);
+					}
 				}
 			}
 		}
@@ -351,5 +412,116 @@ public class MailUtilities {
 		} else {
 			return email.toLowerCase().trim();
 		}
+	}
+
+	/**
+	 * Try to open an email in the standard email client
+	 *
+	 * @param toAdress
+	 * @param subject
+	 * @param body
+	 * @return
+	 */
+	public static boolean openMailInStandardClient(final String toAdress, final String subject, final String body) {
+		return openMailInStandardClient(toAdress, null, subject, body);
+	}
+
+	/**
+	 * Try to open an email in the standard email client
+	 *
+	 * @param toAdress
+	 * @param ccAdress
+	 * @param subject
+	 * @param body
+	 * @return
+	 */
+	public static boolean openMailInStandardClient(final String toAdress, final String ccAdress, final String subject, final String body) {
+		try {
+			final String mailtoString = createMailtoLink(toAdress, ccAdress, subject, body);
+
+			if (SystemUtilities.isWindowsSystem()) {
+				if (Desktop.isDesktopSupported()) {
+					final Desktop desktop = Desktop.getDesktop();
+					if (desktop.isSupported(Desktop.Action.MAIL)) {
+						desktop.mail(new URI(mailtoString));
+						return true;
+					}
+				}
+
+				try {
+					if (Program.launch(mailtoString)) {
+						return true;
+					}
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					// Try some other method of mail creation
+				}
+			} else {
+				try {
+					Runtime.getRuntime().exec("xdg-open " + mailtoString);
+					return true;
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					// Try some other method of mail creation
+				}
+
+				try {
+					// For using the parameters check the following description
+					// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
+					Runtime.getRuntime().exec("thunderbird -compose");
+					if (Program.launch(mailtoString)) {
+						return true;
+					}
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					// Try some other method of mail creation
+				}
+			}
+
+			throw new Exception("Cannot create mail in standard mailclient");
+		} catch (final Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	private static String createMailtoLink(final String toAdress, final String ccAdress, final String subject, final String body) throws Exception {
+		if (Utilities.isBlank(toAdress)) {
+			throw new Exception("TO address is missing or empty");
+		}
+
+		String mailtoString = "mailto:" + HttpUtilities.urlEncode(toAdress, StandardCharsets.UTF_8);
+
+		boolean isFirstParameter = true;
+
+		if (Utilities.isNotBlank(ccAdress)) {
+			if (isFirstParameter) {
+				mailtoString += "?";
+			} else {
+				mailtoString += "&";
+			}
+			mailtoString += "cc=" + HttpUtilities.urlEncode(ccAdress, StandardCharsets.UTF_8);
+			isFirstParameter = false;
+		}
+
+		if (Utilities.isNotBlank(subject)) {
+			if (isFirstParameter) {
+				mailtoString += "?";
+			} else {
+				mailtoString += "&";
+			}
+			mailtoString += "subject=" + HttpUtilities.urlEncode(subject, StandardCharsets.UTF_8).replace("+", "%20");
+			isFirstParameter = false;
+		}
+
+		if (Utilities.isNotBlank(body)) {
+			if (isFirstParameter) {
+				mailtoString += "?";
+			} else {
+				mailtoString += "&";
+			}
+			mailtoString += "body=" + HttpUtilities.urlEncode(body, StandardCharsets.UTF_8).replace("+", "%20");
+			isFirstParameter = false;
+		}
+		// + (attachmentFile != null ? "&attachment=" + urlEncode(attachmentFile.getAbsolutePath(), StandardCharsets.UTF_8) : ""); // maybe it is "&attach="
+
+		return mailtoString;
 	}
 }
