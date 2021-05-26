@@ -68,6 +68,50 @@ public class ZipUtilities {
 		unzipFile(zipFile, destinationDirectory, null, null);
 	}
 
+	public static File unzipFile(final File zipFile, final File destinationFilePath, final char[] password, Charset fileNameEncodingCharset, final String filePathInZipFile) throws Exception {
+		if (!zipFile.exists()) {
+			throw new IOException("ZipFile '" + zipFile.getAbsolutePath() + "' does not exist");
+		} else if (!zipFile.isFile()) {
+			throw new IOException("ZipFile '" + zipFile.getAbsolutePath() + "' is not a file");
+		} else if (destinationFilePath.exists()) {
+			throw new IOException("Destination file '" + destinationFilePath.getAbsolutePath() + "' already exists");
+		}
+
+		if (fileNameEncodingCharset == null) {
+			fileNameEncodingCharset = Charset.forName("Cp437");
+		}
+
+		final byte[] buffer = new byte[1024];
+		try (final InputStream inputStream = (password == null ? new FileInputStream(zipFile) : new ZipDecryptInputStream(new FileInputStream(zipFile), password));
+				final ZipInputStream zis = new ZipInputStream(inputStream, fileNameEncodingCharset)) {
+			ZipEntry zipEntry = zis.getNextEntry();
+			while (zipEntry != null) {
+				if (zipEntry.getName().equals(filePathInZipFile)) {
+					final File destFile = destinationFilePath;
+
+					final File parentDirectory = destFile.getParentFile();
+					if (!parentDirectory.exists()) {
+						throw new IOException("Destination directory does not exist: " + parentDirectory.getAbsolutePath());
+					} else if (!parentDirectory.isDirectory()) {
+						throw new IOException("Destination directory exists but is not a directory: " + parentDirectory.getAbsolutePath());
+					}
+
+					try (final FileOutputStream fos = new FileOutputStream(destFile)) {
+						int len;
+						while ((len = zis.read(buffer)) > 0) {
+							fos.write(buffer, 0, len);
+						}
+					}
+
+					return destFile;
+				}
+				zis.closeEntry();
+				zipEntry = zis.getNextEntry();
+			}
+		}
+		throw new Exception("File not found in zipfile");
+	}
+
 	public static void unzipFile(final File zipFile, final File destinationDirectory, final char[] password, Charset fileNameEncodingCharset) throws IOException {
 		if (!zipFile.exists()) {
 			throw new IOException("ZipFile '" + zipFile.getAbsolutePath() + "' does not exist");
@@ -122,9 +166,9 @@ public class ZipUtilities {
 						}
 					}
 				}
+				zis.closeEntry();
 				zipEntry = zis.getNextEntry();
 			}
-			zis.closeEntry();
 		}
 	}
 
