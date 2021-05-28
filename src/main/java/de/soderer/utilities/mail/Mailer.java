@@ -21,7 +21,13 @@ public class Mailer {
 	private String smtpUsername = null;
 	private char[] smtpPassword = null;
 
-	private boolean useStartTLS = false;
+	private MailerConnectionSecurity connectionSecurity = MailerConnectionSecurity.None;
+
+	public enum MailerConnectionSecurity {
+		None,
+		STARTTLS,
+		SSL_TLS
+	}
 
 	public String getSmtpMailRelayHostname() {
 		return smtpMailRelayHostname;
@@ -59,12 +65,12 @@ public class Mailer {
 		return this;
 	}
 
-	public boolean isUseStartTLS() {
-		return useStartTLS;
+	public MailerConnectionSecurity getConnectionSecurity() {
+		return connectionSecurity;
 	}
 
-	public Mailer setUseStartTLS(final boolean useStartTLS) {
-		this.useStartTLS = useStartTLS;
+	public Mailer setConnectionSecurity(final MailerConnectionSecurity connectionSecurity) {
+		this.connectionSecurity = connectionSecurity;
 		return this;
 	}
 
@@ -74,10 +80,12 @@ public class Mailer {
 		mailProps.put("mail.smtp.host", smtpMailRelayHostname);
 		mailProps.put("mail.smtp.port", smtpMailRelayPort);
 		mailProps.put("mail.smtp.auth", true);
-		mailProps.put("mail.smtp.socketFactory.port", smtpMailRelayPort);
-		mailProps.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-		mailProps.put("mail.smtp.socketFactory.fallback", "false");
-		if (useStartTLS) {
+
+		if (connectionSecurity == MailerConnectionSecurity.SSL_TLS) {
+			mailProps.put("mail.smtp.socketFactory.port", smtpMailRelayPort);
+			mailProps.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+			mailProps.put("mail.smtp.socketFactory.fallback", "false");
+		} else if (connectionSecurity == MailerConnectionSecurity.STARTTLS) {
 			mailProps.put("mail.smtp.starttls.enable", "true");
 		}
 
@@ -101,7 +109,7 @@ public class Mailer {
 
 		final Multipart multipart = new MimeMultipart();
 		final MimeBodyPart mimeBodyPart = new MimeBodyPart();
-		//		mimeBodyPart.setContent(email.getBodyHtml(), "text/html;charset=" + email.getCharset().name());
+		mimeBodyPart.setContent(email.getBodyHtml(), "text/html;charset=" + email.getCharset().name());
 		mimeBodyPart.setContent(email.getBodyText(), "plain/text;charset=" + email.getCharset().name());
 		multipart.addBodyPart(mimeBodyPart);
 		message.setContent(multipart);

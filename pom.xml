@@ -48,11 +48,11 @@
 		    <artifactId>jakarta.activation-api</artifactId>
 		    <version>2.0.1</version>
 		</dependency>
-		<dependency>
+		<!--dependency>
 		    <groupId>com.sun.mail</groupId>
 		    <artifactId>javax.mail</artifactId>
 		    <version>1.6.2</version>
-		</dependency>
+		</dependency-->
 		<dependency>
 			<groupId>jakarta.xml.bind</groupId>
 			<artifactId>jakarta.xml.bind-api</artifactId>
@@ -97,6 +97,11 @@
 			<groupId>jakarta.mail</groupId>
 			<artifactId>jakarta.mail-api</artifactId>
 			<version>2.0.1</version>
+		</dependency>
+		<dependency>
+		    <groupId>com.sun.mail</groupId>
+		    <artifactId>smtp</artifactId>
+		    <version>2.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.jcraft</groupId>
