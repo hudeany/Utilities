@@ -83,13 +83,6 @@ public class Mailer {
 
 	public Mailer send(final Email email) throws Exception {
 		if (Utilities.isBlank(smtpMailRelayHostname)) {
-			throw new Exception("smtpMailRelayHostname is missing, so no mail was sent. emailSubject: " + email.getSubject());
-		}
-		if (smtpMailRelayPort <= 0) {
-			throw new Exception("smtpMailRelayPort is invalid (" + smtpMailRelayPort + "), so no mail was sent. emailSubject: " + email.getSubject());
-		}
-
-		if (Utilities.isBlank(smtpMailRelayHostname)) {
 			smtpMailRelayHostname = "localhost";
 		}
 
