@@ -58,8 +58,6 @@ public class DkimSignedMessage extends MimeMessage {
 			throw new Exception("DKIM key selector may not be empty");
 		} else if (privateRsaKey == null) {
 			throw new Exception("DKIM private key may not be empty");
-		} else if (StringUtils.isBlank(identity)) {
-			throw new Exception("DKIM identity may not be empty");
 		}
 
 		this.domain = domain;

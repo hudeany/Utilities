@@ -1,8 +1,12 @@
 package de.soderer.utilities.mail;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.interfaces.RSAPrivateKey;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
 
 import jakarta.mail.internet.InternetAddress;
 
@@ -24,10 +28,19 @@ public class Email {
 
 	private List<MailAttachment> attachments = new ArrayList<>();
 
+	private RSAPrivateKey dkimPrivateKey = null;
+	private String dkimDomain = null;
+	private String dkimSelector = null;
+	private String dkimIdentity = null;
+
 	public Email(final InternetAddress fromAddress, final String subject, final Charset charset) {
 		this.fromAddress = fromAddress;
 		this.subject = subject;
 		this.charset = charset;
+	}
+
+	public Email(final String fromAddress, final String subject) throws Exception {
+		this(new InternetAddress(fromAddress), subject, StandardCharsets.UTF_8);
 	}
 
 	public Email(final String fromAddress, final String subject, final Charset charset) throws Exception {
@@ -47,7 +60,11 @@ public class Email {
 	}
 
 	public Charset getCharset() {
-		return charset;
+		if (charset != null) {
+			return charset;
+		} else {
+			return StandardCharsets.UTF_8;
+		}
 	}
 
 	public InternetAddress getBounceAddress() {
@@ -190,5 +207,42 @@ public class Email {
 	public Email addAttachment(final MailAttachment attachment) {
 		attachments.add(attachment);
 		return this;
+	}
+
+	public Email setDkimData(final String domain, final String selector, final RSAPrivateKey privateKey) throws Exception {
+		return setDkimData(domain, selector, privateKey, null);
+	}
+
+	public Email setDkimData(final String domain, final String selector, final RSAPrivateKey privateKey, final String identity) throws Exception {
+		if (StringUtils.isBlank(domain)) {
+			throw new Exception("DKIM domain may not be empty");
+		} else if (StringUtils.isBlank(selector)) {
+			throw new Exception("DKIM key selector may not be empty");
+		} else if (privateKey == null) {
+			throw new Exception("DKIM private key may not be empty");
+		}
+
+		dkimDomain = domain;
+		dkimSelector = selector;
+		dkimPrivateKey = privateKey;
+		dkimIdentity = identity;
+
+		return this;
+	}
+
+	public RSAPrivateKey getDkimPrivateKey() {
+		return dkimPrivateKey;
+	}
+
+	public String getDkimDomain() {
+		return dkimDomain;
+	}
+
+	public String getDkimSelector() {
+		return dkimSelector;
+	}
+
+	public String getDkimIdentity() {
+		return dkimIdentity;
 	}
 }

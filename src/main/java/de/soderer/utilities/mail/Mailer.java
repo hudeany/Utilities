@@ -1,8 +1,13 @@
 package de.soderer.utilities.mail;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Properties;
 
+import de.soderer.utilities.Utilities;
+import de.soderer.utilities.mail.dkim.DkimSignedMessage;
+import jakarta.activation.DataHandler;
+import jakarta.mail.Address;
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
 import jakarta.mail.Multipart;
@@ -13,6 +18,8 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.internet.MimeUtility;
+import jakarta.mail.util.ByteArrayDataSource;
 
 public class Mailer {
 	private String smtpMailRelayHostname = "localhost";
@@ -75,6 +82,17 @@ public class Mailer {
 	}
 
 	public Mailer send(final Email email) throws Exception {
+		if (Utilities.isBlank(smtpMailRelayHostname)) {
+			throw new Exception("smtpMailRelayHostname is missing, so no mail was sent. emailSubject: " + email.getSubject());
+		}
+		if (smtpMailRelayPort <= 0) {
+			throw new Exception("smtpMailRelayPort is invalid (" + smtpMailRelayPort + "), so no mail was sent. emailSubject: " + email.getSubject());
+		}
+
+		if (Utilities.isBlank(smtpMailRelayHostname)) {
+			smtpMailRelayHostname = "localhost";
+		}
+
 		final Properties mailProps = new Properties();
 		mailProps.put("mail.smtp.from", email.getFromAddress().getAddress());
 		mailProps.put("mail.smtp.host", smtpMailRelayHostname);
@@ -89,7 +107,7 @@ public class Mailer {
 			mailProps.put("mail.smtp.starttls.enable", "true");
 		}
 
-		final Session mailSession;
+		final Session session;
 		if (smtpUsername != null) {
 			final Authenticator authenticator = new Authenticator() {
 				@Override
@@ -97,25 +115,120 @@ public class Mailer {
 					return new PasswordAuthentication(smtpUsername, new String(smtpPassword));
 				}
 			};
-			mailSession = Session.getDefaultInstance(mailProps, authenticator);
+			session = Session.getDefaultInstance(mailProps, authenticator);
 		} else {
-			mailSession = Session.getDefaultInstance(mailProps);
+			session = Session.getDefaultInstance(mailProps);
 		}
 
-		final MimeMessage message = new MimeMessage(mailSession);
-		message.setFrom(email.getFromAddress());
-		message.setRecipients(Message.RecipientType.TO, email.getToAddressList().toArray(new InternetAddress[0]));
-		message.setSubject(email.getSubject(), email.getCharset().name());
+		// create a message
+		final MimeMessage mimeMessage;
+		if (email.getDkimPrivateKey() != null) {
+			mimeMessage = new DkimSignedMessage(session);
+			((DkimSignedMessage) mimeMessage).setDkimKeyData(email.getDkimDomain(), email.getDkimSelector(), email.getDkimPrivateKey(), email.getDkimIdentity());
+		} else {
+			mimeMessage = new MimeMessage(session);
+		}
 
-		final Multipart multipart = new MimeMultipart();
-		final MimeBodyPart mimeBodyPart = new MimeBodyPart();
-		mimeBodyPart.setContent(email.getBodyHtml(), "text/html;charset=" + email.getCharset().name());
-		mimeBodyPart.setContent(email.getBodyText(), "plain/text;charset=" + email.getCharset().name());
-		multipart.addBodyPart(mimeBodyPart);
-		message.setContent(multipart);
-		message.setSentDate(new Date());
+		mimeMessage.setFrom(email.getFromAddress());
+		mimeMessage.setSubject(email.getSubject(), email.getCharset().name());
+		mimeMessage.setSentDate(new Date());
 
-		Transport.send(message);
+		// Set reply-to address
+		if (email.getReplyToAddressList().size() > 0) {
+			mimeMessage.setReplyTo(email.getReplyToAddressList().toArray(new InternetAddress[0]));
+		} else {
+			// Use fromAddress as fallback
+			mimeMessage.setReplyTo(new Address[] { email.getFromAddress() });
+		}
+
+		// Set to-recipient email addresses
+		if (email.getToAddressList().size() > 0) {
+			mimeMessage.setRecipients(Message.RecipientType.TO, email.getToAddressList().toArray(new InternetAddress[0]));
+		}
+
+		// Set cc-recipient email addresses
+		if (email.getCcAddressList().size() > 0) {
+			mimeMessage.setRecipients(Message.RecipientType.CC, email.getCcAddressList().toArray(new InternetAddress[0]));
+		}
+
+		// Set bcc-recipient email addresses
+		if (email.getBccAddressList().size() > 0) {
+			mimeMessage.setRecipients(Message.RecipientType.BCC, email.getBccAddressList().toArray(new InternetAddress[0]));
+		}
+
+		if (email.getAttachments() == null || email.getAttachments().size() == 0) {
+			if (Utilities.isBlank(email.getBodyText()) && Utilities.isBlank(email.getBodyHtml())) {
+				// Use a simple text email with only text content
+				// Set to a single space. If body is totally empty, Commons Emails rejects sending email with exception "Invalid message supplied" (-> EMM-4133)
+				mimeMessage.setText(" ", email.getCharset().name());
+			} else if (Utilities.isBlank(email.getBodyHtml())) {
+				// Use a simple text email with only text content
+				mimeMessage.setText(email.getBodyText(), email.getCharset().name());
+			} else if (Utilities.isBlank(email.getBodyText())) {
+				// Use a simple html email with only html content
+				mimeMessage.setContent(email.getBodyHtml(), "text/html; charset=" + email.getCharset().name());
+			} else {
+				// Use a multipart email with text and html content
+				final Multipart multipart = new MimeMultipart("alternative");
+
+				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
+				textMimeBodyPart.setText(email.getBodyText(), email.getCharset().name());
+				multipart.addBodyPart(textMimeBodyPart);
+
+				final MimeBodyPart htmlMimeBodyPart = new MimeBodyPart();
+				htmlMimeBodyPart.setContent(email.getBodyHtml(), "text/html; charset=" + email.getCharset().name());
+				multipart.addBodyPart(htmlMimeBodyPart);
+
+				mimeMessage.setContent(multipart);
+			}
+		} else {
+			final Multipart multipartMixed = new MimeMultipart("mixed");
+
+			if (Utilities.isBlank(email.getBodyText()) && Utilities.isBlank(email.getBodyHtml())) {
+				// Use a multipart text email with only text content and attachements
+				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
+				// Set to a single space. If body is totally empty, Commons Emails rejects sending email with exception "Invalid message supplied" (-> EMM-4133)
+				textMimeBodyPart.setText(" ", email.getCharset().name());
+				multipartMixed.addBodyPart(textMimeBodyPart);
+			} else if (Utilities.isBlank(email.getBodyHtml())) {
+				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
+				// Use a multipart text email with only text content and attachements
+				textMimeBodyPart.setText(email.getBodyText(), email.getCharset().name());
+				multipartMixed.addBodyPart(textMimeBodyPart);
+			} else if (Utilities.isBlank(email.getBodyText())) {
+				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
+				// Use a multipart html email with only html content and attachements
+				textMimeBodyPart.setContent(email.getBodyHtml(), "text/html; charset=" + email.getCharset().name());
+				multipartMixed.addBodyPart(textMimeBodyPart);
+			} else {
+				// Use a multipart html email with text and html content and attachements
+				final Multipart multipartTextContent = new MimeMultipart("alternative");
+
+				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
+				textMimeBodyPart.setText(email.getBodyText(), email.getCharset().name());
+				multipartTextContent.addBodyPart(textMimeBodyPart);
+
+				final MimeBodyPart htmlMimeBodyPart = new MimeBodyPart();
+				htmlMimeBodyPart.setContent(email.getBodyHtml(), "text/html; charset=" + email.getCharset().name());
+				multipartTextContent.addBodyPart(htmlMimeBodyPart);
+
+				final MimeBodyPart alternativeMimeBodyPart = new MimeBodyPart();
+				multipartMixed.addBodyPart(alternativeMimeBodyPart);
+				alternativeMimeBodyPart.setContent(multipartTextContent);
+			}
+
+			for (final MailAttachment attachment : email.getAttachments()) {
+				final MimeBodyPart attachmentMimeBodyPart = new MimeBodyPart();
+				attachmentMimeBodyPart.setFileName(MimeUtility.encodeText(attachment.getName(), StandardCharsets.UTF_8.name(), null));
+				final ByteArrayDataSource bds = new ByteArrayDataSource(attachment.getData(), attachment.getMimeType());
+				attachmentMimeBodyPart.setDataHandler(new DataHandler(bds));
+				multipartMixed.addBodyPart(attachmentMimeBodyPart);
+			}
+
+			mimeMessage.setContent(multipartMixed);
+		}
+
+		Transport.send(mimeMessage);
 
 		return this;
 	}
