@@ -205,17 +205,15 @@ public class MailerForJavaxMail {
 				final Multipart multipart = new MimeMultipart("alternative");
 
 				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
-				textMimeBodyPart.setText(email.getBodyText(), email.getCharset().name());
-				multipart.addBodyPart(textMimeBodyPart);
-				mimeMessage.setContent(multipart, multipart.getContentType());
+				textMimeBodyPart.setContent(email.getBodyText(), "text/plain; charset=" + email.getCharset().name());
 
 				final MimeBodyPart htmlMimeBodyPart = new MimeBodyPart();
 				htmlMimeBodyPart.setContent(email.getBodyHtml(), "text/html; charset=" + email.getCharset().name());
-				multipart.addBodyPart(htmlMimeBodyPart);
-				mimeMessage.setContent(multipart, multipart.getContentType());
 
 				multipart.addBodyPart(textMimeBodyPart);
 				multipart.addBodyPart(htmlMimeBodyPart);
+
+				mimeMessage.setContent(multipart, multipart.getContentType());
 				//				}
 			}
 		} else {
