@@ -48,15 +48,20 @@
 		    <artifactId>jakarta.activation-api</artifactId>
 		    <version>2.0.1</version>
 		</dependency>
-		<!--dependency>
-		    <groupId>com.sun.mail</groupId>
-		    <artifactId>javax.mail</artifactId>
-		    <version>1.6.2</version>
-		</dependency-->
 		<dependency>
 			<groupId>jakarta.xml.bind</groupId>
 			<artifactId>jakarta.xml.bind-api</artifactId>
 			<version>3.0.1</version>
+		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>javax.mail</groupId> -->
+<!-- 			<artifactId>mail</artifactId> -->
+<!-- 			<version>1.4.5</version> -->
+<!-- 		</dependency> -->
+		<dependency>
+		    <groupId>com.sun.mail</groupId>
+		    <artifactId>javax.mail</artifactId>
+		    <version>1.6.2</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -122,19 +127,25 @@
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk15on</artifactId>
-			<version>1.68</version>
+			<version>1.69</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpg-jdk15on</artifactId>
-			<version>1.68</version>
+			<version>1.69</version>
+		</dependency>
+		<dependency>
+			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on -->
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcmail-jdk15on</artifactId>
+			<version>1.69</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpkix-jdk15on</artifactId>
-			<version>1.68</version>
+			<version>1.69</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>

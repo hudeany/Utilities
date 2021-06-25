@@ -11,15 +11,16 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+
 import org.eclipse.swt.program.Program;
 
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.http.HttpUtilities;
-import jakarta.mail.internet.AddressException;
-import jakarta.mail.internet.InternetAddress;
 
-public class MailUtilities {
+public class MailUtilitiesForJavaxMail {
 	private static final String SPECIAL_CHARS_REGEXP = "\\p{Cntrl}\\(\\)<>@,;:'\\\\\\\"\\.\\[\\]";
 	private static final String VALID_CHARS_REGEXP = "[^\\s" + SPECIAL_CHARS_REGEXP + "]";
 	private static final String QUOTED_USER_REGEXP = "(\"[^\"]*\")";
@@ -126,7 +127,7 @@ public class MailUtilities {
 		if (Utilities.isNotBlank(listString)) {
 			for (String address : splitAndNormalizeEmails(listString)) {
 				address = address == null ? "" : Utilities.trim(address);
-				if (Utilities.isNotBlank(address) && MailUtilities.isEmailValid(address)) {
+				if (Utilities.isNotBlank(address) && MailUtilitiesForJavaxMail.isEmailValid(address)) {
 					try {
 						final InternetAddress nextAddress = new InternetAddress(address.trim());
 						nextAddress.validate();

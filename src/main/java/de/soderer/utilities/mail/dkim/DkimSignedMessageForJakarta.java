@@ -35,7 +35,7 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeUtility;
 
-public class DkimSignedMessage extends MimeMessage {
+public class DkimSignedMessageForJakarta extends MimeMessage {
 	private static final int MAXIMUM_MESSAGE_HEADER_LENGTH = 67;
 	private static final String DKIM_SIGNATURE_HEADER_NAME = "DKIM-Signature";
 
@@ -47,11 +47,11 @@ public class DkimSignedMessage extends MimeMessage {
 	private boolean useRelaxedBodyCanonicalization = true;
 	private Set<String> excludedHeaderNames = null;
 
-	public DkimSignedMessage(final Session session) {
+	public DkimSignedMessageForJakarta(final Session session) {
 		super(session);
 	}
 
-	public DkimSignedMessage setDkimKeyData(final String domain, final String selector, final RSAPrivateKey privateRsaKey, final String identity) throws Exception {
+	public DkimSignedMessageForJakarta setDkimKeyData(final String domain, final String selector, final RSAPrivateKey privateRsaKey, final String identity) throws Exception {
 		if (StringUtils.isBlank(domain)) {
 			throw new Exception("DKIM domain may not be empty");
 		} else if (StringUtils.isBlank(selector)) {
@@ -68,14 +68,14 @@ public class DkimSignedMessage extends MimeMessage {
 		return this;
 	}
 
-	public DkimSignedMessage setCanonicalization(final boolean useRelaxedHeaderCanonicalization, final boolean useRelaxedBodyCanonicalization) {
+	public DkimSignedMessageForJakarta setCanonicalization(final boolean useRelaxedHeaderCanonicalization, final boolean useRelaxedBodyCanonicalization) {
 		this.useRelaxedHeaderCanonicalization = useRelaxedHeaderCanonicalization;
 		this.useRelaxedBodyCanonicalization = useRelaxedBodyCanonicalization;
 
 		return this;
 	}
 
-	public DkimSignedMessage setExcludedHeaders(final String... headerNames) {
+	public DkimSignedMessageForJakarta setExcludedHeaders(final String... headerNames) {
 		excludedHeaderNames = new HashSet<>();
 		excludedHeaderNames.addAll(Arrays.asList(headerNames));
 

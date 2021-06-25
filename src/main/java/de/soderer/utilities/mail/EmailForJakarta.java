@@ -2,6 +2,8 @@ package de.soderer.utilities.mail;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import jakarta.mail.internet.InternetAddress;
 
-public class Email {
+public class EmailForJakarta {
 	private final InternetAddress fromAddress;
 	private final String subject;
 	private final Charset charset;
@@ -33,21 +35,24 @@ public class Email {
 	private String dkimSelector = null;
 	private String dkimIdentity = null;
 
-	public Email(final InternetAddress fromAddress, final String subject, final Charset charset) {
+	private PrivateKey signatureKey = null;
+	private X509Certificate encryptionCertificate = null;
+
+	public EmailForJakarta(final InternetAddress fromAddress, final String subject, final Charset charset) {
 		this.fromAddress = fromAddress;
 		this.subject = subject;
 		this.charset = charset;
 	}
 
-	public Email(final String fromAddress, final String subject) throws Exception {
+	public EmailForJakarta(final String fromAddress, final String subject) throws Exception {
 		this(new InternetAddress(fromAddress), subject, StandardCharsets.UTF_8);
 	}
 
-	public Email(final String fromAddress, final String subject, final Charset charset) throws Exception {
+	public EmailForJakarta(final String fromAddress, final String subject, final Charset charset) throws Exception {
 		this(new InternetAddress(fromAddress), subject, charset);
 	}
 
-	public Email(final String fromAddress, final String fromName, final String subject, final Charset charset) throws Exception {
+	public EmailForJakarta(final String fromAddress, final String fromName, final String subject, final Charset charset) throws Exception {
 		this(new InternetAddress(fromAddress, fromName), subject, charset);
 	}
 
@@ -71,17 +76,17 @@ public class Email {
 		return bounceAddress;
 	}
 
-	public Email setBounceAddress(final InternetAddress bounceAddress) {
+	public EmailForJakarta setBounceAddress(final InternetAddress bounceAddress) {
 		this.bounceAddress = bounceAddress;
 		return this;
 	}
 
-	public Email setBounceAddress(final String bounceAddress) throws Exception {
+	public EmailForJakarta setBounceAddress(final String bounceAddress) throws Exception {
 		this.bounceAddress = new InternetAddress(bounceAddress);
 		return this;
 	}
 
-	public Email setBounceAddress(final String bounceAddress, final String bounceAddressName) throws Exception {
+	public EmailForJakarta setBounceAddress(final String bounceAddress, final String bounceAddressName) throws Exception {
 		this.bounceAddress = new InternetAddress(bounceAddress, bounceAddressName);
 		return this;
 	}
@@ -90,17 +95,17 @@ public class Email {
 		return replyToAddressList;
 	}
 
-	public Email addReplyToAddress(final InternetAddress replyToAddress) {
+	public EmailForJakarta addReplyToAddress(final InternetAddress replyToAddress) {
 		replyToAddressList.add(replyToAddress);
 		return this;
 	}
 
-	public Email addReplyToAddress(final String replyToAddress) throws Exception {
+	public EmailForJakarta addReplyToAddress(final String replyToAddress) throws Exception {
 		replyToAddressList.add(new InternetAddress(replyToAddress));
 		return this;
 	}
 
-	public Email addReplyToAddress(final String replyToAddress, final String replyToAddressName) throws Exception {
+	public EmailForJakarta addReplyToAddress(final String replyToAddress, final String replyToAddressName) throws Exception {
 		replyToAddressList.add(new InternetAddress(replyToAddress, replyToAddressName));
 		return this;
 	}
@@ -109,22 +114,22 @@ public class Email {
 		return toAddressList;
 	}
 
-	public Email setToAddressList(final List<InternetAddress> toAddressList) {
+	public EmailForJakarta setToAddressList(final List<InternetAddress> toAddressList) {
 		this.toAddressList = toAddressList;
 		return this;
 	}
 
-	public Email addToAddress(final InternetAddress toAddress) {
+	public EmailForJakarta addToAddress(final InternetAddress toAddress) {
 		toAddressList.add(toAddress);
 		return this;
 	}
 
-	public Email addToAddress(final String toAddress) throws Exception {
+	public EmailForJakarta addToAddress(final String toAddress) throws Exception {
 		toAddressList.add(new InternetAddress(toAddress));
 		return this;
 	}
 
-	public Email addToAddress(final String toAddress, final String toAddressName) throws Exception {
+	public EmailForJakarta addToAddress(final String toAddress, final String toAddressName) throws Exception {
 		toAddressList.add(new InternetAddress(toAddress, toAddressName));
 		return this;
 	}
@@ -133,22 +138,22 @@ public class Email {
 		return ccAddressList;
 	}
 
-	public Email setCcAddressList(final List<InternetAddress> ccAddressList) {
+	public EmailForJakarta setCcAddressList(final List<InternetAddress> ccAddressList) {
 		this.ccAddressList = ccAddressList;
 		return this;
 	}
 
-	public Email addCcAddress(final InternetAddress ccAddress) {
+	public EmailForJakarta addCcAddress(final InternetAddress ccAddress) {
 		ccAddressList.add(ccAddress);
 		return this;
 	}
 
-	public Email addCcAddress(final String ccAddress) throws Exception {
+	public EmailForJakarta addCcAddress(final String ccAddress) throws Exception {
 		ccAddressList.add(new InternetAddress(ccAddress));
 		return this;
 	}
 
-	public Email addCcAddress(final String ccAddress, final String ccAddressName) throws Exception {
+	public EmailForJakarta addCcAddress(final String ccAddress, final String ccAddressName) throws Exception {
 		ccAddressList.add(new InternetAddress(ccAddress, ccAddressName));
 		return this;
 	}
@@ -157,22 +162,22 @@ public class Email {
 		return bccAddressList;
 	}
 
-	public Email setBccAddressList(final List<InternetAddress> bccAddressList) {
+	public EmailForJakarta setBccAddressList(final List<InternetAddress> bccAddressList) {
 		this.bccAddressList = bccAddressList;
 		return this;
 	}
 
-	public Email addBccAddress(final InternetAddress bccAddress) {
+	public EmailForJakarta addBccAddress(final InternetAddress bccAddress) {
 		bccAddressList.add(bccAddress);
 		return this;
 	}
 
-	public Email addBccAddress(final String bccAddress) throws Exception {
+	public EmailForJakarta addBccAddress(final String bccAddress) throws Exception {
 		bccAddressList.add(new InternetAddress(bccAddress));
 		return this;
 	}
 
-	public Email addBccAddress(final String bccAddress, final String bccAddressName) throws Exception {
+	public EmailForJakarta addBccAddress(final String bccAddress, final String bccAddressName) throws Exception {
 		bccAddressList.add(new InternetAddress(bccAddress, bccAddressName));
 		return this;
 	}
@@ -181,7 +186,7 @@ public class Email {
 		return bodyText;
 	}
 
-	public Email setBodyText(final String bodyText) {
+	public EmailForJakarta setBodyText(final String bodyText) {
 		this.bodyText = bodyText;
 		return this;
 	}
@@ -190,7 +195,7 @@ public class Email {
 		return bodyHtml;
 	}
 
-	public Email setBodyHtml(final String bodyHtml) {
+	public EmailForJakarta setBodyHtml(final String bodyHtml) {
 		this.bodyHtml = bodyHtml;
 		return this;
 	}
@@ -199,21 +204,21 @@ public class Email {
 		return attachments;
 	}
 
-	public Email setAttachments(final List<MailAttachment> attachments) {
+	public EmailForJakarta setAttachments(final List<MailAttachment> attachments) {
 		this.attachments = attachments;
 		return this;
 	}
 
-	public Email addAttachment(final MailAttachment attachment) {
+	public EmailForJakarta addAttachment(final MailAttachment attachment) {
 		attachments.add(attachment);
 		return this;
 	}
 
-	public Email setDkimData(final String domain, final String selector, final RSAPrivateKey privateKey) throws Exception {
+	public EmailForJakarta setDkimData(final String domain, final String selector, final RSAPrivateKey privateKey) throws Exception {
 		return setDkimData(domain, selector, privateKey, null);
 	}
 
-	public Email setDkimData(final String domain, final String selector, final RSAPrivateKey privateKey, final String identity) throws Exception {
+	public EmailForJakarta setDkimData(final String domain, final String selector, final RSAPrivateKey privateKey, final String identity) throws Exception {
 		if (StringUtils.isBlank(domain)) {
 			throw new Exception("DKIM domain may not be empty");
 		} else if (StringUtils.isBlank(selector)) {
@@ -244,5 +249,21 @@ public class Email {
 
 	public String getDkimIdentity() {
 		return dkimIdentity;
+	}
+
+	public PrivateKey getSignatureKey() {
+		return signatureKey;
+	}
+
+	public void setSignaturePrivateKey(final PrivateKey signatureKey) {
+		this.signatureKey = signatureKey;
+	}
+
+	public X509Certificate getEncryptionCertificate() {
+		return encryptionCertificate;
+	}
+
+	public void setEncryptionCertificate(final X509Certificate encryptionCertificate) {
+		this.encryptionCertificate = encryptionCertificate;
 	}
 }

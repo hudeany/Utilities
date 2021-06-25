@@ -152,6 +152,24 @@ public class Utilities {
 	}
 
 	/**
+	 * Encode a Base64 String
+	 *
+	 * @param clearData
+	 * @return
+	 */
+	public static String encodeBase64(final byte[] clearData, final int maxCharactersPerLine, final String splitCharacters) {
+		final String dataBase64 = Base64.getEncoder().encodeToString(clearData);
+		final StringBuilder returnString = new StringBuilder();
+		final int fullLines = (int) Math.floor(dataBase64.length() / maxCharactersPerLine);
+		for (int i = 0; i < fullLines; i++) {
+			returnString.append(dataBase64.substring(i * maxCharactersPerLine, (i * maxCharactersPerLine) + maxCharactersPerLine));
+			returnString.append(splitCharacters);
+		}
+		returnString.append(dataBase64.substring(fullLines * 64, (fullLines * 64) + (dataBase64.length() % 64)));
+		return returnString.toString();
+	}
+
+	/**
 	 * Decode a Base64 String
 	 *
 	 * @param base64String
@@ -1582,5 +1600,53 @@ public class Utilities {
 			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
 		}
 		return returnParts;
+	}
+
+	public static List<String> parseArguments(final String argumentLine) throws Exception {
+		final List<String> returnList = new ArrayList<>();
+		StringBuilder currentArgument = new StringBuilder();
+		Character enclosingChar = null;
+		boolean escapedNextChar = false;
+		for (final char nextChar : argumentLine.replace("\r\n", "\n").replace("\r", "\n").toCharArray()) {
+			if (enclosingChar != null) {
+				if (escapedNextChar) {
+					if (nextChar != enclosingChar) {
+						currentArgument.append("\\");
+					}
+					currentArgument.append(nextChar);
+					escapedNextChar = false;
+				} else if (nextChar == '\\') {
+					escapedNextChar = true;
+				} else if (nextChar == enclosingChar) {
+					returnList.add(currentArgument.toString());
+					enclosingChar = null;
+					currentArgument = new StringBuilder();
+				} else {
+					currentArgument.append(nextChar);
+				}
+			} else {
+				if (nextChar == '\'' || nextChar == '"') {
+					if (currentArgument.length() > 0) {
+						returnList.add(currentArgument.toString());
+						currentArgument = new StringBuilder();
+					}
+					enclosingChar = nextChar;
+				} else if (nextChar == ' ' || nextChar == '\n' || nextChar == '\t') {
+					if (currentArgument.length() > 0) {
+						returnList.add(currentArgument.toString());
+						currentArgument = new StringBuilder();
+					}
+				} else {
+					currentArgument.append(nextChar);
+				}
+			}
+		}
+		if (enclosingChar != null) {
+			throw new Exception("Invalid quotation. Missing closing " + enclosingChar);
+		} else if (currentArgument.length() > 0) {
+			returnList.add(currentArgument.toString());
+			currentArgument = new StringBuilder();
+		}
+		return returnList;
 	}
 }
