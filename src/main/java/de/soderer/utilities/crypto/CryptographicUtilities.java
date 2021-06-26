@@ -51,6 +51,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -1076,6 +1077,21 @@ public class CryptographicUtilities {
 		final BasicConstraints basicConstraints = new BasicConstraints(true);
 		certBuilder.addExtension(new ASN1ObjectIdentifier("2.5.29.19"), true, basicConstraints);
 		return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certBuilder.build(contentSigner));
+	}
+
+	public static boolean checkPrivateKeyFitsPublicKey(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
+		final byte[] challenge = new byte[1024];
+		ThreadLocalRandom.current().nextBytes(challenge);
+
+		final Signature challengeSignature = Signature.getInstance("SHA512withRSA");
+		challengeSignature.initSign(privateKey);
+		challengeSignature.update(challenge);
+		final byte[] signature = challengeSignature.sign();
+
+		challengeSignature.initVerify(publicKey);
+		challengeSignature.update(challenge);
+
+		return challengeSignature.verify(signature);
 	}
 
 	// TODO: Read TLS CA Cert (CA Chain file with multiple CA Certs)

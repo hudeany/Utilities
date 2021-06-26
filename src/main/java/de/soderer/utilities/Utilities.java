@@ -1649,4 +1649,61 @@ public class Utilities {
 		}
 		return returnList;
 	}
+
+	public static List<String> parseTokens(final String line, final char... delimiters) throws Exception {
+		final List<String> returnList = new ArrayList<>();
+		StringBuilder currentArgument = new StringBuilder();
+		Character enclosingChar = null;
+		boolean escapedNextChar = false;
+		for (final char nextChar : line.replace("\r\n", "\n").replace("\r", "\n").toCharArray()) {
+			if (enclosingChar != null) {
+				if (escapedNextChar) {
+					if (nextChar != enclosingChar) {
+						currentArgument.append("\\");
+					}
+					currentArgument.append(nextChar);
+					escapedNextChar = false;
+				} else if (nextChar == '\\') {
+					escapedNextChar = true;
+				} else if (nextChar == enclosingChar) {
+					returnList.add(currentArgument.toString());
+					enclosingChar = null;
+					currentArgument = new StringBuilder();
+				} else {
+					currentArgument.append(nextChar);
+				}
+			} else {
+				if (nextChar == '\'' || nextChar == '"') {
+					if (currentArgument.length() > 0) {
+						returnList.add(currentArgument.toString());
+						currentArgument = new StringBuilder();
+					}
+					enclosingChar = nextChar;
+				} else if (equalsAnyChar(nextChar, delimiters)) {
+					if (currentArgument.length() > 0) {
+						returnList.add(currentArgument.toString());
+						currentArgument = new StringBuilder();
+					}
+				} else {
+					currentArgument.append(nextChar);
+				}
+			}
+		}
+		if (enclosingChar != null) {
+			throw new Exception("Invalid quotation. Missing closing " + enclosingChar);
+		} else if (currentArgument.length() > 0) {
+			returnList.add(currentArgument.toString());
+			currentArgument = new StringBuilder();
+		}
+		return returnList;
+	}
+
+	public static boolean equalsAnyChar(final char checkChar, final char... compareChars) {
+		for (final char compareChar : compareChars) {
+			if (checkChar == compareChar) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

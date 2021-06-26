@@ -5,12 +5,20 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.mail.internet.InternetAddress;
 
 import org.apache.commons.lang3.StringUtils;
+
+import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.Utilities;
+import de.soderer.utilities.crypto.CryptographicUtilities;
+import de.soderer.utilities.mail.dkim.DomainKey;
+import de.soderer.utilities.mail.dkim.DomainKeyUtil;
 
 public class Email {
 	private final InternetAddress fromAddress;
@@ -274,5 +282,81 @@ public class Email {
 
 	public void setEncryptionCertificate(final X509Certificate encryptionCertificate) {
 		this.encryptionCertificate = encryptionCertificate;
+	}
+
+	public List<String> checkValidData() throws Exception {
+		final List<String> errors = new ArrayList<>();
+
+		if (dkimPrivateKey != null) {
+			final DomainKey domainKey = DomainKeyUtil.getDomainKey(dkimDomain, dkimSelector);
+			if (domainKey == null) {
+				errors.add("No DKIM key found in DNS entry for domain '" + dkimDomain + "' and selector '" + dkimSelector + "'");
+			}
+		}
+
+		if (signatureKey != null) {
+			if (signatureCertificate == null) {
+				errors.add("SignatureCertficate for emailaddress '" + fromAddress.toString() + "' is missing");
+			}
+
+			String certEmail = null;
+			for (final String token : Utilities.parseTokens(signatureCertificate.getSubjectDN().toString(), ',')) {
+				final String[] keyValueParts = token.trim().split("=");
+				if (keyValueParts.length >= 2 && "E".equals(keyValueParts[0])) {
+					certEmail = keyValueParts[1];
+					break;
+				}
+			}
+
+			if (certEmail == null || !certEmail.equals(fromAddress.toString())) {
+				errors.add("SignatureCertficates emailaddress '" + certEmail + "' does not match from-emailaddress '" + fromAddress.toString() + "'");
+			}
+
+			if (signatureCertificate != null && signatureCertificate.getNotBefore() != null && signatureCertificate.getNotBefore().after(new Date())) {
+				errors.add("SignatureCertficates of emailaddress '" + certEmail + "' may not be used before: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(signatureCertificate.getNotBefore()));
+			}
+			if (signatureCertificate != null && signatureCertificate.getNotAfter() != null && signatureCertificate.getNotAfter().before(new Date())) {
+				errors.add("SignatureCertficates of emailaddress '" + certEmail + "' may not be used after: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(signatureCertificate.getNotAfter()));
+			}
+
+			if (!CryptographicUtilities.checkPrivateKeyFitsPublicKey(signatureKey, signatureCertificate.getPublicKey())) {
+				errors.add("SignatureCertficate of emailaddress '" + certEmail + "' does not fit to signatureKey");
+			}
+		}
+
+		if (encryptionCertificate != null) {
+			encryptionCertificate.getBasicConstraints();
+			String certEmail = null;
+			for (final String token : Utilities.parseTokens(encryptionCertificate.getSubjectDN().toString(), ',')) {
+				final String[] keyValueParts = token.trim().split("=");
+				if (keyValueParts.length >= 2 && "E".equals(keyValueParts[0])) {
+					certEmail = keyValueParts[1];
+					break;
+				}
+			}
+
+			if (toAddressList.size() != 1) {
+				errors.add("To many to-address recipients for single encryption certificate");
+			} else if (certEmail == null || !certEmail.equals(toAddressList.get(0).toString())) {
+				errors.add("EncryptionCertficates emailaddress '" + certEmail + "' does not match to-emailaddress '" + toAddressList.get(0).toString() + "'");
+			}
+
+			if (encryptionCertificate != null && encryptionCertificate.getNotBefore() != null && encryptionCertificate.getNotBefore().after(new Date())) {
+				errors.add("EncryptionCertficates of emailaddress '" + certEmail + "' may not be used before: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(encryptionCertificate.getNotBefore()));
+			}
+			if (encryptionCertificate != null && encryptionCertificate.getNotAfter() != null && encryptionCertificate.getNotAfter().before(new Date())) {
+				errors.add("EncrytionCertficates of emailaddress '" + certEmail + "' may not be used after: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(encryptionCertificate.getNotAfter()));
+			}
+
+			if (ccAddressList.size() > 0) {
+				errors.add("To many cc-address recipients for single encryption certificate");
+			}
+
+			if (bccAddressList.size() > 0) {
+				errors.add("To many bcc-address recipients for single encryption certificate");
+			}
+		}
+
+		return errors;
 	}
 }

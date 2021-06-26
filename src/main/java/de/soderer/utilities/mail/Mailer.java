@@ -128,12 +128,13 @@ public class Mailer {
 		}
 
 		// create a message
+		final String messageID = Utilities.generateUUID();
 		final MimeMessage mimeMessage;
 		if (email.getDkimPrivateKey() != null) {
-			mimeMessage = new DkimSignedMessage(session);
+			mimeMessage = new DkimSignedMessage(session, messageID);
 			((DkimSignedMessage) mimeMessage).setDkimKeyData(email.getDkimDomain(), email.getDkimSelector(), email.getDkimPrivateKey(), email.getDkimIdentity());
 		} else {
-			mimeMessage = new MimeMessage(session);
+			mimeMessage = new de.soderer.utilities.mail.MimeMessage(session, messageID);
 		}
 
 		mimeMessage.setFrom(email.getFromAddress().getAddress());
@@ -175,7 +176,7 @@ public class Mailer {
 				mimeMessage.setContent(email.getBodyHtml(), "text/html; charset=" + email.getCharset().name());
 			} else {
 				// Use a multipart email with text and html content
-				final Multipart multipart = new MimeMultipart("alternative");
+				final Multipart multipart = new de.soderer.utilities.mail.MimeMultipart("alternative", Utilities.generateUUID());
 
 				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
 				textMimeBodyPart.setContent(email.getBodyText(), "text/plain; charset=" + email.getCharset().name());
@@ -189,7 +190,7 @@ public class Mailer {
 				mimeMessage.setContent(multipart, multipart.getContentType());
 			}
 		} else {
-			final Multipart multipartMixed = new MimeMultipart("mixed");
+			final Multipart multipartMixed = new de.soderer.utilities.mail.MimeMultipart("mixed", Utilities.generateUUID());
 
 			if (Utilities.isBlank(email.getBodyText()) && Utilities.isBlank(email.getBodyHtml())) {
 				// Use a multipart text email with only text content and attachements
@@ -208,7 +209,7 @@ public class Mailer {
 				multipartMixed.addBodyPart(textMimeBodyPart);
 			} else {
 				// Use a multipart html email with text and html content and attachements
-				final Multipart multipartTextContent = new MimeMultipart("alternative");
+				final Multipart multipartTextContent = new de.soderer.utilities.mail.MimeMultipart("alternative", Utilities.generateUUID());
 
 				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
 				textMimeBodyPart.setText(email.getBodyText(), email.getCharset().name());

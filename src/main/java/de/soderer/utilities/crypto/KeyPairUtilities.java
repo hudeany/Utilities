@@ -532,7 +532,7 @@ public class KeyPairUtilities {
 			try {
 				final int nextBlockSize = keyDataInput.readInt();
 				if (nextBlockSize <= 0) {
-					throw new Exception("Key blocksize error. Maybe the key encrytion password was wrong");
+					throw new Exception("Key blocksize error. Maybe the key encryption password was wrong");
 				}
 				final byte[] nextBlock = new byte[nextBlockSize];
 				keyDataInput.readFully(nextBlock);

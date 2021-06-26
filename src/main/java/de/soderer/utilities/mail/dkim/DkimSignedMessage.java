@@ -28,7 +28,6 @@ import java.util.Set;
 import javax.mail.Header;
 import javax.mail.MessagingException;
 import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
 
 import org.apache.commons.io.IOUtils;
@@ -36,7 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import de.soderer.utilities.QuotedPrintableCodec;
 
-public class DkimSignedMessage extends MimeMessage {
+public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 	private static final int MAXIMUM_MESSAGE_HEADER_LENGTH = 67;
 	private static final String DKIM_SIGNATURE_HEADER_NAME = "DKIM-Signature";
 
@@ -48,8 +47,8 @@ public class DkimSignedMessage extends MimeMessage {
 	private boolean useRelaxedBodyCanonicalization = true;
 	private Set<String> excludedHeaderNames = null;
 
-	public DkimSignedMessage(final Session session) {
-		super(session);
+	public DkimSignedMessage(final Session session, final String messageID) {
+		super(session, messageID);
 	}
 
 	public DkimSignedMessage setDkimKeyData(final String domain, final String selector, final RSAPrivateKey privateRsaKey, final String identity) throws Exception {
