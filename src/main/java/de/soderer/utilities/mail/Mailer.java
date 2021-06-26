@@ -39,7 +39,7 @@ import org.bouncycastle.mail.smime.SMIMEEnvelopedGenerator;
 import org.bouncycastle.mail.smime.SMIMESignedGenerator;
 
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.mail.dkim.DkimSignedMessageForJavaxMail;
+import de.soderer.utilities.mail.dkim.DkimSignedMessage;
 
 public class Mailer {
 	private String smtpMailRelayHostname = "localhost";
@@ -130,8 +130,8 @@ public class Mailer {
 		// create a message
 		final MimeMessage mimeMessage;
 		if (email.getDkimPrivateKey() != null) {
-			mimeMessage = new DkimSignedMessageForJavaxMail(session);
-			((DkimSignedMessageForJavaxMail) mimeMessage).setDkimKeyData(email.getDkimDomain(), email.getDkimSelector(), email.getDkimPrivateKey(), email.getDkimIdentity());
+			mimeMessage = new DkimSignedMessage(session);
+			((DkimSignedMessage) mimeMessage).setDkimKeyData(email.getDkimDomain(), email.getDkimSelector(), email.getDkimPrivateKey(), email.getDkimIdentity());
 		} else {
 			mimeMessage = new MimeMessage(session);
 		}
