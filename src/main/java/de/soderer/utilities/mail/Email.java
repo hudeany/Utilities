@@ -36,6 +36,7 @@ public class Email {
 	private String dkimIdentity = null;
 
 	private PrivateKey signatureKey = null;
+	private X509Certificate signatureCertificate = null;
 	private X509Certificate encryptionCertificate = null;
 
 	public Email(final InternetAddress fromAddress, final String subject, final Charset charset) {
@@ -257,6 +258,14 @@ public class Email {
 
 	public void setSignaturePrivateKey(final PrivateKey signatureKey) {
 		this.signatureKey = signatureKey;
+	}
+
+	public void setSignatureCertificate(final X509Certificate signatureCertificate) {
+		this.signatureCertificate = signatureCertificate;
+	}
+
+	public X509Certificate getSignatureCertificate() {
+		return signatureCertificate;
 	}
 
 	public X509Certificate getEncryptionCertificate() {

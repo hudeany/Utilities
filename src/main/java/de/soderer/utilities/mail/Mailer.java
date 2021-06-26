@@ -238,7 +238,10 @@ public class Mailer {
 		}
 
 		if (email.getSignatureKey() != null) {
-			signMessage(mimeMessage, email.getSignatureKey(), email.getEncryptionCertificate());
+			if (email.getSignatureCertificate() == null) {
+				throw new Exception("Signature certificate is missing");
+			}
+			signMessage(mimeMessage, email.getSignatureKey(), email.getSignatureCertificate());
 		}
 
 		if (email.getEncryptionCertificate() != null) {
@@ -265,7 +268,7 @@ public class Mailer {
 		return message;
 	}
 
-	public static MimeMessage signMessage(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate) throws Exception {
+	private static MimeMessage signMessage(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final SMIMECapabilityVector capabilities = new SMIMECapabilityVector();
