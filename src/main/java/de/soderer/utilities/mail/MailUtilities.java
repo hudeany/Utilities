@@ -20,7 +20,7 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.http.HttpUtilities;
 
-public class MailUtilitiesForJavaxMail {
+public class MailUtilities {
 	private static final String SPECIAL_CHARS_REGEXP = "\\p{Cntrl}\\(\\)<>@,;:'\\\\\\\"\\.\\[\\]";
 	private static final String VALID_CHARS_REGEXP = "[^\\s" + SPECIAL_CHARS_REGEXP + "]";
 	private static final String QUOTED_USER_REGEXP = "(\"[^\"]*\")";
@@ -127,7 +127,7 @@ public class MailUtilitiesForJavaxMail {
 		if (Utilities.isNotBlank(listString)) {
 			for (String address : splitAndNormalizeEmails(listString)) {
 				address = address == null ? "" : Utilities.trim(address);
-				if (Utilities.isNotBlank(address) && MailUtilitiesForJavaxMail.isEmailValid(address)) {
+				if (Utilities.isNotBlank(address) && MailUtilities.isEmailValid(address)) {
 					try {
 						final InternetAddress nextAddress = new InternetAddress(address.trim());
 						nextAddress.validate();

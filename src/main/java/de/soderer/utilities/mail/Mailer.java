@@ -1,27 +1,47 @@
 package de.soderer.utilities.mail;
 
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
+import java.security.Security;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 
-import de.soderer.utilities.Utilities;
-import de.soderer.utilities.mail.dkim.DkimSignedMessageForJakarta;
-import jakarta.activation.DataHandler;
-import jakarta.mail.Address;
-import jakarta.mail.Authenticator;
-import jakarta.mail.Message;
-import jakarta.mail.Multipart;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeBodyPart;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
-import jakarta.mail.internet.MimeUtility;
-import jakarta.mail.util.ByteArrayDataSource;
+import javax.activation.DataHandler;
+import javax.mail.Address;
+import javax.mail.Authenticator;
+import javax.mail.Message;
+import javax.mail.Multipart;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimeUtility;
+import javax.mail.util.ByteArrayDataSource;
 
-public class MailerForJakarta {
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.cms.AttributeTable;
+import org.bouncycastle.asn1.smime.SMIMECapabilitiesAttribute;
+import org.bouncycastle.asn1.smime.SMIMECapability;
+import org.bouncycastle.asn1.smime.SMIMECapabilityVector;
+import org.bouncycastle.cert.jcajce.JcaCertStore;
+import org.bouncycastle.cms.CMSAlgorithm;
+import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoGeneratorBuilder;
+import org.bouncycastle.cms.jcajce.JceCMSContentEncryptorBuilder;
+import org.bouncycastle.cms.jcajce.JceKeyTransRecipientInfoGenerator;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.mail.smime.SMIMEEnvelopedGenerator;
+import org.bouncycastle.mail.smime.SMIMESignedGenerator;
+
+import de.soderer.utilities.Utilities;
+import de.soderer.utilities.mail.dkim.DkimSignedMessageForJavaxMail;
+
+public class Mailer {
 	private String smtpMailRelayHostname = "localhost";
 	private int smtpMailRelayPort = 0;
 
@@ -34,7 +54,7 @@ public class MailerForJakarta {
 		return smtpMailRelayHostname;
 	}
 
-	public MailerForJakarta setSmtpMailRelayHostname(final String smtpMailRelayHostname) {
+	public Mailer setSmtpMailRelayHostname(final String smtpMailRelayHostname) {
 		this.smtpMailRelayHostname = smtpMailRelayHostname;
 		return this;
 	}
@@ -43,7 +63,7 @@ public class MailerForJakarta {
 		return smtpMailRelayPort;
 	}
 
-	public MailerForJakarta setSmtpMailRelayPort(final int smtpMailRelayPort) {
+	public Mailer setSmtpMailRelayPort(final int smtpMailRelayPort) {
 		this.smtpMailRelayPort = smtpMailRelayPort;
 		return this;
 	}
@@ -52,7 +72,7 @@ public class MailerForJakarta {
 		return smtpUsername;
 	}
 
-	public MailerForJakarta setSmtpUsername(final String smtpUsername) {
+	public Mailer setSmtpUsername(final String smtpUsername) {
 		this.smtpUsername = smtpUsername;
 		return this;
 	}
@@ -61,7 +81,7 @@ public class MailerForJakarta {
 		return smtpPassword;
 	}
 
-	public MailerForJakarta setSmtpPassword(final char[] smtpPassword) {
+	public Mailer setSmtpPassword(final char[] smtpPassword) {
 		this.smtpPassword = smtpPassword;
 		return this;
 	}
@@ -70,12 +90,12 @@ public class MailerForJakarta {
 		return connectionSecurity;
 	}
 
-	public MailerForJakarta setConnectionSecurity(final MailerConnectionSecurity connectionSecurity) {
+	public Mailer setConnectionSecurity(final MailerConnectionSecurity connectionSecurity) {
 		this.connectionSecurity = connectionSecurity;
 		return this;
 	}
 
-	public MailerForJakarta send(final EmailForJakarta email) throws Exception {
+	public Mailer send(final Email email) throws Exception {
 		if (Utilities.isBlank(smtpMailRelayHostname)) {
 			smtpMailRelayHostname = "localhost";
 		}
@@ -110,13 +130,13 @@ public class MailerForJakarta {
 		// create a message
 		final MimeMessage mimeMessage;
 		if (email.getDkimPrivateKey() != null) {
-			mimeMessage = new DkimSignedMessageForJakarta(session);
-			((DkimSignedMessageForJakarta) mimeMessage).setDkimKeyData(email.getDkimDomain(), email.getDkimSelector(), email.getDkimPrivateKey(), email.getDkimIdentity());
+			mimeMessage = new DkimSignedMessageForJavaxMail(session);
+			((DkimSignedMessageForJavaxMail) mimeMessage).setDkimKeyData(email.getDkimDomain(), email.getDkimSelector(), email.getDkimPrivateKey(), email.getDkimIdentity());
 		} else {
 			mimeMessage = new MimeMessage(session);
 		}
 
-		mimeMessage.setFrom(email.getFromAddress());
+		mimeMessage.setFrom(email.getFromAddress().getAddress());
 		mimeMessage.setSubject(email.getSubject(), email.getCharset().name());
 		mimeMessage.setSentDate(new Date());
 
@@ -155,52 +175,6 @@ public class MailerForJakarta {
 				mimeMessage.setContent(email.getBodyHtml(), "text/html; charset=" + email.getCharset().name());
 			} else {
 				// Use a multipart email with text and html content
-				//				if (email.getEncryptionCertificate() != null && email.getSignatureKey() != null) {
-				//					final Multipart multipart = new MimeMultipart("alternative");
-				//
-				//					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
-				//					textMimeBodyPart.setText(email.getBodyText(), email.getCharset().name());
-				//					multipart.addBodyPart(textMimeBodyPart);
-				//					mimeMessage.setContent(multipart, multipart.getContentType());
-				//
-				//					final MimeBodyPart htmlMimeBodyPart = new MimeBodyPart();
-				//					htmlMimeBodyPart.setContent(email.getBodyHtml(), "text/html; charset=" + email.getCharset().name());
-				//					multipart.addBodyPart(htmlMimeBodyPart);
-				//					mimeMessage.setContent(multipart, multipart.getContentType());
-				//
-				//					multipart.addBodyPart(textMimeBodyPart);
-				//					multipart.addBodyPart(htmlMimeBodyPart);
-				//
-				//					final SMIMEEnvelopedGenerator fact = new SMIMEEnvelopedGenerator();
-				//
-				//					fact.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator(email.getEncryptionCertificate()).setProvider("BC"));
-				//
-				//					final MimeBodyPart mp = fact.generate(mimeMessage, new JceCMSContentEncryptorBuilder(CMSAlgorithm.RC2_CBC, 40).setProvider("BC").build());
-				//
-				//					final String boundary = Utilities.generateUUID();
-				//					final Multipart multipart = new MultipartSigned(boundary);
-				//
-				//					final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
-				//					textMimeBodyPart.setContent(email.getBodyText(), "text/plain; charset=" + email.getCharset().name() + "; format=flowed");
-				//					textMimeBodyPart.setHeader("Content-Transfer-Encoding", "quoted-printable");
-				//					multipart.addBodyPart(textMimeBodyPart);
-				//
-				//					//					final byte[] signatureData = CryptographicUtilities.signData(email.getBodyText().getBytes(email.getCharset()), email.getSignatureKey());
-				//					//					final String signatureDataBase64String = Utilities.encodeBase64(signatureData, 64, "\r\n");
-				//					//
-				//					//					final MimeBodyPart signatureMimeBodyPart = new MimeBodyPart();
-				//					//					signatureMimeBodyPart.setContent(signatureDataBase64String, "application/pkcs7-signature; name=\"smime.p7s\"");
-				//					//					signatureMimeBodyPart.setHeader("Content-Transfer-Encoding", "base64");
-				//					//					signatureMimeBodyPart.setHeader("Content-Disposition", "attachment; filename=\"smime.p7s\"");
-				//					//					signatureMimeBodyPart.setHeader("Content-Description", "S/MIME Cryptographic Signature");
-				//					//					multipart.addBodyPart(signatureMimeBodyPart);
-				//
-				//					mimeMessage.setContent(multipart);
-				//				} else if (email.getEncryptionCertificate() != null) {
-				//					throw new NotImplementedException();
-				//				} else if (email.getSignatureKey() != null) {
-				//					throw new NotImplementedException();
-				//				} else {
 				final Multipart multipart = new MimeMultipart("alternative");
 
 				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
@@ -213,7 +187,6 @@ public class MailerForJakarta {
 				multipart.addBodyPart(htmlMimeBodyPart);
 
 				mimeMessage.setContent(multipart, multipart.getContentType());
-				//				}
 			}
 		} else {
 			final Multipart multipartMixed = new MimeMultipart("mixed");
@@ -221,13 +194,12 @@ public class MailerForJakarta {
 			if (Utilities.isBlank(email.getBodyText()) && Utilities.isBlank(email.getBodyHtml())) {
 				// Use a multipart text email with only text content and attachements
 				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
-				// Set to a single space. If body is totally empty, Commons Emails rejects sending email with exception "Invalid message supplied" (-> EMM-4133)
-				textMimeBodyPart.setText(" ", email.getCharset().name());
+				textMimeBodyPart.setText("", email.getCharset().name());
 				multipartMixed.addBodyPart(textMimeBodyPart);
 			} else if (Utilities.isBlank(email.getBodyHtml())) {
 				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
 				// Use a multipart text email with only text content and attachements
-				textMimeBodyPart.setText(email.getBodyText(), email.getCharset().name());
+				textMimeBodyPart.setContent(email.getBodyText(), "text/plain; charset=" + email.getCharset().name());
 				multipartMixed.addBodyPart(textMimeBodyPart);
 			} else if (Utilities.isBlank(email.getBodyText())) {
 				final MimeBodyPart textMimeBodyPart = new MimeBodyPart();
@@ -265,8 +237,61 @@ public class MailerForJakarta {
 			mimeMessage.setContent(multipartMixed);
 		}
 
+		if (email.getSignatureKey() != null) {
+			signMessage(mimeMessage, email.getSignatureKey(), email.getEncryptionCertificate());
+		}
+
+		if (email.getEncryptionCertificate() != null) {
+			encryptMessage(mimeMessage, email.getEncryptionCertificate());
+		}
+
 		Transport.send(mimeMessage);
 
 		return this;
+	}
+
+	private static MimeMessage encryptMessage(final MimeMessage message, final X509Certificate recipientCert) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		final SMIMEEnvelopedGenerator envelopedGenerator = new SMIMEEnvelopedGenerator();
+		envelopedGenerator.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator(recipientCert).setProvider("BC"));
+
+		final MimeBodyPart mimeBodyPart = new MimeBodyPart();
+		mimeBodyPart.setContent(message.getContent(), message.getContentType());
+		final MimeBodyPart encryptedMimeBodyPart = envelopedGenerator.generate(mimeBodyPart, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES256_CBC).setProvider("BC").build());
+		message.setContent(encryptedMimeBodyPart.getContent(), encryptedMimeBodyPart.getContentType());
+		message.saveChanges();
+
+		return message;
+	}
+
+	public static MimeMessage signMessage(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		final SMIMECapabilityVector capabilities = new SMIMECapabilityVector();
+		capabilities.addCapability(SMIMECapability.dES_EDE3_CBC);
+		capabilities.addCapability(SMIMECapability.rC2_CBC, 128);
+		capabilities.addCapability(SMIMECapability.dES_CBC);
+		capabilities.addCapability(SMIMECapability.aES256_CBC);
+
+		final ASN1EncodableVector attributes = new ASN1EncodableVector();
+		attributes.add(new SMIMECapabilitiesAttribute(capabilities));
+
+		final SMIMESignedGenerator signer = new SMIMESignedGenerator();
+
+		signer.addSignerInfoGenerator(new JcaSimpleSignerInfoGeneratorBuilder().setProvider("BC")
+				.setSignedAttributeGenerator(new AttributeTable(attributes))
+				.build("SHA512withRSA", privateKey, signingCertificate));
+
+		final List<X509Certificate> certList = new ArrayList<>();
+		certList.add(signingCertificate);
+		signer.addCertificates(new JcaCertStore(certList));
+
+		final MimeMultipart mimeMultipart = signer.generate(message);
+
+		message.setContent(mimeMultipart, mimeMultipart.getContentType());
+		message.saveChanges();
+
+		return message;
 	}
 }
