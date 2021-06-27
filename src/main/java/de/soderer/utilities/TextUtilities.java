@@ -196,13 +196,17 @@ public class TextUtilities {
 	 * @return
 	 */
 	public static String normalizeLineBreaks(final String value, final LineBreakType type) {
-		final String returnString = value.replace(LinebreakWindows, LinebreakUnix).replace(LinebreakMac, LinebreakUnix);
-		if (type == LineBreakType.Mac) {
-			return returnString.replace(LinebreakUnix, LinebreakMac);
-		} else if (type == LineBreakType.Windows) {
-			return returnString.replace(LinebreakUnix, LinebreakWindows);
+		if (value == null) {
+			return value;
 		} else {
-			return returnString;
+			final String returnString = value.replace(LinebreakWindows, LinebreakUnix).replace(LinebreakMac, LinebreakUnix);
+			if (type == LineBreakType.Mac) {
+				return returnString.replace(LinebreakUnix, LinebreakMac);
+			} else if (type == LineBreakType.Windows) {
+				return returnString.replace(LinebreakUnix, LinebreakWindows);
+			} else {
+				return returnString;
+			}
 		}
 	}
 

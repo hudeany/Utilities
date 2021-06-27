@@ -13,6 +13,8 @@ import java.util.List;
 import javax.mail.internet.InternetAddress;
 
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.TextUtilities;
+import de.soderer.utilities.TextUtilities.LineBreakType;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.mail.dkim.DomainKey;
@@ -194,7 +196,7 @@ public class Email {
 	}
 
 	public Email setBodyText(final String bodyText) {
-		this.bodyText = bodyText;
+		this.bodyText = TextUtilities.normalizeLineBreaks(bodyText, LineBreakType.Windows);
 		return this;
 	}
 
@@ -203,7 +205,7 @@ public class Email {
 	}
 
 	public Email setBodyHtml(final String bodyHtml) {
-		this.bodyHtml = bodyHtml;
+		this.bodyHtml = TextUtilities.normalizeLineBreaks(bodyHtml, LineBreakType.Windows);
 		return this;
 	}
 
