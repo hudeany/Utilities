@@ -54,13 +54,6 @@ public final class DomainKeyUtil {
 		return domainKey.getTimestamp() + cacheTtl > System.currentTimeMillis();
 	}
 
-	/**
-	 * Retrieves the tags of a domain key for the given signing domain and selector
-	 */
-	public static Map<Character, String> getTags(final String signingDomain, final String selector) throws Exception {
-		return getTags(getRecordName(signingDomain, selector));
-	}
-
 	private static Map<Character, String> getTags(final String recordName) throws Exception {
 		final Map<Character, String> tags = new HashMap<>();
 
@@ -69,19 +62,17 @@ public final class DomainKeyUtil {
 		for (String tag : recordValue.split(";")) {
 			try {
 				tag = tag.trim();
-				tags.put(tag.charAt(0), tag.substring(2));
+				final String[] tagKeyValueParts = tag.split("=", 2);
+				if (tagKeyValueParts.length == 2 && tagKeyValueParts[0].length() == 1) {
+					tags.put(tagKeyValueParts[0].charAt(0), tagKeyValueParts[1]);
+				} else {
+					throw new Exception("Invalid tag found in recordValue: " + recordValue);
+				}
 			} catch (final IndexOutOfBoundsException e) {
 				throw new Exception("The tag " + tag + " in RR " + recordName + " couldn't be decoded.", e);
 			}
 		}
 		return tags;
-	}
-
-	/**
-	 * Retrieves the raw domain key for the given signing domain and selector
-	 */
-	public static String getValue(final String signingDomain, final String selector) throws Exception {
-		return getValue(getRecordName(signingDomain, selector));
 	}
 
 	private static String getValue(final String recordName) throws Exception {
@@ -98,6 +89,9 @@ public final class DomainKeyUtil {
 			final StringBuilder builder = new StringBuilder();
 			final NamingEnumeration<?> e = txtRecord.getAll();
 			while (e.hasMore()) {
+				if (builder.length() > 0) {
+					builder.append(";");
+				}
 				builder.append((String) e.next());
 			}
 
@@ -107,7 +101,6 @@ public final class DomainKeyUtil {
 			}
 
 			return unquoteRecordValue(value);
-
 		} catch (final NamingException ne) {
 			throw new Exception("Selector lookup failed", ne);
 		}
