@@ -291,6 +291,8 @@ public class Email {
 			final DomainKey domainKey = DomainKeyUtil.getDomainKey(dkimDomain, dkimSelector);
 			if (domainKey == null) {
 				errors.add("No DKIM key found in DNS entry for domain '" + dkimDomain + "' and selector '" + dkimSelector + "'");
+			} else if (!CryptographicUtilities.checkPrivateKeyFitsPublicKey(dkimPrivateKey, domainKey.getPublicKey())) {
+				errors.add("PublicKey of DKIM key found in DNS entry for domain '" + dkimDomain + "' and selector '" + dkimSelector + "' does not fit the given private key");
 			}
 		}
 
