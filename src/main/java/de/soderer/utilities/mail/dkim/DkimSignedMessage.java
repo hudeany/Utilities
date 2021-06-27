@@ -31,9 +31,9 @@ import javax.mail.Session;
 import javax.mail.internet.MimeUtility;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import de.soderer.utilities.QuotedPrintableCodec;
+import de.soderer.utilities.Utilities;
 
 public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 	private static final int MAXIMUM_MESSAGE_HEADER_LENGTH = 67;
@@ -52,9 +52,9 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 	}
 
 	public DkimSignedMessage setDkimKeyData(final String domain, final String selector, final RSAPrivateKey privateRsaKey, final String identity) throws Exception {
-		if (StringUtils.isBlank(domain)) {
+		if (Utilities.isBlank(domain)) {
 			throw new Exception("DKIM domain may not be empty");
-		} else if (StringUtils.isBlank(selector)) {
+		} else if (Utilities.isBlank(selector)) {
 			throw new Exception("DKIM key selector may not be empty");
 		} else if (privateRsaKey == null) {
 			throw new Exception("DKIM private key may not be empty");

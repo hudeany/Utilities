@@ -12,8 +12,6 @@ import java.util.List;
 
 import javax.mail.internet.InternetAddress;
 
-import org.apache.commons.lang3.StringUtils;
-
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
@@ -228,9 +226,9 @@ public class Email {
 	}
 
 	public Email setDkimData(final String domain, final String selector, final RSAPrivateKey privateKey, final String identity) throws Exception {
-		if (StringUtils.isBlank(domain)) {
+		if (Utilities.isBlank(domain)) {
 			throw new Exception("DKIM domain may not be empty");
-		} else if (StringUtils.isBlank(selector)) {
+		} else if (Utilities.isBlank(selector)) {
 			throw new Exception("DKIM key selector may not be empty");
 		} else if (privateKey == null) {
 			throw new Exception("DKIM private key may not be empty");

@@ -15,7 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import com.auth0.jwt.JWT;
@@ -59,7 +58,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 	 */
 	public GoogleCloudConnection(final String applicationCredentialsJsonString) throws Exception {
 		this.applicationCredentialsJsonString = applicationCredentialsJsonString;
-		if (StringUtils.isBlank(applicationCredentialsJsonString)) {
+		if (Utilities.isBlank(applicationCredentialsJsonString)) {
 			throw new Exception("Mandatory applicationCredentialsJsonString is missing");
 		}
 
@@ -75,11 +74,11 @@ public class GoogleCloudConnection implements RemoteConnection {
 		} else {
 			final JsonObject credentials = (JsonObject) credentialsNode.getValue();
 			clientEmail = (String) credentials.get("client_email");
-			if (StringUtils.isBlank(clientEmail)) {
+			if (Utilities.isBlank(clientEmail)) {
 				throw new Exception("Mandatory credentials data is missing: client_email");
 			}
 			final String privateKeyString = (String) credentials.get("private_key");
-			if (StringUtils.isBlank(clientEmail)) {
+			if (Utilities.isBlank(clientEmail)) {
 				throw new Exception("Mandatory credentials data is missing: private_key");
 			}
 
