@@ -238,15 +238,28 @@ public class Mailer {
 			mimeMessage.setContent(multipartMixed);
 		}
 
-		if (email.getSignatureKey() != null) {
-			if (email.getSignatureCertificate() == null) {
-				throw new Exception("Signature certificate is missing");
+		if (email.getCryptoType() == CryptoType.S_MIME) {
+			if (email.getSignatureKey() != null) {
+				if (email.getSignatureCertificate() == null) {
+					throw new Exception("Signature certificate is missing");
+				}
+				signMessageWithSmime(mimeMessage, email.getSignatureKey(), email.getSignatureCertificate());
 			}
-			signMessage(mimeMessage, email.getSignatureKey(), email.getSignatureCertificate());
-		}
 
-		if (email.getEncryptionCertificate() != null) {
-			encryptMessage(mimeMessage, email.getEncryptionCertificate());
+			if (email.getEncryptionCertificate() != null) {
+				encryptMessageWithSmime(mimeMessage, email.getEncryptionCertificate());
+			}
+		} else if (email.getCryptoType() == CryptoType.PGP) {
+			if (email.getSignatureKey() != null) {
+				if (email.getSignatureCertificate() == null) {
+					throw new Exception("Signature certificate is missing");
+				}
+				signMessageWithPgp(mimeMessage, email.getSignatureKey(), email.getSignatureCertificate());
+			}
+
+			if (email.getEncryptionCertificate() != null) {
+				encryptMessageWithPgp(mimeMessage, email.getEncryptionCertificate());
+			}
 		}
 
 		Transport.send(mimeMessage);
@@ -254,22 +267,7 @@ public class Mailer {
 		return this;
 	}
 
-	private static MimeMessage encryptMessage(final MimeMessage message, final X509Certificate recipientCert) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		final SMIMEEnvelopedGenerator envelopedGenerator = new SMIMEEnvelopedGenerator();
-		envelopedGenerator.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator(recipientCert).setProvider("BC"));
-
-		final MimeBodyPart mimeBodyPart = new MimeBodyPart();
-		mimeBodyPart.setContent(message.getContent(), message.getContentType());
-		final MimeBodyPart encryptedMimeBodyPart = envelopedGenerator.generate(mimeBodyPart, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES256_CBC).setProvider("BC").build());
-		message.setContent(encryptedMimeBodyPart.getContent(), encryptedMimeBodyPart.getContentType());
-		message.saveChanges();
-
-		return message;
-	}
-
-	private static MimeMessage signMessage(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate) throws Exception {
+	private static MimeMessage signMessageWithSmime(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final SMIMECapabilityVector capabilities = new SMIMECapabilityVector();
@@ -295,6 +293,39 @@ public class Mailer {
 
 		message.setContent(mimeMultipart, mimeMultipart.getContentType());
 		message.saveChanges();
+
+		return message;
+	}
+
+	private static MimeMessage encryptMessageWithSmime(final MimeMessage message, final X509Certificate recipientCert) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		final SMIMEEnvelopedGenerator envelopedGenerator = new SMIMEEnvelopedGenerator();
+		envelopedGenerator.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator(recipientCert).setProvider("BC"));
+
+		final MimeBodyPart mimeBodyPart = new MimeBodyPart();
+		mimeBodyPart.setContent(message.getContent(), message.getContentType());
+		final MimeBodyPart encryptedMimeBodyPart = envelopedGenerator.generate(mimeBodyPart, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES256_CBC).setProvider("BC").build());
+		message.setContent(encryptedMimeBodyPart.getContent(), encryptedMimeBodyPart.getContentType());
+		message.saveChanges();
+
+		return message;
+	}
+
+	private static MimeMessage signMessageWithPgp(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		//		final EncryptionUtils pgpUtils = EncryptionManager.getEncryptionUtils(EncryptionManager.PGP);
+		//		final MimeMessage pgpSignedMsg = pgpUtils.signMessage(mailSession, newMessage, pgpKey);
+
+		return message;
+	}
+
+	private static MimeMessage encryptMessageWithPgp(final MimeMessage message, final X509Certificate recipientCert) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		//		final EncryptionUtils pgpUtils = EncryptionManager.getEncryptionUtils(EncryptionManager.PGP);
+		//		final MimeMessage pgpEncryptedMsg = pgpUtils.encryptMessage(mailSession, newMessage, pgpKey);
 
 		return message;
 	}
