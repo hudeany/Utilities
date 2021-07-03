@@ -26,6 +26,7 @@ import javax.mail.internet.MimeUtility;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.cms.AttributeTable;
 import org.bouncycastle.asn1.smime.SMIMECapabilitiesAttribute;
 import org.bouncycastle.asn1.smime.SMIMECapability;
@@ -42,6 +43,7 @@ import org.bouncycastle.mail.smime.SMIMESignedGenerator;
 import com.sun.mail.smtp.SMTPAddressFailedException;
 
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.mail.dkim.DkimSignedMessage;
 
 public class Mailer {
@@ -247,11 +249,11 @@ public class Mailer {
 				if (email.getSignatureCertificate() == null) {
 					throw new Exception("Signature certificate is missing");
 				}
-				signMessageWithSmime(mimeMessage, email.getSignatureKey(), email.getSignatureCertificate());
+				signMessageWithSmime(mimeMessage, email.getSignatureKey(), email.getSignatureCertificate(), email.getSignatureMethodName());
 			}
 
 			if (email.getEncryptionCertificate() != null) {
-				encryptMessageWithSmime(mimeMessage, email.getEncryptionCertificate());
+				encryptMessageWithSmime(mimeMessage, email.getEncryptionCertificate(), email.getEncryptionMethodName());
 			}
 		} else if (email.getCryptoType() == CryptoType.PGP) {
 			if (email.getSignatureKey() != null) {
@@ -287,7 +289,7 @@ public class Mailer {
 		return this;
 	}
 
-	private static MimeMessage signMessageWithSmime(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate) throws Exception {
+	private static MimeMessage signMessageWithSmime(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate, final String signatureMethodName) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final SMIMECapabilityVector capabilities = new SMIMECapabilityVector();
@@ -301,9 +303,10 @@ public class Mailer {
 
 		final SMIMESignedGenerator signer = new SMIMESignedGenerator();
 
+
 		signer.addSignerInfoGenerator(new JcaSimpleSignerInfoGeneratorBuilder().setProvider("BC")
 				.setSignedAttributeGenerator(new AttributeTable(attributes))
-				.build("SHA512withRSA", privateKey, signingCertificate));
+				.build(Utilities.isBlank(signatureMethodName) ? "SHA512withRSA" : signatureMethodName, privateKey, signingCertificate));
 
 		final List<X509Certificate> certList = new ArrayList<>();
 		certList.add(signingCertificate);
@@ -317,7 +320,7 @@ public class Mailer {
 		return message;
 	}
 
-	private static MimeMessage encryptMessageWithSmime(final MimeMessage message, final X509Certificate recipientCert) throws Exception {
+	private static MimeMessage encryptMessageWithSmime(final MimeMessage message, final X509Certificate recipientCert, final String encryptionMethodName) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final SMIMEEnvelopedGenerator envelopedGenerator = new SMIMEEnvelopedGenerator();
@@ -325,7 +328,8 @@ public class Mailer {
 
 		final MimeBodyPart mimeBodyPart = new MimeBodyPart();
 		mimeBodyPart.setContent(message.getContent(), message.getContentType());
-		final MimeBodyPart encryptedMimeBodyPart = envelopedGenerator.generate(mimeBodyPart, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES256_CBC).setProvider("BC").build());
+		final ASN1ObjectIdentifier encryptionAlgorithmIdentifier = Utilities.isBlank(encryptionMethodName) ? CMSAlgorithm.AES256_CBC : CryptographicUtilities.getASN1ObjectIdentifierByEncryptionMethodName(encryptionMethodName);
+		final MimeBodyPart encryptedMimeBodyPart = envelopedGenerator.generate(mimeBodyPart, new JceCMSContentEncryptorBuilder(encryptionAlgorithmIdentifier).setProvider("BC").build());
 		message.setContent(encryptedMimeBodyPart.getContent(), encryptedMimeBodyPart.getContentType());
 		message.saveChanges();
 

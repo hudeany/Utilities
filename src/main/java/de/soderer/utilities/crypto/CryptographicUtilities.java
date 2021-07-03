@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -76,6 +78,7 @@ import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.cms.CMSAlgorithm;
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.PBEParametersGenerator;
@@ -1092,6 +1095,41 @@ public class CryptographicUtilities {
 		challengeSignature.update(challenge);
 
 		return challengeSignature.verify(signature);
+	}
+
+	public static String checkSignatureMethodName(final String signatureMethodName) {
+		for (final String signatureMethodNameItem : KNOWN_SIGNATURE_METHODS) {
+			if (signatureMethodNameItem.replace(" ", "").replace("_", "").replace("/", "").replace("-", "").equalsIgnoreCase(signatureMethodName.replace(" ", "").replace("_", "").replace("/", "").replace("-", ""))) {
+				return signatureMethodNameItem;
+			}
+		}
+		return null;
+	}
+
+	public static ASN1ObjectIdentifier getASN1ObjectIdentifierByEncryptionMethodName(final String encryptionMethodName) {
+		try {
+			for (final Field field : CMSAlgorithm.class.getDeclaredFields()) {
+				if (Modifier.isStatic(field.getModifiers()) && field.getName().replace(" ", "").replace("_", "").replace("/", "").replace("-", "").equalsIgnoreCase(encryptionMethodName.replace(" ", "").replace("_", "").replace("/", "").replace("-", ""))) {
+					return (ASN1ObjectIdentifier) field.get(encryptionMethodName);
+				}
+			}
+			return null;
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return null;
+		}
+	}
+
+	public static String checkEncryptionMethodName(final String encryptionMethodName) {
+		try {
+			for (final Field field : CMSAlgorithm.class.getDeclaredFields()) {
+				if (Modifier.isStatic(field.getModifiers()) && field.getName().replace(" ", "").replace("_", "").replace("/", "").replace("-", "").equalsIgnoreCase(encryptionMethodName.replace(" ", "").replace("_", "").replace("/", "").replace("-", ""))) {
+					return encryptionMethodName;
+				}
+			}
+			return null;
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return null;
+		}
 	}
 
 	// TODO: Read TLS CA Cert (CA Chain file with multiple CA Certs)

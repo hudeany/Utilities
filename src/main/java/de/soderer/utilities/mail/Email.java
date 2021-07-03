@@ -44,7 +44,9 @@ public class Email {
 	private CryptoType cryptoType = null;
 	private PrivateKey signatureKey = null;
 	private X509Certificate signatureCertificate = null;
+	private String signatureMethodName = null;
 	private X509Certificate encryptionCertificate = null;
+	private String encryptionMethodName = null;
 
 	public Email(final InternetAddress fromAddress, final String subject, final Charset charset) {
 		this.fromAddress = fromAddress;
@@ -380,5 +382,21 @@ public class Email {
 		}
 
 		return errors;
+	}
+
+	public String getSignatureMethodName() {
+		return signatureMethodName;
+	}
+
+	public void setSignatureMethodName(final String signatureMethodName) {
+		this.signatureMethodName = signatureMethodName;
+	}
+
+	public String getEncryptionMethodName() {
+		return encryptionMethodName;
+	}
+
+	public void setEncryptionMethodName(final String encryptionMethodName) {
+		this.encryptionMethodName = encryptionMethodName;
 	}
 }
