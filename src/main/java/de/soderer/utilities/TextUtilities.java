@@ -210,6 +210,14 @@ public class TextUtilities {
 		}
 	}
 
+	public static String normalizeLineBreaksForCurrentSystem(final String value) {
+		if (SystemUtilities.isWindowsSystem()) {
+			return normalizeLineBreaks(value, LineBreakType.Windows);
+		} else {
+			return normalizeLineBreaks(value, LineBreakType.Unix);
+		}
+	}
+
 	/**
 	 * Get the text lines of a text as a list of strings
 	 *

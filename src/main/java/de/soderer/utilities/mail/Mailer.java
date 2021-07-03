@@ -260,11 +260,11 @@ public class Mailer {
 				if (email.getSignatureCertificate() == null) {
 					throw new Exception("Signature certificate is missing");
 				}
-				signMessageWithPgp(mimeMessage, email.getSignatureKey(), email.getSignatureCertificate());
+				signMessageWithPgp(mimeMessage, email.getSignatureKey(), email.getSignatureCertificate(), email.getSignatureMethodName());
 			}
 
 			if (email.getEncryptionCertificate() != null) {
-				encryptMessageWithPgp(mimeMessage, email.getEncryptionCertificate());
+				encryptMessageWithPgp(mimeMessage, email.getEncryptionCertificate(), email.getEncryptionMethodName());
 			}
 		}
 
@@ -336,7 +336,7 @@ public class Mailer {
 		return message;
 	}
 
-	private static MimeMessage signMessageWithPgp(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate) throws Exception {
+	private static MimeMessage signMessageWithPgp(final MimeMessage message, final PrivateKey privateKey, final X509Certificate signingCertificate, final String signatureMethodName) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		//		final EncryptionUtils pgpUtils = EncryptionManager.getEncryptionUtils(EncryptionManager.PGP);
@@ -345,7 +345,7 @@ public class Mailer {
 		return message;
 	}
 
-	private static MimeMessage encryptMessageWithPgp(final MimeMessage message, final X509Certificate recipientCert) throws Exception {
+	private static MimeMessage encryptMessageWithPgp(final MimeMessage message, final X509Certificate recipientCert, final String encryptionMethodName) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		//		final EncryptionUtils pgpUtils = EncryptionManager.getEncryptionUtils(EncryptionManager.PGP);
