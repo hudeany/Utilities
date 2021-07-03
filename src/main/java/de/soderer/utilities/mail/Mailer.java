@@ -15,6 +15,7 @@ import javax.mail.Authenticator;
 import javax.mail.Message;
 import javax.mail.Multipart;
 import javax.mail.PasswordAuthentication;
+import javax.mail.SendFailedException;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
@@ -37,6 +38,8 @@ import org.bouncycastle.cms.jcajce.JceKeyTransRecipientInfoGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.mail.smime.SMIMEEnvelopedGenerator;
 import org.bouncycastle.mail.smime.SMIMESignedGenerator;
+
+import com.sun.mail.smtp.SMTPAddressFailedException;
 
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.mail.dkim.DkimSignedMessage;
@@ -104,7 +107,6 @@ public class Mailer {
 		mailProps.put("mail.smtp.from", email.getFromAddress().getAddress());
 		mailProps.put("mail.smtp.host", smtpMailRelayHostname);
 		mailProps.put("mail.smtp.port", smtpMailRelayPort);
-		mailProps.put("mail.smtp.auth", true);
 
 		if (connectionSecurity == MailerConnectionSecurity.SSL_TLS) {
 			mailProps.put("mail.smtp.socketFactory.port", smtpMailRelayPort);
@@ -116,6 +118,7 @@ public class Mailer {
 
 		final Session session;
 		if (smtpUsername != null) {
+			mailProps.put("mail.smtp.auth", true);
 			final Authenticator authenticator = new Authenticator() {
 				@Override
 				protected PasswordAuthentication getPasswordAuthentication() {
@@ -124,6 +127,7 @@ public class Mailer {
 			};
 			session = Session.getDefaultInstance(mailProps, authenticator);
 		} else {
+			mailProps.put("mail.smtp.auth", false);
 			session = Session.getDefaultInstance(mailProps);
 		}
 
@@ -262,7 +266,23 @@ public class Mailer {
 			}
 		}
 
-		Transport.send(mimeMessage);
+		try {
+			Transport.send(mimeMessage);
+		} catch (final SendFailedException e) {
+			if (e.getCause() != null && e.getCause() instanceof SMTPAddressFailedException && e.getCause().getMessage() != null) {
+				if (e.getCause().getMessage().contains("Relay access denied")) {
+					throw new Exception("Server '" + smtpMailRelayHostname + "' denied relay of this email", e);
+				} else if (e.getCause().getMessage().contains("Client host rejected")) {
+					throw new Exception("Server '" + smtpMailRelayHostname + "' denied relay of this email. Your host is not allowed to send emails.", e);
+				} else if (e.getCause().getMessage().contains("Access denied")) {
+					throw new Exception("Server '" + smtpMailRelayHostname + "' denied relay of this email. Maybe authentification is needed.", e);
+				} else {
+					throw e;
+				}
+			} else {
+				throw e;
+			}
+		}
 
 		return this;
 	}
