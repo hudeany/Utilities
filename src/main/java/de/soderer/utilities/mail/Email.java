@@ -326,7 +326,7 @@ public class Email {
 				String certEmail = null;
 				for (final String token : Utilities.parseTokens(signatureCertificate.getSubjectDN().toString(), ',')) {
 					final String[] keyValueParts = token.trim().split("=");
-					if (keyValueParts.length >= 2 && "E".equals(keyValueParts[0])) {
+					if (keyValueParts.length >= 2 && ("E".equals(keyValueParts[0]) || "EMAILADDRESS".equals(keyValueParts[0]))) {
 						certEmail = keyValueParts[1];
 						break;
 					}
@@ -352,7 +352,7 @@ public class Email {
 				String certEmail = null;
 				for (final String token : Utilities.parseTokens(encryptionCertificate.getSubjectDN().toString(), ',')) {
 					final String[] keyValueParts = token.trim().split("=");
-					if (keyValueParts.length >= 2 && "E".equals(keyValueParts[0])) {
+					if (keyValueParts.length >= 2 && ("E".equals(keyValueParts[0]) || "EMAILADDRESS".equals(keyValueParts[0]))) {
 						certEmail = keyValueParts[1];
 						break;
 					}

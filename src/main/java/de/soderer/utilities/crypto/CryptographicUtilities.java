@@ -520,7 +520,7 @@ public class CryptographicUtilities {
 			if (readObject instanceof X509Certificate) {
 				return (X509Certificate) readObject;
 			} else if (readObject instanceof X509CertificateHolder) {
-				return new JcaX509CertificateConverter().setProvider("BC").getCertificate((X509CertificateHolder) readObject);
+				return new JcaX509CertificateConverter().getCertificate((X509CertificateHolder) readObject);
 			} else {
 				return null;
 			}
@@ -835,10 +835,14 @@ public class CryptographicUtilities {
 	public static X509Certificate[] loadCertificatesFromPemFile(final File pemFile) throws Exception {
 		try (PEMParser pemReader = new PEMParser(new FileReader(pemFile))) {
 			final List<X509Certificate> certificateList = new ArrayList<>();
-			Object nextCertificate;
-			while ((nextCertificate = pemReader.readObject()) != null) {
-				if (nextCertificate instanceof X509Certificate) {
-					certificateList.add((X509Certificate) nextCertificate);
+			Object readObject;
+			while ((readObject = pemReader.readObject()) != null) {
+				if (readObject instanceof X509Certificate) {
+					certificateList.add((X509Certificate) readObject);
+				} else if (readObject instanceof X509CertificateHolder) {
+					certificateList.add(new JcaX509CertificateConverter().getCertificate((X509CertificateHolder) readObject));
+				} else {
+					throw new Exception("Unknown certificate type");
 				}
 			}
 			return certificateList.toArray(new X509Certificate[0]);
