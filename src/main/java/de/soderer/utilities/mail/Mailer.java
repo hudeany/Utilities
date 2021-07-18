@@ -282,7 +282,7 @@ public class Mailer {
 			}
 		} else if (email.getCryptoType() == CryptoType.PGP) {
 			if (email.getPgpSecretKey() != null) {
-				signMessageWithPgp(mimeMessage, rootMultipart, email.getPgpSecretKey(), email.getPgpSecretKeyPassword(), email.getSignatureMethodName());
+				rootMultipart = signMessageWithPgp(mimeMessage, rootMultipart, email.getPgpSecretKey(), email.getPgpSecretKeyPassword(), email.getSignatureMethodName());
 			}
 
 			if (email.getPgpPublicKey() != null) {
@@ -361,7 +361,7 @@ public class Mailer {
 		return mimeMessage;
 	}
 
-	private static MimeMessage signMessageWithPgp(final MimeMessage mimeMessage, final Multipart rootMultipart, final PGPSecretKey privateKey, final char[] password, final String signatureMethodName) throws Exception {
+	private static Multipart signMessageWithPgp(final MimeMessage mimeMessage, final Multipart rootMultipart, final PGPSecretKey privateKey, final char[] password, final String signatureMethodName) throws Exception {
 		final MimeBodyPart bodyPart = new MimeBodyPart();
 		bodyPart.setContent(rootMultipart);
 
@@ -413,7 +413,7 @@ public class Mailer {
 
 		mimeMessage.setContent(multipartSigned);
 
-		return mimeMessage;
+		return multipartSigned;
 	}
 
 	private static MimeMessage encryptMessageWithPgp(final MimeMessage mimeMessage, final Multipart rootMultipart, final PGPPublicKey publicKey) throws Exception {
