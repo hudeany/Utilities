@@ -286,7 +286,7 @@ public class Mailer {
 			}
 
 			if (email.getPgpPublicKey() != null) {
-				encryptMessageWithPgp(mimeMessage, rootMultipart, email.getPgpPublicKey());
+				encryptMessageWithPgp(mimeMessage, rootMultipart, email.getPgpPublicKey(), email.getEncryptionMethodName());
 			}
 		} else {
 			if (rootMultipart != null) {
@@ -337,7 +337,7 @@ public class Mailer {
 		certList.add(signingCertificate);
 		signer.addCertificates(new JcaCertStore(certList));
 
-		final MimeMultipart mimeMultipart = signer.generate(mimeMessage);
+		final de.soderer.utilities.mail.MimeMultipart mimeMultipart = new de.soderer.utilities.mail.MimeMultipart(signer.generate(mimeMessage));
 
 		mimeMessage.setContent(mimeMultipart, mimeMultipart.getContentType());
 		mimeMessage.saveChanges();
@@ -416,7 +416,7 @@ public class Mailer {
 		return multipartSigned;
 	}
 
-	private static MimeMessage encryptMessageWithPgp(final MimeMessage mimeMessage, final Multipart rootMultipart, final PGPPublicKey publicKey) throws Exception {
+	private static MimeMessage encryptMessageWithPgp(final MimeMessage mimeMessage, final Multipart rootMultipart, final PGPPublicKey publicKey, final String encryptionMethodName) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final MimeBodyPart contentPart = new MimeBodyPart();
@@ -434,6 +434,9 @@ public class Mailer {
 
 		final ByteArrayOutputStream encryptedMessageBuffer = new ByteArrayOutputStream();
 		final PGPFileEncryptionWorker pgpFileEncryptionWorker = new PGPFileEncryptionWorker(null, new ByteArrayInputStream(messageToEncryptBuffer.toByteArray()), encryptedMessageBuffer, publicKey);
+		if (encryptionMethodName != null) {
+			pgpFileEncryptionWorker.setPgpSymmetricEncryptionMethod(encryptionMethodName);
+		}
 		if (!pgpFileEncryptionWorker.work()) {
 			throw new Exception("Error while encrypting data", pgpFileEncryptionWorker.getError());
 		}

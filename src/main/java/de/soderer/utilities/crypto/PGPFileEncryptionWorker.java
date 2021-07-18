@@ -30,6 +30,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 	private OutputStream encryptedData = null;
 	private PGPPublicKey publicKey = null;
 	private boolean useIntegrityPacket = true;
+	private PgpSymmetricEncryptionMethod pgpSymmetricEncryptionMethod = PgpSymmetricEncryptionMethod.AES_256;
 
 	public boolean isUseIntegrityPacket() {
 		return useIntegrityPacket;
@@ -45,6 +46,20 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		this.dataToEncrypt = dataToEncrypt;
 		this.encryptedData = encryptedData;
 		this.publicKey = publicKey;
+	}
+
+	public PGPFileEncryptionWorker setPgpSymmetricEncryptionMethod(final String pgpSymmetricEncryptionMethod) throws Exception {
+		this.pgpSymmetricEncryptionMethod = PgpSymmetricEncryptionMethod.getByName(pgpSymmetricEncryptionMethod);
+		return this;
+	}
+
+	public PGPFileEncryptionWorker setPgpSymmetricEncryptionMethod(final PgpSymmetricEncryptionMethod pgpSymmetricEncryptionMethod) {
+		this.pgpSymmetricEncryptionMethod = pgpSymmetricEncryptionMethod;
+		return this;
+	}
+
+	public PgpSymmetricEncryptionMethod getPgpSymmetricEncryptionMethod() {
+		return pgpSymmetricEncryptionMethod;
 	}
 
 	@SuppressWarnings("resource")
@@ -71,7 +86,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 				encryptedData = new ArmoredOutputStream(encryptedData);
 			}
 
-			final JcePGPDataEncryptorBuilder builder = new JcePGPDataEncryptorBuilder(PgpSymmetricEncryptionMethod.getByName(PGPUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).getId()).setWithIntegrityPacket(useIntegrityPacket);
+			final JcePGPDataEncryptorBuilder builder = new JcePGPDataEncryptorBuilder(pgpSymmetricEncryptionMethod.getId()).setWithIntegrityPacket(useIntegrityPacket);
 			encryptedDataGenerator = new PGPEncryptedDataGenerator(builder);
 			final JcePublicKeyKeyEncryptionMethodGenerator encryptionMethodGenerator = new JcePublicKeyKeyEncryptionMethodGenerator(publicKey);
 			encryptedDataGenerator.addMethod(encryptionMethodGenerator);
