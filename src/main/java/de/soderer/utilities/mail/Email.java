@@ -12,6 +12,9 @@ import java.util.List;
 
 import javax.mail.internet.InternetAddress;
 
+import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPSecretKey;
+
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
@@ -47,6 +50,9 @@ public class Email {
 	private String signatureMethodName = null;
 	private X509Certificate encryptionCertificate = null;
 	private String encryptionMethodName = null;
+	private PGPSecretKey pgpSecretKey = null;
+	private char[] pgpSecretKeyPassword = null;
+	private PGPPublicKey pgpPublicKey = null;
 
 	public Email(final InternetAddress fromAddress, final String subject, final Charset charset) {
 		this.fromAddress = fromAddress;
@@ -388,15 +394,44 @@ public class Email {
 		return signatureMethodName;
 	}
 
-	public void setSignatureMethodName(final String signatureMethodName) {
+	public Email setSignatureMethodName(final String signatureMethodName) {
 		this.signatureMethodName = signatureMethodName;
+		return this;
 	}
 
 	public String getEncryptionMethodName() {
 		return encryptionMethodName;
 	}
 
-	public void setEncryptionMethodName(final String encryptionMethodName) {
+	public Email setEncryptionMethodName(final String encryptionMethodName) {
 		this.encryptionMethodName = encryptionMethodName;
+		return this;
+	}
+
+	public PGPSecretKey getPgpSecretKey() {
+		return pgpSecretKey;
+	}
+
+	public Email setPgpSecretKey(final PGPSecretKey pgpSecretKey) {
+		this.pgpSecretKey = pgpSecretKey;
+		return this;
+	}
+
+	public char[] getPgpSecretKeyPassword() {
+		return pgpSecretKeyPassword;
+	}
+
+	public Email setPgpSecretKeyPassword(final char[] pgpSecretKeyPassword) {
+		this.pgpSecretKeyPassword = pgpSecretKeyPassword;
+		return this;
+	}
+
+	public PGPPublicKey getPgpPublicKey() {
+		return pgpPublicKey;
+	}
+
+	public Email setPgpPublicKey(final PGPPublicKey pgpPublicKey) {
+		this.pgpPublicKey = pgpPublicKey;
+		return this;
 	}
 }

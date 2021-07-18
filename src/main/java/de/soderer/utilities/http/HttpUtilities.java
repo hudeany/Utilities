@@ -22,6 +22,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,6 +42,8 @@ import org.apache.commons.io.IOUtils;
 
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.NumberUtilities;
+import de.soderer.utilities.PasswordGenerator;
+import de.soderer.utilities.PasswordGeneratorCharacterGroup;
 import de.soderer.utilities.Triple;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
@@ -159,7 +162,7 @@ public class HttpUtilities {
 				urlConnection.setRequestProperty(HttpRequest.HEADER_NAME_UPLOAD_COOKIE, cookieValue.toString());
 			}
 
-			final String boundary = Utilities.generateUUID();
+			final String boundary = HttpUtilities.generateBoundary();
 
 			String httpRequestBody = null;
 			if (httpRequest.getRequestBodyContentStream() != null) {
@@ -695,5 +698,13 @@ public class HttpUtilities {
 		} else {
 			return value.replace(";", "%3B").replace("=", "%3D");
 		}
+	}
+
+	public static String generateBoundary() throws Exception {
+		final List<PasswordGeneratorCharacterGroup> groups = new ArrayList<>();
+		groups.add(new PasswordGeneratorCharacterGroup("abcdefghijklmnopqrstuvwxyz".toCharArray()));
+		groups.add(new PasswordGeneratorCharacterGroup("ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray()));
+		groups.add(new PasswordGeneratorCharacterGroup("0123456789".toCharArray()));
+		return new String(PasswordGenerator.generatePassword(groups, 32, 32));
 	}
 }

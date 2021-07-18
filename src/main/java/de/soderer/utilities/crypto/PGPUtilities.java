@@ -49,6 +49,7 @@ import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
 
@@ -618,5 +619,9 @@ public class PGPUtilities {
 			signatureIDs.add(Long.toHexString(id).toUpperCase());
 		}
 		return signatureIDs;
+	}
+
+	public static String removeVersionFromArmoredData(final String armoredData) {
+		return TextUtilities.removeLinesContainingText(armoredData, "Version: ");
 	}
 }

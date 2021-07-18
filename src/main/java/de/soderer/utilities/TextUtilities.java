@@ -1089,4 +1089,36 @@ public class TextUtilities {
 			}
 		}
 	}
+
+	public static String removeLinesContainingText(final String text, final String searchLinePart) {
+		if (text == null) {
+			return null;
+		}
+
+		final StringBuilder resultText = new StringBuilder();
+
+		StringBuilder nextLine = new StringBuilder();
+		boolean foundLinebreakStart = false;
+		char lastChar = 'x';
+		for (final char nextChar : text.toCharArray()) {
+			if ((nextChar == '\r' && lastChar != '\r' && lastChar != '\n') || (nextChar == '\n' && (lastChar == '\r' || lastChar != '\n'))) {
+				foundLinebreakStart = true;
+			} else if (foundLinebreakStart) {
+				if (!nextLine.toString().contains(searchLinePart)) {
+					resultText.append(nextLine);
+				}
+				nextLine = new StringBuilder();
+				foundLinebreakStart = false;
+			}
+			nextLine.append(nextChar);
+			lastChar = nextChar;
+		}
+		if (nextLine.length() > 0) {
+			if (!nextLine.toString().contains(searchLinePart)) {
+				resultText.append(nextLine);
+			}
+		}
+
+		return resultText.toString();
+	}
 }

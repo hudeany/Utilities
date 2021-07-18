@@ -1475,13 +1475,17 @@ public class Utilities {
 		return byteArrayOutputStream.toByteArray();
 	}
 
-	public static Map<String, String> createMap(final String... data) {
+	public static Map<String, String> createMap(final String... data) throws Exception {
 		final Map<String, String> returnMap = new HashMap<>();
 		if (data != null && data.length > 0) {
-			for (int i = 0; i < data.length / 2; i++) {
-				final String key = data[i * 2];
-				final String value = data[i * 2 + 1];
-				returnMap.put(key, value);
+			if (data.length % 2 != 0) {
+				throw new Exception("Invalid map data: odd number of parameters, must be even");
+			} else {
+				for (int i = 0; i < data.length / 2; i++) {
+					final String key = data[i * 2];
+					final String value = data[i * 2 + 1];
+					returnMap.put(key, value);
+				}
 			}
 		}
 		return returnMap;
