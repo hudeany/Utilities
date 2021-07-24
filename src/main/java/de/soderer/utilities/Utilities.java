@@ -12,7 +12,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.Reader;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -134,7 +133,7 @@ public class Utilities {
 		try {
 			final ByteArrayOutputStream decoded = new ByteArrayOutputStream();
 			final ByteArrayInputStream encoded = new ByteArrayInputStream(zippedData);
-			copy(new GZIPInputStream(encoded), decoded);
+			IoUtilities.copy(new GZIPInputStream(encoded), decoded);
 			return decoded.toByteArray();
 		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
@@ -841,7 +840,7 @@ public class Utilities {
 	public static void downloadFile(final String url, final String localeDestionationPath) throws Exception {
 		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new URL(url).openStream());
 				FileOutputStream fileOutputStream = new FileOutputStream(localeDestionationPath)) {
-			copy(bufferedInputStream, fileOutputStream);
+			IoUtilities.copy(bufferedInputStream, fileOutputStream);
 		} catch (final Exception e) {
 			throw new Exception("Cannot download file", e);
 		}
@@ -1150,34 +1149,9 @@ public class Utilities {
 		}
 	}
 
-	public static long copy(final InputStream inputStream, final OutputStream outputStream) throws IOException {
-		final byte[] buffer = new byte[4096];
-		int lengthRead = -1;
-		long bytesCopied = 0;
-		while ((lengthRead = inputStream.read(buffer)) > -1) {
-			outputStream.write(buffer, 0, lengthRead);
-			bytesCopied += lengthRead;
-		}
-		outputStream.flush();
-		return bytesCopied;
-	}
-
-	public static long copy(final Reader inputReader, final OutputStream outputStream, final Charset encoding) throws IOException {
-		final char[] buffer = new char[4096];
-		int lengthRead = -1;
-		long bytesCopied = 0;
-		while ((lengthRead = inputReader.read(buffer)) > -1) {
-			final String data = new String(buffer, 0, lengthRead);
-			outputStream.write(data.getBytes(encoding));
-			bytesCopied += lengthRead;
-		}
-		outputStream.flush();
-		return bytesCopied;
-	}
-
 	public static byte[] toByteArray(final InputStream inputStream) throws IOException {
 		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-			copy(inputStream, byteArrayOutputStream);
+			IoUtilities.copy(inputStream, byteArrayOutputStream);
 			return byteArrayOutputStream.toByteArray();
 		}
 	}
@@ -1471,7 +1445,7 @@ public class Utilities {
 
 	public static byte[] readStreamToByteArray(final InputStream inputStream) throws IOException {
 		final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		copy(inputStream, byteArrayOutputStream);
+		IoUtilities.copy(inputStream, byteArrayOutputStream);
 		return byteArrayOutputStream.toByteArray();
 	}
 

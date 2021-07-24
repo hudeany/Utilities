@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import de.soderer.utilities.Utilities;
+import de.soderer.utilities.IoUtilities;
 
 public class PGPKeyStorageStringSplitter {
 	private static final String PUBLIC_KEY_START = "-----BEGIN PGP PUBLIC KEY BLOCK-----";
@@ -35,7 +35,7 @@ public class PGPKeyStorageStringSplitter {
 
 	public PGPKeyStorageStringSplitter(final InputStream inputStream) throws Exception {
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		Utilities.copy(inputStream, outputStream);
+		IoUtilities.copy(inputStream, outputStream);
 		keyStorageData = outputStream.toByteArray();
 		final String keyStorageString = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
 

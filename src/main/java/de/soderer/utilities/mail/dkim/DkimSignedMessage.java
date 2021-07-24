@@ -30,8 +30,7 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeUtility;
 
-import org.apache.commons.io.IOUtils;
-
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.QuotedPrintableCodec;
 import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.TextUtilities.LineBreakType;
@@ -122,7 +121,7 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 				}
 			} else if (content == null) {
 				try (InputStream inputStream = getContentStream()) {
-					IOUtils.copy(inputStream, buffer);
+					IoUtilities.copy(inputStream, buffer);
 				}
 			} else {
 				buffer.write(content);

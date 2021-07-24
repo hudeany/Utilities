@@ -451,7 +451,7 @@ public class FileUtilities {
 		ByteArrayOutputStream output = null;
 		try (FileInputStream input = new FileInputStream(dataFile)) {
 			output = new ByteArrayOutputStream();
-			Utilities.copy(input, output);
+			IoUtilities.copy(input, output);
 			return output.toByteArray();
 		} catch (final Exception e) {
 			throw e;

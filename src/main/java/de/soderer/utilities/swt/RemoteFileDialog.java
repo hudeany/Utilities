@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
 import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
@@ -734,7 +735,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			for (final FileInfo fileInfo : directory.getSecond()) {
 				try (InputStream inputStream = connection.downloadFile(currentPath + "/" + fileInfo.getFileName());
 						OutputStream outputStream = new FileOutputStream(destinationPath + "/" + fileInfo.getFileName())) {
-					Utilities.copy(inputStream, outputStream);
+					IoUtilities.copy(inputStream, outputStream);
 				}
 			}
 		}

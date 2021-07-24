@@ -143,7 +143,7 @@ public class UtilitiesTest {
 		try {
 			final InputStream in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			final OutputStream out = new ByteArrayOutputStream();
-			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8).length, Utilities.copy(in, out));
+			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8).length, IoUtilities.copy(in, out));
 			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(((ByteArrayOutputStream) out).toByteArray(), StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
