@@ -39,7 +39,7 @@ public class ParameterException extends Exception {
 	 *            the error message
 	 */
 	public ParameterException(final String parameter, final String errorMessage) {
-		super(errorMessage + " Parameter: " + parameter);
+		super(errorMessage + " (Parameter: " + parameter + ")");
 		this.parameter = parameter;
 	}
 }
