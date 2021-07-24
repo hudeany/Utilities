@@ -27,6 +27,7 @@ import com.jcraft.jsch.Session;
 
 import de.soderer.utilities.ExceptionUtilities;
 import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.JschFileData;
 import de.soderer.utilities.JschFileData.JschFileType;
 import de.soderer.utilities.ServerAccessData;
@@ -294,7 +295,7 @@ public class SftpConnection implements RemoteConnection {
 	public void uploadFileAlternative(final String filePath, final InputStream fileInputStream) throws Exception {
 		Channel channel = null;
 		try {
-			final byte[] fileData = Utilities.readStreamToByteArray(fileInputStream);
+			final byte[] fileData = IoUtilities.toByteArray(fileInputStream);
 			String command = "scp -p -t \"" + filePath + "\"";
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);

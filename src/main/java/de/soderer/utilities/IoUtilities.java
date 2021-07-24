@@ -13,10 +13,9 @@ public class IoUtilities {
 	}
 
 	public static byte[] toByteArray(final InputStream inputStream) throws IOException {
-		try (final ByteArrayOutputStream bufferStream = new ByteArrayOutputStream()) {
-			copy(inputStream, bufferStream);
-			return bufferStream.toByteArray();
-		}
+		final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		IoUtilities.copy(inputStream, byteArrayOutputStream);
+		return byteArrayOutputStream.toByteArray();
 	}
 
 	public static long copy(final InputStream inputStream, final OutputStream outputStream) throws IOException {

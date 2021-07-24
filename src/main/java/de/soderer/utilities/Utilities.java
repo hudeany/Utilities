@@ -1443,12 +1443,6 @@ public class Utilities {
 		}
 	}
 
-	public static byte[] readStreamToByteArray(final InputStream inputStream) throws IOException {
-		final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		IoUtilities.copy(inputStream, byteArrayOutputStream);
-		return byteArrayOutputStream.toByteArray();
-	}
-
 	public static Map<String, String> createMap(final String... data) throws Exception {
 		final Map<String, String> returnMap = new HashMap<>();
 		if (data != null && data.length > 0) {
