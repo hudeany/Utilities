@@ -38,8 +38,6 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.commons.io.IOUtils;
-
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.NumberUtilities;
 import de.soderer.utilities.PasswordGenerator;
@@ -168,7 +166,7 @@ public class HttpUtilities {
 			if (httpRequest.getRequestBodyContentStream() != null) {
 				urlConnection.setDoOutput(true);
 				final OutputStream outputStream = urlConnection.getOutputStream();
-				IOUtils.copy(httpRequest.getRequestBodyContentStream(), outputStream);
+				IoUtilities.copy(httpRequest.getRequestBodyContentStream(), outputStream);
 				outputStream.flush();
 			} else if (httpRequest.getRequestBody() != null) {
 				urlConnection.setDoOutput(true);
