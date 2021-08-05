@@ -1,6 +1,7 @@
 package de.soderer.utilities.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -26,10 +27,12 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import de.soderer.utilities.ApplicationUpdateHelper;
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
+import de.soderer.utilities.UpdateParent;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 
@@ -42,25 +45,29 @@ import de.soderer.utilities.Version;
 public class ApplicationConfigurationDialog extends JDialog {
 	private static final long serialVersionUID = 422519084107817691L;
 
+	private final UpdateParent updateParent;
 	private final String applicationName;
+	private final Version applicationVersion;
 	private final ConfigurationProperties applicationConfiguration;
 	private final byte[] iconImageDataWindows;
 	private final Image iconImageLinux;
+	private final String versioninfoDownloadURL;
+	private final String trustedUpdateCaCertificate;
 
 	/** The db type combo. */
 	private JComboBox<String> languageCombo;
 
-	public ApplicationConfigurationDialog(final Window parent, final String applicationName, final Version applicationVersion, final ConfigurationProperties applicationConfiguration) throws Exception {
-		this(parent, applicationName, applicationVersion, applicationConfiguration, null, null);
-	}
+	public ApplicationConfigurationDialog(final UpdateParent updateParent, final String applicationName, final Version applicationVersion, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
+		super((Window) updateParent, applicationName + " (Version " + applicationVersion.toString() + ")", Dialog.ModalityType.DOCUMENT_MODAL);
 
-	public ApplicationConfigurationDialog(final Window parent, final String applicationName, final Version applicationVersion, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux) throws Exception {
-		super(parent, applicationName + " (Version " + applicationVersion.toString() + ")", Dialog.ModalityType.DOCUMENT_MODAL);
-
+		this.updateParent = updateParent;
 		this.applicationName = applicationName;
+		this.applicationVersion = applicationVersion;
 		this.applicationConfiguration = applicationConfiguration;
 		this.iconImageDataWindows = iconImageDataWindows;
 		this.iconImageLinux = iconImageLinux;
+		this.versioninfoDownloadURL = versioninfoDownloadURL;
+		this.trustedUpdateCaCertificate = trustedUpdateCaCertificate;
 
 		if (iconImageLinux != null) {
 			setIconImage(iconImageLinux);
@@ -93,7 +100,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 
 		pack();
 
-		setLocationRelativeTo(parent);
+		setLocationRelativeTo((Window) updateParent);
 	}
 
 	private JPanel createLanguagePanel() {
@@ -243,25 +250,16 @@ public class ApplicationConfigurationDialog extends JDialog {
 
 		administrativeButtonPanel.add(Box.createRigidArea(new Dimension(5, 36)));
 
-		final JButton updateButton = new JButton(LangResources.get("update"));
+		final JButton updateButton = new JButton(LangResources.get("checkupdate"));
 		updateButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				// TODO
-				//				// Update Button
-				//				final JButton updateButton = new JButton(LangResources.get("checkupdate"));
-				//				updateButton.addActionListener(new ActionListener() {
-				//					@Override
-				//					public void actionPerformed(final ActionEvent event) {
-				//						try {
-				//							new ApplicationUpdateHelper(DbExport.APPLICATION_NAME, DbExport.VERSION, DbExport.VERSIONINFO_DOWNLOAD_URL, dbExportGui, "gui", DbExport.TRUSTED_UPDATE_CA_CERTIFICATE).executeUpdate();
-				//						} catch (final Exception e) {
-				//							final TextDialog textDialog = new TextDialog(dbExportGui, DbExport.APPLICATION_NAME + " ERROR", "ERROR:\n" + e.getMessage(), LangResources.get("close"), false, Color.PINK);
-				//							textDialog.setVisible(true);
-				//						}
-				//					}
-				//				});
-				//				buttonPanel.add(updateButton);
+				try {
+					new ApplicationUpdateHelper(applicationName, applicationVersion, versioninfoDownloadURL, updateParent, "gui", trustedUpdateCaCertificate).executeUpdate();
+				} catch (final Exception e) {
+					final TextDialog textDialog = new TextDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage(), LangResources.get("close"), false, Color.PINK);
+					textDialog.setVisible(true);
+				}
 
 				dispose();
 			}

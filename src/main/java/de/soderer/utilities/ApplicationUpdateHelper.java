@@ -57,13 +57,13 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 	 *            &lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
 	 * @throws Exception
 	 */
-	public ApplicationUpdateHelper(final String applicationName, final String applicationVersion, final String versionIndexFileLocation, final UpdateParent updateParent, final String restartParameter, final String trustedCaCertificateFileName) throws Exception {
+	public ApplicationUpdateHelper(final String applicationName, final Version applicationVersion, final String versionIndexFileLocation, final UpdateParent updateParent, final String restartParameter, final String trustedCaCertificateFileName) throws Exception {
 		if (Utilities.isEmpty(versionIndexFileLocation)) {
 			throw new Exception("Invalid version index location");
 		}
 
 		this.applicationName = applicationName;
-		this.applicationVersion = new Version(applicationVersion);
+		this.applicationVersion = applicationVersion;
 		this.versionIndexFileLocation = replacePlaceholders(versionIndexFileLocation);
 		this.updateParent = updateParent;
 		this.restartParameter = restartParameter;
