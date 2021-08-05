@@ -583,7 +583,7 @@ public class DbUtilities {
 							// DB vendor does not allow "resultSet.getBlob(i)"
 							try (InputStream input = resultSet.getBinaryStream(metaData.getColumnName(i))) {
 								if (input != null) {
-									final byte[] data = Utilities.toByteArray(input);
+									final byte[] data = IoUtilities.toByteArray(input);
 									values.add(Base64.getEncoder().encodeToString(data));
 								} else {
 									values.add("");
@@ -598,7 +598,7 @@ public class DbUtilities {
 								values.add("");
 							} else {
 								try (InputStream input = blob.getBinaryStream()) {
-									final byte[] data = Utilities.toByteArray(input);
+									final byte[] data = IoUtilities.toByteArray(input);
 									values.add(Base64.getEncoder().encodeToString(data));
 								}
 							}

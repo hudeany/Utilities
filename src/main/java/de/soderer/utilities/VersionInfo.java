@@ -15,7 +15,7 @@ public class VersionInfo {
 
 	public static String getVersionInfoText() {
 		try (InputStream inputStream = VersionInfo.class.getClassLoader().getResourceAsStream("VersionInfo.txt")) {
-			return new String(Utilities.toByteArray(inputStream), StandardCharsets.UTF_8);
+			return new String(IoUtilities.toByteArray(inputStream), StandardCharsets.UTF_8);
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return "VersionInfo not found";
 		}

@@ -216,7 +216,7 @@ public class SftpConnection implements RemoteConnection {
 					linkList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
 				}
 
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				final byte[] errorData = IoUtilities.toByteArray(inErrorStream);
 				if (errorData != null && errorData.length > 0) {
 					throw new Exception(new String(errorData, StandardCharsets.UTF_8));
 				}
@@ -254,7 +254,7 @@ public class SftpConnection implements RemoteConnection {
 					linkList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
 				}
 
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				final byte[] errorData = IoUtilities.toByteArray(inErrorStream);
 				if (errorData != null && errorData.length > 0) {
 					throw new Exception(new String(errorData, StandardCharsets.UTF_8));
 				}
@@ -348,10 +348,10 @@ public class SftpConnection implements RemoteConnection {
 					InputStream inErrorStream = channel.getExtInputStream()) {
 				channel.connect();
 
-				final byte[] successData = Utilities.toByteArray(inStream);
+				final byte[] successData = IoUtilities.toByteArray(inStream);
 				final String successString = new String(successData, StandardCharsets.UTF_8);
 
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				final byte[] errorData = IoUtilities.toByteArray(inErrorStream);
 
 				if (errorData != null && errorData.length > 0) {
 					return null;
@@ -668,10 +668,10 @@ public class SftpConnection implements RemoteConnection {
 
 				while (true) {
 					// reads all now available data at once
-					byte[] nextData = Utilities.toByteArray(inStream);
+					byte[] nextData = IoUtilities.toByteArray(inStream);
 					while (nextData.length > 0) {
 						lineListener.addLineData(nextData);
-						nextData = Utilities.toByteArray(inStream);
+						nextData = IoUtilities.toByteArray(inStream);
 					}
 
 					// waits if no more data is available right now
@@ -701,7 +701,7 @@ public class SftpConnection implements RemoteConnection {
 				// send '\0' to start data transfer
 				sendZeroByte(outStream);
 
-				return Utilities.toByteArray(inStream);
+				return IoUtilities.toByteArray(inStream);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Error in downloadFileData", e);
@@ -790,10 +790,10 @@ public class SftpConnection implements RemoteConnection {
 					InputStream inErrorStream = channel.getExtInputStream()) {
 				channel.connect();
 
-				final byte[] successData = Utilities.toByteArray(inStream);
+				final byte[] successData = IoUtilities.toByteArray(inStream);
 				final String successString = new String(successData, StandardCharsets.UTF_8);
 
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				final byte[] errorData = IoUtilities.toByteArray(inErrorStream);
 
 				if (errorData != null && errorData.length > 0) {
 					return null;
@@ -991,10 +991,10 @@ public class SftpConnection implements RemoteConnection {
 					InputStream inErrorStream = channel.getExtInputStream()) {
 				channel.connect();
 
-				final byte[] successData = Utilities.toByteArray(inStream);
+				final byte[] successData = IoUtilities.toByteArray(inStream);
 				final String successString = new String(successData, StandardCharsets.UTF_8);
 
-				final byte[] errorData = Utilities.toByteArray(inErrorStream);
+				final byte[] errorData = IoUtilities.toByteArray(inErrorStream);
 
 				if (errorData != null && errorData.length > 0) {
 					return null;

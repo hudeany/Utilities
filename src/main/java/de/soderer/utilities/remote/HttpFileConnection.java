@@ -19,9 +19,9 @@ import org.apache.log4j.Logger;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
-import de.soderer.utilities.Utilities;
 import de.soderer.utilities.http.HttpUtilities;
 
 /**
@@ -184,7 +184,7 @@ public class HttpFileConnection implements RemoteConnection {
 		try {
 			final URLConnection urlConnection = getUrl(folderPath).openConnection();
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-				final byte[] data = Utilities.toByteArray(inputStream);
+				final byte[] data = IoUtilities.toByteArray(inputStream);
 				for (final String fileLine : getFileLines(data)) {
 					final String fileNameFromLine = getEntryNameFromLine(fileLine);
 					if (fileNameFromLine != null && fileNameFromLine.equals(fileName)) {
@@ -318,7 +318,7 @@ public class HttpFileConnection implements RemoteConnection {
 		try {
 			final URLConnection urlConnection = getUrl(folderPath).openConnection();
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-				final byte[] data = Utilities.toByteArray(inputStream);
+				final byte[] data = IoUtilities.toByteArray(inputStream);
 				final List<FolderInfo> folderInfoList = new ArrayList<>();
 				for (final String subFolderName : getFolderNames(data)) {
 					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));

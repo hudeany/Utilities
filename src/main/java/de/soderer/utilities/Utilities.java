@@ -1149,13 +1149,6 @@ public class Utilities {
 		}
 	}
 
-	public static byte[] toByteArray(final InputStream inputStream) throws IOException {
-		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-			IoUtilities.copy(inputStream, byteArrayOutputStream);
-			return byteArrayOutputStream.toByteArray();
-		}
-	}
-
 	/**
 	 * Append blanks at the left of a string to make if fit the given minimum
 	 *
@@ -1225,7 +1218,7 @@ public class Utilities {
 	}
 
 	public static String toString(final InputStream inputStream, final Charset encoding) throws IOException {
-		return new String(toByteArray(inputStream), encoding);
+		return new String(IoUtilities.toByteArray(inputStream), encoding);
 	}
 
 	public static Object toString(final Reader characterStream) throws IOException {
