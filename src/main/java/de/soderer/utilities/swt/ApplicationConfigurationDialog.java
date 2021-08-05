@@ -165,124 +165,122 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				try {
-					if (!SystemUtilities.isJavaWebstartApp()) {
-						String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
-						if (Utilities.isBlank(applicationJarFileName)) {
-							final FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
-							dialog.setText(LangResources.get("createDesktopLink"));
-							applicationJarFileName = dialog.open();
+					String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+					if (Utilities.isBlank(applicationJarFileName)) {
+						final FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
+						dialog.setText(LangResources.get("createDesktopLink"));
+						applicationJarFileName = dialog.open();
+					}
+
+					if (Utilities.isBlank(applicationJarFileName)) {
+						return;
+					}
+
+					final String javaHome = System.getProperty("java.home");
+
+					if (SystemUtilities.isWindowsSystem()) {
+						final String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".lnk";
+						if (new File(desktopLinkFilePath).exists()) {
+							new File(desktopLinkFilePath).delete();
 						}
 
-						if (Utilities.isBlank(applicationJarFileName)) {
-							return;
+						final String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".ico";
+						if (new File(iconPath).exists()) {
+							new File(iconPath).delete();
 						}
 
-						final String javaHome = System.getProperty("java.home");
+						final String tempScriptFile = System.getProperty("java.io.tmpdir") + File.separator + applicationName + "_createlink.vbs";
+						if (new File(tempScriptFile).exists()) {
+							new File(tempScriptFile).delete();
+						}
 
-						if (SystemUtilities.isWindowsSystem()) {
-							final String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".lnk";
-							if (new File(desktopLinkFilePath).exists()) {
-								new File(desktopLinkFilePath).delete();
-							}
+						if (iconImageDataWindows != null) {
+							FileUtilities.write(new File(iconPath), iconImageDataWindows);
+						}
 
-							final String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".ico";
-							if (new File(iconPath).exists()) {
-								new File(iconPath).delete();
-							}
+						final StringBuilder data = new StringBuilder();
+						data.append("set shortcut = CreateObject(\"WScript.Shell\").CreateShortcut(\"" + desktopLinkFilePath + "\")\n");
+						data.append("shortcut.Description = \"" + applicationName + "\"\n");
+						if (Utilities.isNotBlank(javaHome)) {
+							data.append("shortcut.TargetPath = \"" + javaHome + "\\bin\\javaw.exe\"\n");
+							data.append("shortcut.Arguments = \"-jar \"\"" + applicationJarFileName + "\"\"\"\n");
+						} else {
+							data.append("shortcut.TargetPath = \"" + applicationJarFileName + "\"\n");
+						}
+						data.append("shortcut.IconLocation = \"" + iconPath + "\"\n");
+						data.append("shortcut.Save\n");
 
-							final String tempScriptFile = System.getProperty("java.io.tmpdir") + File.separator + applicationName + "_createlink.vbs";
-							if (new File(tempScriptFile).exists()) {
-								new File(tempScriptFile).delete();
-							}
+						try {
+							FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), StandardCharsets.UTF_8);
 
-							if (iconImageDataWindows != null) {
-								FileUtilities.write(new File(iconPath), iconImageDataWindows);
-							}
+							Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
 
-							final StringBuilder data = new StringBuilder();
-							data.append("set shortcut = CreateObject(\"WScript.Shell\").CreateShortcut(\"" + desktopLinkFilePath + "\")\n");
-							data.append("shortcut.Description = \"" + applicationName + "\"\n");
-							if (Utilities.isNotBlank(javaHome)) {
-								data.append("shortcut.TargetPath = \"" + javaHome + "\\bin\\javaw.exe\"\n");
-								data.append("shortcut.Arguments = \"-jar \"\"" + applicationJarFileName + "\"\"\"\n");
-							} else {
-								data.append("shortcut.TargetPath = \"" + applicationJarFileName + "\"\n");
-							}
-							data.append("shortcut.IconLocation = \"" + iconPath + "\"\n");
-							data.append("shortcut.Save\n");
+							final MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
+							messageBox.setText(LangResources.get("createDesktopLink"));
+							messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+							messageBox.open();
 
-							try {
-								FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), StandardCharsets.UTF_8);
+							new File(tempScriptFile).delete();
+						} catch (final IOException e1) {
+							final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_ERROR | SWT.OK);
+							messageBox.setText(LangResources.get("createDesktopLink"));
+							messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+							messageBox.open();
+						}
+					} else if (SystemUtilities.isLinuxSystem()) {
+						String desktopLinkFilePath;
+						String iconPath;
+						final File localShareApplicationsDirectory = new File(System.getProperty("user.home") + "/.local/share/applications");
+						if (localShareApplicationsDirectory.exists()) {
+							desktopLinkFilePath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".desktop";
+							iconPath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".png";
+						} else {
+							desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+							iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
+						}
+						if (new File(desktopLinkFilePath).exists()) {
+							new File(desktopLinkFilePath).delete();
+						}
+						if (new File(iconPath).exists()) {
+							new File(iconPath).delete();
+						}
 
-								Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
+						final StringBuilder data = new StringBuilder();
+						data.append("[Desktop Entry]\n");
+						data.append("Encoding=UTF-8\n");
+						data.append("Name=" + applicationName + "\n");
 
-								final MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
-								messageBox.setText(LangResources.get("createDesktopLink"));
-								messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
-								messageBox.open();
+						if (iconImageLinux != null) {
+							final ImageLoader loader = new ImageLoader();
+							loader.data = new ImageData[] { iconImageLinux.getImageData() };
+							loader.save(iconPath, SWT.IMAGE_PNG);
 
-								new File(tempScriptFile).delete();
-							} catch (final IOException e1) {
-								final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_ERROR | SWT.OK);
-								messageBox.setText(LangResources.get("createDesktopLink"));
-								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
-								messageBox.open();
-							}
-						} else if (SystemUtilities.isLinuxSystem()) {
-							String desktopLinkFilePath;
-							String iconPath;
-							final File localShareApplicationsDirectory = new File(System.getProperty("user.home") + "/.local/share/applications");
-							if (localShareApplicationsDirectory.exists()) {
-								desktopLinkFilePath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".desktop";
-								iconPath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".png";
-							} else {
-								desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
-								iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
-							}
-							if (new File(desktopLinkFilePath).exists()) {
-								new File(desktopLinkFilePath).delete();
-							}
-							if (new File(iconPath).exists()) {
-								new File(iconPath).delete();
-							}
+							data.append("Icon=" + iconPath + "\n");
+						}
 
-							final StringBuilder data = new StringBuilder();
-							data.append("[Desktop Entry]\n");
-							data.append("Encoding=UTF-8\n");
-							data.append("Name=" + applicationName + "\n");
+						// %U-parameter allows drag and drop of files on starter bar in unity
+						// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window in unity
+						data.append("Exec=java -jar " + applicationJarFileName + " %U\n");
+						data.append("Terminal=false\n");
+						data.append("Type=Application\n");
 
-							if (iconImageLinux != null) {
-								final ImageLoader loader = new ImageLoader();
-								loader.data = new ImageData[] { iconImageLinux.getImageData() };
-								loader.save(iconPath, SWT.IMAGE_PNG);
+						// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
+						data.append("StartupWMClass=" + applicationName + "\n");
 
-								data.append("Icon=" + iconPath + "\n");
-							}
+						try {
+							FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), StandardCharsets.UTF_8);
 
-							// %U-parameter allows drag and drop of files on starter bar in unity
-							// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window in unity
-							data.append("Exec=java -jar " + applicationJarFileName + " %U\n");
-							data.append("Terminal=false\n");
-							data.append("Type=Application\n");
+							new File(desktopLinkFilePath).setExecutable(true);
 
-							// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
-							data.append("StartupWMClass=" + applicationName + "\n");
-
-							try {
-								FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), StandardCharsets.UTF_8);
-
-								new File(desktopLinkFilePath).setExecutable(true);
-
-								final MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
-								messageBox.setText(LangResources.get("createDesktopLink"));
-								messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
-								messageBox.open();
-							} catch (final IOException e1) {
-								final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_ERROR | SWT.OK);
-								messageBox.setText(LangResources.get("createDesktopLink"));
-								messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
-								messageBox.open();
-							}
+							final MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
+							messageBox.setText(LangResources.get("createDesktopLink"));
+							messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+							messageBox.open();
+						} catch (final IOException e1) {
+							final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_ERROR | SWT.OK);
+							messageBox.setText(LangResources.get("createDesktopLink"));
+							messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+							messageBox.open();
 						}
 					}
 				} catch (final Exception e1) {

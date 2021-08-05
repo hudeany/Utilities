@@ -126,10 +126,6 @@ public class SystemUtilities {
 		}
 	}
 
-	public static boolean isJavaWebstartApp() {
-		return System.getProperty("javawebstart.version") != null;
-	}
-
 	public static boolean isUnlimitedKeyStrengthAllowed() {
 		try {
 			return Cipher.getMaxAllowedKeyLength("AES") == Integer.MAX_VALUE;
