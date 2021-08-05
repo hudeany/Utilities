@@ -34,8 +34,10 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 
 /**
- * desktop link button
- * update button
+ * TODO:<br />
+ * - Language button<br />
+ * - Desktop link button<br />
+ * - Update button
  */
 public class ApplicationConfigurationDialog extends JDialog {
 	private static final long serialVersionUID = 422519084107817691L;
@@ -245,7 +247,22 @@ public class ApplicationConfigurationDialog extends JDialog {
 		updateButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				//				applicationConfiguration.
+				// TODO
+				//				// Update Button
+				//				final JButton updateButton = new JButton(LangResources.get("checkupdate"));
+				//				updateButton.addActionListener(new ActionListener() {
+				//					@Override
+				//					public void actionPerformed(final ActionEvent event) {
+				//						try {
+				//							new ApplicationUpdateHelper(DbExport.APPLICATION_NAME, DbExport.VERSION, DbExport.VERSIONINFO_DOWNLOAD_URL, dbExportGui, "gui", DbExport.TRUSTED_UPDATE_CA_CERTIFICATE).executeUpdate();
+				//						} catch (final Exception e) {
+				//							final TextDialog textDialog = new TextDialog(dbExportGui, DbExport.APPLICATION_NAME + " ERROR", "ERROR:\n" + e.getMessage(), LangResources.get("close"), false, Color.PINK);
+				//							textDialog.setVisible(true);
+				//						}
+				//					}
+				//				});
+				//				buttonPanel.add(updateButton);
+
 				dispose();
 			}
 		});
