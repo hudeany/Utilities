@@ -133,9 +133,6 @@ public class ApplicationConfigurationDialog extends JDialog {
 				try {
 					String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
 					if (Utilities.isBlank(applicationJarFileName)) {
-						applicationJarFileName = "C:\\Users\\Andreas\\git\\DbCsvImport\\build\\homebase\\DbImport.jar";
-					}
-					if (Utilities.isBlank(applicationJarFileName)) {
 						applicationJarFileName = openJarFilePathDialog();
 					}
 
