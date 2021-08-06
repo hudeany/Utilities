@@ -13,9 +13,13 @@ public class IoUtilities {
 	}
 
 	public static byte[] toByteArray(final InputStream inputStream) throws IOException {
-		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-			IoUtilities.copy(inputStream, byteArrayOutputStream);
-			return byteArrayOutputStream.toByteArray();
+		if (inputStream == null) {
+			return null;
+		} else {
+			try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+				IoUtilities.copy(inputStream, byteArrayOutputStream);
+				return byteArrayOutputStream.toByteArray();
+			}
 		}
 	}
 
