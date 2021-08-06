@@ -1671,4 +1671,12 @@ public class Utilities {
 		}
 		return false;
 	}
+
+	public static List<String> getList(final String... items) {
+		final List<String> returnList = new ArrayList<>();
+		for (final String item : items) {
+			returnList.add(item);
+		}
+		return returnList;
+	}
 }

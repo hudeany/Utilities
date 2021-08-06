@@ -15,6 +15,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.Box;
@@ -51,6 +52,29 @@ public class ApplicationConfigurationDialog extends JDialog {
 	private final Image iconImageLinux;
 	private final String versioninfoDownloadURL;
 	private final String trustedUpdateCaCertificate;
+	private List<String> availableLanguages = Utilities.getList("de", "en");
+	private String language;
+	private Result result = Result.ERROR;
+
+	public String getLanguage() {
+		return language;
+	}
+
+	public void setLanguage(final String language) {
+		this.language = language;
+	}
+
+	public List<String> getAvailableLanguages() {
+		return availableLanguages;
+	}
+
+	public void setAvailableLanguages(final List<String> availableLanguages) {
+		this.availableLanguages = availableLanguages;
+	}
+
+	public Result getResult() {
+		return result;
+	}
 
 	/** The db type combo. */
 	private JComboBox<String> languageCombo;
@@ -62,6 +86,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
 		this.applicationConfiguration = applicationConfiguration;
+		language = applicationConfiguration.get("Application.Language");
 		this.iconImageDataWindows = iconImageDataWindows;
 		this.iconImageLinux = iconImageLinux;
 		this.versioninfoDownloadURL = versioninfoDownloadURL;
@@ -111,13 +136,16 @@ public class ApplicationConfigurationDialog extends JDialog {
 		languagePanel.add(dbTypeLabel);
 		languageCombo = new JComboBox<>();
 		languageCombo.setToolTipText(LangResources.get("language_help"));
-		for (final String language : new String[] {"de", "en"}) {
-			languageCombo.addItem(language);
+		for (final String availableLanguage : availableLanguages) {
+			languageCombo.addItem(availableLanguage);
+		}
+		if (language != null) {
+			languageCombo.setSelectedItem(language);
 		}
 		languageCombo.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(final ItemEvent e) {
-				//				checkButtonStatus();
+				language = (String) e.getItem();
 			}
 		});
 		languagePanel.add(languageCombo, BorderLayout.EAST);
@@ -280,7 +308,8 @@ public class ApplicationConfigurationDialog extends JDialog {
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				//				applicationConfiguration.
+				applicationConfiguration.set("Application.Language", language);
+				result = Result.OK;
 				dispose();
 			}
 		});
@@ -293,6 +322,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
+				result = Result.CANCELED;
 				dispose();
 			}
 		});
