@@ -37,10 +37,6 @@ import de.soderer.utilities.UpdateParent;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 
-/**
- * TODO:<br />
- * - Language button<br />
- */
 public class ApplicationConfigurationDialog extends JDialog {
 	private static final long serialVersionUID = 422519084107817691L;
 
