@@ -1,8 +1,12 @@
 package de.soderer.utilities.swing;
 
+import java.awt.Toolkit;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
+
+import de.soderer.utilities.SystemUtilities;
 
 public class SwingUtilities {
 	/**
@@ -47,6 +51,19 @@ public class SwingUtilities {
 		} catch (final Exception e) {
 			System.out.println("forceConstructorInit failed for class: " + clazz.getName());
 			e.printStackTrace();
+		}
+	}
+
+	public static void setAwtWmClass(final String applicationName) {
+		if (SystemUtilities.isLinuxSystem()) {
+			try {
+				final Toolkit toolkit = Toolkit.getDefaultToolkit();
+				final Field awtAppClassNameField = toolkit.getClass().getDeclaredField("awtAppClassName");
+				awtAppClassNameField.setAccessible(true);
+				awtAppClassNameField.set(toolkit, applicationName);
+			} catch (final Exception e) {
+				System.err.println("Cannot set AWT WM_CLASS: " + e.getMessage());
+			}
 		}
 	}
 }

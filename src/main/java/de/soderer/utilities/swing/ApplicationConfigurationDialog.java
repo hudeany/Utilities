@@ -240,7 +240,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 						data.append("Name=" + applicationName + "\n");
 
 						if (iconImageLinux != null) {
-							ImageIO.write((BufferedImage) iconImageLinux, "ico", new File(iconPath));
+							ImageIO.write((BufferedImage) iconImageLinux, "png", new File(iconPath));
 							data.append("Icon=" + iconPath + "\n");
 						}
 
