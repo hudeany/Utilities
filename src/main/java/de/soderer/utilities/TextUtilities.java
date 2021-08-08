@@ -625,11 +625,11 @@ public class TextUtilities {
 	 * @return
 	 */
 	public static Tuple<String, Boolean> detectEncoding(final byte[] data) {
-		if (data.length > 2 && data[0] == Utilities.BOM_UTF_16_BIG_ENDIAN[0] && data[1] == Utilities.BOM_UTF_16_BIG_ENDIAN[1]) {
+		if (data.length > 2 && data[0] == BOM.UTF_16_BE.getBytes()[0] && data[1] == BOM.UTF_16_BE.getBytes()[1]) {
 			return new Tuple<>("UTF-16BE", true);
-		} else if (data.length > 2 && data[0] == Utilities.BOM_UTF_16_LOW_ENDIAN[0] && data[1] == Utilities.BOM_UTF_16_LOW_ENDIAN[1]) {
+		} else if (data.length > 2 && data[0] == BOM.UTF_16_LE.getBytes()[0] && data[1] == BOM.UTF_16_LE.getBytes()[1]) {
 			return new Tuple<>("UTF-16LE", true);
-		} else if (data.length > 3 && data[0] == Utilities.BOM_UTF_8[0] && data[1] == Utilities.BOM_UTF_8[1] && data[2] == Utilities.BOM_UTF_8[2]) {
+		} else if (data.length > 3 && data[0] == BOM.UTF_8.getBytes()[0] && data[1] == BOM.UTF_8.getBytes()[1] && data[2] == BOM.UTF_8.getBytes()[2]) {
 			return new Tuple<>(StandardCharsets.UTF_8.name(), true);
 		} else {
 			// Detect Xml Encoding

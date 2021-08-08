@@ -59,18 +59,6 @@ public class Utilities {
 	public static final String STANDARD_BASHSCRIPTSTART = "#!/bin/bash\n";
 	public static final String STANDARD_JSON = "{\n\t\"property1\": null,\n\t\"property2\": " + Math.PI + ",\n\t\"property3\": true,\n\t\"property4\": \"Text\",\n\t\"property5\": [\n\t\tnull,\n\t\t" + Math.PI + ",\n\t\ttrue,\n\t\t\"Text\"\n\t]\n}\n";
 
-	/** UTF-8 BOM (Byte Order Mark) character for readers. */
-	public static final char BOM_UTF_8_CHAR = (char) 65279;
-
-	/** UTF-8 BOM (Byte Order Mark) at data start (EF BB BF, "ï»¿"). */
-	public static final byte[] BOM_UTF_8 = new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
-
-	/** UTF-16 BOM (Byte Order Mark) big endian at data start (FE FF, "þÿ"). */
-	public static final byte[] BOM_UTF_16_BIG_ENDIAN = new byte[] { (byte) 0xFE, (byte) 0xFF };
-
-	/** UTF-16 BOM (Byte Order Mark) low endian at data start (FF FE, "ÿþ"). */
-	public static final byte[] BOM_UTF_16_LOW_ENDIAN = new byte[] { (byte) 0xFF, (byte) 0xFE };
-
 	/**
 	 * Generate a unique ID
 	 *

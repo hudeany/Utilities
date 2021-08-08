@@ -1,23 +1,26 @@
 package de.soderer.utilities;
 
 public final class BOM {
+	/** UTF-8 BOM (Byte Order Mark) character for readers. */
+	public static final char BOM_UTF_8_CHAR = (char) 65279;
+
 	/**
 	 * NONE.
 	 */
 	public static final BOM NONE = new BOM(new byte[] {}, "NONE");
 
 	/**
-	 * UTF-8 BOM (EF BB BF).
+	 * UTF-8 BOM (EF BB BF, "ï»¿").
 	 */
 	public static final BOM UTF_8 = new BOM(new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF }, "UTF-8");
 
 	/**
-	 * UTF-16, little-endian (FF FE).
+	 * UTF-16, little-endian (FF FE, "ÿþ").
 	 */
 	public static final BOM UTF_16_LE = new BOM(new byte[] { (byte) 0xFF, (byte) 0xFE }, "UTF-16 little-endian");
 
 	/**
-	 * UTF-16, big-endian (FE FF).
+	 * UTF-16, big-endian (FE FF, "þÿ").
 	 */
 	public static final BOM UTF_16_BE = new BOM(new byte[] { (byte) 0xFE, (byte) 0xFF }, "UTF-16 big-endian");
 
