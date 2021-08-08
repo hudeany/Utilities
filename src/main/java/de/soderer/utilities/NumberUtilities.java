@@ -164,4 +164,21 @@ public class NumberUtilities {
 			}
 		}
 	}
+
+	public static String formatNumber(final Number number, final char decimalSeparator, final Character groupingSeparator) {
+		if (number == null) {
+			return null;
+		} else {
+			String numberString = number.toString();
+			if (decimalSeparator != '.') {
+				if (groupingSeparator != null) {
+					numberString = numberString.replace(',', groupingSeparator);
+				} else {
+					numberString = numberString.replace(",", "");
+				}
+				numberString = numberString.replace('.', decimalSeparator);
+			}
+			return numberString;
+		}
+	}
 }

@@ -961,6 +961,13 @@ public class DateUtilities {
 		}
 	}
 
+	public static SimpleDateFormat getDateFormat(final Locale locale) {
+		final SimpleDateFormat dateFormat = (SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale);
+		dateFormat.applyPattern(dateFormat.toPattern().replaceFirst("y+", "yyyy"));
+		dateFormat.setLenient(false);
+		return dateFormat;
+	}
+
 	public static SimpleDateFormat getDateTimeFormat(final Locale locale) {
 		final SimpleDateFormat dateTimeFormat = (SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale);
 		dateTimeFormat.applyPattern(dateTimeFormat.toPattern().replaceFirst("y+", "yyyy") + " HH:mm");
