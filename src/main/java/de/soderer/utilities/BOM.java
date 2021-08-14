@@ -1,5 +1,8 @@
 package de.soderer.utilities;
 
+/**
+ * Byte Order Mark
+ */
 public final class BOM {
 	/** UTF-8 BOM (Byte Order Mark) character for readers. */
 	public static final char BOM_UTF_8_CHAR = (char) 65279;
@@ -10,7 +13,7 @@ public final class BOM {
 	public static final BOM NONE = new BOM(new byte[] {}, "NONE");
 
 	/**
-	 * UTF-8 BOM (EF BB BF, "ï»¿").
+	 * UTF-8 BOM (EF BB BF, "ï»¿", (char) 65279).
 	 */
 	public static final BOM UTF_8 = new BOM(new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF }, "UTF-8");
 
