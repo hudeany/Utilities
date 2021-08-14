@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -20,8 +19,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import de.soderer.utilities.TextUtilities;
-import de.soderer.utilities.TextUtilities.LineBreakType;
+import de.soderer.utilities.BOM;
+import de.soderer.utilities.LineReader;
+import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.textbook.action.CountBlankLinesAction;
 import de.soderer.utilities.textbook.action.CountEmptyLinesAction;
@@ -47,7 +47,8 @@ public class TextBookEditor implements AutoCloseable {
 	private final Charset charset;
 	private long size;
 	private Date modificationDate;
-	private LineBreakType lineBreakType = LineBreakType.Unknown;
+	private BOM bom = BOM.NONE;
+	private LineBreak lineBreakType = LineBreak.Unknown;
 
 	private List<Page> pages = null;
 
@@ -107,82 +108,35 @@ public class TextBookEditor implements AutoCloseable {
 
 		pages = new ArrayList<>();
 
-		Page previousPageForWindowsEnlargement = null;
-		Page currentPage = new Page(this);
-		currentPage.setStartFileIndex(0);
+		Page currentPage = null;
 
 		long index = 0;
-		try (InputStream inputStream = getTextFileInputStream()) {
-			int nextByte;
-			int lastByte = 0;
-			boolean foundDataAfterNewLine = false;
-			while ((nextByte = inputStream.read()) != -1) {
-				boolean isNewLine = false;
-				LineBreakType latestLineBreakType = LineBreakType.Unknown;
-				if (nextByte == '\r') {
-					// new linebreak (Mac style, possibly Windows style)
-					isNewLine = true;
-					previousPageForWindowsEnlargement = currentPage;
-					foundDataAfterNewLine = false;
-					latestLineBreakType = LineBreakType.Mac;
-				} else if (nextByte == '\n') {
-					if (lastByte == '\r') {
-						// second part of linebreak (Windows style)
-						// ignore but extend latest page end index
-						latestLineBreakType = LineBreakType.Windows;
-						if (previousPageForWindowsEnlargement != null) {
-							previousPageForWindowsEnlargement.setEndFileIndex(previousPageForWindowsEnlargement.getEndFileIndex() + 1);
-							currentPage.setStartFileIndex(currentPage.getStartFileIndex() + 1);
-						}
-					} else {
-						// new linebreak (Unix style)
-						isNewLine = true;
-						latestLineBreakType = LineBreakType.Unix;
-					}
-					foundDataAfterNewLine = false;
-				} else {
-					foundDataAfterNewLine = true;
-				}
-				previousPageForWindowsEnlargement = null;
-
-				if (isNewLine) {
-					if (lineBreakType == LineBreakType.Unknown) {
-						lineBreakType = latestLineBreakType;
-					} else if (lineBreakType != latestLineBreakType) {
-						lineBreakType = LineBreakType.Mixed;
-					}
-					currentPage.setAmountOfLines(currentPage.getAmountOfLines() + 1);
-
-					if (currentPage.getAmountOfLines() == maximumPageSize) {
-						currentPage.setEndFileIndex(index);
-						previousPageForWindowsEnlargement = currentPage;
-
-						currentPage = new Page(this);
-						currentPage.setStartFileIndex(index + 1);
-					}
+		try (LineReader lineReader = getTextFileLineReader(textFile, charset)) {
+			String nextLine;
+			while ((nextLine = lineReader.readLine()) != null) {
+				if (currentPage == null) {
+					currentPage = new Page(this);
+					currentPage.setStartFileIndex(0);
+				} else if (currentPage.getAmountOfLines() == maximumPageSize) {
+					currentPage.setEndFileIndex(index);
+					currentPage = new Page(this);
+					currentPage.setStartFileIndex(index);
 				}
 
-				lastByte = nextByte;
-				index++;
-			}
-
-			if (index > 0 && foundDataAfterNewLine) {
 				currentPage.setAmountOfLines(currentPage.getAmountOfLines() + 1);
 
-				if (currentPage.getAmountOfLines() == maximumPageSize) {
-					currentPage.setEndFileIndex(index);
-					previousPageForWindowsEnlargement = currentPage;
-
-					currentPage = new Page(this);
-					currentPage.setStartFileIndex(index + 1);
+				index = index + nextLine.length();
+				if (lineReader.getLatestLineBreakType() == LineBreak.Unix || lineReader.getLatestLineBreakType() == LineBreak.Mac) {
+					index = index + 1;
+				} else if (lineReader.getLatestLineBreakType() == LineBreak.Windows) {
+					index = index + 2;
 				}
 			}
-
-			currentPage.setEndFileIndex(index);
-
-			if (currentPage.getAmountOfLines() == 0) {
-				removePage(currentPage);
+			if (currentPage != null) {
+				currentPage.setEndFileIndex(index);
 			}
+			bom = lineReader.getBom();
+			lineBreakType = lineReader.getGlobalLineBreakType();
 		} catch (final Exception e) {
 			size = 0;
 			modificationDate = null;
@@ -191,13 +145,14 @@ public class TextBookEditor implements AutoCloseable {
 		}
 	}
 
-	private InputStream getTextFileInputStream() throws Exception {
+	@SuppressWarnings("resource")
+	private static LineReader getTextFileLineReader(final File textFile, final Charset charset) throws Exception {
 		if (textFile.getName().toLowerCase().endsWith(".zip")) {
-			final ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(textFile)));
+			final ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(textFile)), charset);
 			inputStream.getNextEntry();
-			return inputStream;
+			return new LineReader(inputStream, charset);
 		} else {
-			return new BufferedInputStream(new FileInputStream(textFile));
+			return new LineReader(new FileInputStream(textFile), charset);
 		}
 	}
 
@@ -354,42 +309,42 @@ public class TextBookEditor implements AutoCloseable {
 	private List<String> addMissingLineBreaks(final List<String> lines) {
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
-			if (line.endsWith(TextUtilities.LinebreakWindows)) {
-				if (lineBreakType == LineBreakType.Mac) {
-					lines.set(i, line.substring(0, line.length() - 2) + TextUtilities.LinebreakMac);
-				} else if (lineBreakType == LineBreakType.Unix) {
-					lines.set(i, line.substring(0, line.length() - 2) + TextUtilities.LinebreakUnix);
-				} else if (lineBreakType == LineBreakType.Unknown) {
-					lineBreakType = LineBreakType.Windows;
+			if (line.endsWith(LineBreak.Windows.toString())) {
+				if (lineBreakType == LineBreak.Mac) {
+					lines.set(i, line.substring(0, line.length() - 2) + LineBreak.Mac.toString());
+				} else if (lineBreakType == LineBreak.Unix) {
+					lines.set(i, line.substring(0, line.length() - 2) + LineBreak.Unix.toString());
+				} else if (lineBreakType == LineBreak.Unknown) {
+					lineBreakType = LineBreak.Windows;
 				}
-			} else if (line.endsWith(TextUtilities.LinebreakMac)) {
-				if (lineBreakType == LineBreakType.Windows) {
-					lines.set(i, line.substring(0, line.length() - 1) + TextUtilities.LinebreakWindows);
-				} else if (lineBreakType == LineBreakType.Unix) {
-					lines.set(i, line.substring(0, line.length() - 1) + TextUtilities.LinebreakUnix);
-				} else if (lineBreakType == LineBreakType.Unknown) {
-					lineBreakType = LineBreakType.Mac;
+			} else if (line.endsWith(LineBreak.Mac.toString())) {
+				if (lineBreakType == LineBreak.Windows) {
+					lines.set(i, line.substring(0, line.length() - 1) + LineBreak.Windows.toString());
+				} else if (lineBreakType == LineBreak.Unix) {
+					lines.set(i, line.substring(0, line.length() - 1) + LineBreak.Unix.toString());
+				} else if (lineBreakType == LineBreak.Unknown) {
+					lineBreakType = LineBreak.Mac;
 				}
-			} else if (line.endsWith("\n")) {
-				if (lineBreakType == LineBreakType.Windows) {
-					lines.set(i, line.substring(0, line.length() - 1) + TextUtilities.LinebreakWindows);
-				} else if (lineBreakType == LineBreakType.Mac) {
-					lines.set(i, line.substring(0, line.length() - 1) + TextUtilities.LinebreakMac);
-				} else if (lineBreakType == LineBreakType.Unknown) {
-					lineBreakType = LineBreakType.Unix;
+			} else if (line.endsWith(LineBreak.Unix.toString())) {
+				if (lineBreakType == LineBreak.Windows) {
+					lines.set(i, line.substring(0, line.length() - 1) + LineBreak.Windows.toString());
+				} else if (lineBreakType == LineBreak.Mac) {
+					lines.set(i, line.substring(0, line.length() - 1) + LineBreak.Mac.toString());
+				} else if (lineBreakType == LineBreak.Unknown) {
+					lineBreakType = LineBreak.Unix;
 				}
 			} else {
-				if (lineBreakType == LineBreakType.Windows) {
-					lines.set(i, line + TextUtilities.LinebreakWindows);
-				} else if (lineBreakType == LineBreakType.Mac) {
-					lines.set(i, line + TextUtilities.LinebreakMac);
-				} else if (lineBreakType == LineBreakType.Unix) {
-					lines.set(i, line + TextUtilities.LinebreakUnix);
-				} else if (lineBreakType == LineBreakType.Unknown) {
-					lineBreakType = LineBreakType.Unix;
-					lines.set(i, line + TextUtilities.LinebreakUnix);
+				if (lineBreakType == LineBreak.Windows) {
+					lines.set(i, line + LineBreak.Windows.toString());
+				} else if (lineBreakType == LineBreak.Mac) {
+					lines.set(i, line + LineBreak.Mac.toString());
+				} else if (lineBreakType == LineBreak.Unix) {
+					lines.set(i, line + LineBreak.Unix.toString());
+				} else if (lineBreakType == LineBreak.Unknown) {
+					lineBreakType = LineBreak.Unix;
+					lines.set(i, line + LineBreak.Unix.toString());
 				} else {
-					lines.set(i, line + TextUtilities.LinebreakUnix);
+					lines.set(i, line + LineBreak.Unix.toString());
 				}
 			}
 		}
@@ -741,8 +696,9 @@ public class TextBookEditor implements AutoCloseable {
 			}
 
 			if (textFile != null) {
-				try (InputStream inputStream = getTextFileInputStream();
+				try (LineReader lineReader = getTextFileLineReader(textFile, charset);
 						OutputStream outputStream = getTextFileOutputStream(interimTextBookFile)) {
+					outputStream.write(bom.getBytes());
 					long currentReadIndex = 0;
 					for (final Page page : pages) {
 						final List<String> newContentLines = page.getNewContentLines();
@@ -751,11 +707,11 @@ public class TextBookEditor implements AutoCloseable {
 							outputStream.write(newDataString.getBytes(charset));
 							page.clear();
 						} else {
-							final long bytesSkipped = Utilities.skipInputStreamData(inputStream, page.getStartFileIndex() - currentReadIndex);
-							currentReadIndex += bytesSkipped;
+							lineReader.skipChars(page.getStartFileIndex() - currentReadIndex);
+							currentReadIndex += page.getStartFileIndex() - currentReadIndex;
 							int nextByte;
 							final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-							while (currentReadIndex <= page.getEndFileIndex() && (nextByte = inputStream.read()) != -1) {
+							while (currentReadIndex <= page.getEndFileIndex() && (nextByte = lineReader.readChar()) != -1) {
 								buffer.write(nextByte);
 								if (buffer.size() == 4096) {
 									outputStream.write(buffer.toByteArray());
@@ -795,7 +751,7 @@ public class TextBookEditor implements AutoCloseable {
 			throw e;
 		}
 		if (destinationFile == null) {
-			interimTextBookFile.renameTo(interimTextBookFile);
+			interimTextBookFile.renameTo(textFile);
 		}
 	}
 
@@ -804,46 +760,33 @@ public class TextBookEditor implements AutoCloseable {
 			throw new Exception("The sourcefile has been tampered meanwile after read");
 		}
 
-		try (InputStream inputStream = getTextFileInputStream()) {
+		try (LineReader lineReader = getTextFileLineReader(textFile, charset)) {
 			long bytesSkipped = 0;
 			while (bytesSkipped < startFileIndex) {
-				final long newBytesSkipped = inputStream.skip(startFileIndex - bytesSkipped);
-				if (newBytesSkipped == 0) {
-					throw new Exception("Cannot skip data while reading textfile: " + textFile.getCanonicalPath());
+				try {
+					lineReader.skipChars(startFileIndex - bytesSkipped);
+				} catch(final Exception e) {
+					throw new Exception("Cannot skip data while reading textfile: " + textFile.getCanonicalPath(), e);
 				}
-				bytesSkipped += newBytesSkipped;
+				bytesSkipped += startFileIndex - bytesSkipped;
 			}
 			long index = startFileIndex;
 			final List<String> dataLines = new ArrayList<>();
-			ByteArrayOutputStream readData = new ByteArrayOutputStream();
-			int nextByte;
-			int lastByte = 0;
-			while (index <= endFileIndex && (nextByte = inputStream.read()) != -1) {
-				readData.write(nextByte);
-
-				boolean isNewLine = false;
-				if (nextByte == '\r') {
-					// new linebreak (Mac style, possibly Windows style)
-					isNewLine = true;
-				} else if (nextByte == '\n') {
-					if (lastByte == '\r') {
-						// second part of linebreak (Windows style)
-						// ignore but extend latest page end index
-						dataLines.set(dataLines.size() - 1, dataLines.get(dataLines.size() - 1) + '\r');
-						readData = new ByteArrayOutputStream();
-					} else {
-						// new linebreak (Unix style)
-						isNewLine = true;
-					}
+			String nextLine;
+			while (index < endFileIndex && (nextLine = lineReader.readLine()) != null) {
+				index = index + nextLine.length();
+				if (lineReader.getLatestLineBreakType() == LineBreak.Unix) {
+					nextLine += LineBreak.Unix.toString();
+					index = index + 1;
+				} else if (lineReader.getLatestLineBreakType() == LineBreak.Mac) {
+					nextLine += LineBreak.Mac.toString();
+					index = index + 1;
+				} else if (lineReader.getLatestLineBreakType() == LineBreak.Windows) {
+					nextLine += LineBreak.Windows.toString();
+					index = index + 2;
 				}
 
-				if (isNewLine) {
-					dataLines.add(new String(readData.toByteArray(), charset));
-					readData = new ByteArrayOutputStream();
-				}
-
-				lastByte = nextByte;
-				index++;
+				dataLines.add(nextLine);
 			}
 
 			return dataLines;
@@ -983,8 +926,12 @@ public class TextBookEditor implements AutoCloseable {
 		return interimStorageKey;
 	}
 
-	public LineBreakType getLineBreakType() {
+	public LineBreak getLineBreakType() {
 		return lineBreakType;
+	}
+
+	public BOM getBom() {
+		return bom;
 	}
 
 	public boolean removePage(final Page page) {

@@ -37,36 +37,55 @@ public class TextUtilities {
 	/**
 	 * Enum to represent a linebreak type of an text
 	 */
-	public enum LineBreakType {
-		Unknown, Mixed, Unix, Mac, Windows;
+	public enum LineBreak {
+		/**
+		 * No linebreak
+		 */
+		Unknown(null),
 
-		public static LineBreakType getLineBreakTypeByName(final String lineBreakTypeName) {
+		/**
+		 * Multiple linebreak types
+		 */
+		Mixed(null),
+
+		/**
+		 * Unix/Linux linebreak ("\n")
+		 */
+		Unix("\n"),
+
+		/**
+		 * Mac/Apple linebreak ("\r")
+		 */
+		Mac("\r"),
+
+		/**
+		 * Windows linebreak ("\r\n")
+		 */
+		Windows("\r\n");
+
+		private final String representationString;
+
+		@Override
+		public String toString() {
+			return representationString;
+		}
+
+		LineBreak(final String representationString) {
+			this.representationString = representationString;
+		}
+
+		public static LineBreak getLineBreakTypeByName(final String lineBreakTypeName) {
 			if ("WINDOWS".equalsIgnoreCase(lineBreakTypeName)) {
-				return LineBreakType.Windows;
+				return LineBreak.Windows;
 			} else if ("UNIX".equalsIgnoreCase(lineBreakTypeName)) {
-				return LineBreakType.Unix;
+				return LineBreak.Unix;
 			} else if ("MAC".equalsIgnoreCase(lineBreakTypeName)) {
-				return LineBreakType.Mac;
+				return LineBreak.Mac;
 			} else {
-				return LineBreakType.Unknown;
+				return LineBreak.Unknown;
 			}
 		}
 	}
-
-	/**
-	 * Mac/Apple linebreak character
-	 */
-	public static String LinebreakMac = "\r";
-
-	/**
-	 * Unix/Linux linebreak character
-	 */
-	public static String LinebreakUnix = "\n";
-
-	/**
-	 * Windows linebreak characters
-	 */
-	public static String LinebreakWindows = "\r\n";
 
 	/**
 	 * Trim a string to an exact length with alignment right for display purposes If the string underruns the length, it will be filled up with blanks on the left side. If the string exceeds the
@@ -160,16 +179,16 @@ public class TextUtilities {
 	 * @return
 	 */
 	public static String trimToMaxNumberOfLines(final String value, final int maxLines) {
-		final String normalizedValue = normalizeLineBreaks(value, LineBreakType.Unix);
+		final String normalizedValue = normalizeLineBreaks(value, LineBreak.Unix);
 		int count = 0;
 		int nextLinebreak = 0;
 		while (nextLinebreak != -1 && count < maxLines) {
-			nextLinebreak = normalizedValue.indexOf(LinebreakUnix, nextLinebreak + 1);
+			nextLinebreak = normalizedValue.indexOf(LineBreak.Unix.toString(), nextLinebreak + 1);
 			count++;
 		}
 
 		if (nextLinebreak != -1) {
-			final LineBreakType originalLineBreakType = detectLinebreakType(value);
+			final LineBreak originalLineBreakType = detectLinebreakType(value);
 			return normalizeLineBreaks(normalizedValue.substring(0, nextLinebreak + 1), originalLineBreakType) + "...";
 		} else {
 			return value;
@@ -182,7 +201,7 @@ public class TextUtilities {
 	 * @param value
 	 * @return
 	 */
-	public static LineBreakType detectLinebreakType(final String value) {
+	public static LineBreak detectLinebreakType(final String value) {
 		final TextPropertiesReader textPropertiesReader = new TextPropertiesReader(value);
 		textPropertiesReader.readProperties();
 		return textPropertiesReader.getLinebreakType();
@@ -195,15 +214,15 @@ public class TextUtilities {
 	 * @param type
 	 * @return
 	 */
-	public static String normalizeLineBreaks(final String value, final LineBreakType type) {
+	public static String normalizeLineBreaks(final String value, final LineBreak type) {
 		if (value == null) {
 			return value;
 		} else {
-			final String returnString = value.replace(LinebreakWindows, LinebreakUnix).replace(LinebreakMac, LinebreakUnix);
-			if (type == LineBreakType.Mac) {
-				return returnString.replace(LinebreakUnix, LinebreakMac);
-			} else if (type == LineBreakType.Windows) {
-				return returnString.replace(LinebreakUnix, LinebreakWindows);
+			final String returnString = value.replace(LineBreak.Windows.toString(), LineBreak.Unix.toString()).replace(LineBreak.Mac.toString(), LineBreak.Unix.toString());
+			if (type == LineBreak.Mac) {
+				return returnString.replace(LineBreak.Unix.toString(), LineBreak.Mac.toString());
+			} else if (type == LineBreak.Windows) {
+				return returnString.replace(LineBreak.Unix.toString(), LineBreak.Windows.toString());
 			} else {
 				return returnString;
 			}
@@ -212,9 +231,9 @@ public class TextUtilities {
 
 	public static String normalizeLineBreaksForCurrentSystem(final String value) {
 		if (SystemUtilities.isWindowsSystem()) {
-			return normalizeLineBreaks(value, LineBreakType.Windows);
+			return normalizeLineBreaks(value, LineBreak.Windows);
 		} else {
-			return normalizeLineBreaks(value, LineBreakType.Unix);
+			return normalizeLineBreaks(value, LineBreak.Unix);
 		}
 	}
 
@@ -301,9 +320,9 @@ public class TextUtilities {
 			int lineCount = 1;
 			int position = 0;
 			while (lineCount < lineNumber) {
-				final int nextLineBreakMac = dataString.indexOf(LinebreakMac, position);
-				final int nextLineBreakUnix = dataString.indexOf(LinebreakUnix, position);
-				final int nextLineBreakWindows = dataString.indexOf(LinebreakWindows, position);
+				final int nextLineBreakMac = dataString.indexOf(LineBreak.Mac.toString(), position);
+				final int nextLineBreakUnix = dataString.indexOf(LineBreak.Unix.toString(), position);
+				final int nextLineBreakWindows = dataString.indexOf(LineBreak.Windows.toString(), position);
 				int nextPosition = -1;
 				int lineBreakSize = 0;
 				if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac < nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac < nextLineBreakWindows)) {
@@ -344,16 +363,16 @@ public class TextUtilities {
 		} else if (index == 0) {
 			return 0;
 		} else {
-			final int nextLineBreakMac = dataString.lastIndexOf(LinebreakMac, index);
-			final int nextLineBreakUnix = dataString.lastIndexOf(LinebreakUnix, index);
-			final int nextLineBreakWindows = dataString.lastIndexOf(LinebreakWindows, index);
+			final int nextLineBreakMac = dataString.lastIndexOf(LineBreak.Mac.toString(), index);
+			final int nextLineBreakUnix = dataString.lastIndexOf(LineBreak.Unix.toString(), index);
+			final int nextLineBreakWindows = dataString.lastIndexOf(LineBreak.Windows.toString(), index);
 
 			if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac < nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac < nextLineBreakWindows)) {
-				return nextLineBreakMac + LinebreakMac.length();
+				return nextLineBreakMac + LineBreak.Mac.toString().length();
 			} else if (nextLineBreakUnix >= 0 && (nextLineBreakWindows < 0 || nextLineBreakUnix < nextLineBreakWindows)) {
-				return nextLineBreakUnix + LinebreakUnix.length();
+				return nextLineBreakUnix + LineBreak.Unix.toString().length();
 			} else if (nextLineBreakWindows >= 0) {
-				return nextLineBreakWindows + LinebreakWindows.length();
+				return nextLineBreakWindows + LineBreak.Windows.toString().length();
 			} else {
 				return 0;
 			}
@@ -373,9 +392,9 @@ public class TextUtilities {
 		} else if (index == 0) {
 			return 0;
 		} else {
-			final int nextLineBreakMac = dataString.indexOf(LinebreakMac, index);
-			final int nextLineBreakUnix = dataString.indexOf(LinebreakUnix, index);
-			final int nextLineBreakWindows = dataString.indexOf(LinebreakWindows, index);
+			final int nextLineBreakMac = dataString.indexOf(LineBreak.Mac.toString(), index);
+			final int nextLineBreakUnix = dataString.indexOf(LineBreak.Unix.toString(), index);
+			final int nextLineBreakWindows = dataString.indexOf(LineBreak.Windows.toString(), index);
 
 			if (nextLineBreakMac >= 0 && (nextLineBreakUnix < 0 || nextLineBreakMac > nextLineBreakUnix) && (nextLineBreakWindows < 0 || nextLineBreakMac > nextLineBreakWindows)) {
 				return nextLineBreakMac;
@@ -525,7 +544,7 @@ public class TextUtilities {
 					textPart = dataString.substring(0, textPosition);
 				}
 				int lineNumber = getLineCount(textPart);
-				if (textPart.endsWith(LinebreakUnix) || textPart.endsWith(LinebreakMac)) {
+				if (textPart.endsWith(LineBreak.Unix.toString()) || textPart.endsWith(LineBreak.Mac.toString())) {
 					lineNumber++;
 				}
 				return lineNumber;

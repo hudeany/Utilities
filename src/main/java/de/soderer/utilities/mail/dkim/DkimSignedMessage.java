@@ -33,7 +33,7 @@ import javax.mail.internet.MimeUtility;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.QuotedPrintableCodec;
 import de.soderer.utilities.TextUtilities;
-import de.soderer.utilities.TextUtilities.LineBreakType;
+import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.Utilities;
 
 public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
@@ -222,7 +222,7 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 	}
 
 	private static String canonicalizeBody(final boolean useRelaxedCanonicalization, String body) {
-		body = TextUtilities.normalizeLineBreaks(body, LineBreakType.Windows);
+		body = TextUtilities.normalizeLineBreaks(body, LineBreak.Windows);
 
 		if (useRelaxedCanonicalization) {
 			if (body == null) {

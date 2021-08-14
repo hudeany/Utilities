@@ -10,6 +10,7 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.textbook.TextBookEditor;
 
 public class TextBookEditorTest {
@@ -116,6 +117,151 @@ public class TextBookEditorTest {
 				Assert.assertEquals(40, textBookEditor.searchAndReplace("abc", "def"));
 				Assert.assertEquals(80, textBookEditor.searchCount("def"));
 			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (tempTextFile_src != null && tempTextFile_src.exists()) {
+				tempTextFile_src.delete();
+			}
+			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
+				tempTextFile_dest.delete();
+			}
+		}
+	}
+
+	@Test
+	public void testSearchWithWindowsLinebreak() {
+		File tempTextFile_src = null;
+		final File tempTextFile_dest = null;
+		try {
+			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
+			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
+				for (int i = 0; i < 20; i++) {
+					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\r\n").getBytes(StandardCharsets.UTF_8));
+				}
+			}
+
+			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, StandardCharsets.UTF_8)) {
+				textBookEditor.read();
+
+				Assert.assertEquals(LineBreak.Windows, textBookEditor.getLineBreakType());
+
+				Assert.assertEquals(17, textBookEditor.search("Line 17").getLine());
+				Assert.assertEquals(1, textBookEditor.countLinesContaining("Line 17"));
+				Assert.assertEquals(1, textBookEditor.searchAndReplace("Line 17", "Replaced", true, true, true, null, null));
+				Assert.assertEquals(0, textBookEditor.countLinesContaining("Line 17"));
+				Assert.assertEquals(1, textBookEditor.countLinesContaining("Replaced"));
+				Assert.assertEquals(20, textBookEditor.countLinesContaining(TextUtilities.GERMAN_TEST_STRING));
+				Assert.assertEquals(61, textBookEditor.searchCount("e"));
+				Assert.assertEquals(40, textBookEditor.searchAndReplace("abc", "def"));
+				Assert.assertEquals(80, textBookEditor.searchCount("def"));
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (tempTextFile_src != null && tempTextFile_src.exists()) {
+				tempTextFile_src.delete();
+			}
+			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
+				tempTextFile_dest.delete();
+			}
+		}
+	}
+
+	@Test
+	public void testChangeWithBOM() {
+		File tempTextFile_src = null;
+		final File tempTextFile_dest = null;
+		try {
+			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
+			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
+				outputStream.write(BOM.UTF_8.getBytes());
+				for (int i = 0; i < 20; i++) {
+					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\n").getBytes(StandardCharsets.UTF_8));
+				}
+			}
+
+			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, StandardCharsets.UTF_8)) {
+				textBookEditor.read();
+
+				Assert.assertEquals(LineBreak.Unix, textBookEditor.getLineBreakType());
+
+				Assert.assertEquals(17, textBookEditor.search("Line 17").getLine());
+				Assert.assertEquals(1, textBookEditor.countLinesContaining("Line 17"));
+				Assert.assertEquals(1, textBookEditor.searchAndReplace("Line 17", "Replaced", true, true, true, null, null));
+				Assert.assertEquals(0, textBookEditor.countLinesContaining("Line 17"));
+				Assert.assertEquals(1, textBookEditor.countLinesContaining("Replaced"));
+				Assert.assertEquals(20, textBookEditor.countLinesContaining(TextUtilities.GERMAN_TEST_STRING));
+				Assert.assertEquals(61, textBookEditor.searchCount("e"));
+				Assert.assertEquals(40, textBookEditor.searchAndReplace("abc", "def"));
+				Assert.assertEquals(80, textBookEditor.searchCount("def"));
+
+				textBookEditor.replaceLine(1, null);
+
+				textBookEditor.insertLine(6, "NewLineX");
+
+				textBookEditor.write();
+			}
+
+			final byte[] fileData = FileUtilities.readFileToByteArray(tempTextFile_src);
+			Assert.assertTrue(fileData[0] == BOM.UTF_8.getBytes()[0] && fileData[1] == BOM.UTF_8.getBytes()[1] && fileData[2] == BOM.UTF_8.getBytes()[2]);
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			if (tempTextFile_src != null && tempTextFile_src.exists()) {
+				tempTextFile_src.delete();
+			}
+			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
+				tempTextFile_dest.delete();
+			}
+		}
+	}
+
+	@Test
+	public void testSearchWithWindowsLinebreakWithBOM() {
+		File tempTextFile_src = null;
+		final File tempTextFile_dest = null;
+		try {
+			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
+			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
+				outputStream.write(BOM.UTF_8.getBytes());
+				for (int i = 0; i < 20; i++) {
+					outputStream.write(("Line " + (i + 1) + ": " + TextUtilities.GERMAN_TEST_STRING + "\r\n").getBytes(StandardCharsets.UTF_8));
+				}
+			}
+
+			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, StandardCharsets.UTF_8)) {
+				textBookEditor.read();
+
+				Assert.assertEquals(LineBreak.Windows, textBookEditor.getLineBreakType());
+
+				Assert.assertEquals(17, textBookEditor.search("Line 17").getLine());
+				Assert.assertEquals(1, textBookEditor.countLinesContaining("Line 17"));
+				Assert.assertEquals(1, textBookEditor.searchAndReplace("Line 17", "Replaced", true, true, true, null, null));
+				Assert.assertEquals(0, textBookEditor.countLinesContaining("Line 17"));
+				Assert.assertEquals(1, textBookEditor.countLinesContaining("Replaced"));
+				Assert.assertEquals(20, textBookEditor.countLinesContaining(TextUtilities.GERMAN_TEST_STRING));
+				Assert.assertEquals(61, textBookEditor.searchCount("e"));
+				Assert.assertEquals(40, textBookEditor.searchAndReplace("abc", "def"));
+				Assert.assertEquals(80, textBookEditor.searchCount("def"));
+
+				textBookEditor.replaceLine(1, null);
+
+				textBookEditor.insertLine(6, "NewLineX");
+
+				textBookEditor.write();
+			}
+
+			final byte[] fileData = FileUtilities.readFileToByteArray(tempTextFile_src);
+			Assert.assertTrue(fileData[0] == BOM.UTF_8.getBytes()[0] && fileData[1] == BOM.UTF_8.getBytes()[1] && fileData[2] == BOM.UTF_8.getBytes()[2]);
+
+			final String fileDataString = FileUtilities.readFileToString(tempTextFile_src, StandardCharsets.UTF_8);
+			Assert.assertTrue(fileDataString.contains(LineBreak.Windows.toString()));
+			Assert.assertFalse(fileDataString.replace(LineBreak.Windows.toString(), "").contains(LineBreak.Mac.toString()));
+			Assert.assertFalse(fileDataString.replace(LineBreak.Windows.toString(), "").contains(LineBreak.Unix.toString()));
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
