@@ -94,7 +94,6 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		}
 
 		shell.pack();
-		shell.setMinimumSize(shell.getSize());
 
 		if (buttonToSelect != null) {
 			getParent().setDefaultButton(buttonToSelect);

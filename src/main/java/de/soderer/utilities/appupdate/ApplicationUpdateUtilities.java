@@ -65,8 +65,8 @@ public class ApplicationUpdateUtilities {
 			}
 
 			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(updateParent, versionIndexFileLocation, applicationName, applicationVersion);
-			if (newVersionAvailable != null && askForUpdate(updateParent, newVersionAvailable.getFirst())) {
-				updateApplication(updateParent, newVersionAvailable.getSecond(), trustedCaCertificateFileName, username, password, restartParameter);
+			if (askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
+				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, trustedCaCertificateFileName, username, password, restartParameter);
 			}
 		} catch (final Exception e) {
 			if (updateParent != null) {
@@ -140,6 +140,10 @@ public class ApplicationUpdateUtilities {
 
 	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter) {
 		try {
+			if (Utilities.isBlank(updateFileLocation)) {
+				throw new Exception("Mandatory updateFileLocation is empty");
+			}
+
 			String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
 
 			if (jarFilePath == null) {
