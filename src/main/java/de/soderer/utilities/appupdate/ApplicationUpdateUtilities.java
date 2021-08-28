@@ -1,5 +1,6 @@
 package de.soderer.utilities.appupdate;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -7,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
@@ -39,7 +41,6 @@ import de.soderer.utilities.UserError;
 import de.soderer.utilities.UserError.Reason;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
-import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.http.HttpUtilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.xml.XmlUtilities;
@@ -168,7 +169,7 @@ public class ApplicationUpdateUtilities {
 						return;
 					}
 					try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
-						trustedCerts = CryptographicUtilities.loadCertificatesFromPemStream(trustedUpdateCertificatesStream);
+						trustedCerts = CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(trustedUpdateCertificatesStream));
 					} catch (final Exception e) {
 						showUpdateError(updateParent, "Update error:\nTrusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
 						return;
