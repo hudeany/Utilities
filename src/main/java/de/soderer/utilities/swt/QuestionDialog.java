@@ -10,8 +10,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
@@ -33,17 +33,13 @@ public class QuestionDialog extends ModalDialog<Integer> {
 	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
 
-		final Composite composite = new Composite(shell, SWT.NONE);
-		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		composite.setLayout(SwtUtilities.createNoMarginGridLayout(buttonTexts.length, true));
-
-		final Text textField = new Text(composite, SWT.READ_ONLY | SWT.MULTI);
-		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, buttonTexts.length, 1));
-		textField.setText(text);
+		final Label label = new Label(shell, SWT.NONE);
+		label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		label.setText(text);
 
 		if (Utilities.isNotBlank(checkboxText)) {
-			final Button checkboxCheckBox = new Button(composite, SWT.CHECK);
-			checkboxCheckBox.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, buttonTexts.length, 1));
+			final Button checkboxCheckBox = new Button(shell, SWT.CHECK);
+			checkboxCheckBox.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 			checkboxCheckBox.setSelection(checkboxStatus);
 			checkboxCheckBox.setText(checkboxText);
 			checkboxCheckBox.addSelectionListener(new SelectionAdapter() {
@@ -57,10 +53,14 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		Button buttonToSelect = null;
 
 		if (buttonTexts != null && buttonTexts.length > 0) {
+			final Composite buttonComposite = new Composite(shell, SWT.NONE);
+			buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			buttonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(buttonTexts.length, true));
+
 			for (int i = 0; i < buttonTexts.length; i++) {
 				final String buttonText = buttonTexts[i];
 				final int buttonIndex = i;
-				final Button nextButton = new Button(composite, SWT.PUSH);
+				final Button nextButton = new Button(buttonComposite, SWT.PUSH);
 				nextButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 				nextButton.setText(buttonText);
 				nextButton.addSelectionListener(new SelectionAdapter() {
@@ -70,12 +70,17 @@ public class QuestionDialog extends ModalDialog<Integer> {
 						getParent().close();
 					}
 				});
+
 				if (i == 0) {
 					buttonToSelect = nextButton;
 				}
 			}
 		} else {
-			final Button cancelButton = new Button(composite, SWT.PUSH);
+			final Composite buttonComposite = new Composite(shell, SWT.NONE);
+			buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			buttonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
+
+			final Button cancelButton = new Button(buttonComposite, SWT.PUSH);
 			cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 			cancelButton.setText(getI18NString("close"));
 			cancelButton.addSelectionListener(new SelectionAdapter() {
