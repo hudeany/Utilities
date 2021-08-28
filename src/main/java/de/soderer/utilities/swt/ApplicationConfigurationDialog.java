@@ -165,7 +165,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				try {
-					String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+					String applicationJarFileName = SystemUtilities.getCurrentlyRunningJarFilePath();
 					if (Utilities.isBlank(applicationJarFileName)) {
 						final FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
 						dialog.setText(LangResources.get("createDesktopLink"));

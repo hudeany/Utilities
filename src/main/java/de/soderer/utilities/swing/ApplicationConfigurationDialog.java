@@ -6,7 +6,6 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Image;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -28,19 +27,26 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-import de.soderer.utilities.ApplicationUpdateHelper;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.NetworkUtilities;
 import de.soderer.utilities.SystemUtilities;
-import de.soderer.utilities.UpdateParent;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
+import de.soderer.utilities.VersionInfo;
+import de.soderer.utilities.appupdate.ApplicationUpdateUtilities;
+import de.soderer.utilities.xml.XmlUtilities;
 
 public class ApplicationConfigurationDialog extends JDialog {
 	private static final long serialVersionUID = 422519084107817691L;
 
-	private final UpdateParent updateParent;
+	public static final String CONFIG_LANGUAGE = "Application.Language";
+
+	private final UpdateableGuiApplication updateParent;
 	private final String applicationName;
 	private final Version applicationVersion;
 	private final ConfigurationProperties applicationConfiguration;
@@ -52,37 +58,51 @@ public class ApplicationConfigurationDialog extends JDialog {
 	private String language;
 	private Result result = Result.ERROR;
 
+	private JPanel configurationValuesPanel;
+
+	private JComboBox<String> languageCombo;
+
 	public String getLanguage() {
 		return language;
 	}
 
 	public void setLanguage(final String language) {
 		this.language = language;
+		if (language != null) {
+			languageCombo.setSelectedItem(language);
+		}
 	}
 
 	public List<String> getAvailableLanguages() {
 		return availableLanguages;
 	}
 
-	public void setAvailableLanguages(final List<String> availableLanguages) {
+	public ApplicationConfigurationDialog setAvailableLanguages(final List<String> availableLanguages) {
 		this.availableLanguages = availableLanguages;
+
+		languageCombo.removeAll();
+		for (final String availableLanguage : availableLanguages) {
+			languageCombo.addItem(availableLanguage);
+		}
+		if (language != null) {
+			languageCombo.setSelectedItem(language);
+		}
+
+		return this;
 	}
 
 	public Result getResult() {
 		return result;
 	}
 
-	/** The db type combo. */
-	private JComboBox<String> languageCombo;
-
-	public ApplicationConfigurationDialog(final UpdateParent updateParent, final String applicationName, final Version applicationVersion, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
-		super((Window) updateParent, applicationName + " (Version " + applicationVersion.toString() + ")", Dialog.ModalityType.DOCUMENT_MODAL);
+	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final Version applicationVersion, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
+		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")", Dialog.ModalityType.DOCUMENT_MODAL);
 
 		this.updateParent = updateParent;
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
 		this.applicationConfiguration = applicationConfiguration;
-		language = applicationConfiguration.get("Application.Language");
+		language = applicationConfiguration.get(CONFIG_LANGUAGE);
 		this.iconImageDataWindows = iconImageDataWindows;
 		this.iconImageLinux = iconImageLinux;
 		this.versioninfoDownloadURL = versioninfoDownloadURL;
@@ -111,7 +131,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 		final JPanel mandatoryParameterPanel = new JPanel();
 		mandatoryParameterPanel.setLayout(new BoxLayout(mandatoryParameterPanel, BoxLayout.PAGE_AXIS));
 
-		panel.add(createLanguagePanel());
+		panel.add(createConfigurationValuesPanel());
 
 		panel.add(createAdministrativePanel());
 
@@ -119,17 +139,18 @@ public class ApplicationConfigurationDialog extends JDialog {
 
 		pack();
 
-		setLocationRelativeTo((Window) updateParent);
+		setLocationRelativeTo(updateParent);
 	}
 
-	private JPanel createLanguagePanel() {
+	private JPanel createConfigurationValuesPanel() {
+		configurationValuesPanel = new JPanel();
+		configurationValuesPanel.setLayout(new BoxLayout(configurationValuesPanel, BoxLayout.Y_AXIS));
+
 		final JPanel languagePanel = new JPanel();
 		languagePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
-		languagePanel.add(Box.createRigidArea(new Dimension(5, 36)));
-
-		final JLabel dbTypeLabel = new JLabel(LangResources.get("language"));
-		languagePanel.add(dbTypeLabel);
+		final JLabel languageLabel = new JLabel(LangResources.get("language"));
+		languagePanel.add(languageLabel);
 		languageCombo = new JComboBox<>();
 		languageCombo.setToolTipText(LangResources.get("language_help"));
 		for (final String availableLanguage : availableLanguages) {
@@ -146,9 +167,9 @@ public class ApplicationConfigurationDialog extends JDialog {
 		});
 		languagePanel.add(languageCombo, BorderLayout.EAST);
 
-		languagePanel.add(Box.createRigidArea(new Dimension(5, 36)));
+		configurationValuesPanel.add(languagePanel);
 
-		return languagePanel;
+		return configurationValuesPanel;
 	}
 
 	private JPanel createAdministrativePanel() {
@@ -162,7 +183,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				try {
-					String applicationJarFileName = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+					String applicationJarFileName = SystemUtilities.getCurrentlyRunningJarFilePath();
 					if (Utilities.isBlank(applicationJarFileName)) {
 						applicationJarFileName = openJarFilePathDialog();
 					}
@@ -213,8 +234,8 @@ public class ApplicationConfigurationDialog extends JDialog {
 							JOptionPane.showMessageDialog(getParent(), LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
 
 							new File(tempScriptFile).delete();
-						} catch (final IOException e1) {
-							JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e1.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+						} catch (final IOException e) {
+							JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 						}
 					} else if (SystemUtilities.isLinuxSystem()) {
 						String desktopLinkFilePath;
@@ -259,12 +280,12 @@ public class ApplicationConfigurationDialog extends JDialog {
 							new File(desktopLinkFilePath).setExecutable(true);
 
 							JOptionPane.showMessageDialog(getParent(), LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
-						} catch (final IOException e1) {
-							JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e1.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+						} catch (final IOException e) {
+							JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 						}
 					}
-				} catch (final Exception e1) {
-					JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e1.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+				} catch (final Exception e) {
+					JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
@@ -277,13 +298,11 @@ public class ApplicationConfigurationDialog extends JDialog {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				try {
-					new ApplicationUpdateHelper(applicationName, applicationVersion, versioninfoDownloadURL, updateParent, "gui", trustedUpdateCaCertificate).executeUpdate();
+					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, applicationName, applicationVersion, trustedUpdateCaCertificate, null, null, "gui");
 				} catch (final Exception e) {
 					final TextDialog textDialog = new TextDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage(), LangResources.get("close"), false, Color.PINK);
 					textDialog.setVisible(true);
 				}
-
-				dispose();
 			}
 		});
 		administrativeButtonPanel.add(updateButton);
@@ -304,7 +323,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				applicationConfiguration.set("Application.Language", language);
+				applicationConfiguration.set(CONFIG_LANGUAGE, language);
 				result = Result.OK;
 				dispose();
 			}
@@ -339,5 +358,26 @@ public class ApplicationConfigurationDialog extends JDialog {
 			applicationJarFileName = null;
 		}
 		return applicationJarFileName;
+	}
+
+	public static String checkForNewVersionAvailable(final String versioninfoDownloadUrl) throws Exception {
+		final String homeUrl = NetworkUtilities.getProtocolFromRequestString(versioninfoDownloadUrl) + "://" + NetworkUtilities.getHostnameFromRequestString(versioninfoDownloadUrl);
+
+		if (!NetworkUtilities.checkForNetworkConnection()) {
+			throw new Exception(LangResources.get("error.missingNetworkConnection"));
+		} else if (!NetworkUtilities.ping(homeUrl)) {
+			throw new Exception(LangResources.get("error.missingInternetConnection"));
+		}
+
+		final Document versionsDocument = XmlUtilities.downloadAndParseXmlFile(versioninfoDownloadUrl);
+		final Node multiedNode = XmlUtilities.getSingleXPathNode(versionsDocument, "ApplicationVersions/MultiEd");
+		final Node versionNode = multiedNode.getAttributes().getNamedItem("version");
+		final String version = versionNode.getNodeValue();
+
+		if (VersionInfo.getApplicationVersion().compareTo(new Version(version)) < 0) {
+			return version;
+		} else {
+			return null;
+		}
 	}
 }

@@ -6,19 +6,20 @@ import java.text.MessageFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import de.soderer.utilities.appupdate.ApplicationUpdateParent;
 import de.soderer.utilities.console.ConsoleUtilities;
 
-public class BasicUpdateableConsoleApplication implements UpdateParent {
+public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	private final String applicationName;
 	private final Version applicationVersion;
 
-	public BasicUpdateableConsoleApplication(final String applicationName, final Version applicationVersion) throws HeadlessException {
+	public UpdateableConsoleApplication(final String applicationName, final Version applicationVersion) throws HeadlessException {
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
 	}
 
 	@Override
-	public boolean askForUpdate(final String availableNewVersion) throws Exception {
+	public boolean askForUpdate(final Version availableNewVersion) throws Exception {
 		final Console console = System.console();
 		if (console == null) {
 			throw new Exception("Couldn't get Console instance");
@@ -28,7 +29,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 			System.out.println();
 			return false;
 		} else {
-			System.out.println(getI18NString("newVersion", availableNewVersion, applicationName, applicationVersion.toString()));
+			System.out.println(getI18NString("newVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
 			final String input = console.readLine(getI18NString("installUpdate") + ": ");
 			System.out.println();
 			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j"));
@@ -36,7 +37,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 	}
 
 	@Override
-	public Credentials aquireCredentials(final String text, final boolean aquireUsername, final boolean aquirePassword) throws Exception {
+	public Credentials aquireCredentials(final String text, final boolean aquireUsername, final boolean aquirePassword, final boolean firstRequest) throws Exception {
 		final Console console = System.console();
 		if (console == null) {
 			throw new Exception("Couldn't get Console instance");
@@ -108,7 +109,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 				case "enterUsername": pattern = "Bitte Usernamen eingeben"; break;
 				case "enterPassword": pattern = "Bitte Passwort eingeben"; break;
 				case "updateDone": pattern = "Update beendet"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + " Argumente: " + Utilities.join(arguments, ", ");
+				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
 		} else {
@@ -120,7 +121,7 @@ public class BasicUpdateableConsoleApplication implements UpdateParent {
 				case "enterUsername": pattern = "Please enter username"; break;
 				case "enterPassword": pattern = "Please enter password"; break;
 				case "updateDone": pattern = "Update done"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + " arguments: " + Utilities.join(arguments, ", ");
+				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
 		}

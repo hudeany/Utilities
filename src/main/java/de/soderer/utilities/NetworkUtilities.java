@@ -184,6 +184,14 @@ public class NetworkUtilities {
 		}
 	}
 
+	public static String getProtocolFromRequestString(final String requestString) {
+		if (requestString.contains("://")) {
+			return requestString.substring(0, requestString.indexOf("://")).toLowerCase();
+		} else {
+			return null;
+		}
+	}
+
 	/**
 	 * Get hostname of this machine
 	 *

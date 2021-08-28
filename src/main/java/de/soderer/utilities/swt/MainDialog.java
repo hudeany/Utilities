@@ -9,7 +9,7 @@ import de.soderer.utilities.LangResources;
 public abstract class MainDialog extends Shell {
 	private final Display display;
 
-	public MainDialog(final Display display) throws Exception {
+	public MainDialog(final Display display) {
 		super(display, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MIN | SWT.MAX);
 
 		this.display = display;

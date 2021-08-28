@@ -566,7 +566,7 @@ public class PGPUtilities {
 			String encryptionAlgorithm;
 			try {
 				encryptionAlgorithm = PgpPublicEncryptionMethod.getById(signature.getKeyAlgorithm()).name();
-			} catch (@SuppressWarnings("unused") final Exception e1) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				encryptionAlgorithm = LangResources.get("Unknown");
 			}
 			signatureData.put("encryptionalgorithm", encryptionAlgorithm);
@@ -574,7 +574,7 @@ public class PGPUtilities {
 			String hashingAlgorithm;
 			try {
 				hashingAlgorithm = PgpHashMethod.getById(signature.getHashAlgorithm()).name();
-			} catch (@SuppressWarnings("unused") final Exception e1) {
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				hashingAlgorithm = LangResources.get("Unknown");
 			}
 			signatureData.put("hashingalgorithm", hashingAlgorithm);

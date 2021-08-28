@@ -17,7 +17,7 @@ import javax.swing.SwingUtilities;
 import de.soderer.utilities.worker.WorkerDual;
 import de.soderer.utilities.worker.WorkerParentDual;
 
-public class DualProgressDialog<T extends WorkerDual<?>> extends SimpleProgressDialog<T> implements WorkerParentDual {
+public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<T> implements WorkerParentDual {
 	private static final long serialVersionUID = 1891862599169713021L;
 
 	private JLabel label;

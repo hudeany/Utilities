@@ -59,8 +59,8 @@ public class AdditionalPropertiesValidator extends ExtendedBaseJsonSchemaValidat
 								Pattern propertyKeyPattern;
 								try {
 									propertyKeyPattern = Pattern.compile(entry.getKey());
-								} catch (final Exception e1) {
-									throw new JsonSchemaDefinitionError("PatternProperties data contains invalid RegEx pattern: " + entry.getKey(), jsonSchemaPath, e1);
+								} catch (final Exception e) {
+									throw new JsonSchemaDefinitionError("PatternProperties data contains invalid RegEx pattern: " + entry.getKey(), jsonSchemaPath, e);
 								}
 
 								if (propertyKeyPattern.matcher(checkPropertyKey).find()) {

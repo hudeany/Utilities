@@ -159,7 +159,13 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 	public void close() {
 		if (!isClosed) {
 			isClosed = true;
-			getParent().close();
+
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					getParent().close();
+				}
+			});
 		}
 		setReturnValue(false);
 	}

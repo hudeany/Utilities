@@ -31,6 +31,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
+import de.soderer.utilities.Credentials;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.LangResources;
@@ -178,8 +179,9 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 
 					serverEntriesCombo.setText("");
 
-					final char[] keystorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
-					if (keystorePassword != null) {
+					final Credentials credentials = new CredentialsDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"), false, true).open();
+					if (credentials != null) {
+						final char[] keystorePassword = credentials.getPassword();
 						try {
 							keyStore.save(keystoreFile, keystorePassword, keystoreFileSalt);
 						} catch (final Exception e) {
@@ -201,8 +203,9 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 					}
 					final String newEntryName = serverEntriesCombo.getText();
 					keyStore.addEntry(serverEntriesCombo.getText(), getServerEntry());
-					final char[] keystorePassword = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword")).open();
-					if (keystorePassword != null) {
+					final Credentials credentials = new CredentialsDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"), false, true).open();
+					if (credentials != null) {
+						final char[] keystorePassword = credentials.getPassword();
 						try {
 							keyStore.save(keystoreFile, keystorePassword, keystoreFileSalt);
 						} catch (final Exception e) {
@@ -926,11 +929,12 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			}
 
 			while (passwordWasWrong) {
-				final PasswordDialog dialog = new PasswordDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"));
-				dialog.setKeepInMemoryText(LangResources.get("keepPasswordInMemory"));
-				passwordToUse = dialog.open();
-				if (passwordToUse != null) {
-					if (dialog.keepInMemory()) {
+				final CredentialsDialog dialog = new CredentialsDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"), false, true);
+				dialog.setRememberCredentialsText(LangResources.get("keepPasswordInMemory"));
+				final Credentials credentials = dialog.open();
+				if (credentials != null) {
+					passwordToUse = credentials.getPassword();
+					if (dialog.isRememberCredentials()) {
 						inMemoryPassword = Arrays.copyOf(passwordToUse, passwordToUse.length);
 					}
 					try {

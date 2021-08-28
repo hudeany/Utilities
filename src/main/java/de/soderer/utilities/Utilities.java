@@ -445,8 +445,15 @@ public class Utilities {
 	public static boolean interpretAsBool(String value) {
 		if (isNotEmpty(value)) {
 			value = value.trim();
-			return "true".equalsIgnoreCase(value) || "+".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value) || "ja".equalsIgnoreCase(value) || "ok".equalsIgnoreCase(value)
-					|| "on".equalsIgnoreCase(value) || "an".equalsIgnoreCase(value);
+			return "true".equalsIgnoreCase(value)
+					|| "+".equalsIgnoreCase(value)
+					|| "yes".equalsIgnoreCase(value)
+					|| "y".equalsIgnoreCase(value)
+					|| "ja".equalsIgnoreCase(value)
+					|| "j".equalsIgnoreCase(value)
+					|| "ok".equalsIgnoreCase(value)
+					|| "on".equalsIgnoreCase(value)
+					|| "an".equalsIgnoreCase(value);
 		} else {
 			return false;
 		}

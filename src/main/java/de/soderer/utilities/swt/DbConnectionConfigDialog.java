@@ -3,6 +3,8 @@ package de.soderer.utilities.swt;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -122,7 +124,33 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		SwtUtilities.addMainButtonComposite(shell, this);
+		final ModalDialog<Boolean> finalParentDialog = this;
+
+		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);
+		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
+
+		okButton = new Button(mainButtonComposite, SWT.PUSH);
+		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		okButton.setText(LangResources.get("ok"));
+		okButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(final SelectionEvent e) {
+				finalParentDialog.setReturnValue(true);
+				finalParentDialog.getParent().close();
+			}
+		});
+
+		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
+		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(final SelectionEvent e) {
+				finalParentDialog.setReturnValue(false);
+				finalParentDialog.getParent().close();
+			}
+		});
 
 		shell.pack();
 

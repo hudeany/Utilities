@@ -1,26 +1,25 @@
-package de.soderer.utilities;
+package de.soderer.utilities.appupdate;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.MessageDigest;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
@@ -30,56 +29,58 @@ import java.util.jar.Manifest;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+import de.soderer.utilities.Credentials;
+import de.soderer.utilities.FileDownloadWorker;
+import de.soderer.utilities.LangResources;
+import de.soderer.utilities.NetworkUtilities;
+import de.soderer.utilities.SystemUtilities;
+import de.soderer.utilities.Tuple;
+import de.soderer.utilities.UserError;
 import de.soderer.utilities.UserError.Reason;
+import de.soderer.utilities.Utilities;
+import de.soderer.utilities.Version;
+import de.soderer.utilities.crypto.CryptographicUtilities;
+import de.soderer.utilities.http.HttpUtilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.xml.XmlUtilities;
 
-public class ApplicationUpdateHelper implements WorkerParentSimple {
-	private final String applicationName;
-	private final Version applicationVersion;
-	private final String versionIndexFileLocation;
-	private final UpdateParent updateParent;
-	private FileDownloadWorker fileDownloadWorker;
-	private String updateFileLocation;
-	private String updateFileMd5Checksum = null;
-	private final String restartParameter;
-	private String trustedCaCertificateFileName = null;
-	private String username;
-	private char[] password;
+/**
+ * versionIndexFileLocation
+ * 	may include placeholders:<br />
+ * 		&lt;system> : replaced by "windows" or "linux"<br />
+ *  	&lt;bitmode> : replaced by "32" or "64"<br />
+ * 		&lt;username> : interactive username dialog<br />
+ * 		&lt;password> : interactive password dialog<br />
+ * 		&lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
+ */
+public class ApplicationUpdateUtilities {
+	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
+	public static final String CONFIG_NEXT_DAILY_UPDATE_CHECK = "NextDailyUpdateCheck";
 
-	/**
-	 * @param versionIndexFileLocation
-	 *            may include placeholders:<br />
-	 *            &lt;system> : replaced by "windows" or "linux"<br />
-	 *            &lt;bitmode> : replaced by "32" or "64"<br />
-	 *            &lt;username> : interactive username dialog<br />
-	 *            &lt;password> : interactive password dialog
-	 *            &lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
-	 * @throws Exception
-	 */
-	public ApplicationUpdateHelper(final String applicationName, final Version applicationVersion, final String versionIndexFileLocation, final UpdateParent updateParent, final String restartParameter, final String trustedCaCertificateFileName) throws Exception {
-		if (Utilities.isEmpty(versionIndexFileLocation)) {
-			throw new Exception("Invalid version index location");
-		}
-
-		this.applicationName = applicationName;
-		this.applicationVersion = applicationVersion;
-		this.versionIndexFileLocation = replacePlaceholders(versionIndexFileLocation);
-		this.updateParent = updateParent;
-		this.restartParameter = restartParameter;
-		this.trustedCaCertificateFileName = trustedCaCertificateFileName;
-	}
-
-	public void executeUpdate() {
-		final String newVersionAvailable = checkForNewVersionAvailable();
-		if (askForUpdate(newVersionAvailable)) {
-			updateApplication();
-		}
-	}
-
-	private String checkForNewVersionAvailable() {
+	public static void executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter) throws Exception {
 		try {
-			if (!NetworkUtilities.checkForNetworkConnection()) {
+			if (Utilities.isEmpty(versionIndexFileLocation)) {
+				throw new Exception("Invalid version index location");
+			}
+
+			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(updateParent, versionIndexFileLocation, applicationName, applicationVersion);
+			if (newVersionAvailable != null && askForUpdate(updateParent, newVersionAvailable.getFirst())) {
+				updateApplication(updateParent, newVersionAvailable.getSecond(), trustedCaCertificateFileName, username, password, restartParameter);
+			}
+		} catch (final Exception e) {
+			if (updateParent != null) {
+				showUpdateError(updateParent, "Update error while executing update:\n" + e.getMessage());
+			} else {
+				throw e;
+			}
+		}
+	}
+
+	public static Tuple<Version, String> checkForNewVersionAvailable(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final String applicationName, final Version applicationVersion) throws Exception {
+		try {
+			if (Utilities.isEmpty(versionIndexFileLocation)) {
+				throw new Exception("Invalid version index location");
+			} else if (!NetworkUtilities.checkForNetworkConnection()) {
 				throw new Exception("error.missingNetworkConnection");
 			} else if (!NetworkUtilities.ping(versionIndexFileLocation)) {
 				throw new Exception("error.missingInternetConnection");
@@ -103,33 +104,32 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			final Node versionNode = startFileNameNode.getAttributes().getNamedItem("version");
 			final String version = versionNode.getNodeValue();
 
-			final Node md5ChecksumNode = startFileNameNode.getAttributes().getNamedItem("md5CheckSum");
-			if (md5ChecksumNode != null) {
-				updateFileMd5Checksum = md5ChecksumNode.getNodeValue();
-			}
-
-			updateFileLocation = startFileNameNode.getFirstChild().getNodeValue();
+			String updateFileLocation = startFileNameNode.getFirstChild().getNodeValue();
 
 			final Version availableVersion = new Version(version);
 			if (applicationVersion.compareTo(availableVersion) < 0 && updateFileLocation != null && updateFileLocation.trim().length() > 0) {
 				updateFileLocation = replacePlaceholders(updateFileLocation);
-				return version;
+				return new Tuple<>(availableVersion, updateFileLocation);
 			} else {
 				updateFileLocation = null;
 				return null;
 			}
 		} catch (final Exception e) {
-			showUpdateError("Update error while checking for new version:\n" + e.getMessage());
-			return null;
+			if (updateParent != null) {
+				showUpdateError(updateParent, "Update error while checking for new version:\n" + e.getMessage());
+				return null;
+			} else {
+				throw e;
+			}
 		}
 	}
 
-	private boolean askForUpdate(final String availableNewVersion) {
+	private static boolean askForUpdate(final ApplicationUpdateParent updateParent, final Version availableNewVersion) {
 		if (updateParent != null) {
 			try {
 				return updateParent.askForUpdate(availableNewVersion);
 			} catch (final Exception e) {
-				updateParent.showUpdateError("Update error :\n" + e.getMessage());
+				updateParent.showUpdateError("Update error:\n" + e.getMessage());
 				return false;
 			}
 		} else {
@@ -137,17 +137,13 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	private void updateApplication() {
+	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter) {
 		try {
-			String jarFilePath = System.getProperty(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
-
-			if (jarFilePath == null) {
-				jarFilePath = System.getenv(SystemUtilities.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
-			}
+			String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
 
 			if (jarFilePath == null) {
 				try {
-					final String currentJarUrlPath = getClass().getResource(getClass().getSimpleName() + ".class").toString();
+					final String currentJarUrlPath = updateParent.getClass().getResource(updateParent.getClass().getSimpleName() + ".class").toString();
 					jarFilePath = currentJarUrlPath.substring(0, currentJarUrlPath.lastIndexOf("!")).replaceFirst("jar:file:", "");
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					jarFilePath = null;
@@ -162,37 +158,33 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 
 			final File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 
-			final boolean downloadSuccess = getNewApplicationVersionFile(downloadTempFile);
+			final boolean downloadSuccess = getNewApplicationVersionFile(updateParent, username, password, updateFileLocation, downloadTempFile);
 			if (downloadSuccess) {
 				if (Utilities.isNotEmpty(trustedCaCertificateFileName)) {
 					Collection<? extends Certificate> trustedCerts = null;
-					final ClassLoader applicationClassLoader = getClass().getClassLoader();
+					final ClassLoader applicationClassLoader = updateParent.getClass().getClassLoader();
 					if (applicationClassLoader == null) {
-						showUpdateError("Update error:\n" + "Applications classloader is not readable");
+						showUpdateError(updateParent, "Update error:\nApplications classloader is not readable");
 						return;
 					}
 					try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
-						trustedCerts = CertificateFactory.getInstance("X.509").generateCertificates(trustedUpdateCertificatesStream);
+						trustedCerts = CryptographicUtilities.loadCertificatesFromPemStream(trustedUpdateCertificatesStream);
 					} catch (final Exception e) {
-						showUpdateError("Update error:\n" + "Trusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
+						showUpdateError(updateParent, "Update error:\nTrusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
 						return;
 					}
 					if (trustedCerts == null || trustedCerts.size() == 0) {
-						showUpdateError("Update error:\n" + "Trusted CA certificate is missing");
+						showUpdateError(updateParent, "Update error:\nTrusted CA certificate is missing");
 						return;
 					} else if (!verifyJarSignature(downloadTempFile, trustedCerts)) {
-						showUpdateError("Update error:\n" + "Signature of updatefile is invalid");
+						showUpdateError(updateParent, "Update error:\nSignature of updatefile is invalid");
 						return;
 					}
-				} else if (Utilities.isNotEmpty(updateFileMd5Checksum) && !"NONE".equalsIgnoreCase(updateFileMd5Checksum)) {
-					final String downloadTempFileMd5Checksum = createMd5Checksum(downloadTempFile);
-					if (!updateFileMd5Checksum.equalsIgnoreCase(downloadTempFileMd5Checksum)) {
-						showUpdateError("Update error:\n" + "MD5-Checksum of updatefile is invalid (expected: " + updateFileMd5Checksum + ", actual: " + downloadTempFileMd5Checksum + ")");
-						return;
-					}
+				} else {
+					showUpdateError(updateParent, "Update error:\nTrusted CA certificate file name is missing");
 				}
 
-				final String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile);
+				final String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartParameter);
 
 				if (updateParent != null) {
 					updateParent.showUpdateDone();
@@ -204,67 +196,76 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 				}
 			}
 		} catch (final Exception e) {
-			showUpdateError("Update error while updating to new version:\n" + e.getMessage());
+			showUpdateError(updateParent, "Update error while updating to new version:\n" + e.getMessage());
 			return;
 		}
 	}
 
-	private boolean getNewApplicationVersionFile(final File downloadTempFile) throws Exception {
+	private static boolean getNewApplicationVersionFile(final ApplicationUpdateParent updateParent, final String username, final char[] password, final String updateFileLocation, final File downloadTempFile) throws Exception {
 		if (updateFileLocation.toLowerCase().startsWith("http")) {
 			// Download file
 			boolean retryDownload = true;
+			boolean firstRequest = true;
 			while (retryDownload) {
 				String downloadUrlWithCredentials = updateFileLocation;
 
-				if (username != null) {
-					downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", username);
-					// Only use preconfigured username in first try
-					username = null;
-				}
-				if (password != null) {
-					downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", new String(password));
-					// Only use preconfigured password in first try
-					password = null;
+				// Only use preconfigured credentials in first try only
+				if (firstRequest) {
+					if (username != null) {
+						downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(username, StandardCharsets.UTF_8));
+					}
+					if (password != null) {
+						downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(password), StandardCharsets.UTF_8));
+					}
 				}
 
 				if (downloadUrlWithCredentials.contains("<username>") && downloadUrlWithCredentials.contains("<password>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials("Please enter update credentials", true, true);
-						if (credentials == null || Utilities.isEmpty(credentials.getUsername()) || Utilities.isEmpty(credentials.getPassword())) {
-							updateParent.showUpdateError("Update error:\nusername and password required");
+						final Credentials credentials = updateParent.aquireCredentials(getI18NString("enterDownloadCredentials"), true, true, firstRequest);
+						if (credentials == null) {
+							updateParent.showUpdateError(getI18NString("canceledByUser"));
+							return false;
+						} else if (Utilities.isEmpty(credentials.getUsername()) || Utilities.isEmpty(credentials.getPassword())) {
+							updateParent.showUpdateError(getI18NString("usernameAndPasswordRequired"));
 							return false;
 						} else {
-							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", credentials.getUsername());
-							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", new String(credentials.getPassword()));
+							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(credentials.getUsername(), StandardCharsets.UTF_8));
+							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(credentials.getPassword()), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError("Update error:\n" + "username required");
+						showUpdateError(updateParent, getI18NString("usernameAndPasswordRequired"));
 						return false;
 					}
 				} else if (downloadUrlWithCredentials.contains("<username>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials("Please enter update credentials", true, false);
-						if (credentials == null || Utilities.isEmpty(credentials.getUsername())) {
-							updateParent.showUpdateError("Update error:\nusername required");
+						final Credentials credentials = updateParent.aquireCredentials(getI18NString("enterDownloadUserName"), true, false, firstRequest);
+						if (credentials == null) {
+							updateParent.showUpdateError(getI18NString("canceledByUser"));
+							return false;
+						} else if (Utilities.isEmpty(credentials.getUsername())) {
+							updateParent.showUpdateError(getI18NString("usernameRequired"));
 							return false;
 						} else {
-							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", credentials.getUsername());
+							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(credentials.getUsername(), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError("Update error:\n" + "username required");
+						showUpdateError(updateParent, getI18NString("usernameRequired"));
 						return false;
 					}
 				} else if (downloadUrlWithCredentials.contains("<password>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials("Please enter update credentials", false, true);
-						if (credentials == null || Utilities.isEmpty(credentials.getPassword())) {
-							updateParent.showUpdateError("Update error:\npassword required");
+						final Credentials credentials = updateParent.aquireCredentials(getI18NString("enterDownloadPassword"), false, true, firstRequest);
+						if (credentials == null) {
+							updateParent.showUpdateError(getI18NString("canceledByUser"));
+							return false;
+						} else if (Utilities.isEmpty(credentials.getPassword())) {
+							updateParent.showUpdateError(getI18NString("passwordRequired"));
 							return false;
 						} else {
-							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", new String(credentials.getPassword()));
+							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(credentials.getPassword()), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError("Update error:\n" + "password required");
+						showUpdateError(updateParent, getI18NString("passwordRequired"));
 						return false;
 					}
 				}
@@ -274,10 +275,10 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 					if (downloadTempFile.exists()) {
 						downloadTempFile.delete();
 					}
-					final boolean success = downloadUpdateFile(downloadTempFile, downloadUrlWithCredentials);
+					final boolean success = downloadUpdateFile(updateParent, downloadTempFile, downloadUrlWithCredentials);
 					if (!success) {
 						// download stopped by user
-						updateParent.showUpdateError("Canceled by user");
+						updateParent.showUpdateError(getI18NString("canceledByUser"));
 						return false;
 					}
 				} catch (final UserError e) {
@@ -318,10 +319,12 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 							return false;
 						}
 					} else {
-						showUpdateError("Update error:\n" + e.getMessage());
+						showUpdateError(updateParent, "Update error:\n" + e.getMessage());
 						return false;
 					}
 				}
+
+				firstRequest = false;
 			}
 		} else {
 			// Copy file
@@ -331,7 +334,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		return downloadTempFile.exists();
 	}
 
-	private String createUpdateBatchFile(final String jarFilePath, final File downloadTempFile) throws Exception {
+	private static String createUpdateBatchFile(final String jarFilePath, final File downloadTempFile, final String restartParameter) throws Exception {
 		String javaBinPath = SystemUtilities.getJavaBinPath();
 		if (Utilities.isBlank(javaBinPath)) {
 			javaBinPath = "java";
@@ -425,9 +428,39 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	private boolean downloadUpdateFile(final File downloadTempFile, final String downloadUrl) throws Exception {
+	private static boolean downloadUpdateFile(final ApplicationUpdateParent updateParent, final File downloadTempFile, final String downloadUrl) throws Exception {
 		try {
-			fileDownloadWorker = new FileDownloadWorker(this, downloadUrl, downloadTempFile);
+			final WorkerParentSimple workerParentAdapter = new WorkerParentSimple() {
+				@Override
+				public void showUnlimitedProgress() {
+					// Do nothing
+				}
+
+				@Override
+				public void showProgress(final Date start, final long itemsToDo, final long itemsDone) {
+					if (updateParent != null) {
+						updateParent.showUpdateProgress(start, itemsToDo, itemsDone);
+					}
+				}
+
+				@Override
+				public void showDone(final Date start, final Date end, final long itemsDone) {
+					if (updateParent != null) {
+						updateParent.showUpdateDownloadEnd();
+					}
+				}
+
+				@Override
+				public void cancel() {
+					// Do nothing
+				}
+
+				@Override
+				public void changeTitle(final String text) {
+					// do nothing
+				}
+			};
+			final FileDownloadWorker fileDownloadWorker = new FileDownloadWorker(workerParentAdapter, downloadUrl, downloadTempFile);
 			new Thread(fileDownloadWorker).start();
 
 			if (updateParent != null) {
@@ -453,59 +486,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	private static String createMd5Checksum(final File file) {
-		try {
-			final MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-			try (InputStream inputStream = new FileInputStream(file)) {
-				final byte[] buffer = new byte[4096];
-				int bytesRead;
-				while ((bytesRead = inputStream.read(buffer)) >= 0) {
-					messageDigest.update(buffer, 0, bytesRead);
-				}
-			}
-			return bytesToHexString(messageDigest.digest());
-		} catch (@SuppressWarnings("unused") final Exception e) {
-			return null;
-		}
-	}
-
-	private static String bytesToHexString(final byte[] bytes) {
-		final char[] hexArray = "0123456789ABCDEF".toCharArray();
-
-		final char[] hexChars = new char[bytes.length * 2];
-		for (int j = 0; j < bytes.length; j++) {
-			final int v = bytes[j] & 0xFF;
-			hexChars[j * 2] = hexArray[v >>> 4];
-			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-		}
-		return new String(hexChars);
-	}
-
-	@Override
-	public void showUnlimitedProgress() {
-		// Do nothing
-	}
-
-	@Override
-	public void showProgress(final Date start, final long itemsToDo, final long itemsDone) {
-		if (updateParent != null) {
-			updateParent.showUpdateProgress(start, itemsToDo, itemsDone);
-		}
-	}
-
-	@Override
-	public void showDone(final Date start, final Date end, final long itemsDone) {
-		if (updateParent != null) {
-			updateParent.showUpdateDownloadEnd();
-		}
-	}
-
-	@Override
-	public void cancel() {
-		// Do nothing
-	}
-
-	private void showUpdateError(final String errorMessage) {
+	private static void showUpdateError(final ApplicationUpdateParent updateParent, final String errorMessage) {
 		if (updateParent != null) {
 			updateParent.showUpdateError(errorMessage);
 		} else {
@@ -515,20 +496,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	public void setUsername(final String username) {
-		this.username = username;
-	}
-
-	public void setPassword(final char[] password) {
-		this.password = password;
-	}
-
-	@Override
-	public void changeTitle(final String text) {
-		// do nothing
-	}
-
-	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCerts) throws Exception {
+	private static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCerts) throws Exception {
 		if (trustedCerts == null || trustedCerts.size() == 0) {
 			return false;
 		}
@@ -586,7 +554,7 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 		}
 	}
 
-	public static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<? extends Certificate> trustedCerts) throws Exception {
+	private static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<? extends Certificate> trustedCerts) throws Exception {
 		final CertPathBuilder certifier = CertPathBuilder.getInstance("PKIX");
 		final X509CertSelector targetConstraints = new X509CertSelector();
 		targetConstraints.setCertificate(cert);
@@ -603,6 +571,38 @@ public class ApplicationUpdateHelper implements WorkerParentSimple {
 			return result != null;
 		} catch (@SuppressWarnings("unused") final Exception cpbe) {
 			return false;
+		}
+	}
+
+	private static String getI18NString(final String resourceKey, final Object... arguments) {
+		if (LangResources.existsKey(resourceKey)) {
+			return LangResources.get(resourceKey, arguments);
+		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
+			String pattern;
+			switch(resourceKey) {
+				case "canceledByUser": pattern = "Abbruch durch Benutzer"; break;
+				case "usernameAndPasswordRequired": pattern = "Fehler:\nUsername und Passwort sind notwendig"; break;
+				case "usernameRequired": pattern = "Fehler:\nUsername ist notwendig"; break;
+				case "passwordRequired": pattern = "Fehler:\nPasswort ist notwendig"; break;
+				case "enterDownloadCredentials": pattern = "Bitte Userdaten für den Download eingeben"; break;
+				case "enterDownloadUserName": pattern = "Bitte Passwort für Download eingeben"; break;
+				case "enterDownloadPassword": pattern = "Bitte Usernamen für Download eingeben"; break;
+				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		} else {
+			String pattern;
+			switch(resourceKey) {
+				case "canceledByUser": pattern = "Canceled by user"; break;
+				case "usernameAndPasswordRequired": pattern = "Error:\nUsername and password are required"; break;
+				case "usernameRequired": pattern = "Error:\nUsername is required"; break;
+				case "passwordRequired": pattern = "Error:\nPassword is required"; break;
+				case "enterDownloadCredentials": pattern = "Enter credentials for download"; break;
+				case "enterDownloadUserName": pattern = "Enter password for download"; break;
+				case "enterDownloadPassword": pattern = "Enter username for download"; break;
+				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
 		}
 	}
 }

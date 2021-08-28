@@ -14,12 +14,11 @@ import java.util.Map;
 import javax.crypto.Cipher;
 
 import de.soderer.utilities.collection.CaseInsensitiveMap;
+import de.soderer.utilities.jarinjarloader.JarInJarLoader;
 
 public class SystemUtilities {
 	private static final boolean isWindows = getOsName().toLowerCase().contains("windows");
 	private static final boolean isLinux = getOsName().toLowerCase().contains("unix") || getOsName().toLowerCase().contains("linux");
-
-	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
 
 	public static String getOsName() {
 		return System.getProperty("os.name");
@@ -97,11 +96,19 @@ public class SystemUtilities {
 		resultMap.put("process.uptime", Long.toString(getUptimeInMillis()));
 		resultMap.put("process.starttime", getStarttime().toString());
 		resultMap.put("process.javastartuparguments", getJavaStartupArguments().toString());
-		resultMap.put("process.jar", System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR) == null ? "<unknown>" : System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR));
+		resultMap.put("process.jar", getCurrentlyRunningJarFilePath() == null ? "<unknown>" : getCurrentlyRunningJarFilePath());
 
 		resultMap.put("cryptography.unlimitedKeyStrength", isUnlimitedKeyStrengthAllowed() ? "true" : "false");
 
 		return resultMap;
+	}
+
+	public static String getCurrentlyRunningJarFilePath() {
+		String jarFilePath = System.getProperty(JarInJarLoader.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+		if (jarFilePath == null) {
+			jarFilePath = System.getenv(JarInJarLoader.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+		}
+		return jarFilePath;
 	}
 
 	public static List<String> getProcessListRaw() {

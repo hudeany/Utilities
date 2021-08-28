@@ -1,8 +1,5 @@
 package de.soderer.utilities.swt;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.DeviceData;
@@ -14,16 +11,11 @@ import org.eclipse.swt.graphics.Pattern;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.graphics.TextLayout;
 import org.eclipse.swt.graphics.Transform;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
-import de.soderer.utilities.LangResources;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 public class SwtUtilities {
@@ -115,35 +107,5 @@ public class SwtUtilities {
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		return gridLayout;
-	}
-
-	public static void addMainButtonComposite(final Shell shell, final ModalDialog<Boolean> parentDialog) {
-		final ModalDialog<Boolean> finalParentDialog = parentDialog;
-
-		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);
-		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
-
-		final Button okButton = new Button(mainButtonComposite, SWT.PUSH);
-		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		okButton.setText(LangResources.get("ok"));
-		okButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(final SelectionEvent e) {
-				finalParentDialog.setReturnValue(true);
-				finalParentDialog.getParent().close();
-			}
-		});
-
-		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
-		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		cancelButton.setText(LangResources.get("cancel"));
-		cancelButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(final SelectionEvent e) {
-				finalParentDialog.setReturnValue(false);
-				finalParentDialog.getParent().close();
-			}
-		});
 	}
 }

@@ -38,7 +38,6 @@ public class SecurePreferencesDialog extends JDialog {
 	private SecureDataStore secureDataStore = null;
 	private Object currentSecureDataEntry;
 
-	// I18N texts for CredentialsDialog
 	private final String text_Username;
 	private final String text_PasswordText;
 	private final String text_Password;
@@ -57,12 +56,6 @@ public class SecurePreferencesDialog extends JDialog {
 
 	private final JTextField newNameField;
 	private final JTable preferencesTable;
-
-	public SecurePreferencesDialog(final Window parent, final String title, final String text, final File securePreferencesFile, final byte[] salt) {
-		this(parent, title, text, securePreferencesFile, salt,
-				"Load", "Create", "Update", "Delete", "Save with new password", "Cancel", "Please enter password for secured preferences",
-				"Username", "Password", "OK", "Cancel");
-	}
 
 	public SecurePreferencesDialog(final Window parent, final String title, final String text, final File securePreferencesFile, final byte[] salt,
 			final String textButton_Load, final String textButton_Create, final String textButton_Update, final String textButton_Delete, final String textButton_Save, final String textButton_Cancel, final String text_PasswordText,

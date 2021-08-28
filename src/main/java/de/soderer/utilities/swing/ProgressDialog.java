@@ -19,22 +19,22 @@ import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
-public class SimpleProgressDialog<T extends WorkerSimple<?>> extends JDialog implements WorkerParentSimple {
+public class ProgressDialog<T extends WorkerSimple<?>> extends JDialog implements WorkerParentSimple {
 	private static final long serialVersionUID = 4039220978715450890L;
 
 	protected T worker;
 	protected JProgressBar progressBar;
 	protected boolean canceledByUser = false;
 
-	protected SimpleProgressDialog(final Window parent) {
+	protected ProgressDialog(final Window parent) {
 		super(parent, Dialog.ModalityType.DOCUMENT_MODAL);
 	}
 
-	public SimpleProgressDialog(final WorkerParentSimple parent, final String title) {
+	public ProgressDialog(final WorkerParentSimple parent, final String title) {
 		this((Window) parent, title, (T) null);
 	}
 
-	public SimpleProgressDialog(final Window parent, final String title, final T worker) {
+	public ProgressDialog(final Window parent, final String title, final T worker) {
 		this(parent);
 
 		setTitle(title);
