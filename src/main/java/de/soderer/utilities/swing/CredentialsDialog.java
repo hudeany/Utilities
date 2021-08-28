@@ -140,6 +140,12 @@ public class CredentialsDialog extends JDialog {
 			rememberCredentialsPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 			final JCheckBox rememberCredentialsCheckBox = new JCheckBox(rememberCredentialsText);
 			rememberCredentialsCheckBox.setSelected(rememberCredentials);
+			rememberCredentialsCheckBox.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent e) {
+					rememberCredentials = rememberCredentialsCheckBox.isSelected();
+				}
+			});
 			rememberCredentialsPanel.add(rememberCredentialsCheckBox);
 			panel.add(rememberCredentialsPanel);
 		}

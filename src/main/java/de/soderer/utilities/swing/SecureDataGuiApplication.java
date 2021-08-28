@@ -51,6 +51,9 @@ public class SecureDataGuiApplication extends JFrame {
 				if (keystoreCredentialsDialog.getCredentials() != null) {
 					final char[] keystorePassword = keystoreCredentialsDialog.getCredentials().getPassword();
 					secureDataStore.save(keystoreFile, keystorePassword, keystoreSalt);
+					if (keystoreCredentialsDialog.isRememberCredentials()) {
+						rememberedKeystorePassword = keystorePassword;
+					}
 				}
 			} else {
 				secureDataStore = new SecureDataStore();
@@ -61,6 +64,9 @@ public class SecureDataGuiApplication extends JFrame {
 				if (keystoreCredentialsDialog.getCredentials() != null) {
 					final char[] keystorePassword = keystoreCredentialsDialog.getCredentials().getPassword();
 					secureDataStore.save(keystoreFile, keystorePassword, keystoreSalt);
+					if (keystoreCredentialsDialog.isRememberCredentials()) {
+						rememberedKeystorePassword = keystorePassword;
+					}
 				}
 			}
 		}
