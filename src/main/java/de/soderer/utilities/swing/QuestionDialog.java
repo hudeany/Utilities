@@ -26,6 +26,7 @@ public class QuestionDialog extends JDialog {
 	private static final long serialVersionUID = 2020023796052296409L;
 
 	private final String text;
+	private Color backgroundcolor = null;
 	private final String[] buttonTexts;
 	private String checkboxText = null;
 	private boolean checkboxStatus = false;
@@ -54,7 +55,9 @@ public class QuestionDialog extends JDialog {
 		final JTextArea textField = new JTextArea();
 		textField.setText(text);
 		textField.setEditable(false);
-		textField.setBackground(Color.LIGHT_GRAY);
+		if (backgroundcolor != null) {
+			textField.setBackground(backgroundcolor);
+		}
 
 		final JScrollPane textScrollpane = new JScrollPane(textField);
 		textScrollpane.setPreferredSize(new Dimension(textField.getPreferredSize().width + 5, textField.getPreferredSize().height + 5));
@@ -138,6 +141,13 @@ public class QuestionDialog extends JDialog {
 		if (buttonToSelect != null) {
 			getRootPane().setDefaultButton(buttonToSelect);
 		}
+	}
+
+	public QuestionDialog setBackgroundColor(final Color backgroundcolor) {
+		this.backgroundcolor = backgroundcolor;
+		remove(panel);
+		createComponents(this);
+		return this;
 	}
 
 	public QuestionDialog setCheckboxText(final String checkboxText) {

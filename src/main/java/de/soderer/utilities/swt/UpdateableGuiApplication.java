@@ -66,7 +66,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			updateProgressDialog = null;
 		}
 
-		new QuestionDialog(getShell(), "Update " + applicationName + " Error", errorText, getI18NString("close")).open();
+		new QuestionDialog(getShell(), "Update " + applicationName + " Error", errorText, getI18NString("close")).setBackgroundColor(SwtColor.LightRed).open();
 	}
 
 	@Override

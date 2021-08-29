@@ -94,7 +94,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 						}
 					} else {
 						if (new File(fileName).exists()) {
-							final QuestionDialog questionDialog = new QuestionDialog(shell, title, LangResources.get("filealreadyexists"), LangResources.get("ok"), LangResources.get("cancel"));
+							final QuestionDialog questionDialog = new QuestionDialog(shell, title, LangResources.get("filealreadyexists"), LangResources.get("ok"), LangResources.get("cancel")).setBackgroundColor(SwtColor.LightRed);
 							if (questionDialog.open() != 0) {
 								retry = false;
 							}
@@ -113,7 +113,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			}
 			return null;
 		} catch (final Exception e) {
-			new QuestionDialog(shell, title, LangResources.get("filewasnotsaved"), LangResources.get("error") + ":\n" + e.getMessage(), LangResources.get("ok")).open();
+			new QuestionDialog(shell, title, LangResources.get("filewasnotsaved"), LangResources.get("error") + ":\n" + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 			return null;
 		}
 	}

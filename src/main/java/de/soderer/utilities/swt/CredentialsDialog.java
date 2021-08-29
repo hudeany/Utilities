@@ -47,7 +47,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 	public CredentialsDialog(final Shell shell, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword,
 			final String text_Username, final String text_Password, final String text_OK, final String text_Cancel) {
-		super(shell, SWT.RESIZE, title);
+		super(shell, title);
 
 		this.text = text;
 		this.text_Username = text_Username;

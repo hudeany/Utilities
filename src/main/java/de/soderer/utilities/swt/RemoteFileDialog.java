@@ -453,7 +453,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 							connection.createFolder(selectedFilePath, folderName);
 							showPathDirectory();
 						} catch (final Exception e) {
-							new QuestionDialog(getParent(), getText(), "Error while creating folder on server: " + e.getMessage(), LangResources.get("ok")).open();
+							new QuestionDialog(getParent(), getText(), "Error while creating folder on server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 						}
 					}
 				}
@@ -471,7 +471,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								folderTree.select(folderTree.getSelection()[0].getParentItem());
 								showPathDirectory();
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
+								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 						}
 					}
@@ -495,7 +495,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								connection.deleteFile(filePath);
 								showPathDirectory();
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
+								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 						}
 					}
@@ -562,7 +562,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).open();
+								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							} finally {
 								if (progressDialog != null) {
 									progressDialog.close();
@@ -591,7 +591,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).open();
+								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							} finally {
 								if (progressDialog != null) {
 									progressDialog.close();
@@ -621,7 +621,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 									showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).open();
+								new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							} finally {
 								if (progressDialog != null) {
 									progressDialog.close();
@@ -649,7 +649,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 									showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).open();
+								new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							} finally {
 								if (progressDialog != null) {
 									progressDialog.close();
@@ -687,7 +687,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while uploading directory: " + e.getMessage(), LangResources.get("ok")).open();
+								new QuestionDialog(getParent(), getText(), "Error while uploading directory: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							} finally {
 								if (progressDialog != null) {
 									progressDialog.close();
@@ -697,7 +697,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 							showPathDirectory();
 						}
 					} else {
-						new QuestionDialog(getParent(), getText(), "Must select some directory to upload to", LangResources.get("ok")).open();
+						new QuestionDialog(getParent(), getText(), "Must select some directory to upload to", LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 					}
 				}
 			});
@@ -750,7 +750,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 				try {
 					connection = new SftpConnection(getServerEntry());
 				} catch (final UnknownHostKeyException e) {
-					if (new QuestionDialog(getParent(), getText(), LangResources.get("confirmNewHostKey", e.getHostnameOrIp(), e.getHostKeyFingerPrint()), LangResources.get("yes"), LangResources.get("no")).open() == 0) {
+					if (new QuestionDialog(getParent(), getText(), LangResources.get("confirmNewHostKey", e.getHostnameOrIp(), e.getHostKeyFingerPrint()), LangResources.get("yes"), LangResources.get("no")).setBackgroundColor(SwtColor.LightRed).open() == 0) {
 						final ByteArrayOutputStream newKnownHosts = new ByteArrayOutputStream();
 						final ServerAccessData serverEntry = getServerEntry();
 						connection = new SftpConnection(serverEntry.getHostname(), serverEntry.getUsername(), FileUtilities.readFileToByteArray(new File(serverEntry.getKeyFile())), serverEntry.getPassword(), serverEntry.getPort(), e.getHostKeyFingerPrint(), newKnownHosts);
@@ -798,7 +798,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			currentPathField.setText(selectedFilePath);
 		} catch (final Exception e) {
 			disconnect();
-			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 		}
 
 		checkButtonStatus();
@@ -944,7 +944,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						passwordWasWrong = false;
 					} catch (final Exception e) {
 						e.printStackTrace();
-						new QuestionDialog(getParent(), getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).open();
+						new QuestionDialog(getParent(), getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 						keyStore = null;
 						passwordWasWrong = true;
 						if (inMemoryPassword != null) {
@@ -1037,7 +1037,7 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 			}
 			selectedFilePath = path;
 		} catch (final Exception e) {
-			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).open();
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 		}
 	}
 }

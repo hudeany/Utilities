@@ -78,7 +78,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			public void widgetSelected(final SelectionEvent e) {
 				final boolean success = MailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : ""), ExceptionUtilities.throwableToString(throwable));
 				if (!success) {
-					new QuestionDialog(getParent(), getText(), getText("CANNOT_OPEN_MAIL"), "OK").open();
+					new QuestionDialog(getParent(), getText(), getText("CANNOT_OPEN_MAIL"), "OK").setBackgroundColor(SwtColor.LightRed).open();
 				}
 			}
 		});

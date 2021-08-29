@@ -6,6 +6,7 @@ import java.util.Locale;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -18,12 +19,13 @@ import de.soderer.utilities.Utilities;
 
 public class QuestionDialog extends ModalDialog<Integer> {
 	private final String text;
+	private Color backgroundcolor = null;
 	private String checkboxText = null;
 	private boolean checkboxStatus = false;
 	private final String[] buttonTexts;
 
 	public QuestionDialog(final Shell shell, final String title, final String text, final String... buttonTexts) {
-		super(shell, SWT.RESIZE, title);
+		super(shell, title);
 
 		this.text = text;
 		this.buttonTexts = buttonTexts;
@@ -36,6 +38,10 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		final Label label = new Label(shell, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		label.setText(text);
+
+		if (backgroundcolor != null) {
+			label.setBackground(backgroundcolor);
+		}
 
 		if (Utilities.isNotBlank(checkboxText)) {
 			final Button checkboxCheckBox = new Button(shell, SWT.CHECK);
@@ -101,8 +107,14 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		}
 	}
 
-	public void setCheckboxText(final String checkboxText) {
+	public QuestionDialog setBackgroundColor(final Color backgroundcolor) {
+		this.backgroundcolor = backgroundcolor;
+		return this;
+	}
+
+	public QuestionDialog setCheckboxText(final String checkboxText) {
 		this.checkboxText = checkboxText;
+		return this;
 	}
 
 	public QuestionDialog setCheckboxStatus(final boolean checkboxStatus) {
