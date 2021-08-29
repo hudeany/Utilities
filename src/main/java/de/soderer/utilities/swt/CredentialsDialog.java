@@ -47,7 +47,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 	public CredentialsDialog(final Shell shell, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword,
 			final String text_Username, final String text_Password, final String text_OK, final String text_Cancel) {
-		super(shell, title);
+		super(shell, SWT.RESIZE, title);
 
 		this.text = text;
 		this.text_Username = text_Username;
@@ -65,17 +65,17 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 		if (Utilities.isNotBlank(text)) {
 			final Label label = new Label(shell, SWT.NONE);
-			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
+			label.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 			label.setText(text);
 		}
 
 		if (aquireUsername) {
 			final Label usernameLabel = new Label(shell, SWT.NONE);
-			usernameLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
+			usernameLabel.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, true));
 			usernameLabel.setText(text_Username);
 
 			final Text usernameTextField = new Text(shell, SWT.BORDER);
-			usernameTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+			usernameTextField.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 			usernameTextField.setText("");
 			usernameTextField.addModifyListener(new ModifyListener() {
 				@Override
@@ -97,11 +97,11 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 		if (aquirePassword) {
 			final Label passwordLabel = new Label(shell, SWT.NONE);
-			passwordLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
+			passwordLabel.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, true));
 			passwordLabel.setText(text_Password);
 
 			final Text passwordTextField = new Text(shell, SWT.BORDER | SWT.PASSWORD);
-			passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+			passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 			passwordTextField.setText("");
 			passwordTextField.addModifyListener(new ModifyListener() {
 				@Override
@@ -123,7 +123,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 		if (Utilities.isNotBlank(rememberCredentialsText)) {
 			final Button rememberCredentialsButton = new Button(shell, SWT.CHECK);
-			rememberCredentialsButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+			rememberCredentialsButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 			rememberCredentialsButton.setText(rememberCredentialsText);
 			rememberCredentialsButton.addSelectionListener(new SelectionAdapter() {
 				@Override
@@ -134,7 +134,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		}
 
 		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);
-		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 
 		okButton = new Button(mainButtonComposite, SWT.PUSH);
