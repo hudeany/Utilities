@@ -95,7 +95,7 @@ public class JarInJarLoader {
 						try {
 							for (final String entryName : getZipFileEntries(new File(jarFilePath))) {
 								if (entryName.toLowerCase().endsWith(".jar")) {
-									if (entryName.startsWith("org.eclipse.swt")) {
+									if (entryName.startsWith("swt")) {
 										swtFound = true;
 										if (osArch.contains("64") && osName.contains("win") && entryName.contains("win32") && entryName.contains("x86_64")) {
 											rsrcClassPath += " " + entryName;
