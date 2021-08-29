@@ -190,7 +190,7 @@ public class SecurePreferencesDialog extends JDialog {
 							secureDataStore.save(securePreferencesFile, getPassword(), salt);
 						} catch (final Exception e) {
 							e.printStackTrace();
-							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).setVisible(true);
+							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 						}
 						currentSecureDataEntry = null;
 						dispose();
@@ -226,7 +226,7 @@ public class SecurePreferencesDialog extends JDialog {
 								secureDataStore.save(securePreferencesFile, getPassword(), salt);
 							} catch (final Exception e) {
 								e.printStackTrace();
-								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).setVisible(true);
+								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 							}
 							currentSecureDataEntry = null;
 							dispose();
@@ -266,7 +266,7 @@ public class SecurePreferencesDialog extends JDialog {
 							secureDataStore.save(securePreferencesFile, getPassword(), salt);
 						} catch (final Exception e) {
 							e.printStackTrace();
-							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).setVisible(true);
+							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 						}
 						currentSecureDataEntry = null;
 						dispose();
@@ -312,7 +312,7 @@ public class SecurePreferencesDialog extends JDialog {
 								secureDataStore.save(securePreferencesFile, getPassword(), salt);
 							} catch (final Exception e) {
 								e.printStackTrace();
-								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).setVisible(true);
+								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 							}
 							currentSecureDataEntry = null;
 							dispose();
@@ -328,7 +328,7 @@ public class SecurePreferencesDialog extends JDialog {
 						secureDataStore.save(securePreferencesFile, getPassword(), salt);
 					} catch (final Exception e) {
 						e.printStackTrace();
-						new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).setVisible(true);
+						new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 					}
 					currentSecureDataEntry = null;
 					dispose();
@@ -424,8 +424,7 @@ public class SecurePreferencesDialog extends JDialog {
 			}
 		} catch (final Exception e) {
 			setPassword(null);
-			final TextDialog textDialog = new TextDialog((Window) getParent(), "ERROR", "ERROR:\n" + e.getMessage(), LangResources.get("close"), false, Color.RED);
-			textDialog.setVisible(true);
+			new QuestionDialog((Window) getParent(), "ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 		}
 	}
 }

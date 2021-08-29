@@ -195,4 +195,14 @@ public class QuestionDialog extends JDialog {
 			return MessageFormat.format(pattern, arguments);
 		}
 	}
+
+	public Integer open() {
+		setVisible(true);
+
+		if (answerButtonIndex < 0) {
+			return null;
+		} else {
+			return answerButtonIndex;
+		}
+	}
 }

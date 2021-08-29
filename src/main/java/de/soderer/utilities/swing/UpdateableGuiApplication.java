@@ -1,6 +1,5 @@
 package de.soderer.utilities.swing;
 
-import java.awt.Color;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.Date;
@@ -62,7 +61,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			updateProgressDialog = null;
 		}
 
-		new TextDialog(this, "Update " + applicationName + " Error", errorText, getI18NString("close"), false, Color.PINK).setVisible(true);
+		new QuestionDialog(this, "Update " + applicationName + " Error", errorText).setBackgroundColor(SwingColor.LightRed).open();
 	}
 
 	@Override
@@ -79,7 +78,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			updateProgressDialog = null;
 		}
 
-		new QuestionDialog(this, "Update " + applicationName, getI18NString("updateDone"), getI18NString("restartNow")).setVisible(true);
+		new QuestionDialog(this, "Update " + applicationName, getI18NString("updateDone"), getI18NString("restartNow")).open();
 	}
 
 	@Override
@@ -90,7 +89,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 				questionDialog.setCheckboxText(getI18NString("dailyUpdateCheck"));
 				questionDialog.setCheckboxStatus(isDailyUpdateCheckActivated());
 			}
-			questionDialog.setVisible(true);
+			questionDialog.open();
 			setDailyUpdateCheckStatus(questionDialog.getCheckboxStatus());
 			return false;
 		} else {
@@ -99,7 +98,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 				questionDialog.setCheckboxText(getI18NString("dailyUpdateCheck"));
 				questionDialog.setCheckboxStatus(isDailyUpdateCheckActivated());
 			}
-			questionDialog.setVisible(true);
+			questionDialog.open();
 			setDailyUpdateCheckStatus(questionDialog.getCheckboxStatus());
 			if (questionDialog.getAnswerButtonIndex() == 0) {
 				return true;

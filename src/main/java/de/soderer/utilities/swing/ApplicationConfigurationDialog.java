@@ -1,7 +1,6 @@
 package de.soderer.utilities.swing;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -300,8 +299,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 				try {
 					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, applicationName, applicationVersion, trustedUpdateCaCertificate, null, null, "gui");
 				} catch (final Exception e) {
-					final TextDialog textDialog = new TextDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage(), LangResources.get("close"), false, Color.PINK);
-					textDialog.setVisible(true);
+					new QuestionDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 				}
 			}
 		});
