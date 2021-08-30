@@ -224,7 +224,7 @@
 						<phase>package</phase>
 						<configuration>
 							<target>
-								<signjar destDir="target" alias="soderer-de-java-2020" keystore="../soderer-de-java-2020_keystore.jks" storepass="+u1F}&lt;}D(Kf_NvFrFX706574780T?LP'" keypass="5veQptNfbMrjcGaEQHh6" preservelastmodified="true" tsaurl="http://sha256timestamp.ws.symantec.com/sha256/timestamp">
+								<signjar destDir="target" alias="soderer-de-java-2021" keystore="../soderer-de-java-2021_keystore.jks" storepass="+u1F}&lt;}D(Kf_NvFrFX706574780T?LP'" keypass="5veQptNfbMrjcGaEQHh6" preservelastmodified="true" tsaurl="http://sha256timestamp.ws.symantec.com/sha256/timestamp">
 									<path>
 										<fileset dir="target" includes="soderer-utilities-*.jar" />
 									</path>
