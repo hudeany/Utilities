@@ -1,4 +1,4 @@
-package de.soderer.utilities.swing;
+package de.soderer.utilities;
 
 public enum Result {
 	OK,

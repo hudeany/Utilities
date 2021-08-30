@@ -27,6 +27,7 @@ import javax.swing.JPanel;
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Result;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;

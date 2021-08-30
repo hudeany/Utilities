@@ -14,6 +14,7 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.Result;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
@@ -79,7 +80,9 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	@Override
 	public Result open() {
 		if (worker != null) {
-			new Thread(worker).start();
+			if (worker.getStartTime() == null) {
+				new Thread(worker).start();
+			}
 		}
 
 		setVisible(true);

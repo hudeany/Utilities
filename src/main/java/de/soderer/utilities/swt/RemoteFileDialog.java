@@ -35,6 +35,7 @@ import de.soderer.utilities.Credentials;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Result;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
@@ -551,9 +552,10 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						if (sourcePath != null) {
 							try {
 								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
-								progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("upload"));
+								progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
 								new Thread(fileUploadWorker).start();
-								if (progressDialog.open()) {
+								final Result dialogResult = progressDialog.open();
+								if (dialogResult == Result.CANCELED) {
 									fileUploadWorker.cancel(true);
 									showMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
 								} else {
@@ -580,9 +582,10 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						if (sourcePath != null) {
 							try {
 								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
-								progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("upload"));
+								progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
 								new Thread(fileUploadWorker).start();
-								if (progressDialog.open()) {
+								final Result dialogResult = progressDialog.open();
+								if (dialogResult == Result.CANCELED) {
 									fileUploadWorker.cancel(true);
 									showMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
 								} else {
@@ -610,9 +613,10 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						if (destinationPath != null) {
 							try {
 								final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(remoteFileDialog, connection, currentPath, new File(destinationPath));
-								progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "");
+								progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "", directoryDownloadWorker);
 								new Thread(directoryDownloadWorker).start();
-								if (progressDialog.open()) {
+								final Result dialogResult = progressDialog.open();
+								if (dialogResult == Result.CANCELED) {
 									directoryDownloadWorker.cancel(true);
 									showMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
 								} else {
@@ -638,9 +642,10 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						if (destinationPath != null) {
 							try {
 								final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(remoteFileDialog, connection, currentPath, new File(destinationPath));
-								progressDialog = new ProgressDialog(getParent(), getText(), LangResources.get("download"));
+								progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("download"), fileDownloadWorker);
 								new Thread(fileDownloadWorker).start();
-								if (progressDialog.open()) {
+								final Result dialogResult = progressDialog.open();
+								if (dialogResult == Result.CANCELED) {
 									fileDownloadWorker.cancel(true);
 									showMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
 								} else {
@@ -676,9 +681,10 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						if (sourcePath != null) {
 							try {
 								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
-								progressDialog = new DualProgressDialog(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "");
+								progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "", directoryUploadWorker);
 								new Thread(directoryUploadWorker).start();
-								if (progressDialog.open()) {
+								final Result dialogResult = progressDialog.open();
+								if (dialogResult == Result.CANCELED) {
 									directoryUploadWorker.cancel(true);
 									showMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
 								} else {

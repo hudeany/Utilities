@@ -11,13 +11,13 @@ import de.soderer.utilities.worker.WorkerParentSimple;
 public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> implements WorkerParentSimple {
 	private static final transient Logger logger = Logger.getLogger(ProgressShowingModalDialog.class);
 
-	protected ProgressDialog progressDialog;
+	protected ProgressDialog<?> progressDialog;
 
-	public ProgressShowingModalDialog(Shell parentShell, String title) {
+	public ProgressShowingModalDialog(final Shell parentShell, final String title) {
 		super(parentShell, SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 
-	public ProgressShowingModalDialog(Shell parentShell, int style, String title) {
+	public ProgressShowingModalDialog(final Shell parentShell, final int style, final String title) {
 		super(parentShell, style | SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL, title);
 	}
 
@@ -32,13 +32,13 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> imple
 					}
 				}
 			});
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			logger.error("Error in showUnlimitedProgress", e);
 		}
 	}
 
 	@Override
-	public void showProgress(Date start, final long itemsToDo, final long itemsDone) {
+	public void showProgress(final Date start, final long itemsToDo, final long itemsDone) {
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
@@ -54,7 +54,7 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> imple
 	}
 
 	@Override
-	public void showDone(Date start, Date end, long itemsDone) {
+	public void showDone(final Date start, final Date end, final long itemsDone) {
 		try {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -63,12 +63,12 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> imple
 						if (progressDialog != null && !progressDialog.isDisposed()) {
 							progressDialog.close();
 						}
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						logger.error("Error in showDone", e);
 					}
 				}
 			});
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			logger.error("Error in showDone", e);
 		}
 	}
@@ -77,9 +77,9 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> imple
 	public void cancel() {
 		// Do nothing
 	}
-	
+
 	@Override
-	public void changeTitle(String newTitle) {
+	public void changeTitle(final String newTitle) {
 		// Do nothing
 	}
 }

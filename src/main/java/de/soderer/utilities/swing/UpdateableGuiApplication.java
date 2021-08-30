@@ -10,6 +10,7 @@ import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class UpdateableGuiApplication extends SecureDataGuiApplication implements ApplicationUpdateParent {
 	private static final long serialVersionUID = 1869492889654406822L;
@@ -97,19 +98,15 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 				questionDialog.setCheckboxText(getI18NString("dailyUpdateCheck"));
 				questionDialog.setCheckboxStatus(isDailyUpdateCheckActivated());
 			}
-			questionDialog.open();
+			final Integer buttonIndex = questionDialog.open();
 			setDailyUpdateCheckStatus(questionDialog.getCheckboxStatus());
-			if (questionDialog.getDefaultReturnValue() != null && questionDialog.getDefaultReturnValue() == 0) {
-				return true;
-			} else {
-				return false;
-			}
+			return buttonIndex != null && buttonIndex == 0;
 		}
 	}
 
 	@Override
-	public void showUpdateDownloadStart() {
-		updateProgressDialog = new ProgressDialog<>(this, "Update " + applicationName, null);
+	public void showUpdateDownloadStart(final WorkerSimple<Boolean> worker) {
+		updateProgressDialog = new ProgressDialog<>(this, "Update " + applicationName, worker);
 		updateProgressDialog.open();
 	}
 

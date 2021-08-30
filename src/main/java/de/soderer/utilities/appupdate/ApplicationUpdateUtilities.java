@@ -504,7 +504,7 @@ public class ApplicationUpdateUtilities {
 			new Thread(fileDownloadWorker).start();
 
 			if (updateParent != null) {
-				updateParent.showUpdateDownloadStart();
+				updateParent.showUpdateDownloadStart(fileDownloadWorker);
 			}
 
 			while (!fileDownloadWorker.isDone()) {
@@ -512,11 +512,15 @@ public class ApplicationUpdateUtilities {
 				Thread.sleep(1000);
 			}
 
+			if (fileDownloadWorker.isCancelled()) {
+				return false;
+			}
+
 			if (!fileDownloadWorker.get()) {
 				throw new Exception("Download was not successful");
 			}
 
-			return !fileDownloadWorker.isCancelled();
+			return true;
 		} catch (final Exception e) {
 			if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
 				throw (UserError) e.getCause();

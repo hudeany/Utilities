@@ -26,8 +26,8 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				if (progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
 						if (subItemToDoParam > 0) {
 							dualProgressDialog.setSubProgress(subItemToDoParam, subItemDoneParam);
@@ -44,8 +44,8 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				if (progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
 						dualProgressDialog.setSubItemTitle(subItemTitle);
 					}
@@ -59,8 +59,8 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				if (progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
 						dualProgressDialog.showUnlimitedProgress();
 					}
@@ -74,8 +74,8 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				if (progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
 						dualProgressDialog.setSubItemTitle(itemName);
 						dualProgressDialog.setSubProgress(100, 0);
@@ -90,8 +90,8 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				if (progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
 						dualProgressDialog.setSubProgress(subItemToDo, subItemDone);
 					}
@@ -105,8 +105,8 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 		getParent().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				if (progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog dualProgressDialog = (DualProgressDialog) progressDialog;
+				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
+					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
 					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
 						dualProgressDialog.setSubProgress(subItemsDone, subItemsDone);
 					}

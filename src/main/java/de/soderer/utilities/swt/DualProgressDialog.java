@@ -14,15 +14,21 @@ import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Result;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.worker.WorkerDual;
 
-public class DualProgressDialog extends ProgressDialog {
+public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<T> {
 	private String subCommentStringFormat;
 	private Label subCommentLabel;
 	private ProgressBar subBar;
 
 	public DualProgressDialog(final Shell shell, final String title, final String commentStringFormat, final String subCommentStringFormat) {
-		super(shell, title, commentStringFormat);
+		this(shell, title, commentStringFormat, subCommentStringFormat, null);
+	}
+
+	public DualProgressDialog(final Shell shell, final String title, final String commentStringFormat, final String subCommentStringFormat, final T worker) {
+		super(shell, title, commentStringFormat, worker);
 
 		this.subCommentStringFormat = subCommentStringFormat;
 	}
@@ -67,7 +73,11 @@ public class DualProgressDialog extends ProgressDialog {
 				buttonClose.addSelectionListener(new SelectionAdapter() {
 					@Override
 					public void widgetSelected(final SelectionEvent e) {
-						setReturnValue(true);
+						setReturnValue(Result.CANCELED);
+						canceledByUser = true;
+						if (worker != null) {
+							worker.cancel();
+						}
 						getParent().close();
 					}
 				});
@@ -108,6 +118,25 @@ public class DualProgressDialog extends ProgressDialog {
 			if (subCommentLabel != null) {
 				subCommentLabel.setText(MessageFormat.format(subCommentStringFormat, done, todo, done * 100 / todo));
 			}
+		}
+	}
+
+	@Override
+	public Result open() {
+		if (worker != null) {
+			if (worker.getStartTime() == null) {
+				new Thread(worker).start();
+			}
+		}
+
+		super.open();
+
+		if (canceledByUser) {
+			return Result.CANCELED;
+		} else if (worker == null || worker.getError() == null) {
+			return Result.OK;
+		} else {
+			return Result.ERROR;
 		}
 	}
 }

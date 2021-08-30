@@ -14,19 +14,28 @@ import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.Result;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.worker.WorkerSimple;
 
-public class ProgressDialog extends ModalDialog<Boolean> {
+public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Result> {
 	protected String commentStringFormat;
 	protected Label commentLabel;
 	protected ProgressBar bar;
 	protected boolean isClosed = false;
 	private Thread unlimitedRunner = null;
+	protected T worker;
+	protected boolean canceledByUser = false;
 
 	public ProgressDialog(final Shell shell, final String title, final String commentStringFormat) {
+		this(shell, title, commentStringFormat, (T) null);
+	}
+
+	public ProgressDialog(final Shell shell, final String title, final String commentStringFormat, final T worker) {
 		super(shell, title);
 
 		this.commentStringFormat = commentStringFormat;
+		this.worker = worker;
 	}
 
 	@Override
@@ -60,7 +69,11 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 				buttonClose.addSelectionListener(new SelectionAdapter() {
 					@Override
 					public void widgetSelected(final SelectionEvent e) {
-						setReturnValue(true);
+						setReturnValue(Result.CANCELED);
+						canceledByUser = true;
+						if (worker != null) {
+							worker.cancel();
+						}
 						getParent().close();
 					}
 				});
@@ -157,21 +170,36 @@ public class ProgressDialog extends ModalDialog<Boolean> {
 	}
 
 	public void close() {
-		if (!isClosed) {
+		if (!isClosed && getParent() != null && !getParent().isDisposed()) {
 			isClosed = true;
 
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					getParent().close();
+					if (getParent() != null) {
+						getParent().close();
+					}
 				}
 			});
 		}
-		setReturnValue(false);
 	}
 
 	@Override
-	protected Boolean getDefaultReturnValue() {
-		return false;
+	public Result open() {
+		if (worker != null) {
+			if (worker.getStartTime() == null) {
+				new Thread(worker).start();
+			}
+		}
+
+		super.open();
+
+		if (canceledByUser) {
+			return Result.CANCELED;
+		} else if (worker == null || worker.getError() == null) {
+			return Result.OK;
+		} else {
+			return Result.ERROR;
+		}
 	}
 }

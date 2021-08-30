@@ -8,6 +8,7 @@ import java.util.Locale;
 
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
 import de.soderer.utilities.console.ConsoleUtilities;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	private final String applicationName;
@@ -88,7 +89,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	}
 
 	@Override
-	public void showUpdateDownloadStart() {
+	public void showUpdateDownloadStart(final WorkerSimple<Boolean> worker) {
 		// Do nothing
 	}
 

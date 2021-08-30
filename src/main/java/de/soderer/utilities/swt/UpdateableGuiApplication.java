@@ -12,12 +12,13 @@ import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public class UpdateableGuiApplication extends SecureDataGuiApplication implements ApplicationUpdateParent {
 	private final String applicationName;
 	private final Version applicationVersion;
 
-	private ProgressDialog updateProgressDialog;
+	private ProgressDialog<?> updateProgressDialog;
 
 	public UpdateableGuiApplication(final Display display, final String applicationName, final Version applicationVersion, final File keystoreFile, final byte[] keystoreSalt) throws Exception {
 		super(display, keystoreFile, keystoreSalt);
@@ -59,7 +60,9 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					updateProgressDialog.close();
+					if (updateProgressDialog != null) {
+						updateProgressDialog.close();
+					}
 				}
 			});
 
@@ -75,7 +78,9 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					updateProgressDialog.setProgress(itemsToDo, itemsDone);
+					if (updateProgressDialog != null) {
+						updateProgressDialog.setProgress(itemsToDo, itemsDone);
+					}
 				}
 			});
 		}
@@ -108,15 +113,15 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 				questionDialog.setCheckboxText(getI18NString("dailyUpdateCheck"));
 				questionDialog.setCheckboxStatus(isDailyUpdateCheckActivated());
 			}
-			final int resultValue = questionDialog.open();
+			final Integer buttonIndex = questionDialog.open();
 			setDailyUpdateCheckStatus(questionDialog.getCheckboxStatus());
-			return resultValue == 0;
+			return buttonIndex != null && buttonIndex == 0;
 		}
 	}
 
 	@Override
-	public void showUpdateDownloadStart() {
-		updateProgressDialog = new ProgressDialog(getShell(), "Update " + applicationName, null);
+	public void showUpdateDownloadStart(final WorkerSimple<Boolean> worker) {
+		updateProgressDialog = new ProgressDialog<>(getShell(), "Update " + applicationName, null, worker);
 		updateProgressDialog.open();
 	}
 

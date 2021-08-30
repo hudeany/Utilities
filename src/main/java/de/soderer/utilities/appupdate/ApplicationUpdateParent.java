@@ -4,6 +4,7 @@ import java.util.Date;
 
 import de.soderer.utilities.CredentialsParent;
 import de.soderer.utilities.Version;
+import de.soderer.utilities.worker.WorkerSimple;
 
 public interface ApplicationUpdateParent extends CredentialsParent {
 	void showUpdateError(String errorText);
@@ -14,7 +15,7 @@ public interface ApplicationUpdateParent extends CredentialsParent {
 
 	boolean askForUpdate(Version availableNewVersion) throws Exception;
 
-	void showUpdateDownloadStart();
+	void showUpdateDownloadStart(WorkerSimple<Boolean> worker);
 
 	void showUpdateDownloadEnd();
 }
