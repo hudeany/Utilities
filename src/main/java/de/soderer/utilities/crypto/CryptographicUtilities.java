@@ -821,7 +821,7 @@ public class CryptographicUtilities {
 	public static X509Certificate[] getChainRootCertificates(final Certificate[] certs) {
 		final Vector<X509Certificate> result = new Vector<>();
 		for (int i = 0; i < certs.length - 1; i++) {
-			if (!((X509Certificate) certs[i + 1]).getSubjectDN().equals(((X509Certificate) certs[i]).getIssuerDN())) {
+			if (!((X509Certificate) certs[i + 1]).getSubjectX500Principal().equals(((X509Certificate) certs[i]).getIssuerX500Principal())) {
 				result.addElement((X509Certificate) certs[i]);
 			}
 		}
@@ -871,7 +871,7 @@ public class CryptographicUtilities {
 	}
 
 	public static String getCnFromCertificate(final X509Certificate certificate) throws InvalidNameException {
-		final Principal principal = certificate.getSubjectDN();
+		final Principal principal = certificate.getSubjectX500Principal();
 		final String dn = principal.getName();
 		final LdapName ln = new LdapName(dn);
 
@@ -1005,9 +1005,9 @@ public class CryptographicUtilities {
 		String dataOutput = "";
 		dataOutput += "CN: " + CryptographicUtilities.getCnFromCertificate(certificate);
 		dataOutput += "\n";
-		dataOutput += "Subject: " + certificate.getSubjectDN();
+		dataOutput += "Subject: " + certificate.getSubjectX500Principal();
 		dataOutput += "\n";
-		dataOutput += "Issuer: " + certificate.getIssuerDN();
+		dataOutput += "Issuer: " + certificate.getIssuerX500Principal();
 		dataOutput += "\n";
 		dataOutput += "is CA-certificate: " + (CryptographicUtilities.checkForCaCertificate(certificate) ? "true" : "false");
 		dataOutput += "\n";

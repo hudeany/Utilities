@@ -330,7 +330,7 @@ public class Email {
 				}
 
 				String certEmail = null;
-				for (final String token : Utilities.parseTokens(signatureCertificate.getSubjectDN().toString(), ',')) {
+				for (final String token : Utilities.parseTokens(signatureCertificate.getSubjectX500Principal().toString(), ',')) {
 					final String[] keyValueParts = token.trim().split("=");
 					if (keyValueParts.length >= 2 && ("E".equals(keyValueParts[0]) || "EMAILADDRESS".equals(keyValueParts[0]))) {
 						certEmail = keyValueParts[1];
@@ -356,7 +356,7 @@ public class Email {
 
 			if (encryptionCertificate != null) {
 				String certEmail = null;
-				for (final String token : Utilities.parseTokens(encryptionCertificate.getSubjectDN().toString(), ',')) {
+				for (final String token : Utilities.parseTokens(encryptionCertificate.getSubjectX500Principal().toString(), ',')) {
 					final String[] keyValueParts = token.trim().split("=");
 					if (keyValueParts.length >= 2 && ("E".equals(keyValueParts[0]) || "EMAILADDRESS".equals(keyValueParts[0]))) {
 						certEmail = keyValueParts[1];
