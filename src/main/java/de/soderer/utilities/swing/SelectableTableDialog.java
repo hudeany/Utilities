@@ -1,7 +1,6 @@
 package de.soderer.utilities.swing;
 
 import java.awt.Color;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -12,7 +11,6 @@ import java.util.List;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -22,7 +20,7 @@ import javax.swing.table.TableColumn;
 
 import de.soderer.utilities.Utilities;
 
-public class SelectableTableDialog extends JDialog {
+public class SelectableTableDialog extends ModalDialog<Boolean> {
 	private static final long serialVersionUID = -718203702968699038L;
 
 	private JTable table;
@@ -30,7 +28,7 @@ public class SelectableTableDialog extends JDialog {
 	private List<List<String>> selectedItems;
 
 	public SelectableTableDialog(final Window parent, final String title, final String text, final List<String> headers, final List<List<String>> items, final boolean defaultState, final String selectAllButtonText, final String selectNoneButtonText, final String selectButtonText, final String cancelButtonText) {
-		super(parent, title, Dialog.ModalityType.DOCUMENT_MODAL);
+		super(parent, title);
 
 		final SelectableTableDialog dialog = this;
 

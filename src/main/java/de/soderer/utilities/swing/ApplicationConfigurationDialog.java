@@ -1,7 +1,6 @@
 package de.soderer.utilities.swing;
 
 import java.awt.BorderLayout;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Image;
@@ -20,27 +19,20 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.NetworkUtilities;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
-import de.soderer.utilities.VersionInfo;
 import de.soderer.utilities.appupdate.ApplicationUpdateUtilities;
-import de.soderer.utilities.xml.XmlUtilities;
 
-public class ApplicationConfigurationDialog extends JDialog {
+public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private static final long serialVersionUID = 422519084107817691L;
 
 	public static final String CONFIG_LANGUAGE = "Application.Language";
@@ -55,7 +47,6 @@ public class ApplicationConfigurationDialog extends JDialog {
 	private final String trustedUpdateCaCertificate;
 	private List<String> availableLanguages = Utilities.getList("de", "en");
 	private String language;
-	private Result result = Result.ERROR;
 
 	private JPanel configurationValuesPanel;
 
@@ -90,12 +81,8 @@ public class ApplicationConfigurationDialog extends JDialog {
 		return this;
 	}
 
-	public Result getResult() {
-		return result;
-	}
-
 	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final Version applicationVersion, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
-		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")", Dialog.ModalityType.DOCUMENT_MODAL);
+		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")");
 
 		this.updateParent = updateParent;
 		this.applicationName = applicationName;
@@ -139,6 +126,8 @@ public class ApplicationConfigurationDialog extends JDialog {
 		pack();
 
 		setLocationRelativeTo(updateParent);
+
+		returnValue = Result.ERROR;
 	}
 
 	private JPanel createConfigurationValuesPanel() {
@@ -322,7 +311,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				applicationConfiguration.set(CONFIG_LANGUAGE, language);
-				result = Result.OK;
+				returnValue = Result.OK;
 				dispose();
 			}
 		});
@@ -335,7 +324,7 @@ public class ApplicationConfigurationDialog extends JDialog {
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				result = Result.CANCELED;
+				returnValue = Result.CANCELED;
 				dispose();
 			}
 		});
@@ -356,26 +345,5 @@ public class ApplicationConfigurationDialog extends JDialog {
 			applicationJarFileName = null;
 		}
 		return applicationJarFileName;
-	}
-
-	public static String checkForNewVersionAvailable(final String versioninfoDownloadUrl) throws Exception {
-		final String homeUrl = NetworkUtilities.getProtocolFromRequestString(versioninfoDownloadUrl) + "://" + NetworkUtilities.getHostnameFromRequestString(versioninfoDownloadUrl);
-
-		if (!NetworkUtilities.checkForNetworkConnection()) {
-			throw new Exception(LangResources.get("error.missingNetworkConnection"));
-		} else if (!NetworkUtilities.ping(homeUrl)) {
-			throw new Exception(LangResources.get("error.missingInternetConnection"));
-		}
-
-		final Document versionsDocument = XmlUtilities.downloadAndParseXmlFile(versioninfoDownloadUrl);
-		final Node multiedNode = XmlUtilities.getSingleXPathNode(versionsDocument, "ApplicationVersions/MultiEd");
-		final Node versionNode = multiedNode.getAttributes().getNamedItem("version");
-		final String version = versionNode.getNodeValue();
-
-		if (VersionInfo.getApplicationVersion().compareTo(new Version(version)) < 0) {
-			return version;
-		} else {
-			return null;
-		}
 	}
 }

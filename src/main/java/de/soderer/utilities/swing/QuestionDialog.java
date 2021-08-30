@@ -1,7 +1,6 @@
 package de.soderer.utilities.swing;
 
 import java.awt.Color;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
@@ -14,7 +13,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -22,7 +20,7 @@ import javax.swing.JTextArea;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
-public class QuestionDialog extends JDialog {
+public class QuestionDialog extends ModalDialog<Integer> {
 	private static final long serialVersionUID = 2020023796052296409L;
 
 	private final String text;
@@ -33,10 +31,8 @@ public class QuestionDialog extends JDialog {
 
 	private JPanel panel;
 
-	private int answerButtonIndex = -1;
-
 	public QuestionDialog(final Window parent, final String title, final String text, final String... buttonTexts) {
-		super(parent, title, Dialog.ModalityType.DOCUMENT_MODAL);
+		super(parent, title);
 
 		this.text = text;
 		this.buttonTexts = buttonTexts;
@@ -107,7 +103,7 @@ public class QuestionDialog extends JDialog {
 				nextButton.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(final ActionEvent event) {
-						questionDialog.setAnswerButtonIndex(answerButtonIndexFinal);
+						returnValue = answerButtonIndexFinal;
 						questionDialog.dispose();
 					}
 				});
@@ -168,14 +164,6 @@ public class QuestionDialog extends JDialog {
 		return checkboxStatus;
 	}
 
-	public int getAnswerButtonIndex() {
-		return answerButtonIndex;
-	}
-
-	private void setAnswerButtonIndex(final int answerButtonIndex) {
-		this.answerButtonIndex = answerButtonIndex;
-	}
-
 	private static String getI18NString(final String resourceKey, final Object... arguments) {
 		if (LangResources.existsKey(resourceKey)) {
 			return LangResources.get(resourceKey, arguments);
@@ -193,16 +181,6 @@ public class QuestionDialog extends JDialog {
 				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
-		}
-	}
-
-	public Integer open() {
-		setVisible(true);
-
-		if (answerButtonIndex < 0) {
-			return null;
-		} else {
-			return answerButtonIndex;
 		}
 	}
 }

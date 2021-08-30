@@ -1,6 +1,5 @@
 package de.soderer.utilities.swing;
 
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
@@ -10,7 +9,6 @@ import java.util.Date;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
@@ -19,23 +17,19 @@ import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
-public class ProgressDialog<T extends WorkerSimple<?>> extends JDialog implements WorkerParentSimple {
+public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Result> implements WorkerParentSimple {
 	private static final long serialVersionUID = 4039220978715450890L;
 
 	protected T worker;
 	protected JProgressBar progressBar;
 	protected boolean canceledByUser = false;
 
-	protected ProgressDialog(final Window parent) {
-		super(parent, Dialog.ModalityType.DOCUMENT_MODAL);
-	}
-
 	public ProgressDialog(final WorkerParentSimple parent, final String title) {
 		this((Window) parent, title, (T) null);
 	}
 
 	public ProgressDialog(final Window parent, final String title, final T worker) {
-		this(parent);
+		super(parent, title);
 
 		setTitle(title);
 
@@ -82,7 +76,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends JDialog implement
 		return worker;
 	}
 
-	public Result showDialog() {
+	@Override
+	public Result open() {
 		if (worker != null) {
 			new Thread(worker).start();
 		}
@@ -96,15 +91,6 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends JDialog implement
 		} else {
 			return Result.ERROR;
 		}
-	}
-
-	/**
-	 * @deprecated use method "showDialog()" instead
-	 */
-	@Override
-	@Deprecated
-	public void setVisible(final boolean value) {
-		super.setVisible(value);
 	}
 
 	@Override

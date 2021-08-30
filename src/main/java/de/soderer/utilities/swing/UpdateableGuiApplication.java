@@ -43,8 +43,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 		if (downloadCredentials == null) {
 			final CredentialsDialog downloadCredentialsDialog = new CredentialsDialog(this, "Update " + applicationName, text, aquireUsername, aquirePassword);
 			downloadCredentialsDialog.setRememberCredentialsText(LangResources.get("rememberUpdateCredentials"));
-			downloadCredentialsDialog.setVisible(true);
-			downloadCredentials = downloadCredentialsDialog.getCredentials();
+			downloadCredentials = downloadCredentialsDialog.open();
 
 			if (downloadCredentials != null && downloadCredentialsDialog.isRememberCredentials()) {
 				saveKeyStoreValue("Update_Credentials", downloadCredentials);
@@ -100,7 +99,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			}
 			questionDialog.open();
 			setDailyUpdateCheckStatus(questionDialog.getCheckboxStatus());
-			if (questionDialog.getAnswerButtonIndex() == 0) {
+			if (questionDialog.getDefaultReturnValue() != null && questionDialog.getDefaultReturnValue() == 0) {
 				return true;
 			} else {
 				return false;
@@ -111,7 +110,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	@Override
 	public void showUpdateDownloadStart() {
 		updateProgressDialog = new ProgressDialog<>(this, "Update " + applicationName, null);
-		updateProgressDialog.showDialog();
+		updateProgressDialog.open();
 	}
 
 	@Override

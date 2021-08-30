@@ -1,7 +1,6 @@
 package de.soderer.utilities.swing;
 
 import java.awt.Color;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -15,7 +14,6 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -25,12 +23,13 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
+import de.soderer.utilities.Credentials;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WrongPasswordException;
 
-public class SecurePreferencesDialog extends JDialog {
+public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 	private static final long serialVersionUID = -2855354859482098916L;
 
 	private final File securePreferencesFile;
@@ -60,7 +59,7 @@ public class SecurePreferencesDialog extends JDialog {
 	public SecurePreferencesDialog(final Window parent, final String title, final String text, final File securePreferencesFile, final byte[] salt,
 			final String textButton_Load, final String textButton_Create, final String textButton_Update, final String textButton_Delete, final String textButton_Save, final String textButton_Cancel, final String text_PasswordText,
 			final String text_Username, final String text_Password, final String text_OK, final String text_Cancel) {
-		super(parent, title, Dialog.ModalityType.DOCUMENT_MODAL);
+		super(parent, title);
 
 		this.text_Username = text_Username;
 		this.text_PasswordText = text_PasswordText;
@@ -178,9 +177,9 @@ public class SecurePreferencesDialog extends JDialog {
 					secureDataStore.addEntry(newNameField.getText(), currentSecureDataEntry);
 					if (getPassword() == null) {
 						final CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
-						credentialsDialog.setVisible(true);
-						if (credentialsDialog.getCredentials() != null) {
-							setPassword(credentialsDialog.getCredentials().getPassword());
+						final Credentials credentials = credentialsDialog.open();
+						if (credentials != null) {
+							setPassword(credentials.getPassword());
 						} else {
 							setPassword(null);
 						}
@@ -214,9 +213,9 @@ public class SecurePreferencesDialog extends JDialog {
 						secureDataStore.addEntry(entryName, currentSecureDataEntry);
 						if (getPassword() == null) {
 							final CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
-							credentialsDialog.setVisible(true);
-							if (credentialsDialog.getCredentials() != null) {
-								setPassword(credentialsDialog.getCredentials().getPassword());
+							final Credentials credentials = credentialsDialog.open();
+							if (credentials != null) {
+								setPassword(credentials.getPassword());
 							} else {
 								setPassword(null);
 							}
@@ -254,9 +253,9 @@ public class SecurePreferencesDialog extends JDialog {
 					}
 					if (getPassword() == null) {
 						final CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
-						credentialsDialog.setVisible(true);
-						if (credentialsDialog.getCredentials() != null) {
-							setPassword(credentialsDialog.getCredentials().getPassword());
+						final Credentials credentials = credentialsDialog.open();
+						if (credentials != null) {
+							setPassword(credentials.getPassword());
 						} else {
 							setPassword(null);
 						}
@@ -300,9 +299,9 @@ public class SecurePreferencesDialog extends JDialog {
 						secureDataStore.addEntry(entryName, currentSecureDataEntry);
 						if (getPassword() == null) {
 							final CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
-							credentialsDialog.setVisible(true);
-							if (credentialsDialog.getCredentials() != null) {
-								setPassword(credentialsDialog.getCredentials().getPassword());
+							final Credentials credentials = credentialsDialog.open();
+							if (credentials != null) {
+								setPassword(credentials.getPassword());
 							} else {
 								setPassword(null);
 							}
@@ -321,9 +320,9 @@ public class SecurePreferencesDialog extends JDialog {
 				}
 
 				final CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
-				credentialsDialog.setVisible(true);
-				if (credentialsDialog.getCredentials() != null) {
-					setPassword(credentialsDialog.getCredentials().getPassword());
+				final Credentials credentials = credentialsDialog.open();
+				if (credentials != null) {
+					setPassword(credentials.getPassword());
 					try {
 						secureDataStore.save(securePreferencesFile, getPassword(), salt);
 					} catch (final Exception e) {
@@ -388,7 +387,8 @@ public class SecurePreferencesDialog extends JDialog {
 		latestPassword = password;
 	}
 
-	public void showDialog() {
+	@Override
+	public Boolean open() {
 		try {
 			if (securePreferencesFile.exists()) {
 				boolean retry = true;
@@ -399,9 +399,9 @@ public class SecurePreferencesDialog extends JDialog {
 					} catch (@SuppressWarnings("unused") final WrongPasswordException e) {
 						secureDataStore = null;
 						final CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
-						credentialsDialog.setVisible(true);
-						if (credentialsDialog.getCredentials() != null) {
-							setPassword(credentialsDialog.getCredentials().getPassword());
+						final Credentials credentials = credentialsDialog.open();
+						if (credentials != null) {
+							setPassword(credentials.getPassword());
 						} else {
 							setPassword(null);
 							retry = false;
@@ -426,5 +426,6 @@ public class SecurePreferencesDialog extends JDialog {
 			setPassword(null);
 			new QuestionDialog((Window) getParent(), "ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 		}
+		return true;
 	}
 }

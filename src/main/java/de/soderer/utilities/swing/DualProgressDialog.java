@@ -28,14 +28,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	public DualProgressDialog(final Window parent, final String title, final T worker) {
-		super(parent);
-
-		setTitle(title);
-
-		this.worker = worker;
-		if (worker != null) {
-			worker.setParent(this);
-		}
+		super(parent, title, worker);
 
 		setResizable(false);
 

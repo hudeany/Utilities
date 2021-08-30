@@ -1,7 +1,6 @@
 package de.soderer.utilities.swing;
 
 import java.awt.Color;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
@@ -16,7 +15,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
@@ -28,7 +26,7 @@ import de.soderer.utilities.Credentials;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
-public class CredentialsDialog extends JDialog {
+public class CredentialsDialog extends ModalDialog<Credentials> {
 	private static final long serialVersionUID = 2020023796052296409L;
 
 	private final String text;
@@ -48,7 +46,6 @@ public class CredentialsDialog extends JDialog {
 	private JTextField userField;
 	private JTextField passwordField;
 
-	private Credentials credentials = null;
 	private boolean rememberCredentials = false;
 
 	public CredentialsDialog(final Window parent, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword) {
@@ -57,7 +54,7 @@ public class CredentialsDialog extends JDialog {
 
 	public CredentialsDialog(final Window parent, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword,
 			final String text_Username, final String text_Password, final String text_OK, final String text_Cancel) {
-		super(parent, title, Dialog.ModalityType.DOCUMENT_MODAL);
+		super(parent, title);
 
 		this.text = text;
 		this.text_Username = text_Username;
@@ -160,11 +157,11 @@ public class CredentialsDialog extends JDialog {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				if (userField != null && passwordField != null) {
-					credentials = new Credentials(userField.getText(), passwordField.getText().toCharArray());
+					returnValue = new Credentials(userField.getText(), passwordField.getText().toCharArray());
 				} else if (userField != null) {
-					credentials = new Credentials(userField.getText());
+					returnValue = new Credentials(userField.getText());
 				} else if (passwordField != null) {
-					credentials = new Credentials(passwordField.getText().toCharArray());
+					returnValue = new Credentials(passwordField.getText().toCharArray());
 				}
 				dispose();
 			}
@@ -178,7 +175,7 @@ public class CredentialsDialog extends JDialog {
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				credentials = null;
+				returnValue = null;
 				dispose();
 			}
 		});
@@ -225,10 +222,6 @@ public class CredentialsDialog extends JDialog {
 
 	public boolean isRememberCredentials() {
 		return rememberCredentials;
-	}
-
-	public Credentials getCredentials() {
-		return credentials;
 	}
 
 	private static String getI18NString(final String resourceKey, final Object... arguments) {
