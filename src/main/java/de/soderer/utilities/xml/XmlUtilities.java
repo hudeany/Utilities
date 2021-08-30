@@ -79,10 +79,7 @@ public class XmlUtilities {
 	 *             the IO exception
 	 */
 	public static Document downloadAndParseXmlFile(final String url) throws Exception {
-		BufferedInputStream inputStream = null;
-		try {
-			final URL documentUrl = new URL(url);
-			inputStream = new BufferedInputStream(documentUrl.openStream());
+		try (BufferedInputStream inputStream = new BufferedInputStream(new URL(url).openStream())) {
 			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
@@ -95,10 +92,6 @@ public class XmlUtilities {
 				throw new Exception("Cannot retrieve xml document from Url '" + url + "'. HTTP code was: " + httpCode);
 			} else {
 				throw e;
-			}
-		} finally {
-			if (inputStream != null) {
-				inputStream.close();
 			}
 		}
 	}

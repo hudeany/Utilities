@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.cert.CertPathBuilder;
@@ -42,6 +43,9 @@ import de.soderer.utilities.UserError.Reason;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 import de.soderer.utilities.http.HttpUtilities;
+import de.soderer.utilities.json.JsonNode;
+import de.soderer.utilities.json.JsonObject;
+import de.soderer.utilities.json.JsonReader;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.xml.XmlUtilities;
 
@@ -87,27 +91,58 @@ public class ApplicationUpdateUtilities {
 				throw new Exception("error.missingInternetConnection");
 			}
 
-			Document versionsDocument = null;
-			if (versionIndexFileLocation.toLowerCase().startsWith("http")) {
-				versionsDocument = XmlUtilities.downloadAndParseXmlFile(versionIndexFileLocation);
-			} else if (new File(versionIndexFileLocation).exists()) {
-				versionsDocument = XmlUtilities.parseXmlFile(new File(versionIndexFileLocation));
+			Version availableVersion = null;
+			String updateFileLocation = null;
+
+			if (versionIndexFileLocation.toLowerCase().contains("json")) {
+				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(new URL(versionIndexFileLocation).openStream()))) {
+					final JsonNode jsonNode = jsonReader.read();
+					if (!jsonNode.isJsonObject()) {
+						throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "'");
+					} else {
+						final JsonObject jsonObject = (JsonObject) jsonNode.getValue();
+						final JsonObject applicationJsonObject = (JsonObject) jsonObject.get(applicationName);
+						if (applicationJsonObject == null) {
+							throw new Exception("Version index not found at location '" + versionIndexFileLocation + "'");
+						} else {
+							try {
+								availableVersion = new Version((String) applicationJsonObject.get("version"));
+								updateFileLocation = (String) applicationJsonObject.get("downloadUrl");
+							} catch (final Exception e) {
+								throw new Exception("Invalid application version entry at location '" + versionIndexFileLocation + "'", e);
+							}
+						}
+					}
+				} catch (final Exception e) {
+					throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
+				}
+			} else {
+				Document versionsDocument = null;
+				if (versionIndexFileLocation.toLowerCase().startsWith("http")) {
+					versionsDocument = XmlUtilities.downloadAndParseXmlFile(versionIndexFileLocation);
+				} else if (new File(versionIndexFileLocation).exists()) {
+					versionsDocument = XmlUtilities.parseXmlFile(new File(versionIndexFileLocation));
+				}
+
+				if (versionsDocument == null) {
+					throw new Exception("Version index not found at location '" + versionIndexFileLocation + "'");
+				}
+
+				final Node startFileNameNode = XmlUtilities.getSingleXPathNode(versionsDocument, "ApplicationVersions/" + applicationName);
+				if (startFileNameNode == null) {
+					throw new Exception("error.cannotFindUpdateVersionData");
+				}
+
+				final Node versionNode = startFileNameNode.getAttributes().getNamedItem("version");
+				if (versionNode != null && Utilities.isNotBlank(versionNode.getNodeValue())) {
+					availableVersion = new Version(versionNode.getNodeValue());
+				}
+
+				if (startFileNameNode.getFirstChild() != null && Utilities.isNotBlank(startFileNameNode.getFirstChild().getNodeValue())) {
+					updateFileLocation = startFileNameNode.getFirstChild().getNodeValue();
+				}
 			}
 
-			if (versionsDocument == null) {
-				throw new Exception("Version index not found at location '" + versionIndexFileLocation + "'");
-			}
-
-			final Node startFileNameNode = XmlUtilities.getSingleXPathNode(versionsDocument, "ApplicationVersions/" + applicationName);
-			if (startFileNameNode == null) {
-				throw new Exception("error.cannotFindUpdateVersionData");
-			}
-			final Node versionNode = startFileNameNode.getAttributes().getNamedItem("version");
-			final String version = versionNode.getNodeValue();
-
-			String updateFileLocation = startFileNameNode.getFirstChild().getNodeValue();
-
-			final Version availableVersion = new Version(version);
 			if (applicationVersion.compareTo(availableVersion) < 0 && updateFileLocation != null && updateFileLocation.trim().length() > 0) {
 				updateFileLocation = replacePlaceholders(updateFileLocation);
 				return new Tuple<>(availableVersion, updateFileLocation);
