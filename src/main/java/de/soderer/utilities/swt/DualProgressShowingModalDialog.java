@@ -21,14 +21,14 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 	}
 
 	public void showSubItemProgress(final long subItemsToDo, final long subItemsDone) {
-		final long subItemToDoParam = subItemsToDo;
-		final long subItemDoneParam = subItemsDone;
-		getParent().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
-					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+		if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+			final long subItemToDoParam = subItemsToDo;
+			final long subItemDoneParam = subItemsDone;
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+						final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
 						if (subItemToDoParam > 0) {
 							dualProgressDialog.setSubProgress(subItemToDoParam, subItemDoneParam);
 						} else {
@@ -36,82 +36,92 @@ public abstract class DualProgressShowingModalDialog<T> extends ProgressShowingM
 						}
 					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 	public void setSubItemTitle(final String subItemTitle) {
-		getParent().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
-					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
-						dualProgressDialog.setSubItemTitle(subItemTitle);
+		if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+						final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
+						if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+							dualProgressDialog.setSubItemTitle(subItemTitle);
+						}
 					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 	@Override
 	public void showUnlimitedSubProgress() {
-		getParent().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
-					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
-						dualProgressDialog.showUnlimitedProgress();
+		if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+						final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
+						if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+							dualProgressDialog.showUnlimitedProgress();
+						}
 					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 	@Override
 	public void showItemStart(final String itemName) {
-		getParent().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
-					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
-						dualProgressDialog.setSubItemTitle(itemName);
-						dualProgressDialog.setSubProgress(100, 0);
+		if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+						final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
+						if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+							dualProgressDialog.setSubItemTitle(itemName);
+							dualProgressDialog.setSubProgress(100, 0);
+						}
 					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 	@Override
 	public void showItemProgress(final Date itemStart, final long subItemToDo, final long subItemDone) {
-		getParent().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
-					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
-						dualProgressDialog.setSubProgress(subItemToDo, subItemDone);
+		if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+						final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
+						if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+							dualProgressDialog.setSubProgress(subItemToDo, subItemDone);
+						}
 					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 	@Override
 	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
-		getParent().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (progressDialog != null && progressDialog instanceof DualProgressDialog) {
-					final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
-					if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
-						dualProgressDialog.setSubProgress(subItemsDone, subItemsDone);
+		if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (progressDialog != null && !progressDialog.isDisposed() && progressDialog instanceof DualProgressDialog) {
+						final DualProgressDialog<?> dualProgressDialog = (DualProgressDialog<?>) progressDialog;
+						if (dualProgressDialog != null && !dualProgressDialog.isDisposed()) {
+							dualProgressDialog.setSubProgress(subItemsDone, subItemsDone);
+						}
 					}
 				}
-			}
-		});
+			});
+		}
 	}
 }

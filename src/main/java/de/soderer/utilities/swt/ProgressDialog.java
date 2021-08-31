@@ -113,16 +113,16 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	public void showUnlimitedProgress() {
-		if (!isClosed) {
+		if (!isClosed && getParent().isDisposed()) {
 			unlimitedRunner = new Thread(new Runnable() {
 				@Override
 				public void run() {
 					try {
-						while (!isClosed) {
+						while (!isClosed && getParent().isDisposed()) {
 							getParent().getDisplay().asyncExec(new Runnable() {
 								@Override
 								public void run() {
-									if (!isClosed) {
+									if (!isClosed && getParent().isDisposed()) {
 										int nextValue;
 										if (bar.getMaximum() == 100) {
 											nextValue = bar.getSelection() + 10;
@@ -176,7 +176,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (getParent() != null) {
+					if (getParent() != null && !getParent().isDisposed()) {
 						getParent().close();
 					}
 				}

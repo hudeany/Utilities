@@ -56,11 +56,11 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 
 	@Override
 	public void showUpdateError(final String errorText) {
-		if (updateProgressDialog != null) {
+		if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
 			getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (updateProgressDialog != null) {
+					if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
 						updateProgressDialog.close();
 					}
 				}
@@ -68,17 +68,17 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 
 			updateProgressDialog = null;
 		}
-
-		new QuestionDialog(getShell(), "Update " + applicationName + " Error", errorText, getI18NString("close")).setBackgroundColor(SwtColor.LightRed).open();
+		
+		new QuestionDialog(getShell(), "Update " + applicationName + " Error", errorText).setBackgroundColor(SwtColor.LightRed).open();
 	}
 
 	@Override
 	public void showUpdateProgress(final Date itemStart, final long itemsToDo, final long itemsDone) {
-		if (updateProgressDialog != null) {
+		if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
 			getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (updateProgressDialog != null) {
+					if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
 						updateProgressDialog.setProgress(itemsToDo, itemsDone);
 					}
 				}

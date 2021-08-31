@@ -34,7 +34,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 	@Override
 	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
-
+		
 		final Label label = new Label(shell, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		label.setText(text);
@@ -99,6 +99,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			buttonToSelect = cancelButton;
 		}
 
+		shell.setMinimumSize(250, 50);
 		shell.pack();
 
 		if (buttonToSelect != null) {

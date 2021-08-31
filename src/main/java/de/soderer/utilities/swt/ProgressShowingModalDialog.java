@@ -24,14 +24,16 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> imple
 	@Override
 	public void showUnlimitedProgress() {
 		try {
-			getParent().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					if (progressDialog != null && !progressDialog.isDisposed()) {
-						progressDialog.showUnlimitedProgress();
+			if (progressDialog != null && !progressDialog.isDisposed()) {
+				getParent().getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						if (progressDialog != null && !progressDialog.isDisposed()) {
+							progressDialog.showUnlimitedProgress();
+						}
 					}
-				}
-			});
+				});
+			}
 		} catch (final Exception e) {
 			logger.error("Error in showUnlimitedProgress", e);
 		}
@@ -39,35 +41,39 @@ public abstract class ProgressShowingModalDialog<T> extends ModalDialog<T> imple
 
 	@Override
 	public void showProgress(final Date start, final long itemsToDo, final long itemsDone) {
-		getParent().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				if (progressDialog != null && !progressDialog.isDisposed()) {
-					if (itemsToDo > 0) {
-						progressDialog.setProgress(itemsToDo, itemsDone);
-					} else {
-						progressDialog.setProgressPercentage(0);
+		if (progressDialog != null && !progressDialog.isDisposed()) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (progressDialog != null && !progressDialog.isDisposed()) {
+						if (itemsToDo > 0) {
+							progressDialog.setProgress(itemsToDo, itemsDone);
+						} else {
+							progressDialog.setProgressPercentage(0);
+						}
 					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 	@Override
 	public void showDone(final Date start, final Date end, final long itemsDone) {
 		try {
-			getParent().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						if (progressDialog != null && !progressDialog.isDisposed()) {
-							progressDialog.close();
+			if (progressDialog != null && !progressDialog.isDisposed()) {
+				getParent().getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							if (progressDialog != null && !progressDialog.isDisposed()) {
+								progressDialog.close();
+							}
+						} catch (final Exception e) {
+							logger.error("Error in showDone", e);
 						}
-					} catch (final Exception e) {
-						logger.error("Error in showDone", e);
 					}
-				}
-			});
+				});
+			}
 		} catch (final Exception e) {
 			logger.error("Error in showDone", e);
 		}
