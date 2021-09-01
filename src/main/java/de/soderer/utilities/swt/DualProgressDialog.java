@@ -120,23 +120,4 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 			}
 		}
 	}
-
-	@Override
-	public Result open() {
-		if (worker != null) {
-			if (worker.getStartTime() == null) {
-				new Thread(worker).start();
-			}
-		}
-
-		super.open();
-
-		if (canceledByUser) {
-			return Result.CANCELED;
-		} else if (worker == null || worker.getError() == null) {
-			return Result.OK;
-		} else {
-			return Result.ERROR;
-		}
-	}
 }

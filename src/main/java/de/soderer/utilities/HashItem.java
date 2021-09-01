@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class HashItem {
@@ -19,7 +20,7 @@ public class HashItem {
 	}
 
 	public byte[] getHash() throws Exception {
-		if (isDirectory) {
+		if (isDirectory && hash == null) {
 			final StringBuilder directoryContentData = new StringBuilder();
 			for (final HashItem item : subItems) {
 				directoryContentData.append(item.getName());
@@ -28,10 +29,10 @@ public class HashItem {
 			}
 
 			final MessageDigest messageDigest = hashAlgorithm.getMessageDigest();
-			return messageDigest.digest(directoryContentData.toString().getBytes(StandardCharsets.UTF_8));
-		} else {
-			return hash;
+			hash = messageDigest.digest(directoryContentData.toString().getBytes(StandardCharsets.UTF_8));
 		}
+
+		return hash;
 	}
 
 	public void setHash(final byte[] hash) {
@@ -46,7 +47,15 @@ public class HashItem {
 		return isDirectory;
 	}
 
+	public void addSubItem(final HashItem subItem) {
+		hash = null;
+		subItems.add(subItem);
+	}
+
+	/**
+	 * Returns subitems in an unmodifiable list
+	 */
 	public List<HashItem> getSubItems() {
-		return subItems;
+		return Collections.unmodifiableList(new ArrayList<>(subItems));
 	}
 }

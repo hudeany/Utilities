@@ -25,8 +25,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	protected JProgressBar progressBar;
 	protected boolean canceledByUser = false;
 
-	public ProgressDialog(final WorkerParentSimple parent, final String title) {
-		this((Window) parent, title, (T) null);
+	public ProgressDialog(final Window parent, final String title) {
+		this(parent, title, (T) null);
 	}
 
 	public ProgressDialog(final Window parent, final String title, final T worker) {
@@ -80,9 +80,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	@Override
 	public Result open() {
 		if (worker != null) {
-			if (worker.getStartTime() == null) {
-				new Thread(worker).start();
-			}
+			new Thread(worker).start();
 		}
 
 		setVisible(true);

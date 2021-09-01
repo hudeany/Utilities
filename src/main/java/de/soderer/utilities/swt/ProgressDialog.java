@@ -187,9 +187,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	@Override
 	public Result open() {
 		if (worker != null) {
-			if (worker.getStartTime() == null) {
-				new Thread(worker).start();
-			}
+			new Thread(worker).start();
 		}
 
 		super.open();

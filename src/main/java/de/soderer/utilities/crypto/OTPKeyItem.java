@@ -58,7 +58,7 @@ public class OTPKeyItem extends Composite {
 		keyFileLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
 		keyFileLabel.setText(labelText + (id > 0 ? " " + id : ""));
 
-		textField = new LabeledFileText(getShell(), this, SWT.NONE, null, true, ArrangementStyle.Horizontal);
+		textField = new LabeledFileText(getShell(), this, SWT.NONE, null, null, false, true, ArrangementStyle.Horizontal);
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, showRemoveButton ? 1 : 2, 1));
 		textField.addModifyListener(new ModifyListener() {
 

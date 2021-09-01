@@ -139,28 +139,39 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 
 	@Override
 	public final void run() {
-		result = null;
-		error = null;
-		cancel = false;
-		isDone = false;
-		itemsToDo = 0L;
-		itemsDone = 0L;
-		startTime = new Date();
-
-		try {
-			result = work();
-		} catch (final Exception e) {
-			error = e;
-		} catch (final Throwable e) {
-			error = new Exception("Fatal error occurred: " + e.getMessage(), e);
+		boolean doIt;
+		synchronized (this) {
+			if (startTime != null) {
+				doIt = false;
+			} else {
+				startTime = new Date();
+				doIt = true;
+			}
 		}
 
-		if (endTime == null) {
-			endTime = new Date();
-		}
-		isDone = true;
-		if (parent != null) {
-			parent.showDone(startTime, endTime, itemsDone);
+		if (doIt) {
+			result = null;
+			error = null;
+			cancel = false;
+			isDone = false;
+			itemsToDo = 0L;
+			itemsDone = 0L;
+
+			try {
+				result = work();
+			} catch (final Exception e) {
+				error = e;
+			} catch (final Throwable e) {
+				error = new Exception("Fatal error occurred: " + e.getMessage(), e);
+			}
+
+			if (endTime == null) {
+				endTime = new Date();
+			}
+			isDone = true;
+			if (parent != null) {
+				parent.showDone(startTime, endTime, itemsDone);
+			}
 		}
 	}
 

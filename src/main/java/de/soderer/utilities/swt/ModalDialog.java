@@ -97,6 +97,10 @@ public abstract class ModalDialog<T> extends Dialog {
 		new QuestionDialog(getParent(), title, text, LangResources.get("ok")).open();
 	}
 
+	protected void showErrorMessage(final String title, final String text) {
+		new QuestionDialog(getParent(), title, text, LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+	}
+
 	protected boolean showQuestion(final String text, final String... buttonTextProperties) {
 		if (buttonTextProperties == null) {
 			return new QuestionDialog(getParent(), getText(), text, LangResources.get("ok"), LangResources.get("cancel")).open() == 0;

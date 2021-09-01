@@ -52,9 +52,9 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			if (subFiles != null) {
 				for (final File file : subFiles) {
 					if (file.isDirectory()) {
-						item.getSubItems().add(hashDirectory(file));
+						item.addSubItem(hashDirectory(file));
 					} else {
-						item.getSubItems().add(hashFile(file));
+						item.addSubItem(hashFile(file));
 					}
 				}
 			}
@@ -67,6 +67,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 	private HashItem hashFile(final File fileToHash) throws Exception {
 		subItemsToDo = fileToHash.length();
 		subItemsDone = 0;
+		showProgress();
 		showItemStart(TextUtilities.trimStringToMaximumLength(fileToHash.getAbsolutePath(), 60, " ... "));
 		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fileToHash))) {
 

@@ -284,7 +284,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 						}
 					}
 				} catch (final Exception e1) {
-					showMessage(LangResources.get("createDesktopLink"), LangResources.get("errorMessage", e1.getMessage()));
+					showErrorMessage(LangResources.get("createDesktopLink"), LangResources.get("errorMessage", e1.getMessage()));
 				}
 			}
 		});
