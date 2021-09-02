@@ -68,7 +68,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 
 			updateProgressDialog = null;
 		}
-		
+
 		new QuestionDialog(getShell(), "Update " + applicationName + " Error", errorText).setBackgroundColor(SwtColor.LightRed).open();
 	}
 
@@ -79,7 +79,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 				@Override
 				public void run() {
 					if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
-						updateProgressDialog.setProgress(itemsToDo, itemsDone);
+						updateProgressDialog.showProgress(itemStart, itemsToDo, itemsDone);
 					}
 				}
 			});

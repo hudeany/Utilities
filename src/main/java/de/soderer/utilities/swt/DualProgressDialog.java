@@ -1,24 +1,19 @@
 package de.soderer.utilities.swt;
 
 import java.text.MessageFormat;
+import java.util.Date;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.LangResources;
-import de.soderer.utilities.Result;
-import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerDual;
+import de.soderer.utilities.worker.WorkerParentDual;
 
-public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<T> {
+public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<T> implements WorkerParentDual {
 	private String subCommentStringFormat;
 	private Label subCommentLabel;
 	private ProgressBar subBar;
@@ -34,70 +29,16 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	protected void createComponents(final Shell shell) throws Exception {
-		try {
-			if (isClosed) {
-				shell.close();
-			} else {
-				shell.setLayout(new GridLayout(1, true));
+	protected void createAdditionalComponents(final Composite composite) {
+		subCommentLabel = new Label(composite, SWT.NONE);
+		subCommentLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 0, 0));
+		subCommentLabel.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 
-				final Composite composite = new Composite(shell, SWT.NONE);
-				composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				composite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
-
-				if (Utilities.isNotBlank(commentStringFormat)) {
-					commentLabel = new Label(composite, SWT.NONE);
-					commentLabel.setText(MessageFormat.format(commentStringFormat, 0, 0, 0));
-					commentLabel.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				}
-
-				bar = new ProgressBar(composite, SWT.SMOOTH);
-				bar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				bar.setMinimum(0);
-				bar.setMaximum(100);
-				bar.setSelection(0);
-
-				subCommentLabel = new Label(composite, SWT.NONE);
-				subCommentLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 0, 0));
-				subCommentLabel.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-
-				subBar = new ProgressBar(composite, SWT.SMOOTH);
-				subBar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				subBar.setMinimum(0);
-				subBar.setMaximum(100);
-				subBar.setSelection(0);
-
-				final Button buttonClose = new Button(composite, SWT.PUSH);
-				buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				buttonClose.setText(LangResources.get("cancel"));
-				buttonClose.addSelectionListener(new SelectionAdapter() {
-					@Override
-					public void widgetSelected(final SelectionEvent e) {
-						setReturnValue(Result.CANCELED);
-						canceledByUser = true;
-						if (worker != null) {
-							worker.cancel();
-						}
-						getParent().close();
-					}
-				});
-
-				shell.pack();
-
-				shell.setMinimumSize(400, shell.getSize().y);
-				shell.setSize(400, shell.getSize().y);
-			}
-		} catch (final Exception e) {
-			throw e;
-		}
-	}
-
-	public void setSubProgressPercentage(final int value) {
-		if (!isClosed) {
-			if (subBar != null) {
-				subBar.setSelection(value);
-			}
-		}
+		subBar = new ProgressBar(composite, SWT.SMOOTH);
+		subBar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		subBar.setMinimum(0);
+		subBar.setMaximum(100);
+		subBar.setSelection(0);
 	}
 
 	public void setSubItemTitle(final String subItemTitle) {
@@ -105,6 +46,14 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 			subCommentStringFormat = subItemTitle;
 			if (subCommentLabel != null) {
 				subCommentLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 0, 0));
+			}
+		}
+	}
+
+	public void setSubProgressPercentage(final int value) {
+		if (!isClosed) {
+			if (subBar != null) {
+				subBar.setSelection(value);
 			}
 		}
 	}
@@ -118,6 +67,63 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 			if (subCommentLabel != null) {
 				subCommentLabel.setText(MessageFormat.format(subCommentStringFormat, done, todo, done * 100 / todo));
 			}
+		}
+	}
+
+	@Override
+	public void showUnlimitedSubProgress() {
+		if (!isClosed && !isDisposed()) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (!isClosed && !isDisposed()) {
+						showUnlimitedProgress();
+					}
+				}
+			});
+		}
+	}
+
+	@Override
+	public void showItemStart(final String itemName) {
+		if (!isClosed && !isDisposed()) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (!isClosed && !isDisposed()) {
+						setSubItemTitle(itemName);
+						setSubProgress(100, 0);
+					}
+				}
+			});
+		}
+	}
+
+	@Override
+	public void showItemProgress(final Date itemStart, final long subItemToDo, final long subItemDone) {
+		if (!isClosed && !isDisposed()) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (!isClosed && !isDisposed()) {
+						setSubProgress(subItemToDo, subItemDone);
+					}
+				}
+			});
+		}
+	}
+
+	@Override
+	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
+		if (!isClosed && !isDisposed()) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (!isClosed && !isDisposed()) {
+						setSubProgress(subItemsDone, subItemsDone);
+					}
+				}
+			});
 		}
 	}
 }

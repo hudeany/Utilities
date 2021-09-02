@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.util.Arrays;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.HashAlgorithm;
@@ -49,6 +50,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 		try {
 			final HashItem item = new HashItem(directory.getName(), true, hashAlgorithm);
 			final File[] subFiles = directory.listFiles();
+			Arrays.sort(subFiles);
 			if (subFiles != null) {
 				for (final File file : subFiles) {
 					if (file.isDirectory()) {

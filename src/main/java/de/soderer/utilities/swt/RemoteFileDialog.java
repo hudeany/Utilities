@@ -54,7 +54,7 @@ import de.soderer.utilities.worker.DirectoryUploadWorker;
 import de.soderer.utilities.worker.RemoteFileDownloadWorker;
 import de.soderer.utilities.worker.RemoteFileUploadWorker;
 
-public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
+public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private static final List<String> PROTOCOL_LIST = Arrays.asList("ssh", "sftp", "ftp", "smb", "smb1", "http", "https");
 	private static final String STANDARD_KNOWNHOSTS_FILE = "~/.ssh/known_hosts";
 
@@ -125,8 +125,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 	@Override
 	protected void createComponents(final Shell parentShell) throws Exception {
 		parentShell.setLayout(new GridLayout(1, true));
-
-		final RemoteFileDialog remoteFileDialog = this;
 
 		if (keystoreFile != null) {
 			final Composite serverEntriesComposite = new Composite(parentShell, SWT.BORDER);
@@ -551,8 +549,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
-								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
-								progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
+								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(null, connection, new File(sourcePath), currentPath);
+								final ProgressDialog<RemoteFileUploadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
 									fileUploadWorker.cancel(true);
@@ -564,11 +562,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
-							} finally {
-								if (progressDialog != null) {
-									progressDialog.close();
-									progressDialog = null;
-								}
 							}
 							showPathDirectory();
 						}
@@ -580,8 +573,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
-								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
-								progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
+								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(null, connection, new File(sourcePath), currentPath);
+								final ProgressDialog<RemoteFileUploadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
 									fileUploadWorker.cancel(true);
@@ -593,11 +586,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
-							} finally {
-								if (progressDialog != null) {
-									progressDialog.close();
-									progressDialog = null;
-								}
 							}
 							showPathDirectory();
 						}
@@ -610,8 +598,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String destinationPath = dialog.open();
 						if (destinationPath != null) {
 							try {
-								final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(remoteFileDialog, connection, currentPath, new File(destinationPath));
-								progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "", directoryDownloadWorker);
+								final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(null, connection, currentPath, new File(destinationPath));
+								final DualProgressDialog<DirectoryDownloadWorker> progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "", directoryDownloadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
 									directoryDownloadWorker.cancel(true);
@@ -623,11 +611,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
-							} finally {
-								if (progressDialog != null) {
-									progressDialog.close();
-									progressDialog = null;
-								}
 							}
 						}
 					} else {
@@ -638,8 +621,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String destinationPath = dialog.open();
 						if (destinationPath != null) {
 							try {
-								final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(remoteFileDialog, connection, currentPath, new File(destinationPath));
-								progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("download"), fileDownloadWorker);
+								final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(null, connection, currentPath, new File(destinationPath));
+								final ProgressDialog<RemoteFileDownloadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("download"), fileDownloadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
 									fileDownloadWorker.cancel(true);
@@ -651,11 +634,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
-							} finally {
-								if (progressDialog != null) {
-									progressDialog.close();
-									progressDialog = null;
-								}
 							}
 						}
 					}
@@ -676,8 +654,8 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
-								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(remoteFileDialog, connection, new File(sourcePath), currentPath);
-								progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "", directoryUploadWorker);
+								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(null, connection, new File(sourcePath), currentPath);
+								final DualProgressDialog<DirectoryUploadWorker> progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "", directoryUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
 									directoryUploadWorker.cancel(true);
@@ -689,11 +667,6 @@ public class RemoteFileDialog extends DualProgressShowingModalDialog<Boolean> {
 								}
 							} catch (final Exception e) {
 								new QuestionDialog(getParent(), getText(), "Error while uploading directory: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
-							} finally {
-								if (progressDialog != null) {
-									progressDialog.close();
-									progressDialog = null;
-								}
 							}
 							showPathDirectory();
 						}
