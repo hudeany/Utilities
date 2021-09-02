@@ -22,7 +22,10 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	private static final long serialVersionUID = 4039220978715450890L;
 
 	protected T worker;
+
 	protected JProgressBar progressBar;
+	protected JButton cancelButton;
+
 	protected boolean canceledByUser = false;
 
 	public ProgressDialog(final Window parent, final String title) {
@@ -51,10 +54,12 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		itemPanel.add(progressBar);
 		panel.add(itemPanel);
 
+		createAdditionalComponents(panel);
+
 		// Cancel Button
 		final JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		final JButton cancelButton = new JButton("Cancel");
+		cancelButton = new JButton("Cancel");
 		cancelButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
@@ -71,6 +76,10 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		setLocationRelativeTo(parent);
 
 		getRootPane().setDefaultButton(cancelButton);
+	}
+
+	protected void createAdditionalComponents(@SuppressWarnings("unused") final JPanel panel) {
+		// May be filled in sub classes
 	}
 
 	public T getWorker() {
@@ -140,21 +149,28 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	@Override
 	public void cancel() {
 		if (SwingUtilities.isEventDispatchThread()) {
-			dispose();
-			canceledByUser = true;
-			if (worker != null) {
-				worker.cancel();
-			}
-			if (getParent() != null && getParent() instanceof WorkerParentSimple) {
-				((WorkerParentSimple) getParent()).cancel();
+			if (!canceledByUser) {
+				canceledByUser = true;
+				cancelButton.setEnabled(false);
+				if (worker != null) {
+					worker.cancel();
+				}
+				if (progressBar.isIndeterminate()) {
+					progressBar.setIndeterminate(false);
+				}
+				if (getParent() != null && getParent() instanceof WorkerParentSimple) {
+					((WorkerParentSimple) getParent()).cancel();
+				}
 			}
 		} else {
-			SwingUtilities.invokeLater(new Runnable() {
-				@Override
-				public void run() {
-					cancel();
-				}
-			});
+			if (!canceledByUser) {
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						cancel();
+					}
+				});
+			}
 		}
 	}
 
@@ -172,7 +188,9 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 			value = 100;
 		}
 
-		progressBar.setIndeterminate(false);
+		if (progressBar.isIndeterminate()) {
+			progressBar.setIndeterminate(false);
+		}
 		progressBar.setValue(value);
 		progressBar.setString(value + "%");
 		progressBar.setStringPainted(true);

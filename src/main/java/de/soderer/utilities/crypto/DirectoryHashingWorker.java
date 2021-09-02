@@ -37,7 +37,6 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 		try {
 			showItemStart(scanningForFilesMessage + " ...");
 			showUnlimitedProgress();
-			Thread.sleep(500);
 			itemsToDo = FileUtilities.getAllSubfilesSize(directoryToHash);
 			showProgress();
 			return hashDirectory(directoryToHash);

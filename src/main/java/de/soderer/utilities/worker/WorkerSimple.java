@@ -64,9 +64,18 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		}
 	}
 
+	public boolean cancel() {
+		return cancel(false);
+	}
+
 	@Override
 	public boolean cancel(final boolean waitForDone) {
-		final boolean success = cancel();
+		if (!cancel) {
+			cancel = true;
+			if (parent != null) {
+				parent.cancel();
+			}
+		}
 		if (waitForDone) {
 			while (!isDone()) {
 				try {
@@ -76,11 +85,6 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 				}
 			}
 		}
-		return success;
-	}
-
-	public boolean cancel() {
-		cancel = true;
 		return cancel;
 	}
 

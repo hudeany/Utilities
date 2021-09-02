@@ -23,7 +23,7 @@ import de.soderer.utilities.worker.WorkerSimple;
 public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Result> implements WorkerParentSimple {
 	protected String commentStringFormat;
 	protected Label commentLabel;
-	protected ProgressBar bar;
+	protected ProgressBar progressBar;
 	protected Button buttonClose;
 	protected boolean isClosed = false;
 	private Thread unlimitedRunner = null;
@@ -63,11 +63,11 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 					commentLabel.setLayoutData(labelGridData);
 				}
 
-				bar = new ProgressBar(composite, SWT.SMOOTH);
-				bar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				bar.setMinimum(0);
-				bar.setMaximum(100);
-				bar.setSelection(0);
+				progressBar = new ProgressBar(composite, SWT.SMOOTH);
+				progressBar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+				progressBar.setMinimum(0);
+				progressBar.setMaximum(100);
+				progressBar.setSelection(0);
 
 				createAdditionalComponents(composite);
 
@@ -104,16 +104,16 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 					if (!isClosed && !isDisposed()) {
 						stopUnlimitedProgress();
 						if (itemsToDo > 0) {
-							if (bar != null) {
-								bar.setSelection((int) (itemsDone * 100 / itemsToDo));
+							if (progressBar != null) {
+								progressBar.setSelection((int) (itemsDone * 100 / itemsToDo));
 							}
 
 							if (commentLabel != null) {
 								commentLabel.setText(MessageFormat.format(commentStringFormat, itemsDone, itemsToDo, itemsDone * 100 / itemsToDo));
 							}
 						} else {
-							if (bar != null) {
-								bar.setSelection(0);
+							if (progressBar != null) {
+								progressBar.setSelection(0);
 							}
 						}
 					}
@@ -124,31 +124,31 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	@Override
 	public void showUnlimitedProgress() {
-		if (!isClosed && isDisposed()) {
+		if (!isClosed && !isDisposed()) {
 			unlimitedRunner = new Thread(new Runnable() {
 				@Override
 				public void run() {
-					while (!isClosed && isDisposed()) {
+					while (!isClosed && !isDisposed()) {
 						getParent().getDisplay().asyncExec(new Runnable() {
 							@Override
 							public void run() {
-								if (!isClosed && isDisposed()) {
+								if (!isClosed && !isDisposed()) {
 									int nextValue;
-									if (bar.getMaximum() == 100) {
-										nextValue = bar.getSelection() + 10;
+									if (progressBar.getMaximum() == 100) {
+										nextValue = progressBar.getSelection() + 10;
 									} else {
-										nextValue = bar.getSelection() - 10;
+										nextValue = progressBar.getSelection() - 10;
 									}
 
 									if (nextValue > 100) {
 										nextValue = 100;
-										bar.setMaximum(101);
+										progressBar.setMaximum(101);
 									} else if (nextValue < 0) {
 										nextValue = 0;
-										bar.setMaximum(100);
+										progressBar.setMaximum(100);
 									}
 
-									bar.setSelection(nextValue);
+									progressBar.setSelection(nextValue);
 								}
 							}
 						});
@@ -156,6 +156,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 						try {
 							Thread.sleep(100);
 						} catch (@SuppressWarnings("unused") final InterruptedException e) {
+							// do nothing
+						} catch (@SuppressWarnings("unused") final ThreadDeath e) {
 							// do nothing
 						}
 					}
@@ -166,24 +168,23 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@SuppressWarnings("deprecation")
-	public void stopUnlimitedProgress() {
-		if (!isClosed && isDisposed()) {
-			if (unlimitedRunner != null) {
-				unlimitedRunner.stop();
-				unlimitedRunner = null;
-				bar.setMaximum(100);
-			}
+	protected void stopUnlimitedProgress() {
+		if (unlimitedRunner != null) {
+			unlimitedRunner.stop();
+			unlimitedRunner = null;
+			progressBar.setMaximum(100);
 		}
 	}
 
 	public void close() {
-		if (!isClosed && getParent() != null && !isDisposed()) {
+		if (!isClosed && !isDisposed()) {
 			isClosed = true;
 
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (getParent() != null && !isDisposed()) {
+					if (!isDisposed()) {
+						stopUnlimitedProgress();
 						getParent().close();
 					}
 				}
@@ -210,16 +211,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	@Override
 	public void showDone(final Date start, final Date end, final long itemsDone) {
-		if (!isClosed && !isDisposed()) {
-			getParent().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					if (!isClosed && !isDisposed()) {
-						close();
-					}
-				}
-			});
-		}
+		close();
 	}
 
 	@Override
@@ -229,11 +221,25 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	@Override
 	public void cancel() {
-		buttonClose.setEnabled(false);
-		setReturnValue(Result.CANCELED);
-		canceledByUser = true;
-		if (worker != null) {
-			worker.cancel();
+		if (!canceledByUser && !isClosed && !isDisposed()) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (!canceledByUser && !isClosed && !isDisposed()) {
+						canceledByUser = true;
+						buttonClose.setEnabled(false);
+						stopUnlimitedProgress();
+						setReturnValue(Result.CANCELED);
+						if (worker != null) {
+							worker.cancel();
+						}
+					}
+				}
+			});
 		}
+	}
+
+	public T getWorker() {
+		return worker;
 	}
 }

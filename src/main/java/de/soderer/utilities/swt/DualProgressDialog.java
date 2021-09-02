@@ -15,58 +15,35 @@ import de.soderer.utilities.worker.WorkerParentDual;
 
 public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<T> implements WorkerParentDual {
 	private String subCommentStringFormat;
-	private Label subCommentLabel;
-	private ProgressBar subBar;
+	private Label subItemLabel;
+	private ProgressBar subItemProgressBar;
 
-	public DualProgressDialog(final Shell shell, final String title, final String commentStringFormat, final String subCommentStringFormat) {
-		this(shell, title, commentStringFormat, subCommentStringFormat, null);
+	public DualProgressDialog(final Shell shell, final String title, final String commentStringFormat) {
+		this(shell, title, commentStringFormat, null);
 	}
 
-	public DualProgressDialog(final Shell shell, final String title, final String commentStringFormat, final String subCommentStringFormat, final T worker) {
+	public DualProgressDialog(final Shell shell, final String title, final String commentStringFormat, final T worker) {
 		super(shell, title, commentStringFormat, worker);
-
-		this.subCommentStringFormat = subCommentStringFormat;
 	}
 
 	@Override
 	protected void createAdditionalComponents(final Composite composite) {
-		subCommentLabel = new Label(composite, SWT.NONE);
-		subCommentLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 0, 0));
-		subCommentLabel.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		subItemLabel = new Label(composite, SWT.NONE);
+		subCommentStringFormat = "Item";
+		subItemLabel.setText("Item");
+		subItemLabel.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 
-		subBar = new ProgressBar(composite, SWT.SMOOTH);
-		subBar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		subBar.setMinimum(0);
-		subBar.setMaximum(100);
-		subBar.setSelection(0);
+		subItemProgressBar = new ProgressBar(composite, SWT.SMOOTH);
+		subItemProgressBar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		subItemProgressBar.setMinimum(0);
+		subItemProgressBar.setMaximum(100);
+		subItemProgressBar.setSelection(0);
 	}
 
-	public void setSubItemTitle(final String subItemTitle) {
+	protected void setSubProgress(final long todo, final long done) {
 		if (!isClosed) {
-			subCommentStringFormat = subItemTitle;
-			if (subCommentLabel != null) {
-				subCommentLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 0, 0));
-			}
-		}
-	}
-
-	public void setSubProgressPercentage(final int value) {
-		if (!isClosed) {
-			if (subBar != null) {
-				subBar.setSelection(value);
-			}
-		}
-	}
-
-	public void setSubProgress(final long todo, final long done) {
-		if (!isClosed) {
-			if (subBar != null) {
-				subBar.setSelection((int) (done * 100 / todo));
-			}
-
-			if (subCommentLabel != null) {
-				subCommentLabel.setText(MessageFormat.format(subCommentStringFormat, done, todo, done * 100 / todo));
-			}
+			subItemProgressBar.setSelection((int) (done * 100 / todo));
+			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, done, todo, done * 100 / todo));
 		}
 	}
 
@@ -91,7 +68,8 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 				@Override
 				public void run() {
 					if (!isClosed && !isDisposed()) {
-						setSubItemTitle(itemName);
+						subCommentStringFormat = itemName;
+						subItemLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 0, 0));
 						setSubProgress(100, 0);
 					}
 				}
