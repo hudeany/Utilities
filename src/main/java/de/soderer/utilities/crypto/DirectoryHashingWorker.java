@@ -53,14 +53,22 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			Arrays.sort(subFiles);
 			if (subFiles != null) {
 				for (final File file : subFiles) {
-					if (file.isDirectory()) {
-						item.addSubItem(hashDirectory(file));
+					if (cancel) {
+						return null;
 					} else {
-						item.addSubItem(hashFile(file));
+						if (file.isDirectory()) {
+							item.addSubItem(hashDirectory(file));
+						} else {
+							item.addSubItem(hashFile(file));
+						}
 					}
 				}
 			}
-			return item;
+			if (cancel) {
+				return null;
+			} else {
+				return item;
+			}
 		} catch (final Exception e) {
 			throw e;
 		}
@@ -72,14 +80,13 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 		showProgress();
 		showItemStart(TextUtilities.trimStringToMaximumLength(fileToHash.getAbsolutePath(), 60, " ... "));
 		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fileToHash))) {
-
 			final MessageDigest messageDigest = hashAlgorithm.getMessageDigest();
 
 			final byte[] buffer = new byte[4096];
 			int bytesRead;
 			while ((bytesRead = inputStream.read(buffer)) >= 0) {
 				if (cancel) {
-					break;
+					return null;
 				} else {
 					messageDigest.update(buffer, 0, bytesRead);
 					subItemsDone += bytesRead;

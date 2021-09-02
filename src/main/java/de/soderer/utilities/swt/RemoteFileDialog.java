@@ -553,7 +553,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 								final ProgressDialog<RemoteFileUploadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									fileUploadWorker.cancel(true);
 									showErrorMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
 								} else {
 									// check for errors
@@ -577,7 +576,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 								final ProgressDialog<RemoteFileUploadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									fileUploadWorker.cancel(true);
 									showErrorMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
 								} else {
 									// check for errors
@@ -602,7 +600,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 								final DualProgressDialog<DirectoryDownloadWorker> progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", "", directoryDownloadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									directoryDownloadWorker.cancel(true);
 									showErrorMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
 								} else {
 									// check for errors
@@ -625,7 +622,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 								final ProgressDialog<RemoteFileDownloadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("download"), fileDownloadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									fileDownloadWorker.cancel(true);
 									showErrorMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
 								} else {
 									// check for errors
@@ -658,7 +654,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 								final DualProgressDialog<DirectoryUploadWorker> progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", "", directoryUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									directoryUploadWorker.cancel(true);
 									showErrorMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
 								} else {
 									// check for errors

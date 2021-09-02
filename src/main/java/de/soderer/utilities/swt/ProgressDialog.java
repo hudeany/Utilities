@@ -235,6 +235,5 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		if (worker != null) {
 			worker.cancel();
 		}
-		getParent().close();
 	}
 }
