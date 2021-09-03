@@ -84,20 +84,17 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			boolean retry = true;
 			while (retry) {
 				final FileDialog dialog = new FileDialog(shell, SWT.SAVE);
-				dialog.setText(title + " " + LangResources.get("savefile"));
+				dialog.setText(title + " " + LangResources.get("saveFile"));
 				final String fileName = dialog.open();
 				if (fileName != null) {
 					if (new File(fileName).exists() && new File(fileName).isDirectory()) {
-						final QuestionDialog questionDialog = new QuestionDialog(shell, title, LangResources.get("pathisdirectory"), LangResources.get("ok"), LangResources.get("cancel"));
+						final QuestionDialog questionDialog = new QuestionDialog(shell, title, LangResources.get("pathIsDirectory"), LangResources.get("ok"), LangResources.get("cancel"));
 						if (questionDialog.open() != 0) {
 							retry = false;
 						}
 					} else {
 						if (new File(fileName).exists()) {
-							final QuestionDialog questionDialog = new QuestionDialog(shell, title, LangResources.get("filealreadyexists"), LangResources.get("ok"), LangResources.get("cancel")).setBackgroundColor(SwtColor.LightRed);
-							if (questionDialog.open() != 0) {
-								retry = false;
-							}
+							new File(fileName).delete();
 						}
 
 						if (retry) {
@@ -113,7 +110,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			}
 			return null;
 		} catch (final Exception e) {
-			new QuestionDialog(shell, title, LangResources.get("filewasnotsaved"), LangResources.get("error") + ":\n" + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+			new QuestionDialog(shell, title, LangResources.get("fileWasNotSaved"), LangResources.get("error") + ":\n" + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
 			return null;
 		}
 	}

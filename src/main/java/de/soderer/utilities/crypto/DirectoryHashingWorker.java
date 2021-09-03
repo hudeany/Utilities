@@ -47,7 +47,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 
 	public HashItem hashDirectory(final File directory) throws Exception {
 		try {
-			final HashItem item = new HashItem(directory.getName(), true, hashAlgorithm);
+			final HashItem item = new HashItem(directory.getName(), true, hashAlgorithm, "directory", -1);
 			final File[] subFiles = directory.listFiles();
 			Arrays.sort(subFiles);
 			if (subFiles != null) {
@@ -93,7 +93,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 				}
 			}
 
-			final HashItem item = new HashItem(fileToHash.getName(), false, hashAlgorithm);
+			final HashItem item = new HashItem(fileToHash.getName(), false, hashAlgorithm, "file", fileToHash.length());
 			item.setHash(messageDigest.digest());
 
 			itemsDone += subItemsDone;

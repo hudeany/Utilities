@@ -158,7 +158,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 						} catch (@SuppressWarnings("unused") final InterruptedException e) {
 							// do nothing
 						} catch (@SuppressWarnings("unused") final ThreadDeath e) {
-							// do nothing
+							break;
 						}
 					}
 				}
