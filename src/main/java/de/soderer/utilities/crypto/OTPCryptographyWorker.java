@@ -70,7 +70,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 			itemsToDo = inputItems[0].available();
 			final MessageDigest messageDigest = MessageDigest.getInstance(inputItems[0].getHashmethod());
 			final List<Integer> keyIds = new ArrayList<>();
-			for (int i = 1; i < inputItems.length; i++) {
+			for (int i = 0; i < inputItems.length; i++) {
 				if (itemsToDo != inputItems[i].available()) {
 					throw new Exception("Invalid read state");
 				}
