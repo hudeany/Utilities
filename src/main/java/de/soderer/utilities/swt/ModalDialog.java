@@ -69,24 +69,26 @@ public abstract class ModalDialog<T> extends Dialog {
 	}
 
 	protected void setPosition(final Shell shell) {
-		int xPosition;
-		int yPosition;
-		if (location == null) {
-			// Sets the position centered of parent
-			try {
-				xPosition = shell.getParent().getLocation().x + shell.getParent().getSize().x / 2 - shell.getSize().x / 2;
-				yPosition = shell.getParent().getLocation().y + shell.getParent().getSize().y / 2 - shell.getSize().y / 2;
-			} catch (@SuppressWarnings("unused") final Exception e) {
-				xPosition = 50;
-				yPosition = 50;
+		if (!shell.isDisposed()) {
+			int xPosition;
+			int yPosition;
+			if (location == null) {
+				// Sets the position centered of parent
+				try {
+					xPosition = shell.getParent().getLocation().x + shell.getParent().getSize().x / 2 - shell.getSize().x / 2;
+					yPosition = shell.getParent().getLocation().y + shell.getParent().getSize().y / 2 - shell.getSize().y / 2;
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					xPosition = 50;
+					yPosition = 50;
+				}
+			} else {
+				xPosition = location.x;
+				yPosition = location.y;
 			}
-		} else {
-			xPosition = location.x;
-			yPosition = location.y;
+			xPosition = Math.max(0, xPosition);
+			yPosition = Math.max(0, yPosition);
+			shell.setLocation(xPosition, yPosition);
 		}
-		xPosition = Math.max(0, xPosition);
-		yPosition = Math.max(0, yPosition);
-		shell.setLocation(xPosition, yPosition);
 	}
 
 	protected T getDefaultReturnValue() {

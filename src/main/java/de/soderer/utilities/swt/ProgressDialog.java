@@ -49,49 +49,41 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	@Override
 	protected void createComponents(final Shell shell) throws Exception {
-		try {
-			if (!isDisposed()) {
-				shell.close();
-			} else {
-				shell.setLayout(new GridLayout(1, true));
+		shell.setLayout(new GridLayout(1, true));
 
-				final Composite composite = new Composite(shell, SWT.NONE);
-				composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				composite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
+		final Composite composite = new Composite(shell, SWT.NONE);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		composite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
 
-				if (Utilities.isNotBlank(commentStringFormat)) {
-					commentLabel = new Label(composite, SWT.NONE);
-					commentLabel.setText(MessageFormat.format(commentStringFormat, 0, 0, 0));
-					final GridData labelGridData = new GridData(SWT.FILL, SWT.UP, true, false);
-					commentLabel.setLayoutData(labelGridData);
-				}
-
-				progressBar = new ProgressBar(composite, SWT.SMOOTH);
-				progressBar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				progressBar.setMinimum(0);
-				progressBar.setMaximum(100);
-				progressBar.setSelection(0);
-
-				createAdditionalComponents(composite);
-
-				buttonClose = new Button(composite, SWT.PUSH);
-				buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-				buttonClose.setText(LangResources.get("cancel"));
-				buttonClose.addSelectionListener(new SelectionAdapter() {
-					@Override
-					public void widgetSelected(final SelectionEvent e) {
-						cancel();
-					}
-				});
-
-				shell.pack();
-
-				shell.setMinimumSize(400, shell.getSize().y);
-				shell.setSize(400, shell.getSize().y);
-			}
-		} catch (final Exception e) {
-			throw e;
+		if (Utilities.isNotBlank(commentStringFormat)) {
+			commentLabel = new Label(composite, SWT.NONE);
+			commentLabel.setText(MessageFormat.format(commentStringFormat, 0, 0, 0));
+			final GridData labelGridData = new GridData(SWT.FILL, SWT.UP, true, false);
+			commentLabel.setLayoutData(labelGridData);
 		}
+
+		progressBar = new ProgressBar(composite, SWT.SMOOTH);
+		progressBar.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		progressBar.setMinimum(0);
+		progressBar.setMaximum(100);
+		progressBar.setSelection(0);
+
+		createAdditionalComponents(composite);
+
+		buttonClose = new Button(composite, SWT.PUSH);
+		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		buttonClose.setText(LangResources.get("cancel"));
+		buttonClose.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(final SelectionEvent e) {
+				cancel();
+			}
+		});
+
+		shell.pack();
+
+		shell.setMinimumSize(400, shell.getSize().y);
+		shell.setSize(400, shell.getSize().y);
 	}
 
 	protected void createAdditionalComponents(@SuppressWarnings("unused") final Composite composite) {
