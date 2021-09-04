@@ -14,8 +14,11 @@ import de.soderer.utilities.worker.WorkerDual;
 import de.soderer.utilities.worker.WorkerParentDual;
 
 public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<T> implements WorkerParentDual {
-	private String subCommentStringFormat;
 	private Label subItemLabel;
+	private String subCommentStringFormat;
+
+	private Thread unlimitedSubRunner = null;
+
 	private ProgressBar subItemProgressBar;
 
 	public DualProgressDialog(final Shell shell, final String title, final String commentStringFormat) {
@@ -41,7 +44,8 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	protected void setSubProgress(final long todo, final long done) {
-		if (!isClosed) {
+		if (!isDisposed()) {
+			stopUnlimitedProgress();
 			subItemProgressBar.setSelection((int) (done * 100 / todo));
 			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, done, todo, done * 100 / todo));
 		}
@@ -49,27 +53,73 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 
 	@Override
 	public void showUnlimitedSubProgress() {
-		if (!isClosed && !isDisposed()) {
+		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (!isClosed && !isDisposed()) {
-						showUnlimitedProgress();
+					if (!isDisposed()) {
+						unlimitedSubRunner = new Thread(new Runnable() {
+							@Override
+							public void run() {
+								while (!isDisposed()) {
+									getParent().getDisplay().asyncExec(new Runnable() {
+										@Override
+										public void run() {
+											if (!isDisposed()) {
+												int nextValue;
+												if (subItemProgressBar.getMaximum() == 100) {
+													nextValue = subItemProgressBar.getSelection() + 10;
+												} else {
+													nextValue = subItemProgressBar.getSelection() - 10;
+												}
+
+												if (nextValue > 100) {
+													nextValue = 100;
+													subItemProgressBar.setMaximum(101);
+												} else if (nextValue < 0) {
+													nextValue = 0;
+													subItemProgressBar.setMaximum(100);
+												}
+
+												subItemProgressBar.setSelection(nextValue);
+											}
+										}
+									});
+
+									try {
+										Thread.sleep(100);
+									} catch (@SuppressWarnings("unused") final InterruptedException e) {
+										// do nothing
+									} catch (@SuppressWarnings("unused") final ThreadDeath e) {
+										break;
+									}
+								}
+							}
+						});
+						unlimitedSubRunner.start();
 					}
 				}
 			});
 		}
 	}
 
+	@SuppressWarnings("deprecation")
+	private void stopUnlimitedProgress() {
+		if (unlimitedSubRunner != null) {
+			unlimitedSubRunner.stop();
+			unlimitedSubRunner = null;
+			subItemProgressBar.setMaximum(100);
+		}
+	}
+
 	@Override
 	public void showItemStart(final String itemName) {
-		if (!isClosed && !isDisposed()) {
+		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (!isClosed && !isDisposed()) {
+					if (!isDisposed()) {
 						subCommentStringFormat = itemName;
-						subItemLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 0, 0));
 						setSubProgress(100, 0);
 					}
 				}
@@ -78,13 +128,13 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemProgress(final Date itemStart, final long subItemToDo, final long subItemDone) {
-		if (!isClosed && !isDisposed()) {
+	public void showItemProgress(final Date itemStart, final long subItemsToDo, final long subItemsDone) {
+		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (!isClosed && !isDisposed()) {
-						setSubProgress(subItemToDo, subItemDone);
+					if (!isDisposed()) {
+						setSubProgress(subItemsToDo, subItemsDone);
 					}
 				}
 			});
@@ -93,11 +143,11 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 
 	@Override
 	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
-		if (!isClosed && !isDisposed()) {
+		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (!isClosed && !isDisposed()) {
+					if (!isDisposed()) {
 						setSubProgress(subItemsDone, subItemsDone);
 					}
 				}

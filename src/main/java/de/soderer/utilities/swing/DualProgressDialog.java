@@ -3,6 +3,7 @@ package de.soderer.utilities.swing;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
+import java.text.MessageFormat;
 import java.util.Date;
 
 import javax.swing.JLabel;
@@ -17,20 +18,22 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	private static final long serialVersionUID = 1891862599169713021L;
 
 	private JLabel subItemLabel;
+	private String subCommentStringFormat;
 	private JProgressBar subItemProgressBar;
 
-	public DualProgressDialog(final WorkerParentDual parent, final String title) {
-		this((Window) parent, title, null);
+	public DualProgressDialog(final WorkerParentDual parent, final String title, final String commentStringFormat) {
+		this((Window) parent, title, commentStringFormat, null);
 	}
 
-	public DualProgressDialog(final Window parent, final String title, final T worker) {
-		super(parent, title, worker);
+	public DualProgressDialog(final Window parent, final String title, final String commentStringFormat, final T worker) {
+		super(parent, title, commentStringFormat, worker);
 	}
 
 	@Override
 	protected void createAdditionalComponents(final JPanel panel) {
 		final JPanel subCommentLabelPanel = new JPanel();
 		subCommentLabelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+		subCommentStringFormat = "Item";
 		subItemLabel = new JLabel("Item");
 		subCommentLabelPanel.add(subItemLabel);
 		panel.add(subCommentLabelPanel);
@@ -61,13 +64,11 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	@Override
 	public void showItemStart(final String itemName) {
 		if (SwingUtilities.isEventDispatchThread()) {
+			subCommentStringFormat = itemName;
 			subItemLabel.setText(itemName);
 
-			final int value = 0;
-			subItemProgressBar.setIndeterminate(false);
-			subItemProgressBar.setValue(value);
-			subItemProgressBar.setString(value + "%");
-			subItemProgressBar.setStringPainted(true);
+			updateProgressBar(subItemProgressBar, new Date(), 100, 0);
+			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 100, 0 * 100 / 100));
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
@@ -79,14 +80,15 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemProgress(final Date itemStart, final long subItemToDo, final long subItemDone) {
+	public void showItemProgress(final Date itemStart, final long subItemsToDo, final long subItemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
-			updateProgressBar(subItemProgressBar, itemStart, subItemToDo, subItemDone);
+			updateProgressBar(subItemProgressBar, itemStart, subItemsToDo, subItemsDone);
+			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, subItemsDone, subItemsToDo, subItemsDone * 100 / subItemsToDo));
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					showItemProgress(itemStart, subItemToDo, subItemDone);
+					showItemProgress(itemStart, subItemsToDo, subItemsDone);
 				}
 			});
 		}
@@ -95,11 +97,8 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	@Override
 	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
-			final int value = 100;
-			subItemProgressBar.setIndeterminate(false);
-			subItemProgressBar.setValue(value);
-			subItemProgressBar.setString(value + "%");
-			subItemProgressBar.setStringPainted(true);
+			updateProgressBar(subItemProgressBar, itemStart, subItemsDone, subItemsDone);
+			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, subItemsDone, subItemsDone, subItemsDone * 100 / subItemsDone));
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override

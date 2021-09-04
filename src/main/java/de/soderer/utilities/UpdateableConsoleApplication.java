@@ -82,7 +82,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	}
 
 	@Override
-	public void showUpdateDone() {
+	public void showUpdateDone(final Date startTime, final Date endTime, final long itemsDone) {
 		System.out.println();
 		System.out.println(getI18NString("updateDone"));
 		System.out.println();
@@ -94,7 +94,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	}
 
 	@Override
-	public void showUpdateDownloadEnd() {
+	public void showUpdateDownloadEnd(final Date startTime, final Date endTime, final long itemsDone) {
 		// Do nothing
 	}
 

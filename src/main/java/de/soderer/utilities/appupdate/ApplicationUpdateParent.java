@@ -11,11 +11,11 @@ public interface ApplicationUpdateParent extends CredentialsParent {
 
 	void showUpdateProgress(Date start, long itemsToDo, long itemsDone);
 
-	void showUpdateDone();
+	void showUpdateDone(Date startTime, Date endTime, long itemsDone);
 
 	boolean askForUpdate(Version availableNewVersion) throws Exception;
 
 	void showUpdateDownloadStart(WorkerSimple<Boolean> worker);
 
-	void showUpdateDownloadEnd();
+	void showUpdateDownloadEnd(Date startTime, Date endTime, long itemsDone);
 }

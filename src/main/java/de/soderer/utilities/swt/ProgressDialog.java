@@ -23,11 +23,14 @@ import de.soderer.utilities.worker.WorkerSimple;
 public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Result> implements WorkerParentSimple {
 	protected String commentStringFormat;
 	protected Label commentLabel;
-	protected ProgressBar progressBar;
+
+	private ProgressBar progressBar;
 	protected Button buttonClose;
-	protected boolean isClosed = false;
+
 	private Thread unlimitedRunner = null;
+
 	protected T worker;
+
 	protected boolean canceledByUser = false;
 
 	public ProgressDialog(final Shell shell, final String title, final String commentStringFormat) {
@@ -47,7 +50,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	@Override
 	protected void createComponents(final Shell shell) throws Exception {
 		try {
-			if (isClosed) {
+			if (!isDisposed()) {
 				shell.close();
 			} else {
 				shell.setLayout(new GridLayout(1, true));
@@ -97,11 +100,11 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	@Override
 	public void showProgress(final Date start, final long itemsToDo, final long itemsDone) {
-		if (!isClosed && !isDisposed()) {
+		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (!isClosed && !isDisposed()) {
+					if (!isDisposed()) {
 						stopUnlimitedProgress();
 						if (itemsToDo > 0) {
 							if (progressBar != null) {
@@ -124,15 +127,15 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	@Override
 	public void showUnlimitedProgress() {
-		if (!isClosed && !isDisposed()) {
+		if (!isDisposed()) {
 			unlimitedRunner = new Thread(new Runnable() {
 				@Override
 				public void run() {
-					while (!isClosed && !isDisposed()) {
+					while (!isDisposed()) {
 						getParent().getDisplay().asyncExec(new Runnable() {
 							@Override
 							public void run() {
-								if (!isClosed && !isDisposed()) {
+								if (!isDisposed()) {
 									int nextValue;
 									if (progressBar.getMaximum() == 100) {
 										nextValue = progressBar.getSelection() + 10;
@@ -168,27 +171,11 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@SuppressWarnings("deprecation")
-	protected void stopUnlimitedProgress() {
+	private void stopUnlimitedProgress() {
 		if (unlimitedRunner != null) {
 			unlimitedRunner.stop();
 			unlimitedRunner = null;
 			progressBar.setMaximum(100);
-		}
-	}
-
-	public void close() {
-		if (!isClosed && !isDisposed()) {
-			isClosed = true;
-
-			getParent().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					if (!isDisposed()) {
-						stopUnlimitedProgress();
-						getParent().close();
-					}
-				}
-			});
 		}
 	}
 
@@ -211,7 +198,18 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	@Override
 	public void showDone(final Date start, final Date end, final long itemsDone) {
-		close();
+		if (!isDisposed()) {
+			getParent().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					if (!isDisposed()) {
+						stopUnlimitedProgress();
+						getParent().close();
+						getParent().dispose();
+					}
+				}
+			});
+		}
 	}
 
 	@Override
@@ -221,11 +219,11 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	@Override
 	public void cancel() {
-		if (!canceledByUser && !isClosed && !isDisposed()) {
+		if (!canceledByUser && !isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (!canceledByUser && !isClosed && !isDisposed()) {
+					if (!canceledByUser && !isDisposed()) {
 						canceledByUser = true;
 						buttonClose.setEnabled(false);
 						stopUnlimitedProgress();

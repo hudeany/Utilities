@@ -61,7 +61,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 				@Override
 				public void run() {
 					if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
-						updateProgressDialog.close();
+						updateProgressDialog.showDone(null, null, 0);
 					}
 				}
 			});
@@ -87,9 +87,9 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	}
 
 	@Override
-	public void showUpdateDone() {
+	public void showUpdateDone(final Date startTime, final Date endTime, final long itemsDone) {
 		if (updateProgressDialog != null) {
-			updateProgressDialog.close();
+			updateProgressDialog.showDone(startTime, endTime, itemsDone);
 			updateProgressDialog = null;
 		}
 
@@ -126,9 +126,9 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	}
 
 	@Override
-	public void showUpdateDownloadEnd() {
+	public void showUpdateDownloadEnd(final Date startTime, final Date endTime, final long itemsDone) {
 		if (updateProgressDialog != null) {
-			updateProgressDialog.close();
+			updateProgressDialog.showDone(startTime, endTime, itemsDone);
 			updateProgressDialog = null;
 		}
 	}

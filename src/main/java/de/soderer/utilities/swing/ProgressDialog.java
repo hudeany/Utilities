@@ -5,37 +5,45 @@ import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.MessageFormat;
 import java.util.Date;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Result;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Result> implements WorkerParentSimple {
 	private static final long serialVersionUID = 4039220978715450890L;
 
+	protected JLabel commentLabel;
+	protected String commentStringFormat;
+
 	protected T worker;
 
-	protected JProgressBar progressBar;
-	protected JButton cancelButton;
+	private JProgressBar progressBar;
+	protected JButton buttonClose;
 
 	protected boolean canceledByUser = false;
 
-	public ProgressDialog(final Window parent, final String title) {
-		this(parent, title, (T) null);
+	public ProgressDialog(final Window parent, final String title, final String commentStringFormat) {
+		this(parent, title, commentStringFormat, (T) null);
 	}
 
-	public ProgressDialog(final Window parent, final String title, final T worker) {
+	public ProgressDialog(final Window parent, final String title, final String commentStringFormat, final T worker) {
 		super(parent, title);
 
 		setTitle(title);
+
+		this.commentStringFormat = commentStringFormat;
 
 		this.worker = worker;
 		if (worker != null) {
@@ -46,6 +54,14 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 		final JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+
+		if (Utilities.isNotBlank(commentStringFormat)) {
+			final JPanel commentLabelPanel = new JPanel();
+			commentLabelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+			commentLabel = new JLabel(MessageFormat.format(commentStringFormat, 0, 0, 0));
+			commentLabelPanel.add(commentLabel);
+			panel.add(commentLabelPanel);
+		}
 
 		final JPanel itemPanel = new JPanel();
 		itemPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
@@ -59,14 +75,14 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		// Cancel Button
 		final JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		cancelButton = new JButton("Cancel");
-		cancelButton.addActionListener(new ActionListener() {
+		buttonClose = new JButton("Cancel");
+		buttonClose.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				cancel();
 			}
 		});
-		buttonPanel.add(cancelButton);
+		buttonPanel.add(buttonClose);
 		panel.add(buttonPanel);
 
 		add(panel);
@@ -75,7 +91,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 		setLocationRelativeTo(parent);
 
-		getRootPane().setDefaultButton(cancelButton);
+		getRootPane().setDefaultButton(buttonClose);
 	}
 
 	protected void createAdditionalComponents(@SuppressWarnings("unused") final JPanel panel) {
@@ -122,6 +138,9 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	public void showProgress(final Date start, final long itemsToDo, final long itemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(progressBar, start, itemsToDo, itemsDone);
+			if (commentLabel != null) {
+				commentLabel.setText(MessageFormat.format(commentStringFormat, itemsDone, itemsToDo, itemsDone * 100 / itemsToDo));
+			}
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
@@ -151,7 +170,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		if (SwingUtilities.isEventDispatchThread()) {
 			if (!canceledByUser) {
 				canceledByUser = true;
-				cancelButton.setEnabled(false);
+				buttonClose.setEnabled(false);
 				if (worker != null) {
 					worker.cancel();
 				}
