@@ -8,18 +8,16 @@ import java.util.List;
 
 public class HashItem {
 	private final String name;
-	private final String type;
 	private long size;
 	private final boolean isDirectory;
 	private final HashAlgorithm hashAlgorithm;
 	private final List<HashItem> subItems = new ArrayList<>();
 	private byte[] hash = null;
 
-	public HashItem(final String name, final boolean isDirectory, final HashAlgorithm hashAlgorithm, final String type, final long size) {
+	public HashItem(final String name, final boolean isDirectory, final HashAlgorithm hashAlgorithm, final long size) {
 		this.name = name;
 		this.isDirectory = isDirectory;
 		this.hashAlgorithm = hashAlgorithm;
-		this.type = type;
 		this.size = size;
 	}
 
@@ -63,18 +61,41 @@ public class HashItem {
 		return Collections.unmodifiableList(new ArrayList<>(subItems));
 	}
 
-	public String getType() {
-		return type;
-	}
-
 	public long getSize() {
 		if (isDirectory && size < 0) {
 			size = 0;
-			for (final HashItem item : subItems) {
-				size += item.getSize();
+			for (final HashItem subItem : subItems) {
+				size += subItem.getSize();
 			}
 		}
 
 		return size;
+	}
+
+	public long getNumberOfFiles() {
+		if (isDirectory) {
+			long filesCount = 0;
+			for (final HashItem subItem : subItems) {
+				filesCount += subItem.getNumberOfFiles();
+			}
+			return filesCount;
+		} else {
+			return 1;
+		}
+	}
+
+	public long getNumberOfDirectories() {
+		if (isDirectory) {
+			long directoriesCount = 0;
+			for (final HashItem subItem : subItems) {
+				if (subItem.isDirectory()) {
+					directoriesCount++;
+					directoriesCount += subItem.getNumberOfDirectories();
+				}
+			}
+			return directoriesCount;
+		} else {
+			return 0;
+		}
 	}
 }
