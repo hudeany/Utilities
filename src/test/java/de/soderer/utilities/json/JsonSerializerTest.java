@@ -6,8 +6,8 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.soderer.utilities.csv.TestObjectComplex;
-import de.soderer.utilities.csv.TestObjectSimple;
+import de.soderer.utilities.TestObjectComplex;
+import de.soderer.utilities.TestObjectSimple;
 
 public class JsonSerializerTest {
 	@Test
