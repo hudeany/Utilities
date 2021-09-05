@@ -435,7 +435,6 @@ public class JsonWriter implements Closeable {
 			jsonWriter.setIndentation(indentation);
 			jsonWriter.setSeparator(separator);
 			jsonWriter.add(jsonObject);
-			jsonWriter.close();
 		}
 
 		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
@@ -455,7 +454,6 @@ public class JsonWriter implements Closeable {
 			jsonWriter.setIndentation(indentation);
 			jsonWriter.setSeparator(separator);
 			jsonWriter.add(jsonArray);
-			jsonWriter.close();
 		}
 
 		return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
