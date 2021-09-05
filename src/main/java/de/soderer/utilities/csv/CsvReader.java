@@ -76,7 +76,11 @@ public class CsvReader extends BasicReader {
 	public CsvReader(final InputStream inputStream, final Charset encoding, final CsvFormat csvFormat) throws Exception {
 		this(inputStream, encoding);
 
-		this.csvFormat = csvFormat;
+		if (csvFormat == null) {
+			throw new Exception("Invalid empty csvFormat parameter");
+		} else {
+			this.csvFormat = csvFormat;
+		}
 	}
 
 	/**
@@ -92,10 +96,15 @@ public class CsvReader extends BasicReader {
 	 * Configured csv format
 	 *
 	 * @param csvFormat
+	 * @throws Exception
 	 */
-	public CsvReader setCsvFormat(final CsvFormat csvFormat) {
-		this.csvFormat = csvFormat;
-		return this;
+	public CsvReader setCsvFormat(final CsvFormat csvFormat) throws Exception {
+		if (csvFormat == null) {
+			throw new Exception("Invalid empty csvFormat parameter");
+		} else {
+			this.csvFormat = csvFormat;
+			return this;
+		}
 	}
 
 	/**

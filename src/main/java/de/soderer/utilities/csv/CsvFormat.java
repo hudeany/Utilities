@@ -214,7 +214,9 @@ public class CsvFormat {
 	}
 
 	public CsvFormat setQuoteMode(final QuoteMode quoteMode) {
-		if (quoteMode != QuoteMode.NO_QUOTE && separator == stringQuote) {
+		if (quoteMode == null) {
+			throw new IllegalArgumentException("Given quoteMode is invalid");
+		} else if (quoteMode != QuoteMode.NO_QUOTE && separator == stringQuote) {
 			throw new IllegalArgumentException("StringQuote '" + stringQuote + "' is invalid");
 		} else {
 			this.quoteMode = quoteMode;
