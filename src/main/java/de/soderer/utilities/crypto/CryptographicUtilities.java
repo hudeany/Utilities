@@ -1,8 +1,6 @@
 package de.soderer.utilities.crypto;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -832,42 +830,11 @@ public class CryptographicUtilities {
 		return returnValue;
 	}
 
-	public static X509Certificate[] loadCertificatesFromPemFile(final File pemFile) throws Exception {
-		try (PEMParser pemReader = new PEMParser(new FileReader(pemFile))) {
-			final List<X509Certificate> certificateList = new ArrayList<>();
-			Object readObject;
-			while ((readObject = pemReader.readObject()) != null) {
-				if (readObject instanceof X509Certificate) {
-					certificateList.add((X509Certificate) readObject);
-				} else if (readObject instanceof X509CertificateHolder) {
-					certificateList.add(new JcaX509CertificateConverter().getCertificate((X509CertificateHolder) readObject));
-				} else {
-					throw new Exception("Unknown certificate type");
-				}
-			}
-			return certificateList.toArray(new X509Certificate[0]);
-		}
-	}
-
-	public static Collection<? extends Certificate> loadCertificatesFromPemStream(final InputStream pemInputStream) throws Exception {
-		return CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(pemInputStream));
-
-		//		Security.addProvider(new BouncyCastleProvider());
-		//
-		//		try (PEMParser pemReader = new PEMParser(new InputStreamReader(pemInputStream))) {
-		//			List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
-		//			Object pemReaderObject;
-		//			while ((pemReaderObject = pemReader.readObject()) != null) {
-		//				if (pemReaderObject instanceof X509Certificate) {
-		//					// Old BouncyCastle API
-		//					certificateList.add((X509Certificate) pemReaderObject);
-		//				} else if (pemReaderObject instanceof X509CertificateHolder) {
-		//					X509Certificate certificate = new JcaX509CertificateConverter().setProvider("BC").getCertificate((X509CertificateHolder) pemReaderObject);
-		//					certificateList.add(certificate);
-		//				}
-		//			}
-		//			return certificateList.toArray(new X509Certificate[0]);
-		//		}
+	public static Collection<? extends X509Certificate> loadCertificatesFromPemStream(final InputStream pemInputStream) throws Exception {
+		final CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+		@SuppressWarnings("unchecked")
+		final Collection<? extends X509Certificate> certificates = (Collection<? extends X509Certificate>) certificateFactory.generateCertificates(pemInputStream);
+		return certificates;
 	}
 
 	public static String getCnFromCertificate(final X509Certificate certificate) throws InvalidNameException {
@@ -1135,7 +1102,4 @@ public class CryptographicUtilities {
 			return null;
 		}
 	}
-
-	// TODO: Read TLS CA Cert (CA Chain file with multiple CA Certs)
-	// TODO: Read TLS Key Cert
 }
