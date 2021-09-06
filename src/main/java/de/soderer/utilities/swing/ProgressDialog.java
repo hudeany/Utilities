@@ -16,6 +16,7 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
@@ -75,7 +76,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		// Cancel Button
 		final JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		buttonClose = new JButton("Cancel");
+		buttonClose = new JButton(LangResources.get("cancel"));
 		buttonClose.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
