@@ -796,20 +796,46 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<? extends Certificate> trustedCerts) throws Exception {
-		final CertPathBuilder certifier = CertPathBuilder.getInstance("PKIX");
+	public static boolean verifyChainOfTrust(final X509Certificate certificate, final Collection<? extends Certificate> trustedCertificates) throws Exception {
 		final X509CertSelector targetConstraints = new X509CertSelector();
-		targetConstraints.setCertificate(cert);
+		targetConstraints.setCertificate(certificate);
 
 		final Set<TrustAnchor> trustAnchors = new HashSet<>();
-		for (final Certificate trustedRootCert : trustedCerts) {
+		for (final Certificate trustedRootCert : trustedCertificates) {
 			trustAnchors.add(new TrustAnchor((X509Certificate) trustedRootCert, null));
 		}
 
 		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
 		params.setRevocationEnabled(false);
 		try {
-			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) certifier.build(params);
+			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) CertPathBuilder.getInstance("PKIX").build(params);
+			return result != null;
+		} catch (@SuppressWarnings("unused") final Exception cpbe) {
+			return false;
+		}
+	}
+
+	/**
+	 * Check if "certificate" was certified by "possibleCertifierCerificate"
+	 *
+	 * @param cert
+	 * @param possibleCertifierCerificate
+	 * @return
+	 * @throws Exception
+	 */
+	public static boolean verifyChainOfTrust(final X509Certificate certificate, final Certificate... trustedCertificates) throws Exception {
+		final X509CertSelector targetConstraints = new X509CertSelector();
+		targetConstraints.setCertificate(certificate);
+
+		final Set<TrustAnchor> trustAnchors = new HashSet<>();
+		for (final Certificate trustedRootCert : trustedCertificates) {
+			trustAnchors.add(new TrustAnchor((X509Certificate) trustedRootCert, null));
+		}
+
+		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
+		params.setRevocationEnabled(false);
+		try {
+			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) CertPathBuilder.getInstance("PKIX").build(params);
 			return result != null;
 		} catch (@SuppressWarnings("unused") final Exception cpbe) {
 			return false;
