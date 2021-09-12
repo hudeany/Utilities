@@ -1,6 +1,7 @@
 package de.soderer.utilities.crypto;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,6 +15,7 @@ import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
@@ -380,8 +382,25 @@ public class CryptographicUtilities {
 
 		try (StringWriter stringWriter = new StringWriter();
 				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
-			pemWriter.writeObject(privateKey);
-			pemWriter.writeObject(publicKey);
+			if (privateKey != null) {
+				pemWriter.writeObject(privateKey);
+			}
+			if (publicKey != null) {
+				pemWriter.writeObject(publicKey);
+			}
+			pemWriter.close();
+			return stringWriter.toString();
+		} catch (final Exception e) {
+			throw new Exception("Cannot create key string: " + e.getMessage(), e);
+		}
+	}
+
+	public static String getStringFromKey(final Key key) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try (StringWriter stringWriter = new StringWriter();
+				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
+			pemWriter.writeObject(key);
 			pemWriter.close();
 			return stringWriter.toString();
 		} catch (final Exception e) {
@@ -1126,6 +1145,16 @@ public class CryptographicUtilities {
 			return null;
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return null;
+		}
+	}
+
+	public static boolean isJavaKeystoreFile(final File possibleJavaKeystoreFile) {
+		try (InputStream javaKeyStoreInputStream = new FileInputStream(possibleJavaKeystoreFile)) {
+			final KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+			keystore.load(javaKeyStoreInputStream, null);
+			return true;
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return false;
 		}
 	}
 }
