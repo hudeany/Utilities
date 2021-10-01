@@ -19,8 +19,8 @@ public class TextUtilitiesTest {
 	public void testSearchAndReplace1() {
 		try {
 			final Tuple<Integer, Integer> result = TextUtilities.searchNextPosition(testStringWindows, 5, "abc", false, true, false);
-			assertEquals(new Integer(20), result.getFirst());
-			assertEquals(new Integer(3), result.getSecond());
+			assertEquals(Integer.valueOf(20), result.getFirst());
+			assertEquals(Integer.valueOf(3), result.getSecond());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -30,8 +30,8 @@ public class TextUtilitiesTest {
 	public void testSearchAndReplace2() {
 		try {
 			final Tuple<Integer, Integer> result = TextUtilities.searchNextPosition(testStringWindows, 5, "abc", false, true, true);
-			assertEquals(new Integer(0), result.getFirst());
-			assertEquals(new Integer(3), result.getSecond());
+			assertEquals(Integer.valueOf(0), result.getFirst());
+			assertEquals(Integer.valueOf(3), result.getSecond());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -51,8 +51,8 @@ public class TextUtilitiesTest {
 	public void testSearchAndReplace4() {
 		try {
 			final Tuple<Integer, Integer> result = TextUtilities.searchNextPosition(testStringWindows, 5, "ä", false, true, false);
-			assertEquals(new Integer(10), result.getFirst());
-			assertEquals(new Integer(1), result.getSecond());
+			assertEquals(Integer.valueOf(10), result.getFirst());
+			assertEquals(Integer.valueOf(1), result.getSecond());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -62,8 +62,8 @@ public class TextUtilitiesTest {
 	public void testSearchAndReplace5() {
 		try {
 			final Tuple<Integer, Integer> result = TextUtilities.searchNextPosition(testStringWindows, 5, "123$", true, true, false);
-			assertEquals(new Integer(15), result.getFirst());
-			assertEquals(new Integer(3), result.getSecond());
+			assertEquals(Integer.valueOf(15), result.getFirst());
+			assertEquals(Integer.valueOf(3), result.getSecond());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -73,8 +73,8 @@ public class TextUtilitiesTest {
 	public void testSearchAndReplace6() {
 		try {
 			final Tuple<Integer, Integer> result = TextUtilities.searchNextPosition(testStringUnix, 5, "123$", true, true, false);
-			assertEquals(new Integer(12), result.getFirst());
-			assertEquals(new Integer(3), result.getSecond());
+			assertEquals(Integer.valueOf(12), result.getFirst());
+			assertEquals(Integer.valueOf(3), result.getSecond());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -84,8 +84,8 @@ public class TextUtilitiesTest {
 	public void testSearchAndReplace7() {
 		try {
 			final Tuple<Integer, Integer> result = TextUtilities.searchNextPosition(testStringWindows, 5, "^123", true, true, false);
-			assertEquals(new Integer(15), result.getFirst());
-			assertEquals(new Integer(3), result.getSecond());
+			assertEquals(Integer.valueOf(15), result.getFirst());
+			assertEquals(Integer.valueOf(3), result.getSecond());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -95,8 +95,8 @@ public class TextUtilitiesTest {
 	public void testSearchAndReplace8() {
 		try {
 			final Tuple<Integer, Integer> result = TextUtilities.searchNextPosition(testStringUnix, 5, "^123", true, true, false);
-			assertEquals(new Integer(12), result.getFirst());
-			assertEquals(new Integer(3), result.getSecond());
+			assertEquals(Integer.valueOf(12), result.getFirst());
+			assertEquals(Integer.valueOf(3), result.getSecond());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -106,8 +106,8 @@ public class TextUtilitiesTest {
 	public void testSearchAndReplace9() {
 		try {
 			final Tuple<Integer, Integer> result = TextUtilities.searchNextPosition(testStringWindows, 5, "123\r\n", true, true, false);
-			assertEquals(new Integer(15), result.getFirst());
-			assertEquals(new Integer(5), result.getSecond());
+			assertEquals(Integer.valueOf(15), result.getFirst());
+			assertEquals(Integer.valueOf(5), result.getSecond());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
