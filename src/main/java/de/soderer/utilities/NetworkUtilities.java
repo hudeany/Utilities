@@ -116,12 +116,12 @@ public class NetworkUtilities {
 
 	public static byte[] getMacAddressBytes(final String macAddress) throws IllegalArgumentException {
 		if (Utilities.isEmpty(macAddress)) {
-			throw new IllegalArgumentException("Invalid MAC address.");
+			throw new IllegalArgumentException("Invalid MAC address");
 		}
 
 		final String[] hexParts = macAddress.split("(\\:|\\-| )");
 		if (hexParts.length != 6) {
-			throw new IllegalArgumentException("Invalid MAC address.");
+			throw new IllegalArgumentException("Invalid MAC address");
 		}
 
 		try {
@@ -131,7 +131,7 @@ public class NetworkUtilities {
 			}
 			return bytes;
 		} catch (final NumberFormatException e) {
-			throw new IllegalArgumentException("Invalid hex digit in MAC address.", e);
+			throw new IllegalArgumentException("Invalid hex digit in MAC address", e);
 		}
 	}
 
@@ -201,7 +201,7 @@ public class NetworkUtilities {
 		try {
 			return InetAddress.getLocalHost().getHostName();
 		} catch (@SuppressWarnings("unused") final UnknownHostException e) {
-			return "unbekannter Rechnername";
+			return "Unknown hostname";
 		}
 	}
 
