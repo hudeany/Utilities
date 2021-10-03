@@ -54,9 +54,9 @@ public class DateUtilities {
 	/** ANSI SQL standard date format */
 	public static final String ANSI_SQL_DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
-	public static String getWochenTagNamensKuerzel(final GregorianCalendar datum) {
-		final int tagesInt = datum.get(Calendar.DAY_OF_WEEK);
-		final String dayString = DateFormatSymbols.getInstance().getWeekdays()[tagesInt];
+	public static String getWeekdayNameShort(final GregorianCalendar date) {
+		final int dayInt = date.get(Calendar.DAY_OF_WEEK);
+		final String dayString = DateFormatSymbols.getInstance().getWeekdays()[dayInt];
 		return dayString.substring(0, 2);
 	}
 

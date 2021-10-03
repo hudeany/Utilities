@@ -45,7 +45,6 @@ import java.security.spec.X509EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -1083,16 +1082,13 @@ public class CryptographicUtilities {
 	public static Certificate generateSelfsignedCertificate(final KeyPair keyPair, final int validityInDays, final String signatureAlgorithm, final String subjectDN) throws OperatorCreationException, CertificateException, IOException {
 		final Provider bcProvider = new BouncyCastleProvider();
 		Security.addProvider(bcProvider);
-		final long now = System.currentTimeMillis();
-		final Date startDate = new Date(now);
+
+		final Date validityStartDate = new Date();
+		final Date validityEndDate = DateUtilities.addDaysToDate(validityStartDate, validityInDays);
 		final X500Name dnName = new X500Name(subjectDN);
-		final BigInteger certSerialNumber = new BigInteger(Long.toString(now));
-		final Calendar calendar = Calendar.getInstance();
-		calendar.setTime(startDate);
-		calendar.add(Calendar.DAY_OF_YEAR, validityInDays);
-		final Date endDate = calendar.getTime();
+		final BigInteger certSerialNumber = new BigInteger(64, new SecureRandom());
 		final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
-		final JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate, dnName, keyPair.getPublic());
+		final JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, validityStartDate, validityEndDate, dnName, keyPair.getPublic());
 		final BasicConstraints basicConstraints = new BasicConstraints(true);
 		certBuilder.addExtension(new ASN1ObjectIdentifier("2.5.29.19"), true, basicConstraints);
 		return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certBuilder.build(contentSigner));
