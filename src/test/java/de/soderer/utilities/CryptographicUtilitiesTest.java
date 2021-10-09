@@ -2,13 +2,17 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
+import java.util.Date;
 
 import javax.crypto.Cipher;
 
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -151,5 +155,42 @@ public class CryptographicUtilitiesTest {
 
 		final byte[] decrypted = cipher2.doFinal(encrypted);
 		Assert.assertEquals(new String(decrypted, StandardCharsets.UTF_8), "This is a secret message Aöü");
+	}
+
+	@Test
+	public void testCertificateSigning() {
+		try {
+			final KeyPair keyPair = CryptographicUtilities.generateRsaKeyPair(2048);
+
+			final PublicKey publicKey = keyPair.getPublic();
+			final PrivateKey privateKey = keyPair.getPrivate();
+
+			final PKCS10CertificationRequest certificationRequest = CryptographicUtilities.generatePKCS10CertificateRequest(privateKey, publicKey, "Test CommonName CN", "Test OrganizationalUnit OU", "Test Organization O", "Test Location L", "Test State S", "Test Country C");
+			final String csrDataString = CryptographicUtilities.getStringFromCertificationRequest(certificationRequest);
+
+			Assert.assertTrue(csrDataString.startsWith("-----BEGIN CERTIFICATE REQUEST-----"));
+
+			final KeyPair caKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
+
+			final PublicKey caPublicKey = caKeyPair.getPublic();
+			final PrivateKey caPrivateKey = caKeyPair.getPrivate();
+			final X509Certificate caCertificate = CryptographicUtilities.generateRsaCertificate(caKeyPair, "Test CA", new Date(), DateUtilities.addDaysToDate(new Date(), 365));
+			final String caCertificateDataString = CryptographicUtilities.getStringFromX509Certificate(caCertificate);
+
+			final X509Certificate testCertificate = CryptographicUtilities.signPKCS10CertificateRequest(caCertificate, caPrivateKey, null, null, csrDataString, BigInteger.valueOf(123456), 365);
+			final String testCertificateDataString = CryptographicUtilities.getStringFromX509Certificate(testCertificate);
+
+			Assert.assertTrue(testCertificateDataString.startsWith("-----BEGIN CERTIFICATE-----"));
+
+			final X509Certificate caCertificateReadFromString = CryptographicUtilities.getCertificateFromString(caCertificateDataString);
+			final X509Certificate testCertificateReadFromString = CryptographicUtilities.getCertificateFromString(testCertificateDataString);
+
+			Assert.assertTrue(CryptographicUtilities.verifyChainOfTrust(testCertificateReadFromString, caCertificateReadFromString));
+			Assert.assertTrue(CryptographicUtilities.verifyChainOfTrust(testCertificateReadFromString, testCertificateReadFromString));
+
+			Assert.assertFalse(CryptographicUtilities.verifyChainOfTrust(caCertificateReadFromString, testCertificateReadFromString));
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
 	}
 }

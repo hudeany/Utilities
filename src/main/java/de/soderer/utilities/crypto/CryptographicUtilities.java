@@ -1,9 +1,11 @@
 package de.soderer.utilities.crypto;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -65,17 +67,31 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
+import javax.security.auth.x500.X500Principal;
 
+import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x509.AccessDescription;
 import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.CRLDistPoint;
+import org.bouncycastle.asn1.x509.DistributionPoint;
+import org.bouncycastle.asn1.x509.DistributionPointName;
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.cms.CMSAlgorithm;
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
@@ -108,6 +124,10 @@ import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder;
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequest;
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 
 import de.soderer.utilities.BitUtilities;
 import de.soderer.utilities.DateUtilities;
@@ -265,14 +285,13 @@ public class CryptographicUtilities {
 	public static String getStringFromX509Certificate(final X509Certificate certificate) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try (StringWriter stringWriter = new StringWriter();
-				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
+		final StringWriter stringWriter = new StringWriter();
+		try (JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
 			pemWriter.writeObject(certificate);
-			pemWriter.close();
-			return stringWriter.toString();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create certificate string: " + e.getMessage(), e);
 		}
+		return stringWriter.toString();
 	}
 
 	public static void encryptAsymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final PublicKey publicKey) throws Exception {
@@ -379,32 +398,30 @@ public class CryptographicUtilities {
 	public static String getStringFromKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try (StringWriter stringWriter = new StringWriter();
-				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
+		final StringWriter stringWriter = new StringWriter();
+		try (JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
 			if (privateKey != null) {
 				pemWriter.writeObject(privateKey);
 			}
 			if (publicKey != null) {
 				pemWriter.writeObject(publicKey);
 			}
-			pemWriter.close();
-			return stringWriter.toString();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create key string: " + e.getMessage(), e);
 		}
+		return stringWriter.toString();
 	}
 
 	public static String getStringFromKey(final Key key) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		try (StringWriter stringWriter = new StringWriter();
-				JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
+		final StringWriter stringWriter = new StringWriter();
+		try (JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
 			pemWriter.writeObject(key);
-			pemWriter.close();
-			return stringWriter.toString();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create key string: " + e.getMessage(), e);
 		}
+		return stringWriter.toString();
 	}
 
 	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(final InputStream inputStream) throws Exception {
@@ -1151,6 +1168,135 @@ public class CryptographicUtilities {
 			return true;
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
+		}
+	}
+
+	public static String generateX500PrincipalString(final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country) throws Exception {
+		final StringBuilder result = new StringBuilder();
+
+		if (Utilities.isNotBlank(commonName)) {
+			result.append("CN=").append(commonName);
+		} else {
+			throw new Exception("CommonName(CN) is mandatory for X500Principal");
+		}
+
+		if (organizationalUnit != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("OU=").append(organizationalUnit);
+		}
+
+		if (organizationName != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("O=").append(organizationName);
+		}
+
+		if (location != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("L=").append(location);
+		}
+
+		if (state != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("S=").append(state);
+		}
+
+		if (country != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("C=").append(country);
+		}
+
+		return result.toString();
+	}
+
+	public static PKCS10CertificationRequest generatePKCS10CertificateRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country) throws Exception {
+		return generatePKCS10CertificateRequest(privateKey, publicKey, commonName, organizationalUnit, organizationName, location, state, country, DEFAULT_SIGNATURE_METHOD);
+	}
+
+	public static PKCS10CertificationRequest generatePKCS10CertificateRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		final PKCS10CertificationRequestBuilder certificationRequestBuilder = new JcaPKCS10CertificationRequestBuilder(new X500Principal(generateX500PrincipalString(commonName, organizationalUnit, organizationName, location, state, country)), publicKey);
+		final JcaContentSignerBuilder contentSignerBuilder = new JcaContentSignerBuilder(signatureMethod);
+		final ContentSigner contentSigner = contentSignerBuilder.build(privateKey);
+		final PKCS10CertificationRequest certificationRequest = certificationRequestBuilder.build(contentSigner);
+
+		return certificationRequest;
+	}
+
+	public static String getStringFromCertificationRequest(final PKCS10CertificationRequest certificationRequest) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+		final StringWriter writer = new StringWriter();
+		try (final JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(writer)) {
+			jcaPEMWriter.writeObject(certificationRequest);
+		} catch (final Exception e) {
+			throw new Exception("Cannot create certification request: " + e.getMessage(), e);
+		}
+		return writer.toString();
+	}
+
+	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final String encodedCsr, final BigInteger serialNo, final int validityDays) throws Exception {
+		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, encodedCsr, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD);
+	}
+
+	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final String encodedCsr, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		PKCS10CertificationRequest certificationRequest;
+		try {
+			final PEMParser pemParser = new PEMParser(new InputStreamReader(new ByteArrayInputStream(encodedCsr.getBytes())));
+			certificationRequest = (PKCS10CertificationRequest) pemParser.readObject();
+		} catch (final IOException e) {
+			throw new Exception("Error in reading the certificate signing request", e);
+		}
+
+		try {
+			final Date issuedDate = new Date();
+			final Date expiryDate = new Date(System.currentTimeMillis() + validityDays * 86400000l);
+			final JcaPKCS10CertificationRequest jcaRequest = new JcaPKCS10CertificationRequest(certificationRequest);
+			final X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(
+					caCertificate,
+					serialNo,
+					issuedDate,
+					expiryDate,
+					jcaRequest.getSubject(),
+					jcaRequest.getPublicKey());
+			final JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
+			certificateBuilder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCertificate));
+			certificateBuilder.addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(jcaRequest.getPublicKey()));
+			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(0));
+			certificateBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
+			certificateBuilder.addExtension(Extension.extendedKeyUsage, true, new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth));
+			final ContentSigner signer = new JcaContentSignerBuilder(signatureMethod).setProvider("BC").build(caPrivateKey);
+
+			if (Utilities.isNotBlank(caCrlEndpointUrl)) {
+				// Add CRL endpoint
+				final DistributionPointName crlEp = new DistributionPointName(new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, caCrlEndpointUrl)));
+				final DistributionPoint disPoint = new DistributionPoint(crlEp, null, null);
+				certificateBuilder.addExtension(Extension.cRLDistributionPoints, false, new CRLDistPoint(new DistributionPoint[] { disPoint }));
+			}
+
+			if (Utilities.isNotBlank(caOcspEndpointUrl)) {
+				// Add OCSP endpoint
+				final AccessDescription ocsp = new AccessDescription(AccessDescription.id_ad_ocsp, new GeneralName(GeneralName.uniformResourceIdentifier, caOcspEndpointUrl));
+				final ASN1EncodableVector authInfoAccessASN = new ASN1EncodableVector();
+				authInfoAccessASN.add(ocsp);
+				certificateBuilder.addExtension(Extension.authorityInfoAccess, false, new DERSequence(authInfoAccessASN));
+			}
+
+			final X509Certificate signedCert = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certificateBuilder.build(signer));
+			return signedCert;
+		} catch (final Exception e) {
+			throw new Exception("Error in signing the certificate", e);
 		}
 	}
 }
