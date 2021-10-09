@@ -1,11 +1,9 @@
 package de.soderer.utilities.crypto;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -1235,29 +1233,35 @@ public class CryptographicUtilities {
 
 	public static String getStringFromCertificationRequest(final PKCS10CertificationRequest certificationRequest) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
+
 		final StringWriter writer = new StringWriter();
 		try (final JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(writer)) {
 			jcaPEMWriter.writeObject(certificationRequest);
 		} catch (final Exception e) {
-			throw new Exception("Cannot create certification request: " + e.getMessage(), e);
+			throw new Exception("Cannot create certification signing request string: " + e.getMessage(), e);
 		}
 		return writer.toString();
 	}
 
-	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final String encodedCsr, final BigInteger serialNo, final int validityDays) throws Exception {
-		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, encodedCsr, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final String encodedCsr, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
+	public static PKCS10CertificationRequest getCertificationRequestFromString(final String encodedCertificationRequest) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		PKCS10CertificationRequest certificationRequest;
 		try {
-			final PEMParser pemParser = new PEMParser(new InputStreamReader(new ByteArrayInputStream(encodedCsr.getBytes())));
+			final PEMParser pemParser = new PEMParser(new StringReader(encodedCertificationRequest));
 			certificationRequest = (PKCS10CertificationRequest) pemParser.readObject();
 		} catch (final IOException e) {
-			throw new Exception("Error in reading the certificate signing request", e);
+			throw new Exception("Error in reading the certificate signing request: " + e.getMessage(), e);
 		}
+		return certificationRequest;
+	}
+
+	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final BigInteger serialNo, final int validityDays) throws Exception {
+		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, certificationRequest, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD);
+	}
+
+	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
 
 		try {
 			final Date issuedDate = new Date();
