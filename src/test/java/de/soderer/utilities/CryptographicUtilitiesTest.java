@@ -172,7 +172,6 @@ public class CryptographicUtilitiesTest {
 
 			final KeyPair caKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
 
-			final PublicKey caPublicKey = caKeyPair.getPublic();
 			final PrivateKey caPrivateKey = caKeyPair.getPrivate();
 			final X509Certificate caCertificate = CryptographicUtilities.generateRsaCertificate(caKeyPair, "Test CA", new Date(), DateUtilities.addDaysToDate(new Date(), 365));
 			final String caCertificateDataString = CryptographicUtilities.getStringFromX509Certificate(caCertificate);
