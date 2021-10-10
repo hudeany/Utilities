@@ -65,6 +65,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 					if (inputPattern == null || inputPattern.matcher(textField.getText()).matches()) {
 						currentText = textField.getText();
 					} else {
+						// Remove the invalid input character
 						currentPosition = textField.getCaretPosition();
 						isTechnicalChange = true;
 						textField.setText(currentText);
