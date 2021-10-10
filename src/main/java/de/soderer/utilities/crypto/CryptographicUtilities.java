@@ -49,7 +49,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
@@ -131,6 +133,7 @@ import de.soderer.utilities.BitUtilities;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
+import de.soderer.utilities.MapStringReader;
 import de.soderer.utilities.Utilities;
 
 /**
@@ -237,6 +240,31 @@ public class CryptographicUtilities {
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
+
+	public static X509Certificate generateRsaCaCertificate(final KeyPair keyPair, final String issuerName, final int allowedSubCertificateLevel, final Date validFrom, final Date validUntil) throws Exception {
+		return generateRsaCaCertificate(keyPair, issuerName, allowedSubCertificateLevel, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
+	}
+
+	public static X509Certificate generateRsaCaCertificate(final KeyPair keyPair, final String issuerName, final int allowedSubCertificateLevel, final Date validFrom, final Date validUntil, final String signatureMethod) throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			final X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
+			builder.addRDN(BCStyle.CN, issuerName);
+			final X500Name x500Name = builder.build();
+
+			final ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(keyPair.getPrivate());
+			final X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, keyPair.getPublic());
+			if (allowedSubCertificateLevel > 0) {
+				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCertificateLevel - 1));
+			} else {
+				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
+			}
+			return new JcaX509CertificateConverter().getCertificate(certificateBuilder.build(sigGen));
+		} catch (final Exception e) {
+			throw new Exception("Cannot create RSA certificate", e);
 		}
 	}
 
@@ -911,7 +939,7 @@ public class CryptographicUtilities {
 	}
 
 	public static boolean checkForCaCertificate(final X509Certificate certificate) {
-		return certificate.getBasicConstraints() != 1;
+		return certificate.getBasicConstraints() >= 0;
 	}
 
 	public static String getMd5FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
@@ -1094,7 +1122,7 @@ public class CryptographicUtilities {
 		return dataOutput;
 	}
 
-	public static Certificate generateSelfsignedCertificate(final KeyPair keyPair, final int validityInDays, final String signatureAlgorithm, final String subjectDN) throws OperatorCreationException, CertificateException, IOException {
+	public static Certificate generateSelfsignedCertificate(final KeyPair keyPair, final int validityInDays, final String signatureAlgorithm, final String subjectDN, final int allowedSubCertificateLevel) throws OperatorCreationException, CertificateException, IOException {
 		final Provider bcProvider = new BouncyCastleProvider();
 		Security.addProvider(bcProvider);
 
@@ -1103,10 +1131,13 @@ public class CryptographicUtilities {
 		final X500Name dnName = new X500Name(subjectDN);
 		final BigInteger certSerialNumber = new BigInteger(64, new SecureRandom());
 		final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
-		final JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, validityStartDate, validityEndDate, dnName, keyPair.getPublic());
-		final BasicConstraints basicConstraints = new BasicConstraints(true);
-		certBuilder.addExtension(new ASN1ObjectIdentifier("2.5.29.19"), true, basicConstraints);
-		return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certBuilder.build(contentSigner));
+		final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, validityStartDate, validityEndDate, dnName, keyPair.getPublic());
+		if (allowedSubCertificateLevel > 0) {
+			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCertificateLevel - 1));
+		} else {
+			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
+		}
+		return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certificateBuilder.build(contentSigner));
 	}
 
 	public static boolean checkPrivateKeyFitsPublicKey(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
@@ -1169,7 +1200,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static String generateX500PrincipalString(final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country) throws Exception {
+	public static String generateX500PrincipalString(final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
 		final StringBuilder result = new StringBuilder();
 
 		if (Utilities.isNotBlank(commonName)) {
@@ -1213,17 +1244,39 @@ public class CryptographicUtilities {
 			result.append("C=").append(country);
 		}
 
+		if (email != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("EMAIL=").append(email);
+		}
+
 		return result.toString();
 	}
 
-	public static PKCS10CertificationRequest generatePKCS10CertificateRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country) throws Exception {
-		return generatePKCS10CertificateRequest(privateKey, publicKey, commonName, organizationalUnit, organizationName, location, state, country, DEFAULT_SIGNATURE_METHOD);
+	public static Map<String, String> parseX500PrincipalString(final String x500NameString) {
+		try {
+			final Map<String, String> dataMap = MapStringReader.readMap(x500NameString);
+			final LinkedHashMap<String, String> returnMap = new LinkedHashMap<>();
+			for (final String keyName : new String[] { "CN", "OU", "O", "L", "S", "ST", "C", "EMAIL" }) {
+				if (dataMap.containsKey(keyName)) {
+					returnMap.put(keyName, dataMap.get(keyName));
+				}
+			}
+			return returnMap;
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return null;
+		}
 	}
 
-	public static PKCS10CertificationRequest generatePKCS10CertificateRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String signatureMethod) throws Exception {
+	public static PKCS10CertificationRequest generatePKCS10CertificateRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
+		return generatePKCS10CertificateRequest(privateKey, publicKey, commonName, organizationalUnit, organizationName, location, state, country, email, DEFAULT_SIGNATURE_METHOD);
+	}
+
+	public static PKCS10CertificationRequest generatePKCS10CertificateRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email, final String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final PKCS10CertificationRequestBuilder certificationRequestBuilder = new JcaPKCS10CertificationRequestBuilder(new X500Principal(generateX500PrincipalString(commonName, organizationalUnit, organizationName, location, state, country)), publicKey);
+		final PKCS10CertificationRequestBuilder certificationRequestBuilder = new JcaPKCS10CertificationRequestBuilder(new X500Principal(generateX500PrincipalString(commonName, organizationalUnit, organizationName, location, state, country, email)), publicKey);
 		final JcaContentSignerBuilder contentSignerBuilder = new JcaContentSignerBuilder(signatureMethod);
 		final ContentSigner contentSigner = contentSignerBuilder.build(privateKey);
 		final PKCS10CertificationRequest certificationRequest = certificationRequestBuilder.build(contentSigner);
@@ -1256,14 +1309,18 @@ public class CryptographicUtilities {
 		return certificationRequest;
 	}
 
-	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final BigInteger serialNo, final int validityDays) throws Exception {
-		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, certificationRequest, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD);
+	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCertificateLevel, final BigInteger serialNo, final int validityDays) throws Exception {
+		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, certificationRequest, allowedSubCertificateLevel, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD);
 	}
 
-	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
+	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCertificateLevel, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
+			if (!checkForCaCertificate(caCertificate)) {
+				throw new Exception("Given certificate is not a CA certificate and therefore may not sign a Certificate Signing Requests");
+			}
+
 			final Date issuedDate = new Date();
 			final Date expiryDate = new Date(System.currentTimeMillis() + validityDays * 86400000l);
 			final JcaPKCS10CertificationRequest jcaRequest = new JcaPKCS10CertificationRequest(certificationRequest);
@@ -1277,7 +1334,11 @@ public class CryptographicUtilities {
 			final JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
 			certificateBuilder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCertificate));
 			certificateBuilder.addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(jcaRequest.getPublicKey()));
-			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(0));
+			if (allowedSubCertificateLevel > 0) {
+				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCertificateLevel - 1));
+			} else {
+				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
+			}
 			certificateBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
 			certificateBuilder.addExtension(Extension.extendedKeyUsage, true, new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth));
 			final ContentSigner signer = new JcaContentSignerBuilder(signatureMethod).setProvider("BC").build(caPrivateKey);

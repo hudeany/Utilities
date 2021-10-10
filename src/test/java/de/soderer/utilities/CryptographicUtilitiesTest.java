@@ -162,17 +162,17 @@ public class CryptographicUtilitiesTest {
 		try {
 			final KeyPair keyPair = CryptographicUtilities.generateRsaKeyPair(2048);
 
-			final PKCS10CertificationRequest certificationRequest = CryptographicUtilities.generatePKCS10CertificateRequest(keyPair.getPrivate(), keyPair.getPublic(), "Test CommonName CN", "Test OrganizationalUnit OU", "Test Organization O", "Test Location L", "Test State S", "Test Country C");
+			final PKCS10CertificationRequest certificationRequest = CryptographicUtilities.generatePKCS10CertificateRequest(keyPair.getPrivate(), keyPair.getPublic(), "Test CommonName CN", "Test OrganizationalUnit OU", "Test Organization O", "Test Location L", "Test State S", "Test Country C", "Test Email EMAIL");
 			final String csrDataString = CryptographicUtilities.getStringFromCertificationRequest(certificationRequest);
 
 			Assert.assertTrue(csrDataString.startsWith("-----BEGIN CERTIFICATE REQUEST-----"));
 
 			final KeyPair caKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
 
-			final X509Certificate caCertificate = CryptographicUtilities.generateRsaCertificate(caKeyPair, "Test CA", new Date(), DateUtilities.addDaysToDate(new Date(), 365));
+			final X509Certificate caCertificate = CryptographicUtilities.generateRsaCaCertificate(caKeyPair, "Test CA", 1, new Date(), DateUtilities.addDaysToDate(new Date(), 365));
 			final String caCertificateDataString = CryptographicUtilities.getStringFromX509Certificate(caCertificate);
 
-			final X509Certificate testCertificate = CryptographicUtilities.signPKCS10CertificateRequest(caCertificate, caKeyPair.getPrivate(), null, null, certificationRequest, BigInteger.valueOf(123456), 365);
+			final X509Certificate testCertificate = CryptographicUtilities.signPKCS10CertificateRequest(caCertificate, caKeyPair.getPrivate(), null, null, certificationRequest, 0, BigInteger.valueOf(123456), 365);
 			final String testCertificateDataString = CryptographicUtilities.getStringFromX509Certificate(testCertificate);
 
 			Assert.assertTrue(testCertificateDataString.startsWith("-----BEGIN CERTIFICATE-----"));

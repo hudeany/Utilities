@@ -4,7 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class MapStringReader extends BasicReader {
@@ -17,7 +17,7 @@ public class MapStringReader extends BasicReader {
 	}
 
 	public Map<String, String> readMap() throws Exception {
-		final Map<String, String> returnMap = new HashMap<>();
+		final Map<String, String> returnMap = new LinkedHashMap<>();
 
 		boolean inValue = false;
 
