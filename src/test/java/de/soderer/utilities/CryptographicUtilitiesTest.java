@@ -172,7 +172,7 @@ public class CryptographicUtilitiesTest {
 			final X509Certificate caCertificate = CryptographicUtilities.generateRsaCertificate(caKeyPair, "Test CA", 0, new Date(), DateUtilities.addDaysToDate(new Date(), 365));
 			final String caCertificateDataString = CryptographicUtilities.getStringFromX509Certificate(caCertificate);
 
-			final X509Certificate testCertificate = CryptographicUtilities.signPKCS10CertificateRequest(caCertificate, caKeyPair.getPrivate(), null, null, certificationRequest, 0, BigInteger.valueOf(123456), 365);
+			final X509Certificate testCertificate = CryptographicUtilities.signPKCS10CertificateRequest(caCertificate, caKeyPair.getPrivate(), null, null, certificationRequest, -1, BigInteger.valueOf(123456), 365);
 			final String testCertificateDataString = CryptographicUtilities.getStringFromX509Certificate(testCertificate);
 
 			Assert.assertTrue(testCertificateDataString.startsWith("-----BEGIN CERTIFICATE-----"));
