@@ -156,6 +156,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 		// Do nothing by standard
 	}
 
+	@SuppressWarnings("static-method")
 	protected Boolean isDailyUpdateCheckActivated() {
 		return null;
 	}
