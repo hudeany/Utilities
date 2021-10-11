@@ -243,11 +243,11 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static X509Certificate generateRsaCaCertificate(final KeyPair keyPair, final String issuerName, final int allowedSubCertificateLevel, final Date validFrom, final Date validUntil) throws Exception {
-		return generateRsaCaCertificate(keyPair, issuerName, allowedSubCertificateLevel, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
+	public static X509Certificate generateRsaCertificate(final KeyPair keyPair, final String issuerName, final int allowedSubCaCertificateLevels, final Date validFrom, final Date validUntil) throws Exception {
+		return generateRsaCertificate(keyPair, issuerName, allowedSubCaCertificateLevels, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
 	}
 
-	public static X509Certificate generateRsaCaCertificate(final KeyPair keyPair, final String issuerName, final int allowedSubCertificateLevel, final Date validFrom, final Date validUntil, final String signatureMethod) throws Exception {
+	public static X509Certificate generateRsaCertificate(final KeyPair keyPair, final String issuerName, final int allowedSubCaCertificateLevels, final Date validFrom, final Date validUntil, final String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
@@ -257,52 +257,12 @@ public class CryptographicUtilities {
 
 			final ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(keyPair.getPrivate());
 			final X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, keyPair.getPublic());
-			if (allowedSubCertificateLevel > 0) {
-				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCertificateLevel - 1));
+			if (allowedSubCaCertificateLevels >= 0) {
+				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCaCertificateLevels));
 			} else {
 				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
 			}
 			return new JcaX509CertificateConverter().getCertificate(certificateBuilder.build(sigGen));
-		} catch (final Exception e) {
-			throw new Exception("Cannot create RSA certificate", e);
-		}
-	}
-
-	public static X509Certificate generateRsaCertificate(final KeyPair keyPair, final String issuerName, final Date validFrom, final Date validUntil) throws Exception {
-		return generateRsaCertificate(keyPair, issuerName, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	public static X509Certificate generateRsaCertificate(final KeyPair keyPair, final String issuerName, final Date validFrom, final Date validUntil, final String signatureMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			final X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
-			builder.addRDN(BCStyle.CN, issuerName);
-			final X500Name x500Name = builder.build();
-
-			final ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(keyPair.getPrivate());
-			final X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, keyPair.getPublic());
-			return new JcaX509CertificateConverter().getCertificate(certGen.build(sigGen));
-		} catch (final Exception e) {
-			throw new Exception("Cannot create RSA certificate", e);
-		}
-	}
-
-	public static X509Certificate generateRsaCertificate(final AsymmetricCipherKeyPair keyPair, final String issuerName, final Date validFrom, final Date validUntil) throws Exception {
-		return generateRsaCertificate(keyPair, issuerName, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	public static X509Certificate generateRsaCertificate(final AsymmetricCipherKeyPair keyPair, final String issuerName, final Date validFrom, final Date validUntil, final String signatureMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			final X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
-			builder.addRDN(BCStyle.CN, issuerName);
-			final X500Name x500Name = builder.build();
-
-			final ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(getPrivateKeyFromAsymmetricCipherKeyPair(keyPair));
-			final X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, getPublicKeyFromAsymmetricCipherKeyPair(keyPair));
-			return new JcaX509CertificateConverter().getCertificate(certGen.build(sigGen));
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA certificate", e);
 		}
@@ -1122,7 +1082,7 @@ public class CryptographicUtilities {
 		return dataOutput;
 	}
 
-	public static Certificate generateSelfsignedCertificate(final KeyPair keyPair, final int validityInDays, final String signatureAlgorithm, final String subjectDN, final int allowedSubCertificateLevel) throws OperatorCreationException, CertificateException, IOException {
+	public static Certificate generateSelfsignedCertificate(final KeyPair keyPair, final int validityInDays, final String signatureAlgorithm, final String subjectDN, final int allowedSubCaCertificateLevels) throws OperatorCreationException, CertificateException, IOException {
 		final Provider bcProvider = new BouncyCastleProvider();
 		Security.addProvider(bcProvider);
 
@@ -1132,8 +1092,8 @@ public class CryptographicUtilities {
 		final BigInteger certSerialNumber = new BigInteger(64, new SecureRandom());
 		final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
 		final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, validityStartDate, validityEndDate, dnName, keyPair.getPublic());
-		if (allowedSubCertificateLevel > 0) {
-			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCertificateLevel - 1));
+		if (allowedSubCaCertificateLevels >= 0) {
+			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCaCertificateLevels));
 		} else {
 			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
 		}
@@ -1309,16 +1269,18 @@ public class CryptographicUtilities {
 		return certificationRequest;
 	}
 
-	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCertificateLevel, final BigInteger serialNo, final int validityDays) throws Exception {
-		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, certificationRequest, allowedSubCertificateLevel, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD);
+	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCaCertificateLevels, final BigInteger serialNo, final int validityDays) throws Exception {
+		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, certificationRequest, allowedSubCaCertificateLevels, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD);
 	}
 
-	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCertificateLevel, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
+	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCaCertificateLevels, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			if (!checkForCaCertificate(caCertificate)) {
+			if (caCertificate.getBasicConstraints() < 0) {
 				throw new Exception("Given certificate is not a CA certificate and therefore may not sign a Certificate Signing Requests");
+			} else if (allowedSubCaCertificateLevels > -1 && caCertificate.getBasicConstraints() - 1 < allowedSubCaCertificateLevels) {
+				throw new Exception("Given CA certificate with BasicConstraints value '" + caCertificate.getBasicConstraints() + "' may not sign a Certificate Signing Requests for a CA Certificate with BasicConstraints value '" + allowedSubCaCertificateLevels + "'");
 			}
 
 			final Date issuedDate = new Date();
@@ -1334,8 +1296,8 @@ public class CryptographicUtilities {
 			final JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
 			certificateBuilder.addExtension(Extension.authorityKeyIdentifier, false, extUtils.createAuthorityKeyIdentifier(caCertificate));
 			certificateBuilder.addExtension(Extension.subjectKeyIdentifier, false, extUtils.createSubjectKeyIdentifier(jcaRequest.getPublicKey()));
-			if (allowedSubCertificateLevel > 0) {
-				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCertificateLevel - 1));
+			if (allowedSubCaCertificateLevels >= 0) {
+				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCaCertificateLevels));
 			} else {
 				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
 			}
