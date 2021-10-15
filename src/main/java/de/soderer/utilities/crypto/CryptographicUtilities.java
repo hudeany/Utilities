@@ -1326,4 +1326,86 @@ public class CryptographicUtilities {
 			throw new Exception("Error in signing the certificate", e);
 		}
 	}
+
+	public static boolean isCertificateFile(final File potentialCertificateFile) {
+		if (potentialCertificateFile != null && potentialCertificateFile.exists()) {
+			try {
+				final String dataString = FileUtilities.readFileToString(potentialCertificateFile, StandardCharsets.UTF_8);
+
+				final String pemBegin = "-----BEGIN CERTIFICATE-----";
+				final String pemEnd = "-----END CERTIFICATE-----";
+
+				if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
+					return true;
+				} else {
+					return false;
+				}
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	public static boolean isCertificationRequestFile(final File potentialCertificationRequestFile) {
+		if (potentialCertificationRequestFile != null && potentialCertificationRequestFile.exists()) {
+			try {
+				final String dataString = FileUtilities.readFileToString(potentialCertificationRequestFile, StandardCharsets.UTF_8);
+
+				final String pemBegin = "-----BEGIN CERTIFICATE REQUEST-----";
+				final String pemEnd = "-----END CERTIFICATE REQUEST-----";
+
+				if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
+					return true;
+				} else {
+					return false;
+				}
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	public static boolean isPrivateKeyFile(final File potentialPrivateKeyFile) {
+		if (potentialPrivateKeyFile != null && potentialPrivateKeyFile.exists()) {
+			try {
+				final String dataString = FileUtilities.readFileToString(potentialPrivateKeyFile, StandardCharsets.UTF_8);
+
+				final String pemRsaBegin = "-----BEGIN RSA PRIVATE KEY-----";
+				final String pemRsaEnd = "-----END RSA PRIVATE KEY-----";
+
+				final String pemBegin = "-----BEGIN PRIVATE KEY-----";
+				final String pemEnd = "-----END PRIVATE KEY-----";
+
+				if (dataString.contains(pemRsaBegin) && dataString.contains(pemRsaEnd) && dataString.indexOf(pemRsaBegin) < dataString.indexOf(pemRsaEnd)) {
+					return true;
+				} else if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
+					return true;
+				} else {
+					return false;
+				}
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	public static boolean isJavaKeyStoreFile(final File potentialJavaKeyStoreFile) {
+		if (potentialJavaKeyStoreFile != null && potentialJavaKeyStoreFile.exists()) {
+			try (InputStream keyStoreInputStream = new FileInputStream(potentialJavaKeyStoreFile)) {
+				final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+				keyStore.load(keyStoreInputStream, null);
+				return true;
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
 }
