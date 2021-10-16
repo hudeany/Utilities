@@ -1753,7 +1753,6 @@ public class DbUtilities {
 				final List<String> systemKeySpaces = Arrays.asList(new String[] {"system", "system_auth", "system_schema", "system_distributed", "system_traces"});
 				tableQuery = "SELECT keyspace_name, table_name FROM system_schema.tables";
 
-
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
 					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
