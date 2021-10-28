@@ -177,8 +177,8 @@ public class CryptographicUtilitiesTest {
 
 			Assert.assertTrue(testCertificateDataString.startsWith("-----BEGIN CERTIFICATE-----"));
 
-			final X509Certificate caCertificateReadFromString = CryptographicUtilities.getCertificateFromString(caCertificateDataString);
-			final X509Certificate testCertificateReadFromString = CryptographicUtilities.getCertificateFromString(testCertificateDataString);
+			final X509Certificate caCertificateReadFromString = CryptographicUtilities.getCertificatesFromString(caCertificateDataString).get(0);
+			final X509Certificate testCertificateReadFromString = CryptographicUtilities.getCertificatesFromString(testCertificateDataString).get(0);
 
 			Assert.assertTrue(CryptographicUtilities.verifyChainOfTrust(testCertificateReadFromString, caCertificateReadFromString));
 			Assert.assertTrue(CryptographicUtilities.verifyChainOfTrust(testCertificateReadFromString, testCertificateReadFromString));
