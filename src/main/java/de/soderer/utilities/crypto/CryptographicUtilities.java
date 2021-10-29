@@ -104,6 +104,7 @@ import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.ElGamalEngine;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
+import org.bouncycastle.crypto.io.InvalidCipherTextIOException;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
@@ -122,14 +123,18 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
 import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8EncryptorBuilder;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.InputDecryptorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.OutputEncryptor;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
+import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequest;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 
@@ -140,6 +145,7 @@ import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.MapStringReader;
 import de.soderer.utilities.MissingPasswordException;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.WrongPasswordException;
 
 /**
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
@@ -1018,11 +1024,11 @@ public class CryptographicUtilities {
 			Security.addProvider(new BouncyCastleProvider());
 
 			final PEMParser pemParser = new PEMParser(new StringReader(key));
-			final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 			Object object;
 			while ((object = pemParser.readObject()) != null) {
 				if (object instanceof PEMKeyPair) {
 					if (password == null) {
+						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 						final KeyPair keyPair = converter.getKeyPair((PEMKeyPair) object);
 						return keyPair.getPrivate();
 					} else {
@@ -1032,13 +1038,35 @@ public class CryptographicUtilities {
 					if (password == null) {
 						throw new MissingPasswordException("Encrypted private key found. Password is needed.");
 					} else {
+						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 						final PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(password);
 						final KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) object).decryptKeyPair(decProv));
 						return keyPair.getPrivate();
 					}
+				} else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
+					if (password == null) {
+						throw new MissingPasswordException("Encrypted private key (PKCS8) found. Password is needed.");
+					} else {
+						try {
+							final JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+							final InputDecryptorProvider decryptionProv = new JceOpenSSLPKCS8DecryptorProviderBuilder().build(password);
+							final PrivateKeyInfo keyInfo = ((PKCS8EncryptedPrivateKeyInfo) object).decryptPrivateKeyInfo(decryptionProv);
+							return converter.getPrivateKey(keyInfo);
+						} catch (final Exception e) {
+							if (e instanceof PKCSException && e.getCause() != null && e.getCause() instanceof InvalidCipherTextIOException) {
+								throw new WrongPasswordException();
+							} else {
+								throw e;
+							}
+						}
+					}
 				}
 			}
 			throw new Exception("No private key object found in data");
+		} catch (final MissingPasswordException mpe) {
+			throw mpe;
+		} catch (final WrongPasswordException wpe) {
+			throw wpe;
 		} catch (final Exception e) {
 			throw new Exception("Cannot read private key: " + e.getMessage(), e);
 		}
@@ -1189,6 +1217,60 @@ public class CryptographicUtilities {
 		}
 	}
 
+	public static String generateLegacyX500PrincipalString(final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
+		final StringBuilder result = new StringBuilder();
+
+		if (Utilities.isNotBlank(commonName)) {
+			result.append("CN=").append(commonName);
+		} else {
+			throw new Exception("CommonName(CN) is mandatory for X500Principal");
+		}
+
+		if (organizationalUnit != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("OU=").append(organizationalUnit);
+		}
+
+		if (organizationName != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("O=").append(organizationName);
+		}
+
+		if (location != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("L=").append(location);
+		}
+
+		if (state != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("ST=").append(state);
+		}
+
+		if (country != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("C=").append(country);
+		}
+
+		if (email != null) {
+			if (result.length() > 0) {
+				result.append(", ");
+			}
+			result.append("EMAILADDRESS=").append(email);
+		}
+
+		return result.toString();
+	}
+
 	public static String generateX500PrincipalString(final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
 		final StringBuilder result = new StringBuilder();
 
@@ -1237,7 +1319,7 @@ public class CryptographicUtilities {
 			if (result.length() > 0) {
 				result.append(", ");
 			}
-			result.append("EMAIL=").append(email);
+			result.append("EMAILADDRESS=").append(email);
 		}
 
 		return result.toString();
@@ -1247,7 +1329,7 @@ public class CryptographicUtilities {
 		try {
 			final Map<String, String> dataMap = MapStringReader.readMap(x500NameString);
 			final LinkedHashMap<String, String> returnMap = new LinkedHashMap<>();
-			for (final String keyName : new String[] { "CN", "OU", "O", "L", "S", "ST", "C", "EMAIL" }) {
+			for (final String keyName : new String[] { "CN", "OU", "O", "L", "S", "ST", "C", "E", "EMAIL", "EMAILADDRESS" }) {
 				if (dataMap.containsKey(keyName)) {
 					returnMap.put(keyName, dataMap.get(keyName));
 				}
@@ -1409,9 +1491,14 @@ public class CryptographicUtilities {
 				final String pemBegin = "-----BEGIN PRIVATE KEY-----";
 				final String pemEnd = "-----END PRIVATE KEY-----";
 
+				final String pemEncryptedBegin = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
+				final String pemEncryptedEnd = "-----END ENCRYPTED PRIVATE KEY-----";
+
 				if (dataString.contains(pemRsaBegin) && dataString.contains(pemRsaEnd) && dataString.indexOf(pemRsaBegin) < dataString.indexOf(pemRsaEnd)) {
 					return true;
 				} else if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
+					return true;
+				} else if (dataString.contains(pemEncryptedBegin) && dataString.contains(pemEncryptedEnd) && dataString.indexOf(pemEncryptedBegin) < dataString.indexOf(pemEncryptedEnd)) {
 					return true;
 				} else {
 					return false;
