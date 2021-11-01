@@ -1166,16 +1166,6 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static boolean isJavaKeystoreFile(final File possibleJavaKeystoreFile) {
-		try (InputStream javaKeyStoreInputStream = new FileInputStream(possibleJavaKeystoreFile)) {
-			final KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-			keystore.load(javaKeyStoreInputStream, null);
-			return true;
-		} catch (@SuppressWarnings("unused") final Exception e) {
-			return false;
-		}
-	}
-
 	public static String generateLegacyX500PrincipalString(final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
 		final StringBuilder result = new StringBuilder();
 
