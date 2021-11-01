@@ -22,6 +22,7 @@ import de.soderer.utilities.Utilities;
 public class MultiInputDialog extends ModalDialog<List<String>> {
 	private final String prologText;
 	private final String[] labelTexts;
+	private String[] defaultTexts = null;
 	private final List<Text> textFields = new ArrayList<>();
 
 	public MultiInputDialog(final Shell shell, final String title, final String prologText, final String... labelTexts) {
@@ -29,6 +30,11 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 		this.prologText = prologText;
 		this.labelTexts = labelTexts;
+	}
+
+	public MultiInputDialog setDefaultTexts(final String[] defaultTexts) {
+		this.defaultTexts = defaultTexts;
+		return this;
 	}
 
 	@Override
@@ -41,6 +47,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 			label.setText(prologText);
 		}
 
+		int index = 0;
 		for (final String text : labelTexts) {
 			final Label label = new Label(shell, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
@@ -48,6 +55,9 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 			final Text textField = new Text(shell, SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+			if (defaultTexts != null && defaultTexts.length > index && defaultTexts[index] != null) {
+				textField.setText(defaultTexts[index]);
+			}
 			textField.addKeyListener(new KeyAdapter() {
 				@Override
 				public void keyReleased(final KeyEvent e) {
@@ -68,6 +78,8 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 			textField.setLayoutData(gridData);
 
 			textFields.add(textField);
+
+			index++;
 		}
 
 		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);

@@ -18,7 +18,6 @@ import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
@@ -36,6 +35,7 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -64,9 +64,6 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -146,6 +143,7 @@ import de.soderer.utilities.MapStringReader;
 import de.soderer.utilities.MissingPasswordException;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WrongPasswordException;
+import de.soderer.utilities.collection.CaseInsensitiveMap;
 
 /**
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
@@ -770,10 +768,10 @@ public class CryptographicUtilities {
 								final X509Certificate certificate = (X509Certificate) cert;
 								if (certificate.getBasicConstraints() == -1) {
 									// Certificate is not a CA certificate
-									returnData.add(getCnFromCertificate(certificate));
+									returnData.add(CryptographicUtilities.getValuesFromX500Principal(certificate.getSubjectX500Principal()).get("CN"));
 								} else {
 									// Certificate is a CA certificate
-									returnData.add("CA: " + getCnFromCertificate(certificate));
+									returnData.add("CA: " + CryptographicUtilities.getValuesFromX500Principal(certificate.getSubjectX500Principal()).get("CN"));
 								}
 							} else {
 								returnData.add("Unknown type of certificate");
@@ -912,18 +910,8 @@ public class CryptographicUtilities {
 		return certificates;
 	}
 
-	public static String getCnFromCertificate(final X509Certificate certificate) throws InvalidNameException {
-		final Principal principal = certificate.getSubjectX500Principal();
-		final String dn = principal.getName();
-		final LdapName ln = new LdapName(dn);
-
-		for (final Rdn rdn : ln.getRdns()) {
-			if ("CN".equalsIgnoreCase(rdn.getType())) {
-				return (String) rdn.getValue();
-			}
-		}
-
-		return null;
+	public static CaseInsensitiveMap<String> getValuesFromX500Principal(final X500Principal x500Principal) throws Exception {
+		return new CaseInsensitiveMap<>(MapStringReader.readMap(x500Principal.toString()));
 	}
 
 	public static boolean checkForCaCertificate(final X509Certificate certificate) {
@@ -1074,7 +1062,7 @@ public class CryptographicUtilities {
 
 	public static String getX509CertificateInfo(final X509Certificate certificate) throws Exception {
 		String dataOutput = "";
-		dataOutput += "CN: " + CryptographicUtilities.getCnFromCertificate(certificate);
+		dataOutput += "CN: " + CryptographicUtilities.getValuesFromX500Principal(certificate.getSubjectX500Principal()).get("CN");
 		dataOutput += "\n";
 		dataOutput += "Subject: " + certificate.getSubjectX500Principal();
 		dataOutput += "\n";
@@ -1549,5 +1537,11 @@ public class CryptographicUtilities {
 		} else {
 			return false;
 		}
+	}
+
+	public static PublicKey getPublicKeyFromPrivateKey(final RSAPrivateCrtKey privateKey) throws Exception {
+		final RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(privateKey.getModulus(), privateKey.getPublicExponent());
+		final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+		return keyFactory.generatePublic(publicKeySpec);
 	}
 }

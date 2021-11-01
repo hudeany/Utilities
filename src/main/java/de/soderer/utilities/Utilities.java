@@ -23,7 +23,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -225,40 +224,6 @@ public class Utilities {
 			}
 		}
 		return returnData.toByteArray();
-	}
-
-	/**
-	 * Get email from X509Certificate
-	 *
-	 * @param cert
-	 * @return
-	 */
-	public static String getEmailFromCertificate(final X509Certificate cert) {
-		final String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
-		for (final String namePart : nameParts) {
-			if (namePart.matches("^[ \\t]*EMAILADDRESS=.*")) {
-				return namePart.substring(namePart.indexOf("=") + 1).trim();
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Get cn from X509Certificate
-	 *
-	 * @param cert
-	 * @return
-	 */
-	public static String getCnFromCertificate(final X509Certificate cert) {
-		final String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
-		for (final String namePart : nameParts) {
-			if (namePart.matches("^[ \\t]*CN=.*")) {
-				return namePart.substring(namePart.indexOf("=") + 1).trim();
-			}
-		}
-
-		return null;
 	}
 
 	/***
