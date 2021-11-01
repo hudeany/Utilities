@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class MapStringReader extends BasicReader {
+	private boolean useBlankAsSeparator = false;
+
 	public MapStringReader(final InputStream inputStream) throws Exception {
 		super(inputStream, null);
 	}
@@ -16,35 +18,66 @@ public class MapStringReader extends BasicReader {
 		super(inputStream, encodingCharset);
 	}
 
+	public boolean isUseBlankAsSeparator() {
+		return useBlankAsSeparator;
+	}
+
+	public void setUseBlankAsSeparator(final boolean useBlankAsSeparator) {
+		this.useBlankAsSeparator = useBlankAsSeparator;
+	}
+
 	public Map<String, String> readMap() throws Exception {
 		final Map<String, String> returnMap = new LinkedHashMap<>();
 
 		boolean inValue = false;
 
 		StringBuilder nextKey = new StringBuilder();
+		boolean keyWasQuoted = false;
 		StringBuilder nextValue = new StringBuilder();
+		boolean valueWasQuoted = false;
 
 		Character currentChar = readNextNonWhitespace();
 		while (currentChar != null) {
 			switch (currentChar) {
 				case ' ':
-					currentChar = readNextNonWhitespace();
-					reuseCurrentChar();
-					if ('=' == currentChar) {
+					if (useBlankAsSeparator) {
+						if (nextKey.length() > 0 || nextValue.length() > 0) {
+							returnMap.put(nextKey.toString(), nextValue.toString());
+							inValue = false;
+							nextKey = new StringBuilder();
+							keyWasQuoted = false;
+							nextValue = new StringBuilder();
+							valueWasQuoted = false;
+						}
+						currentChar = readNextNonWhitespace();
+						break;
+					} else {
+						// Item content, maybe quoted
+						if (inValue) {
+							if (!valueWasQuoted) {
+								nextValue.append(currentChar);
+							}
+						} else {
+							if (!keyWasQuoted) {
+								nextKey.append(currentChar);
+							}
+						}
 						currentChar = readNextCharacter();
 						break;
 					}
-					//$FALL-THROUGH$
 				case ',':
 				case ';':
 				case '\n':
 				case '\r':
 				case '\t':
 					if (nextKey.length() > 0 || nextValue.length() > 0) {
-						returnMap.put(nextKey.toString(), nextValue.toString());
+						returnMap.put(keyWasQuoted ? nextKey.toString() : nextKey.toString().trim(),
+								valueWasQuoted ? nextValue.toString() : nextValue.toString().trim());
 						inValue = false;
 						nextKey = new StringBuilder();
+						keyWasQuoted = false;
 						nextValue = new StringBuilder();
+						valueWasQuoted = false;
 					}
 					currentChar = readNextNonWhitespace();
 					break;
@@ -53,19 +86,12 @@ public class MapStringReader extends BasicReader {
 					// Start quoted value
 					final String quotedText = readQuotedText(currentChar, '\\');
 					if (inValue) {
-						nextValue.append(quotedText);
+						nextValue = new StringBuilder(quotedText);
+						valueWasQuoted = true;
 					} else {
-						nextKey.append(quotedText);
+						nextKey = new StringBuilder(quotedText);
+						keyWasQuoted = true;
 					}
-					// Check for two-times-quote-char as escape char
-					if (currentChar == readNextCharacter()) {
-						if (inValue) {
-							nextValue.append(currentChar);
-						} else {
-							nextKey.append(currentChar);
-						}
-					}
-					reuseCurrentChar();
 					currentChar = readNextCharacter();
 					break;
 				case '=':
@@ -86,10 +112,13 @@ public class MapStringReader extends BasicReader {
 		}
 
 		if (inValue || nextKey.length() > 0) {
-			returnMap.put(nextKey.toString(), nextValue.toString());
+			returnMap.put(keyWasQuoted ? nextKey.toString() : nextKey.toString().trim(),
+					valueWasQuoted ? nextValue.toString() : nextValue.toString().trim());
 			inValue = false;
 			nextKey = new StringBuilder();
+			keyWasQuoted = false;
 			nextValue = new StringBuilder();
+			valueWasQuoted = false;
 		}
 
 		return returnMap;
@@ -97,6 +126,13 @@ public class MapStringReader extends BasicReader {
 
 	public static Map<String, String> readMap(final String mapString) throws Exception {
 		try (MapStringReader mapStringReader = new MapStringReader(new ByteArrayInputStream(mapString.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8)) {
+			return mapStringReader.readMap();
+		}
+	}
+
+	public static Map<String, String> readMapWithBlankAsSeparator(final String mapString) throws Exception {
+		try (MapStringReader mapStringReader = new MapStringReader(new ByteArrayInputStream(mapString.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8)) {
+			mapStringReader.setUseBlankAsSeparator(true);
 			return mapStringReader.readMap();
 		}
 	}

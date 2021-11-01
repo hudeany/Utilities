@@ -10,100 +10,104 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class MapUtilities {
-	public static <K extends Comparable<K>, V> LinkedHashMap<K, V> sort(Map<K, V> map) {
-		LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
-		List<K> keys = new LinkedList<>(map.keySet());
+	public static <K extends Comparable<K>, V> LinkedHashMap<K, V> sort(final Map<K, V> map) {
+		final LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
+		final List<K> keys = new LinkedList<>(map.keySet());
 		Collections.sort(keys);
-		for (K key : keys) {
+		for (final K key : keys) {
 			returnMap.put(key, map.get(key));
 		}
 		return returnMap;
 	}
 
-	public static <K, V> LinkedHashMap<K, V> sort(Map<K, V> map, Comparator<K> comparator) {
-		LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
-		List<K> keys = new LinkedList<>(map.keySet());
+	public static <K, V> LinkedHashMap<K, V> sort(final Map<K, V> map, final Comparator<K> comparator) {
+		final LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
+		final List<K> keys = new LinkedList<>(map.keySet());
 		Collections.sort(keys, comparator);
-		for (K key : keys) {
+		for (final K key : keys) {
 			returnMap.put(key, map.get(key));
 		}
 		return returnMap;
 	}
 
-	public static <K, V> LinkedHashMap<K, V> sortEntries(Map<K, V> map, Comparator<Entry<K, V>> comparator) {
-		LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
-		List<Entry<K, V>> entries = new LinkedList<>(map.entrySet());
+	public static <K, V> LinkedHashMap<K, V> sortEntries(final Map<K, V> map, final Comparator<Entry<K, V>> comparator) {
+		final LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
+		final List<Entry<K, V>> entries = new LinkedList<>(map.entrySet());
 		Collections.sort(entries, comparator);
-		for (Entry<K, V> entry : entries) {
+		for (final Entry<K, V> entry : entries) {
 			returnMap.put(entry.getKey(), entry.getValue());
 		}
 		return returnMap;
 	}
 
-	public static <K extends Comparable<K>, V, L extends LinkedHashMap<K, V>> L sort(L map) {
+	public static <K extends Comparable<K>, V, L extends LinkedHashMap<K, V>> L sort(final L map) {
 		@SuppressWarnings("unchecked")
+		final
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		List<K> keys = new LinkedList<>(map.keySet());
+		final List<K> keys = new LinkedList<>(map.keySet());
 		Collections.sort(keys);
-		for (K key : keys) {
+		for (final K key : keys) {
 			returnMap.put(key, map.get(key));
 		}
 		return returnMap;
 	}
 
-	public static <K, V, L extends LinkedHashMap<K, V>> L sort(L map, Comparator<K> comparator) {
+	public static <K, V, L extends LinkedHashMap<K, V>> L sort(final L map, final Comparator<K> comparator) {
 		@SuppressWarnings("unchecked")
+		final
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		List<K> keys = new LinkedList<>(map.keySet());
+		final List<K> keys = new LinkedList<>(map.keySet());
 		Collections.sort(keys, comparator);
-		for (K key : keys) {
+		for (final K key : keys) {
 			returnMap.put(key, map.get(key));
 		}
 		return returnMap;
 	}
 
-	public static <K, V, L extends LinkedHashMap<K, V>> L sortEntries(L map, Comparator<Entry<K, V>> comparator) {
+	public static <K, V, L extends LinkedHashMap<K, V>> L sortEntries(final L map, final Comparator<Entry<K, V>> comparator) {
 		@SuppressWarnings("unchecked")
+		final
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		List<Entry<K, V>> entries = new LinkedList<>(map.entrySet());
+		final List<Entry<K, V>> entries = new LinkedList<>(map.entrySet());
 		Collections.sort(entries, comparator);
-		for (Entry<K, V> entry : entries) {
+		for (final Entry<K, V> entry : entries) {
 			returnMap.put(entry.getKey(), entry.getValue());
 		}
 		return returnMap;
 	}
 
-	public static <K, V, L extends HashMap<K, V>> L filterEntries(L map, Predicate<Entry<K, V>> predicate) {
+	public static <K, V, L extends HashMap<K, V>> L filterEntries(final L map, final Predicate<Entry<K, V>> predicate) {
 		@SuppressWarnings("unchecked")
+		final
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		for (Entry<K, V> entry : map.entrySet()) {
+		for (final Entry<K, V> entry : map.entrySet()) {
 			if (predicate.evaluate(entry)) {
 				returnMap.put(entry.getKey(), entry.getValue());
 			}
 		}
 		return returnMap;
 	}
-	
-	public static String mapToString(Map<?, ?> map) {
+
+	public static String mapToString(final Map<?, ?> map) {
 		return mapToString(map, '\"', false, ',');
 	}
-	
-	public static String mapToString(Map<?, ?> map, char textQuoteChar, boolean alwaysQuote, char entrySeparatorChar) {
-		StringBuilder returnValue = new StringBuilder();
-		
-		String quoteString = Character.toString(textQuoteChar);
-		String doubleQuote = quoteString + quoteString;
-		String entrySeparatorString = Character.toString(entrySeparatorChar);
-		
-		for (Entry<?, ?> entry : map.entrySet()) {
+
+	public static String mapToString(final Map<?, ?> map, final char textQuoteChar, final boolean alwaysQuote, final char entrySeparatorChar) {
+		final StringBuilder returnValue = new StringBuilder();
+
+		final String quoteString = Character.toString(textQuoteChar);
+		final String escapedQuote = "\\" + quoteString;
+		final String entrySeparatorString = Character.toString(entrySeparatorChar);
+
+		for (final Entry<?, ?> entry : map.entrySet()) {
 			if (returnValue.length() > 0) {
 				returnValue.append(entrySeparatorChar);
 			}
-			
+
 			String key;
 			if (entry.getKey() == null) {
 				key = "null";
@@ -111,12 +115,12 @@ public class MapUtilities {
 				key = entry.getKey().toString();
 			}
 			if (key.contains(quoteString) || key.contains(entrySeparatorString) || alwaysQuote) {
-				key = quoteString + key.replace(quoteString, doubleQuote) + quoteString;
+				key = quoteString + key.replace(quoteString, escapedQuote) + quoteString;
 			}
 			returnValue.append(key);
-			
+
 			returnValue.append('=');
-			
+
 			String value;
 			if (entry.getValue() == null) {
 				value = "null";
@@ -124,11 +128,11 @@ public class MapUtilities {
 				value = entry.getValue().toString();
 			}
 			if (value.contains(quoteString) || value.contains(entrySeparatorString) || alwaysQuote) {
-				value = quoteString + value.replace(quoteString, doubleQuote) + quoteString;
+				value = quoteString + value.replace(quoteString, escapedQuote) + quoteString;
 			}
 			returnValue.append(value);
 		}
-		
+
 		return returnValue.toString();
 	}
 }

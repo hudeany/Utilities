@@ -428,7 +428,7 @@ public class UtilitiesTest {
 			Assert.assertEquals(
 					"abc122=null"
 							+ ",abc123=123"
-							+ ",\"aBc\"\"125\"=\"aBc\"\"125\""
+							+ ",\"aBc\\\"125\"=\"aBc\\\"125\""
 							+ ",abc 124=abc 124",
 							parsedMapString);
 		} catch (final Exception e) {
@@ -443,20 +443,23 @@ public class UtilitiesTest {
 					"abc122 = 122"
 							+ ",abc123=123"
 							+ ",\"abc 124\"=\"abc 124\""
-							+ ",\"aBc\"\"125\"=\"aBc\"\"125\"";
+							+ ",\"aBc\\\"125\"=\"aBc\\\"125\""
+							+ ", abc 126 = abc 12 6 ";
 			final Map<String, String> map = MapStringReader.readMap(mapString);
 
 			Assert.assertEquals("122", map.get("abc122"));
 			Assert.assertEquals("123", map.get("abc123"));
 			Assert.assertEquals("abc 124", map.get("abc 124"));
-			Assert.assertEquals("aBc\"125", map.get("aBc\"125"));
+			Assert.assertEquals("Actual map was: " + map.toString(), "aBc\"125", map.get("aBc\"125"));
 
 			final String parsedMapString = MapUtilities.mapToString(map);
 			Assert.assertEquals(
+					"Actual map was: " + map.toString(),
 					"abc122=122"
 							+ ",abc123=123"
 							+ ",abc 124=abc 124"
-							+ ",\"aBc\"\"125\"=\"aBc\"\"125\"",
+							+ ",\"aBc\\\"125\"=\"aBc\\\"125\""
+							+ ",abc 126=abc 12 6",
 							parsedMapString);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -467,13 +470,13 @@ public class UtilitiesTest {
 	public void testParseMapStringWithBlankSeparator() {
 		try {
 			final String mapString =
-					"abc122 = 122"
+					"abc122=122"
 							+ " abc123=123"
 							+ " \"abc 124\"=\"abc 124\""
-							+ " \"aBc\"\"125\"=\"aBc\"\"125\"";
-			final Map<String, String> map = MapStringReader.readMap(mapString);
+							+ " \"aBc\\\"125\"=\"aBc\\\"125\"";
+			final Map<String, String> map = MapStringReader.readMapWithBlankAsSeparator(mapString);
 
-			Assert.assertEquals("122", map.get("abc122"));
+			Assert.assertEquals("Actual map was: " + map.toString(), "122", map.get("abc122"));
 			Assert.assertEquals("123", map.get("abc123"));
 			Assert.assertEquals("abc 124", map.get("abc 124"));
 			Assert.assertEquals("aBc\"125", map.get("aBc\"125"));
@@ -483,7 +486,7 @@ public class UtilitiesTest {
 					"abc122=122"
 							+ " abc123=123"
 							+ " \"abc 124\"=\"abc 124\""
-							+ " \"aBc\"\"125\"=\"aBc\"\"125\"",
+							+ " \"aBc\\\"125\"=\"aBc\\\"125\"",
 							parsedMapString);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -496,10 +499,10 @@ public class UtilitiesTest {
 			final String mapString =
 					"abc123=123"
 							+ " \"abc 124\"=\"abc 124\""
-							+ " \"aBc\"\"125\"=\"aBc\"\"125\"";
-			final Map<String, String> map = MapStringReader.readMap(mapString);
+							+ " \"aBc\\\"125\"=\"aBc\\\"125\"";
+			final Map<String, String> map = MapStringReader.readMapWithBlankAsSeparator(mapString);
 
-			Assert.assertEquals("123", map.get("abc123"));
+			Assert.assertEquals("Actual map was: " + map.toString(), "123", map.get("abc123"));
 			Assert.assertEquals("abc 124", map.get("abc 124"));
 			Assert.assertEquals("aBc\"125", map.get("aBc\"125"));
 
@@ -507,7 +510,7 @@ public class UtilitiesTest {
 			Assert.assertEquals(
 					"abc123=123"
 							+ " \"abc 124\"=\"abc 124\""
-							+ " \"aBc\"\"125\"=\"aBc\"\"125\"",
+							+ " \"aBc\\\"125\"=\"aBc\\\"125\"",
 							parsedMapString);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -520,18 +523,18 @@ public class UtilitiesTest {
 			final String mapString =
 					"\"abc123\"=\"123\""
 							+ ",\"abc 124\"=\"abc 124\""
-							+ ",\"aBc\"\"125\"=\"aBc\"\"125\"";
+							+ ",\"aBc\\\"125\"=\"aBc\\\"125\"";
 			final Map<String, String> map = MapStringReader.readMap(mapString);
 
 			Assert.assertEquals("123", map.get("abc123"));
 			Assert.assertEquals("abc 124", map.get("abc 124"));
-			Assert.assertEquals("aBc\"125", map.get("aBc\"125"));
+			Assert.assertEquals("Actual map was: " + map.toString(), "aBc\"125", map.get("aBc\"125"));
 
 			final String parsedMapString = MapUtilities.mapToString(map, '\"', true, ',');
 			Assert.assertEquals(
 					"\"abc123\"=\"123\""
 							+ ",\"abc 124\"=\"abc 124\""
-							+ ",\"aBc\"\"125\"=\"aBc\"\"125\"",
+							+ ",\"aBc\\\"125\"=\"aBc\\\"125\"",
 							parsedMapString);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
