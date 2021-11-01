@@ -36,7 +36,6 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateCrtKey;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
@@ -44,7 +43,6 @@ import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -973,33 +971,6 @@ public class CryptographicUtilities {
 					keyFactory.generatePrivate(new PKCS8EncodedKeySpec(keyPair.getPrivateKeyInfo().getEncoded())));
 		} catch (final Exception e) {
 			throw new PEMException("Unable to convert key pair: " + e.getMessage(), e);
-		}
-	}
-
-	public static RSAPrivateKey getRsaPrivateKeyFromString(final String key) throws Exception {
-		try {
-			Security.addProvider(new BouncyCastleProvider());
-
-			String privateKeyPEM = key.trim();
-			final String pemRsaBegin = "-----BEGIN RSA PRIVATE KEY-----";
-			final String pemRsaEnd = "-----END RSA PRIVATE KEY-----";
-
-			final String pemBegin = "-----BEGIN PRIVATE KEY-----";
-			final String pemEnd = "-----END PRIVATE KEY-----";
-
-			if (privateKeyPEM.contains(pemRsaBegin) && privateKeyPEM.contains(pemRsaEnd) && privateKeyPEM.indexOf(pemRsaBegin) < privateKeyPEM.indexOf(pemRsaEnd)) {
-				privateKeyPEM = privateKeyPEM.substring(privateKeyPEM.indexOf(pemRsaBegin) + pemRsaBegin.length(), privateKeyPEM.indexOf(pemRsaEnd)).trim();
-			} else if (privateKeyPEM.contains(pemBegin) && privateKeyPEM.contains(pemEnd) && privateKeyPEM.indexOf(pemBegin) < privateKeyPEM.indexOf(pemEnd)) {
-				privateKeyPEM = privateKeyPEM.substring(privateKeyPEM.indexOf(pemBegin) + pemBegin.length(), privateKeyPEM.indexOf(pemEnd)).trim();
-			}
-
-			privateKeyPEM = privateKeyPEM.replace("\r", "").replace("\n", "");
-			final byte[] privateKeyData = Base64.getDecoder().decode(privateKeyPEM);
-			final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-			final PrivateKey privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyData));
-			return (RSAPrivateKey) privateKey;
-		} catch (final Exception e) {
-			throw new Exception("Cannot read private key", e);
 		}
 	}
 
