@@ -17,7 +17,7 @@ public class IoUtilities {
 			return null;
 		} else {
 			try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-				IoUtilities.copy(inputStream, byteArrayOutputStream);
+				copy(inputStream, byteArrayOutputStream);
 				return byteArrayOutputStream.toByteArray();
 			}
 		}

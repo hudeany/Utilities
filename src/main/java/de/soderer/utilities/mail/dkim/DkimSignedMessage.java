@@ -157,8 +157,7 @@ public class DkimSignedMessage extends MimeMessage {
 		signatureData.put("s", selector);
 		signatureData.put("t", Long.toString(sentDate.getTime() / 1000l));
 		if (identity != null) {
-			final String data = identity;
-			signatureData.put("i", QuotedPrintableCodec.encode(data, StandardCharsets.UTF_8));
+			signatureData.put("i", QuotedPrintableCodec.encode(identity, StandardCharsets.UTF_8));
 		}
 
 		boolean fromHeaderIsIncluded = false;
