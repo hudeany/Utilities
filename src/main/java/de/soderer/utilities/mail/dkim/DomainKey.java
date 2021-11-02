@@ -164,12 +164,12 @@ public final class DomainKey {
 
 	private void checkKeyCompatiblilty(final PrivateKey privateKey) throws Exception {
 		try {
-			final Signature signingSignature = Signature.getInstance("SHA256withRSA");
+			final Signature signingSignature = Signature.getInstance(DkimUtilities.SIGNATURE_ALGORITHM_NAME);
 			signingSignature.initSign(privateKey);
 			signingSignature.update(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			final byte[] signatureBytes = signingSignature.sign();
 
-			final Signature verifyingSignature = Signature.getInstance("SHA256withRSA");
+			final Signature verifyingSignature = Signature.getInstance(DkimUtilities.SIGNATURE_ALGORITHM_NAME);
 			verifyingSignature.initVerify(publicKey);
 			verifyingSignature.update(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 

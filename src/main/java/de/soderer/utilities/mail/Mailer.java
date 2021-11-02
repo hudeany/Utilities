@@ -163,7 +163,7 @@ public class Mailer {
 			mimeMessage = new DkimSignedMessage(session, messageID);
 			((DkimSignedMessage) mimeMessage).setDkimKeyData(email.getDkimDomain(), email.getDkimSelector(), email.getDkimPrivateKey(), email.getDkimIdentity());
 		} else {
-			mimeMessage = new de.soderer.utilities.mail.MimeMessage(session, messageID);
+			mimeMessage = new MimeMessageWithId(session, messageID);
 		}
 
 		mimeMessage.setFrom(email.getFromAddress().getAddress());

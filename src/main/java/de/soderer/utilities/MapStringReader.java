@@ -96,7 +96,11 @@ public class MapStringReader extends BasicReader {
 					break;
 				case '=':
 					// Key value separator
-					inValue = !inValue;
+					if (!inValue) {
+						inValue = true;
+					} else {
+						nextValue.append(currentChar);
+					}
 					currentChar = readNextNonWhitespace();
 					break;
 				default:

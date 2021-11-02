@@ -19,7 +19,7 @@ import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.mail.dkim.DomainKey;
-import de.soderer.utilities.mail.dkim.DomainKeyUtil;
+import de.soderer.utilities.mail.dkim.DkimUtilities;
 
 public class Email {
 	private final InternetAddress fromAddress;
@@ -307,7 +307,7 @@ public class Email {
 		final List<String> errors = new ArrayList<>();
 
 		if (dkimPrivateKey != null) {
-			final DomainKey domainKey = DomainKeyUtil.getDomainKey(dkimDomain, dkimSelector);
+			final DomainKey domainKey = DkimUtilities.getDomainKey(dkimDomain, dkimSelector);
 			if (domainKey == null) {
 				errors.add("No DKIM key found in DNS entry for domain '" + dkimDomain + "' and selector '" + dkimSelector + "'");
 			} else if (!CryptographicUtilities.checkPrivateKeyFitsPublicKey(dkimPrivateKey, domainKey.getPublicKey())) {

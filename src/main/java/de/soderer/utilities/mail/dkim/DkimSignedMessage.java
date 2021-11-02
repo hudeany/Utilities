@@ -28,17 +28,18 @@ import java.util.Set;
 import javax.mail.Header;
 import javax.mail.MessagingException;
 import javax.mail.Session;
+import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
 
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.QuotedPrintableCodec;
-import de.soderer.utilities.TextUtilities;
-import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.Utilities;
 
-public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
+public class DkimSignedMessage extends MimeMessage {
 	private static final int MAXIMUM_MESSAGE_HEADER_LENGTH = 67;
 	private static final String DKIM_SIGNATURE_HEADER_NAME = "DKIM-Signature";
+
+	private String messageID = null;
 
 	private String domain;
 	private String selector;
@@ -49,7 +50,16 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 	private Set<String> excludedHeaderNames = null;
 
 	public DkimSignedMessage(final Session session, final String messageID) {
-		super(session, messageID);
+		super(session);
+
+		this.messageID = messageID;
+	}
+
+	@Override
+	protected void updateMessageID() throws MessagingException {
+		if (messageID != null) {
+			setHeader("Message-ID", messageID);
+		}
 	}
 
 	public DkimSignedMessage setDkimKeyData(final String domain, final String selector, final RSAPrivateKey privateRsaKey, final String identity) throws Exception {
@@ -141,8 +151,8 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 
 		final Map<String, String> signatureData = new LinkedHashMap<>();
 		signatureData.put("v", "1");
-		signatureData.put("a", "rsa-sha256");
-		signatureData.put("c", (useRelaxedHeaderCanonicalization ? "relaxed" : "simple") + "/" + (useRelaxedBodyCanonicalization ? "relaxed" : "simple"));
+		signatureData.put("a", DkimUtilities.ALLOWED_DKIM_SIGNATURE_ALGORITHM_CODE);
+		signatureData.put("c", (useRelaxedHeaderCanonicalization ? DkimUtilities.DKIM_SERIALIZATION_RELAXED_CODE : DkimUtilities.DKIM_SERIALIZATION_SIMPLE_CODE) + "/" + (useRelaxedBodyCanonicalization ? DkimUtilities.DKIM_SERIALIZATION_RELAXED_CODE : DkimUtilities.DKIM_SERIALIZATION_SIMPLE_CODE));
 		signatureData.put("d", domain);
 		signatureData.put("s", selector);
 		signatureData.put("t", Long.toString(sentDate.getTime() / 1000l));
@@ -172,7 +182,7 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 			final String headerName = header.getName();
 			final String headerValue = header.getValue();
 			headerNames.add(headerName);
-			serializedHeaderData.append(canonicalizeHeader(useRelaxedHeaderCanonicalization, headerName, headerValue));
+			serializedHeaderData.append(DkimUtilities.canonicalizeHeader(useRelaxedHeaderCanonicalization, headerName, headerValue));
 			serializedHeaderData.append("\r\n");
 		}
 
@@ -182,19 +192,19 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 		} catch (final NoSuchAlgorithmException e) {
 			throw new MessagingException("Unknown hashing algorithm: sha-256", e);
 		}
-		final String canonicalBody = canonicalizeBody(useRelaxedBodyCanonicalization, encodedMessageBody);
+		final String canonicalBody = DkimUtilities.canonicalizeBody(useRelaxedBodyCanonicalization, encodedMessageBody);
 		final byte[] bodyHashBytes = bodyHashingMessageDigest.digest(canonicalBody.getBytes(StandardCharsets.UTF_8));
 		final String bodyHashBase64String = Base64.getEncoder().encodeToString(bodyHashBytes).replace("\r", "").replace("\n", "");
 		signatureData.put("bh", bodyHashBase64String);
 
-		signatureData.put("h", serializeHeaderNames(headerNames, 3, MAXIMUM_MESSAGE_HEADER_LENGTH));
+		signatureData.put("h", DkimUtilities.serializeHeaderNames(headerNames, 3, MAXIMUM_MESSAGE_HEADER_LENGTH));
 
 		final String serializedSignature = serializeDkimSignatureData(signatureData, DKIM_SIGNATURE_HEADER_NAME.length() + 2, MAXIMUM_MESSAGE_HEADER_LENGTH);
-		serializedHeaderData.append(canonicalizeHeader(useRelaxedHeaderCanonicalization, DKIM_SIGNATURE_HEADER_NAME, serializedSignature));
+		serializedHeaderData.append(DkimUtilities.canonicalizeHeader(useRelaxedHeaderCanonicalization, DKIM_SIGNATURE_HEADER_NAME, serializedSignature));
 
 		Signature signature;
 		try {
-			signature = Signature.getInstance("SHA256withRSA");
+			signature = Signature.getInstance(DkimUtilities.SIGNATURE_ALGORITHM_NAME);
 			signature.initSign(privateRsaKey);
 		} catch (final NoSuchAlgorithmException e) {
 			throw new MessagingException("Unknown signing algorithm SHA256withRSA", e);
@@ -213,78 +223,26 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 		return DKIM_SIGNATURE_HEADER_NAME + ": " + serializedSignature + serializeBase64String(signatureBase64String, 3, MAXIMUM_MESSAGE_HEADER_LENGTH);
 	}
 
-	private static String canonicalizeHeader(final boolean useRelaxedCanonicalization, final String headerName, final String headerValue) {
-		if (useRelaxedCanonicalization) {
-			return headerName.trim().toLowerCase() + ":" + headerValue.replaceAll("\\s+", " ").trim();
-		} else {
-			return headerName + ": " + headerValue;
-		}
-	}
 
-	private static String canonicalizeBody(final boolean useRelaxedCanonicalization, String body) {
-		body = TextUtilities.normalizeLineBreaks(body, LineBreak.Windows);
+	private static String serializeBase64String(final String base64String, int prefixLength, final int maxHeaderLength) {
+		int base64StringReadIndex = 0;
+		final StringBuilder builder = new StringBuilder();
 
-		if (useRelaxedCanonicalization) {
-			if (body == null) {
-				return "";
+		while (true) {
+			if (prefixLength > 0 && (base64String.substring(base64StringReadIndex).length() + prefixLength) > maxHeaderLength) {
+				builder.append(base64String.substring(base64StringReadIndex, base64StringReadIndex + maxHeaderLength - prefixLength));
+				base64StringReadIndex += maxHeaderLength - prefixLength;
+				prefixLength = 0;
+			} else if (2 + base64String.substring(base64StringReadIndex).length() > maxHeaderLength) {
+				builder.append("\r\n\t ").append(base64String.substring(base64StringReadIndex, base64StringReadIndex + maxHeaderLength - 2));
+				base64StringReadIndex += maxHeaderLength -2;
 			} else {
-				if (!body.endsWith("\r\n")) {
-					body += "\r\n";
-				}
-				body = body.replaceAll("[ \\t]+\r\n", "\r\n");
-				body = body.replaceAll("[ \\t]+", " ");
-
-				while (body.endsWith("\r\n\r\n")) {
-					body = body.substring(0, body.length() - 2);
-				}
-
-				if ("\r\n".equals(body)) {
-					body = "";
-				}
-
-				return body;
-			}
-		} else {
-			if (body == null) {
-				return "\r\n";
-			} else {
-				if (!body.endsWith("\r\n")) {
-					return body + "\r\n";
-				} else {
-					while (body.endsWith("\r\n\r\n")) {
-						body = body.substring(0, body.length() - 2);
-					}
-
-					return body;
-				}
+				builder.append("\r\n\t ").append(base64String.substring(base64StringReadIndex));
+				break;
 			}
 		}
-	}
 
-	private static String serializeHeaderNames(final List<String> headerNames, final int prefixLength, final int maxHeaderLength) {
-		final StringBuilder headerNamesSerialized = new StringBuilder();
-		int currentLinePosition = prefixLength;
-		for (int i = 0; i < headerNames.size(); i++) {
-			final String headerName = headerNames.get(i);
-			final boolean isLastHeaderName = ((i + 1) >= headerNames.size());
-			if (headerNamesSerialized.length() == 0) {
-				// first header without leading separator
-				headerNamesSerialized.append(headerName);
-				currentLinePosition += headerName.length();
-			} else if (currentLinePosition + 1 + headerName.length() + (isLastHeaderName ? 0 : 1) > maxHeaderLength) {
-				// header content would exceed limit, so linebreak is added
-				headerNamesSerialized.append(":");
-				headerNamesSerialized.append("\r\n\t ");
-				headerNamesSerialized.append(headerName);
-				currentLinePosition = 2 + headerName.length();
-			} else {
-				// simply adding separator and headername
-				headerNamesSerialized.append(":");
-				headerNamesSerialized.append(headerName);
-				currentLinePosition += 1 + headerName.length();
-			}
-		}
-		return headerNamesSerialized.toString();
+		return builder.toString();
 	}
 
 	private static String serializeDkimSignatureData(final Map<String, String> signatureData, int prefixLength, final int maxHeaderLength) {
@@ -309,26 +267,5 @@ public class DkimSignedMessage extends de.soderer.utilities.mail.MimeMessage {
 		builder.append("\r\n\t" + "b=");
 
 		return builder.toString().trim();
-	}
-
-	private static String serializeBase64String(final String base64String, int prefixLength, final int maxHeaderLength) {
-		int base64StringReadIndex = 0;
-		final StringBuilder builder = new StringBuilder();
-
-		while (true) {
-			if (prefixLength > 0 && (base64String.substring(base64StringReadIndex).length() + prefixLength) > maxHeaderLength) {
-				builder.append(base64String.substring(base64StringReadIndex, base64StringReadIndex + maxHeaderLength - prefixLength));
-				base64StringReadIndex += maxHeaderLength - prefixLength;
-				prefixLength = 0;
-			} else if (2 + base64String.substring(base64StringReadIndex).length() > maxHeaderLength) {
-				builder.append("\r\n\t ").append(base64String.substring(base64StringReadIndex, base64StringReadIndex + maxHeaderLength - 2));
-				base64StringReadIndex += maxHeaderLength -2;
-			} else {
-				builder.append("\r\n\t ").append(base64String.substring(base64StringReadIndex));
-				break;
-			}
-		}
-
-		return builder.toString();
 	}
 }
