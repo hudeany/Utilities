@@ -83,6 +83,7 @@ import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
@@ -978,11 +979,11 @@ public class CryptographicUtilities {
 		return getPrivateKeyFromString(key, null);
 	}
 
-	public static PrivateKey getPrivateKeyFromString(final String key, final char[] password) throws Exception {
+	public static PrivateKey getPrivateKeyFromString(final String keyDataString, final char[] password) throws Exception {
 		try {
 			Security.addProvider(new BouncyCastleProvider());
 
-			final PEMParser pemParser = new PEMParser(new StringReader(key));
+			final PEMParser pemParser = new PEMParser(new StringReader(keyDataString));
 			Object object;
 			while ((object = pemParser.readObject()) != null) {
 				if (object instanceof PEMKeyPair) {
@@ -1001,6 +1002,13 @@ public class CryptographicUtilities {
 						final PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(password);
 						final KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) object).decryptKeyPair(decProv));
 						return keyPair.getPrivate();
+					}
+				} else if (object instanceof PrivateKeyInfo) {
+					if (password == null) {
+						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+						return converter.getPrivateKey((PrivateKeyInfo) object);
+					} else {
+						throw new Exception("Unencrypted private key found. Password is obsolete.");
 					}
 				} else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
 					if (password == null) {
@@ -1028,6 +1036,28 @@ public class CryptographicUtilities {
 			throw wpe;
 		} catch (final Exception e) {
 			throw new Exception("Cannot read private key: " + e.getMessage(), e);
+		}
+	}
+
+	public static PublicKey getPublicKeyFromString(final String keyDataString) throws Exception {
+		try {
+			Security.addProvider(new BouncyCastleProvider());
+
+			final PEMParser pemParser = new PEMParser(new StringReader(keyDataString));
+			Object object;
+			while ((object = pemParser.readObject()) != null) {
+				if (object instanceof PEMKeyPair) {
+					final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+					final KeyPair keyPair = converter.getKeyPair((PEMKeyPair) object);
+					return keyPair.getPublic();
+				} else if (object instanceof SubjectPublicKeyInfo) {
+					final JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+					return converter.getPublicKey((SubjectPublicKeyInfo) object);
+				}
+			}
+			throw new Exception("No public key object found in data");
+		} catch (final Exception e) {
+			throw new Exception("Cannot read public key: " + e.getMessage(), e);
 		}
 	}
 
@@ -1500,9 +1530,15 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static PublicKey getPublicKeyFromPrivateKey(final RSAPrivateCrtKey privateKey) throws Exception {
-		final RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(privateKey.getModulus(), privateKey.getPublicExponent());
-		final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-		return keyFactory.generatePublic(publicKeySpec);
+	public static PublicKey getPublicKeyFromPrivateKey(final PrivateKey privateKey) throws Exception {
+		if (privateKey == null) {
+			throw new Exception("Cannot extract PublicKey from empty PrivateKey");
+		} else if (privateKey instanceof RSAPrivateCrtKey) {
+			final RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(((RSAPrivateCrtKey) privateKey).getModulus(), ((RSAPrivateCrtKey) privateKey).getPublicExponent());
+			final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+			return keyFactory.generatePublic(publicKeySpec);
+		} else {
+			throw new Exception("Cannot extract PublicKey from " + privateKey.getClass().getSimpleName());
+		}
 	}
 }
