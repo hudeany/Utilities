@@ -63,7 +63,7 @@ public class FileSignatureWorker extends WorkerSimple<Boolean> {
 
 			return true;
 		} catch (final Exception e) {
-			throw new Exception("Cannot create signature", e);
+			throw new Exception("Cannot create signature: " + e.getMessage(), e);
 		}
 	}
 }

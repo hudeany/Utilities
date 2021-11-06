@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -27,13 +28,14 @@ import java.security.Signature;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.ECKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.ECGenParameterSpec;
@@ -44,6 +46,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -70,8 +73,6 @@ import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.X500NameBuilder;
-import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x509.AccessDescription;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
@@ -84,6 +85,7 @@ import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
@@ -109,8 +111,14 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
 import org.bouncycastle.jcajce.util.DefaultJcaJceHelper;
+import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.bouncycastle.jce.spec.ECParameterSpec;
+import org.bouncycastle.jce.spec.ECPublicKeySpec;
+import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMException;
@@ -124,7 +132,6 @@ import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8EncryptorBuilder;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.InputDecryptorProvider;
-import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.OutputEncryptor;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
@@ -159,18 +166,18 @@ public class CryptographicUtilities {
 			// Stream chiffre
 			"RC4", "HC128", "HC256", "Salsa20", "VMPC", "Grainv1", "Grain128" };
 
-	public static String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
+	public static final String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
 	public static final String[] KNOWN_SYMMETRIC_ENCRYPTION_METHODS = new String[] { DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, "DES/CBC/PKCS5Padding", "DES/CBC/X9.23Padding", "DES/OFB8/NoPadding",
 			"DES/ECB/WithCTS", "IDEA/CBC/ISO10126Padding", "IDEA/CBC/ISO7816-4Padding", "SKIPJACK/ECB/PKCS7Padding" };
 
-	public static String DEFAULT_SIGNATURE_METHOD = "SHA256WithRSA";
+	public static final String DEFAULT_SIGNATURE_METHOD = "SHA256WithRSA";
 	public static final String[] KNOWN_SIGNATURE_METHODS = new String[] { DEFAULT_SIGNATURE_METHOD, "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
 			"GOST3411withGOST3410-2001", "MD2withRSA", "MD5withRSA", "SHA1withRSA", "RIPEMD128withRSA", "RIPEMD160withRSA", "RIPEMD160withECDSA", "RIPEMD256withRSA", "SHA1withDSA", "NONEwithDSA",
 			"SHA1withECDSA", "NONEwithECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA256withRSA", "SHA384withECDSA", "SHA512withECDSA", "SHA1withECNR", "SHA224withECNR", "SHA256withECNR", "SHA384withECNR",
 			"SHA512withECNR", "SHA224withRSA", "SHA384withRSA", "SHA512withRSA", "SHA1withRSAandMGF1", "SHA256withRSAandMGF1", "SHA384withRSAandMGF1", "SHA512withRSAandMGF1" };
 
-	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "ElGamal" };
-	public static String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
+	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "ECDSA", "ElGamal" };
+	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA = new String[] {
 			"RSA/NONE/PKCS1Padding",
 			"RSA/NONE/OAEPPadding",
@@ -188,6 +195,20 @@ public class CryptographicUtilities {
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_ELGAMAL = new String[] {
 			"ELGAMAL/NONE/NoPadding",
 			"ELGAMAL/NONE/PKCS1PADDING",
+	};
+
+	public static final String DEFAULT_ELLIPTIC_CURVE_NAME = "secp256k1";
+	public static final String[] KNOWN_ELLIPTIC_CURVE_NAMES = new String[] {
+			"secp112r1", "secp112r2", "secp128r1", "secp128r2", "secp160k1", "secp160r1", "secp160r2", "secp192k1",
+			"secp192r1", //= prime192v1
+			"prime192v1", //= secp192r1
+			"secp224k1", "secp224r1", "secp256k1",
+			"secp256r1", // = prime256v1
+			"prime256v1", //= secp256r1
+			"secp384r1", "secp521r1",
+			"sect113r1", "sect113r2", "sect131r1", "sect131r2", "sect163k1", "sect163r1", "sect163r2", "sect193r1",
+			"sect193r2", "sect233k1", "sect233r1", "sect239k1", "sect283k1", "sect283r1", "sect409k1", "sect409r1",
+			"sect571k1", "sect571r1"
 	};
 
 	public static KeyPair generateRsaKeyPair(final int keyStrength) throws Exception {
@@ -251,28 +272,24 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static X509Certificate generateRsaCertificate(final KeyPair keyPair, final String issuerName, final int allowedSubCaCertificateLevels, final Date validFrom, final Date validUntil) throws Exception {
-		return generateRsaCertificate(keyPair, issuerName, allowedSubCaCertificateLevels, validFrom, validUntil, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	public static X509Certificate generateRsaCertificate(final KeyPair keyPair, final String issuerName, final int allowedSubCaCertificateLevels, final Date validFrom, final Date validUntil, final String signatureMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
+	public static X509Certificate generateSelfsignedCertificate(final KeyPair keyPair, final Date validFrom, final Date validUntil, final String signatureAlgorithm, final String subjectDN, final int allowedSubCaCertificateLevels) throws Exception {
+		final Provider bcProvider = new BouncyCastleProvider();
+		Security.addProvider(bcProvider);
 
 		try {
-			final X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
-			builder.addRDN(BCStyle.CN, issuerName);
-			final X500Name x500Name = builder.build();
+			final X500Name dnName = new X500Name(subjectDN);
+			final BigInteger certSerialNumber = new BigInteger(64, new SecureRandom());
 
-			final ContentSigner sigGen = new JcaContentSignerBuilder(signatureMethod).build(keyPair.getPrivate());
-			final X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(x500Name, BigInteger.ONE, validFrom, validUntil, x500Name, keyPair.getPublic());
+			final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
+			final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, validFrom, validUntil, dnName, keyPair.getPublic());
 			if (allowedSubCaCertificateLevels >= 0) {
 				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCaCertificateLevels));
 			} else {
 				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
 			}
-			return new JcaX509CertificateConverter().getCertificate(certificateBuilder.build(sigGen));
+			return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certificateBuilder.build(contentSigner));
 		} catch (final Exception e) {
-			throw new Exception("Cannot create RSA certificate", e);
+			throw new Exception("Cannot create selfsigned certificate: " + e.getMessage(), e);
 		}
 	}
 
@@ -953,11 +970,6 @@ public class CryptographicUtilities {
 		return BitUtilities.toHexString(md.digest());
 	}
 
-	public static int getKeySize(final X509Certificate certificate) {
-		final RSAKey rsaKey = (RSAKey) certificate.getPublicKey();
-		return rsaKey.getModulus().bitLength();
-	}
-
 	public static KeyPair convertPEMKeyPairToKeyPair(final PEMKeyPair keyPair) throws PEMException {
 		try {
 			String algorithm = keyPair.getPrivateKeyInfo().getPrivateKeyAlgorithm().getAlgorithm().getId();
@@ -987,9 +999,10 @@ public class CryptographicUtilities {
 			Object object;
 			while ((object = pemParser.readObject()) != null) {
 				if (object instanceof PEMKeyPair) {
+					final PEMKeyPair pemKeyPair = (PEMKeyPair) object;
 					if (password == null) {
 						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
-						final KeyPair keyPair = converter.getKeyPair((PEMKeyPair) object);
+						final KeyPair keyPair = converter.getKeyPair(pemKeyPair);
 						return keyPair.getPrivate();
 					} else {
 						throw new Exception("Unencrypted private key found. Password is obsolete.");
@@ -1083,7 +1096,7 @@ public class CryptographicUtilities {
 		dataOutput += "\n";
 		dataOutput += "Serial: " + certificate.getSerialNumber();
 		dataOutput += "\n";
-		dataOutput += "Key length: " + CryptographicUtilities.getKeySize(certificate);
+		dataOutput += "Key length: " + ((RSAKey) certificate.getPublicKey()).getModulus().bitLength();
 		dataOutput += "\n";
 		dataOutput += "MD5 fingerprint: " + CryptographicUtilities.getMd5FingerPrint(certificate);
 		dataOutput += "\n";
@@ -1102,6 +1115,19 @@ public class CryptographicUtilities {
 		if (key instanceof RSAKey) {
 			dataOutput += "Key length: " + ((RSAKey) key).getModulus().bitLength();
 			dataOutput += "\n";
+		} else if (key instanceof ECKey) {
+			try {
+				if (key instanceof PrivateKey) {
+					dataOutput += "Elliptic Curve Name: " + getEllipticCurveName((PrivateKey) key);
+					dataOutput += "\n";
+				} else if (key instanceof PublicKey) {
+					dataOutput += "Elliptic Curve Name: " + getEllipticCurveName((PublicKey) key);
+					dataOutput += "\n";
+				}
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				dataOutput += "Elliptic Curve Name: Unknown";
+				dataOutput += "\n";
+			}
 		}
 
 		try {
@@ -1126,24 +1152,6 @@ public class CryptographicUtilities {
 		dataOutput += "\n";
 
 		return dataOutput;
-	}
-
-	public static Certificate generateSelfsignedCertificate(final KeyPair keyPair, final int validityInDays, final String signatureAlgorithm, final String subjectDN, final int allowedSubCaCertificateLevels) throws OperatorCreationException, CertificateException, IOException {
-		final Provider bcProvider = new BouncyCastleProvider();
-		Security.addProvider(bcProvider);
-
-		final Date validityStartDate = new Date();
-		final Date validityEndDate = DateUtilities.addDaysToDate(validityStartDate, validityInDays);
-		final X500Name dnName = new X500Name(subjectDN);
-		final BigInteger certSerialNumber = new BigInteger(64, new SecureRandom());
-		final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
-		final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, validityStartDate, validityEndDate, dnName, keyPair.getPublic());
-		if (allowedSubCaCertificateLevels >= 0) {
-			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCaCertificateLevels));
-		} else {
-			certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
-		}
-		return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certificateBuilder.build(contentSigner));
 	}
 
 	public static boolean checkPrivateKeyFitsPublicKey(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
@@ -1319,11 +1327,11 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static PKCS10CertificationRequest generatePKCS10CertificateRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
-		return generatePKCS10CertificateRequest(privateKey, publicKey, commonName, organizationalUnit, organizationName, location, state, country, email, DEFAULT_SIGNATURE_METHOD);
+	public static PKCS10CertificationRequest generatePKCS10CertificationRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
+		return generatePKCS10CertificationRequest(privateKey, publicKey, commonName, organizationalUnit, organizationName, location, state, country, email, DEFAULT_SIGNATURE_METHOD);
 	}
 
-	public static PKCS10CertificationRequest generatePKCS10CertificateRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email, final String signatureMethod) throws Exception {
+	public static PKCS10CertificationRequest generatePKCS10CertificationRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email, final String signatureMethod) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final PKCS10CertificationRequestBuilder certificationRequestBuilder = new JcaPKCS10CertificationRequestBuilder(new X500Principal(generateX500PrincipalString(commonName, organizationalUnit, organizationName, location, state, country, email)), publicKey);
@@ -1467,6 +1475,9 @@ public class CryptographicUtilities {
 				final String pemRsaBegin = "-----BEGIN RSA PRIVATE KEY-----";
 				final String pemRsaEnd = "-----END RSA PRIVATE KEY-----";
 
+				final String pemEcDsaBegin = "-----BEGIN EC PRIVATE KEY-----";
+				final String pemEcDsaEnd = "-----END EC PRIVATE KEY-----";
+
 				final String pemBegin = "-----BEGIN PRIVATE KEY-----";
 				final String pemEnd = "-----END PRIVATE KEY-----";
 
@@ -1474,6 +1485,8 @@ public class CryptographicUtilities {
 				final String pemEncryptedEnd = "-----END ENCRYPTED PRIVATE KEY-----";
 
 				if (dataString.contains(pemRsaBegin) && dataString.contains(pemRsaEnd) && dataString.indexOf(pemRsaBegin) < dataString.indexOf(pemRsaEnd)) {
+					return true;
+				} else if (dataString.contains(pemEcDsaBegin) && dataString.contains(pemEcDsaEnd) && dataString.indexOf(pemEcDsaBegin) < dataString.indexOf(pemEcDsaEnd)) {
 					return true;
 				} else if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
 					return true;
@@ -1537,8 +1550,69 @@ public class CryptographicUtilities {
 			final RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(((RSAPrivateCrtKey) privateKey).getModulus(), ((RSAPrivateCrtKey) privateKey).getPublicExponent());
 			final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 			return keyFactory.generatePublic(publicKeySpec);
+		} else if (privateKey instanceof org.bouncycastle.jce.interfaces.ECPrivateKey) {
+			final org.bouncycastle.jce.interfaces.ECPrivateKey ecPrivateKey = (org.bouncycastle.jce.interfaces.ECPrivateKey) privateKey;
+			final String name = getEllipticCurveName(ecPrivateKey);
+			final KeyFactory keyFactory = KeyFactory.getInstance("ECDSA", "BC");
+			final ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(name);
+			final ECPoint Q = ecSpec.getG().multiply(ecPrivateKey.getD());
+			final byte[] publicDerBytes = Q.getEncoded(false);
+			final ECPoint point = ecSpec.getCurve().decodePoint(publicDerBytes);
+			final ECPublicKeySpec pubSpec = new ECPublicKeySpec(point, ecSpec);
+			return keyFactory.generatePublic(pubSpec);
+		} else if (privateKey instanceof java.security.interfaces.ECPrivateKey) {
+			final java.security.interfaces.ECPrivateKey ecPrivateKey = (java.security.interfaces.ECPrivateKey) privateKey;
+			final String name = getEllipticCurveName(ecPrivateKey);
+			final KeyFactory keyFactory = KeyFactory.getInstance("ECDSA", "BC");
+			final ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(name);
+			final ECPoint Q = ecSpec.getG().multiply(ecPrivateKey.getS());
+			final byte[] publicDerBytes = Q.getEncoded(false);
+			final ECPoint point = ecSpec.getCurve().decodePoint(publicDerBytes);
+			final ECPublicKeySpec pubSpec = new ECPublicKeySpec(point, ecSpec);
+			return keyFactory.generatePublic(pubSpec);
+		} else if (privateKey instanceof DSAPrivateKey) {
+			throw new Exception("Cannot extract PublicKey from " + privateKey.getClass().getSimpleName());
 		} else {
 			throw new Exception("Cannot extract PublicKey from " + privateKey.getClass().getSimpleName());
 		}
+	}
+
+	public static final String getEllipticCurveName(final PublicKey publicKey) throws GeneralSecurityException{
+		if (publicKey instanceof java.security.interfaces.ECPublicKey){
+			final java.security.interfaces.ECPublicKey pk = (java.security.interfaces.ECPublicKey) publicKey;
+			final java.security.spec.ECParameterSpec params = pk.getParams();
+			return getEllipticCurveName(EC5Util.convertSpec(params));
+		} else if(publicKey instanceof org.bouncycastle.jce.interfaces.ECPublicKey){
+			final org.bouncycastle.jce.interfaces.ECPublicKey pk = (org.bouncycastle.jce.interfaces.ECPublicKey) publicKey;
+			return getEllipticCurveName(pk.getParameters());
+		} else {
+			throw new IllegalArgumentException("This public key is no elliptic curve public key");
+		}
+	}
+
+	public static final String getEllipticCurveName(final PrivateKey privateKey) throws GeneralSecurityException{
+		if (privateKey instanceof java.security.interfaces.ECPrivateKey){
+			final java.security.interfaces.ECPrivateKey pk = (java.security.interfaces.ECPrivateKey) privateKey;
+			final java.security.spec.ECParameterSpec params = pk.getParams();
+			return getEllipticCurveName(EC5Util.convertSpec(params));
+		} else if(privateKey instanceof org.bouncycastle.jce.interfaces.ECPrivateKey){
+			final org.bouncycastle.jce.interfaces.ECPrivateKey pk = (org.bouncycastle.jce.interfaces.ECPrivateKey) privateKey;
+			return getEllipticCurveName(pk.getParameters());
+		} else {
+			throw new IllegalArgumentException("This private key is no elliptic curve private key");
+		}
+	}
+
+	public static final String getEllipticCurveName(final ECParameterSpec ecParameterSpec) throws GeneralSecurityException{
+		for (final String name : Collections.list((Enumeration<String>) org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames())){
+			final X9ECParameters params = org.bouncycastle.asn1.x9.ECNamedCurveTable.getByName(name);
+			if (params.getN().equals(ecParameterSpec.getN())
+					&& params.getH().equals(ecParameterSpec.getH())
+					&& params.getCurve().equals(ecParameterSpec.getCurve())
+					&& params.getG().equals(ecParameterSpec.getG())){
+				return name;
+			}
+		}
+		throw new GeneralSecurityException("Could not find elliptic curve name");
 	}
 }

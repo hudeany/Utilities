@@ -21,6 +21,10 @@ import de.soderer.utilities.crypto.CryptographicUtilities;
 public class CryptographicUtilitiesTest {
 	private static KeyPair rsaKeyPairCache = null;
 	private static KeyPair elGamalKeyPairCache = null;
+	private static KeyPair ecDsaKeyPair = null;
+	private static KeyPair ecDsaKeyPairByPureJava = null;
+	private static KeyPair dsaKeyPairCache = null;
+	private static KeyPair dhKeyPairCache = null;
 
 	private static KeyPair getRsaKeyPair() throws Exception {
 		if (rsaKeyPairCache == null) {
@@ -36,6 +40,30 @@ public class CryptographicUtilitiesTest {
 		}
 
 		return elGamalKeyPairCache;
+	}
+
+	private static KeyPair getEcDsaKeyPair() throws Exception {
+		if (ecDsaKeyPair == null) {
+			ecDsaKeyPair = CryptographicUtilities.generateEcDsaKeyPair(CryptographicUtilities.DEFAULT_ELLIPTIC_CURVE_NAME);
+		}
+
+		return ecDsaKeyPair;
+	}
+
+	private static KeyPair getDsaKeyPair() throws Exception {
+		if (dsaKeyPairCache == null) {
+			dsaKeyPairCache = CryptographicUtilities.generateDsaKeyPair(512);
+		}
+
+		return dsaKeyPairCache;
+	}
+
+	private static KeyPair getDhKeyPair() throws Exception {
+		if (dhKeyPairCache == null) {
+			dhKeyPairCache = CryptographicUtilities.generateDhKeyPair(512);
+		}
+
+		return dhKeyPairCache;
 	}
 
 	@Test
@@ -162,14 +190,21 @@ public class CryptographicUtilitiesTest {
 		try {
 			final KeyPair keyPair = CryptographicUtilities.generateRsaKeyPair(2048);
 
-			final PKCS10CertificationRequest certificationRequest = CryptographicUtilities.generatePKCS10CertificateRequest(keyPair.getPrivate(), keyPair.getPublic(), "Test CommonName CN", "Test OrganizationalUnit OU", "Test Organization O", "Test Location L", "Test State S", "Test Country C", "Test Email EMAIL");
+			final PKCS10CertificationRequest certificationRequest = CryptographicUtilities.generatePKCS10CertificationRequest(keyPair.getPrivate(), keyPair.getPublic(), "Test CommonName CN", "Test OrganizationalUnit OU", "Test Organization O", "Test Location L", "Test State S", "Test Country C", "Test Email EMAIL");
 			final String csrDataString = CryptographicUtilities.getStringFromCertificationRequest(certificationRequest);
 
 			Assert.assertTrue(csrDataString.startsWith("-----BEGIN CERTIFICATE REQUEST-----"));
 
 			final KeyPair caKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
 
-			final X509Certificate caCertificate = CryptographicUtilities.generateRsaCertificate(caKeyPair, "Test CA", 0, new Date(), DateUtilities.addDaysToDate(new Date(), 365));
+			final X509Certificate caCertificate = CryptographicUtilities.generateSelfsignedCertificate(
+					caKeyPair,
+					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
+					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD,
+					"CN=" + "Test CA",
+					0);
+
 			final String caCertificateDataString = CryptographicUtilities.getStringFromX509Certificate(caCertificate);
 
 			final X509Certificate testCertificate = CryptographicUtilities.signPKCS10CertificateRequest(caCertificate, caKeyPair.getPrivate(), null, null, certificationRequest, -1, BigInteger.valueOf(123456), 365);
@@ -184,6 +219,43 @@ public class CryptographicUtilitiesTest {
 			Assert.assertTrue(CryptographicUtilities.verifyChainOfTrust(testCertificateReadFromString, testCertificateReadFromString));
 
 			Assert.assertFalse(CryptographicUtilities.verifyChainOfTrust(caCertificateReadFromString, testCertificateReadFromString));
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testKeyPairStringMethodsForRSA() {
+		try {
+			final String rsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getRsaKeyPair());
+			final PrivateKey rsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(rsaKeyPairString, null);
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey));
+
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()));
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic());
+			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
+
+			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPrivate());
+			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPublic());
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testKeyPairStringMethodsECDSA_() {
+		try {
+			final String curveName = CryptographicUtilities.getEllipticCurveName(getEcDsaKeyPair().getPrivate());
+			final String ecDsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getEcDsaKeyPair());
+			final PrivateKey ecDsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(ecDsaKeyPairString, null);
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getEcDsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(ecDsaPrivateKey));
+
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getEcDsaKeyPair().getPrivate()));
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getEcDsaKeyPair().getPublic());
+			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
+
+			CryptographicUtilities.getKeyInfo(getEcDsaKeyPair().getPrivate());
+			CryptographicUtilities.getKeyInfo(getEcDsaKeyPair().getPublic());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
