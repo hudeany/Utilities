@@ -42,7 +42,6 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 	 * @param encryptedFile
 	 * @param password
 	 * @param encryptionMethod
-	 * @param zipBeforeEncryption
 	 */
 	public SymmetricEncryptionWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final OutputStream encryptedDataOutputStream, final char[] password, final String encryptionMethod, final byte[] salt, final byte[] initializationVector) {
 		super(parent);

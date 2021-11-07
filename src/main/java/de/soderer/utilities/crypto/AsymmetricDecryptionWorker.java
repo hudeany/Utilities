@@ -49,7 +49,6 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 	 * @param decryptedFile
 	 * @param privateKey
 	 * @param encryptionMethod
-	 * @param unzipAfterDecryption
 	 */
 	public AsymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final PrivateKey privateKey, final String encryptionMethod) {
 		super(parent);

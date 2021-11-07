@@ -36,8 +36,11 @@ public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
 
 	@Override
 	public Boolean work() throws Exception {
-		if ("SHA256withEC".equalsIgnoreCase(signatureMethod) || "SHA256withECDH".equalsIgnoreCase(signatureMethod)) {
-			signatureMethod = "SHA256withECDSA";
+		signatureMethod = signatureMethod.toLowerCase();
+		if (signatureMethod.endsWith("withec")) {
+			signatureMethod = signatureMethod.replace("withec", "withecdsa");
+		} else if (signatureMethod.endsWith("withecdh")) {
+			signatureMethod = signatureMethod.replace("withecdh", "withecdsa");
 		}
 
 		showProgress();

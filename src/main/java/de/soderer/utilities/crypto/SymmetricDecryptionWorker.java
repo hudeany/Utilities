@@ -47,7 +47,6 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 	 * @param encryptionMethod
 	 * @param salt
 	 * @param initalizationVector
-	 * @param unzipAfterDecryption
 	 */
 	public SymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final char[] password, final String encryptionMethod, final byte[] salt, final byte[] initializationVector) {
 		super(parent);
