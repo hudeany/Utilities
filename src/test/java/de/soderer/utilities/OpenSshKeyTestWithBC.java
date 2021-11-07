@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.Security;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
@@ -101,7 +102,7 @@ public class OpenSshKeyTestWithBC {
 		// Check OpenSshKeyWriter encrypted PKCS8 data with BouncyCastle
 		final KeyPair readKeyPair3;
 		try (PEMParser pemParser = new PEMParser(new StringReader(new String(privateKeyPkcs8DataByOpenSshKeyWriter, StandardCharsets.UTF_8)))) {
-			final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+			final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME);
 			final PEMEncryptedKeyPair pemEncryptedKeyPair = (PEMEncryptedKeyPair) pemParser.readObject();
 			final PEMDecryptorProvider keyDecryptorProvider = new BcPEMDecryptorProvider("password".toCharArray());
 			final PEMKeyPair pemKeyPair = pemEncryptedKeyPair.decryptKeyPair(keyDecryptorProvider);

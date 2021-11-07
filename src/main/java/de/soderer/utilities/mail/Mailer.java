@@ -329,7 +329,7 @@ public class Mailer {
 
 		final SMIMESignedGenerator signer = new SMIMESignedGenerator();
 
-		signer.addSignerInfoGenerator(new JcaSimpleSignerInfoGeneratorBuilder().setProvider("BC")
+		signer.addSignerInfoGenerator(new JcaSimpleSignerInfoGeneratorBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME)
 				.setSignedAttributeGenerator(new AttributeTable(attributes))
 				.build(Utilities.isBlank(signatureMethodName) ? "SHA512withRSA" : signatureMethodName, privateKey, signingCertificate));
 
@@ -349,12 +349,12 @@ public class Mailer {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final SMIMEEnvelopedGenerator envelopedGenerator = new SMIMEEnvelopedGenerator();
-		envelopedGenerator.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator(recipientCert).setProvider("BC"));
+		envelopedGenerator.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator(recipientCert).setProvider(BouncyCastleProvider.PROVIDER_NAME));
 
 		final MimeBodyPart mimeBodyPart = new MimeBodyPart();
 		mimeBodyPart.setContent(mimeMessage.getContent(), mimeMessage.getContentType());
 		final ASN1ObjectIdentifier encryptionAlgorithmIdentifier = Utilities.isBlank(encryptionMethodName) ? CMSAlgorithm.AES256_CBC : CryptographicUtilities.getASN1ObjectIdentifierByEncryptionMethodName(encryptionMethodName);
-		final MimeBodyPart encryptedMimeBodyPart = envelopedGenerator.generate(mimeBodyPart, new JceCMSContentEncryptorBuilder(encryptionAlgorithmIdentifier).setProvider("BC").build());
+		final MimeBodyPart encryptedMimeBodyPart = envelopedGenerator.generate(mimeBodyPart, new JceCMSContentEncryptorBuilder(encryptionAlgorithmIdentifier).setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
 		mimeMessage.setContent(encryptedMimeBodyPart.getContent(), encryptedMimeBodyPart.getContentType());
 		mimeMessage.saveChanges();
 

@@ -16,13 +16,18 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.utilities.crypto.AsymmetricDecryptionWorker;
+import de.soderer.utilities.crypto.AsymmetricEncryptionWorker;
+import de.soderer.utilities.crypto.AsymmetricSignatureWorker;
+import de.soderer.utilities.crypto.AsymmetricVerificationWorker;
 import de.soderer.utilities.crypto.CryptographicUtilities;
+import de.soderer.utilities.crypto.SymmetricDecryptionWorker;
+import de.soderer.utilities.crypto.SymmetricEncryptionWorker;
 
 public class CryptographicUtilitiesTest {
 	private static KeyPair rsaKeyPairCache = null;
 	private static KeyPair elGamalKeyPairCache = null;
-	private static KeyPair ecDsaKeyPair = null;
-	private static KeyPair ecDsaKeyPairByPureJava = null;
+	private static KeyPair ecKeyPair = null;
 	private static KeyPair dsaKeyPairCache = null;
 	private static KeyPair dhKeyPairCache = null;
 
@@ -42,12 +47,12 @@ public class CryptographicUtilitiesTest {
 		return elGamalKeyPairCache;
 	}
 
-	private static KeyPair getEcDsaKeyPair() throws Exception {
-		if (ecDsaKeyPair == null) {
-			ecDsaKeyPair = CryptographicUtilities.generateEcDsaKeyPair(CryptographicUtilities.DEFAULT_ELLIPTIC_CURVE_NAME);
+	private static KeyPair getEcKeyPair() throws Exception {
+		if (ecKeyPair == null) {
+			ecKeyPair = CryptographicUtilities.generateEcKeyPair(CryptographicUtilities.DEFAULT_ELLIPTIC_CURVE_NAME);
 		}
 
-		return ecDsaKeyPair;
+		return ecKeyPair;
 	}
 
 	private static KeyPair getDsaKeyPair() throws Exception {
@@ -68,19 +73,29 @@ public class CryptographicUtilitiesTest {
 
 	@Test
 	public void testEncryptionAES() {
-		ByteArrayInputStream in = null;
-		ByteArrayOutputStream out = null;
 		try {
 			final char[] password = Utilities.getRandomString(12).toCharArray();
-			in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
-			out = new ByteArrayOutputStream();
-			CryptographicUtilities.encryptSymmetric(in, out, password);
-			final byte[] encryptedData = out.toByteArray();
-			in = new ByteArrayInputStream(encryptedData);
-			out = new ByteArrayOutputStream();
-			CryptographicUtilities.decryptSymmetric(in, out, password);
-			final byte[] decryptedData = out.toByteArray();
-			Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
+			byte[] encryptedData = null;
+			try {
+				final ByteArrayInputStream dataInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				final ByteArrayOutputStream encryptedDataOutputStream = new ByteArrayOutputStream();
+				new SymmetricEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, password, CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, CryptographicUtilities.DEFAULT_SALT, CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR).work();
+				encryptedData = encryptedDataOutputStream.toByteArray();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Encryption failed. Method: " + CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream encryptedDataInputStream = new ByteArrayInputStream(encryptedData);
+				final ByteArrayOutputStream dataOutputStream = new ByteArrayOutputStream();
+				new SymmetricDecryptionWorker(null, encryptedDataInputStream, dataOutputStream, password, CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, CryptographicUtilities.DEFAULT_SALT, CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR).work();
+				final byte[] decryptedData = dataOutputStream.toByteArray();
+				Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Decryption failed. Method: " + CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD + ":\n" + e.getMessage());
+			}
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -89,14 +104,23 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testSignatureRSA() {
 		try {
-			final byte[] signature = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), getRsaKeyPair().getPrivate());
-			final ByteArrayInputStream stream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
-			final byte[] signatureStreamed = CryptographicUtilities.signData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), getRsaKeyPair().getPrivate());
-			Assert.assertArrayEquals(signature, signatureStreamed);
-			final boolean result = CryptographicUtilities.verifyData(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), getRsaKeyPair().getPublic(), signature);
-			Assert.assertTrue(result);
-			final boolean resultStreamed = CryptographicUtilities.verifyStream(stream, getRsaKeyPair().getPublic(), signature);
-			Assert.assertTrue(resultStreamed);
+			byte[] signatureBytes = null;
+			try {
+				final ByteArrayInputStream dataToSignInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				signatureBytes = new AsymmetricSignatureWorker(null, dataToSignInputStream, getRsaKeyPair().getPrivate(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA).work();
+			}catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Signature failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream dataToVerifyInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				final boolean result = new AsymmetricVerificationWorker(null, dataToVerifyInputStream, signatureBytes, getRsaKeyPair().getPublic(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA).work();
+				Assert.assertTrue(result);
+			}catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Verification failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA + ":\n" + e.getMessage());
+			}
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -108,9 +132,9 @@ public class CryptographicUtilitiesTest {
 		for (final String encryptionMethod : CryptographicUtilities.KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA) {
 			byte[] encryptedDataStreamed = null;
 			try {
-				final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
+				final ByteArrayInputStream dataStream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
 				final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
-				CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getRsaKeyPair().getPublic(), encryptionMethod);
+				new AsymmetricEncryptionWorker(null, dataStream, encryptedStream, getRsaKeyPair().getPublic(), encryptionMethod).work();
 				encryptedDataStreamed = encryptedStream.toByteArray();
 			} catch (final Exception e) {
 				e.printStackTrace();
@@ -120,7 +144,59 @@ public class CryptographicUtilitiesTest {
 			try {
 				final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
 				final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
-				CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getRsaKeyPair().getPrivate(), encryptionMethod);
+				new AsymmetricDecryptionWorker(null, encryptedDataStream, decryptedStream, getRsaKeyPair().getPrivate(), encryptionMethod).work();
+				Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Decryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
+		}
+	}
+
+	@Test
+	public void testSignatureEC() {
+		try {
+			byte[] signatureBytes = null;
+			try {
+				final ByteArrayInputStream dataToSignInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				signatureBytes = new AsymmetricSignatureWorker(null, dataToSignInputStream, getEcKeyPair().getPrivate(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_EC).work();
+			}catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Signature failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream dataToVerifyInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				final boolean result = new AsymmetricVerificationWorker(null, dataToVerifyInputStream, signatureBytes, getEcKeyPair().getPublic(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_EC).work();
+				Assert.assertTrue(result);
+			}catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Verification failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA + ":\n" + e.getMessage());
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testEncryptionEC() {
+		for (final String encryptionMethod : CryptographicUtilities.KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_EC) {
+			byte[] encryptedDataStreamed = null;
+			try {
+				final ByteArrayInputStream dataStream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
+				final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
+				new AsymmetricEncryptionWorker(null, dataStream, encryptedStream, getEcKeyPair().getPublic(), encryptionMethod).work();
+				encryptedDataStreamed = encryptedStream.toByteArray();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Encryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
+				final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
+				new AsymmetricDecryptionWorker(null, encryptedDataStream, decryptedStream, getEcKeyPair().getPrivate(), encryptionMethod).work();
 				Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
 			} catch (final Exception e) {
 				e.printStackTrace();
@@ -134,9 +210,9 @@ public class CryptographicUtilitiesTest {
 		for (final String encryptionMethod : CryptographicUtilities.KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_ELGAMAL) {
 			byte[] encryptedDataStreamed = null;
 			try {
-				final ByteArrayInputStream stream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
+				final ByteArrayInputStream dataStream = new ByteArrayInputStream((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8));
 				final ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
-				CryptographicUtilities.encryptAsymmetric(stream, encryptedStream, getElGamalKeyPair().getPublic(), encryptionMethod);
+				new AsymmetricEncryptionWorker(null, dataStream, encryptedStream, getElGamalKeyPair().getPublic(), encryptionMethod).work();
 				encryptedDataStreamed = encryptedStream.toByteArray();
 			} catch (final Exception e) {
 				e.printStackTrace();
@@ -146,7 +222,7 @@ public class CryptographicUtilitiesTest {
 			try {
 				final ByteArrayInputStream encryptedDataStream = new ByteArrayInputStream(encryptedDataStreamed);
 				final ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
-				CryptographicUtilities.decryptAsymmetric(encryptedDataStream, decryptedStream, getElGamalKeyPair().getPrivate(), encryptionMethod);
+				new AsymmetricDecryptionWorker(null, encryptedDataStream, decryptedStream, getElGamalKeyPair().getPrivate(), encryptionMethod).work();
 				Assert.assertArrayEquals((TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING).getBytes(StandardCharsets.UTF_8), decryptedStream.toByteArray());
 			} catch (final Exception e) {
 				e.printStackTrace();
@@ -201,7 +277,7 @@ public class CryptographicUtilitiesTest {
 					caKeyPair,
 					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
 					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
-					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD,
+					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
 					"CN=" + "Test CA",
 					0);
 
@@ -243,19 +319,19 @@ public class CryptographicUtilitiesTest {
 	}
 
 	@Test
-	public void testKeyPairStringMethodsECDSA_() {
+	public void testKeyPairStringMethodsECDSA() {
 		try {
-			final String curveName = CryptographicUtilities.getEllipticCurveName(getEcDsaKeyPair().getPrivate());
-			final String ecDsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getEcDsaKeyPair());
+			final String curveName = CryptographicUtilities.getEllipticCurveName(getEcKeyPair().getPrivate());
+			final String ecDsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getEcKeyPair());
 			final PrivateKey ecDsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(ecDsaKeyPairString, null);
-			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getEcDsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(ecDsaPrivateKey));
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getEcKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(ecDsaPrivateKey));
 
-			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getEcDsaKeyPair().getPrivate()));
-			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getEcDsaKeyPair().getPublic());
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getEcKeyPair().getPrivate()));
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getEcKeyPair().getPublic());
 			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
 
-			CryptographicUtilities.getKeyInfo(getEcDsaKeyPair().getPrivate());
-			CryptographicUtilities.getKeyInfo(getEcDsaKeyPair().getPublic());
+			CryptographicUtilities.getKeyInfo(getEcKeyPair().getPrivate());
+			CryptographicUtilities.getKeyInfo(getEcKeyPair().getPublic());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}

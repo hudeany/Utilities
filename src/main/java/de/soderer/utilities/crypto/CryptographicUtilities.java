@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
@@ -60,11 +59,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -93,14 +87,8 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.cms.CMSAlgorithm;
-import org.bouncycastle.crypto.AsymmetricBlockCipher;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.PBEParametersGenerator;
-import org.bouncycastle.crypto.encodings.ISO9796d1Encoding;
-import org.bouncycastle.crypto.encodings.OAEPEncoding;
-import org.bouncycastle.crypto.encodings.PKCS1Encoding;
-import org.bouncycastle.crypto.engines.ElGamalEngine;
-import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.io.InvalidCipherTextIOException;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -170,14 +158,16 @@ public class CryptographicUtilities {
 	public static final String[] KNOWN_SYMMETRIC_ENCRYPTION_METHODS = new String[] { DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, "DES/CBC/PKCS5Padding", "DES/CBC/X9.23Padding", "DES/OFB8/NoPadding",
 			"DES/ECB/WithCTS", "IDEA/CBC/ISO10126Padding", "IDEA/CBC/ISO7816-4Padding", "SKIPJACK/ECB/PKCS7Padding" };
 
-	public static final String DEFAULT_SIGNATURE_METHOD = "SHA256WithRSA";
-	public static final String[] KNOWN_SIGNATURE_METHODS = new String[] { DEFAULT_SIGNATURE_METHOD, "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
+	public static final String DEFAULT_SIGNATURE_METHOD_RSA = "SHA256WithRSA";
+	public static final String DEFAULT_SIGNATURE_METHOD_EC = "SHA256withECDSA";
+	public static final String[] KNOWN_SIGNATURE_METHODS = new String[] { DEFAULT_SIGNATURE_METHOD_RSA, DEFAULT_SIGNATURE_METHOD_EC, "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
 			"GOST3411withGOST3410-2001", "MD2withRSA", "MD5withRSA", "SHA1withRSA", "RIPEMD128withRSA", "RIPEMD160withRSA", "RIPEMD160withECDSA", "RIPEMD256withRSA", "SHA1withDSA", "NONEwithDSA",
 			"SHA1withECDSA", "NONEwithECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA256withRSA", "SHA384withECDSA", "SHA512withECDSA", "SHA1withECNR", "SHA224withECNR", "SHA256withECNR", "SHA384withECNR",
 			"SHA512withECNR", "SHA224withRSA", "SHA384withRSA", "SHA512withRSA", "SHA1withRSAandMGF1", "SHA256withRSAandMGF1", "SHA384withRSAandMGF1", "SHA512withRSAandMGF1" };
 
-	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "ECDSA", "ElGamal" };
+	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "EC", "ElGamal" };
 	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
+
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA = new String[] {
 			"RSA/NONE/PKCS1Padding",
 			"RSA/NONE/OAEPPadding",
@@ -190,6 +180,10 @@ public class CryptographicUtilities {
 			"RSA/NONE/OAEPWithSHA384AndMGF1Padding",
 			"RSA/NONE/OAEPWithSHA512AndMGF1Padding",
 			"RSA/NONE/ISO9796-1Padding"
+	};
+
+	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_EC = new String[] {
+			"ECIES"
 	};
 
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_ELGAMAL = new String[] {
@@ -215,7 +209,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider.PROVIDER_NAME);
 			keyGen.initialize(keyStrength, new SecureRandom());
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
@@ -227,7 +221,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DSA", "BC");
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DSA", BouncyCastleProvider.PROVIDER_NAME);
 			keyGen.initialize(keyStrength, new SecureRandom());
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
@@ -239,7 +233,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DH", "BC");
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DH", BouncyCastleProvider.PROVIDER_NAME);
 			keyGen.initialize(keyStrength, new SecureRandom());
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
@@ -247,16 +241,20 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static KeyPair generateEcDsaKeyPair(final String ecCurveName) throws Exception {
+	public static KeyPair generateEcKeyPair(final String ecCurveName) throws Exception {
+		if (ecCurveName == null || "".equals(ecCurveName.trim())) {
+			throw new Exception("Missing EC curve name parameter");
+		}
+
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC", "BC");
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
 			final ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec(ecCurveName);
 			keyGen.initialize(ecGenParameterSpec, new SecureRandom());
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
-			throw new Exception("Cannot create ECDSA keypair", e);
+			throw new Exception("Cannot create EC keypair", e);
 		}
 	}
 
@@ -264,7 +262,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try {
-			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ElGamal", "BC");
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ElGamal", BouncyCastleProvider.PROVIDER_NAME);
 			keyGen.initialize(keyStrength, new SecureRandom());
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
@@ -303,93 +301,6 @@ public class CryptographicUtilities {
 			throw new Exception("Cannot create certificate string: " + e.getMessage(), e);
 		}
 		return stringWriter.toString();
-	}
-
-	public static void encryptAsymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final PublicKey publicKey) throws Exception {
-		encryptAsymmetric(dataStream, encryptedOutputStream, publicKey, DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD);
-	}
-
-	public static void encryptAsymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final PublicKey publicKey, String encryptionMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			if (Utilities.isBlank(encryptionMethod)) {
-				throw new Exception("Empty asymmetric encryption method");
-			}
-			encryptionMethod = encryptionMethod.toLowerCase();
-			AsymmetricBlockCipher encryptCipher;
-			if (encryptionMethod.startsWith("rsa")) {
-				encryptCipher = new RSAEngine();
-			} else if (encryptionMethod.startsWith("elgamal")) {
-				encryptCipher = new ElGamalEngine();
-			} else {
-				throw new Exception("Unknown asymmetric encryption cipher method: " + encryptionMethod);
-			}
-			if (encryptionMethod.contains("pkcs1")) {
-				encryptCipher = new PKCS1Encoding(encryptCipher);
-			} else if (encryptionMethod.contains("oaep")) {
-				encryptCipher = new OAEPEncoding(encryptCipher);
-			} else if (encryptionMethod.contains("iso9796")) {
-				encryptCipher = new ISO9796d1Encoding(encryptCipher);
-			} else if (encryptionMethod.contains("nopadding")) {
-				// do no padding
-			} else {
-				throw new Exception("Unknown asymmetric encryption padding method: " + encryptionMethod);
-			}
-			encryptCipher.init(true, PublicKeyFactory.createKey(publicKey.getEncoded()));
-
-			final byte[] buffer = new byte[encryptCipher.getInputBlockSize()];
-			int readBytes;
-			while ((readBytes = dataStream.read(buffer)) > -1) {
-				encryptedOutputStream.write(encryptCipher.processBlock(buffer, 0, readBytes));
-			}
-		} catch (final Exception e) {
-			throw new Exception("Error while encrypting: " + e.getMessage(), e);
-		}
-	}
-
-	public static void decryptAsymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final PrivateKey privateKey) throws Exception {
-		decryptAsymmetric(encryptedDataStream, dataOutputStream, privateKey, DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD);
-	}
-
-	public static void decryptAsymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final PrivateKey privateKey, String encryptionMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
-				throw new Exception("Empty asymmetric encryption method");
-			}
-			encryptionMethod = encryptionMethod.toLowerCase();
-			AsymmetricBlockCipher decryptCipher;
-			if (encryptionMethod.startsWith("rsa")) {
-				decryptCipher = new RSAEngine();
-			} else if (encryptionMethod.startsWith("elgamal")) {
-				decryptCipher = new ElGamalEngine();
-			} else {
-				throw new Exception("Unknown asymmetric encryption cipher method: " + encryptionMethod);
-			}
-			if (encryptionMethod.contains("pkcs1")) {
-				decryptCipher = new PKCS1Encoding(decryptCipher);
-			} else if (encryptionMethod.contains("oaep")) {
-				decryptCipher = new OAEPEncoding(decryptCipher);
-			} else if (encryptionMethod.contains("iso9796")) {
-				decryptCipher = new ISO9796d1Encoding(decryptCipher);
-			} else if (encryptionMethod.contains("nopadding")) {
-				// do no padding
-			} else {
-				throw new Exception("Unknown asymmetric encryption padding method: " + encryptionMethod);
-			}
-
-			decryptCipher.init(false, PrivateKeyFactory.createKey(privateKey.getEncoded()));
-
-			final byte[] buffer = new byte[decryptCipher.getInputBlockSize()];
-			int readBytes;
-			while ((readBytes = encryptedDataStream.read(buffer)) > -1) {
-				dataOutputStream.write(decryptCipher.processBlock(buffer, 0, readBytes));
-			}
-		} catch (final Exception e) {
-			throw new Exception("Error while encrypting: " + e.getMessage(), e);
-		}
 	}
 
 	public static String getStringFromKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
@@ -598,50 +509,6 @@ public class CryptographicUtilities {
 		return getCertificatesFromString(certificateFileString);
 	}
 
-	public static void encryptSymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final char[] password) throws Exception {
-		encryptSymmetric(dataStream, encryptedOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
-	}
-
-	public static void encryptSymmetric(final InputStream dataStream, final OutputStream encryptedOutputStream, final char[] password, final byte[] salt, final byte[] initializationVector, String encryptionMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			if ("TripleDES".equalsIgnoreCase(encryptionMethod) || "3DES".equalsIgnoreCase(encryptionMethod)) {
-				encryptionMethod = "DESede";
-			}
-
-			final byte[] keyBytes = stretchPassword(password, 128, salt);
-			final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			final Cipher encryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
-			encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-			try (CipherOutputStream cipherOutputStream = new CipherOutputStream(encryptedOutputStream, encryptCipher)) {
-				IoUtilities.copy(dataStream, cipherOutputStream);
-			}
-		} catch (final Exception e) {
-			throw new Exception("Error while encrypting: " + e.getMessage(), e);
-		}
-	}
-
-	public static void decryptSymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final char[] password) throws Exception {
-		decryptSymmetric(encryptedDataStream, dataOutputStream, password, DEFAULT_SALT, DEFAULT_SYMMETRIC_INITALIZATION_VECTOR, DEFAULT_SYMMETRIC_ENCRYPTION_METHOD);
-	}
-
-	public static void decryptSymmetric(final InputStream encryptedDataStream, final OutputStream dataOutputStream, final char[] password, final byte[] salt, final byte[] initializationVector, final String encryptionMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			final byte[] keyBytes = stretchPassword(password, 128, salt);
-			final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-			final Cipher decryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
-			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-			try (CipherInputStream cipherInputStream = new CipherInputStream(encryptedDataStream, decryptCipher)) {
-				IoUtilities.copy(cipherInputStream, dataOutputStream);
-			}
-		} catch (final Exception e) {
-			throw new Exception("Error while decrypting: " + e.getMessage(), e);
-		}
-	}
-
 	public static byte[] stretchPassword(final char[] password, final int keyLength, final byte[] salt) {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -649,84 +516,6 @@ public class CryptographicUtilities {
 		generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password), salt, 1000);
 		final KeyParameter params = (KeyParameter) generator.generateDerivedParameters(keyLength);
 		return params.getKey();
-	}
-
-	public static byte[] signData(final byte[] data, final PrivateKey privateKey) throws Exception {
-		return signData(data, privateKey, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	public static byte[] signData(final byte[] data, final PrivateKey privateKey, final String signatureMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			final Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
-			signature.initSign(privateKey);
-			signature.update(data);
-			return signature.sign();
-		} catch (final Exception e) {
-			throw new Exception("Cannot create signature", e);
-		}
-	}
-
-	public static byte[] signStream(final InputStream dataStream, final PrivateKey privateKey) throws Exception {
-		return signStream(dataStream, privateKey, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	public static byte[] signStream(final InputStream dataStream, final PrivateKey privateKey, final String signatureMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			final Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
-			signature.initSign(privateKey);
-			final byte[] buffer = new byte[4096];
-			int bytesRead = dataStream.read(buffer);
-			while (bytesRead >= 0) {
-				signature.update(buffer, 0, bytesRead);
-				bytesRead = dataStream.read(buffer);
-			}
-			return signature.sign();
-		} catch (final Exception e) {
-			throw new Exception("Cannot create signature", e);
-		}
-	}
-
-	public static boolean verifyData(final byte[] data, final PublicKey publicKey, final byte[] signatureData) throws Exception {
-		return verifyData(data, publicKey, signatureData, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	public static boolean verifyData(final byte[] data, final PublicKey publicKey, final byte[] signatureData, final String signatureMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			final Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
-			signature.initVerify(publicKey);
-			signature.update(data);
-			return signature.verify(signatureData);
-		} catch (final Exception e) {
-			throw new Exception("Cannot verify signature", e);
-		}
-	}
-
-	public static boolean verifyStream(final InputStream dataStream, final PublicKey publicKey, final byte[] signatureData) throws Exception {
-		return verifyStream(dataStream, publicKey, signatureData, DEFAULT_SIGNATURE_METHOD);
-	}
-
-	public static boolean verifyStream(final InputStream dataStream, final PublicKey publicKey, final byte[] signatureData, final String signatureMethod) throws Exception {
-		Security.addProvider(new BouncyCastleProvider());
-
-		try {
-			final Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
-			signature.initVerify(publicKey);
-			final byte[] buffer = new byte[4096];
-			int bytesRead = dataStream.read(buffer);
-			while (bytesRead >= 0) {
-				signature.update(buffer, 0, bytesRead);
-				bytesRead = dataStream.read(buffer);
-			}
-			return signature.verify(signatureData);
-		} catch (final Exception e) {
-			throw new Exception("Cannot verify signature", e);
-		}
 	}
 
 	public static void otpWork(final byte[][] immutableData, final byte[][] mutableData) {
@@ -1001,7 +790,7 @@ public class CryptographicUtilities {
 				if (object instanceof PEMKeyPair) {
 					final PEMKeyPair pemKeyPair = (PEMKeyPair) object;
 					if (password == null) {
-						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME);
 						final KeyPair keyPair = converter.getKeyPair(pemKeyPair);
 						return keyPair.getPrivate();
 					} else {
@@ -1011,7 +800,7 @@ public class CryptographicUtilities {
 					if (password == null) {
 						throw new MissingPasswordException("Encrypted private key found. Password is needed.");
 					} else {
-						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME);
 						final PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build(password);
 						final KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) object).decryptKeyPair(decProv));
 						return keyPair.getPrivate();
@@ -1060,7 +849,7 @@ public class CryptographicUtilities {
 			Object object;
 			while ((object = pemParser.readObject()) != null) {
 				if (object instanceof PEMKeyPair) {
-					final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+					final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME);
 					final KeyPair keyPair = converter.getKeyPair((PEMKeyPair) object);
 					return keyPair.getPublic();
 				} else if (object instanceof SubjectPublicKeyInfo) {
@@ -1328,7 +1117,7 @@ public class CryptographicUtilities {
 	}
 
 	public static PKCS10CertificationRequest generatePKCS10CertificationRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
-		return generatePKCS10CertificationRequest(privateKey, publicKey, commonName, organizationalUnit, organizationName, location, state, country, email, DEFAULT_SIGNATURE_METHOD);
+		return generatePKCS10CertificationRequest(privateKey, publicKey, commonName, organizationalUnit, organizationName, location, state, country, email, DEFAULT_SIGNATURE_METHOD_RSA);
 	}
 
 	public static PKCS10CertificationRequest generatePKCS10CertificationRequest(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email, final String signatureMethod) throws Exception {
@@ -1368,7 +1157,7 @@ public class CryptographicUtilities {
 	}
 
 	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCaCertificateLevels, final BigInteger serialNo, final int validityDays) throws Exception {
-		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, certificationRequest, allowedSubCaCertificateLevels, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD);
+		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, certificationRequest, allowedSubCaCertificateLevels, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD_RSA);
 	}
 
 	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCaCertificateLevels, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
@@ -1401,7 +1190,7 @@ public class CryptographicUtilities {
 			}
 			certificateBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
 			certificateBuilder.addExtension(Extension.extendedKeyUsage, true, new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth));
-			final ContentSigner signer = new JcaContentSignerBuilder(signatureMethod).setProvider("BC").build(caPrivateKey);
+			final ContentSigner signer = new JcaContentSignerBuilder(signatureMethod).setProvider(BouncyCastleProvider.PROVIDER_NAME).build(caPrivateKey);
 
 			if (Utilities.isNotBlank(caCrlEndpointUrl)) {
 				// Add CRL endpoint
@@ -1418,7 +1207,7 @@ public class CryptographicUtilities {
 				certificateBuilder.addExtension(Extension.authorityInfoAccess, false, new DERSequence(authInfoAccessASN));
 			}
 
-			final X509Certificate signedCert = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certificateBuilder.build(signer));
+			final X509Certificate signedCert = new JcaX509CertificateConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME).getCertificate(certificateBuilder.build(signer));
 			return signedCert;
 		} catch (final Exception e) {
 			throw new Exception("Error in signing the certificate", e);
@@ -1475,8 +1264,8 @@ public class CryptographicUtilities {
 				final String pemRsaBegin = "-----BEGIN RSA PRIVATE KEY-----";
 				final String pemRsaEnd = "-----END RSA PRIVATE KEY-----";
 
-				final String pemEcDsaBegin = "-----BEGIN EC PRIVATE KEY-----";
-				final String pemEcDsaEnd = "-----END EC PRIVATE KEY-----";
+				final String pemEcBegin = "-----BEGIN EC PRIVATE KEY-----";
+				final String pemEcEnd = "-----END EC PRIVATE KEY-----";
 
 				final String pemBegin = "-----BEGIN PRIVATE KEY-----";
 				final String pemEnd = "-----END PRIVATE KEY-----";
@@ -1486,7 +1275,7 @@ public class CryptographicUtilities {
 
 				if (dataString.contains(pemRsaBegin) && dataString.contains(pemRsaEnd) && dataString.indexOf(pemRsaBegin) < dataString.indexOf(pemRsaEnd)) {
 					return true;
-				} else if (dataString.contains(pemEcDsaBegin) && dataString.contains(pemEcDsaEnd) && dataString.indexOf(pemEcDsaBegin) < dataString.indexOf(pemEcDsaEnd)) {
+				} else if (dataString.contains(pemEcBegin) && dataString.contains(pemEcEnd) && dataString.indexOf(pemEcBegin) < dataString.indexOf(pemEcEnd)) {
 					return true;
 				} else if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
 					return true;
@@ -1553,7 +1342,7 @@ public class CryptographicUtilities {
 		} else if (privateKey instanceof org.bouncycastle.jce.interfaces.ECPrivateKey) {
 			final org.bouncycastle.jce.interfaces.ECPrivateKey ecPrivateKey = (org.bouncycastle.jce.interfaces.ECPrivateKey) privateKey;
 			final String name = getEllipticCurveName(ecPrivateKey);
-			final KeyFactory keyFactory = KeyFactory.getInstance("ECDSA", "BC");
+			final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
 			final ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(name);
 			final ECPoint Q = ecSpec.getG().multiply(ecPrivateKey.getD());
 			final byte[] publicDerBytes = Q.getEncoded(false);
@@ -1563,7 +1352,7 @@ public class CryptographicUtilities {
 		} else if (privateKey instanceof java.security.interfaces.ECPrivateKey) {
 			final java.security.interfaces.ECPrivateKey ecPrivateKey = (java.security.interfaces.ECPrivateKey) privateKey;
 			final String name = getEllipticCurveName(ecPrivateKey);
-			final KeyFactory keyFactory = KeyFactory.getInstance("ECDSA", "BC");
+			final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
 			final ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(name);
 			final ECPoint Q = ecSpec.getG().multiply(ecPrivateKey.getS());
 			final byte[] publicDerBytes = Q.getEncoded(false);

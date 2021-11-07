@@ -34,7 +34,7 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 		this.signatureMethod = signatureMethod;
 
 		if (Utilities.isBlank(this.signatureMethod)) {
-			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
+			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA;
 		}
 	}
 

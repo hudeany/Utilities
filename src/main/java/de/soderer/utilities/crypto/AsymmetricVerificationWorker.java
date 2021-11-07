@@ -1,50 +1,52 @@
 package de.soderer.utilities.crypto;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
-public class FileVerificationWorker extends WorkerSimple<Boolean> {
-	private File fileToVerify = null;
-	private File signatureFile = null;
+public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
+	private InputStream dataInputStream = null;
+	private byte[] signatureData = null;
 	private PublicKey publicKey = null;
 	private String signatureMethod = null;
 
-	public FileVerificationWorker(final WorkerParentSimple parent, final File fileToVerify, final File signatureFile, final PublicKey publicKey) {
-		this(parent, fileToVerify, signatureFile, publicKey, null);
+	public AsymmetricVerificationWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final byte[] signatureData, final PublicKey publicKey) {
+		this(parent, dataInputStream, signatureData, publicKey, null);
 	}
 
-	public FileVerificationWorker(final WorkerParentSimple parent, final File fileToVerify, final File signatureFile, final PublicKey publicKey, final String signatureMethod) {
+	public AsymmetricVerificationWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final byte[] signatureData, final PublicKey publicKey, final String signatureMethod) {
 		super(parent);
-		this.fileToVerify = fileToVerify;
-		this.signatureFile = signatureFile;
+		this.dataInputStream = dataInputStream;
+		this.signatureData = signatureData;
 		this.publicKey = publicKey;
 		this.signatureMethod = signatureMethod;
 
 		if (Utilities.isBlank(this.signatureMethod)) {
-			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD;
+			this.signatureMethod = CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA;
 		}
 	}
 
 	@Override
 	public Boolean work() throws Exception {
+		if ("SHA256withEC".equalsIgnoreCase(signatureMethod) || "SHA256withECDH".equalsIgnoreCase(signatureMethod)) {
+			signatureMethod = "SHA256withECDSA";
+		}
+
 		showProgress();
 
-		itemsToDo = fileToVerify.length();
+		itemsToDo = dataInputStream.available();
 
 		Security.addProvider(new BouncyCastleProvider());
 
-		try (BufferedInputStream dataStream = new BufferedInputStream(new FileInputStream(fileToVerify))) {
+		try (BufferedInputStream dataStream = new BufferedInputStream(dataInputStream)) {
 			final Signature signature = Signature.getInstance(signatureMethod, BouncyCastleProvider.PROVIDER_NAME);
 			signature.initVerify(publicKey);
 			final byte[] buffer = new byte[4096];
@@ -58,8 +60,6 @@ public class FileVerificationWorker extends WorkerSimple<Boolean> {
 					showProgress();
 				}
 			}
-
-			final byte[] signatureData = FileUtilities.readFileToByteArray(signatureFile);
 
 			return signature.verify(signatureData);
 		} catch (final Exception e) {
