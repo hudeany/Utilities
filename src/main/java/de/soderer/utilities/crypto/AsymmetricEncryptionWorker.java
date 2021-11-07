@@ -58,7 +58,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		this.encryptionMethod = encryptionMethod;
 
 		if (Utilities.isBlank(this.encryptionMethod)) {
-			this.encryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD;
+			this.encryptionMethod = CryptographicUtilities.DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA;
 		}
 	}
 

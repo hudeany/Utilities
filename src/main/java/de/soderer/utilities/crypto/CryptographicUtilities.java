@@ -155,19 +155,26 @@ public class CryptographicUtilities {
 			"RC4", "HC128", "HC256", "Salsa20", "VMPC", "Grainv1", "Grain128" };
 
 	public static final String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES/CBC/PKCS7Padding";
-	public static final String[] KNOWN_SYMMETRIC_ENCRYPTION_METHODS = new String[] { DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, "DES/CBC/PKCS5Padding", "DES/CBC/X9.23Padding", "DES/OFB8/NoPadding",
+	public static final String[] KNOWN_SYMMETRIC_ENCRYPTION_METHODS = new String[] {
+			"AES/CBC/PKCS7Padding", "DES/CBC/PKCS5Padding", "DES/CBC/X9.23Padding", "DES/OFB8/NoPadding",
 			"DES/ECB/WithCTS", "IDEA/CBC/ISO10126Padding", "IDEA/CBC/ISO7816-4Padding", "SKIPJACK/ECB/PKCS7Padding" };
 
 	public static final String DEFAULT_SIGNATURE_METHOD_RSA = "SHA256WithRSA";
+	public static final String[] KNOWN_SIGNATURE_METHODS_RSA = new String[] { "MD2withRSA", "MD5withRSA", "SHA1withRSA",
+			"RIPEMD128withRSA", "RIPEMD160withRSA", "RIPEMD256withRSA", "SHA256withRSA", "SHA224withRSA", "SHA384withRSA",
+			"SHA512withRSA", "SHA1withRSAandMGF1", "SHA256withRSAandMGF1", "SHA384withRSAandMGF1", "SHA512withRSAandMGF1" };
+
 	public static final String DEFAULT_SIGNATURE_METHOD_EC = "SHA256withECDSA";
-	public static final String[] KNOWN_SIGNATURE_METHODS = new String[] { DEFAULT_SIGNATURE_METHOD_RSA, DEFAULT_SIGNATURE_METHOD_EC, "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
-			"GOST3411withGOST3410-2001", "MD2withRSA", "MD5withRSA", "SHA1withRSA", "RIPEMD128withRSA", "RIPEMD160withRSA", "RIPEMD160withECDSA", "RIPEMD256withRSA", "SHA1withDSA", "NONEwithDSA",
-			"SHA1withECDSA", "NONEwithECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA256withRSA", "SHA384withECDSA", "SHA512withECDSA", "SHA1withECNR", "SHA224withECNR", "SHA256withECNR", "SHA384withECNR",
-			"SHA512withECNR", "SHA224withRSA", "SHA384withRSA", "SHA512withRSA", "SHA1withRSAandMGF1", "SHA256withRSAandMGF1", "SHA384withRSAandMGF1", "SHA512withRSAandMGF1" };
+	public static final String[] KNOWN_SIGNATURE_METHODS_EC = new String[] { "RIPEMD160withECDSA", "SHA1withECDSA",
+			"NONEwithECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA384withECDSA", "SHA512withECDSA", "SHA1withECNR",
+			"SHA224withECNR", "SHA256withECNR", "SHA384withECNR", "SHA512withECNR" };
+
+	public static final String[] KNOWN_SIGNATURE_METHODS_OTHERS = new String[] { "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
+			"GOST3411withGOST3410-2001", "SHA1withDSA", "NONEwithDSA", };
 
 	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "EC", "ElGamal" };
-	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD = "RSA/ECB/PKCS1Padding";
 
+	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA = "RSA/ECB/PKCS1Padding";
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA = new String[] {
 			"RSA/NONE/PKCS1Padding",
 			"RSA/NONE/OAEPPadding",
@@ -182,10 +189,12 @@ public class CryptographicUtilities {
 			"RSA/NONE/ISO9796-1Padding"
 	};
 
+	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_EC = "ECIES";
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_EC = new String[] {
 			"ECIES"
 	};
 
+	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_ELGAMAL = "ELGAMAL/NONE/PKCS1PADDING";
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_ELGAMAL = new String[] {
 			"ELGAMAL/NONE/NoPadding",
 			"ELGAMAL/NONE/PKCS1PADDING",
@@ -959,7 +968,17 @@ public class CryptographicUtilities {
 	}
 
 	public static String checkSignatureMethodName(final String signatureMethodName) {
-		for (final String signatureMethodNameItem : KNOWN_SIGNATURE_METHODS) {
+		for (final String signatureMethodNameItem : KNOWN_SIGNATURE_METHODS_RSA) {
+			if (signatureMethodNameItem.replace(" ", "").replace("_", "").replace("/", "").replace("-", "").equalsIgnoreCase(signatureMethodName.replace(" ", "").replace("_", "").replace("/", "").replace("-", ""))) {
+				return signatureMethodNameItem;
+			}
+		}
+		for (final String signatureMethodNameItem : KNOWN_SIGNATURE_METHODS_EC) {
+			if (signatureMethodNameItem.replace(" ", "").replace("_", "").replace("/", "").replace("-", "").equalsIgnoreCase(signatureMethodName.replace(" ", "").replace("_", "").replace("/", "").replace("-", ""))) {
+				return signatureMethodNameItem;
+			}
+		}
+		for (final String signatureMethodNameItem : KNOWN_SIGNATURE_METHODS_OTHERS) {
 			if (signatureMethodNameItem.replace(" ", "").replace("_", "").replace("/", "").replace("-", "").equalsIgnoreCase(signatureMethodName.replace(" ", "").replace("_", "").replace("/", "").replace("-", ""))) {
 				return signatureMethodNameItem;
 			}
