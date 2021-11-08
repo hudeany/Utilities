@@ -21,6 +21,7 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 	private byte[] salt = null;
 	private byte[] initializationVector = null;
 	private String encryptionMethod = null;
+	private long dataSizeHint = -1;
 
 	/**
 	 * Symmetric encrypt inputStream
@@ -65,6 +66,10 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	public void setDataSizeHint(final long dataSizeHint) {
+		this.dataSizeHint = dataSizeHint;
+	}
+
 	@Override
 	public Boolean work() throws Exception {
 		if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
@@ -77,7 +82,7 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 
 		showProgress();
 
-		itemsToDo = dataInputStream.available();
+		itemsToDo = Math.max(dataSizeHint, dataInputStream.available());
 
 		try (InputStream inputStream = new BufferedInputStream(dataInputStream)) {
 			final byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);

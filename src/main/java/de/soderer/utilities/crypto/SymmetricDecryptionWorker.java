@@ -24,6 +24,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 	private byte[] salt = null;
 	private byte[] initializationVector = null;
 	private String encryptionMethod = null;
+	private long dataSizeHint = -1;
 
 	/**
 	 * Symmetric decrypt inputStream
@@ -70,6 +71,10 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	public void setDataSizeHint(final long dataSizeHint) {
+		this.dataSizeHint = dataSizeHint;
+	}
+
 	@Override
 	public Boolean work() throws Exception {
 		if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
@@ -82,7 +87,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 
 		showProgress();
 
-		itemsToDo = encryptedDataInputStream.available();
+		itemsToDo = Math.max(dataSizeHint, encryptedDataInputStream.available());
 
 		Security.addProvider(new BouncyCastleProvider());
 

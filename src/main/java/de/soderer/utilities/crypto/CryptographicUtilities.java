@@ -205,8 +205,9 @@ public class CryptographicUtilities {
 			"secp112r1", "secp112r2", "secp128r1", "secp128r2", "secp160k1", "secp160r1", "secp160r2", "secp192k1",
 			"secp192r1", //= prime192v1
 			"prime192v1", //= secp192r1
-			"secp224k1", "secp224r1", "secp256k1",
-			"secp256r1", // = prime256v1
+			"secp224k1", "secp224r1",
+			"secp256k1", //= Bitcoin
+			"secp256r1", //= prime256v1
 			"prime256v1", //= secp256r1
 			"secp384r1", "secp521r1",
 			"sect113r1", "sect113r2", "sect131r1", "sect131r2", "sect163k1", "sect163r1", "sect163r2", "sect193r1",

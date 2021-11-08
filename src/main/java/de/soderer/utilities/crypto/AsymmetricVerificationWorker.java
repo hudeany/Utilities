@@ -17,6 +17,7 @@ public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
 	private byte[] signatureData = null;
 	private PublicKey publicKey = null;
 	private String signatureMethod = null;
+	private long dataSizeHint = -1;
 
 	public AsymmetricVerificationWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final byte[] signatureData, final PublicKey publicKey) {
 		this(parent, dataInputStream, signatureData, publicKey, null);
@@ -34,6 +35,10 @@ public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	public void setDataSizeHint(final long dataSizeHint) {
+		this.dataSizeHint = dataSizeHint;
+	}
+
 	@Override
 	public Boolean work() throws Exception {
 		signatureMethod = signatureMethod.toLowerCase();
@@ -45,7 +50,7 @@ public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
 
 		showProgress();
 
-		itemsToDo = dataInputStream.available();
+		itemsToDo = Math.max(dataSizeHint, dataInputStream.available());
 
 		Security.addProvider(new BouncyCastleProvider());
 

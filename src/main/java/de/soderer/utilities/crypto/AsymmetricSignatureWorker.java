@@ -16,6 +16,7 @@ public class AsymmetricSignatureWorker extends WorkerSimple<byte[]> {
 	private InputStream dataInputStream = null;
 	private PrivateKey privateKey = null;
 	private String signatureMethod = null;
+	private long dataSizeHint = -1;
 
 	public AsymmetricSignatureWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final PrivateKey privateKey) {
 		this(parent, dataInputStream, privateKey, null);
@@ -32,6 +33,10 @@ public class AsymmetricSignatureWorker extends WorkerSimple<byte[]> {
 		}
 	}
 
+	public void setDataSizeHint(final long dataSizeHint) {
+		this.dataSizeHint = dataSizeHint;
+	}
+
 	@Override
 	public byte[] work() throws Exception {
 		signatureMethod = signatureMethod.toLowerCase();
@@ -43,7 +48,7 @@ public class AsymmetricSignatureWorker extends WorkerSimple<byte[]> {
 
 		showProgress();
 
-		itemsToDo = dataInputStream.available();
+		itemsToDo = Math.max(dataSizeHint, dataInputStream.available());
 
 		Security.addProvider(new BouncyCastleProvider());
 

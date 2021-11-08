@@ -28,6 +28,7 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 	private OutputStream decryptedDataOutputStream = null;
 	private PrivateKey privateKey = null;
 	private String encryptionMethod = null;
+	private long dataSizeHint = -1;
 
 	/**
 	 * Asymmetric decrypt inputStream
@@ -62,6 +63,10 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	public void setDataSizeHint(final long dataSizeHint) {
+		this.dataSizeHint = dataSizeHint;
+	}
+
 	@Override
 	public Boolean work() throws Exception {
 		if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
@@ -71,7 +76,7 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 
 		showProgress();
 
-		itemsToDo = encryptedDataInputStream.available();
+		itemsToDo = Math.max(dataSizeHint, encryptedDataInputStream.available());
 
 		Security.addProvider(new BouncyCastleProvider());
 
