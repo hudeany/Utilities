@@ -2,7 +2,6 @@ package de.soderer.utilities;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -20,7 +19,6 @@ import de.soderer.utilities.code.ClassUtilities;
 
 public class SecureDataStoreTest {
 	public static final String TEST_PASSWORD = "test@PasswordÄÖÜäöüß";
-	public static final String TEST_SALT = "testSalt";
 
 	public static final String TEST_ENTRYNAME = "entry Näme";
 
@@ -109,10 +107,10 @@ public class SecureDataStoreTest {
 			secureDataEntry.testSecureDataStoreEntry = new TestSecureDataStoreEntry();
 
 			testKeyStore_ForSave.addEntry(TEST_ENTRYNAME, secureDataEntry);
-			testKeyStore_ForSave.save(testStoreFile, TEST_PASSWORD.toCharArray(), TEST_SALT.getBytes(StandardCharsets.UTF_8));
+			testKeyStore_ForSave.save(testStoreFile, TEST_PASSWORD.toCharArray());
 
 			final SecureDataStore testKeyStore_ForLoad = new SecureDataStore();
-			testKeyStore_ForLoad.load(testStoreFile, TEST_PASSWORD.toCharArray(), TEST_SALT.getBytes(StandardCharsets.UTF_8));
+			testKeyStore_ForLoad.load(testStoreFile, TEST_PASSWORD.toCharArray());
 
 			final Set<String> loadedSecureDataEntryNames = testKeyStore_ForLoad.getEntryNames(TestSecureDataStoreEntry.class);
 			Assert.assertEquals(1, loadedSecureDataEntryNames.size());
@@ -122,7 +120,7 @@ public class SecureDataStoreTest {
 			assertEquals(secureDataEntry, loadedSecureDataEntry);
 
 			try {
-				new SecureDataStore().load(testStoreFile, "abc".toCharArray(), TEST_SALT.getBytes(StandardCharsets.UTF_8));
+				new SecureDataStore().load(testStoreFile, "abc".toCharArray());
 				Assert.fail("Missing expected exception");
 			} catch (final WrongPasswordException e) {
 				Assert.assertNull(e.getMessage());

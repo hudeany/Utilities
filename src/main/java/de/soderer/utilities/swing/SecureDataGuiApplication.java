@@ -12,19 +12,17 @@ public class SecureDataGuiApplication extends JFrame {
 	private static final long serialVersionUID = 1869492889654406822L;
 
 	private final File keystoreFile;
-	private final byte[] keystoreSalt;
 
 	private char[] rememberedKeystorePassword = null;
 
 	public SecureDataGuiApplication() throws Exception {
-		this(null, null);
+		this(null);
 	}
 
-	public SecureDataGuiApplication(final File keystoreFile, final byte[] keystoreSalt) throws Exception {
+	public SecureDataGuiApplication(final File keystoreFile) throws Exception {
 		super();
 
 		this.keystoreFile = keystoreFile;
-		this.keystoreSalt = keystoreSalt;
 	}
 
 	protected boolean keystoreExists() {
@@ -51,7 +49,7 @@ public class SecureDataGuiApplication extends JFrame {
 				final Credentials credentials = keystoreCredentialsDialog.open();
 				if (credentials != null) {
 					final char[] keystorePassword = credentials.getPassword();
-					secureDataStore.save(keystoreFile, keystorePassword, keystoreSalt);
+					secureDataStore.save(keystoreFile, keystorePassword);
 					if (keystoreCredentialsDialog.isRememberCredentials()) {
 						rememberedKeystorePassword = keystorePassword;
 					}
@@ -64,7 +62,7 @@ public class SecureDataGuiApplication extends JFrame {
 				final Credentials credentials = keystoreCredentialsDialog.open();
 				if (credentials != null) {
 					final char[] keystorePassword = credentials.getPassword();
-					secureDataStore.save(keystoreFile, keystorePassword, keystoreSalt);
+					secureDataStore.save(keystoreFile, keystorePassword);
 					if (keystoreCredentialsDialog.isRememberCredentials()) {
 						rememberedKeystorePassword = keystorePassword;
 					}
@@ -83,7 +81,7 @@ public class SecureDataGuiApplication extends JFrame {
 				try {
 					keystorePassword = rememberedKeystorePassword;
 					keystore = new SecureDataStore();
-					keystore.load(keystoreFile, keystorePassword, keystoreSalt);
+					keystore.load(keystoreFile, keystorePassword);
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					keystorePassword = null;
 					keystore = null;
@@ -94,7 +92,7 @@ public class SecureDataGuiApplication extends JFrame {
 				try {
 					keystorePassword = "".toCharArray();
 					keystore = new SecureDataStore();
-					keystore.load(keystoreFile, keystorePassword, keystoreSalt);
+					keystore.load(keystoreFile, keystorePassword);
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					keystorePassword = null;
 					keystore = null;
@@ -115,7 +113,7 @@ public class SecureDataGuiApplication extends JFrame {
 						// try to use this keystore password
 						try {
 							keystore = new SecureDataStore();
-							keystore.load(keystoreFile, keystorePassword, keystoreSalt);
+							keystore.load(keystoreFile, keystorePassword);
 
 							if (keystoreCredentialsDialog.isRememberCredentials()) {
 								rememberedKeystorePassword = keystorePassword;

@@ -9,7 +9,6 @@ import de.soderer.utilities.SecureDataStore;
 
 public class SecureDataGuiApplication extends MainDialog {
 	private final File keystoreFile;
-	private final byte[] keystoreSalt;
 
 	private char[] rememberedKeystorePassword = null;
 
@@ -22,14 +21,13 @@ public class SecureDataGuiApplication extends MainDialog {
 	}
 
 	public SecureDataGuiApplication(final Display display) throws Exception {
-		this(display, null, null);
+		this(display, null);
 	}
 
-	public SecureDataGuiApplication(final Display display, final File keystoreFile, final byte[] keystoreSalt) throws Exception {
+	public SecureDataGuiApplication(final Display display, final File keystoreFile) throws Exception {
 		super(display);
 
 		this.keystoreFile = keystoreFile;
-		this.keystoreSalt = keystoreSalt;
 	}
 
 	protected boolean keystoreExists() {
@@ -55,7 +53,7 @@ public class SecureDataGuiApplication extends MainDialog {
 				keystoreCredentialsDialog.setRememberCredentialsText(LangResources.get("keepPasswordInMemory"));
 				if (keystoreCredentialsDialog.open() != null) {
 					final char[] keystorePassword = keystoreCredentialsDialog.getCredentials().getPassword();
-					secureDataStore.save(keystoreFile, keystorePassword, keystoreSalt);
+					secureDataStore.save(keystoreFile, keystorePassword);
 					if (keystoreCredentialsDialog.isRememberCredentials()) {
 						rememberedKeystorePassword = keystorePassword;
 					}
@@ -67,7 +65,7 @@ public class SecureDataGuiApplication extends MainDialog {
 				keystoreCredentialsDialog.setRememberCredentialsText(LangResources.get("keepPasswordInMemory"));
 				if (keystoreCredentialsDialog.open() != null) {
 					final char[] keystorePassword = keystoreCredentialsDialog.getCredentials().getPassword();
-					secureDataStore.save(keystoreFile, keystorePassword, keystoreSalt);
+					secureDataStore.save(keystoreFile, keystorePassword);
 					if (keystoreCredentialsDialog.isRememberCredentials()) {
 						rememberedKeystorePassword = keystorePassword;
 					}
@@ -86,7 +84,7 @@ public class SecureDataGuiApplication extends MainDialog {
 				try {
 					keystorePassword = rememberedKeystorePassword;
 					keystore = new SecureDataStore();
-					keystore.load(keystoreFile, keystorePassword, keystoreSalt);
+					keystore.load(keystoreFile, keystorePassword);
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					keystorePassword = null;
 					keystore = null;
@@ -97,7 +95,7 @@ public class SecureDataGuiApplication extends MainDialog {
 				try {
 					keystorePassword = "".toCharArray();
 					keystore = new SecureDataStore();
-					keystore.load(keystoreFile, keystorePassword, keystoreSalt);
+					keystore.load(keystoreFile, keystorePassword);
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					keystorePassword = null;
 					keystore = null;
@@ -117,7 +115,7 @@ public class SecureDataGuiApplication extends MainDialog {
 						// try to use this keystore password
 						try {
 							keystore = new SecureDataStore();
-							keystore.load(keystoreFile, keystorePassword, keystoreSalt);
+							keystore.load(keystoreFile, keystorePassword);
 
 							if (keystoreCredentialsDialog.isRememberCredentials()) {
 								rememberedKeystorePassword = keystorePassword;

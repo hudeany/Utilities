@@ -21,53 +21,41 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 	private InputStream encryptedDataInputStream = null;
 	private OutputStream decryptedDataOutputStream = null;
 	private char[] password = null;
-	private byte[] salt = null;
-	private byte[] initializationVector = null;
 	private String encryptionMethod = null;
 	private long dataSizeHint = -1;
+
+	private final int randomSaltSize = 16;
 
 	/**
 	 * Symmetric decrypt inputStream
 	 *
 	 * @param parent
-	 * @param fileToDecrypt
-	 * @param decryptedFile
+	 * @param encryptedDataInputStream
+	 * @param decryptedDataOutputStream
 	 * @param password
 	 */
 	public SymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final char[] password) {
-		this(parent, encryptedDataInputStream, decryptedDataOutputStream, password, null, null, null);
+		this(parent, encryptedDataInputStream, decryptedDataOutputStream, password, null);
 	}
 
 	/**
 	 * Symmetric decrypt inputStream
 	 *
 	 * @param parent
-	 * @param fileToDecrypt
-	 * @param decryptedFile
+	 * @param encryptedDataInputStream
+	 * @param decryptedDataOutputStream
 	 * @param password
 	 * @param encryptionMethod
-	 * @param salt
-	 * @param initalizationVector
 	 */
-	public SymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final char[] password, final String encryptionMethod, final byte[] salt, final byte[] initializationVector) {
+	public SymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final char[] password, final String encryptionMethod) {
 		super(parent);
 		this.encryptedDataInputStream = encryptedDataInputStream;
 		this.decryptedDataOutputStream = decryptedDataOutputStream;
 		this.password = password;
 		this.encryptionMethod = encryptionMethod;
-		this.salt = salt;
-		this.initializationVector = initializationVector;
 
 		if (Utilities.isBlank(this.encryptionMethod)) {
 			this.encryptionMethod = CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD;
-		}
-
-		if (this.salt == null) {
-			this.salt = CryptographicUtilities.DEFAULT_SALT;
-		}
-
-		if (this.initializationVector == null) {
-			this.initializationVector = CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR;
 		}
 	}
 
@@ -91,29 +79,51 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 
 		Security.addProvider(new BouncyCastleProvider());
 
+		byte[] salt = null;
+		byte[] initializationVector = null;
 		try (OutputStream outputStream = new BufferedOutputStream(decryptedDataOutputStream)) {
-			final Cipher decryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
-			final byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
-			final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, encryptionMethod);
-			decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
-			try (InputStream inputStream = new CipherInputStream(new BufferedInputStream(encryptedDataInputStream), decryptCipher)) {
-				final int bufferSize = decryptCipher.getBlockSize() <= 0 ? 4096 : decryptCipher.getBlockSize();
-				final byte[] buffer = new byte[bufferSize];
-				int bytesRead;
-				while ((bytesRead = inputStream.read(buffer)) > -1) {
-					if (cancel) {
-						break;
-					} else {
-						outputStream.write(buffer, 0, bytesRead);
-						itemsDone += bytesRead;
-						showProgress();
+			try (InputStream inputStream = new BufferedInputStream(encryptedDataInputStream)) {
+				salt = new byte[randomSaltSize];
+				final int readSaltBytes = inputStream.read(salt);
+				if (readSaltBytes != salt.length) {
+					throw new Exception("Cannot read password salt prefix: Data is too short");
+				}
+
+				final Cipher symetricDecryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
+				final byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
+				final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, encryptionMethod);
+
+				initializationVector = new byte[symetricDecryptCipher.getBlockSize()];
+				final int readIvBytes = inputStream.read(initializationVector);
+				if (readIvBytes != initializationVector.length) {
+					throw new Exception("Cannot read initialization vector prefix: Data is too short");
+				}
+
+				symetricDecryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(initializationVector));
+
+				try (CipherInputStream cipherInputStream = new CipherInputStream(inputStream, symetricDecryptCipher)) {
+					final int bufferSize = symetricDecryptCipher.getBlockSize() <= 0 ? 4096 : symetricDecryptCipher.getBlockSize();
+					final byte[] buffer = new byte[bufferSize];
+					int bytesRead;
+					while ((bytesRead = cipherInputStream.read(buffer)) > -1) {
+						if (cancel) {
+							break;
+						} else {
+							outputStream.write(buffer, 0, bytesRead);
+							itemsDone += bytesRead;
+							showProgress();
+						}
 					}
 				}
+
 			}
 
 			return true;
 		} catch (final Exception e) {
 			throw new Exception("Error while decrypting: " + e.getMessage(), e);
+		} finally {
+			Utilities.clear(initializationVector);
+			Utilities.clear(salt);
 		}
 	}
 }

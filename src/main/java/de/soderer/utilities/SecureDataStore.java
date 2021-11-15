@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
@@ -30,13 +31,14 @@ import de.soderer.utilities.json.JsonWriter;
 
 public class SecureDataStore {
 	private static final String SYMMETRIC_ENCRYPTION_METHOD = "AES";
+	private static final int RANDOMSALTSIZE = 16;
 
 	/**
 	 * First key is class name of entries grouped by their class name, second key is the entry name
 	 */
 	private Map<String, Map<String, Object>> dataEntries = new HashMap<>();
 
-	public void save(final File storeFile, char[] password, final byte[] salt) throws Exception {
+	public void save(final File storeFile, char[] password) throws Exception {
 		try {
 			if (storeFile == null) {
 				throw new Exception("SecureDataStore file is undefined");
@@ -44,12 +46,17 @@ public class SecureDataStore {
 				if (password == null) {
 					password = "".toCharArray();
 				}
-				try (FileOutputStream fos = new FileOutputStream(storeFile)) {
+				byte[] salt = null;
+				try (FileOutputStream outputStream = new FileOutputStream(storeFile)) {
+					salt = new byte[RANDOMSALTSIZE];
+					new SecureRandom().nextBytes(salt);
+					outputStream.write(salt);
+
 					final byte[] keyBytes = stretchPassword(password, salt);
 					final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 					final Cipher encryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
 					encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec);
-					try (CipherOutputStream cipherOutputStream = new CipherOutputStream(fos, encryptCipher)) {
+					try (CipherOutputStream cipherOutputStream = new CipherOutputStream(outputStream, encryptCipher)) {
 						try (JsonWriter jsonWriter = new JsonWriter(cipherOutputStream)) {
 							jsonWriter.openJsonArray();
 							for (final Entry<String, Map<String, Object>> entryMap : dataEntries.entrySet()) {
@@ -64,6 +71,8 @@ public class SecureDataStore {
 							jsonWriter.closeJsonArray();
 						}
 					}
+				} finally {
+					Utilities.clear(salt);
 				}
 			}
 		} finally {
@@ -71,7 +80,7 @@ public class SecureDataStore {
 		}
 	}
 
-	public void load(final File storeFile, char[] password, final byte[] salt) throws Exception {
+	public void load(final File storeFile, char[] password) throws Exception {
 		try {
 			if (storeFile == null) {
 				throw new Exception("SecureDataStore file is undefined");
@@ -82,12 +91,19 @@ public class SecureDataStore {
 					password = "".toCharArray();
 				}
 				dataEntries = new HashMap<>();
-				try (FileInputStream fis = new FileInputStream(storeFile)) {
+				byte[] salt = null;
+				try (FileInputStream inputStream = new FileInputStream(storeFile)) {
+					salt = new byte[RANDOMSALTSIZE];
+					final int readSaltBytes = inputStream.read(salt);
+					if (readSaltBytes != salt.length) {
+						throw new Exception("Cannot read password salt prefix: Data is too short");
+					}
+
 					final byte[] keyBytes = stretchPassword(password, salt);
 					final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 					final Cipher decryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
 					decryptCipher.init(Cipher.DECRYPT_MODE, keySpec);
-					try (CipherInputStream cipherInputStream = new CipherInputStream(fis, decryptCipher)) {
+					try (CipherInputStream cipherInputStream = new CipherInputStream(inputStream, decryptCipher)) {
 						try (JsonReader jsonReader = new JsonReader(cipherInputStream)) {
 							final JsonToken jsonToken = jsonReader.readNextToken();
 							if (jsonToken != JsonToken.JsonArray_Open) {
@@ -115,6 +131,8 @@ public class SecureDataStore {
 							throw e;
 						}
 					}
+				} finally {
+					Utilities.clear(salt);
 				}
 			}
 		} finally {

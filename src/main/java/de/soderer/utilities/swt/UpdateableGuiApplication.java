@@ -20,8 +20,8 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 
 	private ProgressDialog<?> updateProgressDialog;
 
-	public UpdateableGuiApplication(final Display display, final String applicationName, final Version applicationVersion, final File keystoreFile, final byte[] keystoreSalt) throws Exception {
-		super(display, keystoreFile, keystoreSalt);
+	public UpdateableGuiApplication(final Display display, final String applicationName, final Version applicationVersion, final File keystoreFile) throws Exception {
+		super(display, keystoreFile);
 
 		if (Utilities.isBlank(applicationName)) {
 			throw new Exception("Invalid empty applicationName");

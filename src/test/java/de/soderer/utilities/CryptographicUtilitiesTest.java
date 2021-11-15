@@ -79,7 +79,7 @@ public class CryptographicUtilitiesTest {
 			try {
 				final ByteArrayInputStream dataInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 				final ByteArrayOutputStream encryptedDataOutputStream = new ByteArrayOutputStream();
-				new SymmetricEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, password, CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, CryptographicUtilities.DEFAULT_SALT, CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR).work();
+				new SymmetricEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, password, CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).work();
 				encryptedData = encryptedDataOutputStream.toByteArray();
 			} catch (final Exception e) {
 				e.printStackTrace();
@@ -89,7 +89,7 @@ public class CryptographicUtilitiesTest {
 			try {
 				final ByteArrayInputStream encryptedDataInputStream = new ByteArrayInputStream(encryptedData);
 				final ByteArrayOutputStream dataOutputStream = new ByteArrayOutputStream();
-				new SymmetricDecryptionWorker(null, encryptedDataInputStream, dataOutputStream, password, CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, CryptographicUtilities.DEFAULT_SALT, CryptographicUtilities.DEFAULT_SYMMETRIC_INITALIZATION_VECTOR).work();
+				new SymmetricDecryptionWorker(null, encryptedDataInputStream, dataOutputStream, password, CryptographicUtilities.DEFAULT_SYMMETRIC_ENCRYPTION_METHOD).work();
 				final byte[] decryptedData = dataOutputStream.toByteArray();
 				Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
 			} catch (final Exception e) {

@@ -95,7 +95,6 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private Button action3Button;
 	private char[] inMemoryPassword;
 	private final File keystoreFile;
-	private final byte[] keystoreFileSalt;
 	private SecureDataStore keyStore = null;
 
 	private final Mode dialogMode;
@@ -109,15 +108,13 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	public RemoteFileDialog(final Shell parentShell, final String title, final Mode dialogMode) {
 		super(parentShell, title);
 		keystoreFile = null;
-		keystoreFileSalt = null;
 		inMemoryPassword = null;
 		this.dialogMode = dialogMode;
 	}
 
-	public RemoteFileDialog(final Shell parentShell, final String title, final Mode dialogMode, final File keystoreFile, final byte[] keystoreFileSalt, final char[] inMemoryPassword) {
+	public RemoteFileDialog(final Shell parentShell, final String title, final Mode dialogMode, final File keystoreFile, final char[] inMemoryPassword) {
 		super(parentShell, title);
 		this.keystoreFile = keystoreFile;
-		this.keystoreFileSalt = keystoreFileSalt;
 		this.inMemoryPassword = inMemoryPassword;
 		this.dialogMode = dialogMode;
 	}
@@ -182,7 +179,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (credentials != null) {
 						final char[] keystorePassword = credentials.getPassword();
 						try {
-							keyStore.save(keystoreFile, keystorePassword, keystoreFileSalt);
+							keyStore.save(keystoreFile, keystorePassword);
 						} catch (final Exception e) {
 							e.printStackTrace();
 						}
@@ -206,7 +203,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (credentials != null) {
 						final char[] keystorePassword = credentials.getPassword();
 						try {
-							keyStore.save(keystoreFile, keystorePassword, keystoreFileSalt);
+							keyStore.save(keystoreFile, keystorePassword);
 						} catch (final Exception e) {
 							e.printStackTrace();
 						}
@@ -886,7 +883,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			char[] passwordToUse = inMemoryPassword == null ? "".toCharArray() : Arrays.copyOf(inMemoryPassword, inMemoryPassword.length);
 			try {
 				keyStore = new SecureDataStore();
-				keyStore.load(keystoreFile, passwordToUse, keystoreFileSalt);
+				keyStore.load(keystoreFile, passwordToUse);
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				passwordToUse = null;
 				keyStore = null;
@@ -909,7 +906,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					try {
 						keyStore = new SecureDataStore();
 						// Kills the password after usage
-						keyStore.load(keystoreFile, passwordToUse, keystoreFileSalt);
+						keyStore.load(keystoreFile, passwordToUse);
 						passwordWasWrong = false;
 					} catch (final Exception e) {
 						e.printStackTrace();

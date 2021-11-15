@@ -33,7 +33,6 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 	private static final long serialVersionUID = -2855354859482098916L;
 
 	private final File securePreferencesFile;
-	private final byte[] salt;
 	private SecureDataStore secureDataStore = null;
 	private Object currentSecureDataEntry;
 
@@ -56,7 +55,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 	private final JTextField newNameField;
 	private final JTable preferencesTable;
 
-	public SecurePreferencesDialog(final Window parent, final String title, final String text, final File securePreferencesFile, final byte[] salt,
+	public SecurePreferencesDialog(final Window parent, final String title, final String text, final File securePreferencesFile,
 			final String textButton_Load, final String textButton_Create, final String textButton_Update, final String textButton_Delete, final String textButton_Save, final String textButton_Cancel, final String text_PasswordText,
 			final String text_Username, final String text_Password, final String text_OK, final String text_Cancel) {
 		super(parent, title);
@@ -68,7 +67,6 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 		this.text_Cancel = text_Cancel;
 
 		this.securePreferencesFile = securePreferencesFile;
-		this.salt = salt;
 
 		setResizable(false);
 
@@ -186,7 +184,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 					}
 					if (getPassword() != null) {
 						try {
-							secureDataStore.save(securePreferencesFile, getPassword(), salt);
+							secureDataStore.save(securePreferencesFile, getPassword());
 						} catch (final Exception e) {
 							e.printStackTrace();
 							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
@@ -222,7 +220,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 						}
 						if (getPassword() != null) {
 							try {
-								secureDataStore.save(securePreferencesFile, getPassword(), salt);
+								secureDataStore.save(securePreferencesFile, getPassword());
 							} catch (final Exception e) {
 								e.printStackTrace();
 								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
@@ -262,7 +260,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 					}
 					if (getPassword() != null) {
 						try {
-							secureDataStore.save(securePreferencesFile, getPassword(), salt);
+							secureDataStore.save(securePreferencesFile, getPassword());
 						} catch (final Exception e) {
 							e.printStackTrace();
 							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
@@ -308,7 +306,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 						}
 						if (getPassword() != null) {
 							try {
-								secureDataStore.save(securePreferencesFile, getPassword(), salt);
+								secureDataStore.save(securePreferencesFile, getPassword());
 							} catch (final Exception e) {
 								e.printStackTrace();
 								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
@@ -324,7 +322,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 				if (credentials != null) {
 					setPassword(credentials.getPassword());
 					try {
-						secureDataStore.save(securePreferencesFile, getPassword(), salt);
+						secureDataStore.save(securePreferencesFile, getPassword());
 					} catch (final Exception e) {
 						e.printStackTrace();
 						new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
@@ -395,7 +393,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 				while (secureDataStore == null && retry) {
 					try {
 						secureDataStore = new SecureDataStore();
-						secureDataStore.load(securePreferencesFile, getPassword(), salt);
+						secureDataStore.load(securePreferencesFile, getPassword());
 					} catch (@SuppressWarnings("unused") final WrongPasswordException e) {
 						secureDataStore = null;
 						final CredentialsDialog credentialsDialog = new CredentialsDialog((Window) getParent(), getTitle(), text_PasswordText, false, true, text_Username, text_Password, text_OK, text_Cancel);
