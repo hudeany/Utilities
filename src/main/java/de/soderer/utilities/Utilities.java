@@ -1647,4 +1647,12 @@ public class Utilities {
 		}
 		return returnList;
 	}
+
+	public static boolean isZipArchiveFile(final File potentialZipFile) throws FileNotFoundException, IOException {
+		try (FileInputStream inputStream = new FileInputStream(potentialZipFile)) {
+			final byte[] magicBytes = new byte[4];
+			final int readBytes = inputStream.read(magicBytes);
+			return readBytes == 4 && magicBytes[0] == 0x50 && magicBytes[1] == 0x4B && magicBytes[2] == 0x03 && magicBytes[3] == 0x04;
+		}
+	}
 }
