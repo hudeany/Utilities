@@ -99,10 +99,10 @@ public class Utilities {
 	 * @return
 	 */
 	public static byte[] gzipByteArray(final byte[] clearData) {
-		try (ByteArrayOutputStream encoded = new ByteArrayOutputStream();
-				GZIPOutputStream gzipCompresser = new GZIPOutputStream(encoded)) {
-			gzipCompresser.write(clearData);
-			gzipCompresser.close();
+		try (ByteArrayOutputStream encoded = new ByteArrayOutputStream()) {
+			try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(encoded)) {
+				gzipOutputStream.write(clearData);
+			}
 			return encoded.toByteArray();
 		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
@@ -117,10 +117,10 @@ public class Utilities {
 	 * @throws Exception
 	 */
 	public static byte[] gunzipByteArray(final byte[] zippedData) throws Exception {
-		try {
-			final ByteArrayOutputStream decoded = new ByteArrayOutputStream();
-			final ByteArrayInputStream encoded = new ByteArrayInputStream(zippedData);
-			IoUtilities.copy(new GZIPInputStream(encoded), decoded);
+		try (ByteArrayOutputStream decoded = new ByteArrayOutputStream()) {
+			try (GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(zippedData))) {
+				IoUtilities.copy(gzipInputStream, decoded);
+			}
 			return decoded.toByteArray();
 		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
@@ -412,6 +412,7 @@ public class Utilities {
 			value = value.trim();
 			return "true".equalsIgnoreCase(value)
 					|| "+".equalsIgnoreCase(value)
+					|| "1".equalsIgnoreCase(value)
 					|| "yes".equalsIgnoreCase(value)
 					|| "y".equalsIgnoreCase(value)
 					|| "ja".equalsIgnoreCase(value)
