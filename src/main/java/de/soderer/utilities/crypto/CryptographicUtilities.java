@@ -283,10 +283,10 @@ public class CryptographicUtilities {
 
 		try {
 			final X500Name dnName = new X500Name(subjectDN);
-			final BigInteger certSerialNumber = new BigInteger(64, new SecureRandom());
+			final BigInteger certificateSerialNumber = new BigInteger(64, new SecureRandom());
 
 			final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
-			final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, validFrom, validUntil, dnName, keyPair.getPublic());
+			final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(dnName, certificateSerialNumber, validFrom, validUntil, dnName, keyPair.getPublic());
 			if (allowedSubCaCertificateLevels >= 0) {
 				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCaCertificateLevels));
 			} else {
@@ -569,13 +569,13 @@ public class CryptographicUtilities {
 			for (final JarEntry jarEntry : jarEntries) {
 				if (!jarEntry.isDirectory()) {
 					// Every file must be signed, except for files in META-INF
-					final Certificate[] certs = jarEntry.getCertificates();
-					if ((certs == null) || (certs.length == 0)) {
+					final Certificate[] certificates = jarEntry.getCertificates();
+					if ((certificates == null) || (certificates.length == 0)) {
 						if (!jarEntry.getName().startsWith("META-INF")) {
 							returnData.add("Contains unsigned files");
 						}
 					} else {
-						for (final Certificate cert : certs) {
+						for (final Certificate cert : certificates) {
 							if (cert instanceof X509Certificate) {
 								final X509Certificate certificate = (X509Certificate) cert;
 								if (certificate.getBasicConstraints() == -1) {
@@ -597,8 +597,8 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCerts) throws Exception {
-		if (trustedCerts == null || trustedCerts.size() == 0) {
+	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCertificates) throws Exception {
+		if (trustedCertificates == null || trustedCertificates.size() == 0) {
 			return false;
 		}
 
@@ -627,16 +627,16 @@ public class CryptographicUtilities {
 			for (final JarEntry jarEntry : jarEntries) {
 				if (!jarEntry.isDirectory()) {
 					// Every file must be signed, except for files in META-INF
-					final Certificate[] certs = jarEntry.getCertificates();
-					if ((certs == null) || (certs.length == 0)) {
+					final Certificate[] certificates = jarEntry.getCertificates();
+					if ((certificates == null) || (certificates.length == 0)) {
 						if (!jarEntry.getName().startsWith("META-INF")) {
 							throw new SecurityException("The jar file contains unsigned files.");
 						}
 					} else {
 						boolean isSignedByTrustedCert = false;
 
-						for (final Certificate chainRootCertificate : certs) {
-							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCerts)) {
+						for (final Certificate chainRootCertificate : certificates) {
+							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCertificates)) {
 								isSignedByTrustedCert = true;
 								break;
 							}
@@ -675,7 +675,7 @@ public class CryptographicUtilities {
 	}
 
 	/**
-	 * Check if "certificate" was certified by "possibleCertifierCerificate"
+	 * Check if "certificate" was certified by "trustedCertificates"
 	 *
 	 * @param cert
 	 * @param possibleCertifierCerificate
@@ -701,15 +701,15 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static X509Certificate[] getChainRootCertificates(final Certificate[] certs) {
+	public static X509Certificate[] getChainRootCertificates(final Certificate[] certificates) {
 		final Vector<X509Certificate> result = new Vector<>();
-		for (int i = 0; i < certs.length - 1; i++) {
-			if (!((X509Certificate) certs[i + 1]).getSubjectX500Principal().equals(((X509Certificate) certs[i]).getIssuerX500Principal())) {
-				result.addElement((X509Certificate) certs[i]);
+		for (int i = 0; i < certificates.length - 1; i++) {
+			if (!((X509Certificate) certificates[i + 1]).getSubjectX500Principal().equals(((X509Certificate) certificates[i]).getIssuerX500Principal())) {
+				result.addElement((X509Certificate) certificates[i]);
 			}
 		}
-		// The final entry in the certs array is always a root certificate
-		result.addElement((X509Certificate) certs[certs.length - 1]);
+		// The final entry in the certificates array is always a root certificate
+		result.addElement((X509Certificate) certificates[certificates.length - 1]);
 		final X509Certificate[] returnValue = new X509Certificate[result.size()];
 		result.copyInto(returnValue);
 		return returnValue;
