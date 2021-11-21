@@ -908,6 +908,14 @@ public class CryptographicUtilities {
 		dataOutput += "Algorithm: " + key.getAlgorithm();
 		dataOutput += "\n";
 
+		if (key instanceof PrivateKey) {
+			dataOutput += "Keytype: PrivateKey";
+			dataOutput += "\n";
+		} else if (key instanceof PublicKey) {
+			dataOutput += "Keytype: PublicKey";
+			dataOutput += "\n";
+		}
+
 		if (key instanceof RSAKey) {
 			dataOutput += "Key length: " + ((RSAKey) key).getModulus().bitLength();
 			dataOutput += "\n";
