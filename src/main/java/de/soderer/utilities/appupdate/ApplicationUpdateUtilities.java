@@ -201,22 +201,22 @@ public class ApplicationUpdateUtilities {
 			final boolean downloadSuccess = getNewApplicationVersionFile(updateParent, username, password, updateFileLocation, downloadTempFile);
 			if (downloadSuccess) {
 				if (Utilities.isNotEmpty(trustedCaCertificateFileName)) {
-					Collection<? extends Certificate> trustedCerts = null;
+					Collection<? extends Certificate> trustedCertificates = null;
 					final ClassLoader applicationClassLoader = updateParent.getClass().getClassLoader();
 					if (applicationClassLoader == null) {
 						showUpdateError(updateParent, "Update error:\nApplications classloader is not readable");
 						return;
 					}
 					try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
-						trustedCerts = CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(trustedUpdateCertificatesStream));
+						trustedCertificates = CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(trustedUpdateCertificatesStream));
 					} catch (final Exception e) {
 						showUpdateError(updateParent, "Update error:\nTrusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
 						return;
 					}
-					if (trustedCerts == null || trustedCerts.size() == 0) {
+					if (trustedCertificates == null || trustedCertificates.size() == 0) {
 						showUpdateError(updateParent, "Update error:\nTrusted CA certificate is missing");
 						return;
-					} else if (!verifyJarSignature(downloadTempFile, trustedCerts)) {
+					} else if (!verifyJarSignature(downloadTempFile, trustedCertificates)) {
 						showUpdateError(updateParent, "Update error:\nSignature of updatefile is invalid");
 						return;
 					}
@@ -540,8 +540,8 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCerts) throws Exception {
-		if (trustedCerts == null || trustedCerts.size() == 0) {
+	private static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCertificates) throws Exception {
+		if (trustedCertificates == null || trustedCertificates.size() == 0) {
 			return false;
 		}
 
@@ -570,16 +570,16 @@ public class ApplicationUpdateUtilities {
 			for (final JarEntry jarEntry : jarEntries) {
 				if (!jarEntry.isDirectory()) {
 					// Every file must be signed, except for files in META-INF
-					final Certificate[] certs = jarEntry.getCertificates();
-					if ((certs == null) || (certs.length == 0)) {
+					final Certificate[] certificates = jarEntry.getCertificates();
+					if ((certificates == null) || (certificates.length == 0)) {
 						if (!jarEntry.getName().startsWith("META-INF")) {
 							throw new SecurityException("The jar file contains unsigned files.");
 						}
 					} else {
 						boolean isSignedByTrustedCert = false;
 
-						for (final Certificate chainRootCertificate : certs) {
-							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCerts)) {
+						for (final Certificate chainRootCertificate : certificates) {
+							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCertificates)) {
 								isSignedByTrustedCert = true;
 								break;
 							}
@@ -598,13 +598,13 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<? extends Certificate> trustedCerts) throws Exception {
+	private static boolean verifyChainOfTrust(final X509Certificate cert, final Collection<? extends Certificate> trustedCertificates) throws Exception {
 		final CertPathBuilder certifier = CertPathBuilder.getInstance("PKIX");
 		final X509CertSelector targetConstraints = new X509CertSelector();
 		targetConstraints.setCertificate(cert);
 
 		final Set<TrustAnchor> trustAnchors = new HashSet<>();
-		for (final Certificate trustedRootCert : trustedCerts) {
+		for (final Certificate trustedRootCert : trustedCertificates) {
 			trustAnchors.add(new TrustAnchor((X509Certificate) trustedRootCert, null));
 		}
 

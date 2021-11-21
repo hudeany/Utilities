@@ -56,12 +56,12 @@ public class HttpUtilities {
 		}
 
 		@Override
-		public void checkClientTrusted(final java.security.cert.X509Certificate[] certs, final String authType) {
+		public void checkClientTrusted(final java.security.cert.X509Certificate[] certificates, final String authType) {
 			// nothing to do
 		}
 
 		@Override
-		public void checkServerTrusted(final java.security.cert.X509Certificate[] certs, final String authType) {
+		public void checkServerTrusted(final java.security.cert.X509Certificate[] certificates, final String authType) {
 			// nothing to do
 		}
 	};
