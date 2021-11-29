@@ -2,13 +2,19 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.CertPath;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.crypto.Cipher;
 
@@ -334,6 +340,132 @@ public class CryptographicUtilitiesTest {
 			CryptographicUtilities.getKeyInfo(getEcKeyPair().getPublic());
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testJarSignatureWithCA() {
+		final File signedTestJarFile = new File(System.getProperty("java.io.tmpdir"), "SignedSimpleTest.jar");
+		try {
+			final KeyPair codeSigningKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
+			final PKCS10CertificationRequest certificationRequest = CryptographicUtilities.generatePKCS10CertificationRequest(codeSigningKeyPair.getPrivate(), codeSigningKeyPair.getPublic(), "Test Code Signing CN", null, null, null, null, null, null);
+			final KeyPair caKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
+			final X509Certificate caCertificate = CryptographicUtilities.generateSelfsignedCertificate(
+					caKeyPair,
+					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
+					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
+					"CN=" + "Test CA",
+					0);
+			final Certificate codeSigningCertificate = CryptographicUtilities.signPKCS10CertificateRequest(caCertificate, caKeyPair.getPrivate(), null, null, certificationRequest, -1, BigInteger.valueOf(123456), 365);
+
+			final File testJarFile = new File(getClass().getClassLoader().getResource("SimpleTest.jar").getFile());
+
+			final Set<String> signatureNames = CryptographicUtilities.getJarSignatureNames(testJarFile);
+			Assert.assertEquals(new HashSet<>(Arrays.asList(new String[]{ "Contains unsigned files" })), signatureNames);
+
+			final CertPath certPath = CryptographicUtilities.createCertPath(new Certificate[]{ codeSigningCertificate });
+
+			CryptographicUtilities.createJarSignature(testJarFile, codeSigningKeyPair.getPrivate(), certPath, signedTestJarFile);
+
+			final Set<String> signatureNames2 = CryptographicUtilities.getJarSignatureNames(signedTestJarFile);
+			Assert.assertEquals(new HashSet<>(Arrays.asList(new String[]{ "Test Code Signing CN" })), signatureNames2);
+
+			Assert.assertTrue(CryptographicUtilities.verifyJarSignature(signedTestJarFile, Arrays.asList(new Certificate[] { caCertificate })));
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		} finally {
+			if (signedTestJarFile.exists()) {
+				signedTestJarFile.delete();
+			}
+		}
+	}
+
+	@Test
+	public void testJarSignatureWithoutCA() {
+		final File signedTestJarFile = new File(System.getProperty("java.io.tmpdir"), "SignedSimpleTest.jar");
+		final File unsignedTestJarFile = new File(System.getProperty("java.io.tmpdir"), "UnSignedSimpleTest.jar");
+		try {
+			final KeyPair codeSigningKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
+			final String x500PrincipalString = CryptographicUtilities.generateLegacyX500PrincipalString("Test Code Signing CN", null, null, null, null, null, null);
+			final X509Certificate codeSigningCertificate = CryptographicUtilities.generateSelfsignedCertificate(
+					codeSigningKeyPair,
+					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
+					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
+					x500PrincipalString,
+					-1);
+
+			final File testJarFile = new File(getClass().getClassLoader().getResource("SimpleTest.jar").getFile());
+
+			final Set<String> signatureNames = CryptographicUtilities.getJarSignatureNames(testJarFile);
+			Assert.assertEquals(new HashSet<>(Arrays.asList(new String[]{ "Contains unsigned files" })), signatureNames);
+
+			final CertPath certPath = CryptographicUtilities.createCertPath(new Certificate[]{ codeSigningCertificate });
+
+			CryptographicUtilities.createJarSignature(testJarFile, codeSigningKeyPair.getPrivate(), certPath, signedTestJarFile);
+
+			final Set<String> signatureNames2 = CryptographicUtilities.getJarSignatureNames(signedTestJarFile);
+			Assert.assertEquals(new HashSet<>(Arrays.asList(new String[]{ "Test Code Signing CN" })), signatureNames2);
+
+			Assert.assertTrue(CryptographicUtilities.verifyJarSignature(signedTestJarFile, Arrays.asList(new Certificate[] { codeSigningCertificate })));
+
+			Assert.assertFalse(CryptographicUtilities.verifyJarSignature(testJarFile, Arrays.asList(new Certificate[] { codeSigningCertificate })));
+
+			CryptographicUtilities.removeJarSignature(signedTestJarFile, unsignedTestJarFile);
+
+			Assert.assertFalse(CryptographicUtilities.verifyJarSignature(unsignedTestJarFile, Arrays.asList(new Certificate[] { codeSigningCertificate })));
+			final Set<String> signatureNames3 = CryptographicUtilities.getJarSignatureNames(unsignedTestJarFile);
+			Assert.assertEquals(new HashSet<>(Arrays.asList(new String[]{ "Contains unsigned files" })), signatureNames3);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		} finally {
+			if (signedTestJarFile.exists()) {
+				signedTestJarFile.delete();
+			}
+			if (unsignedTestJarFile.exists()) {
+				unsignedTestJarFile.delete();
+			}
+		}
+	}
+
+	@Test
+	public void testJarSignatureInvalid() {
+		final File signedTestJarFile = new File(System.getProperty("java.io.tmpdir"), "SignedSimpleTest.jar");
+		try {
+			final KeyPair codeSigningKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
+			final String x500PrincipalString = CryptographicUtilities.generateLegacyX500PrincipalString("Test Code Signing CN", null, null, null, null, null, null);
+			final X509Certificate codeSigningCertificate = CryptographicUtilities.generateSelfsignedCertificate(
+					codeSigningKeyPair,
+					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
+					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
+					x500PrincipalString,
+					-1);
+
+			final KeyPair otherKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
+			final String otherX500PrincipalString = CryptographicUtilities.generateLegacyX500PrincipalString("Test Code Signing CN", null, null, null, null, null, null);
+			final X509Certificate otherCertificate = CryptographicUtilities.generateSelfsignedCertificate(
+					otherKeyPair,
+					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
+					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
+					otherX500PrincipalString,
+					-1);
+
+			final File testJarFile = new File(getClass().getClassLoader().getResource("SimpleTest.jar").getFile());
+
+			final CertPath certPath = CryptographicUtilities.createCertPath(new Certificate[]{ codeSigningCertificate });
+
+			CryptographicUtilities.createJarSignature(testJarFile, codeSigningKeyPair.getPrivate(), certPath, signedTestJarFile);
+
+			Assert.assertFalse(CryptographicUtilities.verifyJarSignature(signedTestJarFile, Arrays.asList(new Certificate[] { otherCertificate })));
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		} finally {
+			if (signedTestJarFile.exists()) {
+				signedTestJarFile.delete();
+			}
 		}
 	}
 }

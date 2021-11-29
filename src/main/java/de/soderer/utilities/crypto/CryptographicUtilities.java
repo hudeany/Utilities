@@ -2,6 +2,7 @@ package de.soderer.utilities.crypto;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -24,6 +25,7 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
+import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -44,6 +46,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -58,6 +61,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.zip.ZipFile;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -138,6 +142,8 @@ import de.soderer.utilities.MissingPasswordException;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WrongPasswordException;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
+import de.soderer.utilities.zip.ZipUtilities;
+import jdk.security.jarsigner.JarSigner;
 
 /**
  * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
@@ -552,11 +558,9 @@ public class CryptographicUtilities {
 
 			final byte[] buffer = new byte[4096];
 			final Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
-			final List<JarEntry> jarEntries = new ArrayList<>();
 
 			while (jarEntriesEnumerator.hasMoreElements()) {
 				final JarEntry jarEntry = jarEntriesEnumerator.nextElement();
-				jarEntries.add(jarEntry);
 
 				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
@@ -564,9 +568,7 @@ public class CryptographicUtilities {
 						// just read it
 					}
 				}
-			}
 
-			for (final JarEntry jarEntry : jarEntries) {
 				if (!jarEntry.isDirectory()) {
 					// Every file must be signed, except for files in META-INF
 					final Certificate[] certificates = jarEntry.getCertificates();
@@ -577,14 +579,7 @@ public class CryptographicUtilities {
 					} else {
 						for (final Certificate cert : certificates) {
 							if (cert instanceof X509Certificate) {
-								final X509Certificate certificate = (X509Certificate) cert;
-								if (certificate.getBasicConstraints() == -1) {
-									// Certificate is not a CA certificate
-									returnData.add(CryptographicUtilities.getValuesFromX500Principal(certificate.getSubjectX500Principal()).get("CN"));
-								} else {
-									// Certificate is a CA certificate
-									returnData.add("CA: " + CryptographicUtilities.getValuesFromX500Principal(certificate.getSubjectX500Principal()).get("CN"));
-								}
+								returnData.add(CryptographicUtilities.getValuesFromX500Principal(((X509Certificate) cert).getSubjectX500Principal()).get("CN"));
 							} else {
 								returnData.add("Unknown type of certificate");
 							}
@@ -610,11 +605,9 @@ public class CryptographicUtilities {
 
 			final byte[] buffer = new byte[4096];
 			final Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
-			final List<JarEntry> jarEntries = new ArrayList<>();
 
 			while (jarEntriesEnumerator.hasMoreElements()) {
 				final JarEntry jarEntry = jarEntriesEnumerator.nextElement();
-				jarEntries.add(jarEntry);
 
 				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
@@ -622,9 +615,7 @@ public class CryptographicUtilities {
 						// just read it
 					}
 				}
-			}
 
-			for (final JarEntry jarEntry : jarEntries) {
 				if (!jarEntry.isDirectory()) {
 					// Every file must be signed, except for files in META-INF
 					final Certificate[] certificates = jarEntry.getCertificates();
@@ -653,6 +644,22 @@ public class CryptographicUtilities {
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
+	}
+
+	public static void removeJarSignature(final File signedTestJarFile, final File unsignedTestJarFile) throws Exception {
+		ZipUtilities.removeFilesFromZipFile(signedTestJarFile, unsignedTestJarFile, null, StandardCharsets.UTF_8, "META-INF/*.RSA", "META-INF/*.SF");
+	}
+
+	public static void createJarSignature(final File unsignedJarFile, final PrivateKey privateKey, final CertPath certPath, final File signedJarFile) throws Exception {
+		final JarSigner signer = new JarSigner.Builder(privateKey, certPath).build();
+		try (ZipFile in = new ZipFile(unsignedJarFile);
+				FileOutputStream out = new FileOutputStream(signedJarFile)) {
+			signer.sign(in, out);
+		}
+	}
+
+	public static CertPath createCertPath(final Certificate[] certs) throws Exception {
+		return CertificateFactory.getInstance("X509").generateCertPath(Arrays.asList(certs));
 	}
 
 	public static boolean verifyChainOfTrust(final X509Certificate certificate, final Collection<? extends Certificate> trustedCertificates) throws Exception {

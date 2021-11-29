@@ -16,6 +16,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -349,7 +350,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static void addFileToExistingzipFile(final File sourceFile, final File zipFile) throws IOException {
+	public static void addFileToExistingZipFile(final File sourceFile, final File zipFile) throws IOException {
 		try (ZipOutputStream zipOutputStream = openExistingZipFileForExtension(zipFile)) {
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
 		}
@@ -362,7 +363,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static void addFileToExistingzipFile(final List<File> sourceFiles, final File zipFile) throws IOException {
+	public static void addFileToExistingZipFile(final List<File> sourceFiles, final File zipFile) throws IOException {
 		try (ZipOutputStream zipOutputStream = openExistingZipFileForExtension(zipFile)) {
 			for (final File file : sourceFiles) {
 				addFileToOpenZipFileStream(file, zipOutputStream);
@@ -478,6 +479,58 @@ public class ZipUtilities {
 				entryList.add(entry.getName());
 			}
 			return entryList.toArray(new String[0]);
+		}
+	}
+
+	public static void removeFilesFromZipFile(final File zipFile, final char[] password, final Charset fileNameEncodingCharset, final String... filePatterns) throws Exception {
+		final File tempZipFile = File.createTempFile("temp", ".zip");
+		try {
+			removeFilesFromZipFile(zipFile, tempZipFile, password, fileNameEncodingCharset, filePatterns);
+		} catch (final IOException e) {
+			if (tempZipFile.exists()) {
+				tempZipFile.delete();
+			}
+			throw e;
+		}
+		zipFile.delete();
+		tempZipFile.renameTo(zipFile);
+	}
+
+	public static void removeFilesFromZipFile(final File originalZipFile, final File shrinkedZipFile, final char[] password, final Charset fileNameEncodingCharset, final String... filePatterns) throws Exception {
+		try (ZipFile sourceZipFile = new ZipFile(originalZipFile);
+				ZipOutputStream destinationZipOutputStream = openNewZipOutputStream(shrinkedZipFile, password, fileNameEncodingCharset)) {
+			final List<Pattern> patternsToFilter = new ArrayList<>();
+			for (final String filePattern : filePatterns) {
+				patternsToFilter.add(Pattern.compile("^" + filePattern.replace("\\", "/").replace(".", "\\.").replace("*", ".*").replace("?", ".") + "$"));
+			}
+
+			final Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
+			while (srcEntries.hasMoreElements()) {
+				final ZipEntry sourceZipFileEntry = srcEntries.nextElement();
+				boolean keepFileEntry = true;
+				for (final Pattern pattern : patternsToFilter) {
+					if (pattern.matcher(sourceZipFileEntry.getName()).find()) {
+						keepFileEntry = false;
+						break;
+					}
+				}
+				if (keepFileEntry) {
+					destinationZipOutputStream.putNextEntry(sourceZipFileEntry);
+
+					try (BufferedInputStream bufferedInputStream = new BufferedInputStream(sourceZipFile.getInputStream(sourceZipFileEntry))) {
+						final byte[] bufferArray = new byte[4096];
+						int byteBufferFillLength = bufferedInputStream.read(bufferArray);
+						while (byteBufferFillLength > -1) {
+							destinationZipOutputStream.write(bufferArray, 0, byteBufferFillLength);
+							byteBufferFillLength = bufferedInputStream.read(bufferArray);
+						}
+
+						destinationZipOutputStream.closeEntry();
+					}
+				}
+			}
+		} catch (final IOException e) {
+			throw e;
 		}
 	}
 }
