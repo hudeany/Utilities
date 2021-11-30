@@ -309,8 +309,48 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testKeyPairStringMethodsForRSA() {
 		try {
-			final String rsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getRsaKeyPair());
+			final String rsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getRsaKeyPair(), null);
 			final PrivateKey rsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(rsaKeyPairString, null);
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey));
+
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()));
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic());
+			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
+
+			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPrivate());
+			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPublic());
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testKeyPairStringMethodsForRsaWithPassword() {
+		try {
+			final char[] testPassword = "äBc12@".toCharArray();
+
+			final String rsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getRsaKeyPair(), testPassword);
+			final PrivateKey rsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(rsaKeyPairString, testPassword);
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey));
+
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()));
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic());
+			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
+
+			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPrivate());
+			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPublic());
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testKeyPairStringMethodsForRsaWithEmptyPassword() {
+		try {
+			final char[] testPassword = "".toCharArray();
+
+			final String rsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getRsaKeyPair(), testPassword);
+			final PrivateKey rsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(rsaKeyPairString, testPassword);
 			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey));
 
 			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()));
@@ -328,7 +368,7 @@ public class CryptographicUtilitiesTest {
 	public void testKeyPairStringMethodsECDSA() {
 		try {
 			final String curveName = CryptographicUtilities.getEllipticCurveName(getEcKeyPair().getPrivate());
-			final String ecDsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getEcKeyPair());
+			final String ecDsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getEcKeyPair(), null);
 			final PrivateKey ecDsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(ecDsaKeyPairString, null);
 			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getEcKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(ecDsaPrivateKey));
 

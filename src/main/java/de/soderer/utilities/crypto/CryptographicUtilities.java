@@ -316,62 +316,62 @@ public class CryptographicUtilities {
 		return stringWriter.toString();
 	}
 
-	public static String getStringFromKeyPair(final AsymmetricCipherKeyPair keyPair) throws Exception {
+	public static String getStringFromKeyPair(final AsymmetricCipherKeyPair keyPair, final char[] password) throws Exception {
 		final PublicKey publicKey = getPublicKeyFromAsymmetricCipherKeyPair(keyPair);
 		final PrivateKey privateKey = getPrivateKeyFromAsymmetricCipherKeyPair(keyPair);
 
-		return getStringFromKeyPair(privateKey, publicKey);
+		return getStringFromKeyPair(privateKey, password, publicKey);
 	}
 
-	public static String getStringFromKeyPair(final KeyPair keyPair) throws Exception {
+	public static String getStringFromKeyPair(final KeyPair keyPair, final char[] password) throws Exception {
 		final PublicKey publicKey = keyPair.getPublic();
 		final PrivateKey privateKey = keyPair.getPrivate();
 
-		return getStringFromKeyPair(privateKey, publicKey);
+		return getStringFromKeyPair(privateKey, password, publicKey);
 	}
 
-	public static String getStringFromKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
+	public static String getStringFromKeyPair(final PrivateKey privateKey, final char[] password, final PublicKey publicKey) throws Exception {
+		final StringBuilder result = new StringBuilder();
+		result.append(getStringFromKey(privateKey, password));
+		result.append(getStringFromKey(publicKey));
+		return result.toString();
+	}
+
+	public static String getStringFromKey(final PublicKey publicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final StringWriter stringWriter = new StringWriter();
 		try (JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
-			if (privateKey != null) {
-				pemWriter.writeObject(privateKey);
-			}
-			if (publicKey != null) {
-				pemWriter.writeObject(publicKey);
-			}
+			pemWriter.writeObject(publicKey);
 		} catch (final Exception e) {
-			throw new Exception("Cannot create key string: " + e.getMessage(), e);
+			throw new Exception("Cannot create public key string: " + e.getMessage(), e);
 		}
 		return stringWriter.toString();
 	}
 
-	public static String getStringFromKey(final Key key, final char[] password) throws Exception {
+	public static String getStringFromKey(final PrivateKey privateKey, final char[] password) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		if (password == null || password.length == 0) {
 			final StringWriter stringWriter = new StringWriter();
 			try (JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
-				pemWriter.writeObject(key);
+				pemWriter.writeObject(privateKey);
 			} catch (final Exception e) {
-				throw new Exception("Cannot create key string: " + e.getMessage(), e);
+				throw new Exception("Cannot create private key string: " + e.getMessage(), e);
 			}
 			return stringWriter.toString();
-		} else if (key instanceof PrivateKey) {
+		} else {
 			final StringWriter stringWriter = new StringWriter();
 			try (JcaPEMWriter pemWriter = new JcaPEMWriter(stringWriter)) {
 				final OutputEncryptor encryptor = new JceOpenSSLPKCS8EncryptorBuilder(PKCSObjectIdentifiers.pbeWithSHAAnd3_KeyTripleDES_CBC)
 						.setProvider(BouncyCastleProvider.PROVIDER_NAME)
 						.setRandom(new SecureRandom())
 						.setPassword(password).build();
-				pemWriter.writeObject(new JcaPKCS8Generator((PrivateKey) key, encryptor));
+				pemWriter.writeObject(new JcaPKCS8Generator(privateKey, encryptor));
 			} catch (final Exception e) {
 				throw new Exception("Cannot create private key string: " + e.getMessage(), e);
 			}
 			return stringWriter.toString();
-		} else {
-			throw new Exception("Obsolete password for public key serialisation");
 		}
 	}
 
@@ -432,7 +432,7 @@ public class CryptographicUtilities {
 	public static AsymmetricCipherKeyPair getAsymmetricCipherKeyPair(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final PEMKeyPair keyPair = getPEMKeyPairFromString(getStringFromKeyPair(privateKey, publicKey));
+		final PEMKeyPair keyPair = getPEMKeyPairFromString(getStringFromKeyPair(privateKey, null, publicKey));
 		final AsymmetricKeyParameter privateAsymmetricKeyParameter = PrivateKeyFactory.createKey(keyPair.getPrivateKeyInfo());
 		final AsymmetricKeyParameter publicAsymmetricKeyParameter = PublicKeyFactory.createKey(keyPair.getPublicKeyInfo());
 
@@ -790,10 +790,6 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static PrivateKey getUnencryptedPrivateKeyFromString(final String key) throws Exception {
-		return getPrivateKeyFromString(key, null);
-	}
-
 	public static PrivateKey getPrivateKeyFromString(final String keyDataString, final char[] password) throws Exception {
 		try {
 			Security.addProvider(new BouncyCastleProvider());
@@ -803,7 +799,7 @@ public class CryptographicUtilities {
 			while ((object = pemParser.readObject()) != null) {
 				if (object instanceof PEMKeyPair) {
 					final PEMKeyPair pemKeyPair = (PEMKeyPair) object;
-					if (password == null) {
+					if (password == null || password.length == 0) {
 						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME);
 						final KeyPair keyPair = converter.getKeyPair(pemKeyPair);
 						return keyPair.getPrivate();
@@ -811,7 +807,7 @@ public class CryptographicUtilities {
 						throw new Exception("Unencrypted private key found. Password is obsolete.");
 					}
 				} else if (object instanceof PEMEncryptedKeyPair) {
-					if (password == null) {
+					if (password == null || password.length == 0) {
 						throw new MissingPasswordException("Encrypted private key found. Password is needed.");
 					} else {
 						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME);
@@ -820,14 +816,14 @@ public class CryptographicUtilities {
 						return keyPair.getPrivate();
 					}
 				} else if (object instanceof PrivateKeyInfo) {
-					if (password == null) {
+					if (password == null || password.length == 0) {
 						final JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
 						return converter.getPrivateKey((PrivateKeyInfo) object);
 					} else {
 						throw new Exception("Unencrypted private key found. Password is obsolete.");
 					}
 				} else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
-					if (password == null) {
+					if (password == null || password.length == 0) {
 						throw new MissingPasswordException("Encrypted private key (PKCS8) found. Password is needed.");
 					} else {
 						try {

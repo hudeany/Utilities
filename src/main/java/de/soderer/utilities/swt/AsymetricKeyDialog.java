@@ -249,18 +249,18 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		composite = new Composite(shell, SWT.NONE);
 		gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		composite.setLayoutData(gridData);
-		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
+		composite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
 
-		final Button buttonSave = new Button(composite, SWT.PUSH);
-		buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		buttonSave.setText(LangResources.get("save"));
-		buttonSave.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(final SelectionEvent e) {
-				setReturnValue(true);
-				getParent().close();
-			}
-		});
+		//		final Button buttonSave = new Button(composite, SWT.PUSH);
+		//		buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		//		buttonSave.setText(LangResources.get("save"));
+		//		buttonSave.addSelectionListener(new SelectionAdapter() {
+		//			@Override
+		//			public void widgetSelected(final SelectionEvent e) {
+		//				setReturnValue(true);
+		//				getParent().close();
+		//			}
+		//		});
 
 		final Button buttonClose = new Button(composite, SWT.PUSH);
 		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
