@@ -105,7 +105,7 @@ public class ConsoleMenu {
 
 			System.out.println("  0) " + defaultMenuTitle);
 
-			String choice = System.console().readLine(" > ");
+			String choice = new SimpleConsoleInput().setPrompt(" > ").readInput();
 			choice = choice == null ? "" : choice.trim();
 
 			if (Utilities.isBlank(choice)) {

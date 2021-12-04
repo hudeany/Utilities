@@ -8,6 +8,8 @@ import java.util.Locale;
 
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
 import de.soderer.utilities.console.ConsoleUtilities;
+import de.soderer.utilities.console.PasswordConsoleInput;
+import de.soderer.utilities.console.SimpleConsoleInput;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class UpdateableConsoleApplication implements ApplicationUpdateParent {
@@ -31,7 +33,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 			return false;
 		} else {
 			System.out.println(getI18NString("newVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
-			final String input = console.readLine(getI18NString("installUpdate") + ": ");
+			final String input = new SimpleConsoleInput().setPrompt(getI18NString("installUpdate") + ": ").readInput();
 			System.out.println();
 			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j"));
 		}
@@ -48,12 +50,12 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		char[] password = null;
 
 		if (aquireUsername && aquirePassword) {
-			userName = console.readLine(getI18NString("enterUsername") + ": ");
-			password = console.readPassword(getI18NString("enterPassword") + ": ");
+			userName = new SimpleConsoleInput().setPrompt(getI18NString("enterUsername") + ": ").readInput();
+			password = new PasswordConsoleInput().setPrompt(getI18NString("enterPassword") + ": ").readInput();
 		} else if (aquireUsername) {
-			userName = console.readLine(getI18NString("enterUsername") + ": ");
+			userName = new SimpleConsoleInput().setPrompt(getI18NString("enterUsername") + ": ").readInput();
 		} else if (aquirePassword) {
-			password = console.readPassword(getI18NString("enterPassword") + ": ");
+			password = new PasswordConsoleInput().setPrompt(getI18NString("enterPassword") + ": ").readInput();
 		}
 
 		if (Utilities.isBlank(userName) && Utilities.isBlank(password)) {
