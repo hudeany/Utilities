@@ -662,6 +662,14 @@ public class CryptographicUtilities {
 		return CertificateFactory.getInstance("X509").generateCertPath(Arrays.asList(certs));
 	}
 
+	/**
+	 * Check if "certificate" was certified by "trustedCertificates"
+	 *
+	 * @param certificate
+	 * @param trustedCertificates
+	 * @return
+	 * @throws Exception
+	 */
 	public static boolean verifyChainOfTrust(final X509Certificate certificate, final Collection<? extends Certificate> trustedCertificates) throws Exception {
 		final X509CertSelector targetConstraints = new X509CertSelector();
 		targetConstraints.setCertificate(certificate);
@@ -684,8 +692,8 @@ public class CryptographicUtilities {
 	/**
 	 * Check if "certificate" was certified by "trustedCertificates"
 	 *
-	 * @param cert
-	 * @param possibleCertifierCerificate
+	 * @param certificate
+	 * @param trustedCertificates
 	 * @return
 	 * @throws Exception
 	 */
