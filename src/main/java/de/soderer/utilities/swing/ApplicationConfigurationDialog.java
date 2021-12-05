@@ -287,7 +287,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				try {
-					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, applicationName, applicationVersion, trustedUpdateCaCertificate, null, null, "gui");
+					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, applicationName, applicationVersion, trustedUpdateCaCertificate, null, null, "gui", true);
 				} catch (final Exception e) {
 					new QuestionDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 				}

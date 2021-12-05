@@ -27,12 +27,13 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		if (console == null) {
 			throw new Exception("Couldn't get Console instance");
 		}
+		ConsoleUtilities.clearScreen();
 		if (availableNewVersion == null) {
 			System.out.println(getI18NString("noNewerVersion", applicationName, applicationVersion.toString()));
 			System.out.println();
 			return false;
 		} else {
-			System.out.println(getI18NString("newVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
+			System.out.println(getI18NString("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
 			final String input = new SimpleConsoleInput().setPrompt(getI18NString("installUpdate") + ": ").readInput();
 			System.out.println();
 			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j"));
@@ -107,7 +108,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 			String pattern;
 			switch(resourceKey) {
 				case "noNewerVersion": pattern = "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}."; break;
-				case "newVersion": pattern = "Es ist die eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
+				case "newApplicationVersion": pattern = "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
 				case "installUpdate": pattern = "Update installieren? (jN)"; break;
 				case "enterUsername": pattern = "Bitte Usernamen eingeben"; break;
 				case "enterPassword": pattern = "Bitte Passwort eingeben"; break;
@@ -119,7 +120,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 			String pattern;
 			switch(resourceKey) {
 				case "noNewerVersion": pattern = "There is no newer version available for {0}.\nThe current local version is {1}."; break;
-				case "newVersion": pattern = "New version {0} is available for {1}.\nThe current local version is {2}."; break;
+				case "newApplicationVersion": pattern = "New version {0} is available for {1}.\nThe current local version is {2}."; break;
 				case "installUpdate": pattern = "Install update? (yN)"; break;
 				case "enterUsername": pattern = "Please enter username"; break;
 				case "enterPassword": pattern = "Please enter password"; break;

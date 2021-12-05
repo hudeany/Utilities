@@ -62,7 +62,7 @@ public class ApplicationUpdateUtilities {
 	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
 	public static final String CONFIG_NEXT_DAILY_UPDATE_CHECK = "NextDailyUpdateCheck";
 
-	public static void executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter) throws Exception {
+	public static void executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
 		try {
 			if (Utilities.isEmpty(versionIndexFileLocation)) {
 				throw new Exception("Invalid version index location");
@@ -70,7 +70,7 @@ public class ApplicationUpdateUtilities {
 
 			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(updateParent, versionIndexFileLocation, applicationName, applicationVersion);
 			if (askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
-				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, trustedCaCertificateFileName, username, password, restartParameter);
+				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, trustedCaCertificateFileName, username, password, restartParameter, restartAfterUpdate);
 			}
 		} catch (final Exception e) {
 			if (updateParent != null) {
@@ -173,7 +173,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter) {
+	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
 				throw new Exception("Mandatory updateFileLocation is empty");
@@ -224,15 +224,16 @@ public class ApplicationUpdateUtilities {
 					showUpdateError(updateParent, "Update error:\nTrusted CA certificate file name is missing");
 				}
 
-				final String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartParameter);
-
 				if (updateParent != null) {
 					updateParent.showUpdateDone(null, null, 0);
 				}
 
-				if (restartCommand != null) {
-					Runtime.getRuntime().exec(restartCommand);
-					Runtime.getRuntime().exit(0);
+				if (restartAfterUpdate) {
+					final String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartParameter);
+					if (restartCommand != null) {
+						Runtime.getRuntime().exec(restartCommand);
+						Runtime.getRuntime().exit(0);
+					}
 				}
 			}
 		} catch (final Exception e) {

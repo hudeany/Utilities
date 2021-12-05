@@ -169,7 +169,7 @@ public class SimpleConsoleInput {
 						// Remove special displayed cursor
 						ConsoleUtilities.moveCursorToSavedPosition();
 						System.out.print(prompt);
-						System.out.print(content + " ");
+						System.out.println(content + " ");
 						ConsoleUtilities.showCursor();
 						return content;
 					} else if (keyCode == ConsoleUtilities.KeyCode_Backspace) {

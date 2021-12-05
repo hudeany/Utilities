@@ -163,7 +163,7 @@ public class PasswordConsoleInput {
 						// Remove special displayed cursor
 						ConsoleUtilities.moveCursorToSavedPosition();
 						System.out.print(prompt);
-						System.out.print(Utilities.repeat(hideCharacter, content.length) + " ");
+						System.out.println(Utilities.repeat(hideCharacter, content.length) + " ");
 						ConsoleUtilities.showCursor();
 						return content;
 					} else if (keyCode == ConsoleUtilities.KeyCode_Backspace) {
