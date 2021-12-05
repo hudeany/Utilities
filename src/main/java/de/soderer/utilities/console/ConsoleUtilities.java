@@ -27,7 +27,7 @@ public class ConsoleUtilities {
 	/**
 	 * Detection of contextmenu insert. Only works on Linux systems
 	 */
-	public static final int KeyCode_ContextMenu_Insert = 6513249;
+	public static final int KeyCode_ContextMenu_Insert = 6513249; // TODO: Still valid?
 
 	public static final int KeyCode_Enter;
 	public static final int KeyCode_Backspace;
