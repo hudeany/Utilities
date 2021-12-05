@@ -12,6 +12,8 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ConsoleUtilities {
+	private static final boolean keyCodeDebugMode = false;
+
 	private static Boolean consoleSupportsAnsiCodes = null;
 	private static boolean linuxConsoleActivatedRawMode = false;
 
@@ -44,13 +46,6 @@ public class ConsoleUtilities {
 	public static final int KeyCode_Right;
 	public static final int KeyCode_Down;
 
-	public static final int KeyCode_AUml_Lower;
-	public static final int KeyCode_AUml_Upper;
-	public static final int KeyCode_OUml_Lower;
-	public static final int KeyCode_OUml_Upper;
-	public static final int KeyCode_UUml_Lower;
-	public static final int KeyCode_UUml_Upper;
-
 	static {
 		if (SystemUtilities.isWindowsSystem()) {
 			KeyCode_Enter = 13;
@@ -67,35 +62,21 @@ public class ConsoleUtilities {
 			KeyCode_Left = 57419;
 			KeyCode_Right = 57421;
 			KeyCode_Down = 57424;
-
-			KeyCode_AUml_Lower = 228;
-			KeyCode_AUml_Upper = 196;
-			KeyCode_OUml_Lower = 246;
-			KeyCode_OUml_Upper = 214;
-			KeyCode_UUml_Lower = 252;
-			KeyCode_UUml_Upper = 220;
 		} else {
 			KeyCode_Enter = 13;
 			KeyCode_Backspace = 127;
 
-			KeyCode_Insert = 2117229339;
-			KeyCode_Home = 4741915;
-			KeyCode_PageUp = 2117425947;
-			KeyCode_Delete = 2117294875;
-			KeyCode_End = 4610843;
-			KeyCode_PageDown = 2117491483;
+			KeyCode_Insert = 3276926;
+			KeyCode_Home = 5963848;
+			KeyCode_PageUp = 3473534;
+			KeyCode_Delete = 3342462;
+			KeyCode_End = 5963846;
+			KeyCode_PageDown = 3539070;
 
-			KeyCode_Up = 4283163;
-			KeyCode_Left = 4479771;
-			KeyCode_Right = 4414235;
-			KeyCode_Down = 4348699;
-
-			KeyCode_AUml_Lower = 42179;
-			KeyCode_AUml_Upper = 33987;
-			KeyCode_OUml_Lower = 46787;
-			KeyCode_OUml_Upper = 38595;
-			KeyCode_UUml_Lower = 48323;
-			KeyCode_UUml_Upper = 40131;
+			KeyCode_Up = 5963841;
+			KeyCode_Left = 5963844;
+			KeyCode_Right = 5963843;
+			KeyCode_Down = 5963842;
 		}
 	}
 
@@ -491,7 +472,19 @@ public class ConsoleUtilities {
 				final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
 				try {
 					try (Reader inputReader = System.console().reader()) {
-						return inputReader.read();
+						final char[] buffer = new char[5];
+						final int readChars = inputReader.read(buffer);
+						int keyCode = 0;
+						for (int i = 0; i < readChars; i++) {
+							keyCode = (keyCode * 65536) + buffer[i];
+						}
+
+						if (keyCodeDebugMode) {
+							System.out.println();
+							System.out.println("   " + keyCode + "   ");
+						}
+
+						return keyCode;
 					}
 				} finally {
 					if (linuxConsoleMustBeReset) {

@@ -149,7 +149,7 @@ public class SimpleConsoleInput {
 
 					ConsoleUtilities.moveCursorToSavedPosition();
 
-					int keyCode = ConsoleUtilities.readKey();
+					final int keyCode = ConsoleUtilities.readKey();
 
 					if (keyCode == ConsoleUtilities.KeyCode_CtrlC) {
 						ConsoleUtilities.showCursor();
@@ -166,6 +166,10 @@ public class SimpleConsoleInput {
 					} else if (keyCode == ConsoleUtilities.KeyCode_Escape) {
 						// do nothing
 					} else if (keyCode == ConsoleUtilities.KeyCode_Enter) {
+						// Remove special displayed cursor
+						ConsoleUtilities.moveCursorToSavedPosition();
+						System.out.print(prompt);
+						System.out.print(content + " ");
 						ConsoleUtilities.showCursor();
 						return content;
 					} else if (keyCode == ConsoleUtilities.KeyCode_Backspace) {
@@ -275,20 +279,6 @@ public class SimpleConsoleInput {
 							Toolkit.getDefaultToolkit().beep();
 						}
 					} else {
-						if (keyCode == ConsoleUtilities.KeyCode_AUml_Lower) {
-							keyCode = 'ä';
-						} else if (keyCode == ConsoleUtilities.KeyCode_AUml_Upper) {
-							keyCode = 'Ä';
-						} else if (keyCode == ConsoleUtilities.KeyCode_OUml_Lower) {
-							keyCode = 'ö';
-						} else if (keyCode == ConsoleUtilities.KeyCode_OUml_Upper) {
-							keyCode = 'Ö';
-						} else if (keyCode == ConsoleUtilities.KeyCode_UUml_Lower) {
-							keyCode = 'ü';
-						} else if (keyCode == ConsoleUtilities.KeyCode_UUml_Upper) {
-							keyCode = 'Ü';
-						}
-
 						// "keyCode < 1000" to prevent Chinese symbols on some systems, that occur without intention
 						if ((allowedCharacters != null && allowedCharacters.contains("" + (char) keyCode)) || keyCode < 1000) {
 							if (insertMode || cursorIndex == content.length()) {
