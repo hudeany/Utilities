@@ -75,7 +75,7 @@ public class ConsoleUtilities {
 			KeyCode_UUml_Lower = 252;
 			KeyCode_UUml_Upper = 220;
 		} else {
-			KeyCode_Enter = 10;
+			KeyCode_Enter = 13;
 			KeyCode_Backspace = 127;
 
 			KeyCode_Insert = 2117229339;

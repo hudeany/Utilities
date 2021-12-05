@@ -152,6 +152,7 @@ public class SimpleConsoleInput {
 					int keyCode = ConsoleUtilities.readKey();
 
 					if (keyCode == ConsoleUtilities.KeyCode_CtrlC) {
+						ConsoleUtilities.showCursor();
 						System.exit(1);
 					} else if (keyCode == ConsoleUtilities.KeyCode_CtrlV || keyCode == ConsoleUtilities.KeyCode_ContextMenu_Insert) {
 						final String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
