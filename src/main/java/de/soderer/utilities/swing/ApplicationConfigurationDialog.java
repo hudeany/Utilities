@@ -150,8 +150,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		}
 		languageCombo.addItemListener(new ItemListener() {
 			@Override
-			public void itemStateChanged(final ItemEvent e) {
-				language = (String) e.getItem();
+			public void itemStateChanged(final ItemEvent event) {
+				language = (String) event.getItem();
 			}
 		});
 		languagePanel.add(languageCombo, BorderLayout.EAST);

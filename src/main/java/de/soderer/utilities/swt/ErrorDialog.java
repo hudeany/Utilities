@@ -75,7 +75,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		sendMailButton.setText(getText("OPEN_MAIL"));
 		sendMailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				final boolean success = MailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : ""), ExceptionUtilities.throwableToString(throwable));
 				if (!success) {
 					new QuestionDialog(getParent(), getText(), getText("CANNOT_OPEN_MAIL"), "OK").setBackgroundColor(SwtColor.LightRed).open();
@@ -87,7 +87,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		detailButton.setText(getText("DETAILS_MORE"));
 		detailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				if (detailButton.getText().equals(getText("DETAILS_MORE"))) {
 					detailButton.setText(getText("DETAILS_LESS"));
 				} else {
@@ -110,7 +110,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		closeButton.setText(getText("CLOSE"));
 		closeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(false);
 				getParent().close();
 			}

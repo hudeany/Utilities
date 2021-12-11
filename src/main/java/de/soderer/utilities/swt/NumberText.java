@@ -32,9 +32,9 @@ public class NumberText extends Text {
 
 		addVerifyListener(new VerifyListener() {
 			@Override
-			public void verifyText(VerifyEvent e) {
-				e.doit = e.text.trim().length() == 0 || e.text.matches("\\d*");
-				if (!e.doit && showMessageBoxOnInvalidData) {
+			public void verifyText(VerifyEvent event) {
+				event.doit = event.text.trim().length() == 0 || event.text.matches("\\d*");
+				if (!event.doit && showMessageBoxOnInvalidData) {
 					MessageBox messageBox = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
 					messageBox.setText("Ungültige Eingabedaten");
 					messageBox.setMessage("Dieses Eingabefeld lässt nur Ziffern zu!");

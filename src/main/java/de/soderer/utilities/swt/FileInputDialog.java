@@ -44,8 +44,8 @@ public class FileInputDialog extends ModalDialog<String> {
 		labeledFileText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		labeledFileText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(final ModifyEvent e) {
-				setReturnValue(((LabeledFileText) e.widget).getText());
+			public void modifyText(final ModifyEvent event) {
+				setReturnValue(((LabeledFileText) event.widget).getText());
 				checkStatus();
 			}
 		});
@@ -55,7 +55,7 @@ public class FileInputDialog extends ModalDialog<String> {
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				getParent().close();
 			}
 		});
@@ -65,7 +65,7 @@ public class FileInputDialog extends ModalDialog<String> {
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(null);
 				getParent().close();
 			}

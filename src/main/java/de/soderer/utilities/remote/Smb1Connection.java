@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
@@ -17,10 +15,6 @@ import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbFile;
 
 public class Smb1Connection implements RemoteConnection {
-	/** The Constant logger. */
-	@SuppressWarnings("unused")
-	private static final transient Logger logger = Logger.getLogger(Smb1Connection.class);
-
 	/** The host. */
 	private String hostname = null;
 

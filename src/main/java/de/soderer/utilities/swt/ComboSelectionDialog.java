@@ -74,14 +74,14 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(final SelectionEvent e) {
+		public void widgetSelected(final SelectionEvent event) {
 			okButton.setEnabled(true);
 		}
 	}
 
 	private class OkButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(final SelectionEvent e) {
+		public void widgetSelected(final SelectionEvent event) {
 			if (comboBox.getSelectionIndex() > -1) {
 				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
 			}
@@ -91,7 +91,7 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 	private class CancelButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(final SelectionEvent e) {
+		public void widgetSelected(final SelectionEvent event) {
 			getParent().close();
 		}
 	}

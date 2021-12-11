@@ -60,7 +60,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		textField.setText(defaultText != null ? defaultText : "");
 		textField.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(final ModifyEvent e) {
+			public void modifyText(final ModifyEvent event) {
 				if (!isTechnicalChange) {
 					if (inputPattern == null || inputPattern.matcher(textField.getText()).matches()) {
 						currentText = textField.getText();
@@ -77,9 +77,9 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		});
 		textField.addKeyListener(new KeyAdapter() {
 			@Override
-			public void keyReleased(final KeyEvent e) {
+			public void keyReleased(final KeyEvent event) {
 				// on Enter-key
-				if (e.keyCode == SWT.CR || e.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
+				if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 					setReturnValue(textField.getText());
 					getParent().close();
 				}
@@ -95,7 +95,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(textField.getText());
 				getParent().close();
 			}
@@ -106,7 +106,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(null);
 				getParent().close();
 			}

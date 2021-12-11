@@ -15,8 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
@@ -42,10 +40,6 @@ import de.soderer.utilities.remote.RemoteConnection;
  * The Class GoogleCloudConnection
  */
 public class GoogleCloudConnection implements RemoteConnection {
-	/** The Constant logger. */
-	@SuppressWarnings("unused")
-	private static final transient Logger logger = Logger.getLogger(GoogleCloudConnection.class);
-
 	private final String applicationCredentialsJsonString;
 
 	private String accessToken = null;

@@ -256,7 +256,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		//		buttonSave.setText(LangResources.get("save"));
 		//		buttonSave.addSelectionListener(new SelectionAdapter() {
 		//			@Override
-		//			public void widgetSelected(final SelectionEvent e) {
+		//			public void widgetSelected(final SelectionEvent event) {
 		//				setReturnValue(true);
 		//				getParent().close();
 		//			}
@@ -267,7 +267,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		buttonClose.setText(LangResources.get("close"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(false);
 				getParent().close();
 			}

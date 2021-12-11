@@ -58,7 +58,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			buttonSave.setText(LangResources.get("save"));
 			buttonSave.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
+				public void widgetSelected(final SelectionEvent event) {
 					saveDataInteractive(getParent(), LangResources.get("savedata"), dataString.getBytes(StandardCharsets.UTF_8));
 				}
 			});
@@ -69,7 +69,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		buttonClose.setText(LangResources.get("close"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(0);
 				getParent().close();
 			}

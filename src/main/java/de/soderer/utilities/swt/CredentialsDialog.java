@@ -79,8 +79,8 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			usernameTextField.setText("");
 			usernameTextField.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(final ModifyEvent e) {
-					username = ((Text) e.widget).getText();
+				public void modifyText(final ModifyEvent event) {
+					username = ((Text) event.widget).getText();
 					checkButtonStatus();
 				}
 			});
@@ -105,8 +105,8 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			passwordTextField.setText("");
 			passwordTextField.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(final ModifyEvent e) {
-					password = ((Text) e.widget).getTextChars();
+				public void modifyText(final ModifyEvent event) {
+					password = ((Text) event.widget).getTextChars();
 					checkButtonStatus();
 				}
 			});
@@ -127,8 +127,8 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			rememberCredentialsButton.setText(rememberCredentialsText);
 			rememberCredentialsButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
-					rememberCredentials = ((Button) e.widget).getSelection();
+				public void widgetSelected(final SelectionEvent event) {
+					rememberCredentials = ((Button) event.widget).getSelection();
 				}
 			});
 		}
@@ -142,7 +142,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		okButton.setText(text_OK);
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(getCredentials());
 				getParent().close();
 			}
@@ -153,7 +153,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		cancelButton.setText(text_Cancel);
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(null);
 				getParent().close();
 			}

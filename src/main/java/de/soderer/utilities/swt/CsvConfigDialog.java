@@ -65,7 +65,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		useQuoteButton.setSelection(useStringQuote);
 		useQuoteButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				checkStatus();
 			}
 		});
@@ -80,8 +80,8 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			containsHeadersInFirstRowButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 3, 1));
 			containsHeadersInFirstRowButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
-					containsHeadersInFirstRow = ((Button) e.widget).getSelection();
+				public void widgetSelected(final SelectionEvent event) {
+					containsHeadersInFirstRow = ((Button) event.widget).getSelection();
 					checkStatus();
 				}
 			});
@@ -104,8 +104,8 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			encodingText.setText(encoding.name());
 			encodingText.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(final ModifyEvent e) {
-					encoding = Charset.forName(((Combo) e.widget).getText());
+				public void modifyText(final ModifyEvent event) {
+					encoding = Charset.forName(((Combo) event.widget).getText());
 					checkStatus();
 				}
 			});
@@ -120,7 +120,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				separator = separatorRadioButtonGroup.getSelectedButtonIndex() == 0 ? ',' : ';';
 				useStringQuote = useQuoteButton.getSelection();
 				stringQuote = quoteTypeRadioButtonGroup.getSelectedButtonIndex() == 0 ? '\'' : '"';
@@ -135,7 +135,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(false);
 				getParent().close();
 			}

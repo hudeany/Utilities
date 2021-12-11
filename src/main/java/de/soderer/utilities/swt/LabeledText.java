@@ -61,14 +61,14 @@ public class LabeledText extends Composite {
 			if (verifyPattern != null) {
 				textField.addVerifyListener(new VerifyListener() {
 					@Override
-					public void verifyText(final VerifyEvent e) {
-						final Text text = (Text) e.getSource();
+					public void verifyText(final VerifyEvent event) {
+						final Text text = (Text) event.getSource();
 
 						final String oldContent = text.getText();
-						final String newContent = oldContent.substring(0, e.start) + e.text + oldContent.substring(e.end);
+						final String newContent = oldContent.substring(0, event.start) + event.text + oldContent.substring(event.end);
 
 						if (!Pattern.matches(verifyPattern, newContent)) {
-							e.doit = false;
+							event.doit = false;
 						}
 					}
 				});

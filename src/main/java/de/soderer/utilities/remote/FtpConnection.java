@@ -9,7 +9,6 @@ import java.util.List;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
-import org.apache.log4j.Logger;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
@@ -19,10 +18,6 @@ import de.soderer.utilities.Tuple;
  * FtpConnection
  */
 public class FtpConnection implements RemoteConnection {
-	/** The Constant logger. */
-	@SuppressWarnings("unused")
-	private static final transient Logger logger = Logger.getLogger(FtpConnection.class);
-
 	/** The host. */
 	private String hostname = null;
 

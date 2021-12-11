@@ -136,7 +136,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			serverEntriesCombo.setItems(new String[] {});
 			serverEntriesCombo.addModifyListener(new ModifyListener() {
 				@Override
-				public void modifyText(final ModifyEvent e) {
+				public void modifyText(final ModifyEvent event) {
 					checkButtonStatus();
 				}
 			});
@@ -290,8 +290,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		useKeyFileButton.setText(LangResources.get("useKeyFile"));
 		useKeyFileButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
-				if (((Button) e.widget).getSelection()) {
+			public void widgetSelected(final SelectionEvent event) {
+				if (((Button) event.widget).getSelection()) {
 					final FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
 					dialog.setText(LangResources.get("openKeyFile"));
 					if (keyFilePath == null || "".equals(keyFilePath.trim())) {
@@ -303,7 +303,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (fileName != null) {
 						keyFilePath = fileName;
 					} else {
-						((Button) e.widget).setSelection(false);
+						((Button) event.widget).setSelection(false);
 						keyFilePath = null;
 					}
 				} else {
@@ -370,7 +370,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		connectButton.setText(LangResources.get("connect"));
 		connectButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				if (connection == null) {
 					connect();
 				} else {
@@ -425,8 +425,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		});
 		filesTree.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mouseDoubleClick(final MouseEvent e) {
-				if (((Tree) e.widget).getSelection().length == 1) {
+			public void mouseDoubleClick(final MouseEvent event) {
+				if (((Tree) event.widget).getSelection().length == 1) {
 					setReturnValue(true);
 					getParent().close();
 				}
@@ -673,7 +673,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				if (password != null) {
 					Arrays.fill(password, '\u0000');
 					password = null;

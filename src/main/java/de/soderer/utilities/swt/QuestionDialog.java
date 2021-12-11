@@ -50,8 +50,8 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			checkboxCheckBox.setText(checkboxText);
 			checkboxCheckBox.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
-					checkboxStatus = ((Button) e.widget).getSelection();
+				public void widgetSelected(final SelectionEvent event) {
+					checkboxStatus = ((Button) event.widget).getSelection();
 				}
 			});
 		}
@@ -71,7 +71,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 				nextButton.setText(buttonText);
 				nextButton.addSelectionListener(new SelectionAdapter() {
 					@Override
-					public void widgetSelected(final SelectionEvent e) {
+					public void widgetSelected(final SelectionEvent event) {
 						setReturnValue(buttonIndex);
 						getParent().close();
 					}
@@ -91,7 +91,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			cancelButton.setText(getI18NString("close"));
 			cancelButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
+				public void widgetSelected(final SelectionEvent event) {
 					getParent().close();
 				}
 			});

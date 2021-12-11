@@ -15,7 +15,6 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.NotImplementedException;
-import org.apache.log4j.Logger;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
@@ -28,10 +27,6 @@ import de.soderer.utilities.http.HttpUtilities;
  * HttpFileConnection
  */
 public class HttpFileConnection implements RemoteConnection {
-	/** The Constant logger. */
-	@SuppressWarnings("unused")
-	private static final transient Logger logger = Logger.getLogger(HttpFileConnection.class);
-
 	/** The useTLS. */
 	private boolean useTLS = false;
 

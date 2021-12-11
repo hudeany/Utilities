@@ -53,7 +53,7 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 		browseButton.setText(browseButtonText);
 		browseButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(SelectionEvent event) {
 				DirectoryDialog dialog = new DirectoryDialog(getParent(), SWT.OPEN);
 				dialog.setText(getText());
 				String filePath = dialog.open();
@@ -89,14 +89,14 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 
 	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent e) {
+		public void widgetSelected(SelectionEvent event) {
 			okButton.setEnabled(true);
 		}
 	}
 
 	private class OkButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent e) {
+		public void widgetSelected(SelectionEvent event) {
 			if (comboBox.getSelectionIndex() > -1) {
 				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
 			}
@@ -106,7 +106,7 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 
 	private class CancelButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent e) {
+		public void widgetSelected(SelectionEvent event) {
 			getParent().close();
 		}
 	}

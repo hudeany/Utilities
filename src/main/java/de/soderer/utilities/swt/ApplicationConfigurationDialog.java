@@ -152,7 +152,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		storeButton.setText(LangResources.get("save"));
 		storeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(true);
 				getParent().close();
 			}
@@ -163,7 +163,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		createLinkButton.setText(LangResources.get("createDesktopLink"));
 		createLinkButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				try {
 					String applicationJarFileName = SystemUtilities.getCurrentlyRunningJarFilePath();
 					if (Utilities.isBlank(applicationJarFileName)) {
@@ -294,7 +294,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		showSystemPropertiesButton.setText(LangResources.get("showSystemProperties"));
 		showSystemPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				final Map<String, String> properties = Utilities.getSystemPropertiesMap();
 				for (final Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
@@ -308,7 +308,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		showRuntimePropertiesButton.setText(LangResources.get("showRuntimeProperties"));
 		showRuntimePropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				final Map<String, String> properties = SystemUtilities.getRuntimeProperties(true);
 				for (final Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
@@ -322,7 +322,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		showSwtPropertiesButton.setText(LangResources.get("showSwtProperties"));
 		showSwtPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(getParent().getDisplay()), "\n", " = ", true))
 				.open();
 			}
@@ -333,7 +333,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(false);
 				getParent().close();
 			}
@@ -350,8 +350,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		}
 
 		@Override
-		public void modifyText(final ModifyEvent e) {
-			applicationConfiguration.set(key, Integer.toString(((Spinner) e.widget).getSelection()));
+		public void modifyText(final ModifyEvent event) {
+			applicationConfiguration.set(key, Integer.toString(((Spinner) event.widget).getSelection()));
 		}
 	}
 
@@ -363,8 +363,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		}
 
 		@Override
-		public void modifyText(final ModifyEvent e) {
-			applicationConfiguration.set(key, ConfigurationProperties.unEscape(((Text) e.widget).getText()));
+		public void modifyText(final ModifyEvent event) {
+			applicationConfiguration.set(key, ConfigurationProperties.unEscape(((Text) event.widget).getText()));
 		}
 	}
 
@@ -376,13 +376,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		}
 
 		@Override
-		public void widgetDefaultSelected(final SelectionEvent e) {
-			applicationConfiguration.set(key, ((Button) e.widget).getSelection());
+		public void widgetDefaultSelected(final SelectionEvent event) {
+			applicationConfiguration.set(key, ((Button) event.widget).getSelection());
 		}
 
 		@Override
-		public void widgetSelected(final SelectionEvent e) {
-			applicationConfiguration.set(key, ((Button) e.widget).getSelection());
+		public void widgetSelected(final SelectionEvent event) {
+			applicationConfiguration.set(key, ((Button) event.widget).getSelection());
 		}
 	}
 

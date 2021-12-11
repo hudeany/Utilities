@@ -60,9 +60,9 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 			}
 			textField.addKeyListener(new KeyAdapter() {
 				@Override
-				public void keyReleased(final KeyEvent e) {
+				public void keyReleased(final KeyEvent event) {
 					// on Enter-key
-					if (e.keyCode == SWT.CR || e.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
+					if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
 						final List<String> retunValueList = new ArrayList<>();
 						for (final Text textFieldForReturnValue: textFields) {
 							retunValueList.add(textFieldForReturnValue.getText());
@@ -91,7 +91,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				final List<String> retunValueList = new ArrayList<>();
 				for (final Text textFieldForReturnValue: textFields) {
 					retunValueList.add(textFieldForReturnValue.getText());
@@ -110,7 +110,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				setReturnValue(null);
 				getParent().close();
 			}

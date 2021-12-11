@@ -54,8 +54,8 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		dbTypeRadioButtonGroup.setSelectedButtonIndex(1);
 		dbTypeRadioButtonGroup.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(final ModifyEvent e) {
-				isOracle = ((RadioButtonGroup) e.widget).getSelectedButtonIndex() == 0;
+			public void modifyText(final ModifyEvent event) {
+				isOracle = ((RadioButtonGroup) event.widget).getSelectedButtonIndex() == 0;
 			}
 		});
 
@@ -69,8 +69,8 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		dbServerHostnameText = new Text(credentialsComposite, SWT.BORDER);
 		dbServerHostnameText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(final ModifyEvent e) {
-				dbServerHostname = ((Text) e.widget).getText();
+			public void modifyText(final ModifyEvent event) {
+				dbServerHostname = ((Text) event.widget).getText();
 				checkStatus();
 			}
 		});
@@ -82,8 +82,8 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		dbServerPortText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		dbServerPortText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(final ModifyEvent e) {
-				dbServerPort = ((NumberText) e.widget).getValue();
+			public void modifyText(final ModifyEvent event) {
+				dbServerPort = ((NumberText) event.widget).getValue();
 				checkStatus();
 			}
 		});
@@ -94,8 +94,8 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		dbNameText = new Text(credentialsComposite, SWT.BORDER);
 		dbNameText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(final ModifyEvent e) {
-				dbName = ((Text) e.widget).getText();
+			public void modifyText(final ModifyEvent event) {
+				dbName = ((Text) event.widget).getText();
 				checkStatus();
 			}
 		});
@@ -106,8 +106,8 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		userNameText = new Text(credentialsComposite, SWT.BORDER);
 		userNameText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(final ModifyEvent e) {
-				userName = ((Text) e.widget).getText();
+			public void modifyText(final ModifyEvent event) {
+				userName = ((Text) event.widget).getText();
 				checkStatus();
 			}
 		});
@@ -118,8 +118,8 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		passwordText = new Text(credentialsComposite, SWT.PASSWORD | SWT.BORDER);
 		passwordText.addModifyListener(new ModifyListener() {
 			@Override
-			public void modifyText(final ModifyEvent e) {
-				password = ((Text) e.widget).getText();
+			public void modifyText(final ModifyEvent event) {
+				password = ((Text) event.widget).getText();
 				checkStatus();
 			}
 		});
@@ -135,7 +135,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				finalParentDialog.setReturnValue(true);
 				finalParentDialog.getParent().close();
 			}
@@ -146,7 +146,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				finalParentDialog.setReturnValue(false);
 				finalParentDialog.getParent().close();
 			}

@@ -76,7 +76,7 @@ public class OTPKeyItem extends Composite {
 			removeButton.setText("X");
 			removeButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
+				public void widgetSelected(final SelectionEvent event) {
 					item.dispose();
 					final int width = parentItem.getSize().x;
 					parentItem.pack();
@@ -246,14 +246,14 @@ public class OTPKeyItem extends Composite {
 		final int maxPartSize = 100;
 		final StringBuilder dataString = new StringBuilder();
 		int dataChar = inputStream.read();
-		while (dataChar > -1 && (char)dataChar != '>' && dataString.length() < maxPartSize) {
-			dataString.append((char)dataChar);
+		while (dataChar > -1 && (char) dataChar != '>' && dataString.length() < maxPartSize) {
+			dataString.append((char) dataChar);
 			dataChar = inputStream.read();
 		}
 		if (dataString.length() == maxPartSize) {
 			return null;
-		} else if ((char)dataChar == '>') {
-			dataString.append((char)dataChar);
+		} else if ((char) dataChar == '>') {
+			dataString.append((char) dataChar);
 			return dataString.toString();
 		} else {
 			return dataString.toString();
@@ -264,26 +264,26 @@ public class OTPKeyItem extends Composite {
 		final int maxPartSize = 100;
 		final StringBuilder dataString = new StringBuilder();
 		int dataChar = inputStream.read();
-		while (dataChar > -1 && (char)dataChar != '>' && dataString.length() < maxPartSize) {
-			dataString.append((char)dataChar);
+		while (dataChar > -1 && (char) dataChar != '>' && dataString.length() < maxPartSize) {
+			dataString.append((char) dataChar);
 			dataChar = inputStream.read();
 		}
 		if (dataString.length() == maxPartSize) {
 			return null;
-		} else if ((char)dataChar == '>') {
-			dataString.append((char)dataChar);
+		} else if ((char) dataChar == '>') {
+			dataString.append((char) dataChar);
 		} else {
 			return null;
 		}
 		dataChar = inputStream.read();
-		while (dataChar > -1 && (char)dataChar != '>' && dataString.length() < maxPartSize) {
-			dataString.append((char)dataChar);
+		while (dataChar > -1 && (char) dataChar != '>' && dataString.length() < maxPartSize) {
+			dataString.append((char) dataChar);
 			dataChar = inputStream.read();
 		}
 		if (dataString.length() == maxPartSize) {
 			return null;
-		} else if ((char)dataChar == '>') {
-			dataString.append((char)dataChar);
+		} else if ((char) dataChar == '>') {
+			dataString.append((char) dataChar);
 			return dataString.toString();
 		} else {
 			return null;

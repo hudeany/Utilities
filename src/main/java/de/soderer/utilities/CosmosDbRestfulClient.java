@@ -15,8 +15,6 @@ import java.util.TimeZone;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.log4j.Logger;
-
 import de.soderer.utilities.http.HttpRequest;
 import de.soderer.utilities.http.HttpRequest.HttpMethod;
 import de.soderer.utilities.http.HttpResponse;
@@ -30,9 +28,6 @@ import de.soderer.utilities.json.JsonWriter;
  * For documentation see: https://docs.microsoft.com/en-gb/rest/api/cosmos-db/
  */
 public class CosmosDbRestfulClient {
-	/** The logger. */
-	private static final transient Logger logger = Logger.getLogger(CosmosDbRestfulClient.class);
-
 	private static final String COSMOSDB_API_VERSION = "2017-02-22";
 	private static final String AUTH_TOKEN_TYPE = "master";
 	private static final String AUTH_TOKEN_VERSION = "1.0";
@@ -128,12 +123,6 @@ public class CosmosDbRestfulClient {
 
 		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
-		if (logger.isDebugEnabled()) {
-			logger.debug("HttpCode: " + response.getHttpCode());
-			logger.debug("ContentType: " + response.getContentType());
-			logger.debug("Content: " + response.getContent());
-		}
-
 		if (response.getHttpCode() == 200) {
 			// Replaced existing document
 			return false;
@@ -188,12 +177,6 @@ public class CosmosDbRestfulClient {
 
 		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
-		if (logger.isDebugEnabled()) {
-			logger.debug("HttpCode: " + response.getHttpCode());
-			logger.debug("ContentType: " + response.getContentType());
-			logger.debug("Content: " + response.getContent());
-		}
-
 		if (response.getHttpCode() == 204) {
 			// Removed existing document
 			return true;
@@ -228,12 +211,6 @@ public class CosmosDbRestfulClient {
 		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("GET", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), StandardCharsets.UTF_8));
 
 		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug("HttpCode: " + response.getHttpCode());
-			logger.debug("ContentType: " + response.getContentType());
-			logger.debug("Content: " + response.getContent());
-		}
 
 		if (response.getHttpCode() == 200) {
 			// Document was found
@@ -301,12 +278,6 @@ public class CosmosDbRestfulClient {
 
 		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
-		if (logger.isDebugEnabled()) {
-			logger.debug("HttpCode: " + response.getHttpCode());
-			logger.debug("ContentType: " + response.getContentType());
-			logger.debug("Content: " + response.getContent());
-		}
-
 		if (response.getHttpCode() == 200) {
 			return response.getContent();
 		} else if (response.getHttpCode() == 401) {
@@ -357,12 +328,6 @@ public class CosmosDbRestfulClient {
 			request.setRequestBody(JsonWriter.getJsonItemString(requestObject));
 
 			final HttpResponse response = HttpUtilities.executeHttpRequest(request);
-
-			if (logger.isDebugEnabled()) {
-				logger.debug("HttpCode: " + response.getHttpCode());
-				logger.debug("ContentType: " + response.getContentType());
-				logger.debug("Content: " + response.getContent());
-			}
 
 			if (response.getHttpCode() == 200) {
 				final JsonObject queryResponseJsonObject = ((JsonObject) JsonReader.readJsonItemString(response.getContent()).getValue());

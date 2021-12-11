@@ -64,7 +64,7 @@ public class LabeledFileText extends LabeledText {
 		if (selectDirectory) {
 			dataBrowseButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
+				public void widgetSelected(final SelectionEvent event) {
 					final DirectoryDialog dialog = new DirectoryDialog(shellForFileDialog, openExisting ? SWT.OPEN : SWT.SAVE);
 					dialog.setText(openDialogTitle);
 					final String fileName = dialog.open();
@@ -76,7 +76,7 @@ public class LabeledFileText extends LabeledText {
 		} else {
 			dataBrowseButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
+				public void widgetSelected(final SelectionEvent event) {
 					final FileDialog dialog = new FileDialog(shellForFileDialog, openExisting ? SWT.OPEN : SWT.SAVE);
 					dialog.setText(openDialogTitle);
 					final String fileName = dialog.open();

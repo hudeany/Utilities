@@ -11,8 +11,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import com.hierynomus.msdtyp.AccessMask;
 import com.hierynomus.msfscc.FileAttributes;
 import com.hierynomus.msfscc.fileinformation.FileAllInformation;
@@ -36,10 +34,6 @@ import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 public class SmbConnection implements RemoteConnection {
-	/** The Constant logger. */
-	@SuppressWarnings("unused")
-	private static final transient Logger logger = Logger.getLogger(SmbConnection.class);
-
 	/** The host. */
 	private String hostname = null;
 

@@ -62,7 +62,7 @@ public class RadioButtonGroup extends Composite {
 			radioButton.setText(buttonTexts[i]);
 			radioButton.addSelectionListener(new SelectionAdapter() {
 				@Override
-				public void widgetSelected(final SelectionEvent e) {
+				public void widgetSelected(final SelectionEvent selectionEvent) {
 					final Event event = new Event();
 					event.widget = radioButtonGroup;
 					radioButtonGroup.notifyListeners(SWT.Modify, event);

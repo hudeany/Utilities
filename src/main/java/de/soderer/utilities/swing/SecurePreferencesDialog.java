@@ -88,17 +88,17 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 		newNameField.setToolTipText(text);
 		newNameField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
-			public void insertUpdate(final DocumentEvent e) {
+			public void insertUpdate(final DocumentEvent event) {
 				createButton.setEnabled(newNameField.getText().length() > 0);
 			}
 
 			@Override
-			public void removeUpdate(final DocumentEvent e) {
+			public void removeUpdate(final DocumentEvent event) {
 				createButton.setEnabled(newNameField.getText().length() > 0);
 			}
 
 			@Override
-			public void changedUpdate(final DocumentEvent e) {
+			public void changedUpdate(final DocumentEvent event) {
 				createButton.setEnabled(newNameField.getText().length() > 0);
 			}
 		});

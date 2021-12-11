@@ -105,7 +105,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			userField.setPreferredSize(new Dimension(200, userField.getPreferredSize().height));
 			userField.addKeyListener(new KeyAdapter() {
 				@Override
-				public void keyTyped(final KeyEvent e) {
+				public void keyTyped(final KeyEvent event) {
 					checkButtonStatus();
 				}
 			});
@@ -123,7 +123,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			passwordField.setPreferredSize(new Dimension(200, passwordField.getPreferredSize().height));
 			passwordField.addKeyListener(new KeyAdapter() {
 				@Override
-				public void keyTyped(final KeyEvent e) {
+				public void keyTyped(final KeyEvent event) {
 					checkButtonStatus();
 				}
 			});
@@ -139,7 +139,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			rememberCredentialsCheckBox.setSelected(rememberCredentials);
 			rememberCredentialsCheckBox.addActionListener(new ActionListener() {
 				@Override
-				public void actionPerformed(final ActionEvent e) {
+				public void actionPerformed(final ActionEvent event) {
 					rememberCredentials = rememberCredentialsCheckBox.isSelected();
 				}
 			});

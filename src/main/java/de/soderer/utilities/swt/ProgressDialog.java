@@ -75,7 +75,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		buttonClose.setText(LangResources.get("cancel"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(final SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent event) {
 				cancel();
 			}
 		});

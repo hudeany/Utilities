@@ -50,7 +50,7 @@ public class SelectionDialog extends ModalDialog<String> {
 		table.setLinesVisible(true);
 		table.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(SelectionEvent event) {
 				checkStatus();
 			}
 		});
@@ -63,7 +63,7 @@ public class SelectionDialog extends ModalDialog<String> {
 		}
 		table.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mouseDoubleClick(MouseEvent arg0) {
+			public void mouseDoubleClick(MouseEvent mouseEvent) {
 				if (table.getSelectionIndex() > -1) {
 					setReturnValue(table.getSelection()[0].getText());
 					getParent().close();
@@ -78,7 +78,7 @@ public class SelectionDialog extends ModalDialog<String> {
 		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(SelectionEvent event) {
 				if (table.getSelectionIndex() > -1) {
 					setReturnValue(table.getSelection()[0].getText());
 				}
@@ -91,7 +91,7 @@ public class SelectionDialog extends ModalDialog<String> {
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(SelectionEvent event) {
 				getParent().close();
 			}
 		});

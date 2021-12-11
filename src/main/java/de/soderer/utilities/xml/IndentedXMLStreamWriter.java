@@ -264,7 +264,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 	public void write(final Node node) throws Exception {
 		switch (node.getNodeType()) {
 			case Node.DOCUMENT_TYPE_NODE:
-				writer.writeDTD("<!DOCTYPE " + ((DocumentType)node).getName() + " PUBLIC \"" + ((DocumentType)node).getPublicId() + "\" \"" + ((DocumentType)node).getSystemId() + "\">");
+				writer.writeDTD("<!DOCTYPE " + ((DocumentType) node).getName() + " PUBLIC \"" + ((DocumentType) node).getPublicId() + "\" \"" + ((DocumentType) node).getSystemId() + "\">");
 				writer.writeCharacters("\n");
 				break;
 			case Node.ELEMENT_NODE:
