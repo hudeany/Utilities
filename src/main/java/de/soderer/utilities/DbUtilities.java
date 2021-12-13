@@ -297,7 +297,7 @@ public class DbUtilities {
 			return "jdbc:firebirdsql:" + dbServerHostname + "/" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + ":" + Utilities.replaceUsersHome(dbName);
 		} else if (DbVendor.HSQL == dbVendor) {
 			dbName = Utilities.replaceUsersHome(dbName);
-			if (dbName.startsWith("/")) {
+			if (dbName.startsWith("/") || dbName.matches(".\\:\\\\.*")) {
 				return "jdbc:hsqldb:file:" + dbName + ";shutdown=true";
 			} else if (Utilities.isNotBlank(dbServerHostname)) {
 				if (!dbServerHostname.toLowerCase().startsWith("http")) {
