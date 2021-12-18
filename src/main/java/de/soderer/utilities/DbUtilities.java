@@ -399,6 +399,17 @@ public class DbUtilities {
 					}
 				}
 				return true;
+			} else if (dbPath.matches(".\\:\\\\.*")) {
+				final File baseDirectory = new File(dbPath.substring(0, dbPath.lastIndexOf("\\")));
+				final String basename = dbPath.substring(dbPath.lastIndexOf("\\") + 1);
+				for (final File fileToDelete : baseDirectory.listFiles()) {
+					if (fileToDelete.getName().startsWith(basename)) {
+						if (!Utilities.delete(fileToDelete)) {
+							throw new Exception("Cannot delete db file '" + fileToDelete.getAbsolutePath() + "'");
+						}
+					}
+				}
+				return true;
 			} else {
 				return false;
 			}

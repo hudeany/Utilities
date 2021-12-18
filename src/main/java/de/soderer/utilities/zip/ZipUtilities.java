@@ -35,7 +35,7 @@ public class ZipUtilities {
 	 */
 	public static File zipFile(final File sourceFile) throws IOException {
 		final File zippedFile = new File(sourceFile.getAbsolutePath() + ".zip");
-		zipFile(sourceFile, zippedFile, null, null);
+		zipFile(sourceFile, zippedFile, null);
 		return zippedFile;
 	}
 
@@ -46,7 +46,7 @@ public class ZipUtilities {
 	 * @param destinationZipFile
 	 * @throws IOException
 	 */
-	public static void zipFile(final File sourceFile, final File destinationZipFile, final char[] password, final Charset fileNameEncodingCharset) throws IOException {
+	public static void zipFile(final File sourceFile, final File destinationZipFile, final Charset fileNameEncodingCharset) throws IOException {
 		if (!sourceFile.exists()) {
 			throw new IOException("SourceFile does not exist");
 		}
@@ -55,7 +55,7 @@ public class ZipUtilities {
 			throw new IOException("DestinationFile already exists");
 		}
 
-		try (ZipOutputStream zipOutputStream = openNewZipOutputStream(destinationZipFile, password, fileNameEncodingCharset)) {
+		try (ZipOutputStream zipOutputStream = openNewZipOutputStream(destinationZipFile, fileNameEncodingCharset)) {
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
 		} catch (final IOException e) {
 			if (destinationZipFile.exists()) {
@@ -66,10 +66,10 @@ public class ZipUtilities {
 	}
 
 	public static void unzipFile(final File zipFile, final File destinationDirectory) throws IOException {
-		unzipFile(zipFile, destinationDirectory, null, null);
+		unzipFile(zipFile, destinationDirectory, null);
 	}
 
-	public static File unzipFile(final File zipFile, final File destinationFilePath, final char[] password, Charset fileNameEncodingCharset, final String filePathInZipFile) throws Exception {
+	public static File unzipFile(final File zipFile, final File destinationFilePath, Charset fileNameEncodingCharset, final String filePathInZipFile) throws Exception {
 		if (!zipFile.exists()) {
 			throw new IOException("ZipFile '" + zipFile.getAbsolutePath() + "' does not exist");
 		} else if (!zipFile.isFile()) {
@@ -83,7 +83,7 @@ public class ZipUtilities {
 		}
 
 		final byte[] buffer = new byte[1024];
-		try (final InputStream inputStream = (password == null ? new FileInputStream(zipFile) : new ZipDecryptInputStream(new FileInputStream(zipFile), password));
+		try (final InputStream inputStream = new FileInputStream(zipFile);
 				final ZipInputStream zis = new ZipInputStream(inputStream, fileNameEncodingCharset)) {
 			ZipEntry zipEntry = zis.getNextEntry();
 			while (zipEntry != null) {
@@ -113,7 +113,7 @@ public class ZipUtilities {
 		throw new Exception("File not found in zipfile");
 	}
 
-	public static void unzipFile(final File zipFile, final File destinationDirectory, final char[] password, Charset fileNameEncodingCharset) throws IOException {
+	public static void unzipFile(final File zipFile, final File destinationDirectory, Charset fileNameEncodingCharset) throws IOException {
 		if (!zipFile.exists()) {
 			throw new IOException("ZipFile '" + zipFile.getAbsolutePath() + "' does not exist");
 		} else if (!zipFile.isFile()) {
@@ -130,7 +130,7 @@ public class ZipUtilities {
 
 		final String destinationDirectoryPath = destinationDirectory.getCanonicalPath();
 		final byte[] buffer = new byte[1024];
-		try (final InputStream inputStream = (password == null ? new FileInputStream(zipFile) : new ZipDecryptInputStream(new FileInputStream(zipFile), password));
+		try (final InputStream inputStream = new FileInputStream(zipFile);
 				final ZipInputStream zis = new ZipInputStream(inputStream, fileNameEncodingCharset)) {
 			ZipEntry zipEntry = zis.getNextEntry();
 			while (zipEntry != null) {
@@ -266,8 +266,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	@SuppressWarnings("resource")
-	public static ZipOutputStream openNewZipOutputStream(final File destinationZipFile, final char[] password, Charset fileNameEncodingCharset) throws IOException {
+	public static ZipOutputStream openNewZipOutputStream(final File destinationZipFile, Charset fileNameEncodingCharset) throws IOException {
 		if (destinationZipFile.exists()) {
 			throw new IOException("DestinationFile already exists");
 		} else if (!destinationZipFile.getParentFile().exists()) {
@@ -279,11 +278,7 @@ public class ZipUtilities {
 		}
 
 		try {
-			if (password == null) {
-				return new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(destinationZipFile)));
-			} else {
-				return new ZipOutputStream(new ZipEncryptOutputStream(new BufferedOutputStream(new FileOutputStream(destinationZipFile)), password), fileNameEncodingCharset);
-			}
+			return new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(destinationZipFile)));
 		} catch (final IOException e) {
 			if (destinationZipFile.exists()) {
 				destinationZipFile.delete();
@@ -382,7 +377,7 @@ public class ZipUtilities {
 		if (zipFile.exists()) {
 			return openExistingZipFileForExtension(zipFile);
 		} else {
-			return openNewZipOutputStream(zipFile, null, null);
+			return openNewZipOutputStream(zipFile, null);
 		}
 	}
 
@@ -482,10 +477,10 @@ public class ZipUtilities {
 		}
 	}
 
-	public static void removeFilesFromZipFile(final File zipFile, final char[] password, final Charset fileNameEncodingCharset, final String... filePatterns) throws Exception {
+	public static void removeFilesFromZipFile(final File zipFile, final Charset fileNameEncodingCharset, final String... filePatterns) throws Exception {
 		final File tempZipFile = File.createTempFile("temp", ".zip");
 		try {
-			removeFilesFromZipFile(zipFile, tempZipFile, password, fileNameEncodingCharset, filePatterns);
+			removeFilesFromZipFile(zipFile, tempZipFile, fileNameEncodingCharset, filePatterns);
 		} catch (final IOException e) {
 			if (tempZipFile.exists()) {
 				tempZipFile.delete();
@@ -496,9 +491,9 @@ public class ZipUtilities {
 		tempZipFile.renameTo(zipFile);
 	}
 
-	public static void removeFilesFromZipFile(final File originalZipFile, final File shrinkedZipFile, final char[] password, final Charset fileNameEncodingCharset, final String... filePatterns) throws Exception {
+	public static void removeFilesFromZipFile(final File originalZipFile, final File shrinkedZipFile, final Charset fileNameEncodingCharset, final String... filePatterns) throws Exception {
 		try (ZipFile sourceZipFile = new ZipFile(originalZipFile);
-				ZipOutputStream destinationZipOutputStream = openNewZipOutputStream(shrinkedZipFile, password, fileNameEncodingCharset)) {
+				ZipOutputStream destinationZipOutputStream = openNewZipOutputStream(shrinkedZipFile, fileNameEncodingCharset)) {
 			final List<Pattern> patternsToFilter = new ArrayList<>();
 			for (final String filePattern : filePatterns) {
 				patternsToFilter.add(Pattern.compile("^" + filePattern.replace("\\", "/").replace(".", "\\.").replace("*", ".*").replace("?", ".") + "$"));

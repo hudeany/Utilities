@@ -647,7 +647,7 @@ public class CryptographicUtilities {
 	}
 
 	public static void removeJarSignature(final File signedTestJarFile, final File unsignedTestJarFile) throws Exception {
-		ZipUtilities.removeFilesFromZipFile(signedTestJarFile, unsignedTestJarFile, null, StandardCharsets.UTF_8, "META-INF/*.RSA", "META-INF/*.SF");
+		ZipUtilities.removeFilesFromZipFile(signedTestJarFile, unsignedTestJarFile, StandardCharsets.UTF_8, "META-INF/*.RSA", "META-INF/*.SF");
 	}
 
 	public static void createJarSignature(final File unsignedJarFile, final PrivateKey privateKey, final CertPath certPath, final File signedJarFile) throws Exception {
