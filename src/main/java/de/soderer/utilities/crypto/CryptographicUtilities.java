@@ -579,7 +579,7 @@ public class CryptographicUtilities {
 					} else {
 						for (final Certificate cert : certificates) {
 							if (cert instanceof X509Certificate) {
-								returnData.add(CryptographicUtilities.getValuesFromX500Principal(((X509Certificate) cert).getSubjectX500Principal()).get("CN"));
+								returnData.add(getValuesFromX500Principal(((X509Certificate) cert).getSubjectX500Principal()).get("CN"));
 							} else {
 								returnData.add("Unknown type of certificate");
 							}
@@ -883,7 +883,7 @@ public class CryptographicUtilities {
 
 	public static String getX509CertificateInfo(final X509Certificate certificate) throws Exception {
 		String dataOutput = "";
-		dataOutput += "CN: " + CryptographicUtilities.getValuesFromX500Principal(certificate.getSubjectX500Principal()).get("CN");
+		dataOutput += "CN: " + getValuesFromX500Principal(certificate.getSubjectX500Principal()).get("CN");
 		dataOutput += "\n";
 		dataOutput += "Subject: " + certificate.getSubjectX500Principal();
 		dataOutput += "\n";
