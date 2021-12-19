@@ -57,6 +57,7 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 					showProgress();
 				}
 			}
+			Utilities.clear(buffer);
 		}
 
 		if (cancel && localFile.exists()) {

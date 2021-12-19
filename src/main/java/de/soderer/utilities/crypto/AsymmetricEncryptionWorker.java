@@ -99,6 +99,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 							showProgress();
 						}
 					}
+					Utilities.clear(buffer);
 				}
 			} else {
 				AsymmetricBlockCipher asymmetricEncryptCipher;
@@ -137,6 +138,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 							showProgress();
 						}
 					}
+					Utilities.clear(buffer);
 				}
 			}
 

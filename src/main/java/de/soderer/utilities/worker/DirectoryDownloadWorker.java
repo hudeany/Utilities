@@ -116,6 +116,7 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 							showItemProgress();
 						}
 					}
+					Utilities.clear(buffer);
 					itemsDone += subItemsDone;
 					showProgress();
 				}

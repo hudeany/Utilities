@@ -76,6 +76,7 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 					showProgress();
 				}
 			}
+			Utilities.clear(buffer);
 
 			return signature.verify();
 		} catch (final Exception e) {

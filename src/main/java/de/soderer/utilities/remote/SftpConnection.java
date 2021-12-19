@@ -538,14 +538,15 @@ public class SftpConnection implements RemoteConnection {
 
 				// send a content of lfile
 				try (InputStream bufferedFileInputStream = new BufferedInputStream(new FileInputStream(localPathAndFileName))) {
-					final byte[] buf = new byte[4096];
+					final byte[] buffer = new byte[4096];
 					while (true) {
-						final int len = bufferedFileInputStream.read(buf);
+						final int len = bufferedFileInputStream.read(buffer);
 						if (len <= 0) {
 							break;
 						}
-						out.write(buf, 0, len); // out.flush();
+						out.write(buffer, 0, len); // out.flush();
 					}
+					Utilities.clear(buffer);
 					// send '\0'
 					sendZeroByte(out);
 

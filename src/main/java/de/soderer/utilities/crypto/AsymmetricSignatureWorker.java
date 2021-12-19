@@ -66,6 +66,7 @@ public class AsymmetricSignatureWorker extends WorkerSimple<byte[]> {
 					showProgress();
 				}
 			}
+			Utilities.clear(buffer);
 			final byte[] signatureData = signature.sign();
 			return signatureData;
 		} catch (final Exception e) {

@@ -110,6 +110,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 					showProgress();
 				}
 			}
+			Utilities.clear(buffer);
 
 			literalDataGenerator.close();
 			compressedDataGenerator.close();

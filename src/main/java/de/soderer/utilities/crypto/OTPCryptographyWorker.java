@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.soderer.utilities.BitUtilities;
+import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
@@ -62,6 +63,10 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 				itemsDone += bytesRead;
 				showProgress();
 			}
+			Utilities.clear(inputBuffer);
+			for (final byte[] buffer : outputBuffer) {
+				Utilities.clear(buffer);
+			}
 			final String dataHash = BitUtilities.toHexString(messageDigest.digest());
 			for (int i = 0; i < outputItems.length; i++) {
 				outputItems[i].setDataHash(dataHash);
@@ -108,6 +113,10 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 					itemsDone += bytesRead[0];
 					showProgress();
 				}
+			}
+			Utilities.clear(outputBuffer);
+			for (final byte[] buffer : inputBuffer) {
+				Utilities.clear(buffer);
 			}
 
 			final String dataHash = BitUtilities.toHexString(messageDigest.digest());

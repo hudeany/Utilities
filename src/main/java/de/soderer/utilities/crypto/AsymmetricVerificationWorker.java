@@ -68,6 +68,7 @@ public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
 					showProgress();
 				}
 			}
+			Utilities.clear(buffer);
 
 			return signature.verify(signatureData);
 		} catch (final Exception e) {

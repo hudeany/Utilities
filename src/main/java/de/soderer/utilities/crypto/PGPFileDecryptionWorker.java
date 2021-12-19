@@ -125,6 +125,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 						showProgress();
 					}
 				}
+				Utilities.clear(buffer);
 			} else if (message instanceof PGPOnePassSignatureList) {
 				throw new PGPException("encrypted message contains a signed message - not literal data.");
 			} else {

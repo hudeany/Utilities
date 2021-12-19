@@ -388,6 +388,7 @@ public class Mailer {
 			while ((readBuffer = inputStream.read(buffer)) != -1) {
 				pgpSignatureGenerator.update(buffer, 0, readBuffer);
 			}
+			Utilities.clear(buffer);
 
 			armoredOutput.endClearText();
 			pgpSignatureGenerator.generate().encode(armoredOutput);

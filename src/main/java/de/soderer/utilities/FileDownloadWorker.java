@@ -46,6 +46,7 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 						showProgress();
 					}
 				}
+				Utilities.clear(buffer);
 			} catch (final Exception e) {
 				if (e.getMessage().toLowerCase().contains("server returned http response code: 401")) {
 					throw new UserError("error.userNotAuthenticatedOrNotAuthorized", UserError.Reason.UnauthenticatedOrUnauthorized);

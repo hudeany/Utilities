@@ -80,6 +80,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 					showProgress();
 				}
 			}
+			Utilities.clear(buffer);
 
 			pgpSignatureGenerator.generate().encode(bcpgOutputStream);
 

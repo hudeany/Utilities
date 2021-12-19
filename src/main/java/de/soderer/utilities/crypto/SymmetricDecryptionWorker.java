@@ -114,6 +114,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 							showProgress();
 						}
 					}
+					Utilities.clear(buffer);
 				}
 
 			}
