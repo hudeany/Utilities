@@ -154,7 +154,7 @@ public class SimpleConsoleInput {
 					if (keyCode == ConsoleUtilities.KeyCode_CtrlC) {
 						ConsoleUtilities.showCursor();
 						System.exit(1);
-					} else if (keyCode == ConsoleUtilities.KeyCode_CtrlV || keyCode == ConsoleUtilities.KeyCode_ContextMenu_Insert) {
+					} else if (keyCode == ConsoleUtilities.KeyCode_CtrlV) {
 						final String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
 						if (insertMode || cursorIndex == content.length()) {
 							content = content.substring(0, cursorIndex) + data + content.substring(cursorIndex);
@@ -185,21 +185,21 @@ public class SimpleConsoleInput {
 						} else if (!silent) {
 							Toolkit.getDefaultToolkit().beep();
 						}
-					} else if (keyCode == ConsoleUtilities.KeyCode_Left) {
+					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowLeft) {
 						if (cursorIndex > 0) {
 							cursorIndex--;
 						} else {
 							Toolkit.getDefaultToolkit().beep();
 						}
-					} else if (keyCode == ConsoleUtilities.KeyCode_Right) {
+					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowRight) {
 						if (cursorIndex < content.length()) {
 							cursorIndex++;
 						} else {
 							Toolkit.getDefaultToolkit().beep();
 						}
-					} else if (keyCode == ConsoleUtilities.KeyCode_Down) {
+					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowDown) {
 						// do nothing
-					} else if (keyCode == ConsoleUtilities.KeyCode_Up) {
+					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowUp) {
 						// do nothing
 					} else if (keyCode == ConsoleUtilities.KeyCode_PageDown) {
 						final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);

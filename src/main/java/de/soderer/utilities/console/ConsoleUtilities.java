@@ -12,73 +12,40 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ConsoleUtilities {
-	private static final boolean keyCodeDebugMode = false;
-
 	private static Boolean consoleSupportsAnsiCodes = null;
 	private static boolean linuxConsoleActivatedRawMode = false;
 
-	/**
-	 * Detection of Ctrl-C only works on Windows systems, because it ends Linux Java VM immediatelly
-	 */
 	public static final int KeyCode_CtrlC = 3;
 	public static final int KeyCode_CtrlV = 22;
 	public static final int KeyCode_CtrlX = 24;
 
-	/**
-	 * Detection of contextmenu insert. Only works on Linux systems
-	 */
-	public static final int KeyCode_ContextMenu_Insert = 7077990;
+	public static final int KeyCode_CtrlHome = 57463;
+	public static final int KeyCode_CtrlEnd = 57461;
+	public static final int KeyCode_CtrlArrowUp = 57485;
+	public static final int KeyCode_CtrlArrowLeft = 57459;
+	public static final int KeyCode_CtrlArrowRight = 57460;
+	public static final int KeyCode_CtrlArrowDown = 57489;
 
-	public static final int KeyCode_Enter;
-	public static final int KeyCode_Backspace;
+	public static final int KeyCode_Enter = 13;
+	public static final int KeyCode_Backspace = 8;
 	public static final int KeyCode_Tab = 9;
+	/**
+	 * There is no Windows Code for ReverseTab
+	 */
+	public static final int KeyCode_ReverseTab = -1;
 	public static final int KeyCode_Escape = 27;
 
-	public static final int KeyCode_Home;
-	public static final int KeyCode_PageUp;
-	public static final int KeyCode_End;
-	public static final int KeyCode_Insert;
-	public static final int KeyCode_Delete;
-	public static final int KeyCode_PageDown;
+	public static final int KeyCode_Home = 57415;
+	public static final int KeyCode_PageUp = 57417;
+	public static final int KeyCode_End = 57423;
+	public static final int KeyCode_Insert = 57426;
+	public static final int KeyCode_Delete = 57427;
+	public static final int KeyCode_PageDown = 57425;
 
-	public static final int KeyCode_Up;
-	public static final int KeyCode_Left;
-	public static final int KeyCode_Right;
-	public static final int KeyCode_Down;
-
-	static {
-		if (SystemUtilities.isWindowsSystem()) {
-			KeyCode_Enter = 13;
-			KeyCode_Backspace = 8;
-
-			KeyCode_Insert = 57426;
-			KeyCode_Home = 57415;
-			KeyCode_PageUp = 57417;
-			KeyCode_End = 57423;
-			KeyCode_Delete = 57427;
-			KeyCode_PageDown = 57425;
-
-			KeyCode_Up = 57416;
-			KeyCode_Left = 57419;
-			KeyCode_Right = 57421;
-			KeyCode_Down = 57424;
-		} else {
-			KeyCode_Enter = 13;
-			KeyCode_Backspace = 127;
-
-			KeyCode_Insert = 3276926;
-			KeyCode_Home = 5963848;
-			KeyCode_PageUp = 3473534;
-			KeyCode_Delete = 3342462;
-			KeyCode_End = 5963846;
-			KeyCode_PageDown = 3539070;
-
-			KeyCode_Up = 5963841;
-			KeyCode_Left = 5963844;
-			KeyCode_Right = 5963843;
-			KeyCode_Down = 5963842;
-		}
-	}
+	public static final int KeyCode_ArrowUp = 57416;
+	public static final int KeyCode_ArrowLeft = 57419;
+	public static final int KeyCode_ArrowRight = 57421;
+	public static final int KeyCode_ArrowDown = 57424;
 
 	/**
 	 * Additional attributes
@@ -472,19 +439,81 @@ public class ConsoleUtilities {
 				final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
 				try {
 					try (Reader inputReader = System.console().reader()) {
-						final char[] buffer = new char[5];
-						final int readChars = inputReader.read(buffer);
-						int keyCode = 0;
-						for (int i = 0; i < readChars; i++) {
-							keyCode = (keyCode * 65536) + buffer[i];
+						final int nextKeyCode = inputReader.read();
+						if (nextKeyCode == 3) {
+							return KeyCode_CtrlC;
+						} else if (nextKeyCode == 8) {
+							return KeyCode_Backspace;
+						} else if (nextKeyCode == 9) {
+							return KeyCode_Tab;
+						} else if (nextKeyCode == 13) {
+							return KeyCode_Enter;
+						} else if (nextKeyCode == 22) {
+							return KeyCode_CtrlV;
+						} else if (nextKeyCode == 24) {
+							return KeyCode_CtrlX;
+						} else if (nextKeyCode == 27) {
+							// Escape seqence is entered
+							if (inputReader.ready()) {
+								final char[] escapeSequenceEntered = new char[6];
+								final int sequenceBytesRead = inputReader.read(escapeSequenceEntered);
+								if (sequenceBytesRead == 2) {
+									if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 65) {
+										return KeyCode_ArrowUp;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 66) {
+										return KeyCode_ArrowDown;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 67) {
+										return KeyCode_ArrowRight;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 68) {
+										return KeyCode_ArrowLeft;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 70) {
+										return KeyCode_End;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 72) {
+										return KeyCode_Home;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 90) {
+										return KeyCode_ReverseTab;
+									} else {
+										return KeyCode_Escape;
+									}
+								} else if (sequenceBytesRead == 3) {
+									if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 50 && escapeSequenceEntered[2] == 126) {
+										return KeyCode_Insert;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 51 && escapeSequenceEntered[2] == 126) {
+										return KeyCode_Delete;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 53 && escapeSequenceEntered[2] == 126) {
+										return KeyCode_PageUp;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 54 && escapeSequenceEntered[2] == 126) {
+										return KeyCode_PageDown;
+									} else {
+										return KeyCode_Escape;
+									}
+								} else if (sequenceBytesRead == 5) {
+									if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 70) {
+										return KeyCode_CtrlEnd;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 72) {
+										return KeyCode_CtrlHome;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 65) {
+										return KeyCode_CtrlArrowUp;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 66) {
+										return KeyCode_CtrlArrowDown;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 67) {
+										return KeyCode_CtrlArrowRight;
+									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 68) {
+										return KeyCode_CtrlArrowLeft;
+									} else {
+										return KeyCode_Escape;
+									}
+								} else {
+									return KeyCode_Escape;
+								}
+							} else {
+								return KeyCode_Escape;
+							}
+						} else if (nextKeyCode == 127) {
+							return KeyCode_Backspace;
+						} else {
+							return nextKeyCode;
 						}
-
-						if (keyCodeDebugMode) {
-							System.out.println();
-							System.out.println("   " + keyCode + "   ");
-						}
-
-						return keyCode;
 					}
 				} finally {
 					if (linuxConsoleMustBeReset) {
@@ -494,6 +523,27 @@ public class ConsoleUtilities {
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot readKey", e);
+		}
+	}
+
+	public static int readNextRawKey() throws Exception {
+		try {
+			if (SystemUtilities.isWindowsSystem()) {
+				return WindowsKeyStrokeReader.readKey(true);
+			} else {
+				final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
+				try {
+					try (Reader inputReader = System.console().reader()) {
+						return inputReader.read();
+					}
+				} finally {
+					if (linuxConsoleMustBeReset) {
+						deactivateLinuxConsoleRawMode();
+					}
+				}
+			}
+		} catch (final Exception e) {
+			throw new Exception("Cannot readNextRawKey", e);
 		}
 	}
 }
