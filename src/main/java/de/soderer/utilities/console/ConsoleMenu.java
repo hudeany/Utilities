@@ -3,6 +3,7 @@ package de.soderer.utilities.console;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.soderer.utilities.NumberUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.console.ConsoleUtilities.TextColor;
 
@@ -130,6 +131,35 @@ public class ConsoleMenu {
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					errors.add("Invalid input: " + choice);
 				}
+			}
+		}
+	}
+
+	protected String askForSelection(final String message, final List<String> selectionValues) throws Exception {
+		System.out.println();
+		System.out.println(message + " (Blank => Cancel)");
+		int selectionIndex = 0;
+		for (final String selectionValue : selectionValues) {
+			selectionIndex++;
+			System.out.println(" " + Utilities.leftPad(Integer.toString(selectionIndex), 2) + ") " + selectionValue);
+		}
+		String choice = new SimpleConsoleInput().setAutoCompletionStrings(selectionValues).setPrompt(" > ").readInput();
+		choice = choice == null ? "" : choice.trim();
+		if (Utilities.isBlank(choice)) {
+			getParentMenu().getMessages().add("Canceled by user");
+			return null;
+		} else if (!NumberUtilities.isNumber(choice)) {
+			if (selectionValues.contains(choice)) {
+				return choice;
+			} else {
+				throw new Exception("Invalid selection: " + choice);
+			}
+		} else {
+			final int choiseInt = Integer.parseInt(choice);
+			if (choiseInt < 1 || choiseInt > selectionValues.size()) {
+				throw new Exception("Invalid selection: " + choice);
+			} else {
+				return selectionValues.get(choiseInt - 1);
 			}
 		}
 	}

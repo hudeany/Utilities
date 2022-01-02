@@ -1656,4 +1656,8 @@ public class Utilities {
 			return readBytes == 4 && magicBytes[0] == 0x50 && magicBytes[1] == 0x4B && magicBytes[2] == 0x03 && magicBytes[3] == 0x04;
 		}
 	}
+
+	public static String getSystemTempDir() {
+		return System.getProperty("java.io.tmpdir");
+	}
 }

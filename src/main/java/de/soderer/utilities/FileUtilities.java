@@ -521,6 +521,12 @@ public class FileUtilities {
 		}
 	}
 
+	public static void append(final File file, final byte[] data) throws Exception {
+		try (FileOutputStream out = new FileOutputStream(file, true)) {
+			out.write(data);
+		}
+	}
+
 	public static String trimLeadingFileSeparator(final String path) {
 		if (path != null && path.startsWith("/")) {
 			return path.substring(1);

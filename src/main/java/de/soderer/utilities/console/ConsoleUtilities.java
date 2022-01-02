@@ -5,13 +5,17 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.text.NumberFormat;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.Locale;
+import java.util.Queue;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ConsoleUtilities {
+	private static Queue<Character> consoleInputBuffer = null;
+
 	private static Boolean consoleSupportsAnsiCodes = null;
 	private static boolean linuxConsoleActivatedRawMode = false;
 
@@ -436,73 +440,95 @@ public class ConsoleUtilities {
 			if (SystemUtilities.isWindowsSystem()) {
 				return WindowsKeyStrokeReader.readKey(true);
 			} else {
-				final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
-				try {
-					try (Reader inputReader = System.console().reader()) {
-						final int nextKeyCode = inputReader.read();
+				if (consoleInputBuffer != null) {
+					final int returnValue = consoleInputBuffer.remove();
+					if (consoleInputBuffer.size() == 0) {
+						consoleInputBuffer = null;
+					}
+					return returnValue;
+				} else {
+					final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
+					try (Reader consoleReader = System.console().reader()) {
+						int nextKeyCode = -1;
+
+						final char[] inputReadBuffer = new char[256];
+						int inputReadBytes;
+						// Read method always waits for next key pressed, no matter how much data is still left in the console-reader
+						inputReadBytes = consoleReader.read(inputReadBuffer);
+						if (inputReadBytes > 1 && inputReadBuffer[0] != 27) {
+							consoleInputBuffer = new LinkedList<>();
+							for (int i = 0; i < inputReadBytes; i++) {
+								consoleInputBuffer.add(inputReadBuffer[i]);
+							}
+							nextKeyCode = consoleInputBuffer.remove();
+						} else {
+							nextKeyCode = inputReadBuffer[0];
+						}
+
 						if (nextKeyCode == 3) {
+							consoleInputBuffer = null;
 							return KeyCode_CtrlC;
 						} else if (nextKeyCode == 8) {
+							consoleInputBuffer = null;
 							return KeyCode_Backspace;
 						} else if (nextKeyCode == 9) {
+							consoleInputBuffer = null;
 							return KeyCode_Tab;
 						} else if (nextKeyCode == 13) {
+							consoleInputBuffer = null;
 							return KeyCode_Enter;
 						} else if (nextKeyCode == 22) {
+							consoleInputBuffer = null;
 							return KeyCode_CtrlV;
 						} else if (nextKeyCode == 24) {
+							consoleInputBuffer = null;
 							return KeyCode_CtrlX;
 						} else if (nextKeyCode == 27) {
-							// Escape seqence is entered
-							if (inputReader.ready()) {
-								final char[] escapeSequenceEntered = new char[6];
-								final int sequenceBytesRead = inputReader.read(escapeSequenceEntered);
-								if (sequenceBytesRead == 2) {
-									if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 65) {
-										return KeyCode_ArrowUp;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 66) {
-										return KeyCode_ArrowDown;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 67) {
-										return KeyCode_ArrowRight;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 68) {
-										return KeyCode_ArrowLeft;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 70) {
-										return KeyCode_End;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 72) {
-										return KeyCode_Home;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 90) {
-										return KeyCode_ReverseTab;
-									} else {
-										return KeyCode_Escape;
-									}
-								} else if (sequenceBytesRead == 3) {
-									if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 50 && escapeSequenceEntered[2] == 126) {
-										return KeyCode_Insert;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 51 && escapeSequenceEntered[2] == 126) {
-										return KeyCode_Delete;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 53 && escapeSequenceEntered[2] == 126) {
-										return KeyCode_PageUp;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 54 && escapeSequenceEntered[2] == 126) {
-										return KeyCode_PageDown;
-									} else {
-										return KeyCode_Escape;
-									}
-								} else if (sequenceBytesRead == 5) {
-									if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 70) {
-										return KeyCode_CtrlEnd;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 72) {
-										return KeyCode_CtrlHome;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 65) {
-										return KeyCode_CtrlArrowUp;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 66) {
-										return KeyCode_CtrlArrowDown;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 67) {
-										return KeyCode_CtrlArrowRight;
-									} else if (escapeSequenceEntered[0] == 91 && escapeSequenceEntered[1] == 49 && escapeSequenceEntered[2] == 59 && escapeSequenceEntered[2] == 53 && escapeSequenceEntered[2] == 68) {
-										return KeyCode_CtrlArrowLeft;
-									} else {
-										return KeyCode_Escape;
-									}
+							consoleInputBuffer = null;
+							// Escape sequence is entered
+							if (inputReadBytes == 3) {
+								if (inputReadBuffer[1] == 1 && inputReadBuffer[2] == 65) {
+									return KeyCode_ArrowUp;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 66) {
+									return KeyCode_ArrowDown;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 67) {
+									return KeyCode_ArrowRight;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 68) {
+									return KeyCode_ArrowLeft;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 70) {
+									return KeyCode_End;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 72) {
+									return KeyCode_Home;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 90) {
+									return KeyCode_ReverseTab;
+								} else {
+									return KeyCode_Escape;
+								}
+							} else if (inputReadBytes == 4) {
+								if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 50 && inputReadBuffer[3] == 126) {
+									return KeyCode_Insert;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 51 && inputReadBuffer[3] == 126) {
+									return KeyCode_Delete;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 53 && inputReadBuffer[3] == 126) {
+									return KeyCode_PageUp;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 54 && inputReadBuffer[3] == 126) {
+									return KeyCode_PageDown;
+								} else {
+									return KeyCode_Escape;
+								}
+							} else if (inputReadBytes == 6) {
+								if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 49 && inputReadBuffer[3] == 59 && inputReadBuffer[4] == 53 && inputReadBuffer[5] == 70) {
+									return KeyCode_CtrlEnd;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 49 && inputReadBuffer[3] == 59 && inputReadBuffer[4] == 53 && inputReadBuffer[5] == 72) {
+									return KeyCode_CtrlHome;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 49 && inputReadBuffer[3] == 59 && inputReadBuffer[4] == 53 && inputReadBuffer[5] == 65) {
+									return KeyCode_CtrlArrowUp;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 49 && inputReadBuffer[3] == 59 && inputReadBuffer[4] == 53 && inputReadBuffer[5] == 66) {
+									return KeyCode_CtrlArrowDown;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 49 && inputReadBuffer[3] == 59 && inputReadBuffer[4] == 53 && inputReadBuffer[5] == 67) {
+									return KeyCode_CtrlArrowRight;
+								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 49 && inputReadBuffer[3] == 59 && inputReadBuffer[4] == 53 && inputReadBuffer[5] == 68) {
+									return KeyCode_CtrlArrowLeft;
 								} else {
 									return KeyCode_Escape;
 								}
@@ -510,18 +536,20 @@ public class ConsoleUtilities {
 								return KeyCode_Escape;
 							}
 						} else if (nextKeyCode == 127) {
+							consoleInputBuffer = null;
 							return KeyCode_Backspace;
 						} else {
 							return nextKeyCode;
 						}
-					}
-				} finally {
-					if (linuxConsoleMustBeReset) {
-						deactivateLinuxConsoleRawMode();
+					} finally {
+						if (linuxConsoleMustBeReset) {
+							deactivateLinuxConsoleRawMode();
+						}
 					}
 				}
 			}
 		} catch (final Exception e) {
+			e.printStackTrace();
 			throw new Exception("Cannot readKey", e);
 		}
 	}
@@ -532,10 +560,8 @@ public class ConsoleUtilities {
 				return WindowsKeyStrokeReader.readKey(true);
 			} else {
 				final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
-				try {
-					try (Reader inputReader = System.console().reader()) {
-						return inputReader.read();
-					}
+				try (Reader consoleReader = System.console().reader()) {
+					return consoleReader.read();
 				} finally {
 					if (linuxConsoleMustBeReset) {
 						deactivateLinuxConsoleRawMode();

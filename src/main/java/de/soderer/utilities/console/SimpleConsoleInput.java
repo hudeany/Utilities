@@ -198,9 +198,59 @@ public class SimpleConsoleInput {
 							Toolkit.getDefaultToolkit().beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowDown) {
-						// do nothing
+						final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
+						if (autoCompletionStringsToCheck != null && autoCompletionStringsToCheck.size() > 0) {
+							int currentIndexOfAutocompletion = -1;
+							for (int i = 0; i < autoCompletionStringsToCheck.size(); i++) {
+								if (autoCompletionStringsToCheck.get(i) != null && autoCompletionStringsToCheck.get(i).equals(content)) {
+									currentIndexOfAutocompletion = i;
+									break;
+								}
+							}
+
+							if (currentIndexOfAutocompletion == -1) {
+								currentIndexOfAutocompletion = autoCompletionStringsToCheck.size() - 1;
+							}
+
+							int nextIndexOfAutocompletion;
+							if (currentIndexOfAutocompletion < (autoCompletionStringsToCheck.size() - 1)) {
+								nextIndexOfAutocompletion = currentIndexOfAutocompletion + 1;
+							} else {
+								nextIndexOfAutocompletion = 0;
+							}
+
+							content = autoCompletionStringsToCheck.get(nextIndexOfAutocompletion);
+							cursorIndex = content.length();
+						} else if (!silent) {
+							Toolkit.getDefaultToolkit().beep();
+						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowUp) {
-						// do nothing
+						final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
+						if (autoCompletionStringsToCheck != null && autoCompletionStringsToCheck.size() > 0) {
+							int currentIndexOfAutocompletion = -1;
+							for (int i = 0; i < autoCompletionStringsToCheck.size(); i++) {
+								if (autoCompletionStringsToCheck.get(i) != null && autoCompletionStringsToCheck.get(i).equals(content)) {
+									currentIndexOfAutocompletion = i;
+									break;
+								}
+							}
+
+							if (currentIndexOfAutocompletion == -1) {
+								currentIndexOfAutocompletion = 0;
+							}
+
+							int nextIndexOfAutocompletion;
+							if (currentIndexOfAutocompletion > 0) {
+								nextIndexOfAutocompletion = currentIndexOfAutocompletion - 1;
+							} else {
+								nextIndexOfAutocompletion = autoCompletionStringsToCheck.size() - 1;
+							}
+
+							content = autoCompletionStringsToCheck.get(nextIndexOfAutocompletion);
+							cursorIndex = content.length();
+						} else if (!silent) {
+							Toolkit.getDefaultToolkit().beep();
+						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_PageDown) {
 						final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
 						if (autoCompletionStringsToCheck != null && autoCompletionStringsToCheck.size() > 0) {
