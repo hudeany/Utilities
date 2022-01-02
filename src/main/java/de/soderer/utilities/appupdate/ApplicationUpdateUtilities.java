@@ -228,12 +228,10 @@ public class ApplicationUpdateUtilities {
 					updateParent.showUpdateDone(null, null, 0);
 				}
 
-				if (restartAfterUpdate) {
-					final String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartParameter);
-					if (restartCommand != null) {
-						Runtime.getRuntime().exec(restartCommand);
-						Runtime.getRuntime().exit(0);
-					}
+				final String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+				if (restartCommand != null) {
+					Runtime.getRuntime().exec(restartCommand);
+					Runtime.getRuntime().exit(0);
 				}
 			}
 		} catch (final Exception e) {
@@ -375,7 +373,7 @@ public class ApplicationUpdateUtilities {
 		return downloadTempFile.exists();
 	}
 
-	private static String createUpdateBatchFile(final String jarFilePath, final File downloadTempFile, final String restartParameter) throws Exception {
+	private static String createUpdateBatchFile(final String jarFilePath, final File downloadTempFile, final boolean restartApplicationAfterUpdate, final String restartParameter) throws Exception {
 		String javaBinPath = SystemUtilities.getJavaBinPath();
 		if (Utilities.isBlank(javaBinPath)) {
 			javaBinPath = "java";
@@ -399,7 +397,7 @@ public class ApplicationUpdateUtilities {
 							+ ")\r\n"
 							+ "ren \"" + downloadTempFile.getAbsolutePath() + "\" \"" + new File(jarFilePath).getName() + "\"\r\n"
 							+ "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n"
-							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n"
+							+ (restartApplicationAfterUpdate ? "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n" : "")
 							+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n"
 							+ ")\r\n");
 
@@ -423,7 +421,7 @@ public class ApplicationUpdateUtilities {
 							+ "fi\n"
 							+ "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n"
 							+ "if ! [ -f \"" + downloadTempFile.getAbsolutePath() + "\" ]; then\n"
-							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n"
+							+ (restartApplicationAfterUpdate ? "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n": "")
 							+ "rm \"" + batchFile.getAbsolutePath() + "\"\n"
 							+ "fi\n");
 
