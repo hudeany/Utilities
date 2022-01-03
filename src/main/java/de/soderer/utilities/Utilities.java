@@ -43,6 +43,8 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
@@ -1654,6 +1656,17 @@ public class Utilities {
 			final byte[] magicBytes = new byte[4];
 			final int readBytes = inputStream.read(magicBytes);
 			return readBytes == 4 && magicBytes[0] == 0x50 && magicBytes[1] == 0x4B && magicBytes[2] == 0x03 && magicBytes[3] == 0x04;
+		}
+	}
+
+	public static List<String> getFilepathsFromZipArchiveFile(final File zipFile) throws FileNotFoundException, IOException {
+		try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
+			final List<String> returnList = new ArrayList<>();
+			ZipEntry zipEntry;
+			while((zipEntry = zipInputStream.getNextEntry()) != null) {
+				returnList.add(zipEntry.getName());
+			}
+			return returnList;
 		}
 	}
 
