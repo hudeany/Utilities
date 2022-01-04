@@ -51,8 +51,6 @@ import javax.xml.stream.XMLStreamWriter;
 
 /**
  * Global Utilities
- *
- * This class does no Logging via Log4J, because it is often used before its initialisation
  */
 public class Utilities {
 	public static final String STANDARD_XML = "<?xml version=\"1.0\" encoding=\"<encoding>\" standalone=\"yes\"?>\n<root>\n</root>\n";
@@ -174,7 +172,7 @@ public class Utilities {
 	 * @return
 	 */
 	public static boolean checkForValidUserName(final String value) {
-		return value != null && value.matches("[A-Za-z0-9_-]*");
+		return value != null && value.matches("[A-Za-z0-9_-]+");
 	}
 
 	/**
@@ -184,8 +182,7 @@ public class Utilities {
 	 * @return
 	 */
 	public static String[] convertArrayListOfStringsToStringArray(final ArrayList<String> pArrayListOfStrings) {
-		final String[] arrayofStrings = new String[0];
-		return pArrayListOfStrings.toArray(arrayofStrings);
+		return pArrayListOfStrings.toArray(new String[0]);
 	}
 
 	/**
