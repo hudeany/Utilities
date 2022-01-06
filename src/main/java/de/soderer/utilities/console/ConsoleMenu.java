@@ -50,6 +50,14 @@ public class ConsoleMenu {
 		return messages;
 	}
 
+	public List<String> getWarnings() {
+		return warnings;
+	}
+
+	public List<String> getErrors() {
+		return errors;
+	}
+
 	private ConsoleMenu addSubMenu(final ConsoleMenu subMenu) {
 		subMenus.add(subMenu);
 		return this;
@@ -135,7 +143,7 @@ public class ConsoleMenu {
 		}
 	}
 
-	protected String askForSelection(final String message, final List<String> selectionValues) throws Exception {
+	protected static String askForSelection(final String message, final List<String> selectionValues) throws Exception {
 		System.out.println();
 		System.out.println(message + " (Blank => Cancel)");
 		int selectionIndex = 0;
@@ -146,7 +154,6 @@ public class ConsoleMenu {
 		String choice = new SimpleConsoleInput().setAutoCompletionStrings(selectionValues).setPrompt(" > ").readInput();
 		choice = choice == null ? "" : choice.trim();
 		if (Utilities.isBlank(choice)) {
-			getParentMenu().getMessages().add("Canceled by user");
 			return null;
 		} else if (!NumberUtilities.isNumber(choice)) {
 			if (selectionValues.contains(choice)) {
@@ -159,7 +166,9 @@ public class ConsoleMenu {
 			if (choiseInt < 1 || choiseInt > selectionValues.size()) {
 				throw new Exception("Invalid selection: " + choice);
 			} else {
-				return selectionValues.get(choiseInt - 1);
+				final String selectionItemString = selectionValues.get(choiseInt - 1);
+				System.out.println(selectionItemString);
+				return selectionItemString;
 			}
 		}
 	}
