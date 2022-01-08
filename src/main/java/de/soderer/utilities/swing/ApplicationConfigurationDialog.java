@@ -12,6 +12,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -25,6 +27,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import de.soderer.utilities.ConfigurationProperties;
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
@@ -82,8 +85,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		return this;
 	}
 
-	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final Version applicationVersion, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
-		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")");
+	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final Version applicationVersion, final Date applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
+		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ", " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(applicationBuildTime) + ")");
 
 		this.updateParent = updateParent;
 		this.applicationName = applicationName;
