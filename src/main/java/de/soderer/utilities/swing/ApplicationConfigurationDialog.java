@@ -25,6 +25,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.DateUtilities;
@@ -44,6 +45,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final UpdateableGuiApplication updateParent;
 	private final String applicationName;
 	private final Version applicationVersion;
+	private final Date applicationBuildTime;
 	private final ConfigurationProperties applicationConfiguration;
 	private final byte[] iconImageDataWindows;
 	private final Image iconImageLinux;
@@ -86,11 +88,12 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	}
 
 	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final Version applicationVersion, final Date applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
-		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ", " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(applicationBuildTime) + ")");
+		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")");
 
 		this.updateParent = updateParent;
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
+		this.applicationBuildTime = applicationBuildTime;
 		this.applicationConfiguration = applicationConfiguration;
 		language = applicationConfiguration.get(CONFIG_LANGUAGE);
 		this.iconImageDataWindows = iconImageDataWindows;
@@ -138,6 +141,27 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		configurationValuesPanel = new JPanel();
 		configurationValuesPanel.setLayout(new BoxLayout(configurationValuesPanel, BoxLayout.Y_AXIS));
 
+		configurationValuesPanel.add(createBuildTimePanel());
+		configurationValuesPanel.add(createLanguagePanel());
+
+		return configurationValuesPanel;
+	}
+
+	private JPanel createBuildTimePanel() {
+		final JPanel buildTimePanel = new JPanel();
+		buildTimePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+
+		final JLabel buildTimeLabel = new JLabel(LangResources.get("buildTime"));
+		buildTimePanel.add(buildTimeLabel);
+		final JTextField buildTimeText = new JTextField();
+		buildTimeText.setEditable(false);
+		buildTimeText.setText(new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(applicationBuildTime));
+		buildTimePanel.add(buildTimeText, BorderLayout.EAST);
+
+		return buildTimePanel;
+	}
+
+	private JPanel createLanguagePanel() {
 		final JPanel languagePanel = new JPanel();
 		languagePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
@@ -159,9 +183,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		});
 		languagePanel.add(languageCombo, BorderLayout.EAST);
 
-		configurationValuesPanel.add(languagePanel);
-
-		return configurationValuesPanel;
+		return languagePanel;
 	}
 
 	private JPanel createAdministrativePanel() {

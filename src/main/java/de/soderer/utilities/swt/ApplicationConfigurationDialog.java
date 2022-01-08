@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -31,12 +29,10 @@ import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.ConfigurationProperties;
-import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.Version;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private final String applicationName;
@@ -44,16 +40,16 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private final byte[] iconImageDataWindows;
 	private final Image iconImageLinux;
 
-	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final Version applicationVersion, final Date applicationBuildTime) throws Exception {
-		super(shell, SWT.RESIZE, applicationName + (applicationVersion != null ? " (Version " + applicationVersion.toString() + ", " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(applicationBuildTime) + ")": "") + " " + LangResources.get("configuration"));
+	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName) throws Exception {
+		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
 		iconImageDataWindows = null;
 		iconImageLinux = null;
 	}
 
-	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final Version applicationVersion, final Date applicationBuildTime, final byte[] iconImageWindows, final Image iconImageLinux) throws Exception {
-		super(shell, SWT.RESIZE, applicationName + (applicationVersion != null ? " (Version " + applicationVersion.toString() + ", " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(applicationBuildTime) + ")": "") + " " + LangResources.get("configuration"));
+	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final byte[] iconImageWindows, final Image iconImageLinux) throws Exception {
+		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
 		iconImageDataWindows = iconImageWindows;
