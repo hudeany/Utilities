@@ -47,7 +47,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 		if (publicKey != null) {
 			label = new Label(composite, SWT.NONE);
-			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 			label.setText(LangResources.get("keyType"));
 
 			StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -55,7 +55,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 			textField.setText(publicKey.getAlgorithm());
 
 			label = new Label(composite, SWT.NONE);
-			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 			label.setText(LangResources.get("keyFormat"));
 
 			textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -64,7 +64,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 			if (publicKey instanceof RSAPublicKey) {
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("keyStrength"));
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -72,64 +72,75 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 				textField.setText(Integer.toString(((RSAPublicKey) publicKey).getModulus().bitLength()));
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintMd5"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getMd5FingerPrint(publicKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getMd5FingerPrint(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha1"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getSha1FingerPrint(publicKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha1FingerPrint(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha256"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getSha256FingerPrint(publicKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha256FingerPrint(publicKey, ":").toUpperCase());
+
+				label = new Label(composite, SWT.NONE);
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
+				label.setText(LangResources.get("fingerprintSha384"));
+
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha384FingerPrint(publicKey, ":").toUpperCase());
+
+				label = new Label(composite, SWT.NONE);
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
+				label.setText(LangResources.get("fingerprintSha512"));
+
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha512FingerPrint(publicKey, ":").toUpperCase());
 			} else if (publicKey instanceof BCECPublicKey) {
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("ellipticCurveName"));
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				CryptographicUtilities.getEllipticCurveName(publicKey);
 				textField.setText(CryptographicUtilities.getEllipticCurveName(publicKey));
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintMd5"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getMd5FingerPrint(publicKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getMd5FingerPrint(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha1"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getSha1FingerPrint(publicKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha1FingerPrint(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha256"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getSha256FingerPrint(publicKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha256FingerPrint(publicKey, ":").toUpperCase());
+
+				label = new Label(composite, SWT.NONE);
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
+				label.setText(LangResources.get("fingerprintSha384"));
+
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha384FingerPrint(publicKey, ":").toUpperCase());
+
+				label = new Label(composite, SWT.NONE);
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
+				label.setText(LangResources.get("fingerprintSha512"));
+
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha512FingerPrint(publicKey, ":").toUpperCase());
 			} else {
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText("PublicKey class");
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -152,7 +163,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 		if (privateKey != null) {
 			label = new Label(composite, SWT.NONE);
-			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 			label.setText(LangResources.get("keyType"));
 
 			StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -160,7 +171,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 			textField.setText(privateKey.getAlgorithm());
 
 			label = new Label(composite, SWT.NONE);
-			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 			label.setText(LangResources.get("keyFormat"));
 
 			textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -169,7 +180,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 			if (privateKey instanceof RSAPrivateKey) {
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("keyStrength"));
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -177,31 +188,37 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 				textField.setText(Integer.toString(((RSAPrivateKey) privateKey).getModulus().bitLength()));
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintMd5"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getMd5FingerPrint(privateKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getMd5FingerPrint(privateKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha1"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getSha1FingerPrint(privateKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha1FingerPrint(privateKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha256"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getSha256FingerPrint(privateKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha256FingerPrint(privateKey, ":").toUpperCase());
+
+				label = new Label(composite, SWT.NONE);
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
+				label.setText(LangResources.get("fingerprintSha384"));
+
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha384FingerPrint(privateKey, ":").toUpperCase());
+
+				label = new Label(composite, SWT.NONE);
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
+				label.setText(LangResources.get("fingerprintSha512"));
+
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha512FingerPrint(privateKey, ":").toUpperCase());
 			} else if (privateKey instanceof BCECPrivateKey) {
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("ellipticCurveName"));
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -209,31 +226,37 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 				textField.setText(CryptographicUtilities.getEllipticCurveName(privateKey));
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintMd5"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getMd5FingerPrint(privateKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getMd5FingerPrint(privateKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha1"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getSha1FingerPrint(privateKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha1FingerPrint(privateKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha256"));
 
-				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
-				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
-				textField.setText(CryptographicUtilities.getSha256FingerPrint(privateKey));
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha256FingerPrint(privateKey, ":").toUpperCase());
+
+				label = new Label(composite, SWT.NONE);
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
+				label.setText(LangResources.get("fingerprintSha384"));
+
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha384FingerPrint(privateKey, ":").toUpperCase());
+
+				label = new Label(composite, SWT.NONE);
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
+				label.setText(LangResources.get("fingerprintSha512"));
+
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha512FingerPrint(privateKey, ":").toUpperCase());
 			} else {
 				label = new Label(composite, SWT.NONE);
-				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 1, 1));
+				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText("PrivateKey class");
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
@@ -274,8 +297,19 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		});
 
 		shell.pack();
-		shell.setMinimumSize(600, shell.getSize().y);
-		shell.setSize(600, shell.getSize().y);
+		shell.setMinimumSize(500, shell.getSize().y);
+		shell.setSize(500, shell.getSize().y);
+	}
+
+	private static void addSizeLimitedTextField(final Composite composite, final String text) {
+		final Composite compositeLimited = new Composite(composite, SWT.NONE);
+		final GridData gridDataLimited = new GridData(SWT.FILL, SWT.FILL, true, true);
+		compositeLimited.setLayoutData(gridDataLimited);
+		compositeLimited.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
+
+		final StyledText textField = new StyledText(compositeLimited, SWT.READ_ONLY | SWT.BORDER);
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+		textField.setText(text);
 	}
 
 	public PublicKey getPublicKey() {

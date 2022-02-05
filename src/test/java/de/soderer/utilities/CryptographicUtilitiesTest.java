@@ -311,10 +311,10 @@ public class CryptographicUtilitiesTest {
 		try {
 			final String rsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getRsaKeyPair(), null);
 			final PrivateKey rsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(rsaKeyPairString, null);
-			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey));
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate(), null), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey, null));
 
-			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()));
-			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic());
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()), null);
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic(), null);
 			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
 
 			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPrivate());
@@ -331,10 +331,10 @@ public class CryptographicUtilitiesTest {
 
 			final String rsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getRsaKeyPair(), testPassword);
 			final PrivateKey rsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(rsaKeyPairString, testPassword);
-			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey));
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate(), null), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey, null));
 
-			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()));
-			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic());
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()), null);
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic(), null);
 			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
 
 			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPrivate());
@@ -351,10 +351,10 @@ public class CryptographicUtilitiesTest {
 
 			final String rsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getRsaKeyPair(), testPassword);
 			final PrivateKey rsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(rsaKeyPairString, testPassword);
-			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey));
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPrivate(), null), CryptographicUtilities.getMd5FingerPrint(rsaPrivateKey, null));
 
-			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()));
-			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic());
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getRsaKeyPair().getPrivate()), null);
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getRsaKeyPair().getPublic(), null);
 			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
 
 			CryptographicUtilities.getKeyInfo(getRsaKeyPair().getPrivate());
@@ -370,10 +370,10 @@ public class CryptographicUtilitiesTest {
 			final String curveName = CryptographicUtilities.getEllipticCurveName(getEcKeyPair().getPrivate());
 			final String ecDsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getEcKeyPair(), null);
 			final PrivateKey ecDsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(ecDsaKeyPairString, null);
-			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getEcKeyPair().getPrivate()), CryptographicUtilities.getMd5FingerPrint(ecDsaPrivateKey));
+			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getEcKeyPair().getPrivate(), null), CryptographicUtilities.getMd5FingerPrint(ecDsaPrivateKey, null));
 
-			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getEcKeyPair().getPrivate()));
-			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getEcKeyPair().getPublic());
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(CryptographicUtilities.getPublicKeyFromPrivateKey(getEcKeyPair().getPrivate()), null);
+			final String pubKeyFingerPrint = CryptographicUtilities.getMd5FingerPrint(getEcKeyPair().getPublic(), null);
 			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
 
 			CryptographicUtilities.getKeyInfo(getEcKeyPair().getPrivate());

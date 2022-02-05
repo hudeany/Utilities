@@ -760,22 +760,46 @@ public class CryptographicUtilities {
 		return BitUtilities.toHexString(md.digest());
 	}
 
-	public static String getMd5FingerPrint(final Key key) throws NoSuchAlgorithmException {
+	public static String getSha384FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-384");
+		md.update(certificate.getEncoded());
+		return BitUtilities.toHexString(md.digest());
+	}
+
+	public static String getSha512FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-512");
+		md.update(certificate.getEncoded());
+		return BitUtilities.toHexString(md.digest());
+	}
+
+	public static String getMd5FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("MD5");
 		md.update(key.getEncoded());
-		return BitUtilities.toHexString(md.digest());
+		return BitUtilities.toHexString(md.digest(), byteSeparator);
 	}
 
-	public static String getSha1FingerPrint(final Key key) throws NoSuchAlgorithmException {
+	public static String getSha1FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-1");
 		md.update(key.getEncoded());
-		return BitUtilities.toHexString(md.digest());
+		return BitUtilities.toHexString(md.digest(), byteSeparator);
 	}
 
-	public static String getSha256FingerPrint(final Key key) throws NoSuchAlgorithmException {
+	public static String getSha256FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-256");
 		md.update(key.getEncoded());
-		return BitUtilities.toHexString(md.digest());
+		return BitUtilities.toHexString(md.digest(), byteSeparator);
+	}
+
+	public static String getSha384FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-384");
+		md.update(key.getEncoded());
+		return BitUtilities.toHexString(md.digest(), byteSeparator);
+	}
+
+	public static String getSha512FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-512");
+		md.update(key.getEncoded());
+		return BitUtilities.toHexString(md.digest(), byteSeparator);
 	}
 
 	public static KeyPair convertPEMKeyPairToKeyPair(final PEMKeyPair keyPair) throws PEMException {
@@ -908,6 +932,10 @@ public class CryptographicUtilities {
 		dataOutput += "\n";
 		dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getSha256FingerPrint(certificate);
 		dataOutput += "\n";
+		dataOutput += "SHA384 fingerprint: " + CryptographicUtilities.getSha384FingerPrint(certificate);
+		dataOutput += "\n";
+		dataOutput += "SHA512 fingerprint: " + CryptographicUtilities.getSha512FingerPrint(certificate);
+		dataOutput += "\n";
 		return dataOutput;
 	}
 
@@ -943,23 +971,37 @@ public class CryptographicUtilities {
 		}
 
 		try {
-			dataOutput += "MD5 fingerprint: " + CryptographicUtilities.getMd5FingerPrint(key);
+			dataOutput += "MD5 fingerprint: " + CryptographicUtilities.getMd5FingerPrint(key, null);
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			dataOutput += "MD5 fingerprint: Unknown";
 		}
 		dataOutput += "\n";
 
 		try {
-			dataOutput += "SHA1 fingerprint: " + CryptographicUtilities.getSha1FingerPrint(key);
+			dataOutput += "SHA1 fingerprint: " + CryptographicUtilities.getSha1FingerPrint(key, null);
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			dataOutput += "SHA1 fingerprint: Unknown";
 		}
 		dataOutput += "\n";
 
 		try {
-			dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getSha256FingerPrint(key);
+			dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getSha256FingerPrint(key, null);
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			dataOutput += "SHA256 fingerprint: Unknown";
+		}
+		dataOutput += "\n";
+
+		try {
+			dataOutput += "SHA384 fingerprint: " + CryptographicUtilities.getSha384FingerPrint(key, null);
+		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
+			dataOutput += "SHA384 fingerprint: Unknown";
+		}
+		dataOutput += "\n";
+
+		try {
+			dataOutput += "SHA512 fingerprint: " + CryptographicUtilities.getSha512FingerPrint(key, null);
+		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
+			dataOutput += "SHA512 fingerprint: Unknown";
 		}
 		dataOutput += "\n";
 

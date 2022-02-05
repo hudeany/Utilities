@@ -158,6 +158,14 @@ public class PuttyKey {
 		return KeyPairUtilities.getSha256Fingerprint(keyPair);
 	}
 
+	public String getSha384Fingerprint() throws Exception {
+		return KeyPairUtilities.getSha384Fingerprint(keyPair);
+	}
+
+	public String getSha512Fingerprint() throws Exception {
+		return KeyPairUtilities.getSha512Fingerprint(keyPair);
+	}
+
 	/**
 	 * Contains
 	 *  ssh-rsa: RSAPublicKey and RSAPrivateCrtKey

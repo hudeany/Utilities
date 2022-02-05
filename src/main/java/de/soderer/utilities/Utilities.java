@@ -745,6 +745,21 @@ public class Utilities {
 	}
 
 	/**
+	 * Generate SHA-384 from string data
+	 *
+	 * @param data
+	 * @return
+	 * @throws Exception
+	 */
+	public static byte[] getSHA384Hash(final String data) throws Exception {
+		try {
+			return MessageDigest.getInstance("SHA-384").digest(data.getBytes(StandardCharsets.UTF_8));
+		} catch (final Exception e) {
+			throw new Exception("Error while SHA-384 hashing", e);
+		}
+	}
+
+	/**
 	 * Generate SHA-512 from string data
 	 *
 	 * @param data

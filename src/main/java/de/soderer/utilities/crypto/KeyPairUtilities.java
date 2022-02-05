@@ -391,7 +391,7 @@ public class KeyPairUtilities {
 				md.update(getPublicKeyBytes(publicKey));
 				return BitUtilities.toHexString(md.digest(), ":");
 			} catch (final Exception e) {
-				throw new Exception("Cannot create SHA256 fingerprint", e);
+				throw new Exception("Cannot create SHA1 fingerprint", e);
 			}
 		}
 	}
@@ -413,7 +413,7 @@ public class KeyPairUtilities {
 				md.update(getPublicKeyBytes(publicKey));
 				return Base64.getEncoder().encodeToString(md.digest());
 			} catch (final Exception e) {
-				throw new Exception("Cannot create SHA256 fingerprint", e);
+				throw new Exception("Cannot create SHA1 fingerprint", e);
 			}
 		}
 	}
@@ -458,6 +458,94 @@ public class KeyPairUtilities {
 				return Base64.getEncoder().encodeToString(md.digest());
 			} catch (final Exception e) {
 				throw new Exception("Cannot create SHA256 fingerprint", e);
+			}
+		}
+	}
+
+	public static String getSha384Fingerprint(final KeyPair keyPair) throws Exception {
+		if (keyPair == null) {
+			throw new Exception("Invalid empty keyPair parameter");
+		} else {
+			return getSha384Fingerprint(keyPair.getPublic());
+		}
+	}
+
+	public static String getSha384Fingerprint(final PublicKey publicKey) throws Exception {
+		if (publicKey == null) {
+			throw new Exception("Invalid empty publicKey parameter");
+		} else {
+			try {
+				final MessageDigest md = MessageDigest.getInstance("SHA-384");
+				md.update(getPublicKeyBytes(publicKey));
+				return BitUtilities.toHexString(md.digest(), ":");
+			} catch (final Exception e) {
+				throw new Exception("Cannot create SHA384 fingerprint", e);
+			}
+		}
+	}
+
+	public static String getSha384FingerprintBase64(final KeyPair keyPair) throws Exception {
+		if (keyPair == null) {
+			throw new Exception("Invalid empty keyPair parameter");
+		} else {
+			return getSha384FingerprintBase64(keyPair.getPublic());
+		}
+	}
+
+	public static String getSha384FingerprintBase64(final PublicKey publicKey) throws Exception {
+		if (publicKey == null) {
+			throw new Exception("Invalid empty publicKey parameter");
+		} else {
+			try {
+				final MessageDigest md = MessageDigest.getInstance("SHA-384");
+				md.update(getPublicKeyBytes(publicKey));
+				return Base64.getEncoder().encodeToString(md.digest());
+			} catch (final Exception e) {
+				throw new Exception("Cannot create SHA384 fingerprint", e);
+			}
+		}
+	}
+
+	public static String getSha512Fingerprint(final KeyPair keyPair) throws Exception {
+		if (keyPair == null) {
+			throw new Exception("Invalid empty keyPair parameter");
+		} else {
+			return getSha512Fingerprint(keyPair.getPublic());
+		}
+	}
+
+	public static String getSha512Fingerprint(final PublicKey publicKey) throws Exception {
+		if (publicKey == null) {
+			throw new Exception("Invalid empty publicKey parameter");
+		} else {
+			try {
+				final MessageDigest md = MessageDigest.getInstance("SHA-512");
+				md.update(getPublicKeyBytes(publicKey));
+				return BitUtilities.toHexString(md.digest(), ":");
+			} catch (final Exception e) {
+				throw new Exception("Cannot create SHA512 fingerprint", e);
+			}
+		}
+	}
+
+	public static String getSha512FingerprintBase64(final KeyPair keyPair) throws Exception {
+		if (keyPair == null) {
+			throw new Exception("Invalid empty keyPair parameter");
+		} else {
+			return getSha512FingerprintBase64(keyPair.getPublic());
+		}
+	}
+
+	public static String getSha512FingerprintBase64(final PublicKey publicKey) throws Exception {
+		if (publicKey == null) {
+			throw new Exception("Invalid empty publicKey parameter");
+		} else {
+			try {
+				final MessageDigest md = MessageDigest.getInstance("SHA-512");
+				md.update(getPublicKeyBytes(publicKey));
+				return Base64.getEncoder().encodeToString(md.digest());
+			} catch (final Exception e) {
+				throw new Exception("Cannot create SHA512 fingerprint", e);
 			}
 		}
 	}
