@@ -17,6 +17,10 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.KeyStore.PrivateKeyEntry;
+import java.security.KeyStore.SecretKeyEntry;
+import java.security.KeyStore.TrustedCertificateEntry;
+import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -544,13 +548,67 @@ public class CryptographicUtilities {
 		}
 	}
 
+	/**
+	 * List all Certificate names of jar signatures.
+	 * WATCH OUT: This DOES NOT validate the signatures.
+	 *
+	 * @param jarFile
+	 * @return
+	 * @throws Exception
+	 */
 	public static Set<String> getJarSignatureNames(final File jarFile) throws Exception {
 		final Set<String> returnData = new HashSet<>();
 		try (JarFile jar = new JarFile(jarFile)) {
 			final Manifest manifest = jar.getManifest();
 			if (manifest == null) {
-				returnData.add("Has no MANIFEST.MF file");
-				return returnData;
+				return null;
+			}
+
+			final byte[] buffer = new byte[4096];
+			final Enumeration<JarEntry> jarEntriesEnumerator = jar.entries();
+
+			while (jarEntriesEnumerator.hasMoreElements()) {
+				final JarEntry jarEntry = jarEntriesEnumerator.nextElement();
+
+				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
+					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
+					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+						// just read it
+					}
+				}
+
+				if (!jarEntry.isDirectory()) {
+					// Every file must be signed, except for files in META-INF
+					final Certificate[] certificates = jarEntry.getCertificates();
+					if (certificates != null && certificates.length > 0) {
+						for (final Certificate cert : certificates) {
+							if (cert instanceof X509Certificate) {
+								returnData.add(getValuesFromX500Principal(((X509Certificate) cert).getSubjectX500Principal()).get("CN"));
+							} else {
+								returnData.add("Unknown type of certificate");
+							}
+						}
+					}
+				}
+			}
+
+			return returnData;
+		}
+	}
+
+	/**
+	 * Check if jar file has a signature and has only signed class and resource files
+	 *
+	 * @param jarFile
+	 * @return
+	 * @throws Exception
+	 */
+	public static boolean checkJarIsCompletlySigned(final File jarFile) throws Exception {
+		try (JarFile jar = new JarFile(jarFile)) {
+			final Manifest manifest = jar.getManifest();
+			if (manifest == null) {
+				// Has no MANIFEST.MF file
+				return false;
 			}
 
 			final byte[] buffer = new byte[4096];
@@ -571,21 +629,21 @@ public class CryptographicUtilities {
 					final Certificate[] certificates = jarEntry.getCertificates();
 					if ((certificates == null) || (certificates.length == 0)) {
 						if (!jarEntry.getName().startsWith("META-INF")) {
-							returnData.add("Contains unsigned files");
+							// Contains unsigned files
+							return false;
 						}
 					} else {
 						for (final Certificate cert : certificates) {
-							if (cert instanceof X509Certificate) {
-								returnData.add(getValuesFromX500Principal(((X509Certificate) cert).getSubjectX500Principal()).get("CN"));
-							} else {
-								returnData.add("Unknown type of certificate");
+							if (!(cert instanceof X509Certificate)) {
+								// Unknown type of certificate
+								return false;
 							}
 						}
 					}
 				}
 			}
 
-			return returnData;
+			return true;
 		}
 	}
 
@@ -655,8 +713,18 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static CertPath createCertPath(final Certificate[] certs) throws Exception {
+	public static CertPath createX509CertPath(final Certificate[] certs) throws Exception {
 		return CertificateFactory.getInstance("X509").generateCertPath(Arrays.asList(certs));
+	}
+
+	public static CertPath createX509CertPath(final List<X509Certificate> certs) throws Exception {
+		return CertificateFactory.getInstance("X509").generateCertPath(certs);
+	}
+
+	public static CertPath createX509CertPath(final X509Certificate cert) throws Exception {
+		final List<Certificate> certs = new ArrayList<>();
+		certs.add(cert);
+		return CertificateFactory.getInstance("X509").generateCertPath(certs);
 	}
 
 	/**
@@ -1479,4 +1547,41 @@ public class CryptographicUtilities {
 		}
 		throw new GeneralSecurityException("Could not find elliptic curve name");
 	}
+
+	public static List<String> getKeyAliasesFromJavaKeyStore(final KeyStore keyStore) throws KeyStoreException {
+		final List<String> keyAliases = new ArrayList<>();
+		for (final String alias : Collections.list(keyStore.aliases())) {
+			try {
+				if (keyStore.entryInstanceOf(alias, SecretKeyEntry.class)) {
+					keyAliases.add(alias);
+				} else if (keyStore.entryInstanceOf(alias, PrivateKeyEntry.class)) {
+					keyAliases.add(alias);
+				}
+			} catch (@SuppressWarnings("unused") final KeyStoreException e) {
+				// Do not list this alias
+			}
+		}
+		return keyAliases;
+	}
+
+	public static List<X509Certificate> getCertificatesFromJavaKeyStore(final KeyStore keyStore) throws Exception {
+		final List<X509Certificate> certificates = new ArrayList<>();
+		for (final String alias : Collections.list(keyStore.aliases())) {
+			try {
+				if (keyStore.entryInstanceOf(alias, TrustedCertificateEntry.class)) {
+					final TrustedCertificateEntry entry = (TrustedCertificateEntry) keyStore.getEntry(alias, null);
+					certificates.add((X509Certificate) entry.getTrustedCertificate());
+				} else if (keyStore.entryInstanceOf(alias, PrivateKeyEntry.class)) {
+					final Certificate certificate = keyStore.getCertificate(alias);
+					if (certificate != null && certificate instanceof X509Certificate) {
+						certificates.add((X509Certificate) certificate);
+					}
+				}
+			} catch (@SuppressWarnings("unused") final KeyStoreException e) {
+				// Do not list this alias
+			}
+		}
+		return certificates;
+	}
 }
+

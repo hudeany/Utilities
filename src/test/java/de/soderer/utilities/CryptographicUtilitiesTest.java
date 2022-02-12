@@ -401,10 +401,10 @@ public class CryptographicUtilitiesTest {
 
 			final File testJarFile = new File(getClass().getClassLoader().getResource("SimpleTest.jar").getFile());
 
-			final Set<String> signatureNames = CryptographicUtilities.getJarSignatureNames(testJarFile);
-			Assert.assertEquals(new HashSet<>(Arrays.asList(new String[]{ "Contains unsigned files" })), signatureNames);
+			final boolean completelySigned = CryptographicUtilities.checkJarIsCompletlySigned(testJarFile);
+			Assert.assertFalse(completelySigned);
 
-			final CertPath certPath = CryptographicUtilities.createCertPath(new Certificate[]{ codeSigningCertificate });
+			final CertPath certPath = CryptographicUtilities.createX509CertPath(new Certificate[]{ codeSigningCertificate });
 
 			CryptographicUtilities.createJarSignature(testJarFile, codeSigningKeyPair.getPrivate(), certPath, signedTestJarFile);
 
@@ -438,10 +438,10 @@ public class CryptographicUtilitiesTest {
 
 			final File testJarFile = new File(getClass().getClassLoader().getResource("SimpleTest.jar").getFile());
 
-			final Set<String> signatureNames = CryptographicUtilities.getJarSignatureNames(testJarFile);
-			Assert.assertEquals(new HashSet<>(Arrays.asList(new String[]{ "Contains unsigned files" })), signatureNames);
+			final boolean completelySigned = CryptographicUtilities.checkJarIsCompletlySigned(testJarFile);
+			Assert.assertFalse(completelySigned);
 
-			final CertPath certPath = CryptographicUtilities.createCertPath(new Certificate[]{ codeSigningCertificate });
+			final CertPath certPath = CryptographicUtilities.createX509CertPath(new Certificate[]{ codeSigningCertificate });
 
 			CryptographicUtilities.createJarSignature(testJarFile, codeSigningKeyPair.getPrivate(), certPath, signedTestJarFile);
 
@@ -455,8 +455,9 @@ public class CryptographicUtilitiesTest {
 			CryptographicUtilities.removeJarSignature(signedTestJarFile, unsignedTestJarFile);
 
 			Assert.assertFalse(CryptographicUtilities.verifyJarSignature(unsignedTestJarFile, Arrays.asList(new Certificate[] { codeSigningCertificate })));
-			final Set<String> signatureNames3 = CryptographicUtilities.getJarSignatureNames(unsignedTestJarFile);
-			Assert.assertEquals(new HashSet<>(Arrays.asList(new String[]{ "Contains unsigned files" })), signatureNames3);
+
+			final boolean completelySigned2 = CryptographicUtilities.checkJarIsCompletlySigned(unsignedTestJarFile);
+			Assert.assertFalse(completelySigned2);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		} finally {
@@ -495,7 +496,7 @@ public class CryptographicUtilitiesTest {
 
 			final File testJarFile = new File(getClass().getClassLoader().getResource("SimpleTest.jar").getFile());
 
-			final CertPath certPath = CryptographicUtilities.createCertPath(new Certificate[]{ codeSigningCertificate });
+			final CertPath certPath = CryptographicUtilities.createX509CertPath(new Certificate[]{ codeSigningCertificate });
 
 			CryptographicUtilities.createJarSignature(testJarFile, codeSigningKeyPair.getPrivate(), certPath, signedTestJarFile);
 
