@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import java.text.MessageFormat;
 import java.util.Date;
 
 import org.eclipse.swt.SWT;
@@ -47,7 +46,12 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 		if (!isDisposed()) {
 			stopUnlimitedProgress();
 			subItemProgressBar.setSelection((int) (done * 100 / todo));
-			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, done, todo, done * 100 / todo));
+			try {
+				final String labelText = subCommentStringFormat.replace("{0}", Long.toString(done)).replace("{1}", Long.toString(todo)).replace("{2}", Long.toString(done * 100 / todo));
+				subItemLabel.setText(labelText);
+			} catch (final Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

@@ -5,7 +5,6 @@ import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.MessageFormat;
 import java.util.Date;
 
 import javax.swing.BoxLayout;
@@ -59,7 +58,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		if (Utilities.isNotBlank(commentStringFormat)) {
 			final JPanel commentLabelPanel = new JPanel();
 			commentLabelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-			commentLabel = new JLabel(MessageFormat.format(commentStringFormat, 0, 0, 0));
+			final String labelText = commentStringFormat.replace("{0}", Long.toString(0)).replace("{1}", Long.toString(0)).replace("{2}", Long.toString(0));
+			commentLabel.setText(labelText);
 			commentLabelPanel.add(commentLabel);
 			panel.add(commentLabelPanel);
 		}
@@ -140,7 +140,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(progressBar, start, itemsToDo, itemsDone);
 			if (commentLabel != null) {
-				commentLabel.setText(MessageFormat.format(commentStringFormat, itemsDone, itemsToDo, itemsDone * 100 / itemsToDo));
+				final String labelText = commentStringFormat.replace("{0}", Long.toString(itemsDone)).replace("{1}", Long.toString(itemsToDo)).replace("{2}", Long.toString(itemsDone * 100 / itemsToDo));
+				commentLabel.setText(labelText);
 			}
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {

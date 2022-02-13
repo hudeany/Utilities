@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import java.text.MessageFormat;
 import java.util.Date;
 
 import org.eclipse.swt.SWT;
@@ -57,7 +56,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 		if (Utilities.isNotBlank(commentStringFormat)) {
 			commentLabel = new Label(composite, SWT.NONE);
-			commentLabel.setText(MessageFormat.format(commentStringFormat, 0, 0, 0));
+			final String labelText = commentStringFormat.replace("{0}", Long.toString(0)).replace("{1}", Long.toString(0)).replace("{2}", Long.toString(0));
+			commentLabel.setText(labelText);
 			final GridData labelGridData = new GridData(SWT.FILL, SWT.UP, true, false);
 			commentLabel.setLayoutData(labelGridData);
 		}
@@ -104,7 +104,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 							}
 
 							if (commentLabel != null) {
-								commentLabel.setText(MessageFormat.format(commentStringFormat, itemsDone, itemsToDo, itemsDone * 100 / itemsToDo));
+								final String labelText = commentStringFormat.replace("{0}", Long.toString(itemsDone)).replace("{1}", Long.toString(itemsToDo)).replace("{2}", Long.toString(itemsDone * 100 / itemsToDo));
+								commentLabel.setText(labelText);
 							}
 						} else {
 							if (progressBar != null) {

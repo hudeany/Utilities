@@ -47,26 +47,30 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 
 	public HashItem hashDirectory(final File directory) throws Exception {
 		try {
-			final HashItem item = new HashItem(directory.getName(), true, hashAlgorithm, -1);
-			final File[] subFiles = directory.listFiles();
-			Arrays.sort(subFiles);
-			if (subFiles != null) {
-				for (final File file : subFiles) {
-					if (cancel) {
-						return null;
-					} else {
-						if (file.isDirectory()) {
-							item.addSubItem(hashDirectory(file));
+			if (!directory.canRead()) {
+				throw new Exception("Read access denied to: " + directory.getAbsolutePath());
+			} else {
+				final HashItem item = new HashItem(directory.getName(), true, hashAlgorithm, -1);
+				final File[] subFiles = directory.listFiles();
+				if (subFiles != null) {
+					Arrays.sort(subFiles);
+					for (final File file : subFiles) {
+						if (cancel) {
+							return null;
 						} else {
-							item.addSubItem(hashFile(file));
+							if (file.isDirectory()) {
+								item.addSubItem(hashDirectory(file));
+							} else {
+								item.addSubItem(hashFile(file));
+							}
 						}
 					}
 				}
-			}
-			if (cancel) {
-				return null;
-			} else {
-				return item;
+				if (cancel) {
+					return null;
+				} else {
+					return item;
+				}
 			}
 		} catch (final Exception e) {
 			throw e;
@@ -100,8 +104,14 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			showProgress();
 
 			return item;
-		} catch (final Exception e) {
-			throw e;
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			final HashItem item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
+			item.setHash(null);
+
+			itemsDone += fileToHash.length();
+			showProgress();
+
+			return item;
 		}
 	}
 }

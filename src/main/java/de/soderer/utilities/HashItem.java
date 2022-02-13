@@ -26,8 +26,12 @@ public class HashItem {
 			final StringBuilder directoryContentData = new StringBuilder();
 			for (final HashItem item : subItems) {
 				directoryContentData.append(item.getName());
-				directoryContentData.append(BitUtilities.toHexString(item.getHash()));
-				directoryContentData.append("\n");
+				if (item.getHash() == null) {
+					return null;
+				} else {
+					directoryContentData.append(BitUtilities.toHexString(item.getHash()));
+					directoryContentData.append("\n");
+				}
 			}
 
 			final MessageDigest messageDigest = hashAlgorithm.getMessageDigest();

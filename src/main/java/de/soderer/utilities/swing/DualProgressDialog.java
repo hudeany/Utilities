@@ -3,7 +3,6 @@ package de.soderer.utilities.swing;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
-import java.text.MessageFormat;
 import java.util.Date;
 
 import javax.swing.JLabel;
@@ -68,7 +67,8 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 			subItemLabel.setText(itemName);
 
 			updateProgressBar(subItemProgressBar, new Date(), 100, 0);
-			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, 0, 100, 0 * 100 / 100));
+			final String labelText = subCommentStringFormat.replace("{0}", Long.toString(0)).replace("{1}", Long.toString(100)).replace("{2}", Long.toString(0));
+			subItemLabel.setText(labelText);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
@@ -83,7 +83,8 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	public void showItemProgress(final Date itemStart, final long subItemsToDo, final long subItemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(subItemProgressBar, itemStart, subItemsToDo, subItemsDone);
-			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, subItemsDone, subItemsToDo, subItemsDone * 100 / subItemsToDo));
+			final String labelText = subCommentStringFormat.replace("{0}", Long.toString(subItemsDone)).replace("{1}", Long.toString(subItemsToDo)).replace("{2}", Long.toString(subItemsDone * 100 / subItemsToDo));
+			subItemLabel.setText(labelText);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
@@ -98,7 +99,8 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(subItemProgressBar, itemStart, subItemsDone, subItemsDone);
-			subItemLabel.setText(MessageFormat.format(subCommentStringFormat, subItemsDone, subItemsDone, subItemsDone * 100 / subItemsDone));
+			final String labelText = subCommentStringFormat.replace("{0}", Long.toString(subItemsDone)).replace("{1}", Long.toString(subItemsDone)).replace("{2}", Long.toString(100));
+			subItemLabel.setText(labelText);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
