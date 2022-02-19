@@ -24,6 +24,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 		this.scanningForFilesMessage = scanningForFilesMessage;
 	}
 
+	// TODO: Compare with existing data json
 	public DirectoryHashingWorker(final WorkerParentDual parent, final File directoryToHash, final HashAlgorithm hashAlgorithm) {
 		super(parent);
 		this.directoryToHash = directoryToHash;
