@@ -2,7 +2,6 @@ package de.soderer.utilities.json.compare;
 
 public class JsonCompareSettings {
 	/**
-	 * TODO:
 	 * - allow different order of items in arrays
 	 */
 	private boolean allowArrayMixedOrder = false;
