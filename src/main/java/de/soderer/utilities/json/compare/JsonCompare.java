@@ -67,12 +67,20 @@ public class JsonCompare {
 			differences.add("jsonArrayRight misses " + (jsonArrayLeft.size() - jsonArrayRight.size()) + " items");
 		} else if (jsonArrayLeft.size() < jsonArrayRight.size()) {
 			differences.add("jsonArrayLeft misses " + (jsonArrayRight.size() - jsonArrayLeft.size()) + " items");
-		} else {
+		}
+
+		if (differences.size() == 0 || compareSettings.isCompareArraysOfDifferentLength()) {
 			if (compareSettings == null || !compareSettings.isAllowArrayMixedOrder()) {
 				for (int i = 0; i < jsonArrayLeft.size(); i++) {
 					final JsonArray itemDifferences = compare(jsonArrayLeft.get(i), jsonArrayRight.get(i));
 					if (itemDifferences != null) {
-						differences.add(new JsonObject().add("itemIndex", i).add("differences", itemDifferences));
+						differences.add(new JsonObject().add("leftItemIndex", i).add("differences", itemDifferences));
+					}
+				}
+				for (int i = jsonArrayLeft.size(); i < jsonArrayRight.size(); i++) {
+					final JsonArray itemDifferences = compare(jsonArrayLeft.get(i), jsonArrayRight.get(i));
+					if (itemDifferences != null) {
+						differences.add(new JsonObject().add("rightItemIndex", i).add("differences", itemDifferences));
 					}
 				}
 			} else {
@@ -91,7 +99,13 @@ public class JsonCompare {
 						}
 					}
 					if (!foundMatchingItem) {
-						differences.add(new JsonObject().add("itemIndex", i).add("differences", "Cannot find matching array item in jsonArrayRight"));
+						differences.add(new JsonObject().add("leftItemIndex", i).add("differences", "Cannot find matching array item in jsonArrayRight"));
+					}
+				}
+				for (int i = 0; i < jsonArrayRight.size(); i++) {
+					if (!alreadyUsedRightIndexes.contains(i)) {
+						differences.add(new JsonObject().add("rightItemIndex", i).add("differences", "Cannot find matching array item in jsonArrayLeft"));
+						alreadyUsedRightIndexes.add(i);
 					}
 				}
 			}

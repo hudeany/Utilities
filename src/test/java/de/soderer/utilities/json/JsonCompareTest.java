@@ -217,6 +217,6 @@ public class JsonCompareTest {
 
 		final JsonObject compareResultJson = new JsonCompare(jsonArrayLeft, jsonArrayRight).setCompareSettings(new JsonCompareSettings().setAllowArrayMixedOrder(true)).compare();
 
-		Assert.assertEquals(compareResultJson.toString(), 1, ((JsonArray) compareResultJson.get("differences")).size());
+		Assert.assertEquals(compareResultJson.toString(), 2, ((JsonArray) compareResultJson.get("differences")).size());
 	}
 }

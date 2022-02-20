@@ -6,12 +6,23 @@ public class JsonCompareSettings {
 	 */
 	private boolean allowArrayMixedOrder = false;
 
+	private boolean compareArraysOfDifferentLength = false;
+
 	public boolean isAllowArrayMixedOrder() {
 		return allowArrayMixedOrder;
 	}
 
 	public JsonCompareSettings setAllowArrayMixedOrder(final boolean allowArrayMixedOrder) {
 		this.allowArrayMixedOrder = allowArrayMixedOrder;
+		return this;
+	}
+
+	public boolean isCompareArraysOfDifferentLength() {
+		return compareArraysOfDifferentLength;
+	}
+
+	public JsonCompareSettings setCompareArraysOfDifferentLength(final boolean compareArraysOfDifferentLength) {
+		this.compareArraysOfDifferentLength = compareArraysOfDifferentLength;
 		return this;
 	}
 }
