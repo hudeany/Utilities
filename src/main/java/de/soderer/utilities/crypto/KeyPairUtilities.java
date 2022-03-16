@@ -1,16 +1,12 @@
 package de.soderer.utilities.crypto;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.AlgorithmParameters;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
@@ -21,14 +17,11 @@ import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.EdECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
-import java.security.spec.ECPoint;
-import java.security.spec.ECPublicKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
 
 import de.soderer.utilities.BitUtilities;
@@ -39,6 +32,8 @@ public class KeyPairUtilities {
 	public static String SSH_ALGORITHM_NAME_ECDSA_NISTP256 = "ecdsa-sha2-nistp256";
 	public static String SSH_ALGORITHM_NAME_ECDSA_NISTP384 = "ecdsa-sha2-nistp384";
 	public static String SSH_ALGORITHM_NAME_ECDSA_NISTP521 = "ecdsa-sha2-nistp521";
+	public static String SSH_ALGORITHM_NAME_EdDSA_Ed25519 = "ecdsa-sha2-eddsa_ed25519";
+	public static String SSH_ALGORITHM_NAME_EdDSA_Ed448 = "ecdsa-sha2-eddsa_ed448";
 
 	/**
 	 * Create a RSA keypair of given strength
@@ -131,11 +126,11 @@ public class KeyPairUtilities {
 	public static String getAlgorithm(final PublicKey publicKey) throws Exception {
 		if (publicKey == null){
 			throw new Exception("Invalid empty publicKey parameter");
-		} else if ("RSA".equals(publicKey.getAlgorithm())){
+		} else if ("RSA".equals(publicKey.getAlgorithm())) {
 			return SSH_ALGORITHM_NAME_RSA;
-		} else if ("DSA".equals(publicKey.getAlgorithm())){
+		} else if ("DSA".equals(publicKey.getAlgorithm())) {
 			return SSH_ALGORITHM_NAME_DSA;
-		} else if ("EC".equals(publicKey.getAlgorithm()) || "ECDSA".equals(publicKey.getAlgorithm())){
+		} else if ("EC".equals(publicKey.getAlgorithm()) || "ECDSA".equals(publicKey.getAlgorithm())) {
 			final int bitLength = ((ECPublicKey) publicKey).getW().getAffineX().bitLength();
 			if (bitLength <= 256) {
 				return SSH_ALGORITHM_NAME_ECDSA_NISTP256;
@@ -145,6 +140,15 @@ public class KeyPairUtilities {
 				return SSH_ALGORITHM_NAME_ECDSA_NISTP521;
 			} else {
 				throw new Exception("Unsupported ECDSA bit length: " + bitLength);
+			}
+		} else if ("EdDSA".equals(publicKey.getAlgorithm())) {
+			final EdECPublicKey publicEdDsaKey = (EdECPublicKey) publicKey;
+			if ("Ed25519".equals(publicEdDsaKey.getParams().getName())) {
+				return SSH_ALGORITHM_NAME_EdDSA_Ed25519;
+			} else if ("Ed448".equals(publicEdDsaKey.getParams().getName())) {
+				return SSH_ALGORITHM_NAME_EdDSA_Ed448;
+			} else {
+				throw new Exception("Unsupported EdDSA algorithm name: " + publicEdDsaKey.getParams().getName());
 			}
 		} else {
 			throw new Exception("Unsupported ssh algorithm name: " + publicKey.getAlgorithm());
@@ -260,63 +264,27 @@ public class KeyPairUtilities {
 				final byte[] q = new byte[qLength];
 				System.arraycopy(javaEncoding, javaEncoding.length - qLength, q, 0, qLength);
 				publicKeyWriter.writeData(q);
+			} else if (publicKey instanceof EdECPublicKey) {
+				final EdECPublicKey publicKeyEdEC = (EdECPublicKey) publicKey;
+				int publicKeyDataLength;
+				if ("Ed25519".equalsIgnoreCase(publicKeyEdEC.getParams().getName())) {
+					publicKeyWriter.writeString("ssh-ed25519");
+					publicKeyDataLength = 32;
+				} else if ("Ed448".equalsIgnoreCase(publicKeyEdEC.getParams().getName())) {
+					publicKeyWriter.writeString("ssh-ed448");
+					publicKeyDataLength = 57;
+				} else {
+					throw new Exception("Unknown EdDSA type: " + publicKeyEdEC.getParams().getName());
+				}
+
+				final byte[] javaEncoding = publicKeyEdEC.getEncoded();
+				final byte[] publicKeyData = new byte[publicKeyDataLength];
+				System.arraycopy(javaEncoding, javaEncoding.length - publicKeyDataLength, publicKeyData, 0, publicKeyDataLength);
+				publicKeyWriter.writeData(publicKeyData);
 			} else {
 				throw new Exception("Unsupported ssh algorithm name: " + algorithmName);
 			}
 			return publicKeyWriter.toByteArray();
-		}
-	}
-
-	public static PublicKey parsePublicKeyBytes(final byte[] data) throws Exception {
-		final BlockDataReader publicKeyReader = new BlockDataReader(data);
-		final String algorithmName = publicKeyReader.readString();
-		if (KeyPairUtilities.SSH_ALGORITHM_NAME_RSA.equalsIgnoreCase(algorithmName)) {
-			final BigInteger publicExponent = publicKeyReader.readBigInt();
-			final BigInteger modulus = publicKeyReader.readBigInt();
-
-			final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-			return keyFactory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
-		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_DSA.equalsIgnoreCase(algorithmName)) {
-			final BigInteger p = publicKeyReader.readBigInt();
-			final BigInteger q = publicKeyReader.readBigInt();
-			final BigInteger g = publicKeyReader.readBigInt();
-
-			final BigInteger y = publicKeyReader.readBigInt();
-
-			final KeyFactory keyFactory = KeyFactory.getInstance("DSA");
-			return keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
-		} else if (KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP256.equalsIgnoreCase(algorithmName)
-				|| KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP384.equalsIgnoreCase(algorithmName)
-				|| KeyPairUtilities.SSH_ALGORITHM_NAME_ECDSA_NISTP521.equalsIgnoreCase(algorithmName)) {
-			final String curveName = publicKeyReader.readString();
-			if ("nistp256".equals(curveName)) {
-				// Do nothing
-			} else if ("nistp384".equals(curveName)) {
-				// Do nothing
-			} else if ("nistp521".equals(curveName)) {
-				// Do nothing
-			} else {
-				throw new Exception("Unsupported ECDSA curveName: " + curveName);
-			}
-
-			final byte[] qBytes = publicKeyReader.readData();
-			final int xLength = (qBytes.length - 1) / 2;
-			if (4 != qBytes[0]) {
-				throw new Exception("Invalid key data found");
-			}
-			final byte[] x = new byte[xLength];
-			final byte[] y = new byte[xLength];
-			System.arraycopy(qBytes, 1, x, 0, xLength);
-			System.arraycopy(qBytes, xLength + 1, y, 0, xLength);
-
-			final KeyFactory keyFactory = KeyFactory.getInstance("EC");
-			final AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
-			parameters.init(new ECGenParameterSpec(curveName.replace("nist", "sec") + "r1"));
-			final ECParameterSpec ecParameterSpec = parameters.getParameterSpec(ECParameterSpec.class);
-
-			return keyFactory.generatePublic(new ECPublicKeySpec(new ECPoint(new BigInteger(x), new BigInteger(y)), ecParameterSpec));
-		} else {
-			throw new IllegalArgumentException("Invalid public key algorithm for PuTTY key (only supports RSA / DSA / EC): " + algorithmName);
 		}
 	}
 
@@ -598,36 +566,6 @@ public class KeyPairUtilities {
 
 		private byte[] toByteArray() {
 			return outputStream.toByteArray();
-		}
-	}
-
-	private static class BlockDataReader {
-		private final DataInput keyDataInput;
-
-		private BlockDataReader(final byte[] key) {
-			keyDataInput = new DataInputStream(new ByteArrayInputStream(key));
-		}
-
-		private BigInteger readBigInt() throws Exception {
-			return new BigInteger(readData());
-		}
-
-		private String readString() throws Exception {
-			return new String(readData(), StandardCharsets.ISO_8859_1);
-		}
-
-		private byte[] readData() throws IOException, Exception {
-			try {
-				final int nextBlockSize = keyDataInput.readInt();
-				if (nextBlockSize <= 0) {
-					throw new Exception("Key blocksize error. Maybe the key encryption password was wrong");
-				}
-				final byte[] nextBlock = new byte[nextBlockSize];
-				keyDataInput.readFully(nextBlock);
-				return nextBlock;
-			} catch (final IOException e) {
-				throw new Exception("Key block read error", e);
-			}
 		}
 	}
 }

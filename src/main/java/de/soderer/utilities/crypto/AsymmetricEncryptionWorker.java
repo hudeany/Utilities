@@ -82,6 +82,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 
 		try (InputStream inputStream = new BufferedInputStream(dataInputStream)) {
 			if (encryptionMethod.equalsIgnoreCase("ecies")) {
+				// Used by ECDSA
 				final Cipher eciesCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 				eciesCipher.init(Cipher.ENCRYPT_MODE, publicKey);
 

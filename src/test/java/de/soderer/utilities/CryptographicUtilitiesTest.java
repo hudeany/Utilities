@@ -30,16 +30,23 @@ import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.crypto.SymmetricDecryptionWorker;
 import de.soderer.utilities.crypto.SymmetricEncryptionWorker;
 
+/*
+ * TODO:
+ * Add Ed448, Ed25519 tests
+ * Add ECDSA tests
+ */
 public class CryptographicUtilitiesTest {
 	private static KeyPair rsaKeyPairCache = null;
 	private static KeyPair elGamalKeyPairCache = null;
 	private static KeyPair ecKeyPair = null;
 	private static KeyPair dsaKeyPairCache = null;
 	private static KeyPair dhKeyPairCache = null;
+	private static KeyPair ed25519KeyPair = null;
+	private static KeyPair ed448KeyPair = null;
 
 	private static KeyPair getRsaKeyPair() throws Exception {
 		if (rsaKeyPairCache == null) {
-			rsaKeyPairCache = CryptographicUtilities.generateRsaKeyPair(512);
+			rsaKeyPairCache = CryptographicUtilities.generateRsaKeyPair(2048);
 		}
 
 		return rsaKeyPairCache;
@@ -63,7 +70,7 @@ public class CryptographicUtilitiesTest {
 
 	private static KeyPair getDsaKeyPair() throws Exception {
 		if (dsaKeyPairCache == null) {
-			dsaKeyPairCache = CryptographicUtilities.generateDsaKeyPair(512);
+			dsaKeyPairCache = CryptographicUtilities.generateDsaKeyPair(2048);
 		}
 
 		return dsaKeyPairCache;
@@ -75,6 +82,22 @@ public class CryptographicUtilitiesTest {
 		}
 
 		return dhKeyPairCache;
+	}
+
+	private static KeyPair getEd25519KeyPair() throws Exception {
+		if (ed25519KeyPair == null) {
+			ed25519KeyPair = CryptographicUtilities.generateEd25519KeyPair();
+		}
+
+		return ed25519KeyPair;
+	}
+
+	private static KeyPair getEd448KeyPair() throws Exception {
+		if (ed448KeyPair == null) {
+			ed448KeyPair = CryptographicUtilities.generateEd448KeyPair();
+		}
+
+		return ed448KeyPair;
 	}
 
 	@Test
@@ -114,7 +137,7 @@ public class CryptographicUtilitiesTest {
 			try {
 				final ByteArrayInputStream dataToSignInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 				signatureBytes = new AsymmetricSignatureWorker(null, dataToSignInputStream, getRsaKeyPair().getPrivate(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA).work();
-			}catch (final Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 				Assert.fail("Signature failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA + ":\n" + e.getMessage());
 			}
@@ -123,10 +146,12 @@ public class CryptographicUtilitiesTest {
 				final ByteArrayInputStream dataToVerifyInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 				final boolean result = new AsymmetricVerificationWorker(null, dataToVerifyInputStream, signatureBytes, getRsaKeyPair().getPublic(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA).work();
 				Assert.assertTrue(result);
-			}catch (final Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 				Assert.fail("Verification failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA + ":\n" + e.getMessage());
 			}
+
+			Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(getRsaKeyPair().getPrivate(), getRsaKeyPair().getPublic()));
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -166,7 +191,7 @@ public class CryptographicUtilitiesTest {
 			try {
 				final ByteArrayInputStream dataToSignInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 				signatureBytes = new AsymmetricSignatureWorker(null, dataToSignInputStream, getEcKeyPair().getPrivate(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_EC).work();
-			}catch (final Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 				Assert.fail("Signature failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA + ":\n" + e.getMessage());
 			}
@@ -175,10 +200,12 @@ public class CryptographicUtilitiesTest {
 				final ByteArrayInputStream dataToVerifyInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 				final boolean result = new AsymmetricVerificationWorker(null, dataToVerifyInputStream, signatureBytes, getEcKeyPair().getPublic(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_EC).work();
 				Assert.assertTrue(result);
-			}catch (final Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 				Assert.fail("Verification failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA + ":\n" + e.getMessage());
 			}
+
+			Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(getEcKeyPair().getPrivate(), getEcKeyPair().getPublic()));
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -507,6 +534,62 @@ public class CryptographicUtilitiesTest {
 			if (signedTestJarFile.exists()) {
 				signedTestJarFile.delete();
 			}
+		}
+	}
+
+	@Test
+	public void testSignatureEd25519() {
+		try {
+			byte[] signatureBytes = null;
+			try {
+				final ByteArrayInputStream dataToSignInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				signatureBytes = new AsymmetricSignatureWorker(null, dataToSignInputStream, getEd25519KeyPair().getPrivate(), CryptographicUtilities.ENCRYPTION_METHOD_ED25519).work();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Signature failed. Method: " + CryptographicUtilities.ENCRYPTION_METHOD_ED25519 + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream dataToVerifyInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				final boolean result = new AsymmetricVerificationWorker(null, dataToVerifyInputStream, signatureBytes, getEd25519KeyPair().getPublic(), CryptographicUtilities.ENCRYPTION_METHOD_ED25519).work();
+				Assert.assertTrue(result);
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Verification failed. Method: " + CryptographicUtilities.ENCRYPTION_METHOD_ED25519 + ":\n" + e.getMessage());
+			}
+
+			Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(getEd25519KeyPair().getPrivate(), getEd25519KeyPair().getPublic()));
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testSignatureEd448() {
+		try {
+			byte[] signatureBytes = null;
+			try {
+				final ByteArrayInputStream dataToSignInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				signatureBytes = new AsymmetricSignatureWorker(null, dataToSignInputStream, getEd448KeyPair().getPrivate(), CryptographicUtilities.ENCRYPTION_METHOD_ED448).work();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Signature failed. Method: " + CryptographicUtilities.ENCRYPTION_METHOD_ED448 + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream dataToVerifyInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				final boolean result = new AsymmetricVerificationWorker(null, dataToVerifyInputStream, signatureBytes, getEd448KeyPair().getPublic(), CryptographicUtilities.ENCRYPTION_METHOD_ED448).work();
+				Assert.assertTrue(result);
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Verification failed. Method: " + CryptographicUtilities.ENCRYPTION_METHOD_ED448 + ":\n" + e.getMessage());
+			}
+
+			Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(getEd448KeyPair().getPrivate(), getEd448KeyPair().getPublic()));
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
 		}
 	}
 }

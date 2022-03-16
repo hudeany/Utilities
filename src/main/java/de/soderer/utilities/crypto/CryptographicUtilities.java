@@ -41,6 +41,7 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.ECKey;
+import java.security.interfaces.EdECPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.ECGenParameterSpec;
@@ -174,9 +175,9 @@ public class CryptographicUtilities {
 			"SHA224withECNR", "SHA256withECNR", "SHA384withECNR", "SHA512withECNR" };
 
 	public static final String[] KNOWN_SIGNATURE_METHODS_OTHERS = new String[] { "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
-			"GOST3411withGOST3410-2001", "SHA1withDSA", "NONEwithDSA", };
+			"GOST3411withGOST3410-2001", "SHA1withDSA", "SHA256withDSA", "SHA384withDSA", "SHA512withDSA", "NONEwithDSA", };
 
-	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "EC", "ElGamal" };
+	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "EC", "ElGamal", "Ed25519", "Ed448" };
 
 	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA = "RSA/ECB/PKCS1Padding";
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA = new String[] {
@@ -218,6 +219,9 @@ public class CryptographicUtilities {
 			"sect193r2", "sect233k1", "sect233r1", "sect239k1", "sect283k1", "sect283r1", "sect409k1", "sect409r1",
 			"sect571k1", "sect571r1"
 	};
+
+	public static final String ENCRYPTION_METHOD_ED25519 = "ED25519";
+	public static final String ENCRYPTION_METHOD_ED448 = "ED448";
 
 	public static KeyPair generateRsaKeyPair(final int keyStrength) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
@@ -281,6 +285,32 @@ public class CryptographicUtilities {
 			return keyGen.generateKeyPair();
 		} catch (final Exception e) {
 			throw new Exception("Cannot create RSA keypair", e);
+		}
+	}
+
+	public static KeyPair generateEd25519KeyPair() throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ED25519", BouncyCastleProvider.PROVIDER_NAME);
+			final ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec("ED25519");
+			keyGen.initialize(ecGenParameterSpec, new SecureRandom());
+			return keyGen.generateKeyPair();
+		} catch (final Exception e) {
+			throw new Exception("Cannot create EC keypair", e);
+		}
+	}
+
+	public static KeyPair generateEd448KeyPair() throws Exception {
+		Security.addProvider(new BouncyCastleProvider());
+
+		try {
+			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ED448", BouncyCastleProvider.PROVIDER_NAME);
+			final ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec("ED448");
+			keyGen.initialize(ecGenParameterSpec, new SecureRandom());
+			return keyGen.generateKeyPair();
+		} catch (final Exception e) {
+			throw new Exception("Cannot create EC keypair", e);
 		}
 	}
 
@@ -1077,10 +1107,36 @@ public class CryptographicUtilities {
 	}
 
 	public static boolean checkPrivateKeyFitsPublicKey(final PrivateKey privateKey, final PublicKey publicKey) throws Exception {
+		final Signature challengeSignature;
+		if (privateKey == null) {
+			throw new Exception("PrivateKey is missing");
+		} else if (publicKey == null) {
+			throw new Exception("PublicKey is missing");
+		} else if (privateKey.getAlgorithm().toLowerCase().equals("dsa")) {
+			challengeSignature = Signature.getInstance("SHA512withDSA");
+		} else if (privateKey.getAlgorithm().toLowerCase().equals("ec")) {
+			Security.addProvider(new BouncyCastleProvider());
+			challengeSignature = Signature.getInstance("SHA512withECDSA", BouncyCastleProvider.PROVIDER_NAME);
+		} else if (privateKey.getAlgorithm().toLowerCase().equals("eddsa")) {
+			final EdECPublicKey publicEdDsaKey = (EdECPublicKey) publicKey;
+			if ("Ed25519".equals(publicEdDsaKey.getParams().getName())) {
+				challengeSignature = Signature.getInstance("Ed25519");
+			} else if ("Ed448".equals(publicEdDsaKey.getParams().getName())) {
+				challengeSignature = Signature.getInstance("Ed448");
+			} else {
+				throw new Exception("Unsupported EdDSA algorithm name: " + publicEdDsaKey.getParams().getName());
+			}
+		} else if (privateKey.getAlgorithm().toLowerCase().equals("ed25519")) {
+			challengeSignature = Signature.getInstance("Ed25519");
+		} else if (privateKey.getAlgorithm().toLowerCase().equals("ed448")) {
+			challengeSignature = Signature.getInstance("Ed448");
+		} else {
+			challengeSignature = Signature.getInstance("SHA512withRSA");
+		}
+
 		final byte[] challenge = new byte[1024];
 		ThreadLocalRandom.current().nextBytes(challenge);
 
-		final Signature challengeSignature = Signature.getInstance("SHA512withRSA");
 		challengeSignature.initSign(privateKey);
 		challengeSignature.update(challenge);
 		final byte[] signature = challengeSignature.sign();
@@ -1413,6 +1469,9 @@ public class CryptographicUtilities {
 				final String pemBegin = "-----BEGIN PRIVATE KEY-----";
 				final String pemEnd = "-----END PRIVATE KEY-----";
 
+				final String pemOpenSshBegin = "-----BEGIN OPENSSH PRIVATE KEY-----";
+				final String pemOpenSshEnd = "-----END OPENSSH PRIVATE KEY-----";
+
 				final String pemEncryptedBegin = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
 				final String pemEncryptedEnd = "-----END ENCRYPTED PRIVATE KEY-----";
 
@@ -1421,6 +1480,8 @@ public class CryptographicUtilities {
 				} else if (dataString.contains(pemEcBegin) && dataString.contains(pemEcEnd) && dataString.indexOf(pemEcBegin) < dataString.indexOf(pemEcEnd)) {
 					return true;
 				} else if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
+					return true;
+				} else if (dataString.contains(pemOpenSshBegin) && dataString.contains(pemOpenSshEnd) && dataString.indexOf(pemOpenSshBegin) < dataString.indexOf(pemOpenSshEnd)) {
 					return true;
 				} else if (dataString.contains(pemEncryptedBegin) && dataString.contains(pemEncryptedEnd) && dataString.indexOf(pemEncryptedBegin) < dataString.indexOf(pemEncryptedEnd)) {
 					return true;
@@ -1487,8 +1548,8 @@ public class CryptographicUtilities {
 			final String name = getEllipticCurveName(ecPrivateKey);
 			final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
 			final ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(name);
-			final ECPoint Q = ecSpec.getG().multiply(ecPrivateKey.getD());
-			final byte[] publicDerBytes = Q.getEncoded(false);
+			final ECPoint q = ecSpec.getG().multiply(ecPrivateKey.getD());
+			final byte[] publicDerBytes = q.getEncoded(false);
 			final ECPoint point = ecSpec.getCurve().decodePoint(publicDerBytes);
 			final ECPublicKeySpec pubSpec = new ECPublicKeySpec(point, ecSpec);
 			return keyFactory.generatePublic(pubSpec);
@@ -1497,8 +1558,8 @@ public class CryptographicUtilities {
 			final String name = getEllipticCurveName(ecPrivateKey);
 			final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
 			final ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(name);
-			final ECPoint Q = ecSpec.getG().multiply(ecPrivateKey.getS());
-			final byte[] publicDerBytes = Q.getEncoded(false);
+			final ECPoint q = ecSpec.getG().multiply(ecPrivateKey.getS());
+			final byte[] publicDerBytes = q.getEncoded(false);
 			final ECPoint point = ecSpec.getCurve().decodePoint(publicDerBytes);
 			final ECPublicKeySpec pubSpec = new ECPublicKeySpec(point, ecSpec);
 			return keyFactory.generatePublic(pubSpec);

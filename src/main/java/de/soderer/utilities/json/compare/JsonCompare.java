@@ -72,13 +72,13 @@ public class JsonCompare {
 		if (differences.size() == 0 || compareSettings.isCompareArraysOfDifferentLength()) {
 			if (compareSettings == null || !compareSettings.isAllowArrayMixedOrder()) {
 				for (int i = 0; i < jsonArrayLeft.size(); i++) {
-					final JsonArray itemDifferences = compare(jsonArrayLeft.get(i), jsonArrayRight.get(i));
+					final JsonArray itemDifferences = compare(jsonArrayLeft.get(i), jsonArrayRight.size() > i ? jsonArrayRight.get(i) : null);
 					if (itemDifferences != null) {
 						differences.add(new JsonObject().add("leftItemIndex", i).add("differences", itemDifferences));
 					}
 				}
 				for (int i = jsonArrayLeft.size(); i < jsonArrayRight.size(); i++) {
-					final JsonArray itemDifferences = compare(jsonArrayLeft.get(i), jsonArrayRight.get(i));
+					final JsonArray itemDifferences = compare(jsonArrayLeft.size() > i ? jsonArrayLeft.get(i) : null, jsonArrayRight.get(i));
 					if (itemDifferences != null) {
 						differences.add(new JsonObject().add("rightItemIndex", i).add("differences", itemDifferences));
 					}

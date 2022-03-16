@@ -1140,4 +1140,13 @@ public class TextUtilities {
 
 		return resultText.toString();
 	}
+
+	public static boolean containsNonAsciiCharacters(final char[] text) {
+		for (final char nextChar : text) {
+			if (!ASCII_CHARACTERS_STRING.contains(Character.toString(nextChar))) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

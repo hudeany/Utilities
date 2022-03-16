@@ -558,6 +558,21 @@ public class UtilitiesTest {
 		}
 	}
 
+	@Test
+	public void testReverseArray() {
+		try {
+			final int[] testArrayOddLength = new int[] { 0,1,2,3,4 };
+			Utilities.reverseArray(testArrayOddLength);
+			Assert.assertArrayEquals(new int[] { 4,3,2,1,0 }, testArrayOddLength);
+
+			final int[] testArrayEvenLength = new int[] { 0,1,2,3,4, 5 };
+			Utilities.reverseArray(testArrayEvenLength);
+			Assert.assertArrayEquals(new int[] { 5, 4,3,2,1,0 }, testArrayEvenLength);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
 	//	@Test
 	//	public void testEncodingUTF_8() {
 	//		try {

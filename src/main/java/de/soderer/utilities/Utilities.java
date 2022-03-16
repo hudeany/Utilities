@@ -876,15 +876,6 @@ public class Utilities {
 		return list;
 	}
 
-	public static <T> T[] revertArray(final T[] array) {
-		@SuppressWarnings("unchecked")
-		final T[] returnValue = (T[]) new Object[array.length];
-		for (int i = 0; i < array.length; i++) {
-			returnValue[i] = array[array.length - 1 - i];
-		}
-		return returnValue;
-	}
-
 	public static String getDomainFromUrl(final String url) throws Exception {
 		final URI uri = new URI(url);
 		final String domain = uri.getHost();
@@ -1684,5 +1675,35 @@ public class Utilities {
 
 	public static String getSystemTempDir() {
 		return System.getProperty("java.io.tmpdir");
+	}
+
+	public static <T> T[] reverseArray(final T[] arrayData) {
+		for (int i = 0; i < arrayData.length / 2; i++) {
+			final int j = arrayData.length - 1 - i;
+			final T tmp = arrayData[i];
+			arrayData[i] = arrayData[j];
+			arrayData[j] = tmp;
+		}
+		return arrayData;
+	}
+
+	public static int[] reverseArray(final int[] arrayData) {
+		for (int i = 0; i < arrayData.length / 2; i++) {
+			final int j = arrayData.length - 1 - i;
+			final int tmp = arrayData[i];
+			arrayData[i] = arrayData[j];
+			arrayData[j] = tmp;
+		}
+		return arrayData;
+	}
+
+	public static byte[] reverseArray(final byte[] arrayData) {
+		for (int i = 0; i < arrayData.length / 2; i++) {
+			final int j = arrayData.length - 1 - i;
+			final byte tmp = arrayData[i];
+			arrayData[i] = arrayData[j];
+			arrayData[j] = tmp;
+		}
+		return arrayData;
 	}
 }

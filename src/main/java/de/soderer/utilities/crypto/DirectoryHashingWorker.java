@@ -3,9 +3,14 @@ package de.soderer.utilities.crypto;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Date;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.HashAlgorithm;
@@ -17,6 +22,16 @@ import de.soderer.utilities.worker.WorkerParentDual;
 public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 	private final File directoryToHash;
 	private final HashAlgorithm hashAlgorithm;
+
+	private boolean addDates = false;
+
+	public boolean isAddDates() {
+		return addDates;
+	}
+
+	public void setAddDates(final boolean addDates) {
+		this.addDates = addDates;
+	}
 
 	private String scanningForFilesMessage = "Scanning for files";
 
@@ -51,7 +66,17 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			if (!directory.canRead()) {
 				throw new Exception("Read access denied to: " + directory.getAbsolutePath());
 			} else {
-				final HashItem item = new HashItem(directory.getName(), true, hashAlgorithm, -1);
+				HashItem item;
+				if (!addDates) {
+					item = new HashItem(directory.getName(), true, hashAlgorithm, -1);
+				} else {
+					try {
+						final BasicFileAttributes attr = Files.readAttributes(Paths.get(directory.getAbsolutePath()), BasicFileAttributes.class);
+						item = new HashItem(directory.getName(), true, hashAlgorithm, -1, new Date(attr.creationTime().toMillis()), new Date(attr.lastModifiedTime().toMillis()));
+					} catch (@SuppressWarnings("unused") final Exception e) {
+						item = new HashItem(directory.getName(), true, hashAlgorithm, -1);
+					}
+				}
 				final File[] subFiles = directory.listFiles();
 				if (subFiles != null) {
 					Arrays.sort(subFiles);
@@ -98,7 +123,17 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 				}
 			}
 
-			final HashItem item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
+			HashItem item;
+			if (!addDates) {
+				item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
+			} else {
+				try {
+					final BasicFileAttributes attr = Files.readAttributes(Paths.get(fileToHash.getAbsolutePath()), BasicFileAttributes.class);
+					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length(), new Date(attr.creationTime().toMillis()), new Date(attr.lastModifiedTime().toMillis()));
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
+				}
+			}
 			item.setHash(messageDigest.digest());
 
 			itemsDone += subItemsDone;
@@ -106,7 +141,17 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 
 			return item;
 		} catch (@SuppressWarnings("unused") final Exception e) {
-			final HashItem item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
+			HashItem item;
+			if (!addDates) {
+				item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
+			} else {
+				try {
+					final BasicFileAttributes attr = Files.readAttributes(Paths.get(fileToHash.getAbsolutePath()), BasicFileAttributes.class);
+					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length(), new Date(attr.creationTime().toMillis()), new Date(attr.lastModifiedTime().toMillis()));
+				} catch (@SuppressWarnings("unused") final IOException e1) {
+					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
+				}
+			}
 			item.setHash(null);
 
 			itemsDone += fileToHash.length();

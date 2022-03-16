@@ -44,17 +44,17 @@ public class PuttyKeyWriter implements Closeable {
 		this.outputStream = outputStream;
 	}
 
-	public void writeKey(final PuttyKey puttyKey, final char[] password) throws Exception {
-		final String algorithmName = puttyKey.getAlgorithm();
+	public void writeKey(final SshKey sshKey, final char[] password) throws Exception {
+		final String algorithmName = sshKey.getAlgorithm();
 		final byte[] passwordBytes = password == null || password.length == 0 ? null : toBytes(password, StandardCharsets.ISO_8859_1);
 
-		final byte[] publicKeyBytes = puttyKey.getPublicKeyBytes();
-		byte[] privateKeyBytes = puttyKey.getPrivateKeyBytes();
+		final byte[] publicKeyBytes = sshKey.getPublicKeyBytes();
+		byte[] privateKeyBytes = sshKey.getPrivateKeyBytes();
 
 		// padding up to multiple of 16 bytes for AES/CBC/NoPadding encryption
 		privateKeyBytes = addRandomPadding(privateKeyBytes, 16);
 
-		final String macHash = calculateMacChecksum(passwordBytes, algorithmName, puttyKey.getComment(), publicKeyBytes, privateKeyBytes);
+		final String macHash = calculateMacChecksum(passwordBytes, algorithmName, sshKey.getComment(), publicKeyBytes, privateKeyBytes);
 
 		if (passwordBytes != null) {
 			final byte[] puttyKeyEncryptionKey = stretchPassword(passwordBytes);
@@ -71,7 +71,7 @@ public class PuttyKeyWriter implements Closeable {
 		final StringBuilder content = new StringBuilder();
 		content.append("PuTTY-User-Key-File-2: ").append(algorithmName).append("\r\n");
 		content.append("Encryption: ").append(passwordBytes == null ? "none" : "aes256-cbc").append("\r\n");
-		content.append("Comment: ").append(puttyKey.getComment()).append("\r\n");
+		content.append("Comment: ").append(sshKey.getComment()).append("\r\n");
 		content.append("Public-Lines: ").append(getLineCount(publicKeyBase64)).append("\r\n");
 		content.append(publicKeyBase64).append("\r\n");
 		content.append("Private-Lines: ").append(getLineCount(privateKeyBase64)).append("\r\n");
@@ -119,7 +119,7 @@ public class PuttyKeyWriter implements Closeable {
 	private static String calculateMacChecksum(final byte[] passwordBytes, final String keyType, final String comment, final byte[] publicKey, final byte[] privateKey) throws Exception {
 		final String encryptionType = passwordBytes == null ? "none" : "aes256-cbc";
 		final MessageDigest digest = MessageDigest.getInstance("SHA-1");
-		digest.update("putty-private-key-file-mac-key".getBytes());
+		digest.update("putty-private-key-file-mac-key".getBytes(StandardCharsets.UTF_8));
 		if (passwordBytes != null) {
 			digest.update(passwordBytes);
 		}

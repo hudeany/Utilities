@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public class HashItem {
@@ -14,11 +15,24 @@ public class HashItem {
 	private final List<HashItem> subItems = new ArrayList<>();
 	private byte[] hash = null;
 
+	private Date creationDate = null;
+	private Date modifiedDate = null;
+
 	public HashItem(final String name, final boolean isDirectory, final HashAlgorithm hashAlgorithm, final long size) {
 		this.name = name;
 		this.isDirectory = isDirectory;
 		this.hashAlgorithm = hashAlgorithm;
 		this.size = size;
+	}
+
+	public HashItem(final String name, final boolean isDirectory, final HashAlgorithm hashAlgorithm, final long size, final Date creationDate, final Date modifiedDate) {
+		this.name = name;
+		this.isDirectory = isDirectory;
+		this.hashAlgorithm = hashAlgorithm;
+		this.size = size;
+
+		this.creationDate = creationDate;
+		this.modifiedDate = modifiedDate;
 	}
 
 	public byte[] getHash() throws Exception {
@@ -41,8 +55,12 @@ public class HashItem {
 		return hash;
 	}
 
-	public void setHash(final byte[] hash) {
-		this.hash = hash;
+	public void setHash(final byte[] hash) throws Exception {
+		if (isDirectory) {
+			throw new Exception("Directory hash may not be set, but must be calculated");
+		} else {
+			this.hash = hash;
+		}
 	}
 
 	public String getName() {
@@ -100,6 +118,48 @@ public class HashItem {
 			return directoriesCount;
 		} else {
 			return 0;
+		}
+	}
+
+	public Date getCreationDate() {
+		return creationDate;
+	}
+
+	public Date getModifiedDate() {
+		return modifiedDate;
+	}
+
+	public Date getLatestFileCreation() {
+		if (isDirectory) {
+			Date latestFileCreationDate = null;
+			for (final HashItem subItem : subItems) {
+				final Date subItemLatestFileCreation = subItem.getLatestFileCreation();
+				if (latestFileCreationDate == null) {
+					latestFileCreationDate = subItemLatestFileCreation;
+				} else if (subItemLatestFileCreation != null && latestFileCreationDate.before(latestFileCreationDate)) {
+					latestFileCreationDate = subItemLatestFileCreation;
+				}
+			}
+			return latestFileCreationDate;
+		} else {
+			return creationDate;
+		}
+	}
+
+	public Date getLatestFileModified() {
+		if (isDirectory) {
+			Date latestFileModifiedDate = null;
+			for (final HashItem subItem : subItems) {
+				final Date subItemLatestFileModified = subItem.getLatestFileModified();
+				if (latestFileModifiedDate == null) {
+					latestFileModifiedDate = subItemLatestFileModified;
+				} else if (subItemLatestFileModified != null && latestFileModifiedDate.before(latestFileModifiedDate)) {
+					latestFileModifiedDate = subItemLatestFileModified;
+				}
+			}
+			return latestFileModifiedDate;
+		} else {
+			return modifiedDate;
 		}
 	}
 }
