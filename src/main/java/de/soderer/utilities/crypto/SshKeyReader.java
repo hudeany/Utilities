@@ -298,7 +298,7 @@ public class SshKeyReader {
 			final BigInteger y = new BigInteger(1, edDsaPublicKeyData);
 			final EdECPoint edECPoint = new EdECPoint(xOdd, y);
 
-			final PublicKey publicKey = KeyFactory.getInstance("ED25519").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed25519"), edECPoint));
+			final PublicKey publicKey = KeyFactory.getInstance("Ed25519").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed25519"), edECPoint));
 			return publicKey;
 		} else if ("ssh-ed448".equalsIgnoreCase(algorithmName)) {
 			final byte[] edDsaPublicKeyData = publicKeyReader.readData();
@@ -311,7 +311,7 @@ public class SshKeyReader {
 			final BigInteger y = new BigInteger(1, edDsaPublicKeyData);
 			final EdECPoint edECPoint = new EdECPoint(xOdd, y);
 
-			final PublicKey publicKey = KeyFactory.getInstance("ED448").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed448"), edECPoint));
+			final PublicKey publicKey = KeyFactory.getInstance("Ed448").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed448"), edECPoint));
 			return publicKey;
 		} else {
 			throw new IllegalArgumentException("Invalid public key algorithm for PuTTY key (only supports RSA / DSA / ECDSA / EdDSA): " + algorithmName);
@@ -713,7 +713,7 @@ public class SshKeyReader {
 				final BigInteger y = new BigInteger(1, edDsaPublicKeyData);
 				final EdECPoint edECPoint = new EdECPoint(xOdd, y);
 
-				final PublicKey publicKey = KeyFactory.getInstance("ED25519").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed25519"), edECPoint));
+				final PublicKey publicKey = KeyFactory.getInstance("Ed25519").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed25519"), edECPoint));
 				return publicKey;
 			} else if ("ssh-ed448".equals(keyType)) {
 				final byte[] edDsaPublicKeyData = extractNextByteArray(publicKeyDataInput, "edDsaPublicKeyData");
@@ -730,7 +730,7 @@ public class SshKeyReader {
 				final BigInteger y = new BigInteger(1, edDsaPublicKeyData);
 				final EdECPoint edECPoint = new EdECPoint(xOdd, y);
 
-				final PublicKey publicKey = KeyFactory.getInstance("ED448").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed448"), edECPoint));
+				final PublicKey publicKey = KeyFactory.getInstance("Ed448").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed448"), edECPoint));
 				return publicKey;
 			} else {
 				throw new Exception("Unexpected key type '" + keyType + "'");
@@ -865,8 +865,8 @@ public class SshKeyReader {
 				final BigInteger y = new BigInteger(1, edDsaPublicKeyData);
 				final EdECPoint edECPoint = new EdECPoint(xOdd, y);
 
-				final PublicKey publicKey = KeyFactory.getInstance("ED25519").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed25519"), edECPoint));
-				final PrivateKey privateKey = KeyFactory.getInstance("ED25519").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed25519"), privateKeyBytes));
+				final PublicKey publicKey = KeyFactory.getInstance("Ed25519").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed25519"), edECPoint));
+				final PrivateKey privateKey = KeyFactory.getInstance("Ed25519").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed25519"), privateKeyBytes));
 				return new SshKey(SshKeyFormat.OpenSSHv1, keyComment, new KeyPair(publicKey, privateKey));
 			} else if ("ssh-ed448".equals(algorithmName)) {
 				final BigInteger checkBigInt1 = new BigInteger(extractNextByteArray(privateKeyDataInput, "y"));
@@ -898,8 +898,8 @@ public class SshKeyReader {
 				final BigInteger y = new BigInteger(1, edDsaPublicKeyData);
 				final EdECPoint edECPoint = new EdECPoint(xOdd, y);
 
-				final PublicKey publicKey = KeyFactory.getInstance("ED448").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed448"), edECPoint));
-				final PrivateKey privateKey = KeyFactory.getInstance("ED448").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed448"), privateKeyBytes));
+				final PublicKey publicKey = KeyFactory.getInstance("Ed448").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed448"), edECPoint));
+				final PrivateKey privateKey = KeyFactory.getInstance("Ed448").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed448"), privateKeyBytes));
 				return new SshKey(SshKeyFormat.OpenSSHv1, keyComment, new KeyPair(publicKey, privateKey));
 			} else {
 				throw new Exception("Unexpected key type '" + algorithmName + "'");
@@ -1346,8 +1346,8 @@ public class SshKeyReader {
 				final BigInteger y = new BigInteger(1, edDsaPublicKeyData);
 				final EdECPoint edECPoint = new EdECPoint(xOdd, y);
 
-				final PublicKey publicKey = KeyFactory.getInstance("ED25519").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed25519"), edECPoint));
-				final PrivateKey privateKey = KeyFactory.getInstance("ED25519").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed25519"), privateKeyBytes));
+				final PublicKey publicKey = KeyFactory.getInstance("Ed25519").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed25519"), edECPoint));
+				final PrivateKey privateKey = KeyFactory.getInstance("Ed25519").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed25519"), privateKeyBytes));
 				return new KeyPair(publicKey, privateKey);
 			} else if ("ssh-ed448".equalsIgnoreCase(algorithmName)) {
 				final byte[] edDsaPublicKeyData = publicKeyReader.readData();
@@ -1361,8 +1361,8 @@ public class SshKeyReader {
 				final BigInteger y = new BigInteger(1, edDsaPublicKeyData);
 				final EdECPoint edECPoint = new EdECPoint(xOdd, y);
 
-				final PublicKey publicKey = KeyFactory.getInstance("ED448").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed448"), edECPoint));
-				final PrivateKey privateKey = KeyFactory.getInstance("ED448").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed448"), privateKeyBytes));
+				final PublicKey publicKey = KeyFactory.getInstance("Ed448").generatePublic(new EdECPublicKeySpec(new NamedParameterSpec("Ed448"), edECPoint));
+				final PrivateKey privateKey = KeyFactory.getInstance("Ed448").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed448"), privateKeyBytes));
 				return new KeyPair(publicKey, privateKey);
 			} else {
 				throw new IllegalArgumentException("Invalid public key algorithm for PuTTY key (only supports RSA / DSA / ECDSA / EdDSA): " + algorithmName);
