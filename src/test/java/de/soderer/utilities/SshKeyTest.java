@@ -70,8 +70,6 @@ public class SshKeyTest {
 							final SshKey sshKey;
 							if (filename.toLowerCase().contains("_no_password_")) {
 								sshKey = SshKeyReader.readKey(inputStream, null);
-							} else if (filename.toLowerCase().contains("_ä_")) {
-								sshKey = SshKeyReader.readKey(inputStream, "ä".toCharArray());
 							} else {
 								sshKey = SshKeyReader.readKey(inputStream, "pÄsswOrd".toCharArray());
 							}

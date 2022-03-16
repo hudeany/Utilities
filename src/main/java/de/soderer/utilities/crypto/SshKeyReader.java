@@ -60,7 +60,7 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
 
 /*
  * TODO:
- * simplefiy "extractNextByteArray" by blockreader
+ * simplifiy "extractNextByteArray" by blockreader
  * Read Putty Keys Version 3 secured with password
  * Password Class autocloseable
  * Putty Key save without password does not work in GUI
