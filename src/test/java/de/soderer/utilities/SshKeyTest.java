@@ -41,7 +41,9 @@ public class SshKeyTest {
 							Assert.assertEquals(filename, md5Hash.toUpperCase(), readMd5Fingerprint.toUpperCase().replace(":", ""));
 
 							final boolean keyCheckSuccess = CryptographicUtilities.checkPrivateKeyFitsPublicKey(sshKey.getKeyPair().getPrivate(), sshKey.getKeyPair().getPublic());
-							System.out.println("Signature sign/verify test with file: " + filename + ": " + keyCheckSuccess);
+							if (!keyCheckSuccess) {
+								System.out.println("Signature sign/verify test failed with file: " + filename + ": " + keyCheckSuccess);
+							}
 							overallSuccess &= keyCheckSuccess;
 						}
 					} else if (filename.endsWith(".pub")) {
@@ -77,7 +79,9 @@ public class SshKeyTest {
 							Assert.assertEquals(filename, md5Hash.toUpperCase(), readMd5Fingerprint.toUpperCase().replace(":", ""));
 
 							final boolean keyCheckSuccess = CryptographicUtilities.checkPrivateKeyFitsPublicKey(sshKey.getKeyPair().getPrivate(), sshKey.getKeyPair().getPublic());
-							System.out.println("Signature sign/verify test with file: " + filename + ": " + keyCheckSuccess);
+							if (!keyCheckSuccess) {
+								System.out.println("Signature sign/verify test failed with file: " + filename + ": " + keyCheckSuccess);
+							}
 							overallSuccess &= keyCheckSuccess;
 						}
 					}

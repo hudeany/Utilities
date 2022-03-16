@@ -65,6 +65,7 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
  * Password Class autocloseable
  * Putty Key save without password does not work in GUI
  * Join both SshKeyWriter
+ * Create new Formats in SshWriter
  * Check Linux OpsnSSHv1 with password by single 'ä' password
  * Show SHA-256 Fingerprints as Base64
  * replace nistp* BouncyCastle public key decoding
