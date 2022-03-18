@@ -1149,4 +1149,28 @@ public class TextUtilities {
 		}
 		return false;
 	}
+
+	/**
+	 * Fix the encoding of a String if it was stored in UTF-8 encoding but decoded with ISO-8859-1 encoding
+	 *
+	 * Examples of byte data of wrongly encoded Umlauts and other special characters:
+	 *   Ä: [-61, -124]
+	 *   ä: [-61, -92]
+	 *   ß: [-61, -97]
+	 *   è: [-61, -88]
+	 */
+	public static String fixEncodingErrorUTF8AsISO8859(final String text) {
+		boolean wrongEncodingDetected = false;
+		for (final byte nextByte : text.getBytes(StandardCharsets.ISO_8859_1)) {
+			if (nextByte == -61) {
+				wrongEncodingDetected = true;
+				break;
+			}
+		}
+		if (wrongEncodingDetected) {
+			return new String(text.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+		} else {
+			return text;
+		}
+	}
 }

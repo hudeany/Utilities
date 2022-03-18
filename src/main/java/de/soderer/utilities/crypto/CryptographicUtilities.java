@@ -41,6 +41,7 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.ECKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.EdECPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateCrtKey;
@@ -52,6 +53,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -144,6 +146,7 @@ import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.MapStringReader;
 import de.soderer.utilities.MissingPasswordException;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WrongPasswordException;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
@@ -888,16 +891,34 @@ public class CryptographicUtilities {
 		return BitUtilities.toHexString(md.digest(), byteSeparator);
 	}
 
+	public static String getSha256FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-256");
+		md.update(key.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
+	}
+
 	public static String getSha384FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-384");
 		md.update(key.getEncoded());
 		return BitUtilities.toHexString(md.digest(), byteSeparator);
 	}
 
+	public static String getSha384FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-384");
+		md.update(key.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
+	}
+
 	public static String getSha512FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-512");
 		md.update(key.getEncoded());
 		return BitUtilities.toHexString(md.digest(), byteSeparator);
+	}
+
+	public static String getSha512FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-512");
+		md.update(key.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
 	}
 
 	public static KeyPair convertPEMKeyPairToKeyPair(final PEMKeyPair keyPair) throws PEMException {
@@ -1643,6 +1664,19 @@ public class CryptographicUtilities {
 			}
 		}
 		return certificates;
+	}
+
+	public static Tuple<String, Integer> getCurveNameAndQLengthFromECPublicKey(final ECPublicKey publicKeyEC) throws Exception {
+		final int bitLength = publicKeyEC.getW().getAffineX().bitLength();
+		if (bitLength <= 256) {
+			return new Tuple<>("nistp256", 65);
+		} else if (bitLength <= 384) {
+			return new Tuple<>("nistp384", 97);
+		} else if (bitLength <= 521) {
+			return new Tuple<>("nistp521", 133);
+		} else {
+			throw new Exception("Unsupported ECDSA bit length: " + bitLength);
+		}
 	}
 }
 

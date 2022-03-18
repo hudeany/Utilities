@@ -30,7 +30,7 @@ public class SshKey {
 				|| "EdDSA".equals(keyPair.getPublic().getAlgorithm())) {
 			this.keyPair = keyPair;
 		} else {
-			throw new IllegalArgumentException("Invalid public key algorithm for SSH key (only supports RSA / DSA / ECDSA / EdDSA): " + keyPair.getPublic().getAlgorithm());
+			throw new IllegalArgumentException("Unsupported SSH cipher algorithm for SSH key (only supports RSA / DSA / EC (ECDSA) / EdDSA): " + keyPair.getPublic().getAlgorithm());
 		}
 	}
 
@@ -66,24 +66,28 @@ public class SshKey {
 		return KeyPairUtilities.getSha256Fingerprint(keyPair);
 	}
 
+	public String getSha256FingerprintBase64() throws Exception {
+		return KeyPairUtilities.getSha256FingerprintBase64(keyPair);
+	}
+
 	public String getSha384Fingerprint() throws Exception {
 		return KeyPairUtilities.getSha384Fingerprint(keyPair);
+	}
+
+	public String getSha384FingerprintBase64() throws Exception {
+		return KeyPairUtilities.getSha384FingerprintBase64(keyPair);
 	}
 
 	public String getSha512Fingerprint() throws Exception {
 		return KeyPairUtilities.getSha512Fingerprint(keyPair);
 	}
 
+	public String getSha512FingerprintBase64() throws Exception {
+		return KeyPairUtilities.getSha512FingerprintBase64(keyPair);
+	}
+
 	public KeyPair getKeyPair() throws Exception {
 		return keyPair;
-	}
-
-	public byte[] getPublicKeyBytes() throws Exception {
-		return KeyPairUtilities.getPublicKeyBytes(keyPair);
-	}
-
-	public byte[] getPrivateKeyBytes() throws Exception {
-		return KeyPairUtilities.getPrivateKeyBytes(keyPair);
 	}
 
 	public String encodePublicKeyForAuthorizedKeys() throws Exception {

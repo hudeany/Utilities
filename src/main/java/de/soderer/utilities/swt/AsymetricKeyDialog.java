@@ -87,19 +87,19 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha256"));
 
-				addSizeLimitedTextField(composite, CryptographicUtilities.getSha256FingerPrint(publicKey, ":").toUpperCase());
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha256FingerPrintBase64(publicKey).toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha384"));
 
-				addSizeLimitedTextField(composite, CryptographicUtilities.getSha384FingerPrint(publicKey, ":").toUpperCase());
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha384FingerPrintBase64(publicKey).toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha512"));
 
-				addSizeLimitedTextField(composite, CryptographicUtilities.getSha512FingerPrint(publicKey, ":").toUpperCase());
+				addSizeLimitedTextField(composite, CryptographicUtilities.getSha512FingerPrintBase64(publicKey).toUpperCase());
 			} else if (publicKey instanceof BCECPublicKey) {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));

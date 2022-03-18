@@ -24,7 +24,10 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.util.Base64;
 
+import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey;
+
 import de.soderer.utilities.BitUtilities;
+import de.soderer.utilities.Tuple;
 
 public class KeyPairUtilities {
 	public static String SSH_ALGORITHM_NAME_RSA = "ssh-rsa";
@@ -96,6 +99,16 @@ public class KeyPairUtilities {
 		}
 		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
 		keyPairGenerator.initialize(curveId);
+		return keyPairGenerator.generateKeyPair();
+	}
+
+	public static KeyPair createEd25519CurveKeyPair() throws Exception {
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("Ed25519");
+		return keyPairGenerator.generateKeyPair();
+	}
+
+	public static KeyPair createEd448CurveKeyPair() throws Exception {
+		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("Ed448");
 		return keyPairGenerator.generateKeyPair();
 	}
 
@@ -179,6 +192,7 @@ public class KeyPairUtilities {
 			} else {
 				throw new Exception("Unsupported ECDSA bit length: " + bitLength);
 			}
+			// TODO EdDSA
 		} else{
 			throw new IllegalArgumentException("Unknown private key cipher");
 		}
@@ -242,25 +256,11 @@ public class KeyPairUtilities {
 				publicKeyWriter.writeBigInt(publicKeyDSA.getY());
 			} else if (publicKey instanceof ECPublicKey) {
 				final ECPublicKey publicKeyEC = (ECPublicKey) publicKey;
-				final int bitLength = publicKeyEC.getW().getAffineX().bitLength();
-				String curveName = null;
-				int qLength;
-				if (bitLength <= 256) {
-					curveName = "nistp256";
-					qLength = 65;
-				} else if (bitLength <= 384) {
-					curveName = "nistp384";
-					qLength = 97;
-				} else if (bitLength <= 521) {
-					curveName = "nistp521";
-					qLength = 133;
-				} else {
-					throw new Exception("Unsupported ECDSA bit length: " + bitLength);
-				}
-
+				final Tuple<String, Integer> curveInfo = CryptographicUtilities.getCurveNameAndQLengthFromECPublicKey(publicKeyEC);
 				publicKeyWriter.writeString(algorithmName);
-				publicKeyWriter.writeString(curveName);
+				publicKeyWriter.writeString(curveInfo.getFirst());
 				final byte[] javaEncoding = publicKeyEC.getEncoded();
+				final int qLength = curveInfo.getSecond();
 				final byte[] q = new byte[qLength];
 				System.arraycopy(javaEncoding, javaEncoding.length - qLength, q, 0, qLength);
 				publicKeyWriter.writeData(q);
@@ -282,7 +282,7 @@ public class KeyPairUtilities {
 				System.arraycopy(javaEncoding, javaEncoding.length - publicKeyDataLength, publicKeyData, 0, publicKeyDataLength);
 				publicKeyWriter.writeData(publicKeyData);
 			} else {
-				throw new Exception("Unsupported ssh algorithm name: " + algorithmName);
+				throw new Exception("Unsupported  algorithm name: " + algorithmName);
 			}
 			return publicKeyWriter.toByteArray();
 		}
@@ -313,8 +313,11 @@ public class KeyPairUtilities {
 			} else if (privateKey instanceof ECPrivateKey) {
 				final ECPrivateKey privateKeyEC = (ECPrivateKey) privateKey;
 				privateKeyWriter.writeBigInt(privateKeyEC.getS());
+			} else if (privateKey instanceof EdDSAPublicKey) {
+				// TODO:
+				throw new IllegalArgumentException("EdDSA SSH cipher algorithm not supported yet");
 			} else {
-				throw new IllegalArgumentException("Unsupported ssh algorithm");
+				throw new IllegalArgumentException("Unsupported SSH cipher algorithm");
 			}
 			return privateKeyWriter.toByteArray();
 		}
@@ -521,6 +524,8 @@ public class KeyPairUtilities {
 	public static String encodePublicKeyForAuthorizedKeys(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
+		} else if (keyPair.getPublic() == null) {
+			throw new Exception("Missing public key for AuthorizedKey string generation");
 		} else {
 			return encodePublicKeyForAuthorizedKeys(keyPair.getPublic());
 		}

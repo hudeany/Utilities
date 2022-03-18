@@ -26,6 +26,7 @@ import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -912,17 +913,13 @@ public class Utilities {
 
 	public static void clear(final char[] array) {
 		if (array != null) {
-			for (int i = 0; i < array.length; i++) {
-				array[i] = 0;
-			}
+			Arrays.fill(array, (char) 0);
 		}
 	}
 
 	public static void clear(final byte[] array) {
 		if (array != null) {
-			for (int i = 0; i < array.length; i++) {
-				array[i] = 0;
-			}
+			Arrays.fill(array, (byte) 0);
 		}
 	}
 

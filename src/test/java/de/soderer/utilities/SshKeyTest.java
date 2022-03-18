@@ -12,17 +12,17 @@ import org.junit.Test;
 
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.crypto.KeyPairUtilities;
-import de.soderer.utilities.crypto.OpenSshKeyWriter;
-import de.soderer.utilities.crypto.PuttyKeyWriter;
 import de.soderer.utilities.crypto.SshKey;
 import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
 import de.soderer.utilities.crypto.SshKeyReader;
+import de.soderer.utilities.crypto.SshKeyWriter;
 
 public class SshKeyTest {
+	private static char[] TESTPASSWORD = "pÄsswOrd".toCharArray();
+	private static String TESTCOMMENT = "Test key with Ümlaut";
+
 	@Test
 	public void testTestKeyFiles() throws Exception {
-		final ByteArrayOutputStream authorizedKeys = new ByteArrayOutputStream();
-
 		boolean overallSuccess = true;
 		for (final File sshkeyFileDirectory : new File(getClass().getClassLoader().getResource("sshkey").toURI()).listFiles()) {
 			for (final File sshkeyFile : sshkeyFileDirectory.listFiles()) {
@@ -37,8 +37,7 @@ public class SshKeyTest {
 							} else {
 								sshKey = SshKeyReader.readKey(inputStream, "pÄsswOrd".toCharArray());
 							}
-							final String readMd5Fingerprint = sshKey.getMd5Fingerprint();
-							Assert.assertEquals(filename, md5Hash.toUpperCase(), readMd5Fingerprint.toUpperCase().replace(":", ""));
+							Assert.assertEquals(filename, md5Hash.toUpperCase(), sshKey.getMd5Fingerprint().toUpperCase().replace(":", ""));
 
 							final boolean keyCheckSuccess = CryptographicUtilities.checkPrivateKeyFitsPublicKey(sshKey.getKeyPair().getPrivate(), sshKey.getKeyPair().getPublic());
 							if (!keyCheckSuccess) {
@@ -46,18 +45,19 @@ public class SshKeyTest {
 							}
 							overallSuccess &= keyCheckSuccess;
 						}
+
+						try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
+							final SshKey publicSshKey = SshKeyReader.readPublicKey(inputStream);
+							if (publicSshKey != null) {
+								Assert.assertEquals(filename, md5Hash.toUpperCase(), publicSshKey.getMd5Fingerprint().toUpperCase().replace(":", ""));
+							}
+						}
 					} else if (filename.endsWith(".pub")) {
 						final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
 						try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
 							final SshKey sshKey = SshKeyReader.readKey(inputStream, null);
 							final String readMd5Fingerprint = sshKey.getMd5Fingerprint();
 							Assert.assertEquals(filename, md5Hash.toUpperCase(), readMd5Fingerprint.toUpperCase().replace(":", ""));
-						}
-
-						try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
-							IoUtilities.copy(inputStream, authorizedKeys);
-							authorizedKeys.write(("# " + filename).getBytes(StandardCharsets.UTF_8));
-							authorizedKeys.write("\n\n".getBytes(StandardCharsets.UTF_8));
 						}
 					} else if (filename.endsWith(".pem") && filename.toLowerCase().contains("public")) {
 						final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
@@ -75,14 +75,20 @@ public class SshKeyTest {
 							} else {
 								sshKey = SshKeyReader.readKey(inputStream, "pÄsswOrd".toCharArray());
 							}
-							final String readMd5Fingerprint = sshKey.getMd5Fingerprint();
-							Assert.assertEquals(filename, md5Hash.toUpperCase(), readMd5Fingerprint.toUpperCase().replace(":", ""));
+							Assert.assertEquals(filename, md5Hash.toUpperCase(), sshKey.getMd5Fingerprint().toUpperCase().replace(":", ""));
 
 							final boolean keyCheckSuccess = CryptographicUtilities.checkPrivateKeyFitsPublicKey(sshKey.getKeyPair().getPrivate(), sshKey.getKeyPair().getPublic());
 							if (!keyCheckSuccess) {
 								System.out.println("Signature sign/verify test failed with file: " + filename + ": " + keyCheckSuccess);
 							}
 							overallSuccess &= keyCheckSuccess;
+						}
+
+						try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
+							final SshKey publicSshKey = SshKeyReader.readPublicKey(inputStream);
+							if (publicSshKey != null) {
+								Assert.assertEquals(filename, md5Hash.toUpperCase(), publicSshKey.getMd5Fingerprint().toUpperCase().replace(":", ""));
+							}
 						}
 					}
 				} catch (final Exception e) {
@@ -93,18 +99,6 @@ public class SshKeyTest {
 			}
 		}
 		Assert.assertTrue("At least one keyfile test had errors", overallSuccess);
-
-		try {
-			final ByteArrayInputStream inputStream = new ByteArrayInputStream(authorizedKeys.toByteArray());
-			SshKey nextKey;
-			int numberOfPublicKeys = 0;
-			while ((nextKey = SshKeyReader.readKey(inputStream, null)) != null) {
-				// Do nothing, just read the authorizedKeys data
-				numberOfPublicKeys++;
-			}
-		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
-		}
 	}
 
 	@Test
@@ -156,13 +150,11 @@ public class SshKeyTest {
 	}
 
 	private void testKeyPair(final KeyPair keyPair) throws Exception {
-		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
 
 		final byte[] privateKeyPkcs8Data;
 		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
-			try (OpenSshKeyWriter writer = new OpenSshKeyWriter(byteArrayOutStream)) {
-				writer.writePKCS8Format(keyPair, "password".toCharArray());
-			}
+			SshKeyWriter.writePKCS8Format(byteArrayOutStream, keyPair, TESTPASSWORD, null);
 			byteArrayOutStream.flush();
 			privateKeyPkcs8Data = byteArrayOutStream.toByteArray();
 		}
@@ -173,17 +165,15 @@ public class SshKeyTest {
 
 		SshKey openSshKey1;
 		try (InputStream inputStream = new ByteArrayInputStream(privateKeyPkcs8Data)) {
-			openSshKey1 = SshKeyReader.readKey(inputStream, "password".toCharArray());
+			openSshKey1 = SshKeyReader.readKey(inputStream, TESTPASSWORD);
 		}
-		final String readsha256Fingerprint = openSshKey1.getSha256Fingerprint();
+		final String readsha256Fingerprint = openSshKey1.getSha256FingerprintBase64();
 		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
 
 		final byte[] publicKeyPkcs1Data;
 
 		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
-			try (OpenSshKeyWriter writer = new OpenSshKeyWriter(byteArrayOutStream)) {
-				writer.writePKCS1Format(keyPair.getPublic());
-			}
+			SshKeyWriter.writePKCS1Format(byteArrayOutStream, keyPair.getPublic());
 			byteArrayOutStream.flush();
 			publicKeyPkcs1Data = byteArrayOutStream.toByteArray();
 		}
@@ -193,17 +183,15 @@ public class SshKeyTest {
 		}
 		final SshKey openSshKey2;
 		try (InputStream inputStream = new ByteArrayInputStream(publicKeyPkcs1Data)) {
-			openSshKey2 = SshKeyReader.readKey(inputStream, "password".toCharArray());
+			openSshKey2 = SshKeyReader.readKey(inputStream, TESTPASSWORD);
 		}
-		Assert.assertEquals(sha256Fingerprint, openSshKey2.getSha256Fingerprint());
+		Assert.assertEquals(sha256Fingerprint, openSshKey2.getSha256FingerprintBase64());
 
 		final byte[] keypairPkcs1Data;
 
 		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
-			try (OpenSshKeyWriter writer = new OpenSshKeyWriter(byteArrayOutStream)) {
-				writer.writePKCS8Format(keyPair, null);
-				writer.writePKCS1Format(keyPair.getPublic());
-			}
+			SshKeyWriter.writePKCS8Format(byteArrayOutStream, keyPair, null, null);
+			SshKeyWriter.writePKCS1Format(byteArrayOutStream, keyPair.getPublic());
 			byteArrayOutStream.flush();
 			keypairPkcs1Data = byteArrayOutStream.toByteArray();
 		}
@@ -213,27 +201,23 @@ public class SshKeyTest {
 		}
 		final SshKey openSshKey3;
 		try (InputStream inputStream = new ByteArrayInputStream(keypairPkcs1Data)) {
-			openSshKey3 = SshKeyReader.readKey(inputStream, "password".toCharArray());
+			openSshKey3 = SshKeyReader.readKey(inputStream, TESTPASSWORD);
 		}
-		Assert.assertEquals(sha256Fingerprint, openSshKey3.getSha256Fingerprint());
+		Assert.assertEquals(sha256Fingerprint, openSshKey3.getSha256FingerprintBase64());
 	}
 
 
 	@Test
 	public void testPutty() throws Exception {
-		final SshKey sshKey = new SshKey(SshKeyFormat.Putty2, "TestKey (Ä)", KeyPairUtilities.createRsaKeyPair(2048));
+		final SshKey sshKey = new SshKey(SshKeyFormat.Putty2, "TestKey (ÄÖÜäöüß)", KeyPairUtilities.createRsaKeyPair(2048));
 
-		final ByteArrayOutputStream output = new ByteArrayOutputStream();
-		try (PuttyKeyWriter sshKeyWriter = new PuttyKeyWriter(output)) {
-			sshKeyWriter.writeKey(sshKey, "passwörd".toCharArray());
-		}
+		final ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream();
+		SshKeyWriter.writePuttyVersion2Key(byteArrayOutStream, sshKey, "passwörd".toCharArray());
 
-		final SshKey sshKey2 = SshKeyReader.readKey(new ByteArrayInputStream(output.toByteArray()), "passwörd".toCharArray());
+		final SshKey sshKey2 = SshKeyReader.readKey(new ByteArrayInputStream(byteArrayOutStream.toByteArray()), "passwörd".toCharArray());
 
 		final ByteArrayOutputStream outputNoPassword = new ByteArrayOutputStream();
-		try (PuttyKeyWriter sshKeyWriter = new PuttyKeyWriter(outputNoPassword)) {
-			sshKeyWriter.writeKey(sshKey, null);
-		}
+		SshKeyWriter.writePuttyVersion2Key(outputNoPassword, sshKey, null);
 
 		final SshKey sshKey3 = SshKeyReader.readKey(new ByteArrayInputStream(outputNoPassword.toByteArray()), null);
 
@@ -249,22 +233,18 @@ public class SshKeyTest {
 		}
 
 		final ByteArrayOutputStream output2 = new ByteArrayOutputStream();
-		try (OpenSshKeyWriter writer = new OpenSshKeyWriter(output2)) {
-			writer.writePKCS8Format(sshKey2.getKeyPair(), null);
-		}
+		SshKeyWriter.writePKCS8Format(output2, sshKey2.getKeyPair(), null, null);
 		if (output2.toByteArray() == null || output2.toByteArray().length == 0) {
 			Assert.fail();
 		}
 
-		final String sha256Fingerprint = sshKey.getSha256Fingerprint();
+		final String sha256Fingerprint = sshKey.getSha256FingerprintBase64();
 		if (sha256Fingerprint == null || sha256Fingerprint.length() == 0) {
 			Assert.fail();
 		}
 
 		final ByteArrayOutputStream output3 = new ByteArrayOutputStream();
-		try (OpenSshKeyWriter writer = new OpenSshKeyWriter(output3)) {
-			writer.writePKCS8Format(sshKey.getKeyPair(), "DES-EDE3-CBC", "passwörd".toCharArray());
-		}
+		SshKeyWriter.writePKCS8Format(output3, sshKey.getKeyPair(), "DES-EDE3-CBC", "passwörd".toCharArray(), null);
 		if (output3.toByteArray() == null || output3.toByteArray().length == 0) {
 			Assert.fail();
 		}
@@ -274,124 +254,251 @@ public class SshKeyTest {
 	public void testRsaPutty() throws Exception {
 		final KeyPair keyPair = KeyPairUtilities.createRsaKeyPair(2048);
 
-		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
 
 		final byte[] data;
 
 		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
-			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
-				writer.writeKey(new SshKey(SshKeyFormat.Putty2, "Test key", keyPair), "password".toCharArray());
-			}
+			SshKeyWriter.writePuttyVersion2Key(byteArrayOutStream, new SshKey(SshKeyFormat.Putty2, TESTCOMMENT, keyPair), TESTPASSWORD);
 			byteArrayOutStream.flush();
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
-			Assert.fail();
-		}
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2"));
 
-		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), "password".toCharArray());
-		final String readsha256Fingerprint = readSshKey.getSha256Fingerprint();
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
 		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
 	}
 
 	@Test
 	public void testDsaPutty() throws Exception {
 		final KeyPair keyPair = KeyPairUtilities.createDsaKeyPair();
 
-		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
 
 		final byte[] data;
 
 		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
-			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
-				writer.writeKey(new SshKey(SshKeyFormat.Putty2, "Test key", keyPair), "password".toCharArray());
-			}
+			SshKeyWriter.writePuttyVersion2Key(byteArrayOutStream, new SshKey(SshKeyFormat.Putty2, TESTCOMMENT, keyPair), TESTPASSWORD);
 			byteArrayOutStream.flush();
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
-			Assert.fail();
-		}
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2"));
 
-		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), "password".toCharArray());
-		final String readsha256Fingerprint = readSshKey.getSha256Fingerprint();
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
 		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
 	}
 
 	@Test
 	public void testEc256Putty() throws Exception {
 		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp256");
 
-		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
 
 		final byte[] data;
 
 		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
-			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
-				writer.writeKey(new SshKey(SshKeyFormat.Putty2, "Test key", keyPair), "password".toCharArray());
-			}
+			SshKeyWriter.writePuttyVersion2Key(byteArrayOutStream, new SshKey(SshKeyFormat.Putty2, TESTCOMMENT, keyPair), TESTPASSWORD);
 			byteArrayOutStream.flush();
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
-			Assert.fail();
-		}
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2"));
 
-		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), "password".toCharArray());
-		final String readsha256Fingerprint = readSshKey.getSha256Fingerprint();
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
 		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
 	}
 
 	@Test
 	public void testEc384Putty() throws Exception {
 		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp384");
 
-		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
 
 		final byte[] data;
 
 		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
-			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
-				writer.writeKey(new SshKey(SshKeyFormat.Putty2, "Test key", keyPair), "password".toCharArray());
-			}
+			SshKeyWriter.writePuttyVersion2Key(byteArrayOutStream, new SshKey(SshKeyFormat.Putty2, TESTCOMMENT, keyPair), TESTPASSWORD);
 			byteArrayOutStream.flush();
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
-			Assert.fail();
-		}
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2"));
 
-		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), "password".toCharArray());
-		final String readsha256Fingerprint = readSshKey.getSha256Fingerprint();
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
 		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
 	}
 
 	@Test
 	public void testEc521Putty() throws Exception {
 		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp521");
 
-		final String sha256Fingerprint = KeyPairUtilities.getSha256Fingerprint(keyPair);
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
 
 		final byte[] data;
 
 		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
-			try (PuttyKeyWriter writer = new PuttyKeyWriter(byteArrayOutStream)) {
-				writer.writeKey(new SshKey(SshKeyFormat.Putty2, "Test key", keyPair), "password".toCharArray());
-			}
+			SshKeyWriter.writePuttyVersion2Key(byteArrayOutStream, new SshKey(SshKeyFormat.Putty2, TESTCOMMENT, keyPair), TESTPASSWORD);
 			byteArrayOutStream.flush();
 			data = byteArrayOutStream.toByteArray();
 		}
 
-		if (!new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2")) {
-			Assert.fail();
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("PuTTY-User-Key-File-2"));
+
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
+	}
+
+	@Test
+	public void test_Rsa_OpenSshv1() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createRsaKeyPair(2048);
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			SshKeyWriter.writeOpenSshv1Key(byteArrayOutStream, new SshKey(SshKeyFormat.OpenSSHv1, TESTCOMMENT, keyPair), TESTPASSWORD, null);
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
 		}
 
-		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), "password".toCharArray());
-		final String readsha256Fingerprint = readSshKey.getSha256Fingerprint();
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("-----BEGIN OPENSSH PRIVATE KEY-----"));
+
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
 		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
+	}
+
+	@Test
+	public void test_Dsa_OpenSshv1() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createDsaKeyPair();
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			SshKeyWriter.writeOpenSshv1Key(byteArrayOutStream, new SshKey(SshKeyFormat.OpenSSHv1, TESTCOMMENT, keyPair), TESTPASSWORD, null);
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("-----BEGIN OPENSSH PRIVATE KEY-----"));
+
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
+	}
+
+	@Test
+	public void test_Ec256_OpenSshv1() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp256");
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			SshKeyWriter.writeOpenSshv1Key(byteArrayOutStream, new SshKey(SshKeyFormat.OpenSSHv1, TESTCOMMENT, keyPair), TESTPASSWORD, null);
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("-----BEGIN OPENSSH PRIVATE KEY-----"));
+
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
+	}
+
+	@Test
+	public void test_Ec384_OpenSshv1() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp384");
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			SshKeyWriter.writeOpenSshv1Key(byteArrayOutStream, new SshKey(SshKeyFormat.OpenSSHv1, TESTCOMMENT, keyPair), TESTPASSWORD, null);
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("-----BEGIN OPENSSH PRIVATE KEY-----"));
+
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
+	}
+
+	@Test
+	public void test_Ec521_OpenSshv1() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEllipticCurveKeyPair("nistp521");
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			SshKeyWriter.writeOpenSshv1Key(byteArrayOutStream, new SshKey(SshKeyFormat.OpenSSHv1, TESTCOMMENT, keyPair), TESTPASSWORD, null);
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("-----BEGIN OPENSSH PRIVATE KEY-----"));
+
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
+	}
+
+	@Test
+	public void test_Ed25519_OpenSshv1() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEd25519CurveKeyPair();
+
+		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
+
+		final byte[] data;
+
+		try (ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream()) {
+			SshKeyWriter.writeOpenSshv1Key(byteArrayOutStream, new SshKey(SshKeyFormat.OpenSSHv1, TESTCOMMENT, keyPair), TESTPASSWORD, null);
+			byteArrayOutStream.flush();
+			data = byteArrayOutStream.toByteArray();
+		}
+
+		Assert.assertTrue(new String(data, StandardCharsets.UTF_8).contains("-----BEGIN OPENSSH PRIVATE KEY-----"));
+
+		final SshKey readSshKey = SshKeyReader.readKey(new ByteArrayInputStream(data), TESTPASSWORD);
+		final String readsha256Fingerprint = readSshKey.getSha256FingerprintBase64();
+		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		Assert.assertEquals(TESTCOMMENT, readSshKey.getComment());
+		Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(readSshKey.getKeyPair().getPrivate(), readSshKey.getKeyPair().getPublic()));
 	}
 }
