@@ -75,10 +75,10 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
 
 /* TODO:
  * Putty Key save without password does not work in GUI
- * Create new Formats in SshWriter
+ * Create Putty3 in SshWriter
+ * Create new Formats in SshWriter for Putty 2
  * Show SHA-256 Fingerprints as Base64
  * replace nistp* BouncyCastle public key decoding
- * Option to read public key only by SshKeyReader
  * Add buttons to SshKey Dialog
  * Show warning in SshKey Dialog on comments and passwords with non-ascii chars
  */
@@ -964,7 +964,6 @@ public class SshKeyReader {
 			keyComment = fixCommentEncodingIfNeeded(keyComment);
 
 			final byte[] paddingBytes = privateKeyDataReader.readLeftoverData();
-
 			for (int i = 0; i < paddingBytes.length; i++) {
 				if (paddingBytes[i] != i + 1) {
 					throw new Exception("Invalid private key padding found");
