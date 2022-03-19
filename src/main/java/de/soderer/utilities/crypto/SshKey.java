@@ -7,11 +7,22 @@ import java.security.KeyPair;
  */
 public class SshKey {
 	public enum SshKeyFormat {
-		Undefined,
-		OpenSSL,
-		OpenSSHv1,
-		Putty2,
-		Putty3
+		Undefined(""),
+		OpenSSL("OpenSSL / PKCS#8"),
+		OpenSSHv1("OpenSSH Version 1"),
+		Putty2("PuTTY Version 2"),
+		Putty3("PuTTY Version 3"),
+		PKCS1("PKCS#1");
+
+		private String displayText;
+
+		public String getDisplayText() {
+			return displayText;
+		}
+
+		SshKeyFormat(final String displayText) {
+			this.displayText = displayText;
+		}
 	}
 
 	private SshKeyFormat format;
