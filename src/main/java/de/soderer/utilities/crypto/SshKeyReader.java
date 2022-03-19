@@ -72,6 +72,10 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
  * - EdDSA (Ed25519, Ed448)<br />
  * <br />
  */
+
+/*
+ * TODO: Clean sensitive arrays after use
+ */
 public class SshKeyReader {
 	/**
 	 * Read public key data only and ignore the private key parts.<br />

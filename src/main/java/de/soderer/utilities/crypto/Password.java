@@ -5,7 +5,9 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Wrapper for password charArrays.<br />
@@ -20,6 +22,7 @@ public class Password implements Closeable {
 	private char[] passwordChars = null;
 	private byte[] passwordBytesUtfEncoded = null;
 	private byte[] passwordBytesIsoEncoded = null;
+	private final List<byte[]> sensitiveDataToCleanup = new ArrayList<>();
 
 	public Password(final char[] passwordChars) {
 		this.passwordChars = passwordChars;
@@ -43,6 +46,10 @@ public class Password implements Closeable {
 		return passwordBytesIsoEncoded;
 	}
 
+	public void addSensitiveDataToCleanup(final byte[] sensitiveData) {
+		sensitiveDataToCleanup.add(sensitiveData);
+	}
+
 	@Override
 	public void close() {
 		if (passwordChars != null) {
@@ -56,6 +63,11 @@ public class Password implements Closeable {
 		if (passwordBytesIsoEncoded != null) {
 			Arrays.fill(passwordBytesIsoEncoded, (byte) 0);
 			passwordBytesIsoEncoded = null;
+		}
+		for (final byte[] sensitiveData : sensitiveDataToCleanup) {
+			if (sensitiveData != null) {
+				Arrays.fill(sensitiveData, (byte) 0);
+			}
 		}
 	}
 

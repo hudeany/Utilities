@@ -43,6 +43,9 @@ import org.bouncycastle.jce.ECNamedCurveTable;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
+/*
+ * TODO: Clean sensitive arrays after use
+ */
 public class SshKeyWriter {
 	/**
 	 * Converts this keypair into protected OpenSSH format<br />
@@ -51,7 +54,9 @@ public class SshKeyWriter {
 	 * passwordEncoding is used for encoding of password:<br />
 	 *   - default is "UTF-8"<br />
 	 *   - other value may be "ISO-8859-1"<br />
-	 * Watchout for PuTTY's key import can only use special characters in passwords, when the ISO-8859-1 encoding is used.<br />
+	 * <br />
+	 * Watchout for PuTTY's key import can only use special characters in passwords, if the ISO-8859-1 encoding is used for passwordAndCommentEncoding.<br />
+	 * But OpenSSH's default encoding is UTF-8<br />
 	 */
 	public static void writeOpenSshv1Key(final OutputStream outputStream, final SshKey sshKey, final char[] passwordChars, Charset passwordAndCommentEncoding) throws Exception {
 		if (passwordAndCommentEncoding == null) {
@@ -266,7 +271,9 @@ public class SshKeyWriter {
 	 * Converts this key into PEM format (PKCS#8) for OpenSSH keys<br />
 	 * Using default encryption method "AES-128-CBC", when the optional password is set.<br />
 	 * This format includes private and public key data and is accepted by PuTTY's key import.<br />
-	 * Watchout for PuTTY's key import can only use special characters in passwords, when the ISO-8859-1 encoding is used.<br />
+	 * <br />
+	 * Watchout for PuTTY's key import can only use special characters in passwords, if the ISO-8859-1 encoding is used for passwordEncoding.<br />
+	 * But OpenSSH's default encoding is UTF-8<br />
 	 */
 	public static void writePKCS8Format(final OutputStream outputStream, final KeyPair keyPair, final char[] passwordChars, final Charset passwordEncoding) throws Exception {
 		writePKCS8Format(outputStream, keyPair, null, passwordChars, passwordEncoding);
@@ -283,7 +290,9 @@ public class SshKeyWriter {
 	 * passwordEncoding is used for encoding of password:<br />
 	 *   - default is "UTF-8"<br />
 	 *   - other value may be "ISO-8859-1"<br />
-	 * Watchout for PuTTY's key import can only use special characters in passwords, when the ISO-8859-1 encoding is used.<br />
+	 * <br />
+	 * Watchout for PuTTY's key import can only use special characters in passwords, if the ISO-8859-1 encoding is used for passwordEncoding.<br />
+	 * But OpenSSH's default encoding is UTF-8<br />
 	 */
 	public static void writePKCS8Format(final OutputStream outputStream, final KeyPair keyPair, String keyEncryptionCipherName, final char[] passwordChars, final Charset passwordEncoding) throws Exception {
 		String keyTypeName;
