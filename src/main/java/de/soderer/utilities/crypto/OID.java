@@ -10,6 +10,7 @@ public class OID {
 	 * OID 1.2.840.113549.1.1.1
 	 */
 	public static byte[] RSA_ALGORITHM_ARRAY = new byte[] { 42, -122, 72, -122, -9, 13, 1, 1, 1 };
+
 	/**
 	 * OID for DSA algorithm
 	 * OID 1.2.840.10040.4.1
@@ -17,22 +18,28 @@ public class OID {
 	public static byte[] DSA_ALGORITHM_ARRAY = new byte[] { 42, -122, 72, -50, 56, 4, 1 };
 
 	/**
+	 * OID for EcDSA Public Key
+	 * OID 1.2.840.10045.2.1
+	 */
+	public static byte[] ECDSA_PUBLICKEY_ARRAY = new byte[] { 42, -122, 72, -50, 61, 2, 1 };
+
+	/**
 	 * OID for elliptic curve secp256 and nistp256
 	 * OID 1.2.840.10045.3.1.7
 	 */
-	public static byte[] SECP256R1_ARRAY = new byte[] { 42, -122, 72, -50, 61, 3, 1, 7 };
+	public static byte[] ECDSA_CURVE_NISTP256_ARRAY = new byte[] { 42, -122, 72, -50, 61, 3, 1, 7 };
 
 	/**
 	 * OID for elliptic curve secp384 and nistp384
 	 * OID 1.3.132.0.34
 	 */
-	public static byte[] SECP384R1_ARRAY = new byte[] { 43, -127, 4, 0, 34 };
+	public static byte[] ECDSA_CURVE_NISTP384_ARRAY = new byte[] { 43, -127, 4, 0, 34 };
 
 	/**
 	 * OID for elliptic curve secp521 and nistp521
 	 * OID 1.3.132.0.35
 	 */
-	public static byte[] SECP521R1_ARRAY = new byte[] { 43, -127, 4, 0, 35 };
+	public static byte[] ECDSA_CURVE_NISTP521_ARRAY = new byte[] { 43, -127, 4, 0, 35 };
 
 	/**
 	 * OID for EdDSA25519 algorithm

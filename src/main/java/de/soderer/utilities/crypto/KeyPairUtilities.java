@@ -23,10 +23,12 @@ import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 
 import de.soderer.utilities.BitUtilities;
-import de.soderer.utilities.Tuple;
+import de.soderer.utilities.crypto.Asn1Codec.DerTag;
 
 public class KeyPairUtilities {
 	/**
@@ -247,14 +249,39 @@ public class KeyPairUtilities {
 				publicKeyWriter.writeBigInt(publicKeyDSA.getY());
 			} else if (publicKey instanceof ECPublicKey) {
 				final ECPublicKey publicKeyEC = (ECPublicKey) publicKey;
-				final Tuple<String, Integer> curveInfo = CryptographicUtilities.getCurveNameAndQLengthFromECPublicKey(publicKeyEC);
+				final String ecCurveName = CryptographicUtilities.getEcCurveNameFromECPublicKey(publicKeyEC);
 				publicKeyWriter.writeString(algorithmName);
-				publicKeyWriter.writeString(curveInfo.getFirst());
-				final byte[] javaEncoding = publicKeyEC.getEncoded();
-				final int qLength = curveInfo.getSecond();
-				final byte[] q = new byte[qLength];
-				System.arraycopy(javaEncoding, javaEncoding.length - qLength, q, 0, qLength);
-				publicKeyWriter.writeData(q);
+				publicKeyWriter.writeString(ecCurveName);
+
+				final DerTag enclosingDerTag = Asn1Codec.readDerTag(publicKeyEC.getEncoded());
+				if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
+					throw new Exception("Invalid key data found");
+				}
+				final List<DerTag> derDataTags = Asn1Codec.readDerTags(enclosingDerTag.getData());
+				if (Asn1Codec.DER_TAG_SEQUENCE != derDataTags.get(0).getTagId()) {
+					throw new Exception("Invalid key data found");
+				}
+				final List<DerTag> sshAlgorithmDerTags = Asn1Codec.readDerTags(derDataTags.get(0).getData());
+				final OID ecDsaPublicKeyOid = new OID(sshAlgorithmDerTags.get(0).getData());
+				if (Arrays.equals(OID.ECDSA_PUBLICKEY_ARRAY, ecDsaPublicKeyOid.getByteArrayEncoding())) {
+					final OID ecDsaCurveOid = new OID(sshAlgorithmDerTags.get(1).getData());
+					if (Arrays.equals(OID.ECDSA_CURVE_NISTP256_ARRAY, ecDsaCurveOid.getByteArrayEncoding())
+							|| Arrays.equals(OID.ECDSA_CURVE_NISTP384_ARRAY, ecDsaCurveOid.getByteArrayEncoding())
+							|| Arrays.equals(OID.ECDSA_CURVE_NISTP521_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+						if (Asn1Codec.DER_TAG_BIT_STRING != derDataTags.get(1).getTagId()) {
+							throw new Exception("Invalid key data found");
+						} else {
+							// remove first byte (odd sign)
+							final byte[] dataWithLeadingZero = derDataTags.get(1).getData();
+							final byte[] qBytes = Arrays.copyOfRange(dataWithLeadingZero, 1, dataWithLeadingZero.length);
+							publicKeyWriter.writeData(qBytes);
+						}
+					} else {
+						throw new Exception("Unknown SSH EcDSA curve OID: " + ecDsaCurveOid.getStringEncoding());
+					}
+				} else {
+					throw new Exception("Unknown SSH EcDSA public key OID: " + ecDsaPublicKeyOid.getStringEncoding());
+				}
 			} else if (publicKey instanceof EdECPublicKey) {
 				final EdECPublicKey publicKeyEdEC = (EdECPublicKey) publicKey;
 				int publicKeyDataLength;

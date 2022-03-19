@@ -657,11 +657,11 @@ public class SshKeyReader {
 		}
 		final byte[] oidBytes = oidTag.getData();
 		String ecdsaCurveName;
-		if (Arrays.equals(OID.SECP256R1_ARRAY, oidBytes)) {
+		if (Arrays.equals(OID.ECDSA_CURVE_NISTP256_ARRAY, oidBytes)) {
 			ecdsaCurveName = "nistp256";
-		} else if (Arrays.equals(OID.SECP384R1_ARRAY, oidBytes)) {
+		} else if (Arrays.equals(OID.ECDSA_CURVE_NISTP384_ARRAY, oidBytes)) {
 			ecdsaCurveName = "nistp384";
-		} else if (Arrays.equals(OID.SECP521R1_ARRAY, oidBytes)) {
+		} else if (Arrays.equals(OID.ECDSA_CURVE_NISTP521_ARRAY, oidBytes)) {
 			ecdsaCurveName = "nistp521";
 		} else {
 			try {

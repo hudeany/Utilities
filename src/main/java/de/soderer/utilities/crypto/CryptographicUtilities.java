@@ -146,10 +146,10 @@ import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.MapStringReader;
 import de.soderer.utilities.MissingPasswordException;
-import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WrongPasswordException;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
+import de.soderer.utilities.crypto.Asn1Codec.DerTag;
 import de.soderer.utilities.zip.ZipUtilities;
 import jdk.security.jarsigner.JarSigner;
 
@@ -1666,16 +1666,30 @@ public class CryptographicUtilities {
 		return certificates;
 	}
 
-	public static Tuple<String, Integer> getCurveNameAndQLengthFromECPublicKey(final ECPublicKey publicKeyEC) throws Exception {
-		final int bitLength = publicKeyEC.getW().getAffineX().bitLength();
-		if (bitLength <= 256) {
-			return new Tuple<>("nistp256", 65);
-		} else if (bitLength <= 384) {
-			return new Tuple<>("nistp384", 97);
-		} else if (bitLength <= 521) {
-			return new Tuple<>("nistp521", 133);
+	public static String getEcCurveNameFromECPublicKey(final ECPublicKey publicKeyEC) throws Exception {
+		final DerTag enclosingDerTag = Asn1Codec.readDerTag(publicKeyEC.getEncoded());
+		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> derDataTags = Asn1Codec.readDerTags(enclosingDerTag.getData());
+		if (Asn1Codec.DER_TAG_SEQUENCE != derDataTags.get(0).getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> sshAlgorithmDerTags = Asn1Codec.readDerTags(derDataTags.get(0).getData());
+		final OID ecDsaPublicKeyOid = new OID(sshAlgorithmDerTags.get(0).getData());
+		if (Arrays.equals(OID.ECDSA_PUBLICKEY_ARRAY, ecDsaPublicKeyOid.getByteArrayEncoding())) {
+			final OID ecDsaCurveOid = new OID(sshAlgorithmDerTags.get(1).getData());
+			if (Arrays.equals(OID.ECDSA_CURVE_NISTP256_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+				return "nistp256";
+			} else if (Arrays.equals(OID.ECDSA_CURVE_NISTP384_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+				return "nistp384";
+			} else if (Arrays.equals(OID.ECDSA_CURVE_NISTP521_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+				return "nistp521";
+			} else {
+				throw new Exception("Unknown SSH EcDSA curve OID: " + ecDsaCurveOid.getStringEncoding());
+			}
 		} else {
-			throw new Exception("Unsupported ECDSA bit length: " + bitLength);
+			throw new Exception("Unknown SSH EcDSA public key OID: " + ecDsaPublicKeyOid.getStringEncoding());
 		}
 	}
 }

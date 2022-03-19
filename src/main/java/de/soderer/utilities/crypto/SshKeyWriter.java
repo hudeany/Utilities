@@ -41,7 +41,6 @@ import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
 import org.bouncycastle.jce.ECNamedCurveTable;
 
-import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.Asn1Codec.DerTag;
 
@@ -163,10 +162,10 @@ public class SshKeyWriter {
 			} else if (sshKey.getKeyPair().getPrivate() instanceof ECPrivateKey) {
 				final ECPrivateKey privateKeyEC = (ECPrivateKey) sshKey.getKeyPair().getPrivate();
 				final ECPublicKey publicKeyEC = (ECPublicKey) sshKey.getKeyPair().getPublic();
-				final Tuple<String, Integer> curveInfo = CryptographicUtilities.getCurveNameAndQLengthFromECPublicKey(publicKeyEC);
-				privateKeyWriter.writeData(("ecdsa-sha2-" + curveInfo.getFirst()).getBytes(StandardCharsets.UTF_8));
-				privateKeyWriter.writeData((curveInfo.getFirst()).getBytes(StandardCharsets.UTF_8));
-				final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(curveInfo.getFirst().replace("nist", "sec") + "r1");
+				final String ecCurveName = CryptographicUtilities.getEcCurveNameFromECPublicKey(publicKeyEC);
+				privateKeyWriter.writeData(("ecdsa-sha2-" + ecCurveName).getBytes(StandardCharsets.UTF_8));
+				privateKeyWriter.writeData((ecCurveName).getBytes(StandardCharsets.UTF_8));
+				final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ecCurveName.replace("nist", "sec") + "r1");
 				final org.bouncycastle.math.ec.ECPoint point = ecSpec.getCurve().createPoint(publicKeyEC.getW().getAffineX(), publicKeyEC.getW().getAffineY());
 				final byte[] eccKeyBlobBytes = point.getEncoded(false);
 				privateKeyWriter.writeData(eccKeyBlobBytes);
@@ -360,13 +359,13 @@ public class SshKeyWriter {
 			keyData = createDssBinaryKey(keyPair);
 		} else if ("ecdsa-sha2-nistp256".equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "EC PRIVATE KEY";
-			keyData = createEcdsaBinaryKey(keyPair, OID.SECP256R1_ARRAY);
+			keyData = createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP256_ARRAY);
 		} else if ("ecdsa-sha2-nistp384".equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "EC PRIVATE KEY";
-			keyData = createEcdsaBinaryKey(keyPair, OID.SECP384R1_ARRAY);
+			keyData = createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP384_ARRAY);
 		} else if ("ecdsa-sha2-nistp521".equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "EC PRIVATE KEY";
-			keyData = createEcdsaBinaryKey(keyPair, OID.SECP521R1_ARRAY);
+			keyData = createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP521_ARRAY);
 		} else {
 			// TODO Ed25519
 			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
@@ -440,11 +439,11 @@ public class SshKeyWriter {
 		} else if ("ssh-dss".equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createDssBinaryKey(keyPair));
 		} else if ("ecdsa-sha2-nistp256".equalsIgnoreCase(algorithmName)) {
-			outputStream.write(createEcdsaBinaryKey(keyPair, OID.SECP256R1_ARRAY));
+			outputStream.write(createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP256_ARRAY));
 		} else if ("ecdsa-sha2-nistp384".equalsIgnoreCase(algorithmName)) {
-			outputStream.write(createEcdsaBinaryKey(keyPair, OID.SECP384R1_ARRAY));
+			outputStream.write(createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP384_ARRAY));
 		} else if ("ecdsa-sha2-nistp521".equalsIgnoreCase(algorithmName)) {
-			outputStream.write(createEcdsaBinaryKey(keyPair, OID.SECP521R1_ARRAY));
+			outputStream.write(createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP521_ARRAY));
 		} else {
 			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
 		}
@@ -529,24 +528,36 @@ public class SshKeyWriter {
 	}
 
 	private static byte[] createEcdsaBinaryKey(final KeyPair keyPair, final byte[] oidKey) throws Exception {
-		int qLength;
-		if (Arrays.equals(OID.SECP256R1_ARRAY, oidKey)) {
-			qLength = 66;
-		} else if (Arrays.equals(OID.SECP384R1_ARRAY, oidKey)) {
-			qLength = 98;
-		} else if (Arrays.equals(OID.SECP521R1_ARRAY, oidKey)) {
-			qLength = 134;
-		} else {
-			throw new Exception("Unsupported ECDSA curve");
-		}
-
 		final ECPrivateKey privateKey = ((ECPrivateKey) keyPair.getPrivate());
 		final ECPublicKey publicKey = ((ECPublicKey) keyPair.getPublic());
 
-		final byte[] javaEncoding = publicKey.getEncoded();
-		final byte[] qBytes = new byte[qLength];
-
-		System.arraycopy(javaEncoding, javaEncoding.length - qLength, qBytes, 0, qLength);
+		byte[] qBytes;
+		final DerTag enclosingDerTag = Asn1Codec.readDerTag(publicKey.getEncoded());
+		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> derDataTags = Asn1Codec.readDerTags(enclosingDerTag.getData());
+		if (Asn1Codec.DER_TAG_SEQUENCE != derDataTags.get(0).getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> sshAlgorithmDerTags = Asn1Codec.readDerTags(derDataTags.get(0).getData());
+		final OID ecDsaPublicKeyOid = new OID(sshAlgorithmDerTags.get(0).getData());
+		if (Arrays.equals(OID.ECDSA_PUBLICKEY_ARRAY, ecDsaPublicKeyOid.getByteArrayEncoding())) {
+			final OID ecDsaCurveOid = new OID(sshAlgorithmDerTags.get(1).getData());
+			if (Arrays.equals(OID.ECDSA_CURVE_NISTP256_ARRAY, ecDsaCurveOid.getByteArrayEncoding())
+					|| Arrays.equals(OID.ECDSA_CURVE_NISTP384_ARRAY, ecDsaCurveOid.getByteArrayEncoding())
+					|| Arrays.equals(OID.ECDSA_CURVE_NISTP521_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+				if (Asn1Codec.DER_TAG_BIT_STRING != derDataTags.get(1).getTagId()) {
+					throw new Exception("Invalid key data found");
+				} else {
+					qBytes = derDataTags.get(1).getData();
+				}
+			} else {
+				throw new Exception("Unknown SSH EcDSA curve OID: " + ecDsaCurveOid.getStringEncoding());
+			}
+		} else {
+			throw new Exception("Unknown SSH EcDSA public key OID: " + ecDsaPublicKeyOid.getStringEncoding());
+		}
 
 		return Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_SEQUENCE,
 				Asn1Codec.createDerTagData(Asn1Codec.DER_TAG_INTEGER, BigInteger.ONE.toByteArray()),
