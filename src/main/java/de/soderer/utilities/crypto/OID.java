@@ -6,6 +6,17 @@ import java.util.List;
 
 public class OID {
 	/**
+	 * OID for RSA algorithm
+	 * OID 1.2.840.113549.1.1.1
+	 */
+	public static byte[] RSA_ALGORITHM_ARRAY = new byte[] { 42, -122, 72, -122, -9, 13, 1, 1, 1 };
+	/**
+	 * OID for DSA algorithm
+	 * OID 1.2.840.10040.4.1
+	 */
+	public static byte[] DSA_ALGORITHM_ARRAY = new byte[] { 42, -122, 72, -50, 56, 4, 1 };
+
+	/**
 	 * OID for elliptic curve secp256 and nistp256
 	 * OID 1.2.840.10045.3.1.7
 	 */
@@ -22,6 +33,18 @@ public class OID {
 	 * OID 1.3.132.0.35
 	 */
 	public static byte[] SECP521R1_ARRAY = new byte[] { 43, -127, 4, 0, 35 };
+
+	/**
+	 * OID for EdDSA25519 algorithm
+	 * OID 1.3.101.112
+	 */
+	public static byte[] EDDSA25519_ALGORITHM_ARRAY = new byte[] { 43, 101, 112 };
+
+	/**
+	 * OID for EdDSA448 algorithm
+	 * OID 1.3.101.113
+	 */
+	public static byte[] EDDSA448_ALGORITHM_ARRAY = new byte[] { 43, 101, 113 };
 
 	private int[] id;
 

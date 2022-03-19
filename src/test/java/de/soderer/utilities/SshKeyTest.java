@@ -75,13 +75,15 @@ public class SshKeyTest {
 							} else {
 								sshKey = SshKeyReader.readKey(inputStream, "pÄsswOrd".toCharArray());
 							}
-							Assert.assertEquals(filename, md5Hash.toUpperCase(), sshKey.getMd5Fingerprint().toUpperCase().replace(":", ""));
+							if (sshKey.getKeyPair().getPublic() != null) {
+								Assert.assertEquals(filename, md5Hash.toUpperCase(), sshKey.getMd5Fingerprint().toUpperCase().replace(":", ""));
 
-							final boolean keyCheckSuccess = CryptographicUtilities.checkPrivateKeyFitsPublicKey(sshKey.getKeyPair().getPrivate(), sshKey.getKeyPair().getPublic());
-							if (!keyCheckSuccess) {
-								System.out.println("Signature sign/verify test failed with file: " + filename + ": " + keyCheckSuccess);
+								final boolean keyCheckSuccess = CryptographicUtilities.checkPrivateKeyFitsPublicKey(sshKey.getKeyPair().getPrivate(), sshKey.getKeyPair().getPublic());
+								if (!keyCheckSuccess) {
+									System.out.println("Signature sign/verify test failed with file: " + filename + ": " + keyCheckSuccess);
+								}
+								overallSuccess &= keyCheckSuccess;
 							}
-							overallSuccess &= keyCheckSuccess;
 						}
 
 						try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {

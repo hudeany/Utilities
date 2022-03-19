@@ -27,6 +27,7 @@ import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -42,18 +43,16 @@ import org.bouncycastle.jce.ECNamedCurveTable;
 
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.crypto.Asn1Codec.DerTag;
 
-/*
- * TODO: Clean up sensitive arrays after use
- */
 public class SshKeyWriter {
 	/**
 	 * Converts this keypair into protected OpenSSH format<br />
 	 * This format includes private and public key data and is accepted by PuTTY's key import<br />
 	 * <br />
 	 * passwordEncoding is used for encoding of password:<br />
-	 *   - default is "UTF-8"<br />
-	 *   - other value may be "ISO-8859-1"<br />
+	 *	- default is "UTF-8"<br />
+	 *	- other value may be "ISO-8859-1"<br />
 	 * <br />
 	 * Watchout for PuTTY's key import can only use special characters in passwords, if the ISO-8859-1 encoding is used for passwordAndCommentEncoding.<br />
 	 * But OpenSSH's default encoding is UTF-8<br />
@@ -175,24 +174,19 @@ public class SshKeyWriter {
 			} else if (sshKey.getKeyPair().getPrivate() instanceof EdECPrivateKey) {
 				final EdECPrivateKey privateKeyEdEC = (EdECPrivateKey) sshKey.getKeyPair().getPrivate();
 				final EdECPublicKey publicKeyEdEC = (EdECPublicKey) sshKey.getKeyPair().getPublic();
-				int publicKeyDataLength;
 				if ("Ed25519".equalsIgnoreCase(publicKeyEdEC.getParams().getName())) {
 					privateKeyWriter.writeData("ssh-ed25519".getBytes(StandardCharsets.UTF_8));
-					publicKeyDataLength = 32;
 				} else if ("Ed448".equalsIgnoreCase(publicKeyEdEC.getParams().getName())) {
 					privateKeyWriter.writeData("ssh-ed448".getBytes(StandardCharsets.UTF_8));
-					publicKeyDataLength = 57;
 				} else {
 					throw new Exception("Unknown EdDSA type: " + publicKeyEdEC.getParams().getName());
 				}
-				final byte[] encodedPrivateKey = privateKeyEdEC.getEncoded();
-				final byte[] privateKeyData = Arrays.copyOfRange(encodedPrivateKey, encodedPrivateKey.length - publicKeyDataLength, encodedPrivateKey.length);
-				final byte[] encodedPublicKey = publicKeyEdEC.getEncoded();
-				final byte[] publicKeyData = Arrays.copyOfRange(encodedPublicKey, encodedPublicKey.length - publicKeyDataLength, encodedPublicKey.length);
+				final byte[] publicKeyData = getEdDSAPublicKeyBytes(publicKeyEdEC);
+				final byte[] privateKeyData = getEdDSAPrivateKeyBytes(privateKeyEdEC);
+				privateKeyWriter.writeData(publicKeyData);
 				final ByteArrayOutputStream keyDataBuffer = new ByteArrayOutputStream();
 				keyDataBuffer.write(privateKeyData);
 				keyDataBuffer.write(publicKeyData);
-				privateKeyWriter.writeData(publicKeyData);
 				privateKeyWriter.writeData(keyDataBuffer.toByteArray());
 			} else {
 				throw new IllegalArgumentException("Unsupported SSH cipher algorithm");
@@ -209,6 +203,66 @@ public class SshKeyWriter {
 			}
 
 			return privateKeyWriter.toByteArray();
+		}
+	}
+
+	private static byte[] getEdDSAPrivateKeyBytes(final EdECPrivateKey privateKeyEdEC) throws Exception {
+		final DerTag enclosingDerTag = Asn1Codec.readDerTag(privateKeyEdEC.getEncoded());
+		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> derDataTags = Asn1Codec.readDerTags(enclosingDerTag.getData());
+
+		final BigInteger keyEncodingVersion = new BigInteger(derDataTags.get(0).getData());
+		if (!BigInteger.ZERO.equals(keyEncodingVersion)) {
+			throw new Exception("Invalid key data version found");
+		}
+
+		if (Asn1Codec.DER_TAG_SEQUENCE != derDataTags.get(1).getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> sshAlgorithmDerTags = Asn1Codec.readDerTags(derDataTags.get(1).getData());
+		final OID sshAlgorithmOid = new OID(sshAlgorithmDerTags.get(0).getData());
+		if (Arrays.equals(OID.EDDSA25519_ALGORITHM_ARRAY, sshAlgorithmOid.getByteArrayEncoding())
+				|| Arrays.equals(OID.EDDSA448_ALGORITHM_ARRAY, sshAlgorithmOid.getByteArrayEncoding())) {
+			if (Asn1Codec.DER_TAG_OCTET_STRING != derDataTags.get(2).getTagId()) {
+				throw new Exception("Invalid key data found");
+			} else {
+				final List<DerTag> privateKeyTags = Asn1Codec.readDerTags(derDataTags.get(2).getData());
+				if (Asn1Codec.DER_TAG_OCTET_STRING != privateKeyTags.get(0).getTagId()) {
+					throw new Exception("Invalid key data found");
+				} else {
+					return privateKeyTags.get(0).getData();
+				}
+			}
+		} else {
+			throw new Exception("Unknown ssh algorithm OID: " + sshAlgorithmOid.getStringEncoding());
+		}
+	}
+
+	private static byte[] getEdDSAPublicKeyBytes(final EdECPublicKey publicKeyEdEC) throws Exception {
+		final DerTag enclosingDerTag = Asn1Codec.readDerTag(publicKeyEdEC.getEncoded());
+		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> derDataTags = Asn1Codec.readDerTags(enclosingDerTag.getData());
+
+		if (Asn1Codec.DER_TAG_SEQUENCE != derDataTags.get(0).getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> sshAlgorithmDerTags = Asn1Codec.readDerTags(derDataTags.get(0).getData());
+		final OID sshAlgorithmOid = new OID(sshAlgorithmDerTags.get(0).getData());
+		if (Arrays.equals(OID.EDDSA25519_ALGORITHM_ARRAY, sshAlgorithmOid.getByteArrayEncoding())
+				|| Arrays.equals(OID.EDDSA448_ALGORITHM_ARRAY, sshAlgorithmOid.getByteArrayEncoding())) {
+			if (Asn1Codec.DER_TAG_BIT_STRING != derDataTags.get(1).getTagId()) {
+				throw new Exception("Invalid key data found");
+			} else {
+				// remove first byte (odd sign)
+				final byte[] dataWithLeadingZero = derDataTags.get(1).getData();
+				return Arrays.copyOfRange(dataWithLeadingZero, 1, dataWithLeadingZero.length);
+			}
+		} else {
+			throw new Exception("Unknown ssh algorithm OID: " + sshAlgorithmOid.getStringEncoding());
 		}
 	}
 
@@ -284,12 +338,12 @@ public class SshKeyWriter {
 	 * This format includes private and public key data and is accepted by PuTTY's key import<br />
 	 * <br />
 	 * keyEncryptionCipherName:<br />
-	 *   - default is "AES-128-CBC"<br />
-	 *   - other value may be "DES-EDE3-CBC"<br />
+	 *	- default is "AES-128-CBC"<br />
+	 *	- other value may be "DES-EDE3-CBC"<br />
 	 * <br />
 	 * passwordEncoding is used for encoding of password:<br />
-	 *   - default is "UTF-8"<br />
-	 *   - other value may be "ISO-8859-1"<br />
+	 *	- default is "UTF-8"<br />
+	 *	- other value may be "ISO-8859-1"<br />
 	 * <br />
 	 * Watchout for PuTTY's key import can only use special characters in passwords, if the ISO-8859-1 encoding is used for passwordEncoding.<br />
 	 * But OpenSSH's default encoding is UTF-8<br />
@@ -314,6 +368,7 @@ public class SshKeyWriter {
 			keyTypeName = "EC PRIVATE KEY";
 			keyData = createEcdsaBinaryKey(keyPair, OID.SECP521R1_ARRAY);
 		} else {
+			// TODO Ed25519
 			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
 		}
 
@@ -575,16 +630,7 @@ public class SshKeyWriter {
 				privateKeyWriter.writeBigInt(privateKeyEC.getS());
 			} else if (privateKey instanceof EdECPrivateKey) {
 				final EdECPrivateKey privateKeyEdEC = (EdECPrivateKey) privateKey;
-				int publicKeyDataLength;
-				if ("Ed25519".equalsIgnoreCase(privateKeyEdEC.getParams().getName())) {
-					publicKeyDataLength = 32;
-				} else if ("Ed448".equalsIgnoreCase(privateKeyEdEC.getParams().getName())) {
-					publicKeyDataLength = 57;
-				} else {
-					throw new Exception("Unknown EdDSA type: " + privateKeyEdEC.getParams().getName());
-				}
-				final byte[] encodedPrivateKey = privateKeyEdEC.getEncoded();
-				final byte[] privateKeyData = Arrays.copyOfRange(encodedPrivateKey, encodedPrivateKey.length - publicKeyDataLength, encodedPrivateKey.length);
+				final byte[] privateKeyData = getEdDSAPrivateKeyBytes(privateKeyEdEC);
 				privateKeyWriter.writeData(privateKeyData);
 			} else {
 				throw new IllegalArgumentException("Unsupported SSH cipher algorithm");
@@ -672,16 +718,7 @@ public class SshKeyWriter {
 				privateKeyWriter.writeBigInt(privateKeyEC.getS());
 			} else if (privateKey instanceof EdECPrivateKey) {
 				final EdECPrivateKey privateKeyEdEC = (EdECPrivateKey) privateKey;
-				int publicKeyDataLength;
-				if ("Ed25519".equalsIgnoreCase(privateKeyEdEC.getParams().getName())) {
-					publicKeyDataLength = 32;
-				} else if ("Ed448".equalsIgnoreCase(privateKeyEdEC.getParams().getName())) {
-					publicKeyDataLength = 57;
-				} else {
-					throw new Exception("Unknown EdDSA type: " + privateKeyEdEC.getParams().getName());
-				}
-				final byte[] encodedPrivateKey = privateKeyEdEC.getEncoded();
-				final byte[] privateKeyData = Arrays.copyOfRange(encodedPrivateKey, encodedPrivateKey.length - publicKeyDataLength, encodedPrivateKey.length);
+				final byte[] privateKeyData = getEdDSAPrivateKeyBytes(privateKeyEdEC);
 				privateKeyWriter.writeData(privateKeyData);
 			} else {
 				throw new IllegalArgumentException("Unsupported SSH cipher algorithm");

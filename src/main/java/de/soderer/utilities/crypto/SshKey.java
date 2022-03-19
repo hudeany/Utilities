@@ -24,13 +24,26 @@ public class SshKey {
 	public SshKey(final SshKeyFormat format, final String comment, final KeyPair keyPair) throws Exception {
 		this.format = format == null ? SshKeyFormat.Undefined : format;
 		this.comment = comment;
-		if ("RSA".equals(keyPair.getPublic().getAlgorithm())
-				|| "DSA".equals(keyPair.getPublic().getAlgorithm())
-				|| "EC".equals(keyPair.getPublic().getAlgorithm())
-				|| "EdDSA".equals(keyPair.getPublic().getAlgorithm())) {
+
+		String algorithm = null;
+		if (keyPair.getPublic() != null) {
+			algorithm = keyPair.getPublic().getAlgorithm();
+		}
+		if (keyPair.getPrivate() != null) {
+			if (algorithm != null && !algorithm.equals(keyPair.getPrivate().getAlgorithm())) {
+				throw new IllegalArgumentException("SSH cipher algorithm of public key ('" + algorithm + "') and private key ('" + keyPair.getPrivate().getAlgorithm() + "') do not match");
+			} else {
+				algorithm = keyPair.getPrivate().getAlgorithm();
+			}
+		}
+
+		if ("RSA".equals(algorithm)
+				|| "DSA".equals(algorithm)
+				|| "EC".equals(algorithm)
+				|| "EdDSA".equals(algorithm)) {
 			this.keyPair = keyPair;
 		} else {
-			throw new IllegalArgumentException("Unsupported SSH cipher algorithm for SSH key (only supports RSA / DSA / EC (ECDSA) / EdDSA): " + keyPair.getPublic().getAlgorithm());
+			throw new IllegalArgumentException("Unsupported SSH cipher algorithm for SSH key (only supports RSA / DSA / EC (ECDSA) / EdDSA): " + algorithm);
 		}
 	}
 

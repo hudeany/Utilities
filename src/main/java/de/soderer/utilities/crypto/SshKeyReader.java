@@ -72,10 +72,6 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
  * - EdDSA (Ed25519, Ed448)<br />
  * <br />
  */
-
-/*
- * TODO: Clean up sensitive arrays after use
- */
 public class SshKeyReader {
 	/**
 	 * Read public key data only and ignore the private key parts.<br />
@@ -136,7 +132,7 @@ public class SshKeyReader {
 									if ("4,ENCRYPTED".equals(keyProperties.get("Proc-Type")) && !skipPrivateKey) {
 										keyData = decryptOpenSslKeyData(keyData, keyProperties.get("DEK-Info"), password, passwordCharset);
 									}
-									return new SshKey(SshKeyFormat.OpenSSL, null, readPkcs8RsaPrivateKey(keyData));
+									return new SshKey(SshKeyFormat.OpenSSL, null, readPKCS8RsaPrivateKey(keyData));
 								}
 							} else if (currentKeyName.startsWith("DSA")) {
 								if (skipPrivateKey) {
@@ -145,7 +141,7 @@ public class SshKeyReader {
 									if ("4,ENCRYPTED".equals(keyProperties.get("Proc-Type")) && !skipPrivateKey) {
 										keyData = decryptOpenSslKeyData(keyData, keyProperties.get("DEK-Info"), password, passwordCharset);
 									}
-									return new SshKey(SshKeyFormat.OpenSSL, null, readPkcs8DsaPrivateKey(keyData));
+									return new SshKey(SshKeyFormat.OpenSSL, null, readPKCS8DsaPrivateKey(keyData));
 								}
 							} else if (currentKeyName.startsWith("EC")) {
 								if (skipPrivateKey) {
@@ -154,12 +150,16 @@ public class SshKeyReader {
 									if ("4,ENCRYPTED".equals(keyProperties.get("Proc-Type")) && !skipPrivateKey) {
 										keyData = decryptOpenSslKeyData(keyData, keyProperties.get("DEK-Info"), password, passwordCharset);
 									}
-									return new SshKey(SshKeyFormat.OpenSSL, null, readPkcs8EcdsaPrivateKey(keyData));
+									return new SshKey(SshKeyFormat.OpenSSL, null, readPKCS8EcdsaPrivateKey(keyData));
 								}
 							} else if (currentKeyName.startsWith("OPENSSH")) {
 								return readOpenSshv1Key(keyData, password, skipPrivateKey);
 							} else {
-								throw new IllegalArgumentException("Unsupported key name: " + currentKeyName);
+								if (skipPrivateKey) {
+									return null;
+								} else {
+									return new SshKey(SshKeyFormat.OpenSSHv1, null, new KeyPair(null, parseDerEncodedPrivateKey(keyData)));
+								}
 							}
 						} else if (currentKeyName.toLowerCase().contains("public")) {
 							return new SshKey(SshKeyFormat.OpenSSL, null, new KeyPair(parsePublicKeyBytes(keyData), null));
@@ -191,7 +191,7 @@ public class SshKeyReader {
 							if ("4,ENCRYPTED".equals(keyProperties.get("Proc-Type"))) {
 								keyData = decryptOpenSslKeyData(keyData, keyProperties.get("DEK-Info"), password, passwordCharset);
 							}
-							return new SshKey(SshKeyFormat.OpenSSL, null, readPkcs8RsaPrivateKey(keyData));
+							return new SshKey(SshKeyFormat.OpenSSL, null, readPKCS8RsaPrivateKey(keyData));
 						} catch (final Exception e) {
 							// Putty uses "ISO-8859-1" for password encoding, even for those keys stored in OpenSSHv1 and OpenSSL format
 							// "ssh-keygen" on Linux uses UTF-8 for password encoding
@@ -237,6 +237,54 @@ public class SshKeyReader {
 			} else {
 				throw new Exception("No keydata found");
 			}
+		}
+	}
+
+	private static PrivateKey parseDerEncodedPrivateKey(final byte[] keyData) throws Exception {
+		final DerTag enclosingDerTag = Asn1Codec.readDerTag(keyData);
+		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> derDataTags = Asn1Codec.readDerTags(enclosingDerTag.getData());
+
+		final BigInteger keyEncodingVersion = new BigInteger(derDataTags.get(0).getData());
+		if (!BigInteger.ZERO.equals(keyEncodingVersion)) {
+			throw new Exception("Invalid key data version found");
+		}
+
+		if (Asn1Codec.DER_TAG_SEQUENCE != derDataTags.get(1).getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> sshAlgorithmDerTags = Asn1Codec.readDerTags(derDataTags.get(1).getData());
+		final OID sshAlgorithmOid = new OID(sshAlgorithmDerTags.get(0).getData());
+		if (Arrays.equals(OID.EDDSA25519_ALGORITHM_ARRAY, sshAlgorithmOid.getByteArrayEncoding())) {
+			if (Asn1Codec.DER_TAG_OCTET_STRING != derDataTags.get(2).getTagId()) {
+				throw new Exception("Invalid key data found");
+			} else {
+				final List<DerTag> privateKeyTags = Asn1Codec.readDerTags(derDataTags.get(2).getData());
+				if (Asn1Codec.DER_TAG_OCTET_STRING != privateKeyTags.get(0).getTagId()) {
+					throw new Exception("Invalid key data found");
+				} else {
+					final byte[] privateKeyBytes = privateKeyTags.get(0).getData();
+					final PrivateKey privateKey = KeyFactory.getInstance("Ed25519").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed25519"), privateKeyBytes));
+					return privateKey;
+				}
+			}
+		} else if (Arrays.equals(OID.EDDSA448_ALGORITHM_ARRAY, sshAlgorithmOid.getByteArrayEncoding())) {
+			if (Asn1Codec.DER_TAG_OCTET_STRING != derDataTags.get(2).getTagId()) {
+				throw new Exception("Invalid key data found");
+			} else {
+				final List<DerTag> privateKeyTags = Asn1Codec.readDerTags(derDataTags.get(2).getData());
+				if (Asn1Codec.DER_TAG_OCTET_STRING != privateKeyTags.get(0).getTagId()) {
+					throw new Exception("Invalid key data found");
+				} else {
+					final byte[] privateKeyBytes = privateKeyTags.get(0).getData();
+					final PrivateKey privateKey = KeyFactory.getInstance("Ed448").generatePrivate(new EdECPrivateKeySpec(new NamedParameterSpec("Ed448"), privateKeyBytes));
+					return privateKey;
+				}
+			}
+		} else {
+			throw new Exception("Unknown ssh algorithm OID: " + sshAlgorithmOid.getStringEncoding());
 		}
 	}
 
@@ -481,7 +529,7 @@ public class SshKeyReader {
 		}
 	}
 
-	private static KeyPair readPkcs8RsaPrivateKey(final byte[] data) throws Exception {
+	private static KeyPair readPKCS8RsaPrivateKey(final byte[] data) throws Exception {
 		final DerTag enclosingDerTag = Asn1Codec.readDerTag(data);
 		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
 			throw new Exception("Invalid key data found");
@@ -539,7 +587,7 @@ public class SshKeyReader {
 		return new KeyPair(publicKey, privateKey);
 	}
 
-	private static KeyPair readPkcs8DsaPrivateKey(final byte[] data) throws Exception {
+	private static KeyPair readPKCS8DsaPrivateKey(final byte[] data) throws Exception {
 		final DerTag enclosingDerTag = Asn1Codec.readDerTag(data);
 		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
 			throw new Exception("Invalid key data found");
@@ -582,7 +630,7 @@ public class SshKeyReader {
 		return new KeyPair(publicKey, privateKey);
 	}
 
-	private static KeyPair readPkcs8EcdsaPrivateKey(final byte[] data) throws Exception {
+	private static KeyPair readPKCS8EcdsaPrivateKey(final byte[] data) throws Exception {
 		final DerTag enclosingDerTag = Asn1Codec.readDerTag(data);
 		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
 			throw new Exception("Invalid key data found");
@@ -1092,7 +1140,7 @@ public class SshKeyReader {
 			if (encryptionMethod == null || "".equals(encryptionMethod) || "none".equalsIgnoreCase(encryptionMethod)) {
 				privateKeyData = base64Decoder.decode(keyProperties.get("Private-Lines"));
 			} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
-				if (password == null || password.getPasswordChars().length == 0)  {
+				if (password == null || password.getPasswordChars().length == 0) {
 					throw new WrongPasswordException();
 				} else {
 					passwordByteArray = password.getPasswordBytesIsoEncoded();
@@ -1212,7 +1260,7 @@ public class SshKeyReader {
 			if (encryptionMethod == null || "".equals(encryptionMethod) || "none".equalsIgnoreCase(encryptionMethod)) {
 				privateKeyData = base64Decoder.decode(keyProperties.get("Private-Lines"));
 			} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
-				if (password == null || password.getPasswordChars().length == 0)  {
+				if (password == null || password.getPasswordChars().length == 0) {
 					throw new WrongPasswordException();
 				} else {
 					passwordByteArray = password.getPasswordBytesIsoEncoded();
@@ -1497,10 +1545,10 @@ public class SshKeyReader {
 	 * Fix the encoding of a String if it was stored in UTF-8 encoding but decoded with ISO-8859-1 encoding
 	 *
 	 * Examples of byte data of wrongly encoded Umlauts and other special characters:
-	 *   Ä: [-61, -124]
-	 *   ä: [-61, -92]
-	 *   ß: [-61, -97]
-	 *   è: [-61, -88]
+	 *	Ä: [-61, -124]
+	 *	ä: [-61, -92]
+	 *	ß: [-61, -97]
+	 *	è: [-61, -88]
 	 */
 	private static String fixCommentEncodingIfNeeded(final String comment) {
 		boolean wrongEncodingDetected = false;
