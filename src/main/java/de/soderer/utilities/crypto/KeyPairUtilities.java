@@ -114,10 +114,10 @@ public class KeyPairUtilities {
 	public static String getAlgorithm(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
-		} else if (keyPair.getPublic() != null) {
-			return getAlgorithm(keyPair.getPublic());
 		} else if (keyPair.getPrivate() != null) {
 			return getAlgorithm(keyPair.getPrivate());
+		} else if (keyPair.getPublic() != null) {
+			return getAlgorithm(keyPair.getPublic());
 		} else {
 			throw new Exception("KeyPair data is empty");
 		}
@@ -166,16 +166,7 @@ public class KeyPairUtilities {
 		} else if (privateKey instanceof DSAPrivateKey) {
 			return "ssh-dss";
 		} else if (privateKey instanceof ECPrivateKey) {
-			final int bitLength = ((ECPrivateKey) privateKey).getS().bitLength();
-			if (bitLength <= 256) {
-				return "ecdsa-sha2-nistp256";
-			} else if (bitLength <= 384) {
-				return "ecdsa-sha2-nistp384";
-			} else if (bitLength <= 521) {
-				return "ecdsa-sha2-nistp521";
-			} else {
-				throw new Exception("Unsupported ECDSA bit length: " + bitLength);
-			}
+			return "ecdsa-sha2-" + CryptographicUtilities.getEcCurveNameFromECPrivateKey((ECPrivateKey) privateKey);
 		} else if (privateKey instanceof EdECPrivateKey) {
 			final EdECPrivateKey privateKeyEdEC = (EdECPrivateKey) privateKey;
 			if ("Ed25519".equalsIgnoreCase(privateKeyEdEC.getParams().getName())) {

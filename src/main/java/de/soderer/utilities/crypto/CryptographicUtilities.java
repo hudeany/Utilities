@@ -11,7 +11,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -41,6 +40,7 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.ECKey;
+import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.EdECPublicKey;
 import java.security.interfaces.RSAKey;
@@ -1591,7 +1591,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static final String getEllipticCurveName(final PublicKey publicKey) throws GeneralSecurityException{
+	public static final String getEllipticCurveName(final PublicKey publicKey) throws Exception{
 		if (publicKey instanceof java.security.interfaces.ECPublicKey){
 			final java.security.interfaces.ECPublicKey pk = (java.security.interfaces.ECPublicKey) publicKey;
 			final java.security.spec.ECParameterSpec params = pk.getParams();
@@ -1604,7 +1604,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static final String getEllipticCurveName(final PrivateKey privateKey) throws GeneralSecurityException{
+	public static final String getEllipticCurveName(final PrivateKey privateKey) throws Exception{
 		if (privateKey instanceof java.security.interfaces.ECPrivateKey){
 			final java.security.interfaces.ECPrivateKey pk = (java.security.interfaces.ECPrivateKey) privateKey;
 			final java.security.spec.ECParameterSpec params = pk.getParams();
@@ -1617,7 +1617,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static final String getEllipticCurveName(final ECParameterSpec ecParameterSpec) throws GeneralSecurityException{
+	public static final String getEllipticCurveName(final ECParameterSpec ecParameterSpec) throws Exception{
 		for (final String name : Collections.list((Enumeration<String>) org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames())){
 			final X9ECParameters params = org.bouncycastle.asn1.x9.ECNamedCurveTable.getByName(name);
 			if (params.getN().equals(ecParameterSpec.getN())
@@ -1627,7 +1627,7 @@ public class CryptographicUtilities {
 				return name;
 			}
 		}
-		throw new GeneralSecurityException("Could not find elliptic curve name");
+		throw new Exception("Could not find elliptic curve name");
 	}
 
 	public static List<String> getKeyAliasesFromJavaKeyStore(final KeyStore keyStore) throws KeyStoreException {
@@ -1676,6 +1676,39 @@ public class CryptographicUtilities {
 			throw new Exception("Invalid key data found");
 		}
 		final List<DerTag> sshAlgorithmDerTags = Asn1Codec.readDerTags(derDataTags.get(0).getData());
+		final OID ecDsaPublicKeyOid = new OID(sshAlgorithmDerTags.get(0).getData());
+		if (Arrays.equals(OID.ECDSA_PUBLICKEY_ARRAY, ecDsaPublicKeyOid.getByteArrayEncoding())) {
+			final OID ecDsaCurveOid = new OID(sshAlgorithmDerTags.get(1).getData());
+			if (Arrays.equals(OID.ECDSA_CURVE_NISTP256_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+				return "nistp256";
+			} else if (Arrays.equals(OID.ECDSA_CURVE_NISTP384_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+				return "nistp384";
+			} else if (Arrays.equals(OID.ECDSA_CURVE_NISTP521_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+				return "nistp521";
+			} else {
+				throw new Exception("Unknown SSH EcDSA curve OID: " + ecDsaCurveOid.getStringEncoding());
+			}
+		} else {
+			throw new Exception("Unknown SSH EcDSA public key OID: " + ecDsaPublicKeyOid.getStringEncoding());
+		}
+	}
+
+	public static String getEcCurveNameFromECPrivateKey(final ECPrivateKey ecPrivateKey) throws Exception {
+		final DerTag enclosingDerTag = Asn1Codec.readDerTag(ecPrivateKey.getEncoded());
+		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> derDataTags = Asn1Codec.readDerTags(enclosingDerTag.getData());
+
+		final BigInteger keyEncodingVersion = new BigInteger(derDataTags.get(0).getData());
+		if (!BigInteger.ZERO.equals(keyEncodingVersion)) {
+			throw new Exception("Invalid key data version found");
+		}
+
+		if (Asn1Codec.DER_TAG_SEQUENCE != derDataTags.get(1).getTagId()) {
+			throw new Exception("Invalid key data found");
+		}
+		final List<DerTag> sshAlgorithmDerTags = Asn1Codec.readDerTags(derDataTags.get(1).getData());
 		final OID ecDsaPublicKeyOid = new OID(sshAlgorithmDerTags.get(0).getData());
 		if (Arrays.equals(OID.ECDSA_PUBLICKEY_ARRAY, ecDsaPublicKeyOid.getByteArrayEncoding())) {
 			final OID ecDsaCurveOid = new OID(sshAlgorithmDerTags.get(1).getData());
