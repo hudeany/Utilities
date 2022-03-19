@@ -151,6 +151,18 @@ public class SshKeyTest {
 		testKeyPair(keyPair);
 	}
 
+	@Test
+	public void testEd25519() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEd25519CurveKeyPair();
+		testKeyPair(keyPair);
+	}
+
+	@Test
+	public void testEd448() throws Exception {
+		final KeyPair keyPair = KeyPairUtilities.createEd448CurveKeyPair();
+		testKeyPair(keyPair);
+	}
+
 	private void testKeyPair(final KeyPair keyPair) throws Exception {
 		final String sha256Fingerprint = KeyPairUtilities.getSha256FingerprintBase64(keyPair);
 
@@ -169,8 +181,10 @@ public class SshKeyTest {
 		try (InputStream inputStream = new ByteArrayInputStream(privateKeyPkcs8Data)) {
 			openSshKey1 = SshKeyReader.readKey(inputStream, TESTPASSWORD);
 		}
-		final String readsha256Fingerprint = openSshKey1.getSha256FingerprintBase64();
-		Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		if (openSshKey1.getKeyPair().getPublic() != null) {
+			final String readsha256Fingerprint = openSshKey1.getSha256FingerprintBase64();
+			Assert.assertEquals(sha256Fingerprint, readsha256Fingerprint);
+		}
 
 		final byte[] publicKeyPkcs1Data;
 
@@ -205,7 +219,9 @@ public class SshKeyTest {
 		try (InputStream inputStream = new ByteArrayInputStream(keypairPkcs1Data)) {
 			openSshKey3 = SshKeyReader.readKey(inputStream, TESTPASSWORD);
 		}
-		Assert.assertEquals(sha256Fingerprint, openSshKey3.getSha256FingerprintBase64());
+		if (openSshKey3.getKeyPair().getPublic() != null) {
+			Assert.assertEquals(sha256Fingerprint, openSshKey3.getSha256FingerprintBase64());
+		}
 	}
 
 	@Test

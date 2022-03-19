@@ -366,8 +366,13 @@ public class SshKeyWriter {
 		} else if ("ecdsa-sha2-nistp521".equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "EC PRIVATE KEY";
 			keyData = createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP521_ARRAY);
+		} else if ("ssh-ed25519".equalsIgnoreCase(algorithmName)) {
+			keyTypeName = "PRIVATE KEY";
+			keyData = keyPair.getPrivate().getEncoded();
+		} else if ("ssh-ed448".equalsIgnoreCase(algorithmName)) {
+			keyTypeName = "PRIVATE KEY";
+			keyData = keyPair.getPrivate().getEncoded();
 		} else {
-			// TODO Ed25519
 			throw new IllegalArgumentException("Unsupported cipher: " + algorithmName);
 		}
 

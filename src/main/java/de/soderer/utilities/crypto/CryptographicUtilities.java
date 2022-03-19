@@ -172,13 +172,17 @@ public class CryptographicUtilities {
 			"RIPEMD128withRSA", "RIPEMD160withRSA", "RIPEMD256withRSA", "SHA256withRSA", "SHA224withRSA", "SHA384withRSA",
 			"SHA512withRSA", "SHA1withRSAandMGF1", "SHA256withRSAandMGF1", "SHA384withRSAandMGF1", "SHA512withRSAandMGF1" };
 
+	public static final String DEFAULT_SIGNATURE_METHOD_DSA = "SHA256withDSA";
+	public static final String[] KNOWN_SIGNATURE_METHODS_DSA = new String[] { "SHA256withDSA", "SHA1withDSA",
+			"SHA384withDSA", "SHA512withDSA", "NONEwithDSA" };
+
 	public static final String DEFAULT_SIGNATURE_METHOD_EC = "SHA256withECDSA";
 	public static final String[] KNOWN_SIGNATURE_METHODS_EC = new String[] { "RIPEMD160withECDSA", "SHA1withECDSA",
 			"NONEwithECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA384withECDSA", "SHA512withECDSA", "SHA1withECNR",
 			"SHA224withECNR", "SHA256withECNR", "SHA384withECNR", "SHA512withECNR" };
 
 	public static final String[] KNOWN_SIGNATURE_METHODS_OTHERS = new String[] { "DSTU4145", "GOST3411withGOST3410", "GOST3411withGOST3410-94", "GOST3411withECGOST3410",
-			"GOST3411withGOST3410-2001", "SHA1withDSA", "SHA256withDSA", "SHA384withDSA", "SHA512withDSA", "NONEwithDSA", };
+	"GOST3411withGOST3410-2001" };
 
 	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "EC", "ElGamal", "Ed25519", "Ed448" };
 
@@ -1170,6 +1174,11 @@ public class CryptographicUtilities {
 
 	public static String checkSignatureMethodName(final String signatureMethodName) {
 		for (final String signatureMethodNameItem : KNOWN_SIGNATURE_METHODS_RSA) {
+			if (signatureMethodNameItem.replace(" ", "").replace("_", "").replace("/", "").replace("-", "").equalsIgnoreCase(signatureMethodName.replace(" ", "").replace("_", "").replace("/", "").replace("-", ""))) {
+				return signatureMethodNameItem;
+			}
+		}
+		for (final String signatureMethodNameItem : KNOWN_SIGNATURE_METHODS_DSA) {
 			if (signatureMethodNameItem.replace(" ", "").replace("_", "").replace("/", "").replace("-", "").equalsIgnoreCase(signatureMethodName.replace(" ", "").replace("_", "").replace("/", "").replace("-", ""))) {
 				return signatureMethodNameItem;
 			}

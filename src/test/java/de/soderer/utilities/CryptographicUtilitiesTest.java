@@ -30,11 +30,6 @@ import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.crypto.SymmetricDecryptionWorker;
 import de.soderer.utilities.crypto.SymmetricEncryptionWorker;
 
-/*
- * TODO:
- * Add Ed448, Ed25519 tests
- * Add ECDSA tests
- */
 public class CryptographicUtilitiesTest {
 	private static KeyPair rsaKeyPairCache = null;
 	private static KeyPair elGamalKeyPairCache = null;
@@ -235,6 +230,34 @@ public class CryptographicUtilitiesTest {
 				e.printStackTrace();
 				Assert.fail("Decryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
 			}
+		}
+	}
+
+	@Test
+	public void testSignatureDSA() {
+		try {
+			byte[] signatureBytes = null;
+			try {
+				final ByteArrayInputStream dataToSignInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				signatureBytes = new AsymmetricSignatureWorker(null, dataToSignInputStream, getDsaKeyPair().getPrivate(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_DSA).work();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Signature failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_DSA + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream dataToVerifyInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				final boolean result = new AsymmetricVerificationWorker(null, dataToVerifyInputStream, signatureBytes, getDsaKeyPair().getPublic(), CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_DSA).work();
+				Assert.assertTrue(result);
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Verification failed. Method: " + CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_DSA + ":\n" + e.getMessage());
+			}
+
+			Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(getDsaKeyPair().getPrivate(), getDsaKeyPair().getPublic()));
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
 		}
 	}
 

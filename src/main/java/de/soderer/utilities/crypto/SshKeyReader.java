@@ -158,6 +158,9 @@ public class SshKeyReader {
 								if (skipPrivateKey) {
 									return null;
 								} else {
+									if ("4,ENCRYPTED".equals(keyProperties.get("Proc-Type")) && !skipPrivateKey) {
+										keyData = decryptOpenSslKeyData(keyData, keyProperties.get("DEK-Info"), password, passwordCharset);
+									}
 									return new SshKey(SshKeyFormat.OpenSSHv1, null, new KeyPair(null, parseDerEncodedPrivateKey(keyData)));
 								}
 							}
