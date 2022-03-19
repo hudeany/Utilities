@@ -137,16 +137,7 @@ public class KeyPairUtilities {
 		} else if ("DSA".equals(publicKey.getAlgorithm())) {
 			return "ssh-dss";
 		} else if ("EC".equals(publicKey.getAlgorithm()) || "ECDSA".equals(publicKey.getAlgorithm())) {
-			final int bitLength = ((ECPublicKey) publicKey).getW().getAffineX().bitLength();
-			if (bitLength <= 256) {
-				return "ecdsa-sha2-nistp256";
-			} else if (bitLength <= 384) {
-				return "ecdsa-sha2-nistp384";
-			} else if (bitLength <= 521) {
-				return "ecdsa-sha2-nistp521";
-			} else {
-				throw new Exception("Unsupported ECDSA bit length: " + bitLength);
-			}
+			return "ecdsa-sha2-" + CryptographicUtilities.getEcCurveNameFromECPublicKey((ECPublicKey) publicKey);
 		} else if ("EdDSA".equals(publicKey.getAlgorithm())) {
 			final EdECPublicKey publicEdDsaKey = (EdECPublicKey) publicKey;
 			if ("Ed25519".equals(publicEdDsaKey.getParams().getName())) {

@@ -24,19 +24,19 @@ public class OID {
 	public static byte[] ECDSA_PUBLICKEY_ARRAY = new byte[] { 42, -122, 72, -50, 61, 2, 1 };
 
 	/**
-	 * OID for elliptic curve secp256 and nistp256
+	 * OID for elliptic curve secp256r1 and nistp256
 	 * OID 1.2.840.10045.3.1.7
 	 */
 	public static byte[] ECDSA_CURVE_NISTP256_ARRAY = new byte[] { 42, -122, 72, -50, 61, 3, 1, 7 };
 
 	/**
-	 * OID for elliptic curve secp384 and nistp384
+	 * OID for elliptic curve secp384r1 and nistp384
 	 * OID 1.3.132.0.34
 	 */
 	public static byte[] ECDSA_CURVE_NISTP384_ARRAY = new byte[] { 43, -127, 4, 0, 34 };
 
 	/**
-	 * OID for elliptic curve secp521 and nistp521
+	 * OID for elliptic curve secp521r1 and nistp521
 	 * OID 1.3.132.0.35
 	 */
 	public static byte[] ECDSA_CURVE_NISTP521_ARRAY = new byte[] { 43, -127, 4, 0, 35 };
