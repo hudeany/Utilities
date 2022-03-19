@@ -72,16 +72,6 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
  * - EdDSA (Ed25519, Ed448)<br />
  * <br />
  */
-
-/* TODO:
- * Putty Key save without password does not work in GUI
- * Create Putty3 in SshWriter
- * Create new Formats in SshWriter for Putty 2
- * Show SHA-256 Fingerprints as Base64
- * replace nistp* BouncyCastle public key decoding
- * Add buttons to SshKey Dialog
- * Show warning in SshKey Dialog on comments and passwords with non-ascii chars
- */
 public class SshKeyReader {
 	/**
 	 * Read public key data only and ignore the private key parts.<br />
@@ -1045,12 +1035,16 @@ public class SshKeyReader {
 	}
 
 	private static byte[] fromHexString(final String value) {
-		final int length = value.length();
-		final byte[] data = new byte[length / 2];
-		for (int i = 0; i < length; i += 2) {
-			data[i / 2] = (byte) ((Character.digit(value.charAt(i), 16) << 4) + Character.digit(value.charAt(i + 1), 16));
+		if (value == null) {
+			return null;
+		} else {
+			final int length = value.length();
+			final byte[] data = new byte[length / 2];
+			for (int i = 0; i < length; i += 2) {
+				data[i / 2] = (byte) ((Character.digit(value.charAt(i), 16) << 4) + Character.digit(value.charAt(i + 1), 16));
+			}
+			return data;
 		}
-		return data;
 	}
 
 	private static String toHexString(final byte[] data) {
@@ -1172,7 +1166,7 @@ public class SshKeyReader {
 		data.writeInt(encryptionTypeBytes.length);
 		data.write(encryptionTypeBytes);
 
-		final byte[] commentBytes = comment.getBytes(StandardCharsets.ISO_8859_1);
+		final byte[] commentBytes = (comment == null ? "" : comment).getBytes(StandardCharsets.ISO_8859_1);
 		data.writeInt(commentBytes.length);
 		data.write(commentBytes);
 
@@ -1209,55 +1203,57 @@ public class SshKeyReader {
 
 		byte[] passwordByteArray = null;
 		byte[] privateKeyData;
-		if (encryptionMethod == null || "".equals(encryptionMethod) || "none".equalsIgnoreCase(encryptionMethod)) {
-			privateKeyData = base64Decoder.decode(keyProperties.get("Private-Lines"));
-		} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
-			if (password == null || password.getPasswordChars().length == 0)  {
-				throw new WrongPasswordException();
-			} else {
-				passwordByteArray = password.getPasswordBytesIsoEncoded();
-			}
-
-			byte[] puttyKeyEncryptionKey = null;
-			try {
-				puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKeyVersion3Argon2id(passwordByteArray, keyProperties.get("Key-Derivation"), Integer.parseInt(keyProperties.get("Argon2-Memory")), Integer.parseInt(keyProperties.get("Argon2-Passes")), Integer.parseInt(keyProperties.get("Argon2-Parallelism")), keyProperties.get("Argon2-Salt"));
-				final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
-				cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(puttyKeyEncryptionKey, 0, 32, "AES"), new IvParameterSpec(puttyKeyEncryptionKey, 32, 16));
-
-				privateKeyData = cipher.doFinal(base64Decoder.decode(keyProperties.get("Private-Lines")));
-			} catch (final Exception e) {
-				throw new Exception("Cannot decrypt PuTTY private key data", e);
-			} finally {
-				Utilities.clear(puttyKeyEncryptionKey);
-			}
-		} else {
-			throw new Exception("Unsupported key encryption method: " + keyProperties.get("Encryption"));
-		}
-
+		byte[] puttyKeyEncryptionKey = null;
 		try {
-			final String calculatedMacChecksum;
-			if ("none".equalsIgnoreCase(encryptionMethod)) {
-				calculatedMacChecksum = calculatePuttyMacChecksumVersion3Unencrypted(cipherName, keyProperties.get("Encryption"), keyProperties.get("Comment"), publicKeyData, privateKeyData);
+			if (encryptionMethod == null || "".equals(encryptionMethod) || "none".equalsIgnoreCase(encryptionMethod)) {
+				privateKeyData = base64Decoder.decode(keyProperties.get("Private-Lines"));
 			} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
-				calculatedMacChecksum = calculatePuttyMacChecksumVersion3Argon2id(passwordByteArray, cipherName, keyProperties.get("Encryption"), keyProperties.get("Comment"), publicKeyData, privateKeyData, keyProperties.get("Key-Derivation"), Integer.parseInt(keyProperties.get("Argon2-Memory")), Integer.parseInt(keyProperties.get("Argon2-Passes")), Integer.parseInt(keyProperties.get("Argon2-Parallelism")), keyProperties.get("Argon2-Salt"));
+				if (password == null || password.getPasswordChars().length == 0)  {
+					throw new WrongPasswordException();
+				} else {
+					passwordByteArray = password.getPasswordBytesIsoEncoded();
+				}
+
+				try {
+					puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKeyVersion3Argon2(passwordByteArray, keyProperties.get("Key-Derivation"), Integer.parseInt(keyProperties.get("Argon2-Memory")), Integer.parseInt(keyProperties.get("Argon2-Passes")), Integer.parseInt(keyProperties.get("Argon2-Parallelism")), fromHexString(keyProperties.get("Argon2-Salt")));
+					final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+					cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(puttyKeyEncryptionKey, 0, 32, "AES"), new IvParameterSpec(puttyKeyEncryptionKey, 32, 16));
+
+					privateKeyData = cipher.doFinal(base64Decoder.decode(keyProperties.get("Private-Lines")));
+				} catch (final Exception e) {
+					throw new Exception("Cannot decrypt PuTTY private key data", e);
+				}
 			} else {
 				throw new Exception("Unsupported key encryption method: " + keyProperties.get("Encryption"));
 			}
-			final String foundMacChecksum = keyProperties.get("Private-MAC");
-			if (foundMacChecksum == null || !foundMacChecksum.equalsIgnoreCase(calculatedMacChecksum)) {
-				throw new WrongPasswordException();
+
+			try {
+				final String calculatedMacChecksum;
+				if ("none".equalsIgnoreCase(encryptionMethod)) {
+					calculatedMacChecksum = calculatePuttyMacChecksumVersion3Argon2(cipherName, "none", keyProperties.get("Comment"), publicKeyData, privateKeyData, puttyKeyEncryptionKey);
+				} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
+					calculatedMacChecksum = calculatePuttyMacChecksumVersion3Argon2(cipherName, keyProperties.get("Encryption"), keyProperties.get("Comment"), publicKeyData, privateKeyData, puttyKeyEncryptionKey);
+				} else {
+					throw new Exception("Unsupported key encryption method: " + keyProperties.get("Encryption"));
+				}
+				final String foundMacChecksum = keyProperties.get("Private-MAC");
+				if (foundMacChecksum == null || !foundMacChecksum.equalsIgnoreCase(calculatedMacChecksum)) {
+					throw new WrongPasswordException();
+				}
+			} catch (final WrongPasswordException e) {
+				throw e;
+			} catch (final Exception e) {
+				throw new Exception("Invalid PuTTY key data: " + e.getMessage(), e);
 			}
-		} catch (final WrongPasswordException e) {
-			throw e;
-		} catch (final Exception e) {
-			throw new Exception("Invalid PuTTY key data: " + e.getMessage(), e);
+		} finally {
+			Utilities.clear(puttyKeyEncryptionKey);
 		}
 
 		final KeyPair keyPair = readPuttyKeyData(privateKeyData, publicKeyData);
 		return new SshKey(SshKeyFormat.Putty3, keyProperties.get("Comment"), keyPair);
 	}
 
-	private static byte[] getPuttyPrivateKeyEncryptionKeyVersion3Argon2id(final byte[] passwordByteArray, final String argon2Type, final int argon2Memory, final int argon2Passes, final int argon2Parallelism, final String argon2salt) throws Exception {
+	private static byte[] getPuttyPrivateKeyEncryptionKeyVersion3Argon2(final byte[] passwordByteArray, final String argon2Type, final int argon2Memory, final int argon2Passes, final int argon2Parallelism, final byte[] argon2Salt) throws Exception {
 		int argon2TypeInt;
 		if ("Argon2i".equalsIgnoreCase(argon2Type)) {
 			argon2TypeInt = Argon2Parameters.ARGON2_i;
@@ -1273,7 +1269,7 @@ public class SshKeyReader {
 				.withIterations(argon2Passes)
 				.withMemoryAsKB(argon2Memory)
 				.withParallelism(argon2Parallelism)
-				.withSalt(fromHexString(argon2salt));
+				.withSalt(argon2Salt);
 		final Argon2BytesGenerator argon2BytesGenerator = new Argon2BytesGenerator();
 		argon2BytesGenerator.init(builder.build());
 		final byte[] puttyKeyEncryptionKey = new byte[80];
@@ -1281,9 +1277,13 @@ public class SshKeyReader {
 		return puttyKeyEncryptionKey;
 	}
 
-	private static String calculatePuttyMacChecksumVersion3Unencrypted(final String keyType, final String encryptionType, final String comment, final byte[] publicKey, final byte[] privateKey) throws Exception {
+	private static String calculatePuttyMacChecksumVersion3Argon2(final String keyType, final String encryptionType, final String comment, final byte[] publicKey, final byte[] privateKey, final byte[] puttyKeyEncryptionKey) throws Exception {
 		final Mac mac = Mac.getInstance("HMACSHA256");
-		mac.init(new SecretKeySpec(new byte[32], 0, 32, mac.getAlgorithm()));
+		if (puttyKeyEncryptionKey != null) {
+			mac.init(new SecretKeySpec(puttyKeyEncryptionKey, 48, 32, mac.getAlgorithm()));
+		} else {
+			mac.init(new SecretKeySpec(new byte[32], 0, 32, mac.getAlgorithm()));
+		}
 
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		final DataOutputStream data = new DataOutputStream(out);
@@ -1296,7 +1296,7 @@ public class SshKeyReader {
 		data.writeInt(encryptionTypeBytes.length);
 		data.write(encryptionTypeBytes);
 
-		final byte[] commentBytes = comment.getBytes(StandardCharsets.ISO_8859_1);
+		final byte[] commentBytes = (comment == null ? "" : comment).getBytes(StandardCharsets.ISO_8859_1);
 		data.writeInt(commentBytes.length);
 		data.write(commentBytes);
 
@@ -1307,41 +1307,6 @@ public class SshKeyReader {
 		data.write(privateKey);
 
 		return toHexString(mac.doFinal(out.toByteArray())).toLowerCase();
-	}
-
-	private static String calculatePuttyMacChecksumVersion3Argon2id(final byte[] passwordBytes, final String keyType, final String encryptionType, final String comment, final byte[] publicKey, final byte[] privateKey, final String argon2Type, final int argon2Memory, final int argon2Passes, final int argon2Parallelism, final String argon2salt) throws Exception {
-		byte[] puttyKeyEncryptionKey = null;
-		try {
-			puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKeyVersion3Argon2id(passwordBytes, argon2Type, argon2Memory, argon2Passes, argon2Parallelism, argon2salt);
-
-			final Mac mac = Mac.getInstance("HMACSHA256");
-			mac.init(new SecretKeySpec(puttyKeyEncryptionKey, 48, 32, mac.getAlgorithm()));
-
-			final ByteArrayOutputStream out = new ByteArrayOutputStream();
-			final DataOutputStream data = new DataOutputStream(out);
-
-			final byte[] keyTypeBytes = keyType.getBytes(StandardCharsets.ISO_8859_1);
-			data.writeInt(keyTypeBytes.length);
-			data.write(keyTypeBytes);
-
-			final byte[] encryptionTypeBytes = encryptionType.getBytes(StandardCharsets.ISO_8859_1);
-			data.writeInt(encryptionTypeBytes.length);
-			data.write(encryptionTypeBytes);
-
-			final byte[] commentBytes = comment.getBytes(StandardCharsets.ISO_8859_1);
-			data.writeInt(commentBytes.length);
-			data.write(commentBytes);
-
-			data.writeInt(publicKey.length);
-			data.write(publicKey);
-
-			data.writeInt(privateKey.length);
-			data.write(privateKey);
-
-			return toHexString(mac.doFinal(out.toByteArray())).toLowerCase();
-		} finally {
-			Utilities.clear(puttyKeyEncryptionKey);
-		}
 	}
 
 	private static KeyPair readPuttyKeyData(final byte[] privateKeyData, final byte[] publicKeyData) throws Exception {
