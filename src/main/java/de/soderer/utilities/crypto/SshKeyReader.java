@@ -74,7 +74,7 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
  */
 
 /*
- * TODO: Clean sensitive arrays after use
+ * TODO: Clean up sensitive arrays after use
  */
 public class SshKeyReader {
 	/**

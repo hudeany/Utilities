@@ -44,7 +44,7 @@ import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 /*
- * TODO: Clean sensitive arrays after use
+ * TODO: Clean up sensitive arrays after use
  */
 public class SshKeyWriter {
 	/**
