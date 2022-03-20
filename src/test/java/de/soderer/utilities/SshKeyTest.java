@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,6 +24,8 @@ public class SshKeyTest {
 
 	@Test
 	public void testTestKeyFiles() throws Exception {
+		final ByteArrayOutputStream authorizedKeysBuffer = new ByteArrayOutputStream();
+		int numberOfAuthorizedKeys = 0;
 		boolean overallSuccess = true;
 		for (final File sshkeyFileDirectory : new File(getClass().getClassLoader().getResource("sshkey").toURI()).listFiles()) {
 			for (final File sshkeyFile : sshkeyFileDirectory.listFiles()) {
@@ -47,9 +50,9 @@ public class SshKeyTest {
 						}
 
 						try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
-							final SshKey publicSshKey = SshKeyReader.readPublicKey(inputStream);
-							if (publicSshKey != null) {
-								Assert.assertEquals(filename, md5Hash.toUpperCase(), publicSshKey.getMd5Fingerprint().toUpperCase().replace(":", ""));
+							final List<SshKey> publicSshKeys = SshKeyReader.readAllPublicKeys(inputStream);
+							if (publicSshKeys != null && publicSshKeys.size() > 0) {
+								Assert.assertEquals(filename, md5Hash.toUpperCase(), publicSshKeys.get(0).getMd5Fingerprint().toUpperCase().replace(":", ""));
 							}
 						}
 					} else if (filename.endsWith(".pub")) {
@@ -58,6 +61,13 @@ public class SshKeyTest {
 							final SshKey sshKey = SshKeyReader.readKey(inputStream, null);
 							final String readMd5Fingerprint = sshKey.getMd5Fingerprint();
 							Assert.assertEquals(filename, md5Hash.toUpperCase(), readMd5Fingerprint.toUpperCase().replace(":", ""));
+						}
+
+						try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
+							authorizedKeysBuffer.write(("#" + filename + "\n").getBytes(StandardCharsets.UTF_8));
+							IoUtilities.copy(inputStream, authorizedKeysBuffer);
+							authorizedKeysBuffer.write(("\n\n").getBytes(StandardCharsets.UTF_8));
+							numberOfAuthorizedKeys++;
 						}
 					} else if (filename.endsWith(".pem") && filename.toLowerCase().contains("public")) {
 						final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
@@ -87,9 +97,9 @@ public class SshKeyTest {
 						}
 
 						try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
-							final SshKey publicSshKey = SshKeyReader.readPublicKey(inputStream);
-							if (publicSshKey != null) {
-								Assert.assertEquals(filename, md5Hash.toUpperCase(), publicSshKey.getMd5Fingerprint().toUpperCase().replace(":", ""));
+							final List<SshKey> publicSshKeys = SshKeyReader.readAllPublicKeys(inputStream);
+							if (publicSshKeys != null && publicSshKeys.size() > 0) {
+								Assert.assertEquals(filename, md5Hash.toUpperCase(), publicSshKeys.get(0).getMd5Fingerprint().toUpperCase().replace(":", ""));
 							}
 						}
 					}
@@ -101,6 +111,9 @@ public class SshKeyTest {
 			}
 		}
 		Assert.assertTrue("At least one keyfile test had errors", overallSuccess);
+
+		final List<SshKey> publicKeys = SshKeyReader.readAllPublicKeys(new ByteArrayInputStream(authorizedKeysBuffer.toByteArray()));
+		Assert.assertEquals(numberOfAuthorizedKeys, publicKeys.size());
 	}
 
 	@Test

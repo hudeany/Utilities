@@ -32,6 +32,7 @@ import java.security.spec.EdECPublicKeySpec;
 import java.security.spec.NamedParameterSpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Decoder;
@@ -76,14 +77,21 @@ public class SshKeyReader {
 	/**
 	 * Read public key data only and ignore the private key parts.<br />
 	 * This may be useful if you only need the public key and don't know the password of the encrypted private key.<br />
-	 * On multiple stored public keys (like authorized keys files) only the first key is read.<br />
+	 * This reads multiple stored public keys, like in authorized keys files.<br />
 	 *
 	 * @param inputStream
 	 * @return
 	 * @throws Exception
 	 */
-	public static SshKey readPublicKey(final InputStream inputStream) throws Exception {
-		return readKey(inputStream, null, true);
+	public static List<SshKey> readAllPublicKeys(final InputStream inputStream) throws Exception {
+		try (final BufferedReader dataReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.ISO_8859_1))) {
+			final List<SshKey> keyList = new ArrayList<>();
+			SshKey nextKey;
+			while ((nextKey = readKey(dataReader, null, true)) != null) {
+				keyList.add(nextKey);
+			}
+			return keyList;
+		}
 	}
 
 	/**
@@ -97,12 +105,13 @@ public class SshKeyReader {
 	 * @throws Exception
 	 */
 	public static SshKey readKey(final InputStream inputStream, final char[] passwordChars) throws Exception {
-		return readKey(inputStream, passwordChars, false);
+		try (final BufferedReader dataReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.ISO_8859_1))) {
+			return readKey(dataReader, passwordChars, false);
+		}
 	}
 
-	private static SshKey readKey(final InputStream inputStream, final char[] passwordChars, final boolean skipPrivateKey) throws Exception {
-		try (final Password password = passwordChars == null ? null : new Password(passwordChars.clone());
-				final BufferedReader dataReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.ISO_8859_1))) {
+	private static SshKey readKey(final BufferedReader dataReader, final char[] passwordChars, final boolean skipPrivateKey) throws Exception {
+		try (final Password password = passwordChars == null ? null : new Password(passwordChars.clone())) {
 			// Read the stream internally with ISO-8859-1 charset, because PuTTY keys use it and their comments are part of the MAC checksum, which would be wrong otherwise.
 			// OpenSSH keys and OpenSSL keys are more robust in that matters and their comments encoding will be fixed if needed
 			String nextLine;
