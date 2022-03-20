@@ -356,7 +356,7 @@ public class SshKeyWriter {
 			keyData = createRsaBinaryKey(keyPair);
 		} else if ("ssh-dss".equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "DSA PRIVATE KEY";
-			keyData = createDssBinaryKey(keyPair);
+			keyData = createDsaBinaryKey(keyPair);
 		} else if ("ecdsa-sha2-nistp256".equalsIgnoreCase(algorithmName)) {
 			keyTypeName = "EC PRIVATE KEY";
 			keyData = createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP256_ARRAY);
@@ -442,7 +442,7 @@ public class SshKeyWriter {
 		if ("ssh-rsa".equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createRsaBinaryKey(keyPair));
 		} else if ("ssh-dss".equalsIgnoreCase(algorithmName)) {
-			outputStream.write(createDssBinaryKey(keyPair));
+			outputStream.write(createDsaBinaryKey(keyPair));
 		} else if ("ecdsa-sha2-nistp256".equalsIgnoreCase(algorithmName)) {
 			outputStream.write(createEcdsaBinaryKey(keyPair, OID.ECDSA_CURVE_NISTP256_ARRAY));
 		} else if ("ecdsa-sha2-nistp384".equalsIgnoreCase(algorithmName)) {
@@ -518,7 +518,7 @@ public class SshKeyWriter {
 				);
 	}
 
-	private static byte[] createDssBinaryKey(final KeyPair keyPair) throws Exception {
+	private static byte[] createDsaBinaryKey(final KeyPair keyPair) throws Exception {
 		final DSAPublicKey publicKey = ((DSAPublicKey) keyPair.getPublic());
 		final DSAPrivateKey privateKey = ((DSAPrivateKey) keyPair.getPrivate());
 
@@ -602,7 +602,7 @@ public class SshKeyWriter {
 			final String macHash = calculatePuttyMacChecksumVersion2(password, algorithmName, sshKey.getComment(), publicKeyBytes, privateKeyBytes);
 
 			if (password != null) {
-				final byte[] puttyKeyEncryptionKey = stretchPassword(password.getPasswordBytesIsoEncoded());
+				final byte[] puttyKeyEncryptionKey = getPuttyPrivateKeyEncryptionKeyVersion2(password.getPasswordBytesIsoEncoded());
 
 				final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(puttyKeyEncryptionKey, 0, 32, "AES"), new IvParameterSpec(new byte[16])); // initial vector=0
@@ -761,7 +761,7 @@ public class SshKeyWriter {
 		}
 	}
 
-	private static byte[] stretchPassword(final byte[] passwordByteArray) throws NoSuchAlgorithmException {
+	private static byte[] getPuttyPrivateKeyEncryptionKeyVersion2(final byte[] passwordByteArray) throws NoSuchAlgorithmException {
 		final byte[] puttyKeyEncryptionKey = new byte[32];
 		final MessageDigest digest = MessageDigest.getInstance("SHA-1");
 
