@@ -256,7 +256,7 @@ public class SshKeyWriter {
 			if (Asn1Codec.DER_TAG_BIT_STRING != derDataTags.get(1).getTagId()) {
 				throw new Exception("Invalid key data found");
 			} else {
-				// remove first byte (odd sign)
+				// Remove prefix "0"
 				final byte[] dataWithLeadingZero = derDataTags.get(1).getData();
 				return Arrays.copyOfRange(dataWithLeadingZero, 1, dataWithLeadingZero.length);
 			}

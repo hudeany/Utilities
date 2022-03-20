@@ -413,24 +413,21 @@ public class SshKeyReader {
 				|| "ecdsa-sha2-nistp384".equalsIgnoreCase(algorithmName)
 				|| "ecdsa-sha2-nistp521".equalsIgnoreCase(algorithmName)) {
 			final String ecdsaCurveName = new String(publicKeyReader.readData(), StandardCharsets.UTF_8);
-			if ("nistp256".equals(ecdsaCurveName)) {
-				// Do nothing
-			} else if ("nistp384".equals(ecdsaCurveName)) {
-				// Do nothing
-			} else if ("nistp521".equals(ecdsaCurveName)) {
-				// Do nothing
-			} else {
+			if (!"nistp256".equals(ecdsaCurveName)
+					&& !"nistp384".equals(ecdsaCurveName)
+					&& !"nistp521".equals(ecdsaCurveName)) {
 				throw new Exception("Unsupported ECDSA curveName: " + ecdsaCurveName);
-			}
+			} else {
+				final byte[] eccKeyBlobBytes = publicKeyReader.readData();
 
-			final byte[] eccKeyBlobBytes = publicKeyReader.readData();
-			Security.addProvider(new BouncyCastleProvider());
-			final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
-			final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ecdsaCurveName.replace("nist", "sec") + "r1");
-			final org.bouncycastle.math.ec.ECPoint point = ecSpec.getCurve().decodePoint(eccKeyBlobBytes);
-			final org.bouncycastle.jce.spec.ECPublicKeySpec pubSpec = new org.bouncycastle.jce.spec.ECPublicKeySpec(point, ecSpec);
-			final PublicKey publicKey = keyFactory.generatePublic(pubSpec);
-			return publicKey;
+				Security.addProvider(new BouncyCastleProvider());
+				final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
+				final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ecdsaCurveName.replace("nist", "sec") + "r1");
+				final org.bouncycastle.math.ec.ECPoint point = ecSpec.getCurve().decodePoint(eccKeyBlobBytes);
+				final org.bouncycastle.jce.spec.ECPublicKeySpec pubSpec = new org.bouncycastle.jce.spec.ECPublicKeySpec(point, ecSpec);
+				final PublicKey publicKey = keyFactory.generatePublic(pubSpec);
+				return publicKey;
+			}
 		} else if ("ssh-ed25519".equalsIgnoreCase(algorithmName)) {
 			final byte[] edDsaPublicKeyData = publicKeyReader.readData();
 
@@ -1406,32 +1403,29 @@ public class SshKeyReader {
 					|| "ecdsa-sha2-nistp384".equalsIgnoreCase(algorithmName)
 					|| "ecdsa-sha2-nistp521".equalsIgnoreCase(algorithmName)) {
 				final String ecdsaCurveName = new String(publicKeyReader.readData(), StandardCharsets.UTF_8);
-				if ("nistp256".equals(ecdsaCurveName)) {
-					// Do nothing
-				} else if ("nistp384".equals(ecdsaCurveName)) {
-					// Do nothing
-				} else if ("nistp521".equals(ecdsaCurveName)) {
-					// Do nothing
-				} else {
+				if (!"nistp256".equals(ecdsaCurveName)
+						&& !"nistp384".equals(ecdsaCurveName)
+						&& !"nistp521".equals(ecdsaCurveName)) {
 					throw new Exception("Unsupported ECDSA curveName: " + ecdsaCurveName);
+				} else {
+					final byte[] eccKeyBlobBytes = publicKeyReader.readData();
+
+					Security.addProvider(new BouncyCastleProvider());
+					final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
+					final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ecdsaCurveName.replace("nist", "sec") + "r1");
+					final org.bouncycastle.math.ec.ECPoint point = ecSpec.getCurve().decodePoint(eccKeyBlobBytes);
+					final org.bouncycastle.jce.spec.ECPublicKeySpec pubSpec = new org.bouncycastle.jce.spec.ECPublicKeySpec(point, ecSpec);
+					final PublicKey publicKey = keyFactory.generatePublic(pubSpec);
+
+					final BigInteger s = privateKeyReader.readBigInt();
+
+					final AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
+					parameters.init(new ECGenParameterSpec(ecdsaCurveName.replace("nist", "sec") + "r1"));
+					final ECParameterSpec ecParameterSpec = parameters.getParameterSpec(ECParameterSpec.class);
+					final PrivateKey privateKey = keyFactory.generatePrivate(new ECPrivateKeySpec(s, ecParameterSpec));
+
+					return new KeyPair(publicKey, privateKey);
 				}
-
-				final byte[] eccKeyBlobBytes = publicKeyReader.readData();
-				Security.addProvider(new BouncyCastleProvider());
-				final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
-				final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ecdsaCurveName.replace("nist", "sec") + "r1");
-				final org.bouncycastle.math.ec.ECPoint point = ecSpec.getCurve().decodePoint(eccKeyBlobBytes);
-				final org.bouncycastle.jce.spec.ECPublicKeySpec pubSpec = new org.bouncycastle.jce.spec.ECPublicKeySpec(point, ecSpec);
-				final PublicKey publicKey = keyFactory.generatePublic(pubSpec);
-
-				final BigInteger s = privateKeyReader.readBigInt();
-
-				final AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
-				parameters.init(new ECGenParameterSpec(ecdsaCurveName.replace("nist", "sec") + "r1"));
-				final ECParameterSpec ecParameterSpec = parameters.getParameterSpec(ECParameterSpec.class);
-				final PrivateKey privateKey = keyFactory.generatePrivate(new ECPrivateKeySpec(s, ecParameterSpec));
-
-				return new KeyPair(publicKey, privateKey);
 			} else if ("ssh-ed25519".equalsIgnoreCase(algorithmName)) {
 				final byte[] edDsaPublicKeyData = publicKeyReader.readData();
 				final byte[] privateKeyBytes = privateKeyReader.readData();
@@ -1495,23 +1489,20 @@ public class SshKeyReader {
 					|| "ecdsa-sha2-nistp384".equalsIgnoreCase(algorithmName)
 					|| "ecdsa-sha2-nistp521".equalsIgnoreCase(algorithmName)) {
 				final String ecdsaCurveName = new String(publicKeyReader.readData(), StandardCharsets.UTF_8);
-				if ("nistp256".equals(ecdsaCurveName)) {
-					// Do nothing
-				} else if ("nistp384".equals(ecdsaCurveName)) {
-					// Do nothing
-				} else if ("nistp521".equals(ecdsaCurveName)) {
-					// Do nothing
-				} else {
+				if (!"nistp256".equals(ecdsaCurveName)
+						&& !"nistp384".equals(ecdsaCurveName)
+						&& !"nistp521".equals(ecdsaCurveName)) {
 					throw new Exception("Unsupported ECDSA curveName: " + ecdsaCurveName);
-				}
+				} else {
+					final byte[] eccKeyBlobBytes = publicKeyReader.readData();
 
-				final byte[] eccKeyBlobBytes = publicKeyReader.readData();
-				Security.addProvider(new BouncyCastleProvider());
-				final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
-				final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ecdsaCurveName.replace("nist", "sec") + "r1");
-				final org.bouncycastle.math.ec.ECPoint point = ecSpec.getCurve().decodePoint(eccKeyBlobBytes);
-				final org.bouncycastle.jce.spec.ECPublicKeySpec pubSpec = new org.bouncycastle.jce.spec.ECPublicKeySpec(point, ecSpec);
-				return keyFactory.generatePublic(pubSpec);
+					Security.addProvider(new BouncyCastleProvider());
+					final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
+					final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ecdsaCurveName.replace("nist", "sec") + "r1");
+					final org.bouncycastle.math.ec.ECPoint point = ecSpec.getCurve().decodePoint(eccKeyBlobBytes);
+					final org.bouncycastle.jce.spec.ECPublicKeySpec pubSpec = new org.bouncycastle.jce.spec.ECPublicKeySpec(point, ecSpec);
+					return keyFactory.generatePublic(pubSpec);
+				}
 			} else if ("ssh-ed25519".equalsIgnoreCase(algorithmName)) {
 				final byte[] edDsaPublicKeyData = publicKeyReader.readData();
 
