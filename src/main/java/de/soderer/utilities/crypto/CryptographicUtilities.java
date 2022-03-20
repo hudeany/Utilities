@@ -1583,8 +1583,8 @@ public class CryptographicUtilities {
 			final ECPoint point = ecSpec.getCurve().decodePoint(publicDerBytes);
 			final ECPublicKeySpec pubSpec = new ECPublicKeySpec(point, ecSpec);
 			return keyFactory.generatePublic(pubSpec);
-		} else if (privateKey instanceof java.security.interfaces.ECPrivateKey) {
-			final java.security.interfaces.ECPrivateKey ecPrivateKey = (java.security.interfaces.ECPrivateKey) privateKey;
+		} else if (privateKey instanceof ECPrivateKey) {
+			final ECPrivateKey ecPrivateKey = (ECPrivateKey) privateKey;
 			final String name = getEllipticCurveName(ecPrivateKey);
 			final KeyFactory keyFactory = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
 			final ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(name);
@@ -1598,45 +1598,6 @@ public class CryptographicUtilities {
 		} else {
 			throw new Exception("Cannot extract PublicKey from " + privateKey.getClass().getSimpleName());
 		}
-	}
-
-	public static final String getEllipticCurveName(final PublicKey publicKey) throws Exception{
-		if (publicKey instanceof java.security.interfaces.ECPublicKey){
-			final java.security.interfaces.ECPublicKey pk = (java.security.interfaces.ECPublicKey) publicKey;
-			final java.security.spec.ECParameterSpec params = pk.getParams();
-			return getEllipticCurveName(EC5Util.convertSpec(params));
-		} else if(publicKey instanceof org.bouncycastle.jce.interfaces.ECPublicKey){
-			final org.bouncycastle.jce.interfaces.ECPublicKey pk = (org.bouncycastle.jce.interfaces.ECPublicKey) publicKey;
-			return getEllipticCurveName(pk.getParameters());
-		} else {
-			throw new IllegalArgumentException("This public key is no elliptic curve public key");
-		}
-	}
-
-	public static final String getEllipticCurveName(final PrivateKey privateKey) throws Exception{
-		if (privateKey instanceof java.security.interfaces.ECPrivateKey){
-			final java.security.interfaces.ECPrivateKey pk = (java.security.interfaces.ECPrivateKey) privateKey;
-			final java.security.spec.ECParameterSpec params = pk.getParams();
-			return getEllipticCurveName(EC5Util.convertSpec(params));
-		} else if(privateKey instanceof org.bouncycastle.jce.interfaces.ECPrivateKey){
-			final org.bouncycastle.jce.interfaces.ECPrivateKey pk = (org.bouncycastle.jce.interfaces.ECPrivateKey) privateKey;
-			return getEllipticCurveName(pk.getParameters());
-		} else {
-			throw new IllegalArgumentException("This private key is no elliptic curve private key");
-		}
-	}
-
-	public static final String getEllipticCurveName(final ECParameterSpec ecParameterSpec) throws Exception{
-		for (final String name : Collections.list((Enumeration<String>) org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames())){
-			final X9ECParameters params = org.bouncycastle.asn1.x9.ECNamedCurveTable.getByName(name);
-			if (params.getN().equals(ecParameterSpec.getN())
-					&& params.getH().equals(ecParameterSpec.getH())
-					&& params.getCurve().equals(ecParameterSpec.getCurve())
-					&& params.getG().equals(ecParameterSpec.getG())){
-				return name;
-			}
-		}
-		throw new Exception("Could not find elliptic curve name");
 	}
 
 	public static List<String> getKeyAliasesFromJavaKeyStore(final KeyStore keyStore) throws KeyStoreException {
@@ -1675,7 +1636,7 @@ public class CryptographicUtilities {
 		return certificates;
 	}
 
-	public static String getEcCurveNameFromECPublicKey(final ECPublicKey publicKeyEC) throws Exception {
+	public static String getEcDsaEllipticCurveName(final ECPublicKey publicKeyEC) throws Exception {
 		final DerTag enclosingDerTag = Asn1Codec.readDerTag(publicKeyEC.getEncoded());
 		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
 			throw new Exception("Invalid key data found");
@@ -1702,7 +1663,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static String getEcCurveNameFromECPrivateKey(final ECPrivateKey ecPrivateKey) throws Exception {
+	public static String getEcDsaEllipticCurveName(final ECPrivateKey ecPrivateKey) throws Exception {
 		final DerTag enclosingDerTag = Asn1Codec.readDerTag(ecPrivateKey.getEncoded());
 		if (Asn1Codec.DER_TAG_SEQUENCE != enclosingDerTag.getTagId()) {
 			throw new Exception("Invalid key data found");
@@ -1734,5 +1695,43 @@ public class CryptographicUtilities {
 			throw new Exception("Unknown SSH EcDSA public key OID: " + ecDsaPublicKeyOid.getStringEncoding());
 		}
 	}
-}
 
+	public static final String getEllipticCurveName(final PublicKey publicKey) throws Exception{
+		if (publicKey instanceof ECPublicKey){
+			final ECPublicKey pk = (ECPublicKey) publicKey;
+			final java.security.spec.ECParameterSpec params = pk.getParams();
+			return getEllipticCurveName(EC5Util.convertSpec(params));
+		} else if(publicKey instanceof org.bouncycastle.jce.interfaces.ECPublicKey){
+			final org.bouncycastle.jce.interfaces.ECPublicKey pk = (org.bouncycastle.jce.interfaces.ECPublicKey) publicKey;
+			return getEllipticCurveName(pk.getParameters());
+		} else {
+			throw new IllegalArgumentException("This public key is no elliptic curve public key");
+		}
+	}
+
+	public static final String getEllipticCurveName(final PrivateKey privateKey) throws Exception{
+		if (privateKey instanceof ECPrivateKey){
+			final ECPrivateKey pk = (ECPrivateKey) privateKey;
+			final java.security.spec.ECParameterSpec params = pk.getParams();
+			return getEllipticCurveName(EC5Util.convertSpec(params));
+		} else if(privateKey instanceof org.bouncycastle.jce.interfaces.ECPrivateKey){
+			final org.bouncycastle.jce.interfaces.ECPrivateKey pk = (org.bouncycastle.jce.interfaces.ECPrivateKey) privateKey;
+			return getEllipticCurveName(pk.getParameters());
+		} else {
+			throw new IllegalArgumentException("This private key is no elliptic curve private key");
+		}
+	}
+
+	public static final String getEllipticCurveName(final ECParameterSpec ecParameterSpec) throws Exception{
+		for (final String name : Collections.list((Enumeration<String>) org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames())){
+			final X9ECParameters params = org.bouncycastle.asn1.x9.ECNamedCurveTable.getByName(name);
+			if (params.getN().equals(ecParameterSpec.getN())
+					&& params.getH().equals(ecParameterSpec.getH())
+					&& params.getCurve().equals(ecParameterSpec.getCurve())
+					&& params.getG().equals(ecParameterSpec.getG())){
+				return name;
+			}
+		}
+		throw new Exception("Could not find elliptic curve name");
+	}
+}

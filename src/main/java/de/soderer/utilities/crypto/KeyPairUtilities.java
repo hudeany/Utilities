@@ -137,7 +137,7 @@ public class KeyPairUtilities {
 		} else if ("DSA".equals(publicKey.getAlgorithm())) {
 			return "ssh-dss";
 		} else if ("EC".equals(publicKey.getAlgorithm()) || "ECDSA".equals(publicKey.getAlgorithm())) {
-			return "ecdsa-sha2-" + CryptographicUtilities.getEcCurveNameFromECPublicKey((ECPublicKey) publicKey);
+			return "ecdsa-sha2-" + CryptographicUtilities.getEcDsaEllipticCurveName((ECPublicKey) publicKey);
 		} else if ("EdDSA".equals(publicKey.getAlgorithm())) {
 			final EdECPublicKey publicEdDsaKey = (EdECPublicKey) publicKey;
 			if ("Ed25519".equals(publicEdDsaKey.getParams().getName())) {
@@ -166,7 +166,7 @@ public class KeyPairUtilities {
 		} else if (privateKey instanceof DSAPrivateKey) {
 			return "ssh-dss";
 		} else if (privateKey instanceof ECPrivateKey) {
-			return "ecdsa-sha2-" + CryptographicUtilities.getEcCurveNameFromECPrivateKey((ECPrivateKey) privateKey);
+			return "ecdsa-sha2-" + CryptographicUtilities.getEcDsaEllipticCurveName((ECPrivateKey) privateKey);
 		} else if (privateKey instanceof EdECPrivateKey) {
 			final EdECPrivateKey privateKeyEdEC = (EdECPrivateKey) privateKey;
 			if ("Ed25519".equalsIgnoreCase(privateKeyEdEC.getParams().getName())) {
@@ -231,7 +231,7 @@ public class KeyPairUtilities {
 				publicKeyWriter.writeBigInt(publicKeyDSA.getY());
 			} else if (publicKey instanceof ECPublicKey) {
 				final ECPublicKey publicKeyEC = (ECPublicKey) publicKey;
-				final String ecCurveName = CryptographicUtilities.getEcCurveNameFromECPublicKey(publicKeyEC);
+				final String ecCurveName = CryptographicUtilities.getEcDsaEllipticCurveName(publicKeyEC);
 				publicKeyWriter.writeString(algorithmName);
 				publicKeyWriter.writeString(ecCurveName);
 

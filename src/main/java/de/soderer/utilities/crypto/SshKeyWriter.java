@@ -162,7 +162,7 @@ public class SshKeyWriter {
 			} else if (sshKey.getKeyPair().getPrivate() instanceof ECPrivateKey) {
 				final ECPrivateKey privateKeyEC = (ECPrivateKey) sshKey.getKeyPair().getPrivate();
 				final ECPublicKey publicKeyEC = (ECPublicKey) sshKey.getKeyPair().getPublic();
-				final String ecCurveName = CryptographicUtilities.getEcCurveNameFromECPublicKey(publicKeyEC);
+				final String ecCurveName = CryptographicUtilities.getEcDsaEllipticCurveName(publicKeyEC);
 				privateKeyWriter.writeData(("ecdsa-sha2-" + ecCurveName).getBytes(StandardCharsets.UTF_8));
 				privateKeyWriter.writeData((ecCurveName).getBytes(StandardCharsets.UTF_8));
 				final org.bouncycastle.jce.spec.ECNamedCurveParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ecCurveName.replace("nist", "sec") + "r1");
