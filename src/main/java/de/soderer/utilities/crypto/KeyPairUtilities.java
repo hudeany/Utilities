@@ -303,7 +303,7 @@ public class KeyPairUtilities {
 			try {
 				final MessageDigest md = MessageDigest.getInstance("MD5");
 				md.update(getPublicKeyBytes(publicKey));
-				return BitUtilities.toHexString(md.digest(), ":");
+				return BitUtilities.toHexString(md.digest(), ":").toUpperCase();
 			} catch (final Exception e) {
 				throw new Exception("Cannot create MD5 fingerprint", e);
 			}

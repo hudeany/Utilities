@@ -158,10 +158,29 @@ public class SshKeyReader {
 								if (skipPrivateKey) {
 									return null;
 								} else {
+									SshKeyFormat keyFormat = SshKeyFormat.PKCS1;
 									if ("4,ENCRYPTED".equals(keyProperties.get("Proc-Type")) && !skipPrivateKey) {
 										keyData = decryptOpenSslKeyData(keyData, keyProperties.get("DEK-Info"), password, passwordCharset);
+										keyFormat = SshKeyFormat.OpenSSL;
 									}
-									return new SshKey(SshKeyFormat.OpenSSHv1, null, new KeyPair(null, parseDerEncodedPrivateKey(keyData)));
+									final PrivateKey privateKey = parseDerEncodedPrivateKey(keyData);
+
+									// Skip empty lines and comment lines (#), especially for public key files
+									while ((nextLine = dataReader.readLine()) != null) {
+										if (Utilities.isNotBlank(nextLine) && !nextLine.startsWith("#")) {
+											break;
+										}
+									}
+
+									PublicKey publicKey = null;
+									if (nextLine != null && "---- BEGIN SSH2 PUBLIC KEY ----".equals(nextLine)) {
+										// "---- BEGIN SSH2 PUBLIC KEY ----"
+										final Map<String, String> publicKeyProperties = readUpToLine(dataReader, nextLine.replace("BEGIN ", "END "));
+										final byte[] publicKeyData = Base64.getDecoder().decode(publicKeyProperties.get(null));
+										publicKey = parsePublicKeyBytes(publicKeyData);
+									}
+
+									return new SshKey(keyFormat, null, new KeyPair(publicKey, privateKey));
 								}
 							}
 						} else if (currentKeyName.toLowerCase().contains("public")) {
