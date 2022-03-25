@@ -125,7 +125,7 @@ public class SecureDataStoreTest {
 			} catch (final WrongPasswordException e) {
 				Assert.assertNull(e.getMessage());
 			} catch (final Exception e) {
-				Assert.fail("Other than expected exception");
+				Assert.fail("Other than expected exception: " + e.getClass() + ": " + e.getMessage());
 			}
 		} finally {
 			if (testStoreFile.exists()) {

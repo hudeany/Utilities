@@ -73,6 +73,9 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
  * - EdDSA (Ed25519, Ed448)<br />
  * <br />
  */
+/*
+ * TODO: Clean up sensitive data
+ */
 public class SshKeyReader {
 	/**
 	 * Read public key data only and ignore the private key parts.<br />
@@ -111,7 +114,7 @@ public class SshKeyReader {
 	}
 
 	private static SshKey readKey(final BufferedReader dataReader, final char[] passwordChars, final boolean skipPrivateKey) throws Exception {
-		try (final Password password = passwordChars == null ? null : new Password(passwordChars.clone())) {
+		try (final Password password = new Password(passwordChars == null ? null : passwordChars.clone())) {
 			// Read the stream internally with ISO-8859-1 charset, because PuTTY keys use it and their comments are part of the MAC checksum, which would be wrong otherwise.
 			// OpenSSH keys and OpenSSL keys are more robust in that matters and their comments encoding will be fixed if needed
 			String nextLine;
@@ -200,7 +203,7 @@ public class SshKeyReader {
 					} catch (final Exception e) {
 						// Putty uses "ISO-8859-1" for password encoding, even for those keys stored in OpenSSHv1 and OpenSSL format
 						// "ssh-keygen" on Linux uses UTF-8 for password encoding
-						if (password != null && StandardCharsets.UTF_8.equals(passwordCharset)) {
+						if (password.getPasswordChars() != null && StandardCharsets.UTF_8.equals(passwordCharset)) {
 							if (!Arrays.equals(password.getPasswordBytesIsoEncoded(), password.getPasswordBytesUtfEncoded())) {
 								passwordCharset = StandardCharsets.ISO_8859_1;
 							} else {
@@ -226,7 +229,7 @@ public class SshKeyReader {
 						} catch (final Exception e) {
 							// Putty uses "ISO-8859-1" for password encoding, even for those keys stored in OpenSSHv1 and OpenSSL format
 							// "ssh-keygen" on Linux uses UTF-8 for password encoding
-							if (password != null && StandardCharsets.UTF_8.equals(passwordCharset)) {
+							if (password.getPasswordChars() != null && StandardCharsets.UTF_8.equals(passwordCharset)) {
 								if (!Arrays.equals(password.getPasswordBytesIsoEncoded(), password.getPasswordBytesUtfEncoded())) {
 									passwordCharset = StandardCharsets.ISO_8859_1;
 								} else {
