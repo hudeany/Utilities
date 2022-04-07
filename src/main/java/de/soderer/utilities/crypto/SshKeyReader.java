@@ -387,7 +387,7 @@ public class SshKeyReader {
 	}
 
 	private static byte[] decryptOpenSslKeyData(byte[] keyData, final String dekInfo, final Password password, final Charset passwordCharset) throws Exception {
-		if (password == null) {
+		if (password == null || password.getPasswordChars() == null) {
 			throw new WrongPasswordException();
 		} else if (dekInfo == null) {
 			throw new Exception("Missing key encryption info (DEK-Info)");
@@ -787,7 +787,7 @@ public class SshKeyReader {
 				} else if (kdfRounds <= 0) {
 					throw new Exception("Invalid key derivation function info 'kdfRounds = " + kdfRounds + "' for key derivation function '" + kdfName + "'");
 				} else {
-					if (password == null) {
+					if (password == null || password.getPasswordChars() == null) {
 						throw new WrongPasswordException();
 					} else {
 						// Decrypt private key by bcrypt pbkdf
@@ -1171,7 +1171,7 @@ public class SshKeyReader {
 			if (encryptionMethod == null || "".equals(encryptionMethod) || "none".equalsIgnoreCase(encryptionMethod)) {
 				privateKeyData = base64Decoder.decode(keyProperties.get("Private-Lines"));
 			} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
-				if (password == null || password.getPasswordChars().length == 0) {
+				if (password == null || password.getPasswordChars() == null || password.getPasswordChars().length == 0) {
 					throw new WrongPasswordException();
 				} else {
 					passwordByteArray = password.getPasswordBytesIsoEncoded();
@@ -1291,7 +1291,7 @@ public class SshKeyReader {
 			if (encryptionMethod == null || "".equals(encryptionMethod) || "none".equalsIgnoreCase(encryptionMethod)) {
 				privateKeyData = base64Decoder.decode(keyProperties.get("Private-Lines"));
 			} else if ("aes256-cbc".equalsIgnoreCase(encryptionMethod)) {
-				if (password == null || password.getPasswordChars().length == 0) {
+				if (password == null || password.getPasswordChars() == null || password.getPasswordChars().length == 0) {
 					throw new WrongPasswordException();
 				} else {
 					passwordByteArray = password.getPasswordBytesIsoEncoded();
