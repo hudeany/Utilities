@@ -176,7 +176,7 @@ public class KeyPairUtilities {
 			} else {
 				throw new Exception("Unknown EdDSA type: " + privateKeyEdEC.getParams().getName());
 			}
-		} else{
+		} else {
 			throw new IllegalArgumentException("Unknown private key cipher");
 		}
 	}
