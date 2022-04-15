@@ -61,9 +61,6 @@ import de.soderer.utilities.crypto.Asn1Codec.DerTag;
  * - EdDSA (Ed25519, Ed448)<br />
  * <br />
  */
-/*
- * TODO: Clean up sensitive data
- */
 public class SshKeyWriter {
 	/**
 	 * Converts this keypair into protected OpenSSH format<br />
