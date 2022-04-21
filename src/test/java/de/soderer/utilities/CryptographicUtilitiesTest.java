@@ -6,8 +6,10 @@ import java.io.File;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
 import java.security.cert.CertPath;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -201,6 +203,22 @@ public class CryptographicUtilitiesTest {
 			}
 
 			Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(getEcKeyPair().getPrivate(), getEcKeyPair().getPublic()));
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testSignatureEC_invalidEmptySignatureBytes() {
+		try {
+			final KeyPair keys = KeyPairGenerator.getInstance("EC").generateKeyPair();
+			final byte[] blankSignature = new byte[64];
+			final Signature signature = Signature.getInstance("SHA256WithECDSAInP1363Format");
+			signature.initVerify(keys.getPublic());
+			signature.update("Hello, World".getBytes());
+			final boolean result = signature.verify(blankSignature);
+			Assert.assertFalse("Java JRE accepts invalid empty signature", result);
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
