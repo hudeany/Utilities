@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class PropertiesLanguageFileReader {
 			entries = new LinkedHashMap<>();
 		}
 
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 		String line = null;
 		int lineCount = 0;
 		while ((line = reader.readLine()) != null) {

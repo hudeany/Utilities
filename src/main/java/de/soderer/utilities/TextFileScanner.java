@@ -14,6 +14,7 @@ import java.nio.CharBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -275,7 +276,7 @@ public class TextFileScanner implements Iterator<String> {
 	 *            An input stream to be scanned
 	 */
 	public TextFileScanner(final InputStream source) {
-		this(new InputStreamReader(source), WHITESPACE_PATTERN);
+		this(new InputStreamReader(source, StandardCharsets.UTF_8), WHITESPACE_PATTERN);
 	}
 
 	/**
