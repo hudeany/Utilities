@@ -38,7 +38,11 @@ public class JsonReader extends BasicReader {
 	}
 
 	public JsonToken getCurrentToken() {
-		return openJsonItems.peek();
+		if (openJsonItems.empty()) {
+			return null;
+		} else {
+			return openJsonItems.peek();
+		}
 	}
 
 	public JsonToken readNextToken() throws Exception {
