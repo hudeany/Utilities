@@ -627,4 +627,14 @@ public class FileUtilities {
 
 		return Arrays.equals(hash1, hash2);
 	}
+
+	/**
+	 * Remove all lines which start with a "#" character
+	 *
+	 * @param readFileToString
+	 * @return
+	 */
+	public static String removePropertiesCommentLines(final String propertiesTextData) {
+		return propertiesTextData.replaceAll("(?m)^#.*", "");
+	}
 }

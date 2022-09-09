@@ -129,7 +129,20 @@ public class Mailer {
 		}
 
 		final Properties mailProps = new Properties();
-		mailProps.put("mail.smtp.from", email.getFromAddress().getAddress());
+
+		// Email header "Return-Path"
+		if (email.getBounceAddress() != null) {
+			final String bounceEmailString;
+			if (email.getBounceAddress().getPersonal() != null) {
+				bounceEmailString = email.getBounceAddress().getPersonal() + " <" + email.getBounceAddress().getAddress() + ">";
+			} else {
+				bounceEmailString = email.getBounceAddress().getAddress();
+			}
+			mailProps.put("mail.smtp.from", bounceEmailString);
+		} else {
+			mailProps.put("mail.smtp.from", email.getFromAddress().getAddress());
+		}
+
 		mailProps.put("mail.smtp.host", smtpMailRelayHostname);
 		mailProps.put("mail.smtp.port", smtpMailRelayPort);
 
@@ -191,6 +204,16 @@ public class Mailer {
 		// Set bcc-recipient email addresses
 		if (email.getBccAddressList().size() > 0) {
 			mimeMessage.setRecipients(Message.RecipientType.BCC, email.getBccAddressList().toArray(new InternetAddress[0]));
+		}
+
+		if (email.getNotificationAddress() != null) {
+			final String notificationEmailString;
+			if (email.getNotificationAddress().getPersonal() != null) {
+				notificationEmailString = email.getNotificationAddress().getPersonal() + " <" + email.getNotificationAddress().getAddress() + ">";
+			} else {
+				notificationEmailString = email.getNotificationAddress().getAddress();
+			}
+			mimeMessage.setHeader("Disposition-Notification-To", notificationEmailString);
 		}
 
 		Multipart rootMultipart = null;

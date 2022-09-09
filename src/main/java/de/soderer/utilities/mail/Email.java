@@ -18,15 +18,24 @@ import org.bouncycastle.openpgp.PGPSecretKey;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
-import de.soderer.utilities.mail.dkim.DomainKey;
 import de.soderer.utilities.mail.dkim.DkimUtilities;
+import de.soderer.utilities.mail.dkim.DomainKey;
 
 public class Email {
 	private final InternetAddress fromAddress;
 	private final String subject;
 	private final Charset charset;
 
+	/**
+	 * Added to email headers as "Return-Path"
+	 */
 	private InternetAddress bounceAddress = null;
+
+	/**
+	 * Added to email headers as "Disposition-Notification-To"
+	 * Needs a bounceAddress to be set, which is using the same domain
+	 */
+	private InternetAddress notificationAddress = null;
 
 	private final List<InternetAddress> replyToAddressList = new ArrayList<>();
 
@@ -88,22 +97,65 @@ public class Email {
 		}
 	}
 
+	/**
+	 * Added to email headers as "Return-Path"
+	 */
 	public InternetAddress getBounceAddress() {
 		return bounceAddress;
 	}
 
+	/**
+	 * Added to email headers as "Return-Path"
+	 */
 	public Email setBounceAddress(final InternetAddress bounceAddress) {
 		this.bounceAddress = bounceAddress;
 		return this;
 	}
 
+	/**
+	 * Added to email headers as "Return-Path"
+	 */
 	public Email setBounceAddress(final String bounceAddress) throws Exception {
 		this.bounceAddress = new InternetAddress(bounceAddress);
 		return this;
 	}
 
+	/**
+	 * Added to email headers as "Return-Path"
+	 */
 	public Email setBounceAddress(final String bounceAddress, final String bounceAddressName) throws Exception {
 		this.bounceAddress = new InternetAddress(bounceAddress, bounceAddressName);
+		return this;
+	}
+
+	/**
+	 * Added to email headers as "Disposition-Notification-To"
+	 */
+	public InternetAddress getNotificationAddress() {
+		return notificationAddress;
+	}
+
+	/**
+	 * Added to email headers as "Disposition-Notification-To"
+	 */
+	public Email setNotificationAddress(final InternetAddress notificationAddress) {
+		this.notificationAddress = notificationAddress;
+		return this;
+	}
+
+	/**
+	 * Added to email headers as "Disposition-Notification-To"
+	 */
+	public Email setNotificationAddress(final String notificationAddress) throws Exception {
+		this.notificationAddress = new InternetAddress(notificationAddress);
+		return this;
+	}
+
+	/**
+	 * Added to email headers as "Disposition-Notification-To"
+	 */
+	public Email setNotificationAddress(final String notificationAddress, final String notificationAddressName) throws Exception {
+		this.notificationAddress = new InternetAddress(notificationAddress, notificationAddressName);
 		return this;
 	}
 
