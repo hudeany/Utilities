@@ -4,10 +4,7 @@ import java.awt.Desktop;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -121,43 +118,64 @@ public class MailUtilities {
 		return email != null && isEmailValid(email) && email.equals(normalizeEmail(email));
 	}
 
-	public static InternetAddress[] getEmailAddressesFromList(final String listString) throws Exception {
-		final List<InternetAddress> emailAddresses = new ArrayList<>();
+	public static InternetAddress[] getEmailAddressesFromList(final String emailAddressesListString) throws Exception {
+		if (Utilities.isBlank(emailAddressesListString)) {
+			return new InternetAddress[0];
+		} else {
+			final List<InternetAddress> emailAddresses = new ArrayList<>();
 
-		if (Utilities.isNotBlank(listString)) {
-			for (String address : splitAndNormalizeEmails(listString)) {
-				address = address == null ? "" : Utilities.trim(address);
-				if (Utilities.isNotBlank(address) && MailUtilities.isEmailValid(address)) {
-					try {
-						final InternetAddress nextAddress = new InternetAddress(address.trim());
-						nextAddress.validate();
-						emailAddresses.add(nextAddress);
-					} catch (final AddressException e) {
-						throw new Exception("Invalid Emailaddress found: " + address, e);
+			if (!emailAddressesListString.contains(">")) {
+				for (final String emailAddressString : emailAddressesListString.split(";|,| ")) {
+					if (Utilities.isNotBlank(emailAddressString)) {
+						final String normalizedEmailAddressString = normalizeEmail(emailAddressString);
+						if (MailUtilities.isEmailValid(normalizedEmailAddressString)) {
+							try {
+								final InternetAddress nextAddress = new InternetAddress(normalizedEmailAddressString);
+								nextAddress.validate();
+								emailAddresses.add(nextAddress);
+							} catch (final AddressException e) {
+								throw new Exception("Invalid Emailaddress found: " + emailAddressString, e);
+							}
+						} else {
+							throw new Exception("Invalid Emailaddress found: " + emailAddressString);
+						}
+					}
+				}
+			} else {
+				for (final String nameWithEmailAddressString : emailAddressesListString.split(";|,|>")) {
+					if (Utilities.isNotBlank(nameWithEmailAddressString)) {
+						String name;
+						String normalizedEmailAddressString;
+						if (nameWithEmailAddressString.contains("<")) {
+							name = nameWithEmailAddressString.substring(0, nameWithEmailAddressString.indexOf("<")).trim();
+							normalizedEmailAddressString = normalizeEmail(nameWithEmailAddressString.substring(nameWithEmailAddressString.indexOf("<") + 1).trim());
+						} else {
+							name = null;
+							normalizedEmailAddressString = normalizeEmail(nameWithEmailAddressString);
+						}
+
+						if (MailUtilities.isEmailValid(normalizedEmailAddressString)) {
+							try {
+								final InternetAddress nextAddress;
+								if (Utilities.isBlank(name)) {
+									nextAddress = new InternetAddress(normalizedEmailAddressString);
+								} else {
+									nextAddress = new InternetAddress(normalizedEmailAddressString, name);
+								}
+								nextAddress.validate();
+								emailAddresses.add(nextAddress);
+							} catch (final AddressException e) {
+								throw new Exception("Invalid Emailaddress found: " + nameWithEmailAddressString, e);
+							}
+						} else {
+							throw new Exception("Invalid Emailaddress found: " + nameWithEmailAddressString);
+						}
 					}
 				}
 			}
+
+			return emailAddresses.toArray(new InternetAddress[0]);
 		}
-
-		return emailAddresses.toArray(new InternetAddress[0]);
-	}
-
-	public static Set<String> splitAndNormalizeEmails(final String emails) {
-		if (Utilities.isBlank(emails)) {
-			return Collections.emptySet();
-		}
-
-		final Set<String> addresses = new LinkedHashSet<>();
-
-		for (final String part : emails.split(";|,| ")) {
-			final String address = normalizeEmail(part);
-
-			if (Utilities.isNotEmpty(address)) {
-				addresses.add(address);
-			}
-		}
-
-		return addresses;
 	}
 
 	/**
