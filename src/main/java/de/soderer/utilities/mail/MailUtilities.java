@@ -134,10 +134,10 @@ public class MailUtilities {
 								nextAddress.validate();
 								emailAddresses.add(nextAddress);
 							} catch (final AddressException e) {
-								throw new Exception("Invalid Emailaddress found: " + emailAddressString, e);
+								throw new Exception("Invalid emailaddress found: " + emailAddressString, e);
 							}
 						} else {
-							throw new Exception("Invalid Emailaddress found: " + emailAddressString);
+							throw new Exception("Invalid emailaddress found: " + emailAddressString);
 						}
 					}
 				}
@@ -165,10 +165,10 @@ public class MailUtilities {
 								nextAddress.validate();
 								emailAddresses.add(nextAddress);
 							} catch (final AddressException e) {
-								throw new Exception("Invalid Emailaddress found: " + nameWithEmailAddressString, e);
+								throw new Exception("Invalid emailaddress found: " + nameWithEmailAddressString, e);
 							}
 						} else {
-							throw new Exception("Invalid Emailaddress found: " + nameWithEmailAddressString);
+							throw new Exception("Invalid emailaddress found: " + nameWithEmailAddressString);
 						}
 					}
 				}
