@@ -47,6 +47,7 @@ public class Email {
 	private String bodyHtml = null;
 
 	private List<MailAttachment> attachments = new ArrayList<>();
+	private List<String> eventInvitations = null;
 
 	private RSAPrivateKey dkimPrivateKey = null;
 	private String dkimDomain = null;
@@ -279,6 +280,25 @@ public class Email {
 
 	public Email addAttachment(final MailAttachment attachment) {
 		attachments.add(attachment);
+		return this;
+	}
+
+	/**
+	 * Event invitations in iCal format
+	 */
+	public List<String> getEventInvitations() {
+		return eventInvitations;
+	}
+
+	/**
+	 * Event invitations in iCal format
+	 */
+	public Email addEventInvitation(final String eventInvitation) {
+		if (eventInvitations == null) {
+			eventInvitations = new ArrayList<>();
+		}
+
+		eventInvitations.add(eventInvitation);
 		return this;
 	}
 

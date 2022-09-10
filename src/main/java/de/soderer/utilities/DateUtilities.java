@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,7 +17,10 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.regex.Pattern;
+
+import javax.mail.internet.InternetAddress;
 
 public class DateUtilities {
 	public static final String DD_MM_YYYY_HH_MM_SS = "dd.MM.yyyy HH:mm:ss";
@@ -1057,5 +1061,57 @@ public class DateUtilities {
 			default:
 				throw new Exception("Unknown three letter month: " + threeLetterMonth);
 		}
+	}
+
+	public static String createICalEventInvitation(final String shortname, final String description, final ZonedDateTime startDateTime, final ZonedDateTime endDateTime, final String location, final InternetAddress organizer, final List<InternetAddress> participants) {
+		String returnValue =
+				"BEGIN:VCALENDAR\n";
+		returnValue += "METHOD:REQUEST" + "\n";
+		returnValue += "VERSION:2.0" + "\n";
+
+		returnValue += "BEGIN:VEVENT" + "\n";
+
+		returnValue += "DTSTAMP;VALUE=DATE-TIME:" + DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").format(ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC)) + "\n";
+		returnValue += "UID:" + UUID.randomUUID().toString().toUpperCase() + "\n";
+
+		returnValue += "DTSTART;VALUE=DATE-TIME:" + DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").format(startDateTime.withZoneSameInstant(ZoneOffset.UTC)) + "\n";
+
+		if (endDateTime != null) {
+			returnValue += "DTEND;VALUE=DATE-TIME:" + DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").format(endDateTime.withZoneSameInstant(ZoneOffset.UTC)) + "\n";
+		}
+
+		if (location != null) {
+			returnValue += "LOCATION;VALUE=TEXT:" + location + "\n";
+		}
+
+		returnValue += "SUMMARY;VALUE=TEXT:" + shortname + "\n";
+
+		if (description != null) {
+			returnValue += "DESCRIPTION;VALUE=TEXT:" + description + "\n";
+		}
+
+		if (organizer != null) {
+			if (organizer.getPersonal() != null) {
+				returnValue += "ORGANIZER;CN=" + organizer.getPersonal() + ":MAILTO:" + organizer.getAddress() + "\n";
+			} else {
+				returnValue += "ORGANIZER:MAILTO:" + organizer.getAddress() + "\n";
+			}
+		}
+
+		if (participants != null) {
+			for (final InternetAddress participant : participants) {
+				if (participant.getPersonal() != null) {
+					returnValue += "ATTENDEE;ROLE=REQ-PARTICIPANT;CN=" + participant.getPersonal() + ":MAILTO:" + participant.getAddress() + "\n";
+				} else {
+					returnValue += "ATTENDEE;ROLE=REQ-PARTICIPANT:MAILTO:" + participant.getAddress() + "\n";
+				}
+			}
+		}
+
+		returnValue += "END:VEVENT" + "\n";
+
+		returnValue += "END:VCALENDAR\n";
+
+		return returnValue;
 	}
 }

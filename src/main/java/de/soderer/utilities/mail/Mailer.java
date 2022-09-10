@@ -218,7 +218,9 @@ public class Mailer {
 
 		Multipart rootMultipart = null;
 
-		if (email.getAttachments() == null || email.getAttachments().size() == 0 && email.getCryptoType() != CryptoType.PGP) {
+		if ((email.getAttachments() == null || email.getAttachments().size() == 0)
+				&& (email.getEventInvitations() == null || email.getEventInvitations().size() == 0)
+				&& email.getCryptoType() != CryptoType.PGP) {
 			if (Utilities.isBlank(email.getBodyText()) && Utilities.isBlank(email.getBodyHtml())) {
 				// Use a simple text email with only text content
 				mimeMessage.setText("", email.getCharset().name());
@@ -281,10 +283,26 @@ public class Mailer {
 				attachmentMimeBodyPart.setFileName(MimeUtility.encodeText(attachment.getName(), StandardCharsets.UTF_8.name(), null));
 				if (attachment.getData() == null) {
 					throw new Exception("Invalid empty mail attachment");
+				} else {
+					final ByteArrayDataSource bds = new ByteArrayDataSource(attachment.getData(), attachment.getMimeType());
+					attachmentMimeBodyPart.setDataHandler(new DataHandler(bds));
+					rootMultipart.addBodyPart(attachmentMimeBodyPart);
 				}
-				final ByteArrayDataSource bds = new ByteArrayDataSource(attachment.getData(), attachment.getMimeType());
-				attachmentMimeBodyPart.setDataHandler(new DataHandler(bds));
-				rootMultipart.addBodyPart(attachmentMimeBodyPart);
+			}
+
+			if (email.getEventInvitations() != null) {
+				int count = 0;
+				for (final String eventInvitation : email.getEventInvitations()) {
+					if (Utilities.isBlank(eventInvitation)) {
+						throw new Exception("Invalid empty event invitation");
+					} else {
+						final MimeBodyPart invitation = new MimeBodyPart();
+						invitation.setHeader("Content-ID", "calendar_message_" + (++count));
+						invitation.setHeader("Content-Disposition", "inline");
+						invitation.setContent(eventInvitation, "text/calendar; method=REQUEST");
+						rootMultipart.addBodyPart(invitation);
+					}
+				}
 			}
 		}
 
