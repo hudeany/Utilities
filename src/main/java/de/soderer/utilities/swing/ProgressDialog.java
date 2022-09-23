@@ -6,6 +6,7 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Date;
+import java.util.Locale;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -218,7 +219,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 		final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 		if (estimatedEnd != null) {
-			progressBar.setToolTipText(estimatedEnd.toString());
+			progressBar.setToolTipText("ETA: " + DateUtilities.getDateTimeFormatWithSeconds(Locale.getDefault()).format(estimatedEnd.toString()));
 		} else {
 			progressBar.setToolTipText(null);
 		}

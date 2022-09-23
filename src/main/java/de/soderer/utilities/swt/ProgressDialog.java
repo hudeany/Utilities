@@ -1,6 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.util.Date;
+import java.util.Locale;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -13,6 +14,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
 import de.soderer.utilities.Utilities;
@@ -101,6 +103,13 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 						if (itemsToDo > 0) {
 							if (progressBar != null) {
 								progressBar.setSelection((int) (itemsDone * 100 / itemsToDo));
+
+								final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
+								if (estimatedEnd != null) {
+									progressBar.setToolTipText("ETA: " + DateUtilities.getDateTimeFormatWithSeconds(Locale.getDefault()).format(estimatedEnd.toString()));
+								} else {
+									progressBar.setToolTipText(null);
+								}
 							}
 
 							if (commentLabel != null) {

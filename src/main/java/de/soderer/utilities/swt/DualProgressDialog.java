@@ -1,6 +1,7 @@
 package de.soderer.utilities.swt;
 
 import java.util.Date;
+import java.util.Locale;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -9,6 +10,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.worker.WorkerDual;
 import de.soderer.utilities.worker.WorkerParentDual;
 
@@ -42,10 +44,18 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 		subItemProgressBar.setSelection(0);
 	}
 
-	protected void setSubProgress(final long todo, final long done) {
+	protected void setSubProgress(final Date start, final long todo, final long done) {
 		if (!isDisposed()) {
 			stopUnlimitedProgress();
 			subItemProgressBar.setSelection((int) (done * 100 / todo));
+
+			final Date estimatedEnd = DateUtilities.calculateETA(start, todo, done);
+			if (estimatedEnd != null) {
+				subItemProgressBar.setToolTipText("ETA: " + DateUtilities.getDateTimeFormatWithSeconds(Locale.getDefault()).format(estimatedEnd.toString()));
+			} else {
+				subItemProgressBar.setToolTipText(null);
+			}
+
 			try {
 				final String labelText = subCommentStringFormat.replace("{0}", Long.toString(done)).replace("{1}", Long.toString(todo)).replace("{2}", Long.toString(done * 100 / todo));
 				subItemLabel.setText(labelText);
@@ -124,7 +134,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 				public void run() {
 					if (!isDisposed()) {
 						subCommentStringFormat = itemName;
-						setSubProgress(100, 0);
+						setSubProgress(new Date(), 100, 0);
 					}
 				}
 			});
@@ -138,7 +148,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 				@Override
 				public void run() {
 					if (!isDisposed()) {
-						setSubProgress(subItemsToDo, subItemsDone);
+						setSubProgress(itemStart, subItemsToDo, subItemsDone);
 					}
 				}
 			});
@@ -152,7 +162,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 				@Override
 				public void run() {
 					if (!isDisposed()) {
-						setSubProgress(subItemsDone, subItemsDone);
+						setSubProgress(itemStart, subItemsDone, subItemsDone);
 					}
 				}
 			});
