@@ -1603,7 +1603,7 @@ public class DbUtilities {
 					return tableNamesToExport;
 				}
 			} else if (DbVendor.MySQL == dbVendor) {
-				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema')";
+				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'mysql')";
 				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
 					if (Utilities.isNotBlank(tablePattern)) {
 						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
@@ -1624,7 +1624,7 @@ public class DbUtilities {
 					return tableNamesToExport;
 				}
 			} else if (DbVendor.MariaDB == dbVendor) {
-				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema')";
+				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'mysql')";
 				final List<String> positivePatterns = new ArrayList<>();
 				final List<String> negativePatterns = new ArrayList<>();
 				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
