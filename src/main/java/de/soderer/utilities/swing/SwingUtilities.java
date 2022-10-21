@@ -6,6 +6,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 
+import javax.swing.UIManager;
+
 import de.soderer.utilities.SystemUtilities;
 
 public class SwingUtilities {
@@ -64,6 +66,14 @@ public class SwingUtilities {
 			} catch (final Exception e) {
 				System.err.println("Cannot set AWT WM_CLASS: " + e.getMessage());
 			}
+		}
+	}
+
+	public static void setSystemLookAndFeel() {
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (final Exception e) {
+			e.printStackTrace();
 		}
 	}
 }
