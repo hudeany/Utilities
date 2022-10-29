@@ -56,6 +56,10 @@ public class SwingUtilities {
 		}
 	}
 
+	/**
+	 * Set WM_CLASS for Linux Gnome window manager to allow application to be pinned to Linux Gnome applications dock
+	 * Needs java runtime option "--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
+	 */
 	public static void setAwtWmClass(final String applicationName) {
 		if (SystemUtilities.isLinuxSystem()) {
 			try {
@@ -65,6 +69,21 @@ public class SwingUtilities {
 				awtAppClassNameField.set(toolkit, applicationName);
 			} catch (final Exception e) {
 				System.err.println("Cannot set AWT WM_CLASS: " + e.getMessage());
+
+				System.err.println("Adding open directive");
+				final Module mod = SwingUtilities.class.getClassLoader().getUnnamedModule();
+				if (mod == Toolkit.class.getModule()) {
+					Toolkit.getDefaultToolkit().getClass().getModule().addOpens("sun.awt.X11", mod);
+				}
+
+				try {
+					final Toolkit toolkit = Toolkit.getDefaultToolkit();
+					final Field awtAppClassNameField = toolkit.getClass().getDeclaredField("awtAppClassName");
+					awtAppClassNameField.setAccessible(true);
+					awtAppClassNameField.set(toolkit, applicationName);
+				} catch (final Exception e2) {
+					System.err.println("Cannot set AWT WM_CLASS: " + e2.getMessage());
+				}
 			}
 		}
 	}

@@ -280,8 +280,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 						}
 
 						// %U-parameter allows drag and drop of files on starter bar in unity
-						// Set environment parameter UBUNTU_MENUPROXY to keep menubar docked to application window in unity
-						data.append("Exec=java -jar " + applicationJarFileName + " %U\n");
+						// Set environment parameter --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED to allow application to be pinned in linux gnome applications dock
+						data.append("Exec=java -jar --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED " + applicationJarFileName + " %U\n");
 						data.append("Terminal=false\n");
 						data.append("Type=Application\n");
 
