@@ -51,7 +51,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 
 			final Date estimatedEnd = DateUtilities.calculateETA(start, todo, done);
 			if (estimatedEnd != null) {
-				subItemProgressBar.setToolTipText("ETA: " + DateUtilities.getDateTimeFormatWithSeconds(Locale.getDefault()).format(estimatedEnd.toString()));
+				subItemProgressBar.setToolTipText("ETA: " + DateUtilities.getDateTimeFormatWithSeconds(Locale.getDefault()).format(estimatedEnd));
 			} else {
 				subItemProgressBar.setToolTipText(null);
 			}

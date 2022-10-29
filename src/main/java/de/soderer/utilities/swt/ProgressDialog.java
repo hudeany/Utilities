@@ -106,7 +106,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 								final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 								if (estimatedEnd != null) {
-									progressBar.setToolTipText("ETA: " + DateUtilities.getDateTimeFormatWithSeconds(Locale.getDefault()).format(estimatedEnd.toString()));
+									progressBar.setToolTipText("ETA: " + DateUtilities.getDateTimeFormatWithSeconds(Locale.getDefault()).format(estimatedEnd));
 								} else {
 									progressBar.setToolTipText(null);
 								}
