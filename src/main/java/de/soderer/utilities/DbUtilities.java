@@ -227,7 +227,7 @@ public class DbUtilities {
 
 	public enum DbVendor {
 		Oracle("oracle.jdbc.OracleDriver", 1521, "SELECT 1 FROM DUAL"),
-		MySQL("com.mysql.jdbc.Driver", 3306, "SELECT 1"),
+		MySQL("com.mysql.cj.jdbc.Driver", 3306, "SELECT 1"),
 		MariaDB("org.mariadb.jdbc.Driver", 3306, "SELECT 1"),
 		PostgreSQL("org.postgresql.Driver", 5432, "SELECT 1"),
 		Firebird("org.firebirdsql.jdbc.FBDriver", 3050, "SELECT 1 FROM RDB$RELATION_FIELDS ROWS 1"),
