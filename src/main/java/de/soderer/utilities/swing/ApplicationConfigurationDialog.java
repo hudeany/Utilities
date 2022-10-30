@@ -44,6 +44,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 	private final UpdateableGuiApplication updateParent;
 	private final String applicationName;
+	private final String applicationClassName;
 	private final Version applicationVersion;
 	private final Date applicationBuildTime;
 	private final ConfigurationProperties applicationConfiguration;
@@ -87,11 +88,12 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		return this;
 	}
 
-	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final Version applicationVersion, final Date applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
+	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final Date applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
 		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")");
 
 		this.updateParent = updateParent;
 		this.applicationName = applicationName;
+		this.applicationClassName = applicationClassName;
 		this.applicationVersion = applicationVersion;
 		this.applicationBuildTime = applicationBuildTime;
 		this.applicationConfiguration = applicationConfiguration;
@@ -286,7 +288,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 						data.append("Type=Application\n");
 
 						// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
-						data.append("StartupWMClass=" + applicationName + "\n");
+						data.append("StartupWMClass=" + applicationClassName + "\n");
 
 						try {
 							FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), StandardCharsets.UTF_8);

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -26,6 +27,11 @@ public class JarInJarLoader {
 	}
 
 	public static void main(final String[] args) throws Exception {
+		jarInJarLoaderStart(args);
+	}
+
+	protected static void jarInJarLoaderStart(final String[] args) throws IOException, MalformedURLException,
+	InvocationTargetException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException {
 		// Fill an environment variable with the path of the executed jar file
 		try {
 			final String currentJarUrlPath = JarInJarLoader.class.getResource(JarInJarLoader.class.getSimpleName() + ".class").toString();
