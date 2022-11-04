@@ -254,45 +254,40 @@ public class FileUtilities {
 	 * @return
 	 */
 	public static ArrayList<File> getArrayOfFilesByStammname(final String basenameList) {
-		return getArrayOfFilesByStammname(Arrays.asList(basenameList.split(";")));
+		return getArrayOfFilesByBasename(Arrays.asList(basenameList.split(";")));
 	}
 
 	/**
 	 * Read a directory and return all files starting with a basename form a list of basenames
 	 *
-	 * @param stammNamenListe
+	 * @param basenameList
 	 * @return
 	 */
-	public static ArrayList<File> getArrayOfFilesByStammname(final List<String> stammNamenListe) {
-		final ArrayList<File> ergebnisListe = new ArrayList<>();
+	public static ArrayList<File> getArrayOfFilesByBasename(final List<String> basenameList) {
+		final ArrayList<File> resultList = new ArrayList<>();
 
-		for (final String stammName : stammNamenListe) {
-			// Suchverzeichnis und Dateistammname ermitteln
-			// Achtung: stammName kann auch wildcards wie '*' enthalten daher
-			// NICHT mit File-Class arbeiten
-			final int unixLastIndexOfSeparator = stammName.lastIndexOf("/");
-			final int dosLastIndexOfSeparator = stammName.lastIndexOf("\\");
+		for (final String basename : basenameList) {
+			final int unixLastIndexOfSeparator = basename.lastIndexOf("/");
+			final int dosLastIndexOfSeparator = basename.lastIndexOf("\\");
 			final int lastIndexOfSeparator = Math.max(unixLastIndexOfSeparator, dosLastIndexOfSeparator);
-			final String suchVerzeichnis = stammName.substring(0, lastIndexOfSeparator + 1);
-			final String stammFileName = stammName.substring(lastIndexOfSeparator + 1);
+			final String suchVerzeichnis = basename.substring(0, lastIndexOfSeparator + 1);
+			final String stammFileName = basename.substring(lastIndexOfSeparator + 1);
 
-			// Dateiliste erstellen
 			final File searchPath = new File(suchVerzeichnis);
 			if (searchPath.isDirectory()) {
 				final File[] partList = searchPath.listFiles();
 				for (int i = 0; i < partList.length; i++) {
 					if (partList[i].isFile() && (stammFileName.endsWith("*") && partList[i].getName().startsWith(stammFileName.substring(0, stammFileName.length() - 1))
 							|| !stammFileName.endsWith("*") && partList[i].getName().equals(stammFileName))) {
-						// Datei gefunden: partList[i].getName());
-						if (!ergebnisListe.contains(partList[i])) {
-							ergebnisListe.add(partList[i]);
+						if (!resultList.contains(partList[i])) {
+							resultList.add(partList[i]);
 						}
 					}
 				}
 			}
 		}
 
-		return ergebnisListe;
+		return resultList;
 	}
 
 	/**

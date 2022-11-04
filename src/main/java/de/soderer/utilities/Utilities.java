@@ -701,6 +701,27 @@ public class Utilities {
 	}
 
 	/**
+	 * Make an integer with unitsign human readable and keep all digits
+	 *
+	 * @param value
+	 * @param unitTypeSign
+	 * @param locale
+	 * @return
+	 */
+	public static String getHumanReadableInteger(final Long value, final String unitTypeSign, final Locale locale) {
+		final double interimValue = value.doubleValue();
+		String unitExtension = "";
+		if (isNotBlank(unitTypeSign)) {
+			unitExtension = " " + unitTypeSign;
+		}
+
+		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
+		final DecimalFormat numberFormat = new DecimalFormat("###,##0", decimalFormatSymbols);
+
+		return numberFormat.format(interimValue) + unitExtension;
+	}
+
+	/**
 	 * Generate MD5 from string data
 	 *
 	 * @param data
