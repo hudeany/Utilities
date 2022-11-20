@@ -56,7 +56,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		final JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 
-		if (Utilities.isNotBlank(commentStringFormat)) {
+		if (Utilities.isNotBlank(commentStringFormat) && commentLabel != null) {
 			final JPanel commentLabelPanel = new JPanel();
 			commentLabelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 			final String labelText = commentStringFormat.replace("{0}", Long.toString(0)).replace("{1}", Long.toString(0)).replace("{2}", Long.toString(0));
