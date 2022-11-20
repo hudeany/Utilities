@@ -220,7 +220,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void cancel() {
+	public boolean cancel() {
 		if (!canceledByUser && !isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -237,6 +237,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 				}
 			});
 		}
+		return true;
 	}
 
 	public T getWorker() {

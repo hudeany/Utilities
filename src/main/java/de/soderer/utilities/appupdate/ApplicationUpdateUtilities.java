@@ -490,8 +490,9 @@ public class ApplicationUpdateUtilities {
 				}
 
 				@Override
-				public void cancel() {
+				public boolean cancel() {
 					// Do nothing
+					return true;
 				}
 
 				@Override

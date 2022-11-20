@@ -40,11 +40,11 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		showProgressAfterMilliseconds = value;
 	}
 
-	protected void showProgress() {
+	public void showProgress() {
 		showProgress(false);
 	}
 
-	protected void showProgress(final boolean overrideRefreshTime) {
+	public void showProgress(final boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
 			if (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds) {
 				// Normal progress update
@@ -58,7 +58,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		}
 	}
 
-	protected void showUnlimitedProgress() {
+	public void showUnlimitedProgress() {
 		if (parent != null) {
 			parent.showUnlimitedProgress();
 		}

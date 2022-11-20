@@ -11,5 +11,5 @@ public interface WorkerParentSimple {
 
 	void changeTitle(String text);
 
-	void cancel();
+	boolean cancel();
 }

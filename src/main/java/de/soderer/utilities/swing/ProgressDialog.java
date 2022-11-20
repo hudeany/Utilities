@@ -169,7 +169,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void cancel() {
+	public boolean cancel() {
 		if (SwingUtilities.isEventDispatchThread()) {
 			if (!canceledByUser) {
 				canceledByUser = true;
@@ -194,6 +194,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 				});
 			}
 		}
+		return true;
 	}
 
 	protected static void updateProgressBar(final JProgressBar progressBar, final Date start, final long itemsToDo, final long itemsDone) {
