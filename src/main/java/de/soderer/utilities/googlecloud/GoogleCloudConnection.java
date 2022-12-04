@@ -165,12 +165,12 @@ public class GoogleCloudConnection implements RemoteConnection {
 						if (relativeObjectPath.length() > 0) {
 							if (!relativeObjectPath.contains("/")) {
 								// file found
-								final Date modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
+								final Date modificationDate = DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated")));
 								final long size = Long.parseLong((String) ((JsonObject) itemObject).get("size"));
 								files.add(new FileInfo(relativeObjectPath, size, modificationDate));
 							} else if (relativeObjectPath.indexOf("/") == relativeObjectPath.lastIndexOf("/")) {
 								// real folder found
-								final Date modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
+								final Date modificationDate = DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated")));
 								final String folderName = relativeObjectPath.substring(0, relativeObjectPath.indexOf("/"));
 								interimFolders.put(folderName, new FolderInfo(folderName, modificationDate));
 							} else {
@@ -233,7 +233,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 						final String relativeObjectPath = name.substring(filePathToCheck.length());
 						if (relativeObjectPath.length() == 0) {
 							// real folder found
-							final Date modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
+							final Date modificationDate = DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated")));
 							final String folderName = pathForExecution.getSecond().substring(pathForExecution.getSecond().lastIndexOf("/") + 1);
 							return new FolderInfo(folderName, modificationDate);
 						} else if (relativeObjectPath.contains("/")) {
@@ -328,7 +328,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 				for (final Object itemObject : (JsonArray) itemsArrayObject) {
 					final String name = (String) ((JsonObject) itemObject).get("name");
 					if (name.equals(filePathToCheck)) {
-						final Date modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
+						final Date modificationDate = DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated")));
 						final long size = Long.parseLong((String) ((JsonObject) itemObject).get("size"));
 						return new FileInfo(name.substring(name.lastIndexOf("/") + 1), size, modificationDate);
 					}

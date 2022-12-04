@@ -30,4 +30,134 @@ public class DateUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 	}
+
+	@Test
+	public void testParseISO_DateWithTime_WithTimezoneChar() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10Z");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(22, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithTime_WithTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10+00:00");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(22, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithTime_WithShortTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10+00");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(22, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithTime_WithOutTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Europe/Berlin", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(22, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithoutTime_WithoutTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Europe/Berlin", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(0, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithoutTime_WithTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01+00:00");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(0, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithMillisTime_WithTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10.123+00:00");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(22, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithMillisTime_WithOutTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10.123");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Europe/Berlin", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(22, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithFractalTime_WithTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10.123456+00:00");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(22, resultZonedDateTime.getHour());
+	}
+
+	@Test
+	public void testParseISO_DateWithFractalTime_WithOutTimezone() {
+		ZonedDateTime resultZonedDateTime = null;
+		try {
+			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10.123456");
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+		Assert.assertNotNull(resultZonedDateTime);
+		Assert.assertEquals("Europe/Berlin", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(22, resultZonedDateTime.getHour());
+	}
 }

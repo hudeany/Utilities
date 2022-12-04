@@ -10,6 +10,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -797,14 +798,22 @@ public class DateUtilities {
 		}
 	}
 
+	public static Date getDateForLocalDateTime(final LocalDateTime dateTime) {
+		return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+	}
+
+	public static Date getDateForZonedDateTime(final ZonedDateTime dateTime) {
+		return Date.from(dateTime.withZoneSameInstant(ZoneId.systemDefault()).toInstant());
+	}
+
 	/**
-	 * Parse DateTime strings for SOAP Webservices (ISO 8601)
+	 * Parse DateTime strings for ISO 8601
 	 *
 	 * @param dateValue
 	 * @return
 	 * @throws Exception
 	 */
-	public static Date parseIso8601DateTimeString(String dateValue) throws Exception {
+	public static ZonedDateTime parseIso8601DateTimeString(String dateValue) throws Exception {
 		if (Utilities.isBlank(dateValue)) {
 			return null;
 		}
@@ -819,6 +828,8 @@ public class DateUtilities {
 		boolean hasTimezone = false;
 		if (dateValue.length() > 6 && dateValue.charAt(dateValue.length() - 3) == ':' && (dateValue.charAt(dateValue.length() - 6) == '+' || dateValue.charAt(dateValue.length() - 6) == '-')) {
 			hasTimezone = true;
+		} else if (dateValue.length() > 6 && (dateValue.charAt(dateValue.length() - 3) == '+')) {
+			hasTimezone = true;
 		}
 
 		if (dateValue.contains("T")) {
@@ -826,50 +837,51 @@ public class DateUtilities {
 				if (hasTimezone) {
 					if (dateValue.substring(dateValue.indexOf(".")).length() > 10 ) {
 						// Date with time and fractals
-						final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSSXXXXX");
-						final LocalDateTime dateTime = LocalDateTime.parse(dateValue, formatter);
-						return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+						final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSSXXXXX");
+						dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
+						return ZonedDateTime.parse(dateValue, dateTimeFormatter);
 					} else {
 						// Date with time and milliseconds
-						final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_WITH_MILLIS);
-						dateFormat.setLenient(false);
-						return dateFormat.parse(dateValue);
+						final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSXXXXX");
+						dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
+						return ZonedDateTime.parse(dateValue, dateTimeFormatter);
 					}
 				} else {
 					if (dateValue.substring(dateValue.indexOf(".")).length() > 4 ) {
 						// Date with time and fractals
-						final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSS");
-						final LocalDateTime dateTime = LocalDateTime.parse(dateValue, formatter);
-						return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+						final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSS");
+						return LocalDateTime.parse(dateValue, dateTimeFormatter).atZone(ZoneId.systemDefault());
 					} else {
 						// Date with time and milliseconds
-						final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_WITH_MILLIS_NO_TIMEZONE);
-						dateFormat.setLenient(false);
-						return dateFormat.parse(dateValue);
+						final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSS");
+						dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
+						return LocalDateTime.parse(dateValue, dateTimeFormatter).atZone(ZoneId.systemDefault());
 					}
 				}
 			} else {
 				// Date with time
 				if (hasTimezone) {
-					final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATETIME_FORMAT);
-					dateFormat.setLenient(false);
-					return dateFormat.parse(dateValue);
+					final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+					dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
+					return ZonedDateTime.parse(dateValue, dateTimeFormatter);
 				} else {
-					final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATETIME_FORMAT_NO_TIMEZONE);
-					dateFormat.setLenient(false);
-					return dateFormat.parse(dateValue);
+					final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+					dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
+					return LocalDateTime.parse(dateValue, dateTimeFormatter).atZone(ZoneId.systemDefault());
 				}
 			}
 		} else {
 			// Date only
 			if (hasTimezone) {
-				final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATE_FORMAT);
-				dateFormat.setLenient(false);
-				return dateFormat.parse(dateValue);
+				dateValue = dateValue.replace("+", "T00:00:00+");
+				final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+				dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
+				return ZonedDateTime.parse(dateValue, dateTimeFormatter);
 			} else {
-				final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_8601_DATE_FORMAT_NO_TIMEZONE);
-				dateFormat.setLenient(false);
-				return dateFormat.parse(dateValue);
+				dateValue = dateValue + "T00:00:00";
+				final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+				dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
+				return LocalDateTime.parse(dateValue, dateTimeFormatter).atZone(ZoneId.systemDefault());
 			}
 		}
 	}
@@ -960,6 +972,19 @@ public class DateUtilities {
 		dateFormat.setTimeZone(TimeZone.getTimeZone(zoneId));
 		dateFormat.setLenient(false);
 		return dateFormat;
+	}
+
+	public static String getDateFormatPattern(final Locale locale) {
+		final SimpleDateFormat dateTimeFormat = (SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale);
+		return dateTimeFormat.toPattern().replaceFirst("y+", "yyyy");
+	}
+
+	public static String getDateTimeFormatPattern(final Locale locale) {
+		return getDateFormatPattern(locale) + " HH:mm";
+	}
+
+	public static String getDateTimeFormatWithSecondsPattern(final Locale locale) {
+		return getDateFormatPattern(locale) + " HH:mm:ss";
 	}
 
 	public static SimpleDateFormat getDateTimeFormat(final Locale locale) {

@@ -314,7 +314,7 @@ public class JsonSerializer {
 					}
 					throw new Exception("Invalid enum name '" + enumName + "' for type '" + clazz.getName() + "'");
 				} else if (Date.class.isAssignableFrom(clazz)) {
-					return DateUtilities.parseIso8601DateTimeString((String) value);
+					return DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) value));
 				} else if (value instanceof JsonObject) {
 					Object object;
 					final Constructor<?> constructor = ClassUtilities.getConstructor(clazz);
@@ -544,7 +544,7 @@ public class JsonSerializer {
 						} else if (clazz == Charset.class) {
 							field.set(object, Charset.forName((String) value));
 						} else if (Date.class.isAssignableFrom(clazz)) {
-							field.set(object, DateUtilities.parseIso8601DateTimeString((String) value));
+							field.set(object, DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) value)));
 						} else if (clazz.isEnum()) {
 							final String enumName = (String) value;
 							for (final Object enumConstant : clazz.getEnumConstants()) {

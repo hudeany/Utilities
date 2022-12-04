@@ -225,7 +225,7 @@ public class VcfReader implements AutoCloseable {
 					throw new Exception("Invalid title (" + VcfConstants.REVISION_PROPERTY + ") data (must have 1 part, has " + decodedValues.size() + ") in line " + currentLineNumber);
 				}
 				if (decodedValues.get(0).contains("-")) {
-					card.setLatestUpdate(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0)));
+					card.setLatestUpdate(DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0))));
 				} else {
 					final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmssX");
 					dateFormat.setLenient(false);
@@ -250,9 +250,9 @@ public class VcfReader implements AutoCloseable {
 				}
 				if (decodedValues.get(0).startsWith("--")) {
 					// Date without year
-					card.setBirthday(DateUtilities.parseIso8601DateTimeString("0001" + decodedValues.get(0).substring(1)), true);
+					card.setBirthday(DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString("0001" + decodedValues.get(0).substring(1))), true);
 				} else if (decodedValues.get(0).contains("-")) {
-					card.setBirthday(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0)));
+					card.setBirthday(DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0))));
 				} else {
 					final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 					dateFormat.setLenient(false);
