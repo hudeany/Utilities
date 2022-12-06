@@ -1,8 +1,11 @@
 package de.soderer.utilities;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.mail.internet.InternetAddress;
 
@@ -26,6 +29,54 @@ public class DateUtilitiesTest {
 					"here",
 					new InternetAddress("test@example.com"),
 					participants);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void rezoneDateTest() {
+		try {
+			final Date originalDate = DateUtilities.parseDate("dd.MM.yyyy HH:mm:ss", "01.03.2014 22:11:10");
+			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, ZoneId.of("Europe/Berlin"), ZoneId.of("Z"));
+			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
+			Assert.assertEquals("01.03.2014 21:11:10", resultString);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+
+		try {
+			final Date originalDate = DateUtilities.parseDate("dd.MM.yyyy HH:mm:ss", "04.12.2022 21:11:10");
+			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, ZoneId.of("Europe/Berlin"), ZoneId.of("Europe/Sofia"));
+			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
+			Assert.assertEquals("04.12.2022 22:11:10", resultString);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+
+		try {
+			final Date originalDate = DateUtilities.parseDate("dd.MM.yyyy HH:mm:ss", "04.12.2022 21:11:10");
+			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, ZoneId.of("Europe/Berlin"), ZoneId.of("Europe/Dublin"));
+			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
+			Assert.assertEquals("04.12.2022 20:11:10", resultString);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+
+		try {
+			final Date originalDate = DateUtilities.parseDate("dd.MM.yyyy HH:mm:ss", "04.12.2022 22:11:10");
+			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, TimeZone.getTimeZone("Europe/Sofia"), TimeZone.getTimeZone("Europe/Dublin"));
+			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
+			Assert.assertEquals("04.12.2022 20:11:10", resultString);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+
+		try {
+			final Date originalDate = DateUtilities.parseDate("dd.MM.yyyy HH:mm:ss", "04.12.2022 22:11:10");
+			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, ZoneId.of("Europe/Sofia"), ZoneId.of("Europe/Dublin"));
+			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
+			Assert.assertEquals("04.12.2022 20:11:10", resultString);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}

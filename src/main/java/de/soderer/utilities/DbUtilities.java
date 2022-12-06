@@ -614,6 +614,18 @@ public class DbUtilities {
 								}
 							}
 						}
+					} else if (metaData.getColumnType(i) == Types.DATE) {
+						if (dbVendor == DbVendor.SQLite) {
+							values.add(DateUtilities.formatDate(DateUtilities.ISO_8601_DATETIME_FORMAT_NO_TIMEZONE, resultSet.getTimestamp(i)));
+						} else {
+							values.add(resultSet.getString(i));
+						}
+					} else if (metaData.getColumnType(i) == Types.TIMESTAMP) {
+						if (dbVendor == DbVendor.SQLite) {
+							values.add(DateUtilities.formatDate(DateUtilities.ISO_8601_DATETIME_FORMAT_NO_TIMEZONE, resultSet.getTimestamp(i)));
+						} else {
+							values.add(resultSet.getString(i));
+						}
 					} else {
 						values.add(resultSet.getString(i));
 					}
