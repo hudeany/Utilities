@@ -1,15 +1,14 @@
 package de.soderer.utilities.remote;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.ZonedDateTime;
 
 import de.soderer.utilities.DateUtilities;
 
 public class FolderInfo {
 	private final String folderName;
-	private final Date modificationDate;
+	private final ZonedDateTime modificationDate;
 
-	public FolderInfo(final String folderName, final Date modificationDate) {
+	public FolderInfo(final String folderName, final ZonedDateTime modificationDate) {
 		this.folderName = folderName;
 		this.modificationDate = modificationDate;
 	}
@@ -18,12 +17,12 @@ public class FolderInfo {
 		return folderName;
 	}
 
-	public Date getModificationDate() {
+	public ZonedDateTime getModificationDate() {
 		return modificationDate;
 	}
 
 	@Override
 	public String toString() {
-		return folderName + " [" + (getModificationDate() != null ? new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(getModificationDate()) : "Unknown modification date")  + "]";
+		return folderName + " [" + (getModificationDate() != null ? DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, getModificationDate().toLocalDateTime()) : "Unknown modification date")  + "]";
 	}
 }

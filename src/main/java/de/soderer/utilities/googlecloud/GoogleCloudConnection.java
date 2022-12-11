@@ -9,8 +9,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.security.interfaces.RSAPrivateKey;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,8 +86,8 @@ public class GoogleCloudConnection implements RemoteConnection {
 				.withClaim("iss", clientEmail)
 				.withClaim("scope", "https://www.googleapis.com/auth/devstorage.full_control")
 				.withClaim("aud", "https://oauth2.googleapis.com/token")
-				.withExpiresAt(DateUtilities.addMinutesToDate(new Date(), 60)) // Maximum is "now + 1 hour"
-				.withIssuedAt(new Date())
+				.withExpiresAt(DateUtilities.getDateForLocalDateTime(LocalDateTime.now().plusHours(1))) // Maximum is "now + 1 hour"
+				.withIssuedAt(DateUtilities.getDateForLocalDateTime(LocalDateTime.now()))
 				.sign(algorithm);
 
 		final HttpRequest accessTokenRequest = new HttpRequest(HttpMethod.POST, "https://oauth2.googleapis.com/token");
@@ -165,12 +166,12 @@ public class GoogleCloudConnection implements RemoteConnection {
 						if (relativeObjectPath.length() > 0) {
 							if (!relativeObjectPath.contains("/")) {
 								// file found
-								final Date modificationDate = DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated")));
+								final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
 								final long size = Long.parseLong((String) ((JsonObject) itemObject).get("size"));
 								files.add(new FileInfo(relativeObjectPath, size, modificationDate));
 							} else if (relativeObjectPath.indexOf("/") == relativeObjectPath.lastIndexOf("/")) {
 								// real folder found
-								final Date modificationDate = DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated")));
+								final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
 								final String folderName = relativeObjectPath.substring(0, relativeObjectPath.indexOf("/"));
 								interimFolders.put(folderName, new FolderInfo(folderName, modificationDate));
 							} else {
@@ -233,7 +234,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 						final String relativeObjectPath = name.substring(filePathToCheck.length());
 						if (relativeObjectPath.length() == 0) {
 							// real folder found
-							final Date modificationDate = DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated")));
+							final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
 							final String folderName = pathForExecution.getSecond().substring(pathForExecution.getSecond().lastIndexOf("/") + 1);
 							return new FolderInfo(folderName, modificationDate);
 						} else if (relativeObjectPath.contains("/")) {
@@ -328,7 +329,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 				for (final Object itemObject : (JsonArray) itemsArrayObject) {
 					final String name = (String) ((JsonObject) itemObject).get("name");
 					if (name.equals(filePathToCheck)) {
-						final Date modificationDate = DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated")));
+						final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
 						final long size = Long.parseLong((String) ((JsonObject) itemObject).get("size"));
 						return new FileInfo(name.substring(name.lastIndexOf("/") + 1), size, modificationDate);
 					}

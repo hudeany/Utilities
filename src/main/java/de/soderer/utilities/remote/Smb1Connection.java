@@ -2,8 +2,10 @@ package de.soderer.utilities.remote;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import de.soderer.utilities.FileUtilities;
@@ -108,8 +110,8 @@ public class Smb1Connection implements RemoteConnection {
 		if (fileSize < 0) {
 			fileSize = smbFile.getContentLength();
 		}
-		final Date fileDate = new Date(smbFile.getDate());
-		return new FileInfo(fileName, fileSize, fileDate);
+		final ZonedDateTime changeDate = Instant.ofEpochMilli(smbFile.getDate()).atZone(ZoneId.systemDefault());
+		return new FileInfo(fileName, fileSize, changeDate);
 	}
 
 	@Override
@@ -166,7 +168,8 @@ public class Smb1Connection implements RemoteConnection {
 				folderName = "/";
 			}
 
-			return new FolderInfo(folderName, new Date(smbFile.getDate()));
+			final ZonedDateTime changeDate = Instant.ofEpochMilli(smbFile.getDate()).atZone(ZoneId.systemDefault());
+			return new FolderInfo(folderName, changeDate);
 		} else {
 			return null;
 		}
@@ -202,8 +205,8 @@ public class Smb1Connection implements RemoteConnection {
 					if (fileSize < 0) {
 						fileSize = subFile.getContentLength();
 					}
-					final Date modificationDate = new Date(subFile.getDate());
-					fileInfoList.add(new FileInfo(subFile.getName(), fileSize, modificationDate));
+					final ZonedDateTime changeDate = Instant.ofEpochMilli(smbFile.getDate()).atZone(ZoneId.systemDefault());
+					fileInfoList.add(new FileInfo(subFile.getName(), fileSize, changeDate));
 				}
 			}
 

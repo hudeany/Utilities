@@ -6,12 +6,11 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 
 import de.soderer.utilities.BOM;
 import de.soderer.utilities.DateUtilities;
@@ -190,9 +189,7 @@ public class VcfWriter implements AutoCloseable {
 		}
 
 		if (card.getLatestUpdate() != null) {
-			final SimpleDateFormat dateFormat = new SimpleDateFormat(DateUtilities.ISO_8601_DATETIME_FORMAT);
-			dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-			final String value = dateFormat.format(card.getLatestUpdate());
+			final String value = DateUtilities.formatDate(DateUtilities.ISO_8601_DATETIME_FORMAT, card.getLatestUpdate(), ZoneId.of("GMT"));
 			writeLine(VcfConstants.REVISION_PROPERTY + ":" + value);
 		}
 
@@ -213,11 +210,9 @@ public class VcfWriter implements AutoCloseable {
 		if (card.getBirthday() != null) {
 			final String value;
 			if (card.isBirthdayWithoutYear()) {
-				final SimpleDateFormat dateFormat = new SimpleDateFormat("--MM-dd");
-				value = dateFormat.format(card.getBirthday());
+				value = DateUtilities.formatDate("--MM-dd", card.getBirthday());
 			} else {
-				final SimpleDateFormat dateFormat = new SimpleDateFormat(DateUtilities.YYYY_MM_DD);
-				value = dateFormat.format(card.getBirthday());
+				value = DateUtilities.formatDate(DateUtilities.YYYY_MM_DD, card.getBirthday());
 			}
 			writeLine(VcfConstants.BIRTHDAY_PROPERTY + ":" + value);
 		}

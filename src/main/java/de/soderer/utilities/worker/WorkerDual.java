@@ -1,10 +1,11 @@
 package de.soderer.utilities.worker;
 
-import java.util.Date;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 public abstract class WorkerDual<T> extends WorkerSimple<T> {
-	protected Date startTimeSub = null;
-	protected Date endTimeSub = null;
+	protected LocalDateTime startTimeSub = null;
+	protected LocalDateTime endTimeSub = null;
 	protected String currentItemName = null;
 	protected long subItemsToDo = -1;
 	protected long subItemsDone = -1;
@@ -15,7 +16,7 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 
 	protected void showItemStart(final String itemName) {
 		currentItemName = itemName;
-		startTimeSub = new Date();
+		startTimeSub = LocalDateTime.now();
 		if (parent != null && !cancel) {
 			((WorkerParentDual) parent).showItemStart(currentItemName);
 		}
@@ -27,22 +28,22 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 
 	protected void showItemProgress(final boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
-			if (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds) {
+			if (Duration.between(LocalDateTime.now(), lastProgressShow).toMillis() > showProgressAfterMilliseconds) {
 				// Normal progress update
 				((WorkerParentDual) parent).showProgress(startTimeSub, itemsToDo, itemsDone);
 				((WorkerParentDual) parent).showItemProgress(startTimeSub, subItemsToDo, subItemsDone);
-				lastProgressShow = new Date();
+				lastProgressShow = LocalDateTime.now();
 			} else if (overrideRefreshTime) {
 				// Important progress update, which may not be left out
 				((WorkerParentDual) parent).showProgress(startTimeSub, itemsToDo, itemsDone);
 				((WorkerParentDual) parent).showItemProgress(startTimeSub, subItemsToDo, subItemsDone);
-				lastProgressShow = new Date();
+				lastProgressShow = LocalDateTime.now();
 			}
 		}
 	}
 
 	protected void showItemDone() {
-		endTimeSub = new Date();
+		endTimeSub = LocalDateTime.now();
 		if (parent != null) {
 			((WorkerParentDual) parent).showItemDone(startTimeSub, endTimeSub, subItemsDone);
 			currentItemName = null;

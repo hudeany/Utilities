@@ -1,16 +1,15 @@
 package de.soderer.utilities.remote;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.ZonedDateTime;
 
 import de.soderer.utilities.DateUtilities;
 
 public class FileInfo {
 	private final String fileName;
 	private final long fileSize;
-	private final Date modificationDate;
+	private final ZonedDateTime modificationDate;
 
-	public FileInfo(final String fileName, final long fileSize, final Date modificationDate) {
+	public FileInfo(final String fileName, final long fileSize, final ZonedDateTime modificationDate) {
 		this.fileName = fileName;
 		this.fileSize = fileSize;
 		this.modificationDate = modificationDate;
@@ -24,12 +23,12 @@ public class FileInfo {
 		return fileSize;
 	}
 
-	public Date getModificationDate() {
+	public ZonedDateTime getModificationDate() {
 		return modificationDate;
 	}
 
 	@Override
 	public String toString() {
-		return fileName + " [" + fileSize + " Byte, " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(modificationDate) + "]";
+		return fileName + " [" + fileSize + " Byte, " + DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, modificationDate.toLocalDateTime()) + "]";
 	}
 }

@@ -11,11 +11,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.interfaces.RSAPrivateKey;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -31,6 +32,7 @@ import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.QuotedPrintableCodec;
 import de.soderer.utilities.Utilities;
@@ -143,10 +145,10 @@ public class DkimSignedMessage extends MimeMessage {
 	}
 
 	private String createDkimSignature(final String encodedMessageBody) throws MessagingException {
-		Date sentDate = getSentDate();
+		LocalDateTime sentDate = DateUtilities.getLocalDateTimeForDate(getSentDate());
 		if (sentDate == null) {
-			sentDate = new Date();
-			setSentDate(sentDate);
+			sentDate = LocalDateTime.now();
+			setSentDate(DateUtilities.getDateForLocalDateTime(sentDate));
 		}
 
 		final Map<String, String> signatureData = new LinkedHashMap<>();
@@ -155,7 +157,7 @@ public class DkimSignedMessage extends MimeMessage {
 		signatureData.put("c", (useRelaxedHeaderCanonicalization ? DkimUtilities.DKIM_SERIALIZATION_RELAXED_CODE : DkimUtilities.DKIM_SERIALIZATION_SIMPLE_CODE) + "/" + (useRelaxedBodyCanonicalization ? DkimUtilities.DKIM_SERIALIZATION_RELAXED_CODE : DkimUtilities.DKIM_SERIALIZATION_SIMPLE_CODE));
 		signatureData.put("d", domain);
 		signatureData.put("s", selector);
-		signatureData.put("t", Long.toString(sentDate.getTime() / 1000l));
+		signatureData.put("t", Long.toString(sentDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() / 1000l));
 		if (identity != null) {
 			signatureData.put("i", QuotedPrintableCodec.encode(identity, StandardCharsets.UTF_8));
 		}

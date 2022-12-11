@@ -16,9 +16,10 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -452,7 +453,7 @@ public class ApplicationUpdateUtilities {
 			}
 
 			if (value.contains("<time_seconds>")) {
-				value = value.replace("<time_seconds>", "" + (new Date().getTime() / 1000));
+				value = value.replace("<time_seconds>", "" + (LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)));
 			}
 
 			return value;
@@ -476,14 +477,14 @@ public class ApplicationUpdateUtilities {
 				}
 
 				@Override
-				public void showProgress(final Date startTime, final long itemsToDo, final long itemsDone) {
+				public void showProgress(final LocalDateTime startTime, final long itemsToDo, final long itemsDone) {
 					if (updateParent != null) {
 						updateParent.showUpdateProgress(startTime, itemsToDo, itemsDone);
 					}
 				}
 
 				@Override
-				public void showDone(final Date startTime, final Date endTime, final long itemsDone) {
+				public void showDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
 					if (updateParent != null) {
 						updateParent.showUpdateDownloadEnd(startTime, endTime, itemsDone);
 					}

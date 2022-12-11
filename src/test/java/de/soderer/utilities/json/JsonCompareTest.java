@@ -1,6 +1,6 @@
 package de.soderer.utilities.json;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -11,7 +11,7 @@ import de.soderer.utilities.json.compare.JsonCompareSettings;
 public class JsonCompareTest {
 	@Test
 	public void testOk() {
-		final Date now = new Date();
+		final LocalDateTime now = LocalDateTime.now();
 
 		final JsonObject jsonObjectLeft = new JsonObject();
 		jsonObjectLeft.add("attribute1", "value1");
@@ -58,7 +58,7 @@ public class JsonCompareTest {
 
 	@Test
 	public void testPropertyKeyError() {
-		final Date now = new Date();
+		final LocalDateTime now = LocalDateTime.now();
 
 		final JsonObject jsonObjectLeft = new JsonObject();
 		jsonObjectLeft.add("attribute1", "value1");
@@ -83,7 +83,7 @@ public class JsonCompareTest {
 
 	@Test
 	public void testPropertyValueError() {
-		final Date now = new Date();
+		final LocalDateTime now = LocalDateTime.now();
 
 		final JsonObject jsonObjectLeft = new JsonObject();
 		jsonObjectLeft.add("attribute1", "value1");
@@ -108,7 +108,7 @@ public class JsonCompareTest {
 
 	@Test
 	public void testPropertyValueErrorJsonObject() {
-		final Date now = new Date();
+		final LocalDateTime now = LocalDateTime.now();
 
 		final JsonObject jsonObjectLeft = new JsonObject();
 		jsonObjectLeft.add("attribute1", "value1");
@@ -138,7 +138,7 @@ public class JsonCompareTest {
 
 	@Test
 	public void testArrayError() {
-		final Date now = new Date();
+		final LocalDateTime now = LocalDateTime.now();
 
 		final JsonArray jsonArrayLeft = new JsonArray();
 		jsonArrayLeft.add("value1");
@@ -165,7 +165,7 @@ public class JsonCompareTest {
 
 	@Test
 	public void testArrayOrderError() {
-		final Date now = new Date();
+		final LocalDateTime now = LocalDateTime.now();
 
 		final JsonArray jsonArrayLeft = new JsonArray();
 		jsonArrayLeft.add("value1");
@@ -184,7 +184,7 @@ public class JsonCompareTest {
 
 	@Test
 	public void testArrayOrderMixed() {
-		final Date now = new Date();
+		final LocalDateTime now = LocalDateTime.now();
 
 		final JsonArray jsonArrayLeft = new JsonArray();
 		jsonArrayLeft.add("value1");
@@ -203,7 +203,7 @@ public class JsonCompareTest {
 
 	@Test
 	public void testArrayOrderMixedError() {
-		final Date now = new Date();
+		final LocalDateTime now = LocalDateTime.now();
 
 		final JsonArray jsonArrayLeft = new JsonArray();
 		jsonArrayLeft.add("value1");

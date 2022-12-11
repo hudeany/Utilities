@@ -2,15 +2,13 @@ package de.soderer.utilities;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.lang3.time.DateUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -26,7 +24,7 @@ public class SecureDataStoreTest {
 	public void test() throws Exception {
 		final File testStoreFile = File.createTempFile("test", ".secpref");
 		try {
-			final Date now = DateUtils.truncate(new Date(), Calendar.SECOND);
+			final LocalDateTime now = LocalDateTime.now();
 			final SecureDataStore testKeyStore_ForSave = new SecureDataStore();
 
 			final TestSecureDataStoreEntry secureDataEntry = new TestSecureDataStoreEntry();
@@ -92,7 +90,7 @@ public class SecureDataStoreTest {
 			secureDataEntry.valueStringList = new ArrayList<>(Arrays.asList(secureDataEntry.valueStringArray));
 			secureDataEntry.valueStringCollection = new ArrayList<>(Arrays.asList(secureDataEntry.valueStringArray));
 			secureDataEntry.valueDate = now;
-			secureDataEntry.valueDateArray = new Date[] { now, now };
+			secureDataEntry.valueDateArray = new LocalDateTime[] { now, now };
 			secureDataEntry.valueDateSet = new HashSet<>(Arrays.asList(secureDataEntry.valueDateArray));
 			secureDataEntry.valueDateList = new ArrayList<>(Arrays.asList(secureDataEntry.valueDateArray));
 			secureDataEntry.valueDateCollection = new ArrayList<>(Arrays.asList(secureDataEntry.valueDateArray));

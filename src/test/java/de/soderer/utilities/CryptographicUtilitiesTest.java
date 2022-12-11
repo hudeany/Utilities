@@ -13,8 +13,8 @@ import java.security.Signature;
 import java.security.cert.CertPath;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -350,8 +350,8 @@ public class CryptographicUtilitiesTest {
 
 			final X509Certificate caCertificate = CryptographicUtilities.generateSelfsignedCertificate(
 					caKeyPair,
-					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
-					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					LocalDateTime.now().minusDays(1),
+					LocalDateTime.now().plusYears(2),
 					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
 					"CN=" + "Test CA",
 					0);
@@ -461,8 +461,8 @@ public class CryptographicUtilitiesTest {
 			final KeyPair caKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
 			final X509Certificate caCertificate = CryptographicUtilities.generateSelfsignedCertificate(
 					caKeyPair,
-					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
-					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					LocalDateTime.now().minusDays(1),
+					LocalDateTime.now().plusYears(2),
 					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
 					"CN=" + "Test CA",
 					0);
@@ -499,8 +499,8 @@ public class CryptographicUtilitiesTest {
 			final String x500PrincipalString = CryptographicUtilities.generateLegacyX500PrincipalString("Test Code Signing CN", null, null, null, null, null, null);
 			final X509Certificate codeSigningCertificate = CryptographicUtilities.generateSelfsignedCertificate(
 					codeSigningKeyPair,
-					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
-					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					LocalDateTime.now().minusDays(1),
+					LocalDateTime.now().plusYears(2),
 					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
 					x500PrincipalString,
 					-1);
@@ -547,8 +547,8 @@ public class CryptographicUtilitiesTest {
 			final String x500PrincipalString = CryptographicUtilities.generateLegacyX500PrincipalString("Test Code Signing CN", null, null, null, null, null, null);
 			final X509Certificate codeSigningCertificate = CryptographicUtilities.generateSelfsignedCertificate(
 					codeSigningKeyPair,
-					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
-					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					LocalDateTime.now().minusDays(1),
+					LocalDateTime.now().plusYears(2),
 					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
 					x500PrincipalString,
 					-1);
@@ -557,8 +557,8 @@ public class CryptographicUtilitiesTest {
 			final String otherX500PrincipalString = CryptographicUtilities.generateLegacyX500PrincipalString("Test Code Signing CN", null, null, null, null, null, null);
 			final X509Certificate otherCertificate = CryptographicUtilities.generateSelfsignedCertificate(
 					otherKeyPair,
-					new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
-					new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000),
+					LocalDateTime.now().minusDays(1),
+					LocalDateTime.now().plusYears(2),
 					CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA,
 					otherX500PrincipalString,
 					-1);

@@ -1,13 +1,13 @@
 package de.soderer.utilities.worker;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 public interface WorkerParentDual extends WorkerParentSimple {
-	public void showUnlimitedSubProgress();
+	void showUnlimitedSubProgress();
 
-	public void showItemStart(String itemName);
+	void showItemStart(String itemName);
 
-	public void showItemProgress(Date itemStart, long subItemToDo, long subItemDone);
+	void showItemProgress(LocalDateTime itemStart, long subItemToDo, long subItemDone);
 
-	public void showItemDone(Date itemStart, Date itemEnd, long subItemsDone);
+	void showItemDone(LocalDateTime itemStart, LocalDateTime itemEnd, long subItemsDone);
 }

@@ -10,8 +10,8 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.util.Arrays;
-import java.util.Date;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.HashAlgorithm;
 import de.soderer.utilities.HashItem;
@@ -72,7 +72,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 				} else {
 					try {
 						final BasicFileAttributes attr = Files.readAttributes(Paths.get(directory.getAbsolutePath()), BasicFileAttributes.class);
-						item = new HashItem(directory.getName(), true, hashAlgorithm, -1, new Date(attr.creationTime().toMillis()), new Date(attr.lastModifiedTime().toMillis()));
+						item = new HashItem(directory.getName(), true, hashAlgorithm, -1, DateUtilities.getLocalDateTime(attr.creationTime().toMillis()), DateUtilities.getLocalDateTime(attr.lastModifiedTime().toMillis()));
 					} catch (@SuppressWarnings("unused") final Exception e) {
 						item = new HashItem(directory.getName(), true, hashAlgorithm, -1);
 					}
@@ -129,7 +129,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			} else {
 				try {
 					final BasicFileAttributes attr = Files.readAttributes(Paths.get(fileToHash.getAbsolutePath()), BasicFileAttributes.class);
-					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length(), new Date(attr.creationTime().toMillis()), new Date(attr.lastModifiedTime().toMillis()));
+					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length(), DateUtilities.getLocalDateTime(attr.creationTime().toMillis()), DateUtilities.getLocalDateTime(attr.lastModifiedTime().toMillis()));
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
 				}
@@ -147,7 +147,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			} else {
 				try {
 					final BasicFileAttributes attr = Files.readAttributes(Paths.get(fileToHash.getAbsolutePath()), BasicFileAttributes.class);
-					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length(), new Date(attr.creationTime().toMillis()), new Date(attr.lastModifiedTime().toMillis()));
+					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length(), DateUtilities.getLocalDateTime(attr.creationTime().toMillis()), DateUtilities.getLocalDateTime(attr.lastModifiedTime().toMillis()));
 				} catch (@SuppressWarnings("unused") final IOException e1) {
 					item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());
 				}

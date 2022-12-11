@@ -5,9 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import javax.mail.internet.InternetAddress;
@@ -414,11 +413,11 @@ public class Email {
 					errors.add("SignatureCertficates emailaddress '" + certEmail + "' does not match from-emailaddress '" + fromAddress.toString() + "'");
 				}
 
-				if (signatureCertificate != null && signatureCertificate.getNotBefore() != null && signatureCertificate.getNotBefore().after(new Date())) {
-					errors.add("SignatureCertficates of emailaddress '" + certEmail + "' may not be used before: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(signatureCertificate.getNotBefore()));
+				if (signatureCertificate != null && signatureCertificate.getNotBefore() != null && DateUtilities.getLocalDateTimeForDate(signatureCertificate.getNotBefore()).isAfter(LocalDateTime.now())) {
+					errors.add("SignatureCertficates of emailaddress '" + certEmail + "' may not be used before: " + DateUtilities.formatDate(DateUtilities.DD_MM_YYYY_HH_MM_SS, signatureCertificate.getNotBefore()));
 				}
-				if (signatureCertificate != null && signatureCertificate.getNotAfter() != null && signatureCertificate.getNotAfter().before(new Date())) {
-					errors.add("SignatureCertficates of emailaddress '" + certEmail + "' may not be used after: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(signatureCertificate.getNotAfter()));
+				if (signatureCertificate != null && signatureCertificate.getNotAfter() != null && DateUtilities.getLocalDateTimeForDate(signatureCertificate.getNotAfter()).isBefore(LocalDateTime.now())) {
+					errors.add("SignatureCertficates of emailaddress '" + certEmail + "' may not be used after: " + DateUtilities.formatDate(DateUtilities.DD_MM_YYYY_HH_MM_SS, signatureCertificate.getNotAfter()));
 				}
 
 				if (!CryptographicUtilities.checkPrivateKeyFitsPublicKey(signatureKey, signatureCertificate.getPublicKey())) {
@@ -442,11 +441,11 @@ public class Email {
 					errors.add("EncryptionCertficates emailaddress '" + certEmail + "' does not match to-emailaddress '" + toAddressList.get(0).toString() + "'");
 				}
 
-				if (encryptionCertificate != null && encryptionCertificate.getNotBefore() != null && encryptionCertificate.getNotBefore().after(new Date())) {
-					errors.add("EncryptionCertficates of emailaddress '" + certEmail + "' may not be used before: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(encryptionCertificate.getNotBefore()));
+				if (encryptionCertificate != null && encryptionCertificate.getNotBefore() != null && DateUtilities.getLocalDateTimeForDate(encryptionCertificate.getNotBefore()).isAfter(LocalDateTime.now())) {
+					errors.add("EncryptionCertficates of emailaddress '" + certEmail + "' may not be used before: " + DateUtilities.formatDate(DateUtilities.DD_MM_YYYY_HH_MM_SS, encryptionCertificate.getNotBefore()));
 				}
-				if (encryptionCertificate != null && encryptionCertificate.getNotAfter() != null && encryptionCertificate.getNotAfter().before(new Date())) {
-					errors.add("EncrytionCertficates of emailaddress '" + certEmail + "' may not be used after: " + new SimpleDateFormat(DateUtilities.DD_MM_YYYY_HH_MM_SS).format(encryptionCertificate.getNotAfter()));
+				if (encryptionCertificate != null && encryptionCertificate.getNotAfter() != null && DateUtilities.getLocalDateTimeForDate(encryptionCertificate.getNotAfter()).isBefore(LocalDateTime.now())) {
+					errors.add("EncrytionCertficates of emailaddress '" + certEmail + "' may not be used after: " + DateUtilities.formatDate(DateUtilities.DD_MM_YYYY_HH_MM_SS, encryptionCertificate.getNotAfter()));
 				}
 
 				if (ccAddressList.size() > 0) {

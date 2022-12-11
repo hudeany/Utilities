@@ -1173,4 +1173,8 @@ public class TextUtilities {
 			return text;
 		}
 	}
+
+	public static String replaceLast(final String text, final String searchText, final String replacement) {
+		return text.replaceFirst("(?s)" + Pattern.quote(searchText) + "(?!.*?" + Pattern.quote(searchText) + ")", replacement);
+	}
 }

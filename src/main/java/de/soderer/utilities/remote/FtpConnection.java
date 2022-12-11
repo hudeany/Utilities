@@ -3,6 +3,8 @@ package de.soderer.utilities.remote;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,6 +12,7 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
@@ -247,7 +250,8 @@ public class FtpConnection implements RemoteConnection {
 			return null;
 		} else {
 			final String fileName = FileUtilities.getFilenameFromPath(file.getName());
-			return new FileInfo(fileName, file.getSize(), file.getTimestamp().getTime());
+			final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(file.getTimestamp().getTime()).atZone(ZoneId.systemDefault());
+			return new FileInfo(fileName, file.getSize(), changeDate);
 		}
 	}
 
@@ -260,7 +264,8 @@ public class FtpConnection implements RemoteConnection {
 			return null;
 		} else {
 			final String folderName = FileUtilities.getFilenameFromPath(file.getName());
-			return new FolderInfo(folderName, file.getTimestamp().getTime());
+			final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(file.getTimestamp().getTime()).atZone(ZoneId.systemDefault());
+			return new FolderInfo(folderName, changeDate);
 		}
 	}
 
@@ -317,7 +322,8 @@ public class FtpConnection implements RemoteConnection {
 		if (files != null) {
 			for (final FTPFile file : files) {
 				if (file.isFile()) {
-					fileInfoList.add(new FileInfo(file.getName(), file.getSize(), file.getTimestamp().getTime()));
+					final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(file.getTimestamp().getTime()).atZone(ZoneId.systemDefault());
+					fileInfoList.add(new FileInfo(file.getName(), file.getSize(), changeDate));
 				}
 			}
 		}

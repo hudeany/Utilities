@@ -1,12 +1,12 @@
 package de.soderer.utilities;
 
 import java.io.File;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 public class FileChangeWatcherThread extends Thread {
 	protected File file;
 	protected NotificationListener listener;
-	protected Date lastChangeDate = null;
+	protected LocalDateTime lastChangeDate = null;
 	protected long lastFileSize = 0L;
 	private static final long delay = 1000L;
 	protected boolean running = true;
@@ -25,8 +25,8 @@ public class FileChangeWatcherThread extends Thread {
 					running = false;
 					listener.noticeFileNotExists();
 				} else {
-					if (lastChangeDate == null || lastChangeDate.before(new Date(file.lastModified())) || lastFileSize != file.length()) {
-						lastChangeDate = new Date(file.lastModified());
+					if (lastChangeDate == null || lastChangeDate.isBefore(DateUtilities.getLocalDateTime(file.lastModified())) || lastFileSize != file.length()) {
+						lastChangeDate = DateUtilities.getLocalDateTime(file.lastModified());
 						lastFileSize = file.length();
 						listener.noticeFileChanged();
 					}

@@ -5,7 +5,7 @@ import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Locale;
 
 import javax.swing.BoxLayout;
@@ -137,7 +137,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void showProgress(final Date start, final long itemsToDo, final long itemsDone) {
+	public void showProgress(final LocalDateTime start, final long itemsToDo, final long itemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(progressBar, start, itemsToDo, itemsDone);
 			if (commentLabel != null) {
@@ -155,7 +155,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void showDone(final Date start, final Date end, final long itemsDone) {
+	public void showDone(final LocalDateTime start, final LocalDateTime end, final long itemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			dispose();
 		} else {
@@ -197,7 +197,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		return true;
 	}
 
-	protected static void updateProgressBar(final JProgressBar progressBar, final Date start, final long itemsToDo, final long itemsDone) {
+	protected static void updateProgressBar(final JProgressBar progressBar, final LocalDateTime start, final long itemsToDo, final long itemsDone) {
 		int value;
 		if (itemsToDo > 0) {
 			value = (int) (itemsDone * 100 / itemsToDo);
@@ -218,7 +218,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		progressBar.setString(value + "%");
 		progressBar.setStringPainted(true);
 
-		final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
+		final LocalDateTime estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 		if (estimatedEnd != null) {
 			progressBar.setToolTipText("ETA: " + DateUtilities.formatDate(DateUtilities.getDateTimeFormatWithSecondsPattern(Locale.getDefault()), estimatedEnd));
 		} else {

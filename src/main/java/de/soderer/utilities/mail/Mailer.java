@@ -9,8 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -61,6 +61,7 @@ import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import com.sun.mail.smtp.SMTPAddressFailedException;
 import com.sun.mail.util.CRLFOutputStream;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.crypto.PGPFileEncryptionWorker;
@@ -181,7 +182,7 @@ public class Mailer {
 
 		mimeMessage.setFrom(email.getFromAddress().getAddress());
 		mimeMessage.setSubject(email.getSubject(), email.getCharset().name());
-		mimeMessage.setSentDate(new Date());
+		mimeMessage.setSentDate(DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 
 		// Set reply-to address
 		if (email.getReplyToAddressList().size() > 0) {

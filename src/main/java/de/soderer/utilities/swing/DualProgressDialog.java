@@ -3,7 +3,7 @@ package de.soderer.utilities.swing;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -66,7 +66,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 			subCommentStringFormat = itemName;
 			subItemLabel.setText(itemName);
 
-			updateProgressBar(subItemProgressBar, new Date(), 100, 0);
+			updateProgressBar(subItemProgressBar, LocalDateTime.now(), 100, 0);
 			final String labelText = subCommentStringFormat.replace("{0}", Long.toString(0)).replace("{1}", Long.toString(100)).replace("{2}", Long.toString(0));
 			subItemLabel.setText(labelText);
 		} else {
@@ -80,7 +80,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemProgress(final Date itemStart, final long subItemsToDo, final long subItemsDone) {
+	public void showItemProgress(final LocalDateTime itemStart, final long subItemsToDo, final long subItemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(subItemProgressBar, itemStart, subItemsToDo, subItemsDone);
 			final String labelText = subCommentStringFormat.replace("{0}", Long.toString(subItemsDone)).replace("{1}", Long.toString(subItemsToDo)).replace("{2}", Long.toString(subItemsDone * 100 / subItemsToDo));
@@ -96,7 +96,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
+	public void showItemDone(final LocalDateTime itemStart, final LocalDateTime itemEnd, final long subItemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(subItemProgressBar, itemStart, subItemsDone, subItemsDone);
 			final String labelText = subCommentStringFormat.replace("{0}", Long.toString(subItemsDone)).replace("{1}", Long.toString(subItemsDone)).replace("{2}", Long.toString(100));

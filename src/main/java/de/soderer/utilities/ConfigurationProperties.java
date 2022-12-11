@@ -4,10 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -99,8 +98,8 @@ public class ConfigurationProperties {
 		properties.setProperty(name, Character.toString(value));
 	}
 
-	public void set(final String name, final Date value) {
-		properties.setProperty(name, new SimpleDateFormat(DateUtilities.YYYYMMDD_HHMMSS).format(value));
+	public void set(final String name, final LocalDateTime value) {
+		properties.setProperty(name, DateUtilities.formatDate(DateUtilities.YYYYMMDD_HHMMSS, value));
 	}
 
 	public int getInteger(final String name) {
@@ -127,14 +126,14 @@ public class ConfigurationProperties {
 		}
 	}
 
-	public Date getDate(final String name) {
+	public LocalDateTime getDate(final String name) {
 		try {
 			if (properties.containsKey(name)) {
-				return new SimpleDateFormat(DateUtilities.YYYYMMDD_HHMMSS).parse(properties.getProperty(name));
+				return DateUtilities.parseLocalDateTime(DateUtilities.YYYYMMDD_HHMMSS, properties.getProperty(name));
 			} else {
 				return null;
 			}
-		} catch (@SuppressWarnings("unused") final ParseException e) {
+		} catch (@SuppressWarnings("unused") final DateTimeParseException e) {
 			return null;
 		}
 	}

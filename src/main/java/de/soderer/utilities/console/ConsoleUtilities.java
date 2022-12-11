@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.text.NumberFormat;
-import java.util.Date;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Queue;
@@ -186,8 +187,8 @@ public class ConsoleUtilities {
 	 * @param itemsDone
 	 * @return
 	 */
-	public static String getConsoleProgressString(final int lineLength, final Date start, final long itemsToDo, final long itemsDone) {
-		final Date now = new Date();
+	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone) {
+		final LocalDateTime now = LocalDateTime.now();
 		String itemsToDoString = "??";
 		String percentageString = " 0%";
 		String speedString = "???/s";
@@ -197,15 +198,15 @@ public class ConsoleUtilities {
 			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
 			percentageDone = (int) (itemsDone * 100 / itemsToDo);
 			percentageString = Utilities.leftPad(percentageDone + "%", 3);
-			long elapsedSeconds = (now.getTime() - start.getTime()) / 1000;
+			long elapsedSeconds = Duration.between(start, now).toSeconds();
 			// Prevent division by zero, when start is fast
 			if (elapsedSeconds == 0) {
 				elapsedSeconds = 1;
 			}
 			final int speed = (int) (itemsDone / elapsedSeconds);
 			speedString = Utilities.getHumanReadableNumber(speed, "", true, 5, true, Locale.ENGLISH) + "/s";
-			final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
-			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(estimatedEnd.getTime() - now.getTime(), false, true);
+			final LocalDateTime estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
+			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(Duration.between(now, estimatedEnd), false, true);
 		} else if (itemsToDo > 0) {
 			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
 		}

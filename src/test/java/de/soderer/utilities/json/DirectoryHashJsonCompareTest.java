@@ -1,7 +1,5 @@
 package de.soderer.utilities.json;
 
-import java.util.Date;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,8 +8,6 @@ import de.soderer.utilities.json.compare.DirectoryHashJsonCompare;
 public class DirectoryHashJsonCompareTest {
 	@Test
 	public void testFileOk() {
-		final Date now = new Date();
-
 		final JsonObject jsonObjectLeft = new JsonObject();
 		jsonObjectLeft.add("name", "TestFile");
 		jsonObjectLeft.add("isDirectory", false);
@@ -33,8 +29,6 @@ public class DirectoryHashJsonCompareTest {
 
 	@Test
 	public void testDirectoryOk() {
-		final Date now = new Date();
-
 		final JsonObject jsonObjectLeft = new JsonObject();
 		jsonObjectLeft.add("name", "TestDir");
 		jsonObjectLeft.add("isDirectory", true);
@@ -62,8 +56,6 @@ public class DirectoryHashJsonCompareTest {
 
 	@Test
 	public void testDirectoryWithDifferentHashes() {
-		final Date now = new Date();
-
 		final JsonObject jsonObjectLeft = new JsonObject();
 		jsonObjectLeft.add("name", "TestDir");
 		jsonObjectLeft.add("isDirectory", true);
@@ -96,8 +88,6 @@ public class DirectoryHashJsonCompareTest {
 
 	@Test
 	public void testDirectoryWithDifferentFiles() {
-		final Date now = new Date();
-
 		final JsonObject jsonObjectfile = new JsonObject();
 		jsonObjectfile.add("name", "TestFile1");
 		jsonObjectfile.add("isDirectory", false);

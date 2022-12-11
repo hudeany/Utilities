@@ -10,8 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +23,7 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ZipUtilities {
@@ -349,7 +350,7 @@ public class ZipUtilities {
 		}
 
 		final ZipEntry entry = new ZipEntry(relativeDirPath + filename);
-		entry.setTime(new Date().getTime());
+		entry.setTime(DateUtilities.getDateForLocalDateTime(LocalDateTime.now()).toInstant().toEpochMilli());
 		destinationZipFileStream.putNextEntry(entry);
 
 		destinationZipFileStream.write(fileData);

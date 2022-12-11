@@ -9,9 +9,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,6 +20,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import de.soderer.utilities.BOM;
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.LineReader;
 import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.Utilities;
@@ -46,7 +47,7 @@ public class TextBookEditor implements AutoCloseable {
 	public long maximumInMemoryPages;
 	private final Charset charset;
 	private long size;
-	private Date modificationDate;
+	private LocalDateTime modificationDate;
 	private BOM bom = BOM.NONE;
 	private LineBreak lineBreakType = LineBreak.Unknown;
 
@@ -104,7 +105,7 @@ public class TextBookEditor implements AutoCloseable {
 		}
 
 		size = textFile.length();
-		modificationDate = new Date(textFile.lastModified());
+		modificationDate = DateUtilities.getLocalDateTime(textFile.lastModified());
 
 		pages = new ArrayList<>();
 
@@ -679,7 +680,7 @@ public class TextBookEditor implements AutoCloseable {
 	public void write(final File destinationFile) throws Exception {
 		if (pages == null) {
 			throw new Exception("No data was available to write");
-		} else if (textFile != null && (size != textFile.length() || !modificationDate.equals(new Date(textFile.lastModified())))) {
+		} else if (textFile != null && (size != textFile.length() || !modificationDate.equals(DateUtilities.getLocalDateTime(textFile.lastModified())))) {
 			throw new Exception("The sourcefile has been tampered meanwile after read");
 		} else if (!hasNewContentData() && textFile != null && textFile.getCanonicalPath().equals(destinationFile.getCanonicalPath())) {
 			return;
@@ -756,7 +757,7 @@ public class TextBookEditor implements AutoCloseable {
 	}
 
 	private List<String> readTextFileLines(final long startFileIndex, final long endFileIndex) throws Exception {
-		if (size != textFile.length() || !modificationDate.equals(new Date(textFile.lastModified()))) {
+		if (size != textFile.length() || !modificationDate.equals(DateUtilities.getLocalDateTime(textFile.lastModified()))) {
 			throw new Exception("The sourcefile has been tampered meanwile after read");
 		}
 

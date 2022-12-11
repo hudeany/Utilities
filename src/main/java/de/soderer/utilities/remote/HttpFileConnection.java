@@ -9,9 +9,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -186,10 +186,10 @@ public class HttpFileConnection implements RemoteConnection {
 						final String fileInfoPart = fileLine.substring(fileLine.lastIndexOf("</a>") + 4).trim();
 						final int separatorIndex = fileInfoPart.lastIndexOf(" ");
 						final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
-						final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
+						final LocalDateTime modificationDate = DateUtilities.parseLocalDateTime(DateUtilities.YYYY_MM_DD_HH_MM, changeDateString);
 						final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
 						final long fileSize = getFileSize(sizeString);
-						return new FileInfo(fileName, fileSize, modificationDate);
+						return new FileInfo(fileName, fileSize, modificationDate.atZone(ZoneId.systemDefault()));
 					}
 				}
 				return null;
@@ -324,10 +324,10 @@ public class HttpFileConnection implements RemoteConnection {
 					final String fileInfoPart = fileLine.substring(fileLine.lastIndexOf("</a>") + 4).trim();
 					final int separatorIndex = fileInfoPart.lastIndexOf(" ");
 					final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
-					final Date modificationDate = new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HH_MM).parse(changeDateString);
+					final LocalDateTime modificationDate = DateUtilities.parseLocalDateTime(DateUtilities.YYYY_MM_DD_HH_MM, changeDateString);
 					final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
 					final long fileSize = getFileSize(sizeString);
-					fileInfoList.add(new FileInfo(fileName, fileSize, modificationDate));
+					fileInfoList.add(new FileInfo(fileName, fileSize, modificationDate.atZone(ZoneId.systemDefault())));
 				}
 				return new Tuple<>(folderInfoList, fileInfoList);
 			}

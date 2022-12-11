@@ -1,7 +1,8 @@
 package de.soderer.utilities.vcf;
 
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class VcfCard {
@@ -16,10 +17,10 @@ public class VcfCard {
 	private String title = null;
 	private String photoUrl = null;
 	private byte[] photoData = null;
-	private Date latestUpdate = null;
+	private ZonedDateTime latestUpdate = null;
 	private String url = null;
 	private String note = null;
-	private Date birthday = null;
+	private LocalDate birthday = null;
 	private boolean birthdayWithoutYear = false;
 	private final List<VcfAttributedValue> telephoneNumbers = new ArrayList<>();
 	private final List<VcfAttributedAddress> adresses = new ArrayList<>();
@@ -137,11 +138,11 @@ public class VcfCard {
 		return emails;
 	}
 
-	public Date getLatestUpdate() {
+	public ZonedDateTime getLatestUpdate() {
 		return latestUpdate;
 	}
 
-	public void setLatestUpdate(final Date latestUpdate) {
+	public void setLatestUpdate(final ZonedDateTime latestUpdate) {
 		this.latestUpdate = latestUpdate;
 	}
 
@@ -161,7 +162,7 @@ public class VcfCard {
 		this.note = note;
 	}
 
-	public Date getBirthday() {
+	public LocalDate getBirthday() {
 		return birthday;
 	}
 
@@ -169,11 +170,11 @@ public class VcfCard {
 		return birthdayWithoutYear;
 	}
 
-	public void setBirthday(final Date birthday) {
+	public void setBirthday(final LocalDate birthday) {
 		this.birthday = birthday;
 	}
 
-	public void setBirthday(final Date birthday, final boolean birthdayWithoutYear) {
+	public void setBirthday(final LocalDate birthday, final boolean birthdayWithoutYear) {
 		this.birthday = birthday;
 		this.birthdayWithoutYear = birthdayWithoutYear;
 	}

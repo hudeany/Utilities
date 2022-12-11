@@ -50,13 +50,12 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -321,7 +320,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static X509Certificate generateSelfsignedCertificate(final KeyPair keyPair, final Date validFrom, final Date validUntil, final String signatureAlgorithm, final String subjectDN, final int allowedSubCaCertificateLevels) throws Exception {
+	public static X509Certificate generateSelfsignedCertificate(final KeyPair keyPair, final LocalDateTime validFrom, final LocalDateTime validUntil, final String signatureAlgorithm, final String subjectDN, final int allowedSubCaCertificateLevels) throws Exception {
 		final Provider bcProvider = new BouncyCastleProvider();
 		Security.addProvider(bcProvider);
 
@@ -330,7 +329,7 @@ public class CryptographicUtilities {
 			final BigInteger certificateSerialNumber = new BigInteger(64, new SecureRandom());
 
 			final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
-			final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(dnName, certificateSerialNumber, validFrom, validUntil, dnName, keyPair.getPublic());
+			final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(dnName, certificateSerialNumber, DateUtilities.getDateForLocalDateTime(validFrom), DateUtilities.getDateForLocalDateTime(validUntil), dnName, keyPair.getPublic());
 			if (allowedSubCaCertificateLevels >= 0) {
 				certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(allowedSubCaCertificateLevels));
 			} else {
@@ -1035,9 +1034,9 @@ public class CryptographicUtilities {
 		dataOutput += "\n";
 		dataOutput += "is CA-certificate: " + (CryptographicUtilities.checkForCaCertificate(certificate) ? "true" : "false");
 		dataOutput += "\n";
-		dataOutput += "Valid from: " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(certificate.getNotBefore());
+		dataOutput += "Valid from: " + DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, certificate.getNotBefore());
 		dataOutput += "\n";
-		dataOutput += "Valid until: " + new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(certificate.getNotAfter());
+		dataOutput += "Valid until: " + DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, certificate.getNotAfter());
 		dataOutput += "\n";
 		dataOutput += "Signature algorithm: " + certificate.getSigAlgName();
 		dataOutput += "\n";
@@ -1399,14 +1398,14 @@ public class CryptographicUtilities {
 				throw new Exception("Given CA certificate with BasicConstraints value '" + caCertificate.getBasicConstraints() + "' may not sign a Certificate Signing Requests for a CA Certificate with BasicConstraints value '" + allowedSubCaCertificateLevels + "'");
 			}
 
-			final Date issuedDate = new Date();
-			final Date expiryDate = new Date(System.currentTimeMillis() + validityDays * 86400000l);
+			final LocalDateTime issuedDate = LocalDateTime.now();
+			final LocalDateTime expiryDate = LocalDateTime.now().plusDays(validityDays);
 			final JcaPKCS10CertificationRequest jcaRequest = new JcaPKCS10CertificationRequest(certificationRequest);
 			final X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(
 					caCertificate,
 					serialNo,
-					issuedDate,
-					expiryDate,
+					DateUtilities.getDateForLocalDateTime(issuedDate),
+					DateUtilities.getDateForLocalDateTime(expiryDate),
 					jcaRequest.getSubject(),
 					jcaRequest.getPublicKey());
 			final JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();

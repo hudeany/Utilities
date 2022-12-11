@@ -4,9 +4,10 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +28,7 @@ import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
@@ -143,7 +145,8 @@ public class SmbConnection implements RemoteConnection {
 		}
 		try (final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
 			final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-			return new FileInfo(fileName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate());
+			final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(fileAllInformation.getBasicInformation().getLastWriteTime().toDate()).atZone(ZoneId.systemDefault());
+			return new FileInfo(fileName, fileAllInformation.getStandardInformation().getAllocationSize(), changeDate);
 		}
 	}
 
@@ -182,14 +185,14 @@ public class SmbConnection implements RemoteConnection {
 			folderName = "/";
 		}
 
-		Date modificationDate = null;
+		ZonedDateTime modificationDate = null;
 
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			final String entryName = fileIdBothDirectoryInformation.getFileName();
 			if (".".equals(entryName)) {
 				try (final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
 					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-					modificationDate = fileAllInformation.getBasicInformation().getLastWriteTime().toDate();
+					modificationDate = DateUtilities.getLocalDateTimeForDate(fileAllInformation.getBasicInformation().getLastWriteTime().toDate()).atZone(ZoneId.systemDefault());
 				}
 				break;
 			}
@@ -289,7 +292,8 @@ public class SmbConnection implements RemoteConnection {
 				} else {
 					try (final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
 						final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
-						fileInfoList.add(new FileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), fileAllInformation.getBasicInformation().getLastWriteTime().toDate()));
+						final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(fileAllInformation.getBasicInformation().getLastWriteTime().toDate()).atZone(ZoneId.systemDefault());
+						fileInfoList.add(new FileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), changeDate));
 					}
 				}
 			}

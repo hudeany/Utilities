@@ -3,7 +3,7 @@ package de.soderer.utilities;
 import java.awt.HeadlessException;
 import java.io.Console;
 import java.text.MessageFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Locale;
 
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
@@ -72,7 +72,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	}
 
 	@Override
-	public void showUpdateProgress(final Date itemStart, final long itemsToDo, final long itemsDone) {
+	public void showUpdateProgress(final LocalDateTime itemStart, final long itemsToDo, final long itemsDone) {
 		if (ConsoleUtilities.consoleSupportsAnsiCodes()) {
 			ConsoleUtilities.saveCurrentCursorPosition();
 
@@ -85,7 +85,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	}
 
 	@Override
-	public void showUpdateDone(final Date startTime, final Date endTime, final long itemsDone) {
+	public void showUpdateDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
 		System.out.println();
 		System.out.println(getI18NString("updateDone"));
 		System.out.println();
@@ -97,7 +97,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	}
 
 	@Override
-	public void showUpdateDownloadEnd(final Date startTime, final Date endTime, final long itemsDone) {
+	public void showUpdateDownloadEnd(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
 		// Do nothing
 	}
 

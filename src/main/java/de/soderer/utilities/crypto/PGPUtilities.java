@@ -6,8 +6,9 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.Security;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -48,6 +49,7 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyPair;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.UserError;
@@ -222,7 +224,7 @@ public class PGPUtilities {
 		}
 	}
 
-	public static PGPSecretKey generatePGPSecretKey(final int keyStrength, final PgpPublicEncryptionMethod keyType, final String identity, final char[] password, final Date validity) throws Exception {
+	public static PGPSecretKey generatePGPSecretKey(final int keyStrength, final PgpPublicEncryptionMethod keyType, final String identity, final char[] password, final LocalDateTime validity) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final PGPKeyPair masterKeyPair;
@@ -230,13 +232,13 @@ public class PGPUtilities {
 		if (keyType == PgpPublicEncryptionMethod.RSA_GENERAL
 				|| keyType == PgpPublicEncryptionMethod.RSA_ENCRYPT
 				|| keyType == PgpPublicEncryptionMethod.RSA_SIGN) {
-			masterKeyPair = new JcaPGPKeyPair(keyType.getId(), CryptographicUtilities.generateRsaKeyPair(keyStrength), new Date());
+			masterKeyPair = new JcaPGPKeyPair(keyType.getId(), CryptographicUtilities.generateRsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 		} else if (keyType == PgpPublicEncryptionMethod.ELGAMAL_GENERAL
 				|| keyType == PgpPublicEncryptionMethod.ELGAMAL_ENCRYPT) {
-			masterKeyPair = new JcaPGPKeyPair(PublicKeyAlgorithmTags.DSA, CryptographicUtilities.generateDsaKeyPair(keyStrength), new Date());
-			subKeyPair = new JcaPGPKeyPair(PgpPublicEncryptionMethod.ELGAMAL_GENERAL.getId(), CryptographicUtilities.generateElGamalKeyPair(keyStrength), new Date());
+			masterKeyPair = new JcaPGPKeyPair(PublicKeyAlgorithmTags.DSA, CryptographicUtilities.generateDsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
+			subKeyPair = new JcaPGPKeyPair(PgpPublicEncryptionMethod.ELGAMAL_GENERAL.getId(), CryptographicUtilities.generateElGamalKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 		} else if (keyType == PgpPublicEncryptionMethod.DSA) {
-			masterKeyPair = new JcaPGPKeyPair(keyType.getId(), CryptographicUtilities.generateDsaKeyPair(keyStrength), new Date());
+			masterKeyPair = new JcaPGPKeyPair(keyType.getId(), CryptographicUtilities.generateDsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 		} else {
 			throw new Exception("Unsupported keytype: " + keyType.name());
 		}
@@ -264,7 +266,7 @@ public class PGPUtilities {
 		// Request senders add additional checksums to the message (useful when verifying unsigned messages.)
 		subpacketGenerator.setFeature(false, Features.FEATURE_MODIFICATION_DETECTION);
 
-		final long secondsUntilExpiration = (validity.getTime() - new Date().getTime()) / 1000L + 1;
+		final long secondsUntilExpiration = Duration.between(LocalDateTime.now(), validity).toSeconds() + 1;
 		subpacketGenerator.setKeyExpirationTime(true, secondsUntilExpiration);
 
 		subpacketGenerator.addNotationData(false, true, "identity", identity);
@@ -294,16 +296,16 @@ public class PGPUtilities {
 		return secretKey;
 	}
 
-	public static PGPSecretKey generateDualKeyPGPSecretKey(final int keyStrength, final String identity, final char[] password, final Date validity) throws Exception {
+	public static PGPSecretKey generateDualKeyPGPSecretKey(final int keyStrength, final String identity, final char[] password, final LocalDateTime validity) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final KeyPair keyPair1 = CryptographicUtilities.generateRsaKeyPair(keyStrength);
 		final KeyPair keyPair2 = CryptographicUtilities.generateRsaKeyPair(keyStrength);
 
 		// First create the master (signing) key with the generator.
-		final PGPKeyPair rsakp_sign = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_SIGN, keyPair1, new Date());
+		final PGPKeyPair rsakp_sign = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_SIGN, keyPair1, DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 		// Then an encryption subkey.
-		final PGPKeyPair rsakp_enc = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_ENCRYPT, keyPair2, new Date());
+		final PGPKeyPair rsakp_enc = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_ENCRYPT, keyPair2, DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 
 		// Add a self-signature on the id
 		final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
@@ -329,7 +331,7 @@ public class PGPUtilities {
 		// 3) Request senders add additional checksums to the message (useful when verifying unsigned messages.)
 		subpacketGenerator.setFeature(false, Features.FEATURE_MODIFICATION_DETECTION);
 
-		final long secondsUntilExpiration = (validity.getTime() - new Date().getTime()) / 1000L + 1;
+		final long secondsUntilExpiration = Duration.between(LocalDateTime.now(), validity).toSeconds() + 1;
 		subpacketGenerator.setKeyExpirationTime(true, secondsUntilExpiration);
 
 		subpacketGenerator.addNotationData(true, true, "identity", identity);
@@ -561,7 +563,7 @@ public class PGPUtilities {
 			signatureData.put("id", id);
 
 			// time = signature.getHashedSubPackets().getSignatureCreationTime();
-			signatureData.put("creationtime", signature.getCreationTime());
+			signatureData.put("creationtime", DateUtilities.getLocalDateTimeForDate(signature.getCreationTime()));
 
 			String encryptionAlgorithm;
 			try {

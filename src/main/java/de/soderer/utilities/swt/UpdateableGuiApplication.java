@@ -2,7 +2,7 @@ package de.soderer.utilities.swt;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Locale;
 
 import org.eclipse.swt.widgets.Display;
@@ -73,7 +73,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	}
 
 	@Override
-	public void showUpdateProgress(final Date itemStart, final long itemsToDo, final long itemsDone) {
+	public void showUpdateProgress(final LocalDateTime itemStart, final long itemsToDo, final long itemsDone) {
 		if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
 			getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -87,7 +87,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	}
 
 	@Override
-	public void showUpdateDone(final Date startTime, final Date endTime, final long itemsDone) {
+	public void showUpdateDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
 		if (updateProgressDialog != null) {
 			updateProgressDialog.showDone(startTime, endTime, itemsDone);
 			updateProgressDialog = null;
@@ -126,7 +126,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	}
 
 	@Override
-	public void showUpdateDownloadEnd(final Date startTime, final Date endTime, final long itemsDone) {
+	public void showUpdateDownloadEnd(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
 		if (updateProgressDialog != null) {
 			updateProgressDialog.showDone(startTime, endTime, itemsDone);
 			updateProgressDialog = null;

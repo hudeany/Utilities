@@ -4,7 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.Security;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.CompressionAlgorithmTags;
@@ -17,6 +17,7 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.operator.jcajce.JcePGPDataEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyKeyEncryptionMethodGenerator;
 
+import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.PGPUtilities.PgpSymmetricEncryptionMethod;
 import de.soderer.utilities.worker.WorkerParentSimple;
@@ -96,7 +97,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 			compressedDataGeneratorStream = compressedDataGenerator.open(encryptedDataGeneratorStream);
 
 			literalDataGenerator = new PGPLiteralDataGenerator();
-			literalDataGeneratorStream = literalDataGenerator.open(compressedDataGeneratorStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE, dataToEncrypt.available(), new Date());
+			literalDataGeneratorStream = literalDataGenerator.open(compressedDataGeneratorStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE, dataToEncrypt.available(), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 
 			final byte[] buffer = new byte[4096];
 			int bytesRead;

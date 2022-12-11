@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -225,11 +225,9 @@ public class VcfReader implements AutoCloseable {
 					throw new Exception("Invalid title (" + VcfConstants.REVISION_PROPERTY + ") data (must have 1 part, has " + decodedValues.size() + ") in line " + currentLineNumber);
 				}
 				if (decodedValues.get(0).contains("-")) {
-					card.setLatestUpdate(DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0))));
+					card.setLatestUpdate(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0)));
 				} else {
-					final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmssX");
-					dateFormat.setLenient(false);
-					card.setLatestUpdate(dateFormat.parse(decodedValues.get(0)));
+					card.setLatestUpdate(DateUtilities.parseZonedDateTime("yyyyMMdd'T'HHmmssX", decodedValues.get(0), ZoneId.systemDefault()));
 				}
 			} else if (VcfConstants.URL_PROPERTY.equals(property)) {
 				final List<String> decodedValues = decodeValues(prefixes, values);
@@ -250,13 +248,11 @@ public class VcfReader implements AutoCloseable {
 				}
 				if (decodedValues.get(0).startsWith("--")) {
 					// Date without year
-					card.setBirthday(DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString("0001" + decodedValues.get(0).substring(1))), true);
+					card.setBirthday(DateUtilities.parseIso8601DateTimeString("0001" + decodedValues.get(0).substring(1)).toLocalDate(), true);
 				} else if (decodedValues.get(0).contains("-")) {
-					card.setBirthday(DateUtilities.getDateForZonedDateTime(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0))));
+					card.setBirthday(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0)).toLocalDate());
 				} else {
-					final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-					dateFormat.setLenient(false);
-					card.setBirthday(dateFormat.parse(decodedValues.get(0)));
+					card.setBirthday(DateUtilities.parseLocalDate("yyyyMMdd", decodedValues.get(0)));
 				}
 			} else if (VcfConstants.A_ANDROID_CUSTOM_PROPERTY.equals(property)) {
 				// Ignore property

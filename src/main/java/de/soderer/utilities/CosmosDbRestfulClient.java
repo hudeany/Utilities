@@ -2,7 +2,7 @@
 package de.soderer.utilities;
 
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TimeZone;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -359,9 +358,7 @@ public class CosmosDbRestfulClient {
 	 */
 	private static String getCurrentDateRFC7231() {
 		final Calendar calendar = Calendar.getInstance();
-		final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-		return dateFormat.format(calendar.getTime());
+		return DateUtilities.formatDate("EEE, dd MMM yyyy HH:mm:ss z", calendar.getTime(), Locale.US, ZoneId.of("GMT"));
 	}
 
 	/**

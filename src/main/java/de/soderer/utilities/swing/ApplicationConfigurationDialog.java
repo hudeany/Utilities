@@ -12,8 +12,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -46,7 +45,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final String applicationName;
 	private final String applicationClassName;
 	private final Version applicationVersion;
-	private final Date applicationBuildTime;
+	private final LocalDateTime applicationBuildTime;
 	private final ConfigurationProperties applicationConfiguration;
 	private final byte[] iconImageDataWindows;
 	private final Image iconImageLinux;
@@ -88,7 +87,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		return this;
 	}
 
-	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final Date applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
+	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) throws Exception {
 		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")");
 
 		this.updateParent = updateParent;
@@ -157,7 +156,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		buildTimePanel.add(buildTimeLabel);
 		final JTextField buildTimeText = new JTextField();
 		buildTimeText.setEditable(false);
-		buildTimeText.setText(new SimpleDateFormat(DateUtilities.YYYY_MM_DD_HHMMSS).format(applicationBuildTime));
+		buildTimeText.setText(DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, applicationBuildTime));
 		buildTimePanel.add(buildTimeText, BorderLayout.EAST);
 
 		return buildTimePanel;

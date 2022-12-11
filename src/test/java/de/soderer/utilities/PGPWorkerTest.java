@@ -3,7 +3,7 @@ package de.soderer.utilities;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.bouncycastle.openpgp.PGPSecretKey;
 import org.junit.Assert;
@@ -23,7 +23,7 @@ public class PGPWorkerTest {
 
 	private static PGPSecretKey getPgpSecretKeyRSA() throws Exception {
 		if (pgpSecretKeyRSA == null) {
-			pgpSecretKeyRSA = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.RSA_GENERAL, "Test identity", password, new Date(new Date().getTime() + (1000 * 60 * 60)));
+			pgpSecretKeyRSA = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.RSA_GENERAL, "Test identity", password, LocalDateTime.now().plusMinutes(1));
 		}
 
 		return pgpSecretKeyRSA;
@@ -31,7 +31,7 @@ public class PGPWorkerTest {
 
 	private static PGPSecretKey getPgpSecretKeyDSA() throws Exception {
 		if (pgpSecretKeyDSA == null) {
-			pgpSecretKeyDSA = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.DSA, "Test identity", password, new Date(new Date().getTime() + (1000 * 60 * 60)));
+			pgpSecretKeyDSA = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.DSA, "Test identity", password, LocalDateTime.now().plusMinutes(1));
 		}
 
 		return pgpSecretKeyDSA;
@@ -39,7 +39,7 @@ public class PGPWorkerTest {
 
 	private static PGPSecretKey getPgpSecretKeyElgamal() throws Exception {
 		if (pgpSecretKeyElgamal == null) {
-			pgpSecretKeyElgamal = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.ELGAMAL_GENERAL, "Test identity", password, new Date(new Date().getTime() + (1000 * 60 * 60)));
+			pgpSecretKeyElgamal = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.ELGAMAL_GENERAL, "Test identity", password, LocalDateTime.now().plusMinutes(1));
 		}
 
 		return pgpSecretKeyElgamal;

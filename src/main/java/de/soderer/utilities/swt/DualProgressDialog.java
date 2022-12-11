@@ -1,6 +1,6 @@
 package de.soderer.utilities.swt;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Locale;
 
 import org.eclipse.swt.SWT;
@@ -44,12 +44,12 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 		subItemProgressBar.setSelection(0);
 	}
 
-	protected void setSubProgress(final Date start, final long todo, final long done) {
+	protected void setSubProgress(final LocalDateTime start, final long todo, final long done) {
 		if (!isDisposed()) {
 			stopUnlimitedProgress();
 			subItemProgressBar.setSelection((int) (done * 100 / todo));
 
-			final Date estimatedEnd = DateUtilities.calculateETA(start, todo, done);
+			final LocalDateTime estimatedEnd = DateUtilities.calculateETA(start, todo, done);
 			if (estimatedEnd != null) {
 				subItemProgressBar.setToolTipText("ETA: " + DateUtilities.formatDate(DateUtilities.getDateTimeFormatWithSecondsPattern(Locale.getDefault()), estimatedEnd));
 			} else {
@@ -134,7 +134,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 				public void run() {
 					if (!isDisposed()) {
 						subCommentStringFormat = itemName;
-						setSubProgress(new Date(), 100, 0);
+						setSubProgress(LocalDateTime.now(), 100, 0);
 					}
 				}
 			});
@@ -142,7 +142,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemProgress(final Date itemStart, final long subItemsToDo, final long subItemsDone) {
+	public void showItemProgress(final LocalDateTime itemStart, final long subItemsToDo, final long subItemsDone) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -156,7 +156,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemDone(final Date itemStart, final Date itemEnd, final long subItemsDone) {
+	public void showItemDone(final LocalDateTime itemStart, final LocalDateTime itemEnd, final long subItemsDone) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override

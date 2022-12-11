@@ -2,9 +2,8 @@ package de.soderer.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
 
 public class JschFileData {
@@ -22,7 +21,7 @@ public class JschFileData {
 	private String filePath;
 	private String fileName;
 	private long fileSize;
-	private Date changeDate;
+	private LocalDateTime changeDate;
 
 	public JschFileData(final String dataString) throws Exception {
 		if (Utilities.isBlank(dataString)) {
@@ -145,10 +144,10 @@ public class JschFileData {
 				try {
 					final String changeDateString = DateUtilities.parseThreeLetterMonth(dateString1) + " " + dateString2 + " " + dateString3;
 					try {
-						changeDate = new SimpleDateFormat("MM d HH:mm yyyy").parse(changeDateString + " " + new GregorianCalendar().get(Calendar.YEAR));
+						changeDate = DateUtilities.parseLocalDateTime("MM d HH:mm yyyy", changeDateString + " " + new GregorianCalendar().get(Calendar.YEAR));
 					} catch (@SuppressWarnings("unused") final Exception e) {
 						try {
-							changeDate = new SimpleDateFormat("MM d yyyy").parse(changeDateString);
+							changeDate = DateUtilities.parseLocalDateTime("MM d yyyy", changeDateString);
 						} catch (@SuppressWarnings("unused") final Exception e1) {
 							throw new Exception("Invalid changeDate");
 						}
@@ -190,7 +189,7 @@ public class JschFileData {
 		return fileSize;
 	}
 
-	public Date getChangeDate() {
+	public LocalDateTime getChangeDate() {
 		return changeDate;
 	}
 

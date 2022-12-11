@@ -5,8 +5,8 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -69,8 +69,8 @@ public class SystemUtilities {
 		return ManagementFactory.getRuntimeMXBean().getUptime();
 	}
 
-	public static Date getStarttime() {
-		return new Date(ManagementFactory.getRuntimeMXBean().getStartTime());
+	public static LocalDateTime getStarttime() {
+		return DateUtilities.getLocalDateTime(ManagementFactory.getRuntimeMXBean().getStartTime());
 	}
 
 	public static List<String> getJavaStartupArguments() {

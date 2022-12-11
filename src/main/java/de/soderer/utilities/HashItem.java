@@ -2,9 +2,9 @@ package de.soderer.utilities;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 public class HashItem {
@@ -15,8 +15,8 @@ public class HashItem {
 	private final List<HashItem> subItems = new ArrayList<>();
 	private byte[] hash = null;
 
-	private Date creationDate = null;
-	private Date modifiedDate = null;
+	private LocalDateTime creationDate = null;
+	private LocalDateTime modifiedDate = null;
 
 	public HashItem(final String name, final boolean isDirectory, final HashAlgorithm hashAlgorithm, final long size) {
 		this.name = name;
@@ -25,7 +25,7 @@ public class HashItem {
 		this.size = size;
 	}
 
-	public HashItem(final String name, final boolean isDirectory, final HashAlgorithm hashAlgorithm, final long size, final Date creationDate, final Date modifiedDate) {
+	public HashItem(final String name, final boolean isDirectory, final HashAlgorithm hashAlgorithm, final long size, final LocalDateTime creationDate, final LocalDateTime modifiedDate) {
 		this.name = name;
 		this.isDirectory = isDirectory;
 		this.hashAlgorithm = hashAlgorithm;
@@ -121,22 +121,22 @@ public class HashItem {
 		}
 	}
 
-	public Date getCreationDate() {
+	public LocalDateTime getCreationDate() {
 		return creationDate;
 	}
 
-	public Date getModifiedDate() {
+	public LocalDateTime getModifiedDate() {
 		return modifiedDate;
 	}
 
-	public Date getLatestFileCreation() {
+	public LocalDateTime getLatestFileCreation() {
 		if (isDirectory) {
-			Date latestFileCreationDate = null;
+			LocalDateTime latestFileCreationDate = null;
 			for (final HashItem subItem : subItems) {
-				final Date subItemLatestFileCreation = subItem.getLatestFileCreation();
+				final LocalDateTime subItemLatestFileCreation = subItem.getLatestFileCreation();
 				if (latestFileCreationDate == null) {
 					latestFileCreationDate = subItemLatestFileCreation;
-				} else if (subItemLatestFileCreation != null && latestFileCreationDate.before(latestFileCreationDate)) {
+				} else if (subItemLatestFileCreation != null && latestFileCreationDate.isBefore(latestFileCreationDate)) {
 					latestFileCreationDate = subItemLatestFileCreation;
 				}
 			}
@@ -146,14 +146,14 @@ public class HashItem {
 		}
 	}
 
-	public Date getLatestFileModified() {
+	public LocalDateTime getLatestFileModified() {
 		if (isDirectory) {
-			Date latestFileModifiedDate = null;
+			LocalDateTime latestFileModifiedDate = null;
 			for (final HashItem subItem : subItems) {
-				final Date subItemLatestFileModified = subItem.getLatestFileModified();
+				final LocalDateTime subItemLatestFileModified = subItem.getLatestFileModified();
 				if (latestFileModifiedDate == null) {
 					latestFileModifiedDate = subItemLatestFileModified;
-				} else if (subItemLatestFileModified != null && latestFileModifiedDate.before(latestFileModifiedDate)) {
+				} else if (subItemLatestFileModified != null && latestFileModifiedDate.isBefore(latestFileModifiedDate)) {
 					latestFileModifiedDate = subItemLatestFileModified;
 				}
 			}

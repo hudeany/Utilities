@@ -1,6 +1,7 @@
 package de.soderer.utilities.worker;
 
-import java.util.Date;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
@@ -9,11 +10,11 @@ import java.util.concurrent.TimeoutException;
 public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	private static final long DEFAULT_SHOW_PROGRESS_AFTER_MILLISECONDS = 500;
 
-	private Date startTime;
-	private Date endTime;
+	private LocalDateTime startTime;
+	private LocalDateTime endTime;
 	protected long itemsToDo = -1;
 	protected long itemsDone = -1;
-	protected Date lastProgressShow = new Date();
+	protected LocalDateTime lastProgressShow = LocalDateTime.now();
 	protected long showProgressAfterMilliseconds = DEFAULT_SHOW_PROGRESS_AFTER_MILLISECONDS;
 	private T result = null;
 
@@ -46,14 +47,14 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 
 	public void showProgress(final boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
-			if (new Date().getTime() - lastProgressShow.getTime() > showProgressAfterMilliseconds) {
+			if (Duration.between(LocalDateTime.now(), lastProgressShow).toMillis() > showProgressAfterMilliseconds) {
 				// Normal progress update
 				parent.showProgress(startTime, itemsToDo, itemsDone);
-				lastProgressShow = new Date();
+				lastProgressShow = LocalDateTime.now();
 			} else if (overrideRefreshTime) {
 				// Important progress update, which may not be left out
 				parent.showProgress(startTime, itemsToDo, itemsDone);
-				lastProgressShow = new Date();
+				lastProgressShow = LocalDateTime.now();
 			}
 		}
 	}
@@ -121,15 +122,15 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		return isDone;
 	}
 
-	public Date getStartTime() {
+	public LocalDateTime getStartTime() {
 		return startTime;
 	}
 
-	public void setEndTime(final Date endTime) {
+	public void setEndTime(final LocalDateTime endTime) {
 		this.endTime = endTime;
 	}
 
-	public Date getEndTime() {
+	public LocalDateTime getEndTime() {
 		return endTime;
 	}
 
@@ -148,7 +149,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			if (startTime != null) {
 				doIt = false;
 			} else {
-				startTime = new Date();
+				startTime = LocalDateTime.now();
 				doIt = true;
 			}
 		}
@@ -170,7 +171,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			}
 
 			if (endTime == null) {
-				endTime = new Date();
+				endTime = LocalDateTime.now();
 			}
 			isDone = true;
 			if (parent != null) {

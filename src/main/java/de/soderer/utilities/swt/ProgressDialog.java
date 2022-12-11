@@ -1,6 +1,6 @@
 package de.soderer.utilities.swt;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Locale;
 
 import org.eclipse.swt.SWT;
@@ -93,7 +93,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void showProgress(final Date start, final long itemsToDo, final long itemsDone) {
+	public void showProgress(final LocalDateTime start, final long itemsToDo, final long itemsDone) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -104,7 +104,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 							if (progressBar != null) {
 								progressBar.setSelection((int) (itemsDone * 100 / itemsToDo));
 
-								final Date estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
+								final LocalDateTime estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 								if (estimatedEnd != null) {
 									progressBar.setToolTipText("ETA: " + DateUtilities.formatDate(DateUtilities.getDateTimeFormatWithSecondsPattern(Locale.getDefault()), estimatedEnd));
 								} else {
@@ -199,7 +199,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void showDone(final Date start, final Date end, final long itemsDone) {
+	public void showDone(final LocalDateTime start, final LocalDateTime end, final long itemsDone) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override

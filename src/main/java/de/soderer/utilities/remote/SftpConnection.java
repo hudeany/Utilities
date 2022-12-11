@@ -11,9 +11,10 @@ import java.io.OutputStream;
 import java.io.StringReader;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import com.jcraft.jsch.Channel;
@@ -357,7 +358,8 @@ public class SftpConnection implements RemoteConnection {
 					return null;
 				} else {
 					final JschFileData fileData = new JschFileData(successString);
-					return new FileInfo(fileName, fileData.getSize(), fileData.getChangeDate());
+					final ZonedDateTime changeDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
+					return new FileInfo(fileName, fileData.getSize(), changeDate);
 				}
 			}
 		} finally {
@@ -779,7 +781,7 @@ public class SftpConnection implements RemoteConnection {
 			folderName = folderPath;
 		}
 
-		Date modificationDate = null;
+		ZonedDateTime modificationDate = null;
 
 		Channel channel = null;
 		try {
@@ -806,7 +808,7 @@ public class SftpConnection implements RemoteConnection {
 							if (!isFirstLine || !(nextLine.startsWith("total") || nextLine.startsWith("insgesamt"))) {
 								final JschFileData fileData = new JschFileData(nextLine);
 								if (".".equals(fileData.getFileName())) {
-									modificationDate = fileData.getChangeDate();
+									modificationDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
 									break;
 								}
 							}
@@ -1008,9 +1010,11 @@ public class SftpConnection implements RemoteConnection {
 								final JschFileData fileData = new JschFileData(nextLine);
 								if (!".".equals(fileData.getFileName()) && !"..".equals(fileData.getFileName())) {
 									if (fileData.getFileType() == JschFileType.RegularFile) {
-										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+										final ZonedDateTime changeDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
+										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), changeDate));
 									} else if (fileData.getFileType() == JschFileType.SymbolicLink) {
-										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), fileData.getChangeDate()));
+										final ZonedDateTime changeDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
+										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), changeDate));
 									} else if (fileData.getFileType() == JschFileType.Directory) {
 										subFolderNames.add(fileData.getFileName());
 									}
