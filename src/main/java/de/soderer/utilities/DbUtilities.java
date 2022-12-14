@@ -647,72 +647,53 @@ public class DbUtilities {
 			return Instant.ofEpochMilli(((Long) valueObject)).atZone(ZoneId.systemDefault()).toLocalDate();
 		} else if (valueObject instanceof String) {
 			String valueString = (String) valueObject;
-			try {
-				// ZonedDateTime: "2022-12-13T22:46:44.463491400+01:00[Europe/Berlin]" (String)
-				if (valueString.contains("[")) {
-					valueString = valueString.substring(0, valueString.indexOf(("[")));
-				}
-				return DateUtilities.parseLocalDate("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSz", valueString);
-			} catch(@SuppressWarnings("unused") final DateTimeParseException e1) {
-				try {
+			if (valueString.contains("[")) {
+				valueString = valueString.substring(0, valueString.indexOf(("[")));
+			}
+
+			final String[] datePatterns = new String[] {
 					// ZonedDateTime: "2022-12-13T22:46:44.463491400+01:00[Europe/Berlin]" (String)
-					if (valueString.contains("[")) {
-						valueString = valueString.substring(0, valueString.indexOf(("[")));
-					}
-					return DateUtilities.parseLocalDate("yyyy-MM-dd'T'HH:mm:ss.SSSSSSz", valueString);
-				} catch(@SuppressWarnings("unused") final DateTimeParseException e2) {
-					try {
-						// ZonedDateTime: "2022-12-13T22:46:44.463491400+01:00[Europe/Berlin]" (String)
-						if (valueString.contains("[")) {
-							valueString = valueString.substring(0, valueString.indexOf(("[")));
-						}
-						return DateUtilities.parseLocalDate("yyyy-MM-dd'T'HH:mm:ss.SSSz", valueString);
-					} catch(@SuppressWarnings("unused") final DateTimeParseException e3) {
-						try {
-							// ZonedDateTime: "2022-12-13T22:46:44.463491400+01:00[Europe/Berlin]" (String)
-							if (valueString.contains("[")) {
-								valueString = valueString.substring(0, valueString.indexOf(("[")));
-							}
-							return DateUtilities.parseLocalDate("yyyy-MM-dd'T'HH:mm:ssz", valueString);
-						} catch(@SuppressWarnings("unused") final DateTimeParseException e4) {
-							try {
-								// LocalDateTime: "2022-12-13T22:46:44.460515300" (String)
-								return DateUtilities.parseLocalDate(DateUtilities.ISO_8601_DATETIME_WITH_NANOS_FORMAT_NO_TIMEZONE, valueString);
-							} catch(@SuppressWarnings("unused") final DateTimeParseException e5) {
-								try {
-									// LocalDateTime: "2022-12-13T22:46:44.460515" (String)
-									return DateUtilities.parseLocalDate("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", valueString);
-								} catch(@SuppressWarnings("unused") final DateTimeParseException e6) {
-									try {
-										// LocalDateTime: "2022-12-13T22:46:44.460515" (String)
-										return DateUtilities.parseLocalDate("yyyy-MM-dd'T'HH:mm:ss.SSS", valueString);
-									} catch(@SuppressWarnings("unused") final DateTimeParseException e7) {
-										try {
-											// LocalDateTime: "2022-12-13T22:46:44.460515" (String)
-											return DateUtilities.parseLocalDate("yyyy-MM-dd'T'HH:mm:ss", valueString);
-										} catch(@SuppressWarnings("unused") final DateTimeParseException e8) {
-											try {
-												// CURRENT_TIMESTAMP: "2022-12-13 21:46:44" (String), CURRENT_TIMESTAMP uses UTC timezone by default
-												return DateUtilities.parseLocalDate(DateUtilities.YYYY_MM_DD_HHMMSS, valueString);
-											} catch(final DateTimeParseException e9) {
-												if (valueString.length() == 10) {
-													// LocalDate: "2022-12-13" (String)
-													// CURRENT_DATE: "2022-12-13" (String), CURRENT_DATE uses UTC timezone by default
-													return DateUtilities.parseLocalDate(DateUtilities.ISO_8601_DATE_FORMAT_NO_TIMEZONE, valueString);
-												} else {
-													throw e9;
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
+					"yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSz",
+
+					// ZonedDateTime: "2022-12-13T22:46:44.463491+01:00[Europe/Berlin]" (String)
+					"yyyy-MM-dd'T'HH:mm:ss.SSSSSSz",
+
+					// ZonedDateTime: "2022-12-13T22:46:44.463+01:00[Europe/Berlin]" (String)
+					"yyyy-MM-dd'T'HH:mm:ss.SSSz",
+
+					// ZonedDateTime: "2022-12-13T22:46:44+01:00[Europe/Berlin]" (String)
+					"yyyy-MM-dd'T'HH:mm:ssz",
+
+					// LocalDateTime: "2022-12-13T22:46:44.460515300" (String)
+					DateUtilities.ISO_8601_DATETIME_WITH_NANOS_FORMAT_NO_TIMEZONE,
+
+					// LocalDateTime: "2022-12-13T22:46:44.460515" (String)
+					"yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+
+					// LocalDateTime: "2022-12-13T22:46:44.460" (String)
+					"yyyy-MM-dd'T'HH:mm:ss.SSS",
+
+					// LocalDateTime: "2022-12-13T22:46:44" (String)
+					"yyyy-MM-dd'T'HH:mm:ss",
+
+					// CURRENT_TIMESTAMP: "2022-12-13 21:46:44" (String), CURRENT_TIMESTAMP uses UTC timezone by default
+					DateUtilities.YYYY_MM_DD_HHMMSS,
+
+					// LocalDate: "2022-12-13" (String)
+					// CURRENT_DATE: "2022-12-13" (String), CURRENT_DATE uses UTC timezone by default
+					DateUtilities.ISO_8601_DATE_FORMAT_NO_TIMEZONE
+			};
+
+			for (final String pattern : datePatterns) {
+				try {
+					return DateUtilities.parseLocalDate(pattern, valueString);
+				} catch(final DateTimeParseException e) {
+					// try next pattern
 				}
 			}
+			throw new Exception("Unparseable value for data type DATE: " + ((String) valueObject));
 		} else {
-			throw new Exception("Unparseable value for data type DATE");
+			throw new Exception("Unparseable value type for data type DATE");
 		}
 	}
 
@@ -724,72 +705,56 @@ public class DbUtilities {
 			return Instant.ofEpochMilli(((Long) valueObject)).atZone(ZoneId.systemDefault()).toLocalDateTime();
 		} else if (valueObject instanceof String) {
 			String valueString = (String) valueObject;
-			try {
-				// ZonedDateTime: "2022-12-13T22:46:44.463491400+01:00[Europe/Berlin]" (String)
-				if (valueString.contains("[")) {
-					valueString = valueString.substring(0, valueString.indexOf(("[")));
-				}
-				return DateUtilities.parseLocalDateTime("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSz", valueString);
-			} catch(@SuppressWarnings("unused") final DateTimeParseException e1) {
-				try {
+			if (valueString.contains("[")) {
+				valueString = valueString.substring(0, valueString.indexOf(("[")));
+			}
+
+			final String[] dateTimePatterns = new String[] {
 					// ZonedDateTime: "2022-12-13T22:46:44.463491400+01:00[Europe/Berlin]" (String)
-					if (valueString.contains("[")) {
-						valueString = valueString.substring(0, valueString.indexOf(("[")));
-					}
-					return DateUtilities.parseLocalDateTime("yyyy-MM-dd'T'HH:mm:ss.SSSSSSz", valueString);
-				} catch(@SuppressWarnings("unused") final DateTimeParseException e2) {
-					try {
-						// ZonedDateTime: "2022-12-13T22:46:44.463491400+01:00[Europe/Berlin]" (String)
-						if (valueString.contains("[")) {
-							valueString = valueString.substring(0, valueString.indexOf(("[")));
-						}
-						return DateUtilities.parseLocalDateTime("yyyy-MM-dd'T'HH:mm:ss.SSSz", valueString);
-					} catch(@SuppressWarnings("unused") final DateTimeParseException e3) {
-						try {
-							// ZonedDateTime: "2022-12-13T22:46:44.463491400+01:00[Europe/Berlin]" (String)
-							if (valueString.contains("[")) {
-								valueString = valueString.substring(0, valueString.indexOf(("[")));
-							}
-							return DateUtilities.parseLocalDateTime("yyyy-MM-dd'T'HH:mm:ssz", valueString);
-						} catch(@SuppressWarnings("unused") final DateTimeParseException e4) {
-							try {
-								// LocalDateTime: "2022-12-13T22:46:44.460515300" (String)
-								return DateUtilities.parseLocalDateTime(DateUtilities.ISO_8601_DATETIME_WITH_NANOS_FORMAT_NO_TIMEZONE, valueString);
-							} catch(@SuppressWarnings("unused") final DateTimeParseException e5) {
-								try {
-									// LocalDateTime: "2022-12-13T22:46:44.460515" (String)
-									return DateUtilities.parseLocalDateTime("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", valueString);
-								} catch(@SuppressWarnings("unused") final DateTimeParseException e6) {
-									try {
-										// LocalDateTime: "2022-12-13T22:46:44.460515" (String)
-										return DateUtilities.parseLocalDateTime("yyyy-MM-dd'T'HH:mm:ss.SSS", valueString);
-									} catch(@SuppressWarnings("unused") final DateTimeParseException e7) {
-										try {
-											// LocalDateTime: "2022-12-13T22:46:44.460515" (String)
-											return DateUtilities.parseLocalDateTime("yyyy-MM-dd'T'HH:mm:ss", valueString);
-										} catch(@SuppressWarnings("unused") final DateTimeParseException e8) {
-											try {
-												// CURRENT_TIMESTAMP: "2022-12-13 21:46:44" (String), CURRENT_TIMESTAMP uses UTC timezone by default
-												return DateUtilities.parseLocalDateTime(DateUtilities.YYYY_MM_DD_HHMMSS, valueString);
-											} catch(final DateTimeParseException e9) {
-												if (valueString.length() == 10) {
-													// LocalDate: "2022-12-13" (String)
-													// CURRENT_DATE: "2022-12-13" (String), CURRENT_DATE uses UTC timezone by default
-													return DateUtilities.parseLocalDateTime(DateUtilities.ISO_8601_DATETIME_FORMAT_NO_TIMEZONE, valueString + "T00:00:00");
-												} else {
-													throw e9;
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
+					"yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSz",
+
+					// ZonedDateTime: "2022-12-13T22:46:44.463491+01:00[Europe/Berlin]" (String)
+					"yyyy-MM-dd'T'HH:mm:ss.SSSSSSz",
+
+					// ZonedDateTime: "2022-12-13T22:46:44.463+01:00[Europe/Berlin]" (String)
+					"yyyy-MM-dd'T'HH:mm:ss.SSSz",
+
+					// ZonedDateTime: "2022-12-13T22:46:44+01:00[Europe/Berlin]" (String)
+					"yyyy-MM-dd'T'HH:mm:ssz",
+
+					// LocalDateTime: "2022-12-13T22:46:44.460515300" (String)
+					DateUtilities.ISO_8601_DATETIME_WITH_NANOS_FORMAT_NO_TIMEZONE,
+
+					// LocalDateTime: "2022-12-13T22:46:44.460515" (String)
+					"yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+
+					// LocalDateTime: "2022-12-13T22:46:44.460" (String)
+					"yyyy-MM-dd'T'HH:mm:ss.SSS",
+
+					// LocalDateTime: "2022-12-13T22:46:44" (String)
+					"yyyy-MM-dd'T'HH:mm:ss",
+
+					// CURRENT_TIMESTAMP: "2022-12-13 21:46:44" (String), CURRENT_TIMESTAMP uses UTC timezone by default
+					DateUtilities.YYYY_MM_DD_HHMMSS
+			};
+
+			for (final String pattern : dateTimePatterns) {
+				try {
+					return DateUtilities.parseLocalDateTime(pattern, valueString);
+				} catch(final DateTimeParseException e) {
+					// try next pattern
 				}
 			}
+
+			if (valueString.length() == 10) {
+				// LocalDate: "2022-12-13" (String)
+				// CURRENT_DATE: "2022-12-13" (String), CURRENT_DATE uses UTC timezone by default
+				return DateUtilities.parseLocalDateTime(DateUtilities.ISO_8601_DATETIME_FORMAT_NO_TIMEZONE, valueString + "T00:00:00");
+			} else {
+				throw new Exception("Unparseable value for data type TIMESTAMP: " + ((String) valueObject));
+			}
 		} else {
-			throw new Exception("Unparseable value for data type TIMESTAMP");
+			throw new Exception("Unparseable value type for data type TIMESTAMP");
 		}
 	}
 
