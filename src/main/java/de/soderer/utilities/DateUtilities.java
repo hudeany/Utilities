@@ -788,8 +788,16 @@ public class DateUtilities {
 		return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
 	}
 
+	public static java.sql.Timestamp getSqlTimestampForLocalDateTime(final LocalDateTime localDateTime) {
+		return new java.sql.Timestamp(Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant()).getTime());
+	}
+
 	public static Date getDateForLocalDate(final LocalDate localDate) {
 		return Date.from(localDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
+	}
+
+	public static java.sql.Date getSqlDateForLocalDate(final LocalDate localDate) {
+		return new java.sql.Date(Date.from(localDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()).getTime());
 	}
 
 	public static Date getDateForZonedDateTime(final ZonedDateTime zonedDateTime) {

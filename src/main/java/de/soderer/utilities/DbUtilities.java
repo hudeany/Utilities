@@ -34,6 +34,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -590,9 +591,7 @@ public class DbUtilities {
 			while (resultSet.next()) {
 				final List<String> values = new ArrayList<>();
 				for (int i = 1; i <= metaData.getColumnCount(); i++) {
-					if (resultSet.getObject(i) == null) {
-						values.add(null);
-					} else if (metaData.getColumnType(i) == Types.BLOB
+					if (metaData.getColumnType(i) == Types.BLOB
 							|| metaData.getColumnType(i) == Types.BINARY
 							|| metaData.getColumnType(i) == Types.VARBINARY
 							|| metaData.getColumnType(i) == Types.LONGVARBINARY) {
@@ -621,9 +620,19 @@ public class DbUtilities {
 							}
 						}
 					} else if (dbVendor == DbVendor.SQLite && "DATE".equals(metaData.getColumnTypeName(i))) {
-						values.add(extractSqliteLocalDate(resultSet.getObject(i)).toString());
+						final LocalDate extractSqliteLocalDate = extractSqliteLocalDate(resultSet.getObject(i));
+						if (extractSqliteLocalDate != null) {
+							values.add(extractSqliteLocalDate.toString());
+						} else {
+							values.add(null);
+						}
 					} else if (dbVendor == DbVendor.SQLite && "TIMESTAMP".equals(metaData.getColumnTypeName(i))) {
-						values.add(extractSqliteLocalDateTime(resultSet.getObject(i)).toString());
+						final LocalDateTime extractSqliteLocalDateTime = extractSqliteLocalDateTime(resultSet.getObject(i));
+						if (extractSqliteLocalDateTime != null) {
+							values.add(extractSqliteLocalDateTime.toString());
+						} else {
+							values.add(null);
+						}
 					} else if (metaData.getColumnType(i) == Types.DATE) {
 						values.add(resultSet.getString(i));
 					} else if (metaData.getColumnType(i) == Types.TIMESTAMP) {
@@ -2281,9 +2290,8 @@ public class DbUtilities {
 		try (Statement statement = connection.createStatement()) {
 			statement.execute("ALTER TABLE " + tableName + " ADD " + columnName + " " + DbUtilities.getDataType(dbVendor, SimpleDataType.Integer));
 			if (dbVendor != DbVendor.Cassandra) {
-				final String dateSuffix = DateUtilities.formatDate(DateUtilities.YYYYMMDDHHMMSSSSS, LocalDateTime.now());
 				try {
-					statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + columnName + ")");
+					statement.execute("CREATE INDEX tmp" + new Random().nextInt(100000000) + "_idx ON " + tableName + " (" + columnName + ")");
 				} catch (final Exception e) {
 					e.printStackTrace();
 					// Work without index. Maybe it already exists or it is a not allowed function based index
@@ -2324,8 +2332,7 @@ public class DbUtilities {
 				// Try to create an additional column index
 				if (Utilities.isNotEmpty(keyColumns) && dbVendor != DbVendor.Cassandra) {
 					try {
-						final String dateSuffix = DateUtilities.formatDate(DateUtilities.YYYYMMDDHHMMSS, LocalDateTime.now());
-						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), keyColumns) + ")");
+						statement.execute("CREATE INDEX tmp" + new Random().nextInt(100000000) + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), keyColumns) + ")");
 					} catch (@SuppressWarnings("unused") final Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
 					}
@@ -2351,8 +2358,8 @@ public class DbUtilities {
 	public static int joinDuplicates(final Connection connection, final String tableName, final Collection<String> keyColumnsWithFunctions, final boolean updateWithNullValues) throws Exception {
 		if (detectDuplicates(connection, tableName, keyColumnsWithFunctions) > 0) {
 			final DbVendor dbVendor = getDbVendor(connection);
-			final String dateSuffix = DateUtilities.formatDate(DateUtilities.YYYYMMDDHHMMSS, LocalDateTime.now());
-			final String interimTableName = "tmp_join_" + dateSuffix;
+			final String randomSuffix = "" + new Random().nextInt(100000000);
+			final String interimTableName = "tmp_join_" + randomSuffix;
 			String originalItemIndexColumn = null;
 			String originalDuplicateIndexColumn = null;
 
@@ -2361,7 +2368,7 @@ public class DbUtilities {
 				// Create additional index columns
 				if (Utilities.isNotEmpty(keyColumnsWithFunctions) && dbVendor != DbVendor.Cassandra) {
 					try {
-						statement.execute("CREATE INDEX tmp" + dateSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ")");
+						statement.execute("CREATE INDEX tmp" + randomSuffix + "_idx ON " + tableName + " (" + joinColumnVendorEscaped(dbVendor, keyColumnsWithFunctions) + ")");
 						connection.commit();
 					} catch (@SuppressWarnings("unused") final Exception e) {
 						// Work without index. Maybe it already exists or it is a not allowed function based index
@@ -2486,7 +2493,7 @@ public class DbUtilities {
 			if (dbVendor == DbVendor.SQLite) {
 				// SQLite cannot drop columns
 				try (Statement statement = connection.createStatement()) {
-					final String dateSuffix = DateUtilities.formatDate(DateUtilities.YYYYMMDDHHMMSS, LocalDateTime.now());
+					final String randomSuffix = "" + new Random().nextInt(100000000);
 
 					String createTableStatement = null;
 					try (ResultSet resultSet = statement.executeQuery("SELECT sql FROM sqlite_master WHERE type = 'table' AND LOWER(name) = LOWER('" + tableName + "')")) {
@@ -2499,12 +2506,12 @@ public class DbUtilities {
 
 					createTableStatement = createTableStatement.replaceAll(", " + columnName + " [a-zA-Z0-9()]+\\)", ")").replaceAll(", " + columnName + " [a-zA-Z0-9()]+,", ",");
 
-					statement.execute("ALTER TABLE " + tableName + " RENAME TO tmp" + dateSuffix + "_old");
+					statement.execute("ALTER TABLE " + tableName + " RENAME TO tmp" + randomSuffix + "_old");
 					statement.execute(createTableStatement);
 					final Set<String> columns = getColumnNames(connection, tableName);
 					columns.remove(columnName);
-					statement.execute("INSERT INTO " + tableName + " (" + joinColumnVendorEscaped(dbVendor, columns) + ") SELECT " + joinColumnVendorEscaped(dbVendor, columns) + " FROM tmp" + dateSuffix + "_old");
-					statement.execute("DROP TABLE tmp" + dateSuffix + "_old");
+					statement.execute("INSERT INTO " + tableName + " (" + joinColumnVendorEscaped(dbVendor, columns) + ") SELECT " + joinColumnVendorEscaped(dbVendor, columns) + " FROM tmp" + randomSuffix + "_old");
+					statement.execute("DROP TABLE tmp" + randomSuffix + "_old");
 					connection.commit();
 					return true;
 				} catch (final Exception e) {
@@ -2581,7 +2588,7 @@ public class DbUtilities {
 
 	public static String createIndex(final Connection connection, final String tableName, final List<String> columns) throws Exception {
 		try (Statement statement = connection.createStatement()) {
-			final String indexNameSuffix = "_" + DateUtilities.formatDate(DateUtilities.YYYYMMDDHHMMSS, LocalDateTime.now()) + "_ix";
+			final String indexNameSuffix = "_" + new Random().nextInt(100000000) + "_ix";
 			final String indexName = Utilities.shortenStringToMaxLengthCutRight(tableName, 30 - indexNameSuffix.length(), "") + indexNameSuffix;
 			statement.execute("CREATE INDEX " + indexName + " ON " + tableName + " (" + joinColumnVendorEscaped(getDbVendor(connection), columns) + ")");
 			return indexName;
