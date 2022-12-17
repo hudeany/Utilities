@@ -1,6 +1,7 @@
 package de.soderer.utilities.http;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,9 +20,13 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
+import java.security.KeyPair;
+import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -45,6 +50,7 @@ import de.soderer.utilities.PasswordGeneratorCharacterGroup;
 import de.soderer.utilities.Triple;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.crypto.CryptographicUtilities;
 
 public class HttpUtilities {
 	private static boolean debugLog = false;
@@ -127,7 +133,7 @@ public class HttpUtilities {
 			}
 
 			if (requestedUrl.startsWith(HttpRequest.SECURE_HTTP_PROTOCOL_SIGN) && !httpRequest.isCheckSslCertificates()) {
-				final SSLContext sslContext = SSLContext.getInstance("SSL");
+				final SSLContext sslContext = SSLContext.getInstance("TLS");
 				sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new java.security.SecureRandom());
 				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 				((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
@@ -704,5 +710,59 @@ public class HttpUtilities {
 		groups.add(new PasswordGeneratorCharacterGroup("ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray()));
 		groups.add(new PasswordGeneratorCharacterGroup("0123456789".toCharArray()));
 		return new String(PasswordGenerator.generatePassword(groups, 32, 32));
+	}
+
+	public static X509Certificate getServerTlsCertificate(final String hostnameOrIp, final int port) throws Exception {
+		final HttpsURLConnection urlConnection = (HttpsURLConnection) new URL("https://" + hostnameOrIp + ":" + port).openConnection();
+		final SSLContext sslContext = SSLContext.getInstance("TLS");
+		sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new java.security.SecureRandom());
+		final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+		urlConnection.setSSLSocketFactory(sslSocketFactory);
+		urlConnection.setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
+		urlConnection.connect();
+		final Certificate[] certificates = urlConnection.getServerCertificates();
+		for (final Certificate certificate : certificates) {
+			if (certificate instanceof X509Certificate) {
+				if (((X509Certificate)certificate).getSubjectAlternativeNames() != null) {
+					return (X509Certificate) certificate;
+				}
+			}
+		}
+		return null;
+	}
+
+	public static void createTrustStoreFile(final String hostnameOrIpAndPort, final int defaultPort, final File trustStoreFile) throws Exception {
+		String hostnameOrIp;
+		int port;
+		final String[] hostParts = hostnameOrIpAndPort.split(":");
+		if (hostParts.length == 2) {
+			hostnameOrIp = hostParts[0];
+			try {
+				port = Integer.parseInt(hostParts[1]);
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				throw new Exception("Invalid port: " + hostParts[1]);
+			}
+		} else {
+			hostnameOrIp = hostnameOrIpAndPort;
+			port = defaultPort;
+		}
+
+		final X509Certificate certificate = getServerTlsCertificate(hostnameOrIp, port);
+
+		final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		keyStore.load(null);
+
+		final char[] password = new char[0];
+		final LocalDateTime validityStartDate = LocalDateTime.now();
+		final LocalDateTime validityEndDate = validityStartDate.plusDays(365);
+		final KeyPair keyPair = CryptographicUtilities.generateRsaKeyPair(4096);
+		final String x500PrincipalString = CryptographicUtilities.generateLegacyX500PrincipalString(hostnameOrIp, null, null, null, null, null, null);
+		final Certificate[] chain = { CryptographicUtilities.generateSelfsignedCertificate(keyPair, validityStartDate, validityEndDate, CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA, x500PrincipalString, 0) };
+		keyStore.setKeyEntry("Client for " + hostnameOrIp, keyPair.getPrivate(), password, chain);
+		keyStore.setCertificateEntry("Server certificate " + hostnameOrIp, certificate);
+
+		try (OutputStream javaKeyStoreOutputStream = new FileOutputStream(trustStoreFile)) {
+			keyStore.store(javaKeyStoreOutputStream, password);
+		}
 	}
 }

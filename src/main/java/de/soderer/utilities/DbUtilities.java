@@ -34,6 +34,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
@@ -280,13 +281,22 @@ public class DbUtilities {
 		}
 	}
 
-	public static String generateUrlConnectionString(final DbVendor dbVendor, String dbServerHostname, int dbServerPort, String dbName) throws Exception {
+	public static String generateUrlConnectionString(final DbVendor dbVendor, String dbServerHostname, int dbServerPort, String dbName, final boolean secure, final String trustedCN) throws Exception {
 		if (DbVendor.Oracle == dbVendor) {
-			if (dbName.startsWith("/")) {
-				// Some Oracle databases only accept the SID separated by a "/"
-				return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + dbName;
+			if (!secure) {
+				if (dbName.startsWith("/")) {
+					// Some Oracle databases only accept the SID separated by a "/"
+					return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + dbName;
+				} else {
+					return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + ":" + dbName;
+				}
 			} else {
-				return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + ":" + dbName;
+				return "jdbc:oracle:thin:@"
+						+ "(DESCRIPTION="
+						+ "(ADDRESS=(PROTOCOL=TCPS)(HOST=" + dbServerHostname + ")(PORT=" + dbServerPort + "))"
+						+ "(CONNECT_DATA=(SERVICE_NAME=" + dbName + "))"
+						+ (Utilities.isNotBlank(trustedCN) ? "(SECURITY=(ssl_server_cert_dn=\"" + trustedCN + "\"))" : "")
+						+ ")";
 			}
 		} else if (DbVendor.MySQL == dbVendor) {
 			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
@@ -341,13 +351,13 @@ public class DbUtilities {
 			if (new File(dbPath).exists()) {
 				throw new Exception("SQLite db file '" + dbPath + "' already exists");
 			}
-			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath));
+			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath, false, null));
 		} else if (dbVendor == DbVendor.Derby) {
 			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
 				throw new Exception("Derby db directory '" + dbPath + "' already exists");
 			}
-			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath) + ";create=true");
+			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath, false, null) + ";create=true");
 		} else if (dbVendor == DbVendor.HSQL) {
 			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (dbPath.startsWith("/")) {
@@ -360,7 +370,7 @@ public class DbUtilities {
 			final Logger dbLogger = Logger.getLogger("hsqldb.db");
 			dbLogger.setLevel(Level.WARNING);
 
-			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath));
+			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath, false, null));
 		} else {
 			throw new Exception("Invalid db vendor '" + dbVendor.toString() + "'. Only SQLite, HSQL or Derby db can be created this way.");
 		}
@@ -423,18 +433,24 @@ public class DbUtilities {
 		}
 	}
 
-	public static Connection createConnection(final DbVendor dbVendor, final String hostname, final String dbName, final String userName, final char[] password) throws Exception {
-		return createConnection(dbVendor, hostname, dbName, userName, password, false);
+	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, final String dbName, final String userName, final char[] password) throws Exception {
+		return createConnection(dbVendor, hostnameAndPort, dbName, userName, password, null, false);
+	}
+
+	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, final String dbName, final String userName, final char[] password, final boolean retryOnError) throws Exception {
+		return createConnection(dbVendor, hostnameAndPort, dbName, userName, password, null, retryOnError);
 	}
 
 	@SuppressWarnings("resource")
-	public static Connection createConnection(final DbVendor dbVendor, final String hostname, String dbName, final String userName, final char[] password, final boolean retryOnError) throws Exception {
+	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, String dbName, final String userName, final char[] password, final File trustStoreFile, final boolean retryOnError) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
-		} else if (Utilities.isEmpty(hostname) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby){
+		} else if (Utilities.isEmpty(hostnameAndPort) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby){
 			throw new Exception("Cannot create db connection: Missing hostname");
 		} else if (Utilities.isEmpty(dbName)){
 			throw new Exception("Cannot create db connection: Missing dbName");
+		} else if (trustStoreFile != null && !trustStoreFile.exists()){
+			throw new Exception("Cannot create db connection: Configured trustStoreFile '" + trustStoreFile.getAbsolutePath() + "' does not exist");
 		}
 
 		try {
@@ -457,7 +473,7 @@ public class DbUtilities {
 				} else if (!new File(dbName).isFile()) {
 					throw new Exception("SQLite db file '" + dbName + "' is not a file");
 				}
-				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName));
+				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName, false, null));
 			} else if (dbVendor == DbVendor.Derby) {
 				dbName = Utilities.replaceUsersHome(dbName);
 				if (!new File(dbName).exists()) {
@@ -465,7 +481,7 @@ public class DbUtilities {
 				} else if (!new File(dbName).isDirectory()) {
 					throw new Exception("Derby db directory '" + dbName + "' is not a directory");
 				}
-				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName));
+				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName, false, null));
 			} else if (dbVendor == DbVendor.HSQL) {
 				dbName = Utilities.replaceUsersHome(dbName);
 				if (dbName.startsWith("/")) {
@@ -474,7 +490,7 @@ public class DbUtilities {
 					}
 				}
 				int port;
-				final String[] hostParts = hostname.split(":");
+				final String[] hostParts = hostnameAndPort.split(":");
 				if (hostParts.length == 2) {
 					try {
 						port = Integer.parseInt(hostParts[1]);
@@ -489,10 +505,10 @@ public class DbUtilities {
 				final Logger dbLogger = Logger.getLogger("hsqldb.db");
 				dbLogger.setLevel(Level.WARNING);
 
-				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
+				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, false, null), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
 			} else {
 				int port;
-				final String[] hostParts = hostname.split(":");
+				final String[] hostParts = hostnameAndPort.split(":");
 				if (hostParts.length == 2) {
 					try {
 						port = Integer.parseInt(hostParts[1]);
@@ -511,22 +527,37 @@ public class DbUtilities {
 				//					// securerandom.source=file:/dev/./urandom
 				//				}
 
-				try {
-					if (userName != null && password != null) {
-						connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
-					} else {
-						connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName));
-					}
-				} catch (final Exception e) {
-					if (retryOnError && e.getCause() != null && e.getCause() instanceof SQLRecoverableException) {
+				if (trustStoreFile == null) {
+					try {
 						if (userName != null && password != null) {
-							connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName), userName, new String(password));
+							connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, false, null), userName, new String(password));
 						} else {
-							connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName));
+							connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, false, null));
 						}
-					} else {
-						throw e;
+					} catch (final Exception e) {
+						if (retryOnError && e.getCause() != null && e.getCause() instanceof SQLRecoverableException) {
+							if (userName != null && password != null) {
+								connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, false, null), userName, new String(password));
+							} else {
+								connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, false, null));
+							}
+						} else {
+							throw e;
+						}
 					}
+				} else {
+					final Properties props = new Properties();
+					props.setProperty("javax.net.ssl.trustStore", "/home/aso/Downloads/OracleSslTest/cacerts.jks");
+					props.setProperty("javax.net.ssl.trustStoreType", "JKS");
+					props.setProperty("javax.net.ssl.trustStorePassword", "123456");
+
+					// Enforce server certificate DN check for oracle connections, default is false
+					//props.setProperty("oracle.net.ssl_server_dn_match", "true");
+
+					props.setProperty("user", userName);
+					props.setProperty("password", new String(password));
+
+					connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, true, null), props);
 				}
 
 				//				if (dbVendor == DbVendor.Oracle && new File("/dev/random").exists()) {
@@ -547,24 +578,24 @@ public class DbUtilities {
 		} catch (final Exception e) {
 			try {
 				int port;
-				if (Utilities.isNotEmpty(hostname)) {
-					if (hostname.contains(":")) {
+				if (Utilities.isNotEmpty(hostnameAndPort)) {
+					if (hostnameAndPort.contains(":")) {
 						try {
-							port = Integer.parseInt(hostname.substring(hostname.indexOf(":") + 1));
+							port = Integer.parseInt(hostnameAndPort.substring(hostnameAndPort.indexOf(":") + 1));
 						} catch (@SuppressWarnings("unused") final Exception e1) {
-							throw new Exception("Invalid port: " + hostname.substring(hostname.indexOf(":") + 1));
+							throw new Exception("Invalid port: " + hostnameAndPort.substring(hostnameAndPort.indexOf(":") + 1));
 						}
-						NetworkUtilities.testConnection(hostname.substring(0, hostname.indexOf(":")), port);
+						NetworkUtilities.testConnection(hostnameAndPort.substring(0, hostnameAndPort.indexOf(":")), port);
 					} else {
 						port = dbVendor.getDefaultPort();
-						NetworkUtilities.testConnection(hostname, port);
+						NetworkUtilities.testConnection(hostnameAndPort, port);
 					}
 				}
 
 				// No Exception from testConnection, so it must be some other problem
 				throw new Exception("Cannot create db connection: " + e.getMessage(), e);
 			} catch (final Exception e1) {
-				throw new Exception("Cannot create db connection, caused by Url (" + hostname + "): " + e1.getMessage(), e1);
+				throw new Exception("Cannot create db connection, caused by Url (" + hostnameAndPort + "): " + e1.getMessage(), e1);
 			}
 		}
 	}
@@ -696,7 +727,7 @@ public class DbUtilities {
 			for (final String pattern : datePatterns) {
 				try {
 					return DateUtilities.parseLocalDate(pattern, valueString);
-				} catch(final DateTimeParseException e) {
+				} catch(@SuppressWarnings("unused") final DateTimeParseException e) {
 					// try next pattern
 				}
 			}
@@ -750,7 +781,7 @@ public class DbUtilities {
 			for (final String pattern : dateTimePatterns) {
 				try {
 					return DateUtilities.parseLocalDateTime(pattern, valueString);
-				} catch(final DateTimeParseException e) {
+				} catch(@SuppressWarnings("unused") final DateTimeParseException e) {
 					// try next pattern
 				}
 			}
@@ -2957,8 +2988,8 @@ public class DbUtilities {
 		return pattern.matcher(alias).matches();
 	}
 
-	public static void updateBlob(final DbVendor dbVendor, final String hostname, final String dbName, final String userName, final char[] password, final String sqlUpdateStatementWithPlaceholder, final String filePath) throws Exception {
-		try (Connection connection = createConnection(dbVendor, hostname, dbName, userName, password)) {
+	public static void updateBlob(final DbVendor dbVendor, final String hostname, final String dbName, final String userName, final char[] password, final File trustStoreFile, final String sqlUpdateStatementWithPlaceholder, final String filePath) throws Exception {
+		try (Connection connection = createConnection(dbVendor, hostname, dbName, userName, password, trustStoreFile, false)) {
 			try (FileInputStream inputStream = new FileInputStream(new File(filePath))) {
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sqlUpdateStatementWithPlaceholder)) {
 					preparedStatement.setBinaryStream(1, inputStream);
