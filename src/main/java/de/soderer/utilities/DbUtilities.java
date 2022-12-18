@@ -434,15 +434,15 @@ public class DbUtilities {
 	}
 
 	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, final String dbName, final String userName, final char[] password) throws Exception {
-		return createConnection(dbVendor, hostnameAndPort, dbName, userName, password, null, false);
+		return createConnection(dbVendor, hostnameAndPort, dbName, userName, password, null, null, false);
 	}
 
 	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, final String dbName, final String userName, final char[] password, final boolean retryOnError) throws Exception {
-		return createConnection(dbVendor, hostnameAndPort, dbName, userName, password, null, retryOnError);
+		return createConnection(dbVendor, hostnameAndPort, dbName, userName, password, null, null, retryOnError);
 	}
 
 	@SuppressWarnings("resource")
-	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, String dbName, final String userName, final char[] password, final File trustStoreFile, final boolean retryOnError) throws Exception {
+	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, String dbName, final String userName, final char[] password, final File trustStoreFile, final char[] trustStorePassword, final boolean retryOnError) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
 		} else if (Utilities.isEmpty(hostnameAndPort) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby){
@@ -547,9 +547,11 @@ public class DbUtilities {
 					}
 				} else {
 					final Properties props = new Properties();
-					props.setProperty("javax.net.ssl.trustStore", "/home/aso/Downloads/OracleSslTest/cacerts.jks");
+					props.setProperty("javax.net.ssl.trustStore", trustStoreFile.getAbsolutePath());
 					props.setProperty("javax.net.ssl.trustStoreType", "JKS");
-					props.setProperty("javax.net.ssl.trustStorePassword", "123456");
+					if (trustStorePassword != null && trustStorePassword.length > 0) {
+						props.setProperty("javax.net.ssl.trustStorePassword", new String(trustStorePassword));
+					}
 
 					// Enforce server certificate DN check for oracle connections, default is false
 					//props.setProperty("oracle.net.ssl_server_dn_match", "true");
@@ -2988,8 +2990,8 @@ public class DbUtilities {
 		return pattern.matcher(alias).matches();
 	}
 
-	public static void updateBlob(final DbVendor dbVendor, final String hostname, final String dbName, final String userName, final char[] password, final File trustStoreFile, final String sqlUpdateStatementWithPlaceholder, final String filePath) throws Exception {
-		try (Connection connection = createConnection(dbVendor, hostname, dbName, userName, password, trustStoreFile, false)) {
+	public static void updateBlob(final DbVendor dbVendor, final String hostname, final String dbName, final String userName, final char[] password, final File trustStoreFile, final char[] trustStorePassword, final String sqlUpdateStatementWithPlaceholder, final String filePath) throws Exception {
+		try (Connection connection = createConnection(dbVendor, hostname, dbName, userName, password, trustStoreFile, trustStorePassword, false)) {
 			try (FileInputStream inputStream = new FileInputStream(new File(filePath))) {
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sqlUpdateStatementWithPlaceholder)) {
 					preparedStatement.setBinaryStream(1, inputStream);

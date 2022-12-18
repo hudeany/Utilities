@@ -20,13 +20,11 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
-import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -50,7 +48,6 @@ import de.soderer.utilities.PasswordGeneratorCharacterGroup;
 import de.soderer.utilities.Triple;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.crypto.CryptographicUtilities;
 
 public class HttpUtilities {
 	private static boolean debugLog = false;
@@ -723,15 +720,22 @@ public class HttpUtilities {
 		final Certificate[] certificates = urlConnection.getServerCertificates();
 		for (final Certificate certificate : certificates) {
 			if (certificate instanceof X509Certificate) {
+				// Take the first certificate with alternative names
 				if (((X509Certificate)certificate).getSubjectAlternativeNames() != null) {
 					return (X509Certificate) certificate;
 				}
 			}
 		}
+		for (final Certificate certificate : certificates) {
+			if (certificate instanceof X509Certificate) {
+				// Take the first X509Certificate available, even without alternative names
+				return (X509Certificate) certificate;
+			}
+		}
 		return null;
 	}
 
-	public static void createTrustStoreFile(final String hostnameOrIpAndPort, final int defaultPort, final File trustStoreFile) throws Exception {
+	public static void createTrustStoreFile(final String hostnameOrIpAndPort, final int defaultPort, final File trustStoreFile, final char[] trustStorePassword) throws Exception {
 		String hostnameOrIp;
 		int port;
 		final String[] hostParts = hostnameOrIpAndPort.split(":");
@@ -748,18 +752,15 @@ public class HttpUtilities {
 		}
 
 		final X509Certificate certificate = getServerTlsCertificate(hostnameOrIp, port);
+		if (certificate == null) {
+			throw new Exception("Cannot get TLS certificate for '" + hostnameOrIp + ":" + port + "'");
+		}
 
 		final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 		keyStore.load(null);
 
-		final char[] password = new char[0];
-		final LocalDateTime validityStartDate = LocalDateTime.now();
-		final LocalDateTime validityEndDate = validityStartDate.plusDays(365);
-		final KeyPair keyPair = CryptographicUtilities.generateRsaKeyPair(4096);
-		final String x500PrincipalString = CryptographicUtilities.generateLegacyX500PrincipalString(hostnameOrIp, null, null, null, null, null, null);
-		final Certificate[] chain = { CryptographicUtilities.generateSelfsignedCertificate(keyPair, validityStartDate, validityEndDate, CryptographicUtilities.DEFAULT_SIGNATURE_METHOD_RSA, x500PrincipalString, 0) };
-		keyStore.setKeyEntry("Client for " + hostnameOrIp, keyPair.getPrivate(), password, chain);
-		keyStore.setCertificateEntry("Server certificate " + hostnameOrIp, certificate);
+		final char[] password = trustStorePassword == null ? new char[0] : trustStorePassword;
+		keyStore.setCertificateEntry(hostnameOrIp, certificate);
 
 		try (OutputStream javaKeyStoreOutputStream = new FileOutputStream(trustStoreFile)) {
 			keyStore.store(javaKeyStoreOutputStream, password);
