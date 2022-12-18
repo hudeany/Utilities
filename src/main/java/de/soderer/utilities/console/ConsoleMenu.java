@@ -72,30 +72,7 @@ public class ConsoleMenu {
 
 			System.out.println(menuTitle);
 			System.out.println();
-
-			if (errors.size() > 0) {
-				for (final String error : errors) {
-					System.out.println(ConsoleUtilities.getAnsiColoredText("Error: " + error, TextColor.Light_red));
-					System.out.println();
-				}
-				errors.clear();
-			}
-
-			if (warnings.size() > 0) {
-				for (final String warning : warnings) {
-					System.out.println(ConsoleUtilities.getAnsiColoredText("Warning: " + warning, TextColor.Yellow));
-				}
-				System.out.println();
-				messages.clear();
-			}
-
-			if (messages.size() > 0) {
-				for (final String message : messages) {
-					System.out.println(ConsoleUtilities.getAnsiColoredText(message, TextColor.Green));
-				}
-				System.out.println();
-				messages.clear();
-			}
+			printMessages();
 
 			String defaultMenuTitle;
 			if (parentMenu == null) {
@@ -140,6 +117,32 @@ public class ConsoleMenu {
 					errors.add("Invalid input: " + choice);
 				}
 			}
+		}
+	}
+
+	protected void printMessages() {
+		if (errors.size() > 0) {
+			for (final String error : errors) {
+				System.out.println(ConsoleUtilities.getAnsiColoredText("Error: " + error, TextColor.Light_red));
+				System.out.println();
+			}
+			errors.clear();
+		}
+
+		if (warnings.size() > 0) {
+			for (final String warning : warnings) {
+				System.out.println(ConsoleUtilities.getAnsiColoredText("Warning: " + warning, TextColor.Yellow));
+			}
+			System.out.println();
+			messages.clear();
+		}
+
+		if (messages.size() > 0) {
+			for (final String message : messages) {
+				System.out.println(ConsoleUtilities.getAnsiColoredText(message, TextColor.Green));
+			}
+			System.out.println();
+			messages.clear();
 		}
 	}
 

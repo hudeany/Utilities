@@ -12,6 +12,8 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -631,5 +633,14 @@ public class FileUtilities {
 	 */
 	public static String removePropertiesCommentLines(final String propertiesTextData) {
 		return propertiesTextData.replaceAll("(?m)^#.*", "");
+	}
+
+	public static boolean isValidFilePath(final String path) {
+		try {
+			Paths.get(path);
+		} catch (@SuppressWarnings("unused") InvalidPathException | NullPointerException ex) {
+			return false;
+		}
+		return true;
 	}
 }

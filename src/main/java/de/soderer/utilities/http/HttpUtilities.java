@@ -736,6 +736,10 @@ public class HttpUtilities {
 	}
 
 	public static void createTrustStoreFile(final String hostnameOrIpAndPort, final int defaultPort, final File trustStoreFile, final char[] trustStorePassword) throws Exception {
+		if (trustStoreFile.exists()) {
+			throw new Exception("File '" + trustStoreFile.getAbsolutePath() + "' already exists");
+		}
+
 		String hostnameOrIp;
 		int port;
 		final String[] hostParts = hostnameOrIpAndPort.split(":");
