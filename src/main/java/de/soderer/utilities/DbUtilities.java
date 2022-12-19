@@ -299,9 +299,17 @@ public class DbUtilities {
 						+ ")";
 			}
 		} else if (DbVendor.MySQL == dbVendor) {
-			return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+			if (secure) {
+				return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=true&trustServerCertificate=true";
+			} else {
+				return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+			}
 		} else if (DbVendor.MariaDB == dbVendor) {
-			return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+			if (secure) {
+				return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+			} else {
+				return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=true&trustServerCertificate=true";
+			}
 		} else if (DbVendor.PostgreSQL == dbVendor) {
 			return "jdbc:postgresql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName;
 		} else if (DbVendor.SQLite == dbVendor) {
