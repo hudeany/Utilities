@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -48,6 +49,7 @@ import de.soderer.utilities.collection.CaseInsensitiveMap;
 import de.soderer.utilities.collection.CaseInsensitiveSet;
 import de.soderer.utilities.csv.CsvFormat;
 import de.soderer.utilities.csv.CsvWriter;
+import de.soderer.utilities.http.HttpUtilities;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
 
@@ -473,7 +475,7 @@ public class DbUtilities {
 	}
 
 	@SuppressWarnings("resource")
-	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, String dbName, final String userName, final char[] password, final boolean secureConnection, final File trustStoreFile, final char[] trustStorePassword, final boolean retryOnError) throws Exception {
+	public static Connection createConnection(final DbVendor dbVendor, final String hostnameAndPort, String dbName, final String userName, final char[] password, final boolean secureConnection, File trustStoreFile, final char[] trustStorePassword, final boolean retryOnError) throws Exception {
 		if (dbVendor == null) {
 			throw new Exception("Unknown db vendor");
 		} else if (Utilities.isEmpty(hostnameAndPort) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby){
@@ -583,10 +585,19 @@ public class DbUtilities {
 				} else {
 					if (trustStoreFile != null) {
 						final Properties props = new Properties();
-						props.setProperty("javax.net.ssl.trustStore", trustStoreFile.getAbsolutePath());
-						props.setProperty("javax.net.ssl.trustStoreType", "JKS");
-						if (trustStorePassword != null && trustStorePassword.length > 0) {
-							props.setProperty("javax.net.ssl.trustStorePassword", new String(trustStorePassword));
+						if (dbVendor == DbVendor.Oracle) {
+							props.setProperty("javax.net.ssl.trustStore", trustStoreFile.getAbsolutePath());
+							props.setProperty("javax.net.ssl.trustStoreType", "JKS");
+							if (trustStorePassword != null && trustStorePassword.length > 0) {
+								props.setProperty("javax.net.ssl.trustStorePassword", new String(trustStorePassword));
+							}
+						} else {
+							// MariaDB and MySQLDB ignore trustStore settings in the temporary properties, so system properties must be used
+							System.setProperty("javax.net.ssl.trustStore", trustStoreFile.getAbsolutePath());
+							System.setProperty("javax.net.ssl.trustStoreType", "JKS");
+							if (trustStorePassword != null && trustStorePassword.length > 0) {
+								System.setProperty("javax.net.ssl.trustStorePassword", new String(trustStorePassword));
+							}
 						}
 
 						props.setProperty("user", userName);
@@ -598,7 +609,22 @@ public class DbUtilities {
 						props.setProperty("user", userName);
 						props.setProperty("password", new String(password));
 
-						connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, true, trustStoreFile, trustStorePassword, null), props);
+						String temporaryTrustStoreFilePath = null;
+						if (dbVendor == DbVendor.Oracle) {
+							// Create a temporary trustStore
+							temporaryTrustStoreFilePath = Files.createTempFile("TempTrustStore", ".jks").toString();
+							trustStoreFile = new File(temporaryTrustStoreFilePath);
+							HttpUtilities.createTrustStoreFile(hostParts[0], port, trustStoreFile, null);
+						}
+
+						try {
+							connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, true, trustStoreFile, trustStorePassword, null), props);
+						} finally {
+							if (dbVendor == DbVendor.Oracle) {
+								// Remove temporary trustStore
+								new File(temporaryTrustStoreFilePath).delete();
+							}
+						}
 					}
 				}
 

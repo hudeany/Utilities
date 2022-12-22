@@ -21,6 +21,7 @@ import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
@@ -1723,5 +1724,40 @@ public class Utilities {
 			arrayData[j] = tmp;
 		}
 		return arrayData;
+	}
+
+	/**
+	 * KeyStores saved with blank password should also contain certzificates when opened with a null password.
+	 * Special cacerts keystore of JDKs behave this way, but newly created JKS keystores do not.
+	 * Thos are fixed by this keystore copy job to also behave in the intended way to show their certificates when openend with null password.
+	 *
+	 * @param keyStoreFileWithNullPassword
+	 * @throws Exception
+	 */
+	public static void fixNullPasswordTrustStore(final File keyStoreFileWithNullPassword) throws Exception {
+		final KeyStore readKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		try (FileInputStream inputStream = new FileInputStream(keyStoreFileWithNullPassword)) {
+			readKeyStore.load(inputStream, "".toCharArray());
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			// KeyStore password is not blank, so do not fix anything
+			return;
+		}
+
+		final byte[] emptyKeyStoreWithNullPasswordBytes = new byte[] {
+				-2, -19, -2, -19, 0, 0, 0, 2, 0, 0, 0, 0, 87, -66, -68, 39,
+				98, -94, 29, 112, -1, -14, 24, -35, 89, 104, 1, 31, -2, 66, 58, 105 };
+
+		final ByteArrayInputStream inputStreamEmptyKeyStore = new ByteArrayInputStream(emptyKeyStoreWithNullPasswordBytes);
+		final KeyStore writeKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		writeKeyStore.load(inputStreamEmptyKeyStore, null);
+
+		// KeyStore password is null
+		for (final String alias : Collections.list(readKeyStore.aliases())) {
+			writeKeyStore.setCertificateEntry(alias, readKeyStore.getCertificate(alias));
+		}
+		keyStoreFileWithNullPassword.delete();
+		try (FileOutputStream outputStream = new FileOutputStream(keyStoreFileWithNullPassword)) {
+			writeKeyStore.store(outputStream, "".toCharArray());
+		}
 	}
 }
