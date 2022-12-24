@@ -24,15 +24,17 @@ public class Credentials {
 		return username;
 	}
 
-	public void setUsername(final String username) {
+	public Credentials setUsername(final String username) {
 		this.username = username;
+		return this;
 	}
 
 	public char[] getPassword() {
 		return password;
 	}
 
-	public void setPassword(final char[] password) {
+	public Credentials setPassword(final char[] password) {
 		this.password = password;
+		return this;
 	}
 }

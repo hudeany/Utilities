@@ -29,6 +29,10 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 	private final String text_OK;
 	private final String text_Cancel;
 
+	private boolean enableNoPassword = false;
+	private String enableNoPasswordButtonText;
+	private Button enableNoPasswordButton;
+
 	private String rememberCredentialsText = null;
 
 	private Button okButton;
@@ -103,6 +107,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			final Text passwordTextField = new Text(shell, SWT.BORDER | SWT.PASSWORD);
 			passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 			passwordTextField.setText("");
+			password = "".toCharArray();
 			passwordTextField.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(final ModifyEvent event) {
@@ -135,7 +140,20 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
+		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(enableNoPassword ? 3 : 2, true));
+
+		if (enableNoPassword) {
+			enableNoPasswordButton = new Button(mainButtonComposite, SWT.PUSH);
+			enableNoPasswordButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+			enableNoPasswordButton.setText(enableNoPasswordButtonText);
+			enableNoPasswordButton.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(final SelectionEvent event) {
+					setReturnValue(getCredentials().setPassword(null));
+					getParent().close();
+				}
+			});
+		}
 
 		okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
@@ -226,5 +244,11 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			}
 			return MessageFormat.format(pattern, arguments);
 		}
+	}
+
+	public CredentialsDialog enableNoPassword(final boolean enable, final String enableNoPasswordButtonTextParam) {
+		enableNoPassword = enable;
+		enableNoPasswordButtonText = enableNoPasswordButtonTextParam;
+		return this;
 	}
 }

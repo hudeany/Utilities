@@ -1551,12 +1551,30 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static boolean isJavaKeyStoreFile(final File potentialJavaKeyStoreFile) {
-		if (potentialJavaKeyStoreFile != null && potentialJavaKeyStoreFile.exists()) {
-			try (InputStream keyStoreInputStream = new FileInputStream(potentialJavaKeyStoreFile)) {
+	public static boolean isKeyStoreFile(final File potentialKeyStoreFile) {
+		if (potentialKeyStoreFile != null && potentialKeyStoreFile.exists()) {
+			try (InputStream keyStoreInputStream = new FileInputStream(potentialKeyStoreFile)) {
 				final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 				keyStore.load(keyStoreInputStream, null);
 				return true;
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	public static boolean isJavaKeyStoreFile(final File potentialJavaKeyStoreFile) {
+		if (potentialJavaKeyStoreFile != null && potentialJavaKeyStoreFile.exists()) {
+			final byte[] firstBytes = new byte[4];
+			try (InputStream keyStoreInputStream = new FileInputStream(potentialJavaKeyStoreFile)) {
+				if (keyStoreInputStream.read(firstBytes) == 4) {
+					// Magic file numbers "FE ED FE ED"
+					return firstBytes[0] == -2 && firstBytes[1] == -19 && firstBytes[2] == -2 && firstBytes[3] == -19;
+				} else {
+					return false;
+				}
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				return false;
 			}
