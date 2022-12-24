@@ -1727,8 +1727,8 @@ public class Utilities {
 	}
 
 	/**
-	 * KeyStores saved with blank password should also contain certzificates when opened with a null password.
-	 * Special cacerts keystore of JDKs behave this way, but newly created JKS keystores do not.
+	 * KeyStores saved with blank password should also contain certificates when opened with a null password.
+	 * Special cacerts keystore of JDKs behave this way, but PKCS12 keystores do not.
 	 * Thos are fixed by this keystore copy job to also behave in the intended way to show their certificates when openend with null password.
 	 *
 	 * @param keyStoreFileWithNullPassword
@@ -1743,11 +1743,11 @@ public class Utilities {
 			return;
 		}
 
-		final byte[] emptyKeyStoreWithNullPasswordBytes = new byte[] {
+		final byte[] emptyJksKeyStoreWithNullPasswordBytes = new byte[] {
 				-2, -19, -2, -19, 0, 0, 0, 2, 0, 0, 0, 0, 87, -66, -68, 39,
 				98, -94, 29, 112, -1, -14, 24, -35, 89, 104, 1, 31, -2, 66, 58, 105 };
 
-		final ByteArrayInputStream inputStreamEmptyKeyStore = new ByteArrayInputStream(emptyKeyStoreWithNullPasswordBytes);
+		final ByteArrayInputStream inputStreamEmptyKeyStore = new ByteArrayInputStream(emptyJksKeyStoreWithNullPasswordBytes);
 		final KeyStore writeKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 		writeKeyStore.load(inputStreamEmptyKeyStore, null);
 
