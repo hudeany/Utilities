@@ -613,6 +613,7 @@ public class DbUtilities {
 						if (dbVendor == DbVendor.Oracle) {
 							// Create a temporary trustStore
 							temporaryTrustStoreFilePath = Files.createTempFile("TempTrustStore", ".jks").toString();
+							new File(temporaryTrustStoreFilePath).delete();
 							trustStoreFile = new File(temporaryTrustStoreFilePath);
 							HttpUtilities.createTrustStoreFile(hostParts[0], port, trustStoreFile, null);
 						}
