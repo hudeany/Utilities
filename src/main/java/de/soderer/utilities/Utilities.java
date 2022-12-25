@@ -1728,14 +1728,14 @@ public class Utilities {
 
 	/**
 	 * KeyStores saved with blank password should also contain certificates when opened with a null password.
-	 * Special cacerts keystore of JDKs behave this way, but PKCS12 keystores do not.
-	 * Thos are fixed by this keystore copy job to also behave in the intended way to show their certificates when openend with null password.
+	 * Special cacerts keystore of JDKs behave this way, because they are JKS keystores, but PKCS12 keystores do not behave this way.
+	 * Those are fixed by this keystore copy job to also behave in the intended way to show their certificates when openend with null password.
 	 *
 	 * @param keyStoreFileWithNullPassword
 	 * @throws Exception
 	 */
-	public static void fixNullPasswordTrustStore(final File keyStoreFileWithNullPassword) throws Exception {
-		final KeyStore readKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+	public static void convertPkcs12TrustStoreToJKS(final File keyStoreFileWithNullPassword) throws Exception {
+		final KeyStore readKeyStore = KeyStore.getInstance("PKCS12");
 		try (FileInputStream inputStream = new FileInputStream(keyStoreFileWithNullPassword)) {
 			readKeyStore.load(inputStream, "".toCharArray());
 		} catch (@SuppressWarnings("unused") final Exception e) {
@@ -1743,13 +1743,8 @@ public class Utilities {
 			return;
 		}
 
-		final byte[] emptyJksKeyStoreWithNullPasswordBytes = new byte[] {
-				-2, -19, -2, -19, 0, 0, 0, 2, 0, 0, 0, 0, 87, -66, -68, 39,
-				98, -94, 29, 112, -1, -14, 24, -35, 89, 104, 1, 31, -2, 66, 58, 105 };
-
-		final ByteArrayInputStream inputStreamEmptyKeyStore = new ByteArrayInputStream(emptyJksKeyStoreWithNullPasswordBytes);
-		final KeyStore writeKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-		writeKeyStore.load(inputStreamEmptyKeyStore, null);
+		final KeyStore writeKeyStore = KeyStore.getInstance("JKS");
+		writeKeyStore.load(null, null);
 
 		// KeyStore password is null
 		for (final String alias : Collections.list(readKeyStore.aliases())) {

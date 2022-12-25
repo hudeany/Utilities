@@ -760,7 +760,7 @@ public class HttpUtilities {
 			throw new Exception("Cannot get TLS certificate for '" + hostnameOrIp + ":" + port + "'");
 		}
 
-		final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		final KeyStore keyStore = KeyStore.getInstance("JKS");
 		keyStore.load(null);
 
 		final char[] password = trustStorePassword == null ? new char[0] : trustStorePassword;

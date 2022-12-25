@@ -616,6 +616,12 @@ public class DbUtilities {
 							new File(temporaryTrustStoreFilePath).delete();
 							trustStoreFile = new File(temporaryTrustStoreFilePath);
 							HttpUtilities.createTrustStoreFile(hostParts[0], port, trustStoreFile, null);
+
+							props.setProperty("javax.net.ssl.trustStore", trustStoreFile.getAbsolutePath());
+							props.setProperty("javax.net.ssl.trustStoreType", "JKS");
+							if (trustStorePassword != null && trustStorePassword.length > 0) {
+								props.setProperty("javax.net.ssl.trustStorePassword", new String(trustStorePassword));
+							}
 						}
 
 						try {

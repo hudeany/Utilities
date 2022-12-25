@@ -27,7 +27,7 @@ public class KeyStoreTest {
 				"CN=testCert",
 				-1);
 
-		final KeyStore writeKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		final KeyStore writeKeyStore = KeyStore.getInstance("PKCS12");
 		writeKeyStore.load(null);
 		writeKeyStore.setCertificateEntry("testCert", testCert);
 		try (FileOutputStream outputStream = new FileOutputStream(tempJksFilePath)) {
@@ -39,7 +39,7 @@ public class KeyStoreTest {
 		// This is the problem case of unfixed trustore with empty password
 		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
 
-		Utilities.fixNullPasswordTrustStore(new File(tempJksFilePath));
+		Utilities.convertPkcs12TrustStoreToJKS(new File(tempJksFilePath));
 
 		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
 
@@ -60,7 +60,7 @@ public class KeyStoreTest {
 				"CN=testCert",
 				-1);
 
-		final KeyStore writeKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		final KeyStore writeKeyStore = KeyStore.getInstance("PKCS12");
 		writeKeyStore.load(null);
 		writeKeyStore.setCertificateEntry("testCert", testCert);
 		try (FileOutputStream outputStream = new FileOutputStream(tempJksFilePath)) {
@@ -72,7 +72,7 @@ public class KeyStoreTest {
 		// This is the problem case of unfixed trustore with empty password
 		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
 
-		Utilities.fixNullPasswordTrustStore(new File(tempJksFilePath));
+		Utilities.convertPkcs12TrustStoreToJKS(new File(tempJksFilePath));
 
 		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
 
@@ -94,7 +94,7 @@ public class KeyStoreTest {
 				"CN=testCert",
 				-1);
 
-		final KeyStore writeKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		final KeyStore writeKeyStore = KeyStore.getInstance("PKCS12");
 		writeKeyStore.load(null);
 		writeKeyStore.setCertificateEntry("testCert", testCert);
 		try (FileOutputStream outputStream = new FileOutputStream(tempJksFilePath)) {
@@ -104,7 +104,7 @@ public class KeyStoreTest {
 		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, "test"));
 		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
 
-		Utilities.fixNullPasswordTrustStore(new File(tempJksFilePath));
+		Utilities.convertPkcs12TrustStoreToJKS(new File(tempJksFilePath));
 
 		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, "test"));
 		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
@@ -113,7 +113,7 @@ public class KeyStoreTest {
 	}
 
 	private int getTrustStoreSize(final String tempJksFilePath, final String password) throws Exception {
-		final KeyStore readKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		final KeyStore readKeyStore = KeyStore.getInstance("PKCS12");
 		try (FileInputStream inputStream = new FileInputStream(tempJksFilePath)) {
 			readKeyStore.load(inputStream, password == null ? null : password.toCharArray());
 		}
