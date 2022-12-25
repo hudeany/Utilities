@@ -3176,4 +3176,30 @@ public class DbUtilities {
 			throw new Exception("getTableIndexNames is not supported by this db vendor");
 		}
 	}
+
+	public static void setForeignKeyConstraintStatus(final DbVendor dbVendor, final Connection connection, final boolean activated) throws Exception {
+		if (dbVendor == DbVendor.Oracle) {
+			try (Statement statement = connection.createStatement()) {
+				try (ResultSet result = statement.executeQuery("SELECT table_name, constraint_name FROM all_constraints WHERE constraint_type = 'R' AND UPPER(owner) NOT IN ('SYS', 'SYSTEM', 'CTXSYS', 'SITE_SYS', 'MDSYS')")) {
+					while (result.next()) {
+						final String tableName = result.getString("table_name");
+						final String constraintName = result.getString("constraint_name");
+
+						final String changeConstraintSql = "ALTER TABLE " + tableName + " " + (activated ? "ENABLE" : "DISABLE") + " CONSTRAINT " + constraintName;
+						statement.execute(changeConstraintSql);
+					}
+				}
+			}
+		} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
+			try (Statement statement = connection.createStatement()) {
+				if (activated) {
+					statement.execute("SET global FOREIGN_KEY_CHECKS = 1");
+				} else {
+					statement.execute("SET global FOREIGN_KEY_CHECKS = 0");
+				}
+			}
+		} else {
+			throw new Exception("ForeignKeyConstraintStatus change not available for dbvendor '" + dbVendor.name() + "'");
+		}
+	}
 }
