@@ -2998,7 +2998,7 @@ public class DbUtilities {
 		} else if ((dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) && RESERVED_WORDS_MYSSQL_MARIADB.contains(value.toLowerCase())) {
 			return "`" + value + "`";
 		} else if (dbVendor == DbVendor.Oracle && RESERVED_WORDS_ORACLE.contains(value.toLowerCase())) {
-			return "\"" + value + "\"";
+			return "\"" + value.toUpperCase() + "\"";
 		} else if (dbVendor == DbVendor.Derby && RESERVED_WORDS_DERBY.contains(value.toLowerCase())) {
 			return "\"" + value + "\"";
 		} else {
