@@ -3189,8 +3189,27 @@ public class DbUtilities {
 						sqlListToExecute.add("ALTER TABLE " + tableName + " " + (activated ? "ENABLE" : "DISABLE") + " CONSTRAINT " + constraintName);
 					}
 				}
+
 				for (final String sqlToExecute : sqlListToExecute) {
-					statement.execute(sqlToExecute);
+					try {
+						statement.execute(sqlToExecute);
+					} catch (final SQLException e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (activated) {
+					final List<String> notEnabledConstraints = new ArrayList<>();
+					try (ResultSet result = statement.executeQuery("SELECT table_name, constraint_name FROM all_constraints WHERE constraint_type = 'R' AND status != 'ENABLED' AND UPPER(owner) NOT IN ('SYS', 'SYSTEM', 'CTXSYS', 'SITE_SYS', 'MDSYS')")) {
+						while (result.next()) {
+							final String tableName = result.getString("table_name");
+							final String constraintName = result.getString("constraint_name");
+							notEnabledConstraints.add(constraintName + " (TABLE: " + tableName + ")");
+						}
+					}
+					if (notEnabledConstraints.size() > 0) {
+						throw new Exception("Cannot activate following foreign key constraints:\n" + Utilities.join(notEnabledConstraints, ",\n"));
+					}
 				}
 			}
 		} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
