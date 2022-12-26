@@ -3179,15 +3179,18 @@ public class DbUtilities {
 
 	public static void setForeignKeyConstraintStatus(final DbVendor dbVendor, final Connection connection, final boolean activated) throws Exception {
 		if (dbVendor == DbVendor.Oracle) {
+			final List<String> sqlListToExecute = new ArrayList<>();
 			try (Statement statement = connection.createStatement()) {
 				try (ResultSet result = statement.executeQuery("SELECT table_name, constraint_name FROM all_constraints WHERE constraint_type = 'R' AND UPPER(owner) NOT IN ('SYS', 'SYSTEM', 'CTXSYS', 'SITE_SYS', 'MDSYS')")) {
 					while (result.next()) {
 						final String tableName = result.getString("table_name");
 						final String constraintName = result.getString("constraint_name");
 
-						final String changeConstraintSql = "ALTER TABLE " + tableName + " " + (activated ? "ENABLE" : "DISABLE") + " CONSTRAINT " + constraintName;
-						statement.execute(changeConstraintSql);
+						sqlListToExecute.add("ALTER TABLE " + tableName + " " + (activated ? "ENABLE" : "DISABLE") + " CONSTRAINT " + constraintName);
 					}
+				}
+				for (final String sqlToExecute : sqlListToExecute) {
+					statement.execute(sqlToExecute);
 				}
 			}
 		} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
