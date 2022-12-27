@@ -56,7 +56,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		}
 
 		final JScrollPane textScrollpane = new JScrollPane(textField);
-		textScrollpane.setPreferredSize(new Dimension(textField.getPreferredSize().width + 5, textField.getPreferredSize().height + 5));
+		textScrollpane.setPreferredSize(new Dimension(Math.min(textField.getPreferredSize().width + 5, 600), Math.min(textField.getPreferredSize().height + 5, 400)));
 
 		// Text Panel
 		final JPanel textPanel = new JPanel();
