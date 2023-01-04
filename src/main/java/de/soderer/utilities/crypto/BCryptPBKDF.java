@@ -202,8 +202,9 @@ public class BCryptPBKDF {
 		final int plen = p.length;
 		final int slen = s.length;
 
-		for (i1 = 0; i1 < plen; i1++)
+		for (i1 = 0; i1 < plen; i1++) {
 			p[i1] = p[i1] ^ streamToWord(passwordHashBytes, koffp);
+		}
 
 		for (i1 = 0; i1 < plen; i1 += 2) {
 			lr[0] ^= streamToWord(salt, doffp);
@@ -220,6 +221,7 @@ public class BCryptPBKDF {
 			s[i1] = lr[0];
 			s[i1 + 1] = lr[1];
 		}
+
 		for (int i = 0; i < 64; i++) {
 			key(salt);
 			key(passwordHashBytes);
@@ -242,14 +244,12 @@ public class BCryptPBKDF {
 	}
 
 	private final void encipher(final int lr[], final int off) {
-		int i;
-		int n;
 		int l = lr[off];
 		int r = lr[off + 1];
 
 		l ^= p[0];
-		for (i = 0; i <= 16 - 2;) {
-			n = s[(l >> 24) & 0xff];
+		for (int i = 0; i <= 16 - 2;) {
+			int n = s[(l >> 24) & 0xff];
 			n += s[0x100 | ((l >> 16) & 0xff)];
 			n ^= s[0x200 | ((l >> 8) & 0xff)];
 			n += s[0x300 | (l & 0xff)];
@@ -266,11 +266,10 @@ public class BCryptPBKDF {
 	}
 
 	private static int streamToWord(final byte data[], final int offp[]) {
-		int i;
 		int word = 0;
 		int off = offp[0];
 
-		for (i = 0; i < 4; i++) {
+		for (int i = 0; i < 4; i++) {
 			word = (word << 8) | (data[off] & 0xff);
 			off = (off + 1) % data.length;
 		}
@@ -280,21 +279,21 @@ public class BCryptPBKDF {
 	}
 
 	private void key(final byte key[]) {
-		int i;
 		final int koffp[] = { 0 };
 		final int lr[] = { 0, 0 };
 		final int plen = p.length, slen = s.length;
 
-		for (i = 0; i < plen; i++)
+		for (int i = 0; i < plen; i++) {
 			p[i] = p[i] ^ streamToWord(key, koffp);
+		}
 
-		for (i = 0; i < plen; i += 2) {
+		for (int i = 0; i < plen; i += 2) {
 			encipher(lr, 0);
 			p[i] = lr[0];
 			p[i + 1] = lr[1];
 		}
 
-		for (i = 0; i < slen; i += 2) {
+		for (int i = 0; i < slen; i += 2) {
 			encipher(lr, 0);
 			s[i] = lr[0];
 			s[i + 1] = lr[1];
