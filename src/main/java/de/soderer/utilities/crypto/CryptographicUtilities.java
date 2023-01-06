@@ -719,6 +719,7 @@ public class CryptographicUtilities {
 
 						for (final Certificate chainRootCertificate : certificates) {
 							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCertificates)) {
+								// TODO: check certificate validity period: ((X509Certificate) chainRootCertificate).checkValidity();
 								isSignedByTrustedCert = true;
 								break;
 							}
