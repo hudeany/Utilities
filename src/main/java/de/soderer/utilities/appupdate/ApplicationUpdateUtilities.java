@@ -563,16 +563,14 @@ public class ApplicationUpdateUtilities {
 					}
 				}
 
-				if (!jarEntry.isDirectory()) {
-					// Every file must be signed, except for files in META-INF
+				// Every file must be signed, except for files in META-INF
+				if (!jarEntry.isDirectory() && jarEntry.getName().startsWith("META-INF")) {
+					boolean isSignedByTrustedCert = false;
+
 					final Certificate[] certificates = jarEntry.getCertificates();
 					if ((certificates == null) || (certificates.length == 0)) {
-						if (!jarEntry.getName().startsWith("META-INF")) {
-							throw new SecurityException("The jar file contains unsigned files.");
-						}
+						throw new SecurityException("The jar file contains unsigned files.");
 					} else {
-						boolean isSignedByTrustedCert = false;
-
 						for (final Certificate chainRootCertificate : certificates) {
 							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCertificates)) {
 								// TODO: check certificate validity period: ((X509Certificate) chainRootCertificate).checkValidity();
@@ -580,10 +578,10 @@ public class ApplicationUpdateUtilities {
 								break;
 							}
 						}
+					}
 
-						if (!isSignedByTrustedCert) {
-							throw new SecurityException("The jar file contains untrusted signed files");
-						}
+					if (!isSignedByTrustedCert) {
+						throw new SecurityException("The jar file contains untrusted signed files");
 					}
 				}
 			}
