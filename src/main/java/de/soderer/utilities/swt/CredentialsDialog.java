@@ -228,6 +228,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			switch(resourceKey) {
 				case "username": pattern = "Username"; break;
 				case "password": pattern = "Passwort"; break;
+				case "noPassword": pattern = "Kein Passwort"; break;
 				case "ok": pattern = "OK"; break;
 				case "cancel": pattern = "Abbrechen"; break;
 				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
@@ -237,13 +238,19 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			String pattern;
 			switch(resourceKey) {
 				case "username": pattern = "Username"; break;
-				case "password": pattern = "Passwort"; break;
+				case "password": pattern = "Password"; break;
+				case "noPassword": pattern = "No password"; break;
 				case "ok": pattern = "OK"; break;
 				case "cancel": pattern = "Cancel"; break;
 				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
 		}
+	}
+
+	public CredentialsDialog enableNoPassword(final boolean enable) {
+		enableNoPassword(enable, getI18NString("noPassword"));
+		return this;
 	}
 
 	public CredentialsDialog enableNoPassword(final boolean enable, final String enableNoPasswordButtonTextParam) {

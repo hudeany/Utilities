@@ -35,6 +35,10 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 	private final String text_OK;
 	private final String text_Cancel;
 
+	private boolean enableNoPassword = false;
+	private String enableNoPasswordButtonText;
+	private JButton enableNoPasswordButton;
+
 	private String rememberCredentialsText = null;
 
 	private JPanel panel;
@@ -42,6 +46,9 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 	private final boolean aquireUsername;
 	private final boolean aquirePassword;
+
+	private String username = null;
+	private char[] password = null;
 
 	private JTextField userField;
 	private JTextField passwordField;
@@ -103,9 +110,12 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			userPanel.add(userLabel);
 			userField = new JTextField();
 			userField.setPreferredSize(new Dimension(200, userField.getPreferredSize().height));
+			userField.setText("");
+			username = "";
 			userField.addKeyListener(new KeyAdapter() {
 				@Override
 				public void keyTyped(final KeyEvent event) {
+					username = userField.getText();
 					checkButtonStatus();
 				}
 			});
@@ -121,9 +131,12 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			passwordPanel.add(passwordLabel);
 			passwordField = new JPasswordField();
 			passwordField.setPreferredSize(new Dimension(200, passwordField.getPreferredSize().height));
+			passwordField.setText("");
+			password = "".toCharArray();
 			passwordField.addKeyListener(new KeyAdapter() {
 				@Override
 				public void keyTyped(final KeyEvent event) {
+					password = passwordField.getText().toCharArray();
 					checkButtonStatus();
 				}
 			});
@@ -151,18 +164,24 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		final JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
 
+		if (enableNoPassword) {
+			enableNoPasswordButton = new JButton(enableNoPasswordButtonText);
+			enableNoPasswordButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent event) {
+					returnValue = getCredentials().setPassword(null);
+					dispose();
+				}
+			});
+			buttonPanel.add(enableNoPasswordButton);
+		}
+
 		// ok Button
 		okButton = new JButton(text_OK);
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				if (userField != null && passwordField != null) {
-					returnValue = new Credentials(userField.getText(), passwordField.getText().toCharArray());
-				} else if (userField != null) {
-					returnValue = new Credentials(userField.getText());
-				} else if (passwordField != null) {
-					returnValue = new Credentials(passwordField.getText().toCharArray());
-				}
+				returnValue = getCredentials();
 				dispose();
 			}
 		});
@@ -203,7 +222,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 	}
 
 	private void checkButtonStatus() {
-		okButton.setEnabled(!aquireUsername || Utilities.isNotEmpty(userField.getText()));
+		okButton.setEnabled(!aquireUsername || Utilities.isNotEmpty(username));
 	}
 
 	public CredentialsDialog setRememberCredentialsText(final String rememberCredentialsText) {
@@ -224,6 +243,26 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		return rememberCredentials;
 	}
 
+	public Credentials getCredentials() {
+		if (aquireUsername && aquirePassword) {
+			if (username != null) {
+				return new Credentials(username, password);
+			} else {
+				return null;
+			}
+		} else if (aquireUsername) {
+			if (username != null) {
+				return new Credentials(username);
+			} else {
+				return null;
+			}
+		} else if (aquirePassword) {
+			return new Credentials(password);
+		} else {
+			return null;
+		}
+	}
+
 	private static String getI18NString(final String resourceKey, final Object... arguments) {
 		if (LangResources.existsKey(resourceKey)) {
 			return LangResources.get(resourceKey, arguments);
@@ -232,6 +271,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			switch(resourceKey) {
 				case "username": pattern = "Username"; break;
 				case "password": pattern = "Passwort"; break;
+				case "noPassword": pattern = "Kein Passwort"; break;
 				case "ok": pattern = "OK"; break;
 				case "cancel": pattern = "Abbrechen"; break;
 				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
@@ -241,12 +281,24 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			String pattern;
 			switch(resourceKey) {
 				case "username": pattern = "Username"; break;
-				case "password": pattern = "Passwort"; break;
+				case "password": pattern = "Password"; break;
+				case "noPassword": pattern = "No password"; break;
 				case "ok": pattern = "OK"; break;
 				case "cancel": pattern = "Cancel"; break;
 				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
 		}
+	}
+
+	public CredentialsDialog enableNoPassword(final boolean enable) {
+		enableNoPassword(enable, getI18NString("noPassword"));
+		return this;
+	}
+
+	public CredentialsDialog enableNoPassword(final boolean enable, final String enableNoPasswordButtonTextParam) {
+		enableNoPassword = enable;
+		enableNoPasswordButtonText = enableNoPasswordButtonTextParam;
+		return this;
 	}
 }
