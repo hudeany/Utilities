@@ -564,7 +564,7 @@ public class ApplicationUpdateUtilities {
 				}
 
 				// Every file must be signed, except for files in META-INF
-				if (!jarEntry.isDirectory() && jarEntry.getName().startsWith("META-INF")) {
+				if (!jarEntry.isDirectory() && !jarEntry.getName().startsWith("META-INF")) {
 					boolean isSignedByTrustedCert = false;
 
 					final Certificate[] certificates = jarEntry.getCertificates();
