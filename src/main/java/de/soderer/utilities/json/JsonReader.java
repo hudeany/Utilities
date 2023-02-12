@@ -22,7 +22,7 @@ public class JsonReader extends BasicReader {
 		JsonObject_Close,
 		JsonArray_Open,
 		JsonArray_Close,
-		JsonSimpleValue,
+		JsonSimpleValue
 	}
 
 	public JsonReader(final InputStream inputStream) throws Exception {
@@ -46,14 +46,12 @@ public class JsonReader extends BasicReader {
 	}
 
 	public JsonToken readNextToken() throws Exception {
-		final JsonToken jsonToken = readNextTokenInternal();
-
-		updateJsonPath(jsonToken);
+		final JsonToken jsonToken = readNextTokenInternal(true);
 
 		return jsonToken;
 	}
 
-	protected JsonToken readNextTokenInternal() throws Exception {
+	protected JsonToken readNextTokenInternal(final boolean updateJsonPath) throws Exception {
 		currentObject = null;
 		Character currentChar = readNextNonWhitespace();
 		if (currentChar == null) {
@@ -95,14 +93,19 @@ public class JsonReader extends BasicReader {
 				}
 				break;
 			case ',': // Separator of JsonObject properties or JsonArray items
-				currentChar = readNextNonWhitespace();
-				if (currentChar == null || currentChar == '}' || currentChar == ']') {
+				if (!updateJsonPath) {
+					// Multiple comma
 					throw new Exception("Invalid json data '" + currentChar + "' in line " + getReadLines() + " at overall index " + getReadCharacters());
 				} else {
-					reuseCurrentChar();
-					jsonToken = readNextTokenInternal();
+					currentChar = readNextNonWhitespace();
+					if (currentChar == null || currentChar == '}' || currentChar == ']') {
+						throw new Exception("Invalid json data '" + currentChar + "' in line " + getReadLines() + " at overall index " + getReadCharacters());
+					} else {
+						reuseCurrentChar();
+						jsonToken = readNextTokenInternal(false);
+					}
+					break;
 				}
-				break;
 			case '\'': // Not allowed single-quoted value
 				throw new Exception("Invalid json data '" + currentChar + "' in line " + getReadLines() + " at overall index " + getReadCharacters());
 			case '"': // Start JsonObject propertykey or propertyvalue or JsonArray item
@@ -165,7 +168,9 @@ public class JsonReader extends BasicReader {
 				break;
 		}
 
-		updateJsonPath(jsonToken);
+		if (updateJsonPath) {
+			updateJsonPath(jsonToken);
+		}
 
 		return jsonToken;
 	}
@@ -175,26 +180,28 @@ public class JsonReader extends BasicReader {
 			throw new Exception("JsonReader position was not initialized for readNextJsonItem()");
 		}
 
-		final JsonToken nextToken = readNextToken();
-		if (nextToken == JsonToken.JsonObject_Open) {
-			currentObject = readJsonObject();
-			return true;
-		} else if (nextToken == JsonToken.JsonArray_Open) {
-			currentObject = readJsonArray();
-			return true;
-		} else if (nextToken == JsonToken.JsonSimpleValue) {
-			// value was already read
-			return true;
-		} else if (nextToken == JsonToken.JsonObject_Close) {
-			reuseCurrentChar();
-			openJsonItems.push(JsonToken.JsonObject_Open);
-			return false;
-		} else if (nextToken == JsonToken.JsonArray_Close) {
-			reuseCurrentChar();
-			openJsonItems.push(JsonToken.JsonArray_Open);
-			return false;
-		} else {
-			throw new Exception("Invalid data in line " + getReadLines() + " at overall index " + getReadCharacters());
+		switch (readNextToken()) {
+			case JsonObject_Open:
+				currentObject = readJsonObject();
+				return true;
+			case JsonArray_Open:
+				currentObject = readJsonArray();
+				return true;
+			case JsonSimpleValue:
+				// value was already read
+				return true;
+			case JsonObject_Close:
+				reuseCurrentChar();
+				openJsonItems.push(JsonToken.JsonObject_Open);
+				return false;
+			case JsonArray_Close:
+				reuseCurrentChar();
+				openJsonItems.push(JsonToken.JsonArray_Open);
+				return false;
+			case JsonObject_PropertyKey:
+				throw new Exception("Invalid data in line " + getReadLines() + " at overall index " + getReadCharacters());
+			default:
+				throw new Exception("Invalid data in line " + getReadLines() + " at overall index " + getReadCharacters());
 		}
 	}
 

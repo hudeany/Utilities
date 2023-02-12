@@ -942,6 +942,53 @@ public class JsonTest {
 			final String data =
 					"[\n"
 							+ "{\n"
+							+ "\"item1\":\n"
+							+ "{\n"
+							+ "\"item11\": 123,\n"
+							+ "\"item12\":\n"
+							+ "[\n"
+							+ "123,\n"
+							+ "123,\n"
+							+ "123\n"
+							+ "]\n"
+							+ "},\n"
+							+ "\"item2\": 123,\n"
+							+ "\"item3\":\n"
+							+ "{\n"
+							+ "\"item31\": 123,\n"
+							+ "\"item32\": \n"
+							+ "[\n"
+							+ "123,\n"
+							+ "123,\n"
+							+ "123\n"
+							+ "]\n"
+							+ "},\n"
+							+ "\"item4\":\n"
+							+ "{\n"
+							+ "\"item41\": 123,\n"
+							+ "\"item42\": 123\n"
+							+ "}\n"
+							+ "}\n"
+							+ "]\n";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)));
+			JsonUtilities.readUpToJsonPath(jsonReader, "$[0].item3.item32");
+			jsonReader.readNextToken();
+			Assert.assertEquals(JsonToken.JsonArray_Open, jsonReader.getCurrentToken());
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(jsonReader);
+		}
+	}
+
+	@Test
+	public void testJson5ReadPath() {
+		JsonReader jsonReader = null;
+		try {
+			final String data =
+					"[\n"
+							+ "{\n"
 							+ "item1:\n"
 							+ "{\n"
 							+ "item11: 123,\n"
