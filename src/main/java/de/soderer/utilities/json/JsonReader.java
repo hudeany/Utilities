@@ -8,6 +8,7 @@ import java.util.Stack;
 
 import de.soderer.utilities.BasicReader;
 import de.soderer.utilities.NumberUtilities;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 public class JsonReader extends BasicReader {
@@ -175,31 +176,34 @@ public class JsonReader extends BasicReader {
 		return jsonToken;
 	}
 
-	public boolean readNextJsonNode() throws Exception {
+	/**
+	 * Read JSON data node by node.
+	 * Use "readNextToken" first to init read by node steps
+	 */
+	public Object readNextJsonNode() throws Exception {
 		if (getReadCharacters() == 0) {
-			throw new Exception("JsonReader position was not initialized for readNextJsonItem()");
+			throw new Exception("JsonReader position was not initialized for 'readNextJsonNode'. Use 'readNextToken' or 'readUpToJsonPath' to init.");
 		}
 
 		switch (readNextToken()) {
 			case JsonObject_Open:
-				currentObject = readJsonObject();
-				return true;
+				return readJsonObject();
 			case JsonArray_Open:
-				currentObject = readJsonArray();
-				return true;
+				return readJsonArray();
 			case JsonSimpleValue:
 				// value was already read
-				return true;
+				return currentObject;
 			case JsonObject_Close:
 				reuseCurrentChar();
 				openJsonItems.push(JsonToken.JsonObject_Open);
-				return false;
+				return null;
 			case JsonArray_Close:
 				reuseCurrentChar();
 				openJsonItems.push(JsonToken.JsonArray_Open);
-				return false;
+				return null;
 			case JsonObject_PropertyKey:
-				throw new Exception("Invalid data in line " + getReadLines() + " at overall index " + getReadCharacters());
+				final String propertyName = (String) currentObject;
+				return new Tuple<>(propertyName, readNextJsonNode());
 			default:
 				throw new Exception("Invalid data in line " + getReadLines() + " at overall index " + getReadCharacters());
 		}
@@ -319,7 +323,7 @@ public class JsonReader extends BasicReader {
 
 	protected void updateJsonPath(final JsonToken jsonToken) throws Exception {
 		if (jsonToken != null) {
-			switch(jsonToken) {
+			switch (jsonToken) {
 				case JsonArray_Open:
 					if (currentJsonPath.size() > 0 && currentJsonPath.peek().startsWith("[")) {
 						riseArrayIndex();

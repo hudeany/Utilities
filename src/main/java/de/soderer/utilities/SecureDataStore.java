@@ -109,17 +109,20 @@ public class SecureDataStore {
 							if (jsonToken != JsonToken.JsonArray_Open) {
 								throw new Exception("SecureDataStore is corrupt");
 							} else {
-								while (jsonReader.readNextJsonNode()) {
+								Object nextJsonNode;
+								while ((nextJsonNode = jsonReader.readNextJsonNode()) != null) {
 									if (jsonToken == JsonToken.JsonArray_Close) {
 										break;
-									} else {
-										final JsonObject entryObject = (JsonObject) jsonReader.getCurrentObject();
+									} else if (nextJsonNode instanceof JsonObject) {
+										final JsonObject entryObject = (JsonObject) nextJsonNode;
 										final String className = (String) entryObject.get("class");
 										if (!dataEntries.containsKey(className)) {
 											dataEntries.put(className, new HashMap<String, Object>());
 										}
 										final String entryName = (String) entryObject.get("name");
 										dataEntries.get(className).put(entryName, JsonSerializer.deserialize((JsonObject) entryObject.get("value")));
+									} else {
+										throw new Exception("Unexpected JSON data in secureDataStore: " + nextJsonNode.getClass().getSimpleName());
 									}
 								}
 							}

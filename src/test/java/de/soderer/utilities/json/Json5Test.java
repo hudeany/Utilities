@@ -428,21 +428,26 @@ public class Json5Test {
 			Assert.assertEquals(Json5Reader.JsonToken.JsonArray_Open, jsonReader.readNextToken());
 
 			for (int i = 0; i < 5; i++) {
-				Assert.assertTrue(jsonReader.readNextJsonNode());
-				final Object nextJsonNode = jsonReader.getCurrentObject();
+				final Object nextJsonNode = jsonReader.readNextJsonNode();
+				Assert.assertNotNull(nextJsonNode);
 				if (nextJsonNode instanceof JsonObject) {
 					Assert.assertEquals(Integer.valueOf(i), ((JsonObject) nextJsonNode).get("number"));
 				} else {
 					Assert.fail();
 				}
 			}
-			Assert.assertTrue(jsonReader.readNextJsonNode());
+			Object nextJsonNode;
+			nextJsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNotNull(nextJsonNode);
 			Assert.assertEquals(null, jsonReader.getCurrentObject());
-			Assert.assertTrue(jsonReader.readNextJsonNode());
+			nextJsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNotNull(nextJsonNode);
 			Assert.assertEquals(true, jsonReader.getCurrentObject());
-			Assert.assertTrue(jsonReader.readNextJsonNode());
+			nextJsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNotNull(nextJsonNode);
 			Assert.assertEquals(false, jsonReader.getCurrentObject());
-			Assert.assertFalse(jsonReader.readNextJsonNode());
+			nextJsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNull(nextJsonNode);
 
 			Assert.assertEquals(Json5Reader.JsonToken.JsonArray_Close, jsonReader.readNextToken());
 		} catch (final Exception e) {
@@ -1164,6 +1169,53 @@ public class Json5Test {
 		} catch (final Exception e) {
 			// Expected Exception
 			Assert.assertEquals("Invalid unicode sequence at character: 7", e.getMessage());
+		}
+	}
+
+	@Test
+	public void testJson5ReadPath() {
+		JsonReader jsonReader = null;
+		try {
+			final String data =
+					"[\n"
+							+ "{\n"
+							+ "item1:\n"
+							+ "{\n"
+							+ "item11: 123,\n"
+							+ "item12:\n"
+							+ "[\n"
+							+ "123,\n"
+							+ "123,\n"
+							+ "123,\n"
+							+ "]\n"
+							+ "},\n"
+							+ "item2: 123,\n"
+							+ "item3:\n"
+							+ "{\n"
+							+ "item31: 123,\n"
+							+ "item32: \n"
+							+ "[\n"
+							+ "123,\n"
+							+ "123,\n"
+							+ "123,\n"
+							+ "]\n"
+							+ "},\n"
+							+ "item4:\n"
+							+ "{\n"
+							+ "item41: 123,\n"
+							+ "item42: 123\n"
+							+ "}\n"
+							+ "}\n"
+							+ "]\n";
+			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)));
+			JsonUtilities.readUpToJsonPath(jsonReader, "$[0].item3.item32");
+			jsonReader.readNextToken();
+			Assert.assertEquals(JsonToken.JsonArray_Open, jsonReader.getCurrentToken());
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		} finally {
+			Utilities.closeQuietly(jsonReader);
 		}
 	}
 }

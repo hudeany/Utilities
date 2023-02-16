@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.TextUtilities;
+import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.json.JsonReader.JsonToken;
 
@@ -428,21 +429,26 @@ public class JsonTest {
 			Assert.assertEquals(JsonReader.JsonToken.JsonArray_Open, jsonReader.readNextToken());
 
 			for (int i = 0; i < 5; i++) {
-				Assert.assertTrue(jsonReader.readNextJsonNode());
-				final Object nextJsonNode = jsonReader.getCurrentObject();
+				final Object nextJsonNode = jsonReader.readNextJsonNode();
+				Assert.assertNotNull(nextJsonNode);
 				if (nextJsonNode instanceof JsonObject) {
 					Assert.assertEquals(Integer.valueOf(i), ((JsonObject) nextJsonNode).get("number"));
 				} else {
 					Assert.fail();
 				}
 			}
-			Assert.assertTrue(jsonReader.readNextJsonNode());
+			Object nextJsonNode;
+			nextJsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNotNull(nextJsonNode);
 			Assert.assertEquals(null, jsonReader.getCurrentObject());
-			Assert.assertTrue(jsonReader.readNextJsonNode());
+			nextJsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNotNull(nextJsonNode);
 			Assert.assertEquals(true, jsonReader.getCurrentObject());
-			Assert.assertTrue(jsonReader.readNextJsonNode());
+			nextJsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNotNull(nextJsonNode);
 			Assert.assertEquals(false, jsonReader.getCurrentObject());
-			Assert.assertFalse(jsonReader.readNextJsonNode());
+			nextJsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNull(nextJsonNode);
 
 			Assert.assertEquals(JsonReader.JsonToken.JsonArray_Close, jsonReader.readNextToken());
 		} catch (final Exception e) {
@@ -983,44 +989,49 @@ public class JsonTest {
 	}
 
 	@Test
-	public void testJson5ReadPath() {
+	public void testJsonNodes() {
 		JsonReader jsonReader = null;
 		try {
 			final String data =
-					"[\n"
-							+ "{\n"
-							+ "item1:\n"
-							+ "{\n"
-							+ "item11: 123,\n"
-							+ "item12:\n"
-							+ "[\n"
-							+ "123,\n"
-							+ "123,\n"
-							+ "123,\n"
-							+ "]\n"
-							+ "},\n"
-							+ "item2: 123,\n"
-							+ "item3:\n"
-							+ "{\n"
-							+ "item31: 123,\n"
-							+ "item32: \n"
-							+ "[\n"
-							+ "123,\n"
-							+ "123,\n"
-							+ "123,\n"
-							+ "]\n"
-							+ "},\n"
-							+ "item4:\n"
-							+ "{\n"
-							+ "item41: 123,\n"
-							+ "item42: 123\n"
-							+ "}\n"
-							+ "}\n"
-							+ "]\n";
-			jsonReader = new Json5Reader(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)));
-			JsonUtilities.readUpToJsonPath(jsonReader, "$[0].item3.item32");
-			jsonReader.readNextToken();
-			Assert.assertEquals(JsonToken.JsonArray_Open, jsonReader.getCurrentToken());
+					"["
+							+ "	{"
+							+ "		\"item1\":"
+							+ "			{"
+							+ "				\"item11\": 123,"
+							+ "				\"item12\":"
+							+ "					["
+							+ "						123,"
+							+ "						123,"
+							+ "						123"
+							+ "					]"
+							+ "			},"
+							+ "		\"item2\": 123,"
+							+ "		\"item3\":"
+							+ "			{"
+							+ "				\"item31\": 123,"
+							+ "				\"item32\":"
+							+ "					["
+							+ "						123,"
+							+ "						123,"
+							+ "						123"
+							+ "					]"
+							+ "			},"
+							+ "		\"item4\":"
+							+ "			{"
+							+ "				\"item41\": 123,"
+							+ "				\"item42\": 123"
+							+ "			}"
+							+ "	}"
+							+ "]";
+			jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)));
+			JsonUtilities.readUpToJsonPath(jsonReader, "$[0].item1");
+			final JsonToken nextToken = jsonReader.readNextToken();
+			Assert.assertTrue(nextToken == JsonToken.JsonObject_Open);
+			Object jsonNode;
+			while ((jsonNode = jsonReader.readNextJsonNode()) != null) {
+				Assert.assertTrue(jsonNode instanceof Tuple);
+				System.out.println(((Tuple) jsonNode).getFirst() + ": " + ((Tuple) jsonNode).getSecond());
+			}
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
