@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.TextUtilities;
-import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.json.JsonReader.JsonToken;
 
@@ -429,10 +428,10 @@ public class JsonTest {
 			Assert.assertEquals(JsonReader.JsonToken.JsonArray_Open, jsonReader.readNextToken());
 
 			for (int i = 0; i < 5; i++) {
-				final Object nextJsonNode = jsonReader.readNextJsonNode();
+				final JsonNode nextJsonNode = jsonReader.readNextJsonNode();
 				Assert.assertNotNull(nextJsonNode);
-				if (nextJsonNode instanceof JsonObject) {
-					Assert.assertEquals(Integer.valueOf(i), ((JsonObject) nextJsonNode).get("number"));
+				if (nextJsonNode.isJsonObject()) {
+					Assert.assertEquals(Integer.valueOf(i), ((JsonObject) nextJsonNode.getValue()).get("number"));
 				} else {
 					Assert.fail();
 				}
@@ -1027,11 +1026,20 @@ public class JsonTest {
 			JsonUtilities.readUpToJsonPath(jsonReader, "$[0].item1");
 			final JsonToken nextToken = jsonReader.readNextToken();
 			Assert.assertTrue(nextToken == JsonToken.JsonObject_Open);
-			Object jsonNode;
-			while ((jsonNode = jsonReader.readNextJsonNode()) != null) {
-				Assert.assertTrue(jsonNode instanceof Tuple);
-				System.out.println(((Tuple) jsonNode).getFirst() + ": " + ((Tuple) jsonNode).getSecond());
-			}
+
+			JsonNode jsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNotNull(jsonNode);
+			Assert.assertEquals("item11", jsonNode.getPropertyName());
+			Assert.assertTrue(jsonNode.isNumber());
+
+			jsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNotNull(jsonNode);
+			Assert.assertEquals("item12", jsonNode.getPropertyName());
+			Assert.assertTrue(jsonNode.isJsonArray());
+			Assert.assertEquals(3, ((JsonArray) jsonNode.getValue()).size());
+
+			jsonNode = jsonReader.readNextJsonNode();
+			Assert.assertNull(jsonNode);
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());

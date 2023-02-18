@@ -428,10 +428,10 @@ public class Json5Test {
 			Assert.assertEquals(Json5Reader.JsonToken.JsonArray_Open, jsonReader.readNextToken());
 
 			for (int i = 0; i < 5; i++) {
-				final Object nextJsonNode = jsonReader.readNextJsonNode();
+				final JsonNode nextJsonNode = jsonReader.readNextJsonNode();
 				Assert.assertNotNull(nextJsonNode);
-				if (nextJsonNode instanceof JsonObject) {
-					Assert.assertEquals(Integer.valueOf(i), ((JsonObject) nextJsonNode).get("number"));
+				if (nextJsonNode.isJsonObject()) {
+					Assert.assertEquals(Integer.valueOf(i), ((JsonObject) nextJsonNode.getValue()).get("number"));
 				} else {
 					Assert.fail();
 				}

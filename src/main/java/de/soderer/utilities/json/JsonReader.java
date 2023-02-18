@@ -8,7 +8,6 @@ import java.util.Stack;
 
 import de.soderer.utilities.BasicReader;
 import de.soderer.utilities.NumberUtilities;
-import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 public class JsonReader extends BasicReader {
@@ -180,19 +179,19 @@ public class JsonReader extends BasicReader {
 	 * Read JSON data node by node.
 	 * Use "readNextToken" first to init read by node steps
 	 */
-	public Object readNextJsonNode() throws Exception {
+	public JsonNode readNextJsonNode() throws Exception {
 		if (getReadCharacters() == 0) {
 			throw new Exception("JsonReader position was not initialized for 'readNextJsonNode'. Use 'readNextToken' or 'readUpToJsonPath' to init.");
 		}
 
 		switch (readNextToken()) {
 			case JsonObject_Open:
-				return readJsonObject();
+				return new JsonNode(readJsonObject());
 			case JsonArray_Open:
-				return readJsonArray();
+				return new JsonNode(readJsonArray());
 			case JsonSimpleValue:
 				// value was already read
-				return currentObject;
+				return new JsonNode(currentObject);
 			case JsonObject_Close:
 				reuseCurrentChar();
 				openJsonItems.push(JsonToken.JsonObject_Open);
@@ -203,7 +202,7 @@ public class JsonReader extends BasicReader {
 				return null;
 			case JsonObject_PropertyKey:
 				final String propertyName = (String) currentObject;
-				return new Tuple<>(propertyName, readNextJsonNode());
+				return new JsonNode(propertyName, readNextJsonNode().getValue());
 			default:
 				throw new Exception("Invalid data in line " + getReadLines() + " at overall index " + getReadCharacters());
 		}
