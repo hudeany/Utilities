@@ -7,7 +7,7 @@
 
 	<groupId>de.soderer</groupId>
 	<artifactId>soderer-utilities</artifactId>
-	<version>22.5.11</version>
+	<version>23.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>soderer-utilities</name>
