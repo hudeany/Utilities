@@ -66,7 +66,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
-		showProgress();
+		signalProgress();
 
 		final boolean armor = true;
 
@@ -108,7 +108,7 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 					literalDataGeneratorStream.write(buffer, 0, bytesRead);
 
 					itemsDone += bytesRead;
-					showProgress();
+					signalProgress();
 				}
 			}
 			Utilities.clear(buffer);

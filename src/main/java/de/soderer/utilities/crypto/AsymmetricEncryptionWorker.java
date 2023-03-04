@@ -74,7 +74,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		}
 		encryptionMethod = encryptionMethod.toLowerCase();
 
-		showProgress();
+		signalProgress();
 
 		itemsToDo = Math.max(dataSizeHint, dataInputStream.available());
 
@@ -97,7 +97,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 						} else {
 							cipherOutputStream.write(buffer, 0, bytesRead);
 							itemsDone += bytesRead;
-							showProgress();
+							signalProgress();
 						}
 					}
 					Utilities.clear(buffer);
@@ -136,7 +136,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 						} else {
 							bufferedEncryptedDataOutputStream.write(asymmetricEncryptCipher.processBlock(buffer, 0, bytesRead));
 							itemsDone += bytesRead;
-							showProgress();
+							signalProgress();
 						}
 					}
 					Utilities.clear(buffer);

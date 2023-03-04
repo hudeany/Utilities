@@ -48,7 +48,7 @@ public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
 			signatureMethod = signatureMethod.replace("withecdh", "withecdsa");
 		}
 
-		showProgress();
+		signalProgress();
 
 		itemsToDo = Math.max(dataSizeHint, dataInputStream.available());
 
@@ -65,7 +65,7 @@ public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
 				} else {
 					signature.update(buffer, 0, bytesRead);
 					itemsDone += bytesRead;
-					showProgress();
+					signalProgress();
 				}
 			}
 			Utilities.clear(buffer);

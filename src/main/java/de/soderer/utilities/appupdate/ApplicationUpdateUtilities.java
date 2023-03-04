@@ -470,19 +470,19 @@ public class ApplicationUpdateUtilities {
 		try {
 			final WorkerParentSimple workerParentAdapter = new WorkerParentSimple() {
 				@Override
-				public void showUnlimitedProgress() {
+				public void receiveUnlimitedProgressSignal() {
 					// Do nothing
 				}
 
 				@Override
-				public void showProgress(final LocalDateTime startTime, final long itemsToDo, final long itemsDone) {
+				public void receiveProgressSignal(final LocalDateTime startTime, final long itemsToDo, final long itemsDone) {
 					if (updateParent != null) {
 						updateParent.showUpdateProgress(startTime, itemsToDo, itemsDone);
 					}
 				}
 
 				@Override
-				public void showDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
+				public void receiveDoneSignal(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
 					if (updateParent != null) {
 						updateParent.showUpdateDownloadEnd(startTime, endTime, itemsDone);
 					}

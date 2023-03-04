@@ -93,7 +93,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void showProgress(final LocalDateTime start, final long itemsToDo, final long itemsDone) {
+	public void receiveProgressSignal(final LocalDateTime start, final long itemsToDo, final long itemsDone) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -128,7 +128,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void showUnlimitedProgress() {
+	public void receiveUnlimitedProgressSignal() {
 		if (!isDisposed()) {
 			unlimitedRunner = new Thread(new Runnable() {
 				@Override
@@ -199,7 +199,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void showDone(final LocalDateTime start, final LocalDateTime end, final long itemsDone) {
+	public void receiveDoneSignal(final LocalDateTime start, final LocalDateTime end, final long itemsDone) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override

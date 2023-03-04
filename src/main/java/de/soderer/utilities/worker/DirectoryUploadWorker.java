@@ -67,9 +67,9 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 
 	@Override
 	public DirectoryUploadWorker work() throws Exception {
-		showUnlimitedProgress();
+		signalUnlimitedProgress();
 		itemsToDo = FileUtilities.getAllSubfilesSize(localDirectory);
-		showProgress(true);
+		signalProgress(true);
 		connection.createFolder(remoteParentDirectoryPath, localDirectory.getName());
 		recursiveUpload(localDirectory, remoteParentDirectoryPath + "/" + localDirectory.getName());
 		return this;
@@ -91,12 +91,12 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 					final String nextRemoteFile = destinationDirectory + "/" + file.getName();
 					subItemsDone = 0;
 					subItemsToDo = file.length();
-					showItemStart(file.getName());
-					showProgress();
+					signalItemStart(file.getName());
+					signalProgress();
 					try (InputStream inputStream = new ProgressInputStream(new FileInputStream(nextLocalFile))) {
 						connection.uploadFile(nextRemoteFile, inputStream);
 						itemsDone += subItemsDone;
-						showProgress();
+						signalProgress();
 					}
 
 					if (cancel && connection.getFileInfo(nextRemoteFile) != null) {

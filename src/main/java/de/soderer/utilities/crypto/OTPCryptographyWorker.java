@@ -43,7 +43,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 
 	@Override
 	public Boolean work() throws Exception {
-		showProgress();
+		signalProgress();
 
 		final int bufferSize = 4096;
 		if (encrypt) {
@@ -61,7 +61,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 				messageDigest.update(inputBuffer, 0, bytesRead);
 
 				itemsDone += bytesRead;
-				showProgress();
+				signalProgress();
 			}
 			Utilities.clear(inputBuffer);
 			for (final byte[] buffer : outputBuffer) {
@@ -111,7 +111,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 					messageDigest.update(outputBuffer, 0, bytesRead[0]);
 
 					itemsDone += bytesRead[0];
-					showProgress();
+					signalProgress();
 				}
 			}
 			Utilities.clear(outputBuffer);

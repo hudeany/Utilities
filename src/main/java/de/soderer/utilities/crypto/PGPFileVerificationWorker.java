@@ -41,7 +41,7 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
-		showProgress();
+		signalProgress();
 
 		InputStream interimInputStream = null;
 		try (InputStream decoderStream = PGPUtil.getDecoderStream(signatureData)) {
@@ -73,7 +73,7 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 				} else {
 					signature.update(buffer, 0, bytesRead);
 					itemsDone += bytesRead;
-					showProgress();
+					signalProgress();
 				}
 			}
 			Utilities.clear(buffer);

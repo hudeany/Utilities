@@ -67,9 +67,9 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 
 	@Override
 	public DirectoryDownloadWorker work() throws Exception {
-		showUnlimitedProgress();
+		signalUnlimitedProgress();
 		itemsToDo = getRemoteDirectorySize(remoteDirectoryPath);
-		showProgress(true);
+		signalProgress(true);
 		final File destinationParentDirectoryPath = new File(localParentDirectory, localDirectoryName);
 		destinationParentDirectoryPath.mkdir();
 		recursiveDownload(remoteDirectoryPath, destinationParentDirectoryPath);
@@ -100,8 +100,8 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 				final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
 				subItemsDone = 0;
 				subItemsToDo = fileInfo.getFileSize();
-				showItemStart(nextRemoteFile.substring(remoteDirectoryPath.length() + 1));
-				showProgress();
+				signalItemStart(nextRemoteFile.substring(remoteDirectoryPath.length() + 1));
+				signalProgress();
 				try (InputStream inputStream = connection.downloadFile(nextRemoteFile);
 						OutputStream outputStream = new FileOutputStream(nextLocalFile)) {
 
@@ -113,12 +113,12 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 						} else {
 							outputStream.write(buffer, 0, bytesRead);
 							subItemsDone += bytesRead;
-							showItemProgress();
+							signalItemProgress();
 						}
 					}
 					Utilities.clear(buffer);
 					itemsDone += subItemsDone;
-					showProgress();
+					signalProgress();
 				}
 
 				if (cancel && nextLocalFile.exists()) {

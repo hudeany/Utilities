@@ -59,7 +59,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
-		showProgress();
+		signalProgress();
 
 		InputStream decryptedPacketInputStream = null;
 		InputStream decodedInputStream = null;
@@ -122,7 +122,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 					} else {
 						decryptedData.write(buffer, 0, bytesRead);
 						itemsDone += bytesRead;
-						showProgress();
+						signalProgress();
 					}
 				}
 				Utilities.clear(buffer);

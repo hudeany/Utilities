@@ -66,7 +66,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showUnlimitedSubProgress() {
+	public void receiveUnlimitedSubProgressSignal() {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -127,7 +127,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemStart(final String itemName) {
+	public void receiveItemStartSignal(final String itemName) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -142,7 +142,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemProgress(final LocalDateTime itemStart, final long subItemsToDo, final long subItemsDone) {
+	public void receiveItemProgressSignal(final LocalDateTime itemStart, final long subItemsToDo, final long subItemsDone) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override
@@ -156,7 +156,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void showItemDone(final LocalDateTime itemStart, final LocalDateTime itemEnd, final long subItemsDone) {
+	public void receiveItemDoneSignal(final LocalDateTime itemStart, final LocalDateTime itemEnd, final long subItemsDone) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override

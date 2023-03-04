@@ -47,14 +47,14 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 
 	@Override
 	public RemoteFileUploadWorker work() throws Exception {
-		showUnlimitedProgress();
+		signalUnlimitedProgress();
 
 		itemsToDo = localFile.length();
 
-		showProgress();
+		signalProgress();
 		try (InputStream inputStream = new ProgressInputStream(new FileInputStream(localFile))) {
 			connection.uploadFile(remoteFilePath, inputStream);
-			showProgress();
+			signalProgress();
 		}
 
 		if (cancel && connection.getFileInfo(remoteFilePath) != null) {

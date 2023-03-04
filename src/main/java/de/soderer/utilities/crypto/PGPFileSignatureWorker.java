@@ -44,7 +44,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 	@SuppressWarnings("resource")
 	@Override
 	public byte[] work() throws Exception {
-		showProgress();
+		signalProgress();
 
 		final PGPPrivateKey privateKey = PGPUtilities.readPGPPrivateKey(secretKey, password);
 		ByteArrayOutputStream outputStream = null;
@@ -55,7 +55,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 		try {
 			itemsToDo = dataToSign.available();
 
-			showProgress();
+			signalProgress();
 
 			Security.addProvider(new BouncyCastleProvider());
 
@@ -77,7 +77,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 					pgpSignatureGenerator.update(buffer, 0, bytesRead);
 
 					itemsDone += bytesRead;
-					showProgress();
+					signalProgress();
 				}
 			}
 			Utilities.clear(buffer);

@@ -48,13 +48,13 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 
 	@Override
 	public HashItem work() throws Exception {
-		showProgress();
+		signalProgress();
 
 		try {
-			showItemStart(scanningForFilesMessage + " ...");
-			showUnlimitedProgress();
+			signalItemStart(scanningForFilesMessage + " ...");
+			signalUnlimitedProgress();
 			itemsToDo = FileUtilities.getAllSubfilesSize(directoryToHash);
-			showProgress();
+			signalProgress();
 			return hashDirectory(directoryToHash);
 		} catch (final Exception e) {
 			throw new Exception("Error while hashing: " + e.getMessage(), e);
@@ -106,8 +106,8 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 	private HashItem hashFile(final File fileToHash) throws Exception {
 		subItemsToDo = fileToHash.length();
 		subItemsDone = 0;
-		showProgress();
-		showItemStart(TextUtilities.trimStringToMaximumLength(fileToHash.getAbsolutePath(), 60, " ... "));
+		signalProgress();
+		signalItemStart(TextUtilities.trimStringToMaximumLength(fileToHash.getAbsolutePath(), 60, " ... "));
 		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fileToHash))) {
 			final MessageDigest messageDigest = hashAlgorithm.getMessageDigest();
 
@@ -119,7 +119,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 				} else {
 					messageDigest.update(buffer, 0, bytesRead);
 					subItemsDone += bytesRead;
-					showItemProgress();
+					signalItemProgress();
 				}
 			}
 
@@ -137,7 +137,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			item.setHash(messageDigest.digest());
 
 			itemsDone += subItemsDone;
-			showProgress();
+			signalProgress();
 
 			return item;
 		} catch (@SuppressWarnings("unused") final Exception e) {
@@ -155,7 +155,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			item.setHash(null);
 
 			itemsDone += fileToHash.length();
-			showProgress();
+			signalProgress();
 
 			return item;
 		}

@@ -122,7 +122,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void showUnlimitedProgress() {
+	public void receiveUnlimitedProgressSignal() {
 		if (SwingUtilities.isEventDispatchThread()) {
 			progressBar.setIndeterminate(true);
 			progressBar.setStringPainted(false);
@@ -130,14 +130,14 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					showUnlimitedProgress();
+					receiveUnlimitedProgressSignal();
 				}
 			});
 		}
 	}
 
 	@Override
-	public void showProgress(final LocalDateTime start, final long itemsToDo, final long itemsDone) {
+	public void receiveProgressSignal(final LocalDateTime start, final long itemsToDo, final long itemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(progressBar, start, itemsToDo, itemsDone);
 			if (commentLabel != null) {
@@ -148,21 +148,21 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					showProgress(start, itemsToDo, itemsDone);
+					receiveProgressSignal(start, itemsToDo, itemsDone);
 				}
 			});
 		}
 	}
 
 	@Override
-	public void showDone(final LocalDateTime start, final LocalDateTime end, final long itemsDone) {
+	public void receiveDoneSignal(final LocalDateTime start, final LocalDateTime end, final long itemsDone) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			dispose();
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					showDone(start, end, itemsDone);
+					receiveDoneSignal(start, end, itemsDone);
 				}
 			});
 		}

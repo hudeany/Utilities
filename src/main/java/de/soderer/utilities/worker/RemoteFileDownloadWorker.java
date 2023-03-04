@@ -38,11 +38,11 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 
 	@Override
 	public RemoteFileDownloadWorker work() throws Exception {
-		showUnlimitedProgress();
+		signalUnlimitedProgress();
 
 		itemsToDo = connection.getFileInfo(remoteFilePath).getFileSize();
 
-		showProgress();
+		signalProgress();
 
 		try (InputStream inputStream = connection.downloadFile(remoteFilePath);
 				OutputStream outputStream = new FileOutputStream(localFile)) {
@@ -54,7 +54,7 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 				} else {
 					outputStream.write(buffer, 0, bytesRead);
 					itemsDone += bytesRead;
-					showProgress();
+					signalProgress();
 				}
 			}
 			Utilities.clear(buffer);

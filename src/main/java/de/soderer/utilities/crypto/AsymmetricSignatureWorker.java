@@ -46,7 +46,7 @@ public class AsymmetricSignatureWorker extends WorkerSimple<byte[]> {
 			signatureMethod = signatureMethod.replace("withecdh", "withecdsa");
 		}
 
-		showProgress();
+		signalProgress();
 
 		itemsToDo = Math.max(dataSizeHint, dataInputStream.available());
 
@@ -63,7 +63,7 @@ public class AsymmetricSignatureWorker extends WorkerSimple<byte[]> {
 				} else {
 					signature.update(buffer, 0, bytesRead);
 					itemsDone += bytesRead;
-					showProgress();
+					signalProgress();
 				}
 			}
 			Utilities.clear(buffer);

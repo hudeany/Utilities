@@ -71,7 +71,7 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		}
 		encryptionMethod = encryptionMethod.toLowerCase();
 
-		showProgress();
+		signalProgress();
 
 		itemsToDo = Math.max(dataSizeHint, dataInputStream.available());
 
@@ -104,7 +104,7 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 						} else {
 							cipherOutputStream.write(buffer, 0, bytesRead);
 							itemsDone += bytesRead;
-							showProgress();
+							signalProgress();
 						}
 					}
 					Utilities.clear(buffer);

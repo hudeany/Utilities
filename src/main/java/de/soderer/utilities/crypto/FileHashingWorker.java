@@ -30,7 +30,7 @@ public class FileHashingWorker extends WorkerSimple<byte[]> {
 
 	@Override
 	public byte[] work() throws Exception {
-		showProgress();
+		signalProgress();
 
 		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fileToHash))) {
 			final MessageDigest messageDigest = MessageDigest.getInstance(hashAlgorithm.getAlgorithmName());
@@ -43,7 +43,7 @@ public class FileHashingWorker extends WorkerSimple<byte[]> {
 				} else {
 					messageDigest.update(buffer, 0, bytesRead);
 					itemsDone += bytesRead;
-					showProgress();
+					signalProgress();
 				}
 			}
 
