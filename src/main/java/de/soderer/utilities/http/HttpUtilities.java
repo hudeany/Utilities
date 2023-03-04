@@ -137,6 +137,14 @@ public class HttpUtilities {
 				((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
 			}
 
+			if (httpRequest.getConnectTimeoutMillis() >= 0) {
+				urlConnection.setConnectTimeout(httpRequest.getConnectTimeoutMillis());
+			}
+
+			if (httpRequest.getReadTimeoutMillis() >= 0) {
+				urlConnection.setReadTimeout(httpRequest.getReadTimeoutMillis());
+			}
+
 			if (httpRequest.getHeaders() != null && httpRequest.getHeaders().size() > 0) {
 				if (debugLog) {
 					System.out.println("Request Headers: ");

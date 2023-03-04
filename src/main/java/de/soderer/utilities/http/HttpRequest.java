@@ -39,6 +39,9 @@ public class HttpRequest {
 	private final String url;
 	private Charset encoding = StandardCharsets.UTF_8;
 
+	private int connectTimeoutMillis = -1;
+	private int readTimeoutMillis = -1;
+
 	private final Map<String, String> headers = new LinkedHashMap<>();
 	private final List<Tuple<String, Object>> urlParameters = new ArrayList<>();
 	private final List<Tuple<String, Object>> postParameters= new ArrayList<>();
@@ -233,6 +236,32 @@ public class HttpRequest {
 		this.encoding = encoding;
 
 		return this;
+	}
+
+	/**
+	 * Timeout for build up the connection to the server
+	 */
+	public HttpRequest setConnectionTimeoutMillis(final int connectTimeoutMillis) {
+		this.connectTimeoutMillis = connectTimeoutMillis;
+
+		return this;
+	}
+
+	public int getConnectTimeoutMillis() {
+		return connectTimeoutMillis;
+	}
+
+	/**
+	 * Timeout for wait for the servers response after sending the request
+	 */
+	public HttpRequest setReadTimeoutMillis(final int readTimeoutMillis) {
+		this.readTimeoutMillis = readTimeoutMillis;
+
+		return this;
+	}
+
+	public int getReadTimeoutMillis() {
+		return readTimeoutMillis;
 	}
 
 	public String getRequestBody() {
