@@ -3,6 +3,7 @@ package de.soderer.utilities.console;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.Thread.State;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -364,12 +365,13 @@ public class ConsoleUtilities {
 				moveCursorToPosition(3000, 3000);
 
 				if (SystemUtilities.isWindowsSystem()) {
-					// Request current cursor position
-					System.out.print("\033[6n");
-
-					int keyBuffer;
-					while ((keyBuffer = WindowsKeyStrokeReader.readKey(false)) > 0) {
-						response.append((char) keyBuffer);
+					final WindowsConsoleWidthDetection consoleWidthDetection = new WindowsConsoleWidthDetection(response);
+					final Thread consoleWithDetectionThread = new Thread(consoleWidthDetection, "ConsoleWidthDetection");
+					consoleWithDetectionThread.start();
+					Thread.sleep(1000);
+					if (consoleWithDetectionThread.getState() != State.TERMINATED) {
+						consoleWithDetectionThread.interrupt();
+						return new Size(24, 80);
 					}
 				} else {
 					final boolean linuxConsoleMustBeReset = activateLinuxConsoleRawMode();
