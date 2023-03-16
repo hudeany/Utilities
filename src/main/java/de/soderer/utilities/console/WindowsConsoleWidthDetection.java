@@ -2,6 +2,11 @@ package de.soderer.utilities.console;
 
 public class WindowsConsoleWidthDetection implements Runnable  {
 	private final StringBuilder response;
+	private ConsoleType consoleType = null;
+
+	public ConsoleType getConsoleType() {
+		return consoleType;
+	}
 
 	public WindowsConsoleWidthDetection(final StringBuilder response) {
 		this.response = response;
@@ -17,8 +22,10 @@ public class WindowsConsoleWidthDetection implements Runnable  {
 			while ((keyBuffer = WindowsKeyStrokeReader.readKey(false)) > 0) {
 				response.append((char) keyBuffer);
 			}
+			consoleType = ConsoleType.ANSI;
 		} catch (@SuppressWarnings("unused") final Exception e) {
-			// do nothing
+			// Most probably an eclipse console
+			consoleType = ConsoleType.TEST;
 		}
 	}
 }

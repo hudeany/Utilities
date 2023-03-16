@@ -91,7 +91,7 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 					final String nextRemoteFile = destinationDirectory + "/" + file.getName();
 					subItemsDone = 0;
 					subItemsToDo = file.length();
-					signalItemStart(file.getName());
+					signalItemStart(file.getName(), null);
 					signalProgress();
 					try (InputStream inputStream = new ProgressInputStream(new FileInputStream(nextLocalFile))) {
 						connection.uploadFile(nextRemoteFile, inputStream);

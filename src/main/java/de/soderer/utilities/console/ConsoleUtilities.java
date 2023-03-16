@@ -18,7 +18,7 @@ import de.soderer.utilities.Utilities;
 public class ConsoleUtilities {
 	private static Queue<Character> consoleInputBuffer = null;
 
-	private static Boolean consoleSupportsAnsiCodes = null;
+	private static ConsoleType consoleType = null;
 	private static boolean linuxConsoleActivatedRawMode = false;
 
 	public static final int KeyCode_CtrlC = 3;
@@ -142,11 +142,21 @@ public class ConsoleUtilities {
 		}
 	}
 
-	public static boolean consoleSupportsAnsiCodes() {
-		if (consoleSupportsAnsiCodes == null) {
-			consoleSupportsAnsiCodes = SystemUtilities.isWindowsSystem() || (System.console() != null && System.getenv().get("TERM") != null);
+	public static ConsoleType getConsoleType() {
+		if (consoleType == null) {
+			if (SystemUtilities.isWindowsSystem() || (System.console() != null && System.getenv().get("TERM") != null)) {
+				consoleType = ConsoleType.ANSI;
+				try {
+					getTerminalSize();
+				} catch (final Exception e) {
+					e.printStackTrace();
+					consoleType = ConsoleType.TEST;
+				}
+			} else {
+				consoleType = ConsoleType.TEST;
+			}
 		}
-		return consoleSupportsAnsiCodes;
+		return consoleType;
 	}
 
 	public static boolean activateLinuxConsoleRawMode() throws Exception {
@@ -371,6 +381,7 @@ public class ConsoleUtilities {
 					Thread.sleep(1000);
 					if (consoleWithDetectionThread.getState() != State.TERMINATED) {
 						consoleWithDetectionThread.interrupt();
+						consoleType = ConsoleType.TEST;
 						return new Size(24, 80);
 					}
 				} else {

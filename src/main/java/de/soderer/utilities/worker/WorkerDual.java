@@ -14,11 +14,11 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 		super(parent);
 	}
 
-	protected void signalItemStart(final String itemName) {
+	protected void signalItemStart(final String itemName, final String description) {
 		currentItemName = itemName;
 		startTimeSub = LocalDateTime.now();
 		if (parent != null && !cancel) {
-			((WorkerParentDual) parent).receiveItemStartSignal(currentItemName);
+			((WorkerParentDual) parent).receiveItemStartSignal(currentItemName, description);
 		}
 	}
 

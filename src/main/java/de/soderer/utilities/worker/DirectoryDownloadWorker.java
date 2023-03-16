@@ -100,7 +100,7 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 				final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
 				subItemsDone = 0;
 				subItemsToDo = fileInfo.getFileSize();
-				signalItemStart(nextRemoteFile.substring(remoteDirectoryPath.length() + 1));
+				signalItemStart(nextRemoteFile.substring(remoteDirectoryPath.length() + 1), null);
 				signalProgress();
 				try (InputStream inputStream = connection.downloadFile(nextRemoteFile);
 						OutputStream outputStream = new FileOutputStream(nextLocalFile)) {

@@ -51,7 +51,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 		signalProgress();
 
 		try {
-			signalItemStart(scanningForFilesMessage + " ...");
+			signalItemStart(scanningForFilesMessage + " ...", null);
 			signalUnlimitedProgress();
 			itemsToDo = FileUtilities.getAllSubfilesSize(directoryToHash);
 			signalProgress();
@@ -107,7 +107,7 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 		subItemsToDo = fileToHash.length();
 		subItemsDone = 0;
 		signalProgress();
-		signalItemStart(TextUtilities.trimStringToMaximumLength(fileToHash.getAbsolutePath(), 60, " ... "));
+		signalItemStart(TextUtilities.trimStringToMaximumLength(fileToHash.getAbsolutePath(), 60, " ... "), null);
 		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fileToHash))) {
 			final MessageDigest messageDigest = hashAlgorithm.getMessageDigest();
 

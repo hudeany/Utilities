@@ -61,7 +61,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void receiveItemStartSignal(final String itemName) {
+	public void receiveItemStartSignal(final String itemName, final String description) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			subCommentStringFormat = itemName;
 			subItemLabel.setText(itemName);
@@ -73,7 +73,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					receiveItemStartSignal(itemName);
+					receiveItemStartSignal(itemName, description);
 				}
 			});
 		}
