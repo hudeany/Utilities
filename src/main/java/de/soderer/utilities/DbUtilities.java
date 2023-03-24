@@ -683,73 +683,75 @@ public class DbUtilities {
 	public static int readoutInOutputStream(final Connection connection, final String statementString, final OutputStream outputStream, final Charset encoding, final char separator, final Character stringQuote) throws Exception {
 		final DbVendor dbVendor = getDbVendor(connection);
 		try (Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery(statementString);
-				CsvWriter csvWriter = new CsvWriter(outputStream, encoding, new CsvFormat().setSeparator(separator).setStringQuote(stringQuote))) {
-			final ResultSetMetaData metaData = resultSet.getMetaData();
+				ResultSet resultSet = statement.executeQuery(statementString)) {
+			statement.setFetchSize(100);
+			try (CsvWriter csvWriter = new CsvWriter(outputStream, encoding, new CsvFormat().setSeparator(separator).setStringQuote(stringQuote))) {
+				final ResultSetMetaData metaData = resultSet.getMetaData();
 
-			final List<String> headers = new ArrayList<>();
-			for (int i = 1; i <= metaData.getColumnCount(); i++) {
-				headers.add(metaData.getColumnLabel(i));
-			}
-			csvWriter.writeValues(headers);
-
-			while (resultSet.next()) {
-				final List<String> values = new ArrayList<>();
+				final List<String> headers = new ArrayList<>();
 				for (int i = 1; i <= metaData.getColumnCount(); i++) {
-					if (metaData.getColumnType(i) == Types.BLOB
-							|| metaData.getColumnType(i) == Types.BINARY
-							|| metaData.getColumnType(i) == Types.VARBINARY
-							|| metaData.getColumnType(i) == Types.LONGVARBINARY) {
-						if (dbVendor == DbVendor.SQLite || dbVendor == DbVendor.PostgreSQL || dbVendor == DbVendor.Cassandra) {
-							// DB vendor does not allow "resultSet.getBlob(i)"
-							try (InputStream input = resultSet.getBinaryStream(metaData.getColumnName(i))) {
-								if (input != null) {
-									final byte[] data = IoUtilities.toByteArray(input);
-									values.add(Base64.getEncoder().encodeToString(data));
-								} else {
+					headers.add(metaData.getColumnLabel(i));
+				}
+				csvWriter.writeValues(headers);
+
+				while (resultSet.next()) {
+					final List<String> values = new ArrayList<>();
+					for (int i = 1; i <= metaData.getColumnCount(); i++) {
+						if (metaData.getColumnType(i) == Types.BLOB
+								|| metaData.getColumnType(i) == Types.BINARY
+								|| metaData.getColumnType(i) == Types.VARBINARY
+								|| metaData.getColumnType(i) == Types.LONGVARBINARY) {
+							if (dbVendor == DbVendor.SQLite || dbVendor == DbVendor.PostgreSQL || dbVendor == DbVendor.Cassandra) {
+								// DB vendor does not allow "resultSet.getBlob(i)"
+								try (InputStream input = resultSet.getBinaryStream(metaData.getColumnName(i))) {
+									if (input != null) {
+										final byte[] data = IoUtilities.toByteArray(input);
+										values.add(Base64.getEncoder().encodeToString(data));
+									} else {
+										values.add("");
+									}
+								} catch (@SuppressWarnings("unused") final Exception e) {
+									// NULL blobs throw a NullpointerException in SQLite
 									values.add("");
 								}
-							} catch (@SuppressWarnings("unused") final Exception e) {
-								// NULL blobs throw a NullpointerException in SQLite
-								values.add("");
-							}
-						} else {
-							final Blob blob = resultSet.getBlob(i);
-							if (resultSet.wasNull()) {
-								values.add("");
 							} else {
-								try (InputStream input = blob.getBinaryStream()) {
-									final byte[] data = IoUtilities.toByteArray(input);
-									values.add(Base64.getEncoder().encodeToString(data));
+								final Blob blob = resultSet.getBlob(i);
+								if (resultSet.wasNull()) {
+									values.add("");
+								} else {
+									try (InputStream input = blob.getBinaryStream()) {
+										final byte[] data = IoUtilities.toByteArray(input);
+										values.add(Base64.getEncoder().encodeToString(data));
+									}
 								}
 							}
-						}
-					} else if (dbVendor == DbVendor.SQLite && "DATE".equals(metaData.getColumnTypeName(i))) {
-						final LocalDate extractSqliteLocalDate = extractSqliteLocalDate(resultSet.getObject(i));
-						if (extractSqliteLocalDate != null) {
-							values.add(extractSqliteLocalDate.toString());
+						} else if (dbVendor == DbVendor.SQLite && "DATE".equals(metaData.getColumnTypeName(i))) {
+							final LocalDate extractSqliteLocalDate = extractSqliteLocalDate(resultSet.getObject(i));
+							if (extractSqliteLocalDate != null) {
+								values.add(extractSqliteLocalDate.toString());
+							} else {
+								values.add(null);
+							}
+						} else if (dbVendor == DbVendor.SQLite && "TIMESTAMP".equals(metaData.getColumnTypeName(i))) {
+							final LocalDateTime extractSqliteLocalDateTime = extractSqliteLocalDateTime(resultSet.getObject(i));
+							if (extractSqliteLocalDateTime != null) {
+								values.add(extractSqliteLocalDateTime.toString());
+							} else {
+								values.add(null);
+							}
+						} else if (metaData.getColumnType(i) == Types.DATE) {
+							values.add(resultSet.getString(i));
+						} else if (metaData.getColumnType(i) == Types.TIMESTAMP) {
+							values.add(resultSet.getString(i));
 						} else {
-							values.add(null);
+							values.add(resultSet.getString(i));
 						}
-					} else if (dbVendor == DbVendor.SQLite && "TIMESTAMP".equals(metaData.getColumnTypeName(i))) {
-						final LocalDateTime extractSqliteLocalDateTime = extractSqliteLocalDateTime(resultSet.getObject(i));
-						if (extractSqliteLocalDateTime != null) {
-							values.add(extractSqliteLocalDateTime.toString());
-						} else {
-							values.add(null);
-						}
-					} else if (metaData.getColumnType(i) == Types.DATE) {
-						values.add(resultSet.getString(i));
-					} else if (metaData.getColumnType(i) == Types.TIMESTAMP) {
-						values.add(resultSet.getString(i));
-					} else {
-						values.add(resultSet.getString(i));
 					}
+					csvWriter.writeValues(values);
 				}
-				csvWriter.writeValues(values);
-			}
 
-			return csvWriter.getWrittenLines() - 1;
+				return csvWriter.getWrittenLines() - 1;
+			}
 		}
 	}
 
@@ -1013,14 +1015,16 @@ public class DbUtilities {
 	}
 
 	public static boolean checkTableExist(final Connection connection, final String tableName, final boolean throwExceptionOnError) throws Exception {
-		try (Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0")) {
-			return true;
-		} catch (@SuppressWarnings("unused") final Exception e) {
-			if (throwExceptionOnError) {
-				throw new Exception("Table '" + tableName + "' does not exist");
-			} else {
-				return false;
+		try (Statement statement = connection.createStatement()) {
+			statement.setFetchSize(100);
+			try (ResultSet resultSet = statement.executeQuery("SELECT * FROM " + tableName + " WHERE 1 = 0")) {
+				return true;
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				if (throwExceptionOnError) {
+					throw new Exception("Table '" + tableName + "' does not exist");
+				} else {
+					return false;
+				}
 			}
 		}
 	}
@@ -1085,23 +1089,25 @@ public class DbUtilities {
 
 	public static String getResultAsTextTable(final DataSource datasource, final String selectString) throws Exception {
 		try (Connection connection = datasource.getConnection();
-				PreparedStatement preparedStatement = connection.prepareStatement(selectString);
-				ResultSet resultSet = preparedStatement.executeQuery()) {
-			final TextTable textTable = new TextTable();
-			for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-				textTable.addColumn(resultSet.getMetaData().getColumnLabel(columnIndex));
-			}
-			while (resultSet.next()) {
-				textTable.startNewLine();
+				PreparedStatement preparedStatement = connection.prepareStatement(selectString)) {
+			preparedStatement.setFetchSize(100);
+			try (final ResultSet resultSet = preparedStatement.executeQuery()) {
+				final TextTable textTable = new TextTable();
 				for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
-					if (resultSet.getString(columnIndex) != null) {
-						textTable.addValueToCurrentLine(resultSet.getString(columnIndex));
-					} else {
-						textTable.addValueToCurrentLine("<null>");
+					textTable.addColumn(resultSet.getMetaData().getColumnLabel(columnIndex));
+				}
+				while (resultSet.next()) {
+					textTable.startNewLine();
+					for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
+						if (resultSet.getString(columnIndex) != null) {
+							textTable.addValueToCurrentLine(resultSet.getString(columnIndex));
+						} else {
+							textTable.addValueToCurrentLine("<null>");
+						}
 					}
 				}
+				return textTable.toString();
 			}
-			return textTable.toString();
 		}
 	}
 
@@ -1158,6 +1164,7 @@ public class DbUtilities {
 				// Watchout: Oracle's timestamp datatype is "TIMESTAMP(6)", so remove the bracket value
 				final String sql = "SELECT column_name, NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) AS data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
@@ -1183,6 +1190,7 @@ public class DbUtilities {
 			} else if (DbVendor.MySQL == dbVendor) {
 				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 						while (resultSet.next()) {
@@ -1208,6 +1216,7 @@ public class DbUtilities {
 			} else if (DbVendor.MariaDB == dbVendor) {
 				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 						while (resultSet.next()) {
@@ -1233,6 +1242,7 @@ public class DbUtilities {
 			} else if (DbVendor.HSQL == dbVendor) {
 				final String sql = "SELECT column_name, type_name, column_size, decimal_digits, is_nullable, is_autoincrement FROM information_schema.system_columns WHERE LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
@@ -1258,6 +1268,7 @@ public class DbUtilities {
 			} else if (DbVendor.Derby == dbVendor) {
 				final String sql = "SELECT columnname, columndatatype, autoincrementvalue FROM sys.systables, sys.syscolumns WHERE tableid = referenceid AND LOWER(tablename) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
@@ -1290,6 +1301,7 @@ public class DbUtilities {
 				final String sql = "SELECT rf.rdb$field_name, f.rdb$field_type, f.rdb$field_sub_type, f.rdb$field_length, f.rdb$field_scale, f.rdb$null_flag"
 						+ " FROM rdb$fields f JOIN rdb$relation_fields rf ON rf.rdb$field_source = f.rdb$field_name WHERE rf.rdb$relation_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
 					preparedStatement.setString(1, tableName.toUpperCase());
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
@@ -1349,6 +1361,7 @@ public class DbUtilities {
 				if (checkTableExist(connection, "sqlite_sequence")) {
 					// sqlite_sequence only exists if there is any table with auto_increment
 					try (PreparedStatement preparedStatement2 = connection.prepareStatement("SELECT COUNT(*) FROM sqlite_sequence WHERE LOWER(name) = LOWER(?)")) {
+						preparedStatement2.setFetchSize(100);
 						preparedStatement2.setString(1, tableName);
 						try (ResultSet resultSet2 = preparedStatement2.executeQuery()) {
 							if (resultSet2.next()) {
@@ -1359,29 +1372,32 @@ public class DbUtilities {
 				}
 
 				final String sql = "PRAGMA table_info(" + tableName + ")";
-				try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
-						ResultSet resultSet = preparedStatement.executeQuery()) {
-					while (resultSet.next()) {
-						long characterLength = -1;
-						final int numericPrecision = -1;
-						final int numericScale = -1;
-						final boolean isNullable = resultSet.getInt("notnull") == 0;
-						// Only the primary key can be auto incremented in SQLite
-						final boolean isAutoIncrement = hasAutoIncrement && resultSet.getInt("pk") > 0;
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						while (resultSet.next()) {
+							long characterLength = -1;
+							final int numericPrecision = -1;
+							final int numericScale = -1;
+							final boolean isNullable = resultSet.getInt("notnull") == 0;
+							// Only the primary key can be auto incremented in SQLite
+							final boolean isAutoIncrement = hasAutoIncrement && resultSet.getInt("pk") > 0;
 
-						String type = resultSet.getString("type");
+							String type = resultSet.getString("type");
 
-						if (type.contains("(")) {
-							characterLength = Long.parseLong(type.substring(type.indexOf("(") + 1, type.indexOf(")")));
-							type = type.substring(0, type.indexOf("("));
+							if (type.contains("(")) {
+								characterLength = Long.parseLong(type.substring(type.indexOf("(") + 1, type.indexOf(")")));
+								type = type.substring(0, type.indexOf("("));
+							}
+
+							returnMap.put(resultSet.getString("name"), new DbColumnType(type, characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 						}
-
-						returnMap.put(resultSet.getString("name"), new DbColumnType(type, characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
 					}
 				}
 			} else if (DbVendor.PostgreSQL == dbVendor) {
 				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
 					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
@@ -1415,6 +1431,7 @@ public class DbUtilities {
 					final String tableNameInKeySpace = tableName.substring(tableName.indexOf(".") + 1);
 					final String sql = "SELECT column_name, kind, type FROM system_schema.columns WHERE keyspace_name = ? AND table_name = ?";
 					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+						preparedStatement.setFetchSize(100);
 						preparedStatement.setString(1, keySpaceName);
 						preparedStatement.setString(2, tableNameInKeySpace);
 						try (ResultSet resultSet = preparedStatement.executeQuery() ) {
@@ -1426,6 +1443,7 @@ public class DbUtilities {
 				} else {
 					final String sql = "SELECT keyspace_name, column_name, kind, type FROM system_schema.columns WHERE table_name = ? ALLOW FILTERING";
 					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+						preparedStatement.setFetchSize(100);
 						preparedStatement.setString(1, tableName);
 						try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 							String keyspace = null;
@@ -1497,6 +1515,7 @@ public class DbUtilities {
 				if (DbVendor.Oracle == dbVendor) {
 					final String sql = "SELECT data_default FROM user_tab_cols WHERE table_name = ? AND column_name = ?";
 					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+						preparedStatement.setFetchSize(100);
 						preparedStatement.setString(1, tableName.toUpperCase());
 						preparedStatement.setString(2, columnName.toUpperCase());
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -1523,6 +1542,7 @@ public class DbUtilities {
 				} else {
 					final String sql = "SELECT column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ? AND column_name = ?";
 					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+						preparedStatement.setFetchSize(100);
 						preparedStatement.setString(1, tableName);
 						preparedStatement.setString(2, columnName);
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -1703,9 +1723,10 @@ public class DbUtilities {
 	public static boolean checkOracleTablespaceExists(final Connection connection, final String tablespaceName) throws Exception {
 		final DbVendor dbVendor = getDbVendor(connection);
 		if (dbVendor == DbVendor.Oracle && tablespaceName != null) {
-			try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM dba_tablespaces WHERE LOWER(tablespace_name) = ?")) {
-				statement.setString(1, tablespaceName.toLowerCase());
-				try (ResultSet resultSet = statement.executeQuery()) {
+			try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT COUNT(*) FROM dba_tablespaces WHERE LOWER(tablespace_name) = ?")) {
+				preparedStatement.setFetchSize(100);
+				preparedStatement.setString(1, tablespaceName.toLowerCase());
+				try (ResultSet resultSet = preparedStatement.executeQuery()) {
 					return resultSet.getInt(1) > 0;
 				}
 			} catch (final Exception e) {
@@ -1736,6 +1757,7 @@ public class DbUtilities {
 						final String tableNameInKeySpace = tableName.substring(tableName.indexOf(".") + 1);
 						final String sql = "SELECT column_name FROM system_schema.columns WHERE keyspace_name = ? AND table_name = ? AND kind = 'partition_key'";
 						try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+							preparedStatement.setFetchSize(100);
 							preparedStatement.setString(1, keySpaceName);
 							preparedStatement.setString(2, tableNameInKeySpace);
 							final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
@@ -1749,6 +1771,7 @@ public class DbUtilities {
 					} else {
 						final String sql = "SELECT keyspace_name, column_name FROM system_schema.columns WHERE table_name = ? AND kind = 'partition_key' ALLOW FILTERING";
 						try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+							preparedStatement.setFetchSize(100);
 							preparedStatement.setString(1, tableName);
 							try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 								String keyspace = null;
@@ -1825,6 +1848,7 @@ public class DbUtilities {
 	 */
 	public static List<String> getAvailableTables(final Connection connection, final String tablePatternExpression) throws Exception {
 		try (Statement statement = connection.createStatement()) {
+			statement.setFetchSize(100);
 			final DbVendor dbVendor = getDbVendor(connection);
 
 			String tableQuery;
@@ -1864,6 +1888,7 @@ public class DbUtilities {
 				tableQuery += " ORDER BY table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
+					statement.setFetchSize(100);
 					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
@@ -1896,6 +1921,7 @@ public class DbUtilities {
 				}
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
+					statement.setFetchSize(100);
 					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
@@ -1917,6 +1943,7 @@ public class DbUtilities {
 				tableQuery += " ORDER BY table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
+					statement.setFetchSize(100);
 					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
 						tableNamesToExport.add(resultSet.getString("table_name"));
@@ -3221,6 +3248,19 @@ public class DbUtilities {
 			}
 		} else {
 			throw new Exception("ForeignKeyConstraintStatus change not available for dbvendor '" + dbVendor.name() + "'");
+		}
+	}
+
+	public static Statement getStatementForLargeQuery(final Connection connection) throws Exception {
+		final DbVendor dbVendor = getDbVendor(connection);
+		if (DbVendor.MySQL == dbVendor) {
+			final Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			statement.setFetchSize(Integer.MIN_VALUE);
+			return statement;
+		} else {
+			final Statement statement = connection.createStatement();
+			statement.setFetchSize(100);
+			return statement;
 		}
 	}
 }
