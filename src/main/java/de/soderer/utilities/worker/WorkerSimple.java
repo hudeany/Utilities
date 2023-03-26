@@ -47,12 +47,8 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 
 	public void signalProgress(final boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
-			if (Duration.between(lastProgressShow, LocalDateTime.now()).toMillis() > progressDisplayDelayMilliseconds) {
-				// Normal progress update
-				parent.receiveProgressSignal(startTime, itemsToDo, itemsDone);
-				lastProgressShow = LocalDateTime.now();
-			} else if (overrideRefreshTime) {
-				// Important progress update, which may not be left out
+			if (Duration.between(lastProgressShow, LocalDateTime.now()).toMillis() > progressDisplayDelayMilliseconds
+					|| overrideRefreshTime) {
 				parent.receiveProgressSignal(startTime, itemsToDo, itemsDone);
 				lastProgressShow = LocalDateTime.now();
 			}

@@ -28,14 +28,8 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 
 	protected void signalItemProgress(final boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
-			if (Duration.between(lastProgressShow, LocalDateTime.now()).toMillis() > progressDisplayDelayMilliseconds) {
-				// Normal progress update
-				((WorkerParentDual) parent).receiveProgressSignal(startTimeSub, itemsToDo, itemsDone);
-				((WorkerParentDual) parent).receiveItemProgressSignal(startTimeSub, subItemsToDo, subItemsDone);
-				lastProgressShow = LocalDateTime.now();
-			} else if (overrideRefreshTime) {
-				// Important progress update, which may not be left out
-				((WorkerParentDual) parent).receiveProgressSignal(startTimeSub, itemsToDo, itemsDone);
+			if (Duration.between(lastProgressShow, LocalDateTime.now()).toMillis() > progressDisplayDelayMilliseconds
+					|| overrideRefreshTime) {
 				((WorkerParentDual) parent).receiveItemProgressSignal(startTimeSub, subItemsToDo, subItemsDone);
 				lastProgressShow = LocalDateTime.now();
 			}
