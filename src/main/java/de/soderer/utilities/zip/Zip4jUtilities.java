@@ -53,4 +53,42 @@ public class Zip4jUtilities {
 			return uncompressedSize;
 		}
 	}
+
+	@SuppressWarnings("resource")
+	public static InputStream openPasswordSecuredZipFile(final String importFilePathOrData, final char[] zipPassword) throws Exception {
+		final ZipFile zipFile = new ZipFile(importFilePathOrData, zipPassword);
+		final List<FileHeader> fileHeaders = zipFile.getFileHeaders();
+		if (fileHeaders == null || fileHeaders.size() == 0) {
+			try {
+				zipFile.close();
+			} catch (@SuppressWarnings("unused") final IOException e) {
+				// Do nothing
+			}
+			throw new Exception("Zipped file is empty: " + importFilePathOrData);
+		} else if (fileHeaders.size() > 1) {
+			try {
+				zipFile.close();
+			} catch (@SuppressWarnings("unused") final IOException e) {
+				// Do nothing
+			}
+			throw new Exception("Zipped file contains more than one file: " + importFilePathOrData);
+		}
+		final FileHeader fileHeader = fileHeaders.get(0);
+		if (fileHeader == null) {
+			try {
+				zipFile.close();
+			} catch (@SuppressWarnings("unused") final IOException e) {
+				// Do nothing
+			}
+			throw new Exception("Zipped file is empty: " + importFilePathOrData);
+		} else if (fileHeader.getUncompressedSize() == 0) {
+			try {
+				zipFile.close();
+			} catch (@SuppressWarnings("unused") final IOException e) {
+				// Do nothing
+			}
+			throw new Exception("Zipped file is empty: " + importFilePathOrData + ": " + fileHeader.getFileName());
+		}
+		return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(fileHeader), zipFile);
+	}
 }
