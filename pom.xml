@@ -38,15 +38,15 @@
 
 	<dependencies>
 		<dependency>
-		    <groupId>javax.activation</groupId>
-		    <artifactId>activation</artifactId>
-		    <version>1.1.1</version>
+			<groupId>javax.activation</groupId>
+			<artifactId>activation</artifactId>
+			<version>1.1.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/jakarta.activation/jakarta.activation-api -->
 		<dependency>
-		    <groupId>jakarta.activation</groupId>
-		    <artifactId>jakarta.activation-api</artifactId>
-		    <version>2.0.1</version>
+			<groupId>jakarta.activation</groupId>
+			<artifactId>jakarta.activation-api</artifactId>
+			<version>2.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>jakarta.xml.bind</groupId>
@@ -59,9 +59,9 @@
 <!-- 			<version>1.4.5</version> -->
 <!-- 		</dependency> -->
 		<dependency>
-		    <groupId>com.sun.mail</groupId>
-		    <artifactId>javax.mail</artifactId>
-		    <version>1.6.2</version>
+			<groupId>com.sun.mail</groupId>
+			<artifactId>javax.mail</artifactId>
+			<version>1.6.2</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -99,9 +99,9 @@
 			<version>2.0.1</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.sun.mail</groupId>
-		    <artifactId>smtp</artifactId>
-		    <version>2.0.1</version>
+			<groupId>com.sun.mail</groupId>
+			<artifactId>smtp</artifactId>
+			<version>2.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.jcraft</groupId>
@@ -145,42 +145,49 @@
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/net.java.dev.jna/jna -->
-		    <groupId>net.java.dev.jna</groupId>
-		    <artifactId>jna</artifactId>
-		    <version>5.6.0</version>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna</artifactId>
+			<version>5.6.0</version>
 		</dependency>
 		<dependency>
 			<!-- https://mvnrepository.com/artifact/net.java.dev.jna/jna-platform -->
-		    <groupId>net.java.dev.jna</groupId>
-		    <artifactId>jna-platform</artifactId>
-		    <version>5.6.0</version>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna-platform</artifactId>
+			<version>5.6.0</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.auth0</groupId>
-		    <artifactId>java-jwt</artifactId>
-		    <version>3.13.0</version>
+			<groupId>com.auth0</groupId>
+			<artifactId>java-jwt</artifactId>
+			<version>3.13.0</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>
 			<artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
-		    <version>4.22</version>
-		    <scope>system</scope>
-		    <systemPath>${project.basedir}/lib/swt-4.22-gtk-linux-x86_64.jar</systemPath>
+			<version>4.22</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/swt-4.22-gtk-linux-x86_64.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>
 			<artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
-		    <version>4.22</version>
-		    <scope>system</scope>
-		    <systemPath>${project.basedir}/lib/swt-4.22-win32-win32-x86_64.jar</systemPath>
+			<version>4.22</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/swt-4.22-win32-win32-x86_64.jar</systemPath>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/log4j/log4j -->
 		<dependency>
-		    <groupId>log4j</groupId>
-		    <artifactId>log4j</artifactId>
-		    <version>1.2.17</version>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/net.lingala.zip4j/zip4j -->
+		<dependency>
+			<groupId>net.lingala.zip4j</groupId>
+			<artifactId>zip4j</artifactId>
+			<version>2.11.5</version>
 		</dependency>
 	</dependencies>
 
