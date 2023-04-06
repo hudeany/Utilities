@@ -1557,7 +1557,11 @@ public class DbUtilities {
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String returnValue = resultSet.getString(1);
-							return returnValue;
+							if ("NULL".equalsIgnoreCase(returnValue)) {
+								return null;
+							} else {
+								return returnValue;
+							}
 						} else {
 							return null;
 						}
@@ -1572,7 +1576,11 @@ public class DbUtilities {
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String returnValue = resultSet.getString(1);
-							return returnValue;
+							if ("NULL".equalsIgnoreCase(returnValue)) {
+								return null;
+							} else {
+								return returnValue;
+							}
 						} else {
 							return null;
 						}
@@ -1632,7 +1640,10 @@ public class DbUtilities {
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
-							final String returnValue = resultSet.getString(2);
+							String returnValue = resultSet.getString(2);
+							if ("NULL".equalsIgnoreCase(returnValue)) {
+								returnValue = null;
+							}
 							returnMap.put(columnName.toLowerCase(), returnValue);
 						}
 					}
@@ -1645,7 +1656,10 @@ public class DbUtilities {
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
-							final String returnValue = resultSet.getString(2);
+							String returnValue = resultSet.getString(2);
+							if ("NULL".equalsIgnoreCase(returnValue)) {
+								returnValue = null;
+							}
 							returnMap.put(columnName.toLowerCase(), returnValue);
 						}
 					}
