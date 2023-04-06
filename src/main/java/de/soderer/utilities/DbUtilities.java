@@ -1417,7 +1417,7 @@ public class DbUtilities {
 
 							final String defaultValue = resultSet.getString("column_default");
 							boolean isAutoIncrement = false;
-							if (defaultValue!= null && defaultValue.toLowerCase().startsWith("nextval(")) {
+							if (defaultValue != null && defaultValue.toLowerCase().startsWith("nextval(")) {
 								isAutoIncrement = true;
 							}
 
@@ -1504,62 +1504,154 @@ public class DbUtilities {
 
 	public static String getColumnDefaultValue(final DataSource dataSource, final String tableName, final String columnName) throws Exception {
 		if (dataSource == null) {
-			throw new Exception("Invalid empty dataSource for getDefaultValueOf");
+			throw new Exception("Invalid empty dataSource for getColumnDefaultValue");
 		} else if (Utilities.isBlank(tableName)) {
-			throw new Exception("Invalid empty tableName for getDefaultValueOf");
+			throw new Exception("Invalid empty tableName for getColumnDefaultValue");
 		} else if (Utilities.isBlank(columnName)) {
-			throw new Exception("Invalid empty columnName for getDefaultValueOf");
+			throw new Exception("Invalid empty columnName for getColumnDefaultValue");
 		} else {
 			try (Connection connection = dataSource.getConnection()) {
-				final DbVendor dbVendor = getDbVendor(connection);
-				if (DbVendor.Oracle == dbVendor) {
-					final String sql = "SELECT data_default FROM user_tab_cols WHERE table_name = ? AND column_name = ?";
-					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-						preparedStatement.setFetchSize(100);
-						preparedStatement.setString(1, tableName.toUpperCase());
-						preparedStatement.setString(2, columnName.toUpperCase());
-						try (ResultSet resultSet = preparedStatement.executeQuery()) {
-							if (resultSet.next()) {
-								final String defaultvalue = resultSet.getString(1);
-								String returnValue;
-								if (defaultvalue == null || "null".equalsIgnoreCase(defaultvalue)) {
-									returnValue = null;
-								} else if (defaultvalue.startsWith("'") && defaultvalue.endsWith("'")) {
-									returnValue = defaultvalue.substring(1, defaultvalue.length() - 1);
-								} else {
-									returnValue = defaultvalue;
-								}
-								if (resultSet.next()) {
-									throw new Exception("Cannot retrieve column datatype");
-								} else {
-									return returnValue;
-								}
+				return getColumnDefaultValue(connection, tableName, columnName);
+			}
+		}
+	}
+
+	public static String getColumnDefaultValue(final Connection connection, final String tableName, final String columnName) throws Exception {
+		if (connection == null) {
+			throw new Exception("Invalid empty connection for getColumnDefaultValue");
+		} else if (Utilities.isBlank(tableName)) {
+			throw new Exception("Invalid empty tableName for getColumnDefaultValue");
+		} else if (Utilities.isBlank(columnName)) {
+			throw new Exception("Invalid empty columnName for getColumnDefaultValue");
+		} else {
+			final DbVendor dbVendor = getDbVendor(connection);
+			if (DbVendor.Oracle == dbVendor) {
+				final String sql = "SELECT data_default FROM user_tab_cols WHERE table_name = ? AND column_name = ?";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					preparedStatement.setString(1, tableName.toUpperCase());
+					preparedStatement.setString(2, columnName.toUpperCase());
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						if (resultSet.next()) {
+							final String defaultvalue = resultSet.getString(1);
+							String returnValue;
+							if (defaultvalue == null || "null".equalsIgnoreCase(defaultvalue)) {
+								returnValue = null;
+							} else if (defaultvalue.startsWith("'") && defaultvalue.endsWith("'")) {
+								returnValue = defaultvalue.substring(1, defaultvalue.length() - 1);
 							} else {
-								throw new Exception("Cannot retrieve column datatype");
+								returnValue = defaultvalue;
 							}
+							return returnValue;
+						} else {
+							return null;
 						}
 					}
-				} else {
-					final String sql = "SELECT column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ? AND column_name = ?";
-					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-						preparedStatement.setFetchSize(100);
-						preparedStatement.setString(1, tableName);
-						preparedStatement.setString(2, columnName);
-						try (ResultSet resultSet = preparedStatement.executeQuery()) {
-							if (resultSet.next()) {
-								final String returnValue = resultSet.getString(1);
-								if (resultSet.next()) {
-									throw new Exception("Cannot retrieve column datatype");
-								} else {
-									return returnValue;
-								}
-							} else {
-								throw new Exception("Cannot retrieve column datatype");
-							}
+				}
+			} else if (DbVendor.HSQL == dbVendor) {
+				final String sql = "SELECT column_default FROM information_schema.columns WHERE table_name = ? AND column_name = ?";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					preparedStatement.setString(1, tableName);
+					preparedStatement.setString(2, columnName);
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						if (resultSet.next()) {
+							final String returnValue = resultSet.getString(1);
+							return returnValue;
+						} else {
+							return null;
+						}
+					}
+				}
+			} else {
+				final String sql = "SELECT column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ? AND column_name = ?";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					preparedStatement.setString(1, tableName);
+					preparedStatement.setString(2, columnName);
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						if (resultSet.next()) {
+							final String returnValue = resultSet.getString(1);
+							return returnValue;
+						} else {
+							return null;
 						}
 					}
 				}
 			}
+		}
+	}
+
+
+	public static CaseInsensitiveMap<String> getColumnDefaultValues(final DataSource dataSource, final String tableName) throws Exception {
+		if (dataSource == null) {
+			throw new Exception("Invalid empty dataSource for getColumnDefaultValue");
+		} else if (Utilities.isBlank(tableName)) {
+			throw new Exception("Invalid empty tableName for getColumnDefaultValue");
+		} else {
+			try (Connection connection = dataSource.getConnection()) {
+				return getColumnDefaultValues(connection, tableName);
+			}
+		}
+	}
+
+	public static CaseInsensitiveMap<String> getColumnDefaultValues(final Connection connection, final String tableName) throws Exception {
+		if (connection == null) {
+			throw new Exception("Invalid empty connection for getColumnDefaultValue");
+		} else if (Utilities.isBlank(tableName)) {
+			throw new Exception("Invalid empty tableName for getColumnDefaultValues");
+		} else {
+			final CaseInsensitiveMap<String> returnMap = new CaseInsensitiveMap<>();
+			final DbVendor dbVendor = getDbVendor(connection);
+			if (DbVendor.Oracle == dbVendor) {
+				final String sql = "SELECT column_name, data_default FROM user_tab_cols WHERE table_name = ?";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					preparedStatement.setString(1, tableName.toUpperCase());
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						if (resultSet.next()) {
+							final String columnName = resultSet.getString(1);
+							final String defaultvalue = resultSet.getString(2);
+							String returnValue;
+							if (defaultvalue == null || "null".equalsIgnoreCase(defaultvalue)) {
+								returnValue = null;
+							} else if (defaultvalue.startsWith("'") && defaultvalue.endsWith("'")) {
+								returnValue = defaultvalue.substring(1, defaultvalue.length() - 1);
+							} else {
+								returnValue = defaultvalue;
+							}
+							returnMap.put(columnName.toLowerCase(), returnValue);
+						}
+					}
+				}
+			} else if (DbVendor.HSQL == dbVendor) {
+				final String sql = "SELECT column_name, column_default FROM information_schema.columns WHERE table_name = ?";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					preparedStatement.setString(1, tableName);
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						if (resultSet.next()) {
+							final String columnName = resultSet.getString(1);
+							final String returnValue = resultSet.getString(2);
+							returnMap.put(columnName.toLowerCase(), returnValue);
+						}
+					}
+				}
+			} else {
+				final String sql = "SELECT column_name, column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ?";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					preparedStatement.setString(1, tableName);
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						if (resultSet.next()) {
+							final String columnName = resultSet.getString(1);
+							final String returnValue = resultSet.getString(2);
+							returnMap.put(columnName.toLowerCase(), returnValue);
+						}
+					}
+				}
+			}
+			return returnMap;
 		}
 	}
 
