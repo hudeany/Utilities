@@ -366,7 +366,7 @@ public class JsonSerializer {
 						try {
 							field = ClassUtilities.getField(clazz, entry.getKey());
 						} catch (@SuppressWarnings("unused") final Exception e) {
-							throw new Exception("Invalid field name serialization value");
+							throw new Exception("Invalid field name serialization value: " + entry.getKey());
 						}
 						field.setAccessible(true);
 						field.set(object, deserialize((JsonObject) entry.getValue()));

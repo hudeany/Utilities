@@ -114,7 +114,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			username = "";
 			userField.addKeyListener(new KeyAdapter() {
 				@Override
-				public void keyTyped(final KeyEvent event) {
+				public void keyReleased(final KeyEvent event) {
 					username = userField.getText();
 					checkButtonStatus();
 				}
@@ -135,7 +135,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			password = "".toCharArray();
 			passwordField.addKeyListener(new KeyAdapter() {
 				@Override
-				public void keyTyped(final KeyEvent event) {
+				public void keyReleased(final KeyEvent event) {
 					password = passwordField.getText().toCharArray();
 					checkButtonStatus();
 				}
