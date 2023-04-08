@@ -11,6 +11,8 @@ public class DatabaseConstraint {
 			for (ConstraintType constraintType : ConstraintType.values()) {
 				if (constraintType.name().replace("_", "").replace(" ", "").replace("-", "").equalsIgnoreCase(constraintTypeName.replace("_", "").replace(" ", "").replace("-", ""))) {
 					return constraintType;
+				} else if (constraintTypeName.length() == 1 && constraintType.name().replace("_", "").replace(" ", "").replace("-", "").charAt(0) == constraintTypeName.toUpperCase().charAt(0)) {
+					return constraintType;
 				}
 			}
 			return null;
@@ -20,11 +22,13 @@ public class DatabaseConstraint {
 	private String tableName;
 	private String constraintName;
 	private ConstraintType constraintType;
+	private String columnName;
 
-	public DatabaseConstraint(final String tableName, final String constraintName, final ConstraintType constraintType) {
+	public DatabaseConstraint(final String tableName, final String constraintName, final ConstraintType constraintType, String columnName) {
 		this.tableName = tableName;
 		this.constraintName = constraintName;
 		this.constraintType = constraintType;
+		this.columnName = columnName;
 	}
 
 	public String getTableName() {
@@ -50,9 +54,17 @@ public class DatabaseConstraint {
 	public void setConstraintType(final ConstraintType constraintType) {
 		this.constraintType = constraintType;
 	}
+
+	public String getColumnName() {
+		return columnName;
+	}
+
+	public void setColumnName(String columnName) {
+		this.columnName = columnName;
+	}
 	
 	@Override
 	public String toString() {
-		return tableName + " " + constraintName + " " + constraintType;
+		return tableName + " " + constraintName + " " + constraintType + " " + columnName;
 	}
 }

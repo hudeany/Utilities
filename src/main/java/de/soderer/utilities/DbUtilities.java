@@ -3357,7 +3357,14 @@ public class DbUtilities {
 				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
 					final List<DatabaseForeignKey> returnList = new ArrayList<>();
 					while (resultSet.next()) {
-						returnList.add(new DatabaseForeignKey(resultSet.getString("FK_NAME"), resultSet.getString("FKTABLE_NAME"), resultSet.getString("FKCOLUMN_NAME"), resultSet.getString("PKTABLE_NAME"), resultSet.getString("PKCOLUMN_NAME")));
+						String foreignKeyName = resultSet.getString("FK_NAME");
+						if (foreignKeyName != null) {
+							foreignKeyName = foreignKeyName.toLowerCase();
+						}
+						String columnName = resultSet.getString("FKCOLUMN_NAME");
+						String referencesTableName = resultSet.getString("PKTABLE_NAME");
+						String referencedColumnName = resultSet.getString("PKCOLUMN_NAME");
+						returnList.add(new DatabaseForeignKey(foreignKeyName, tableName.toLowerCase(), columnName.toLowerCase(), referencesTableName.toLowerCase(), referencedColumnName.toLowerCase()));
 					}
 					return returnList;
 				}
@@ -3377,7 +3384,25 @@ public class DbUtilities {
 					tableName = tableName.toUpperCase();
 				}
 
-				if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
+				if (dbVendor == DbVendor.Oracle) {
+					try (PreparedStatement preparedStatement = connection.prepareStatement(
+						"SELECT user_constraints.constraint_name, user_constraints.constraint_type, user_cons_columns.column_name"
+						+ " FROM user_constraints JOIN user_cons_columns ON user_constraints.constraint_name = user_cons_columns.constraint_name AND user_constraints.table_name = user_cons_columns.table_name"
+						+ " WHERE user_constraints.table_name = ?")) {
+						preparedStatement.setString(1, tableName);
+						try (ResultSet resultSet = preparedStatement.executeQuery()) {
+							final List<DatabaseConstraint> returnList = new ArrayList<>();
+							while (resultSet.next()) {
+								String constraintName = resultSet.getString("constraint_name").toLowerCase();
+								String constraintType = resultSet.getString("constraint_type");
+								String columnName = resultSet.getString("column_name");
+								
+								returnList.add(new DatabaseConstraint(tableName.toLowerCase(), constraintName, ConstraintType.fromName(constraintType), columnName.toLowerCase()));
+							}
+							return returnList;
+						}
+					}
+				} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT table_name, constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_name = ?")) {
 						preparedStatement.setString(1, tableName);
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -3386,7 +3411,7 @@ public class DbUtilities {
 								String constraintName = resultSet.getString("constraint_name").toLowerCase();
 								String constraintType = resultSet.getString("constraint_type");
 								
-								returnList.add(new DatabaseConstraint(tableName, constraintName, ConstraintType.fromName(constraintType)));
+								returnList.add(new DatabaseConstraint(tableName.toLowerCase(), constraintName, ConstraintType.fromName(constraintType), null));
 							}
 							return returnList;
 						}
@@ -3410,7 +3435,33 @@ public class DbUtilities {
 					tableName = tableName.toUpperCase();
 				}
 
-				if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
+				if (dbVendor == DbVendor.Oracle) {
+					try (Statement statement = connection.createStatement()) {
+						try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT index_name, column_name FROM all_ind_columns WHERE table_name = ?")) {
+							preparedStatement.setString(1, tableName);
+							try (ResultSet resultSet = preparedStatement.executeQuery()) {
+								Map<String, List<String>> interimMap = new HashMap<>();
+								
+								final List<DatabaseIndex> returnList = new ArrayList<>();
+								while (resultSet.next()) {
+									String indexName = resultSet.getString("index_name").toLowerCase();
+									String columnName = resultSet.getString("column_name".toLowerCase());
+									
+									if (!interimMap.containsKey(indexName)) {
+										interimMap.put(indexName, new ArrayList<>());
+									}
+									
+									interimMap.get(indexName).add(columnName.toLowerCase());
+								}
+		
+								for (String indexName : Utilities.sortButPutItemsFirst(interimMap.keySet(), "primary")) {
+									returnList.add(new DatabaseIndex(tableName.toLowerCase(), indexName, interimMap.get(indexName)));
+								}
+								return returnList;
+							}
+						}
+					}
+				} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 					try (Statement statement = connection.createStatement()) {
 						try (ResultSet resultSet = statement.executeQuery("SHOW index FROM " + tableName)) {
 							Map<String, List<String>> interimMap = new HashMap<>();
@@ -3424,11 +3475,11 @@ public class DbUtilities {
 									interimMap.put(indexName, new ArrayList<>());
 								}
 								
-								interimMap.get(indexName).add(columnName);
+								interimMap.get(indexName).add(columnName.toLowerCase());
 							}
 	
 							for (String indexName : Utilities.sortButPutItemsFirst(interimMap.keySet(), "primary")) {
-								returnList.add(new DatabaseIndex(tableName, indexName, interimMap.get(indexName)));
+								returnList.add(new DatabaseIndex(tableName.toLowerCase(), indexName, interimMap.get(indexName)));
 							}
 							return returnList;
 						}
