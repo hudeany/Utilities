@@ -17,7 +17,7 @@ public class PGPKeyStorageStringSplitter {
 	private String publicKeyStorageString = null;
 	private String privateKeyStorageString = null;
 
-	public InputStream getPublicKeyInputStream() throws Exception {
+	public InputStream getPublicKeyInputStream() {
 		if (publicKeyStorageString != null) {
 			return new ByteArrayInputStream(publicKeyStorageString.getBytes(StandardCharsets.UTF_8));
 		} else {
@@ -25,7 +25,7 @@ public class PGPKeyStorageStringSplitter {
 		}
 	}
 
-	public InputStream getPrivateKeyInputStream() throws Exception {
+	public InputStream getPrivateKeyInputStream() {
 		if (privateKeyStorageString != null) {
 			return new ByteArrayInputStream(privateKeyStorageString.getBytes(StandardCharsets.UTF_8));
 		} else {

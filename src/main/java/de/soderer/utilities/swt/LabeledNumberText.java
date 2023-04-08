@@ -13,15 +13,15 @@ import org.eclipse.swt.widgets.TypedListener;
 public class LabeledNumberText extends Composite {
 	protected NumberText textField;
 
-	protected LabeledNumberText(final Composite parent, final int style) throws Exception {
+	protected LabeledNumberText(final Composite parent, final int style) {
 		super(parent, style);
 	}
 
-	public LabeledNumberText(final Composite parent, final int style, final String labelText) throws Exception {
+	public LabeledNumberText(final Composite parent, final int style, final String labelText) {
 		this(parent, style, labelText, null);
 	}
 
-	public LabeledNumberText(final Composite parent, final int style, final String labelText, ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledNumberText(final Composite parent, final int style, final String labelText, ArrangementStyle arrangementStyle) {
 		super(parent, style);
 
 		final LabeledNumberText labeledText = this;

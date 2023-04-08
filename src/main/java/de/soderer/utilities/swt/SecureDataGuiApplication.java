@@ -20,11 +20,11 @@ public class SecureDataGuiApplication extends MainDialog {
 		this.rememberedKeystorePassword = rememberedKeystorePassword;
 	}
 
-	public SecureDataGuiApplication(final Display display) throws Exception {
+	public SecureDataGuiApplication(final Display display) {
 		this(display, null);
 	}
 
-	public SecureDataGuiApplication(final Display display, final File keystoreFile) throws Exception {
+	public SecureDataGuiApplication(final Display display, final File keystoreFile) {
 		super(display);
 
 		this.keystoreFile = keystoreFile;

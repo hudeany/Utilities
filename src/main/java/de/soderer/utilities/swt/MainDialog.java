@@ -20,7 +20,7 @@ public abstract class MainDialog extends Shell {
 		return display;
 	}
 
-	public void run() throws Exception {
+	public void run() {
 		try {
 			open();
 			while (!isDisposed()) {

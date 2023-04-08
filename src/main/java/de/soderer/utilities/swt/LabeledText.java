@@ -18,19 +18,19 @@ public class LabeledText extends Composite {
 	protected Text textField;
 	protected Text passwordTextField = null;
 
-	protected LabeledText(final Composite parent, final int style) throws Exception {
+	protected LabeledText(final Composite parent, final int style) {
 		super(parent, style);
 	}
 
-	public LabeledText(final Composite parent, final int style, final String labelText) throws Exception {
+	public LabeledText(final Composite parent, final int style, final String labelText) {
 		this(parent, style, labelText, null);
 	}
 
-	public LabeledText(final Composite parent, final int style, final String labelText, final ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledText(final Composite parent, final int style, final String labelText, final ArrangementStyle arrangementStyle) {
 		this(parent, style, labelText, arrangementStyle, null);
 	}
 
-	public LabeledText(final Composite parent, final int style, final String labelText, ArrangementStyle arrangementStyle, final String verifyPattern) throws Exception {
+	public LabeledText(final Composite parent, final int style, final String labelText, ArrangementStyle arrangementStyle, final String verifyPattern) {
 		super(parent, style);
 
 		final LabeledText labeledText = this;

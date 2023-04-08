@@ -21,7 +21,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 	/**
 	 * OTP Encryption
 	 */
-	public OTPCryptographyWorker(final WorkerParentSimple parent, final InputStream clearDataToEncrypt, final long dataSize, final OTPKeyItem... outputItems) throws Exception {
+	public OTPCryptographyWorker(final WorkerParentSimple parent, final InputStream clearDataToEncrypt, final long dataSize, final OTPKeyItem... outputItems) {
 		super(parent);
 
 		this.clearDataToEncrypt = clearDataToEncrypt;
@@ -33,7 +33,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 	/**
 	 * OTP Decryption
 	 */
-	public OTPCryptographyWorker(final WorkerParentSimple parent, final OutputStream clearData, final OTPKeyItem... inputItems) throws Exception {
+	public OTPCryptographyWorker(final WorkerParentSimple parent, final OutputStream clearData, final OTPKeyItem... inputItems) {
 		super(parent);
 
 		this.clearData = clearData;

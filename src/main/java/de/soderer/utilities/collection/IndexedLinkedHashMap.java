@@ -10,7 +10,6 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 
 	private List<K> keyList = null;
 
-	@SuppressWarnings("unlikely-arg-type")
 	@Override
 	public V remove(final Object key) {
 		keyList = null;

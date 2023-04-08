@@ -157,7 +157,6 @@ public class FtpConnection implements RemoteConnection {
 	 * @param name the name
 	 * @return the input stream
 	 */
-	@SuppressWarnings("resource")
 	@Override
 	public InputStream downloadFile(final String filePath) throws Exception {
 		checkForConnection();

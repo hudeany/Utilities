@@ -29,7 +29,7 @@ public class SecureDataGuiApplication extends JFrame {
 		return keystoreFile != null && keystoreFile.exists();
 	}
 
-	protected <T> T getKeystoreValue(final Class<T> classType, final String entryName) throws Exception {
+	protected <T> T getKeystoreValue(final Class<T> classType, final String entryName) {
 		final SecureDataStore secureDataStore = openKeystore();
 		return secureDataStore != null ? secureDataStore.getEntry(classType, entryName) : null;
 	}
@@ -71,7 +71,7 @@ public class SecureDataGuiApplication extends JFrame {
 		}
 	}
 
-	private SecureDataStore openKeystore() throws Exception {
+	private SecureDataStore openKeystore() {
 		if (keystoreFile != null && keystoreFile.exists()) {
 			SecureDataStore keystore = null;
 			char[] keystorePassword;

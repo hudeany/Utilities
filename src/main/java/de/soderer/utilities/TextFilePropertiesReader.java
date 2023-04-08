@@ -39,11 +39,11 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		this.encodingData = encodingData;
 	}
 
-	public TextFilePropertiesReader(final byte[] data) throws Exception {
+	public TextFilePropertiesReader(final byte[] data) {
 		this(data, null);
 	}
 
-	public TextFilePropertiesReader(final byte[] data, final Tuple<String, Boolean> encodingData) throws Exception {
+	public TextFilePropertiesReader(final byte[] data, final Tuple<String, Boolean> encodingData) {
 		this.data = data;
 		filesize = data.length;
 		this.encodingData = encodingData;

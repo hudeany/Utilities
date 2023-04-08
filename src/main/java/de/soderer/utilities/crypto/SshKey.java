@@ -110,7 +110,7 @@ public class SshKey {
 		return KeyPairUtilities.getSha512FingerprintBase64(keyPair);
 	}
 
-	public KeyPair getKeyPair() throws Exception {
+	public KeyPair getKeyPair() {
 		return keyPair;
 	}
 

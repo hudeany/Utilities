@@ -63,7 +63,6 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		return pgpSymmetricEncryptionMethod;
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
 		signalProgress();

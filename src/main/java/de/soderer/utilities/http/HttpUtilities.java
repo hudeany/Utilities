@@ -83,7 +83,6 @@ public class HttpUtilities {
 		return executeHttpRequest(httpRequest, null);
 	}
 
-	@SuppressWarnings("resource")
 	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy) throws Exception {
 		try {
 			String requestedUrl = httpRequest.getUrlWithProtocol();
@@ -557,7 +556,7 @@ public class HttpUtilities {
 		return newUrl.toString();
 	}
 
-	public static String getPlainParameterFromHtml(final String htmlText, final String parameterName) throws Exception {
+	public static String getPlainParameterFromHtml(final String htmlText, final String parameterName) {
 		if (Utilities.isBlank(htmlText)) {
 			return null;
 		} else {
@@ -571,7 +570,7 @@ public class HttpUtilities {
 		}
 	}
 
-	public static String getQuotedParameterFromHtml(final String htmlText, final String parameterName) throws Exception {
+	public static String getQuotedParameterFromHtml(final String htmlText, final String parameterName) {
 		if (Utilities.isBlank(htmlText)) {
 			return null;
 		} else {

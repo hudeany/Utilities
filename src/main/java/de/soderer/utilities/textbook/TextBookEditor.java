@@ -146,7 +146,6 @@ public class TextBookEditor implements AutoCloseable {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	private static LineReader getTextFileLineReader(final File textFile, final Charset charset) throws Exception {
 		if (textFile.getName().toLowerCase().endsWith(".zip")) {
 			final ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(textFile)), charset);
@@ -171,7 +170,7 @@ public class TextBookEditor implements AutoCloseable {
 		return pages;
 	}
 
-	public boolean hasNewContentData() throws Exception {
+	public boolean hasNewContentData() {
 		for (final Page page : pages) {
 			if (page.hasNewContentData()) {
 				return true;

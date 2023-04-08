@@ -683,7 +683,7 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCertificates) throws Exception {
+	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCertificates) {
 		if (trustedCertificates == null || trustedCertificates.size() == 0) {
 			return false;
 		}
@@ -1741,7 +1741,10 @@ public class CryptographicUtilities {
 	}
 
 	public static final String getEllipticCurveName(final ECParameterSpec ecParameterSpec) throws Exception{
-		for (final String name : Collections.list((Enumeration<String>) org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames())){
+		@SuppressWarnings("unchecked")
+		Enumeration<String> curveNamesEnumeration = org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames();
+
+		for (final String name : Collections.list(curveNamesEnumeration)) {
 			final X9ECParameters params = org.bouncycastle.asn1.x9.ECNamedCurveTable.getByName(name);
 			if (params.getN().equals(ecParameterSpec.getN())
 					&& params.getH().equals(ecParameterSpec.getH())

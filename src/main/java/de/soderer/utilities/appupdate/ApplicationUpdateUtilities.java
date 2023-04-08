@@ -539,7 +539,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCertificates) throws Exception {
+	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCertificates) {
 		if (trustedCertificates == null || trustedCertificates.size() == 0) {
 			return false;
 		}

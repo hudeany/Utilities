@@ -102,10 +102,8 @@ public class XmlUtilities {
 	 * @param file
 	 *            the file
 	 * @return the document
-	 * @throws IOException
-	 *             the IO exception
 	 */
-	public static Document parseXmlFile(final File file) throws IOException {
+	public static Document parseXmlFile(final File file) {
 		try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file))) {
 			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
@@ -1007,7 +1005,7 @@ public class XmlUtilities {
 		return returnList;
 	}
 
-	public static String formatXmlDocument(final Document xmlDocument, final Charset encoding, final boolean throwExceptionOnError) throws Exception {
+	public static String formatXmlDocument(final Document xmlDocument, final Charset encoding, final boolean throwExceptionOnError) {
 		try {
 			final StringBuilder result = new StringBuilder();
 			result.append("<?xml version=\"");
@@ -1032,7 +1030,7 @@ public class XmlUtilities {
 		}
 	}
 
-	public static String formatXmlDocument(final Document xmlDocument, final boolean throwExceptionOnError) throws Exception {
+	public static String formatXmlDocument(final Document xmlDocument, final boolean throwExceptionOnError) {
 		try {
 			final StringBuilder result = new StringBuilder();
 			result.append("<?xml version=\"");

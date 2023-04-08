@@ -22,11 +22,11 @@ import de.soderer.utilities.Utilities;
 public class LabeledFileText extends LabeledText {
 	private final Button dataBrowseButton;
 
-	public LabeledFileText(final Shell shell, final Composite parent, final int style, final String labelText, final String openDialogTitle, final boolean selectDirectory, final boolean openExisting) throws Exception {
+	public LabeledFileText(final Shell shell, final Composite parent, final int style, final String labelText, final String openDialogTitle, final boolean selectDirectory, final boolean openExisting) {
 		this(shell, parent, style, labelText, openDialogTitle, openExisting, selectDirectory, null);
 	}
 
-	public LabeledFileText(final Shell shell, final Composite parent, final int style, final String labelText, final String openDialogTitle, final boolean selectDirectory, final boolean openExisting, ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledFileText(final Shell shell, final Composite parent, final int style, final String labelText, final String openDialogTitle, final boolean selectDirectory, final boolean openExisting, ArrangementStyle arrangementStyle) {
 		super(parent, style);
 
 		final LabeledFileText labeledFileText = this;

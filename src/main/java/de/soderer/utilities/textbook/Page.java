@@ -72,7 +72,6 @@ public class Page {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	public void setNewContentLines(final List<String> newContentLines) throws Exception {
 		if (interimStorageFile != null) {
 			interimStorageFile.delete();
@@ -90,7 +89,6 @@ public class Page {
 		getParentTextBookEditor().revalidateStatisticData = true;
 	}
 
-	@SuppressWarnings("resource")
 	public void storeInterimData() throws Exception {
 		if (newContentLines != null) {
 			interimStorageFile = File.createTempFile(getParentTextBookEditor().getInterimStorageKey() + "_", ".tmp.zip");

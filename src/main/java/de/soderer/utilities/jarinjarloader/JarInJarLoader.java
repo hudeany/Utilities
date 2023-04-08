@@ -58,7 +58,6 @@ public class JarInJarLoader {
 				classPathUrls[i] = new URL("jar:rsrc:" + classPath + "!/");
 			}
 		}
-		@SuppressWarnings("resource")
 		final URLClassLoader jceClassLoader = new URLClassLoader(classPathUrls, getParentClassLoader());
 		Thread.currentThread().setContextClassLoader(jceClassLoader);
 		final Class<?> mainClass = Class.forName(manifestInfo.mainClass, true, jceClassLoader);

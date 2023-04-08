@@ -45,7 +45,7 @@ public class HttpFileConnection implements RemoteConnection {
 	/** The port. */
 	private int port = 80;
 
-	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath) throws Exception {
+	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath) {
 		this.useTLS = useTLS;
 		if (useTLS) {
 			port = 443;
@@ -54,32 +54,32 @@ public class HttpFileConnection implements RemoteConnection {
 		this.startPath = startPath;
 	}
 
-	public HttpFileConnection(final String hostname, final String startPath) throws Exception {
+	public HttpFileConnection(final String hostname, final String startPath) {
 		this.hostname = hostname;
 		this.startPath = startPath;
 	}
 
-	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final int port) throws Exception {
+	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final int port) {
 		this.useTLS = useTLS;
 		this.hostname = hostname;
 		this.startPath = startPath;
 		this.port = port;
 	}
 
-	public HttpFileConnection(final String hostname, final String startPath, final int port) throws Exception {
+	public HttpFileConnection(final String hostname, final String startPath, final int port) {
 		this.hostname = hostname;
 		this.startPath = startPath;
 		this.port = port;
 	}
 
-	public HttpFileConnection(final String hostname, final String startPath, final String username, final String password) throws Exception {
+	public HttpFileConnection(final String hostname, final String startPath, final String username, final String password) {
 		this.hostname = hostname;
 		this.startPath = startPath;
 		this.username = username;
 		this.password = password;
 	}
 
-	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final String username, final String password) throws Exception {
+	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final String username, final String password) {
 		this.useTLS = useTLS;
 		if (useTLS) {
 			port = 443;
@@ -90,7 +90,7 @@ public class HttpFileConnection implements RemoteConnection {
 		this.password = password;
 	}
 
-	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final String username, final String password, final int port) throws Exception {
+	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final String username, final String password, final int port) {
 		this.useTLS = useTLS;
 		this.hostname = hostname;
 		this.startPath = startPath;
@@ -99,7 +99,7 @@ public class HttpFileConnection implements RemoteConnection {
 		this.port = port;
 	}
 
-	public HttpFileConnection(final String hostname, final String startPath, final String username, final String password, final int port) throws Exception {
+	public HttpFileConnection(final String hostname, final String startPath, final String username, final String password, final int port) {
 		this.hostname = hostname;
 		this.startPath = startPath;
 		this.username = username;

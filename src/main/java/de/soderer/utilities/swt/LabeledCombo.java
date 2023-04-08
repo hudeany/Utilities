@@ -15,15 +15,15 @@ import org.eclipse.swt.widgets.TypedListener;
 public class LabeledCombo extends Composite {
 	protected Combo comboBox;
 
-	protected LabeledCombo(final Composite parent, final int style) throws Exception {
+	protected LabeledCombo(final Composite parent, final int style) {
 		super(parent, style);
 	}
 
-	public LabeledCombo(final Composite parent, final int style, final String labelText, final List<String> items, final int preSelectedItemIndex) throws Exception {
+	public LabeledCombo(final Composite parent, final int style, final String labelText, final List<String> items, final int preSelectedItemIndex) {
 		this(parent, style, labelText, items, preSelectedItemIndex, null);
 	}
 
-	public LabeledCombo(final Composite parent, final int style, final String labelText, final List<String> items, final int preSelectedItemIndex, ArrangementStyle arrangementStyle) throws Exception {
+	public LabeledCombo(final Composite parent, final int style, final String labelText, final List<String> items, final int preSelectedItemIndex, ArrangementStyle arrangementStyle) {
 		super(parent, style);
 
 		final LabeledCombo labeledCombo = this;

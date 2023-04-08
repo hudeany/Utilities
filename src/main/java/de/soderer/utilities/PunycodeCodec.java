@@ -206,7 +206,7 @@ public class PunycodeCodec {
 		}
 	}
 
-	public static String encodeDomainName(final String domainName) throws Exception {
+	public static String encodeDomainName(final String domainName) {
 		if (domainName == null) {
 			return null;
 		} else {
@@ -214,7 +214,7 @@ public class PunycodeCodec {
 		}
 	}
 
-	public static String decodeDomainName(final String domainNameToDecode) throws Exception {
+	public static String decodeDomainName(final String domainNameToDecode) {
 		if (domainNameToDecode == null) {
 			return null;
 		} else {

@@ -415,7 +415,6 @@ public class ZipUtilities {
 	 * @throws IOException
 	 * @throws ZipException
 	 */
-	@SuppressWarnings("resource")
 	public static ZipOutputStream openExistingZipFileForExtension(final File zipFile) throws IOException {
 		final File originalFileTemp = new File(
 				zipFile.getParentFile().getAbsolutePath() + "/" + String.valueOf(System.currentTimeMillis()));

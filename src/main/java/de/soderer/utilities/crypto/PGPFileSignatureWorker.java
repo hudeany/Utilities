@@ -41,7 +41,6 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public byte[] work() throws Exception {
 		signalProgress();

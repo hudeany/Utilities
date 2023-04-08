@@ -367,7 +367,6 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public InputStream downloadFile(final String filePath) throws Exception {
 		Channel channel = null;

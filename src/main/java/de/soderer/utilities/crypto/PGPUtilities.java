@@ -392,7 +392,7 @@ public class PGPUtilities {
 		}
 	}
 
-	public static PGPPublicKey readPGPPublicKey(final InputStream inputStream) throws Exception {
+	public static PGPPublicKey readPGPPublicKey(final InputStream inputStream) {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try (InputStream decoderStream = PGPUtil.getDecoderStream(new PGPKeyStorageStringSplitter(inputStream).getPublicKeyInputStream())) {
@@ -420,7 +420,7 @@ public class PGPUtilities {
 		}
 	}
 
-	public static PGPSecretKey readPGPSecretKey(final InputStream inputStream) throws Exception {
+	public static PGPSecretKey readPGPSecretKey(final InputStream inputStream) {
 		Security.addProvider(new BouncyCastleProvider());
 
 		try (InputStream decoderStream = PGPUtil.getDecoderStream(new PGPKeyStorageStringSplitter(inputStream).getPrivateKeyInputStream())) {
@@ -469,7 +469,7 @@ public class PGPUtilities {
 		}
 	}
 
-	public static PGPPublicKey readPGPPublicKey(final PGPSecretKey pgpSecretKey) throws Exception {
+	public static PGPPublicKey readPGPPublicKey(final PGPSecretKey pgpSecretKey) {
 		Security.addProvider(new BouncyCastleProvider());
 
 		if (pgpSecretKey == null) {

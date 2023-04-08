@@ -882,9 +882,8 @@ public class DateUtilities {
 	 *
 	 * @param dateValue
 	 * @return
-	 * @throws Exception
 	 */
-	public static ZonedDateTime parseIso8601DateTimeString(final String dateValue) throws Exception {
+	public static ZonedDateTime parseIso8601DateTimeString(final String dateValue) {
 		return parseIso8601DateTimeString(dateValue, ZoneId.systemDefault());
 	}
 
@@ -893,9 +892,8 @@ public class DateUtilities {
 	 *
 	 * @param dateValueString
 	 * @return
-	 * @throws Exception
 	 */
-	public static ZonedDateTime parseIso8601DateTimeString(String dateValueString, final ZoneId defaultZoneId) throws Exception {
+	public static ZonedDateTime parseIso8601DateTimeString(String dateValueString, final ZoneId defaultZoneId) {
 		if (Utilities.isBlank(dateValueString)) {
 			return null;
 		}

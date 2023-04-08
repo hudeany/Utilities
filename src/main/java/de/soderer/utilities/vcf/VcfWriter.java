@@ -39,7 +39,7 @@ public class VcfWriter implements AutoCloseable {
 		bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
 	}
 
-	public VcfWriter(final OutputStream outputStream, final Charset charset) throws Exception {
+	public VcfWriter(final OutputStream outputStream, final Charset charset) {
 		bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream, charset));
 	}
 
@@ -226,7 +226,7 @@ public class VcfWriter implements AutoCloseable {
 		bufferedWriter.write("\n");
 	}
 
-	private static List<String> encodeValues(final String version, final List<String> values) throws Exception {
+	private static List<String> encodeValues(final String version, final List<String> values) {
 		if ("2.1".equals(version)) {
 			boolean mustEncode = false;
 			for (final String value : values) {

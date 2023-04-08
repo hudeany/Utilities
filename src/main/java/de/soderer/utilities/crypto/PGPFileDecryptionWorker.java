@@ -56,7 +56,6 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		return this;
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
 		signalProgress();

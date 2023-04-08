@@ -603,9 +603,8 @@ public class TextUtilities {
 	 * @param insertText
 	 * @param lineNumber
 	 * @return
-	 * @throws IOException
 	 */
-	public static String insertTextBeforeLine(final String dataString, final String insertText, final int lineNumber) throws IOException {
+	public static String insertTextBeforeLine(final String dataString, final String insertText, final int lineNumber) {
 		if (lineNumber > -1) {
 			final int startIndex = TextUtilities.getStartIndexOfLine(dataString, lineNumber);
 			final StringBuilder dataBuilder = new StringBuilder(dataString);
@@ -623,9 +622,8 @@ public class TextUtilities {
 	 * @param insertText
 	 * @param lineNumber
 	 * @return
-	 * @throws IOException
 	 */
-	public static String insertTextAfterLine(final String dataString, final String insertText, final int lineNumber) throws IOException {
+	public static String insertTextAfterLine(final String dataString, final String insertText, final int lineNumber) {
 		if (lineNumber > -1) {
 			final int startIndex = TextUtilities.getStartIndexOfLine(dataString, lineNumber + 1);
 			final StringBuilder dataBuilder = new StringBuilder(dataString);
@@ -1056,7 +1054,6 @@ public class TextUtilities {
 	public static String mapToStringWithSortedKeys(final Map<? extends String, ? extends Object> map) {
 		final StringBuilder returnValue = new StringBuilder();
 		for (String key : Utilities.asSortedList(map.keySet())) {
-			@SuppressWarnings("unlikely-arg-type")
 			Object value = map.get(key);
 			if (returnValue.length() > 0) {
 				returnValue.append("\n");
@@ -1095,7 +1092,7 @@ public class TextUtilities {
 		return null;
 	}
 
-	public static String getProsaParameter(final String text, final String parameterName) throws Exception {
+	public static String getProsaParameter(final String text, final String parameterName) {
 		if (Utilities.isBlank(text)) {
 			return null;
 		} else {

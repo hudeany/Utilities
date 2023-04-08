@@ -40,7 +40,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private final byte[] iconImageDataWindows;
 	private final Image iconImageLinux;
 
-	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName) throws Exception {
+	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName) {
 		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
@@ -48,7 +48,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		iconImageLinux = null;
 	}
 
-	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final byte[] iconImageWindows, final Image iconImageLinux) throws Exception {
+	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final byte[] iconImageWindows, final Image iconImageLinux) {
 		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;

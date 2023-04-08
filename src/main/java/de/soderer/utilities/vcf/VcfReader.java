@@ -292,7 +292,7 @@ public class VcfReader implements AutoCloseable {
 		return card;
 	}
 
-	private static List<String> decodeValues(final String[] prefixes, final String[] values) throws Exception {
+	private static List<String> decodeValues(final String[] prefixes, final String[] values) {
 		final List<String> prefixList = Arrays.asList(prefixes);
 		final List<String> valuesDecoded = new ArrayList<>();
 

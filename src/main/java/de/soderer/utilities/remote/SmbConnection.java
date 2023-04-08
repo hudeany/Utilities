@@ -150,7 +150,6 @@ public class SmbConnection implements RemoteConnection {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public InputStream downloadFile(String filePath) throws Exception {
 		checkForConnection();

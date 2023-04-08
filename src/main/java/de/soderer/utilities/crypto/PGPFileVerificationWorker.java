@@ -38,7 +38,6 @@ public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public Boolean work() throws Exception {
 		signalProgress();

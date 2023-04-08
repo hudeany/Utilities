@@ -14,7 +14,6 @@ import java.io.InputStream;
 public class TempFileInputStream extends FilterInputStream {
 	private final File tempFile;
 
-	@SuppressWarnings("resource")
 	public TempFileInputStream(final File tempFile) throws FileNotFoundException {
 		super(new FileInputStream(tempFile));
 		this.tempFile = tempFile;
