@@ -1915,35 +1915,6 @@ public class DbUtilities {
 		}
 	}
 
-	public static List<List<String>> getForeignKeys(final Connection connection, String tableName) throws Exception {
-		if (Utilities.isBlank(tableName)) {
-			return null;
-		} else {
-			final DbVendor dbVendor = getDbVendor(connection);
-			try {
-				if (dbVendor == DbVendor.Oracle || dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
-					tableName = tableName.toUpperCase();
-				}
-
-				final DatabaseMetaData metaData = connection.getMetaData();
-				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
-					final List<List<String>> returnList = new ArrayList<>();
-					while (resultSet.next()) {
-						final List<String> nextForeignKey = new ArrayList<>();
-						nextForeignKey.add(resultSet.getString("FKTABLE_NAME"));
-						nextForeignKey.add(resultSet.getString("FKCOLUMN_NAME"));
-						nextForeignKey.add(resultSet.getString("PKTABLE_NAME"));
-						nextForeignKey.add(resultSet.getString("PKCOLUMN_NAME"));
-						returnList.add(nextForeignKey);
-					}
-					return returnList;
-				}
-			} catch (final Exception e) {
-				throw new Exception("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
-			}
-		}
-	}
-
 	/**
 	 * tablePatternExpression contains a comma-separated list of tablenames with wildcards *? and !(not, before tablename)
 	 *
@@ -3367,6 +3338,87 @@ public class DbUtilities {
 			final Statement statement = connection.createStatement();
 			statement.setFetchSize(100);
 			return statement;
+		}
+	}
+
+	public static List<DatabaseForeignKey> getForeignKeys(final Connection connection, String tableName) throws Exception {
+		if (Utilities.isBlank(tableName)) {
+			return null;
+		} else {
+			final DbVendor dbVendor = getDbVendor(connection);
+			try {
+				if (dbVendor == DbVendor.Oracle || dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
+					tableName = tableName.toUpperCase();
+				}
+
+				final DatabaseMetaData metaData = connection.getMetaData();
+				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
+					final List<DatabaseForeignKey> returnList = new ArrayList<>();
+					while (resultSet.next()) {
+						returnList.add(new DatabaseForeignKey(resultSet.getString("FK_NAME"), resultSet.getString("FKTABLE_NAME"), resultSet.getString("FKCOLUMN_NAME"), resultSet.getString("PKTABLE_NAME"), resultSet.getString("PKCOLUMN_NAME")));
+					}
+					return returnList;
+				}
+			} catch (final Exception e) {
+				throw new Exception("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
+			}
+		}
+	}
+
+	public static List<DatabaseConstraint> getConstraints(final Connection connection, String tableName) throws Exception {
+		if (Utilities.isBlank(tableName)) {
+			return null;
+		} else {
+			final DbVendor dbVendor = getDbVendor(connection);
+			try {
+				if (dbVendor == DbVendor.Oracle || dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
+					tableName = tableName.toUpperCase();
+				}
+
+				final DatabaseMetaData metaData = connection.getMetaData();
+				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
+					final List<DatabaseConstraint> returnList = new ArrayList<>();
+					while (resultSet.next()) {
+						//						nextForeignKey.add(resultSet.getString("FKTABLE_NAME"));
+						//						nextForeignKey.add(resultSet.getString("FKCOLUMN_NAME"));
+						//						nextForeignKey.add(resultSet.getString("PKTABLE_NAME"));
+						//						nextForeignKey.add(resultSet.getString("PKCOLUMN_NAME"));
+						//						returnList.add(new DatabaseConstraint());
+					}
+					return returnList;
+				}
+			} catch (final Exception e) {
+				throw new Exception("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
+			}
+		}
+	}
+
+	public static List<DatabaseIndex> getIndices(final Connection connection, String tableName) throws Exception {
+		if (Utilities.isBlank(tableName)) {
+			return null;
+		} else {
+			final DbVendor dbVendor = getDbVendor(connection);
+			try {
+				if (dbVendor == DbVendor.Oracle || dbVendor == DbVendor.HSQL || dbVendor == DbVendor.Derby) {
+					tableName = tableName.toUpperCase();
+				}
+
+				final DatabaseMetaData metaData = connection.getMetaData();
+				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
+					final List<DatabaseIndex> returnList = new ArrayList<>();
+					while (resultSet.next()) {
+						//						final List<String> nextForeignKey = new ArrayList<>();
+						//						nextForeignKey.add(resultSet.getString("FKTABLE_NAME"));
+						//						nextForeignKey.add(resultSet.getString("FKCOLUMN_NAME"));
+						//						nextForeignKey.add(resultSet.getString("PKTABLE_NAME"));
+						//						nextForeignKey.add(resultSet.getString("PKCOLUMN_NAME"));
+						//						returnList.add(nextForeignKey);
+					}
+					return returnList;
+				}
+			} catch (final Exception e) {
+				throw new Exception("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
+			}
 		}
 	}
 }
