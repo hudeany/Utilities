@@ -5,7 +5,16 @@ public class DatabaseConstraint {
 		PrimaryKey,
 		Unique,
 		ForeignKey,
-		Check
+		Check;
+
+		public static ConstraintType fromName(String constraintTypeName) {
+			for (ConstraintType constraintType : ConstraintType.values()) {
+				if (constraintType.name().replace("_", "").replace(" ", "").replace("-", "").equalsIgnoreCase(constraintTypeName.replace("_", "").replace(" ", "").replace("-", ""))) {
+					return constraintType;
+				}
+			}
+			return null;
+		}
 	}
 
 	private String tableName;
@@ -40,5 +49,10 @@ public class DatabaseConstraint {
 
 	public void setConstraintType(final ConstraintType constraintType) {
 		this.constraintType = constraintType;
+	}
+	
+	@Override
+	public String toString() {
+		return tableName + " " + constraintName + " " + constraintType;
 	}
 }

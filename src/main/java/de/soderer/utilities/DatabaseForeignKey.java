@@ -54,4 +54,9 @@ public class DatabaseForeignKey {
 	public void setReferencedColumnName(final String referencedColumnName) {
 		this.referencedColumnName = referencedColumnName;
 	}
+	
+	@Override
+	public String toString() {
+		return foreignKeyName + ": " + tableName + "(" + columnName + ") references " + referencedTableName + "(" + referencedColumnName + ")";
+	}
 }

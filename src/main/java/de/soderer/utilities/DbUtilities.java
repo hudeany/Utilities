@@ -32,6 +32,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -44,6 +45,7 @@ import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
 
+import de.soderer.utilities.DatabaseConstraint.ConstraintType;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 import de.soderer.utilities.collection.CaseInsensitiveSet;
 import de.soderer.utilities.csv.CsvFormat;
@@ -3375,20 +3377,25 @@ public class DbUtilities {
 					tableName = tableName.toUpperCase();
 				}
 
-				final DatabaseMetaData metaData = connection.getMetaData();
-				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
-					final List<DatabaseConstraint> returnList = new ArrayList<>();
-					while (resultSet.next()) {
-						//						nextForeignKey.add(resultSet.getString("FKTABLE_NAME"));
-						//						nextForeignKey.add(resultSet.getString("FKCOLUMN_NAME"));
-						//						nextForeignKey.add(resultSet.getString("PKTABLE_NAME"));
-						//						nextForeignKey.add(resultSet.getString("PKCOLUMN_NAME"));
-						//						returnList.add(new DatabaseConstraint());
+				if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
+					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT table_name, constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_name = ?")) {
+						preparedStatement.setString(1, tableName);
+						try (ResultSet resultSet = preparedStatement.executeQuery()) {
+							final List<DatabaseConstraint> returnList = new ArrayList<>();
+							while (resultSet.next()) {
+								String constraintName = resultSet.getString("constraint_name").toLowerCase();
+								String constraintType = resultSet.getString("constraint_type");
+								
+								returnList.add(new DatabaseConstraint(tableName, constraintName, ConstraintType.fromName(constraintType)));
+							}
+							return returnList;
+						}
 					}
-					return returnList;
+				} else {
+					return null;
 				}
 			} catch (final Exception e) {
-				throw new Exception("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
+				throw new Exception("Cannot read indexed columns for table " + tableName + ": " + e.getMessage(), e);
 			}
 		}
 	}
@@ -3403,21 +3410,34 @@ public class DbUtilities {
 					tableName = tableName.toUpperCase();
 				}
 
-				final DatabaseMetaData metaData = connection.getMetaData();
-				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
-					final List<DatabaseIndex> returnList = new ArrayList<>();
-					while (resultSet.next()) {
-						//						final List<String> nextForeignKey = new ArrayList<>();
-						//						nextForeignKey.add(resultSet.getString("FKTABLE_NAME"));
-						//						nextForeignKey.add(resultSet.getString("FKCOLUMN_NAME"));
-						//						nextForeignKey.add(resultSet.getString("PKTABLE_NAME"));
-						//						nextForeignKey.add(resultSet.getString("PKCOLUMN_NAME"));
-						//						returnList.add(nextForeignKey);
+				if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
+					try (Statement statement = connection.createStatement()) {
+						try (ResultSet resultSet = statement.executeQuery("SHOW index FROM " + tableName)) {
+							Map<String, List<String>> interimMap = new HashMap<>();
+							
+							final List<DatabaseIndex> returnList = new ArrayList<>();
+							while (resultSet.next()) {
+								String indexName = resultSet.getString("key_name").toLowerCase();
+								String columnName = resultSet.getString("column_name".toLowerCase());
+								
+								if (!interimMap.containsKey(indexName)) {
+									interimMap.put(indexName, new ArrayList<>());
+								}
+								
+								interimMap.get(indexName).add(columnName);
+							}
+	
+							for (String indexName : Utilities.sortButPutItemsFirst(interimMap.keySet(), "primary")) {
+								returnList.add(new DatabaseIndex(tableName, indexName, interimMap.get(indexName)));
+							}
+							return returnList;
+						}
 					}
-					return returnList;
+				} else {
+					return null;
 				}
 			} catch (final Exception e) {
-				throw new Exception("Cannot read foreign key columns for table " + tableName + ": " + e.getMessage(), e);
+				throw new Exception("Cannot read indexed columns for table " + tableName + ": " + e.getMessage(), e);
 			}
 		}
 	}

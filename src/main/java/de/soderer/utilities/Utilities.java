@@ -120,7 +120,7 @@ public class Utilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static byte[] gunzipByteArray(final byte[] zippedData) throws Exception {
+	public static byte[] gunzipByteArray(final byte[] zippedData) {
 		try (ByteArrayOutputStream decoded = new ByteArrayOutputStream()) {
 			try (GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(zippedData))) {
 				IoUtilities.copy(gzipInputStream, decoded);
@@ -492,9 +492,40 @@ public class Utilities {
 	 * @param c
 	 * @return
 	 */
-	public static <T extends Comparable<? super T>> List<T> asSortedList(final Collection<T> c) {
-		final List<T> list = new ArrayList<>(c);
+	public static <T extends Comparable<? super T>> List<T> asSortedList(final Collection<T> collection) {
+		final List<T> list = new ArrayList<>(collection);
 		Collections.sort(list);
+		return list;
+	}
+
+	/**
+	 * Get a collection like a set as a ordered list
+	 *
+	 * @param c
+	 * @return
+	 */
+	@SafeVarargs
+	public static <T extends Comparable<? super T>> List<T> sortButPutItemsFirst(final Collection<T> collection, T... firstItems) {
+		List<T> firstItemsList = new ArrayList<>(Arrays.asList(firstItems));
+		final List<T> list = new ArrayList<>(collection);
+		Collections.sort(list, new Comparator<T>() {
+		     @Override
+			public int compare(T o1, T o2) {
+		         if (o1.equals(o2)) {
+		        	 return 0;
+		         } else if (firstItemsList.contains(o1)) {
+		        	 if (firstItemsList.contains(o2)) {
+			        	 return firstItemsList.indexOf(o1) < firstItemsList.indexOf(o2) ? -1 : 1;
+		        	 } else {
+		        		 return -1;
+		        	 }
+		         } else if (firstItemsList.contains(o2)) {
+		        	 return 1;
+		         } else {
+		        	 return o1.compareTo(o2);
+		         }
+		     }
+		});
 		return list;
 	}
 
