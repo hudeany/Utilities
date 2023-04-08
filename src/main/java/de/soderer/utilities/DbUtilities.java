@@ -3388,7 +3388,7 @@ public class DbUtilities {
 					try (PreparedStatement preparedStatement = connection.prepareStatement(
 						"SELECT user_constraints.constraint_name, user_constraints.constraint_type, user_cons_columns.column_name"
 						+ " FROM user_constraints JOIN user_cons_columns ON user_constraints.constraint_name = user_cons_columns.constraint_name AND user_constraints.table_name = user_cons_columns.table_name"
-						+ " WHERE user_constraints.table_name = ?")) {
+						+ " WHERE user_constraints.table_name = ? ORDER BY user_constraints.constraint_name")) {
 						preparedStatement.setString(1, tableName);
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
 							final List<DatabaseConstraint> returnList = new ArrayList<>();
@@ -3397,30 +3397,49 @@ public class DbUtilities {
 								String constraintType = resultSet.getString("constraint_type");
 								String columnName = resultSet.getString("column_name");
 								
-								returnList.add(new DatabaseConstraint(tableName.toLowerCase(), constraintName, ConstraintType.fromName(constraintType), columnName.toLowerCase()));
+								returnList.add(new DatabaseConstraint(tableName.toLowerCase(), constraintName, ConstraintType.fromName(constraintType), columnName.toLowerCase(), null));
 							}
 							return returnList;
 						}
 					}
 				} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
-					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT table_name, constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_name = ?")) {
+					final List<DatabaseConstraint> returnList = new ArrayList<>();
+					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_name = ? ORDER BY constraint_name")) {
 						preparedStatement.setString(1, tableName);
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
-							final List<DatabaseConstraint> returnList = new ArrayList<>();
 							while (resultSet.next()) {
 								String constraintName = resultSet.getString("constraint_name").toLowerCase();
 								String constraintType = resultSet.getString("constraint_type");
 								
-								returnList.add(new DatabaseConstraint(tableName.toLowerCase(), constraintName, ConstraintType.fromName(constraintType), null));
+								returnList.add(new DatabaseConstraint(tableName.toLowerCase(), constraintName, ConstraintType.fromName(constraintType), null, null));
 							}
-							return returnList;
 						}
 					}
+					
+					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, check_clause FROM information_schema.check_constraints WHERE table_name = ?")) {
+						preparedStatement.setString(1, tableName);
+						try (ResultSet resultSet = preparedStatement.executeQuery()) {
+							while (resultSet.next()) {
+								String constraintName = resultSet.getString("constraint_name").toLowerCase();
+								String condition = resultSet.getString("check_clause");
+								
+								for (DatabaseConstraint databaseConstraint : returnList) {
+									if (constraintName != null && constraintName.equalsIgnoreCase(databaseConstraint.getConstraintName())) {
+										databaseConstraint.setCondition(condition);
+									}
+								}
+							}
+						}
+					} catch (Exception e) {
+						System.err.println("Cannot read constraint conditions of table '" + tableName + "'");
+					}
+					
+					return returnList;
 				} else {
 					return null;
 				}
 			} catch (final Exception e) {
-				throw new Exception("Cannot read indexed columns for table " + tableName + ": " + e.getMessage(), e);
+				throw new Exception("Cannot read constraints columns for table " + tableName + ": " + e.getMessage(), e);
 			}
 		}
 	}

@@ -5,9 +5,10 @@ public class DatabaseConstraint {
 		PrimaryKey,
 		Unique,
 		ForeignKey,
-		Check;
+		Check,
+		Relation;
 
-		public static ConstraintType fromName(String constraintTypeName) {
+		public static ConstraintType fromName(String constraintTypeName) throws Exception {
 			for (ConstraintType constraintType : ConstraintType.values()) {
 				if (constraintType.name().replace("_", "").replace(" ", "").replace("-", "").equalsIgnoreCase(constraintTypeName.replace("_", "").replace(" ", "").replace("-", ""))) {
 					return constraintType;
@@ -15,7 +16,7 @@ public class DatabaseConstraint {
 					return constraintType;
 				}
 			}
-			return null;
+			throw new Exception("Unknown contraint type: '" + constraintTypeName + "'");
 		}
 	}
 
@@ -23,12 +24,14 @@ public class DatabaseConstraint {
 	private String constraintName;
 	private ConstraintType constraintType;
 	private String columnName;
+	private String condition;
 
-	public DatabaseConstraint(final String tableName, final String constraintName, final ConstraintType constraintType, String columnName) {
+	public DatabaseConstraint(final String tableName, final String constraintName, final ConstraintType constraintType, String columnName, String condition) {
 		this.tableName = tableName;
 		this.constraintName = constraintName;
 		this.constraintType = constraintType;
 		this.columnName = columnName;
+		this.condition = condition;
 	}
 
 	public String getTableName() {
@@ -62,9 +65,17 @@ public class DatabaseConstraint {
 	public void setColumnName(String columnName) {
 		this.columnName = columnName;
 	}
+
+	public String getCondition() {
+		return condition;
+	}
+
+	public void setCondition(String condition) {
+		this.condition = condition;
+	}
 	
 	@Override
 	public String toString() {
-		return tableName + " " + constraintName + " " + constraintType + " " + columnName;
+		return tableName + " " + constraintName + " " + constraintType + (columnName == null ? "" : " " + columnName) + (condition == null ? "" : " " + condition);
 	}
 }
