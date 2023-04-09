@@ -10,10 +10,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -30,14 +28,14 @@ import de.soderer.utilities.json.JsonReader.JsonToken;
 import de.soderer.utilities.json.JsonSerializer;
 import de.soderer.utilities.json.JsonWriter;
 
-public class SecureDataStore {
+public class SecureDataStore extends UnsecureDataStore {
 	private static final String SYMMETRIC_ENCRYPTION_METHOD = "AES";
 	private static final int RANDOMSALTSIZE = 16;
 
-	/**
-	 * First key is class name of entries grouped by their class name, second key is the entry name
-	 */
-	private Map<String, Map<String, Object>> dataEntries = new HashMap<>();
+	@Override
+	public void save(final File storeFile) throws Exception {
+		save(storeFile, null);
+	}
 
 	public void save(final File storeFile, char[] password) throws Exception {
 		try {
@@ -81,6 +79,11 @@ public class SecureDataStore {
 		}
 	}
 
+	@Override
+	public void load(final File storeFile) throws Exception {
+		load(storeFile, null);
+	}
+
 	public void load(final File storeFile, char[] password) throws Exception {
 		try {
 			if (storeFile == null) {
@@ -121,7 +124,7 @@ public class SecureDataStore {
 										final String entryName = (String) entryObject.get("name");
 										dataEntries.get(className).put(entryName, JsonSerializer.deserialize((JsonObject) entryObject.get("value")));
 									} else {
-										throw new Exception("Unexpected JSON data in secureDataStore: " + nextJsonNode.getJsonDataType().getName());
+										throw new Exception("Unexpected JSON data in SecureDataStore: " + nextJsonNode.getJsonDataType().getName());
 									}
 								}
 							}
@@ -149,54 +152,5 @@ public class SecureDataStore {
 		final KeySpec spec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
 		final SecretKeyFactory f = SecretKeyFactory.getInstance(algorithm);
 		return f.generateSecret(spec).getEncoded();
-	}
-
-	public Set<String> getEntryNames(final Class<?> classType) {
-		if (dataEntries.get(classType.getName()) == null) {
-			return new HashSet<>();
-		} else {
-			return dataEntries.get(classType.getName()).keySet();
-		}
-	}
-
-	public <T> T getEntry(final Class<T> classType, final String entryName) {
-		if (dataEntries.get(classType.getName()) == null) {
-			return null;
-		}
-		@SuppressWarnings("unchecked")
-		final T returnValue = (T) dataEntries.get(classType.getName()).get(entryName);
-		return returnValue;
-	}
-
-	public Object getEntry(final String entryName) {
-		for (final Entry<String, Map<String, Object>> classEntry : dataEntries.entrySet()) {
-			for (final Entry<String, Object> entry : classEntry.getValue().entrySet()) {
-				if (StringUtilities.equals(entryName, entry.getKey())) {
-					return entry.getValue();
-				}
-			}
-		}
-		return null;
-	}
-
-	public void addEntry(final String entryName, final Object entryValue) {
-		if (dataEntries.get(entryValue.getClass().getName()) == null) {
-			dataEntries.put(entryValue.getClass().getName(), new HashMap<String, Object>());
-		}
-		dataEntries.get(entryValue.getClass().getName()).put(entryName, entryValue);
-	}
-
-	public void removeEntry(final Class<?> classType, final String entryName) {
-		dataEntries.get(classType.getName()).remove(entryName);
-	}
-
-	public void removeEntriesByEntryName(final String entryName) {
-		for (final Entry<String, Map<String, Object>> classEntry : dataEntries.entrySet()) {
-			classEntry.getValue().remove(entryName);
-		}
-	}
-
-	public void removeEntriesByEntryClass(final Class<?> classType) {
-		dataEntries.remove(classType.getName());
 	}
 }
