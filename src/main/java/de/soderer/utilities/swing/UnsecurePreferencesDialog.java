@@ -296,8 +296,8 @@ public class UnsecurePreferencesDialog extends ModalDialog<Boolean> {
 		newNameField.requestFocus();
 	}
 
-	public void setCurrentSecureDataEntry(final Object secureDataEntry) {
-		currentDataEntry = secureDataEntry;
+	public void setCurrentDataEntry(final Object dataEntry) {
+		currentDataEntry = dataEntry;
 	}
 
 	public Object getCurrentDataEntry() {
