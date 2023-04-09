@@ -1741,8 +1741,7 @@ public class CryptographicUtilities {
 	}
 
 	public static final String getEllipticCurveName(final ECParameterSpec ecParameterSpec) throws Exception{
-		@SuppressWarnings("unchecked")
-		Enumeration<String> curveNamesEnumeration = org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames();
+		final Enumeration<String> curveNamesEnumeration = org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames();
 
 		for (final String name : Collections.list(curveNamesEnumeration)) {
 			final X9ECParameters params = org.bouncycastle.asn1.x9.ECNamedCurveTable.getByName(name);
