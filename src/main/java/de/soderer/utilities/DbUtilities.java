@@ -2191,7 +2191,7 @@ public class DbUtilities {
 		}
 	}
 
-	private static String getDataType(final DbVendor dbVendor, final SimpleDataType simpleDataType) throws Exception {
+	public static String getDataType(final DbVendor dbVendor, final SimpleDataType simpleDataType) throws Exception {
 		if (dbVendor == DbVendor.Oracle) {
 			switch (simpleDataType) {
 				case Blob: return "BLOB";
