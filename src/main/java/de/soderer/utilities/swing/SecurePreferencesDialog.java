@@ -64,7 +64,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 		this.text_OK = text_OK;
 		this.text_Cancel = text_Cancel;
 
-		this.preferencesFile = securePreferencesFile;
+		preferencesFile = securePreferencesFile;
 
 		setResizable(false);
 
