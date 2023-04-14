@@ -883,10 +883,22 @@ public class CryptographicUtilities {
 		return BitUtilities.toHexString(md.digest(), byteSeparator);
 	}
 
+	public static String getMd5FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("MD5");
+		md.update(key.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
+	}
+
 	public static String getSha1FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-1");
 		md.update(key.getEncoded());
 		return BitUtilities.toHexString(md.digest(), byteSeparator);
+	}
+
+	public static String getSha1FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-1");
+		md.update(key.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
 	}
 
 	public static String getSha256FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
