@@ -3,6 +3,7 @@ package de.soderer.utilities.swing;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -49,6 +50,11 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		panel.add(Box.createRigidArea(new Dimension(0, 5)));
 
 		final JTextArea textField = new JTextArea();
+
+		final Font f = textField.getFont();
+		final Font f2 = new Font("Arial", f.getStyle(), f.getSize() - 1);
+		textField.setFont(f2);
+
 		textField.setText(text);
 		textField.setEditable(false);
 		if (backgroundcolor != null) {
