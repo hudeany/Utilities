@@ -5,8 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
-import de.soderer.utilities.DbUtilities;
-import de.soderer.utilities.DbUtilities.DbVendor;
+import de.soderer.utilities.db.DbUtilities;
+import de.soderer.utilities.db.DbUtilities.DbVendor;
 
 public class SqlStatementFormatter {
 	/**
