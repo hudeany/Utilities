@@ -47,8 +47,6 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
@@ -686,6 +684,7 @@ public class Utilities {
 		final int unit = siUnits ? 1000 : 1024;
 		double interimValue = value.doubleValue();
 		String unitExtension = "";
+		int maxTrailingDigits = 0;
 		if (interimValue < unit) {
 			if (isNotBlank(unitTypeSign)) {
 				unitExtension = " " + unitTypeSign;
@@ -695,40 +694,35 @@ public class Utilities {
 				return value + unitExtension;
 			}
 		} else {
-			final int exp = (int) (Math.log(interimValue) / Math.log(unit));
-			unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
+			final int exponent = (int) (Math.log(interimValue) / Math.log(unit));
+			unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1) + (siUnits ? "" : "i");
 			if (isNotBlank(unitTypeSign)) {
 				unitExtension += unitTypeSign;
 			}
-			interimValue = interimValue / Math.pow(unit, exp);
+			interimValue = interimValue / Math.pow(unit, exponent);
+			maxTrailingDigits = exponent * 3;
 		}
 
 		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 		DecimalFormat numberFormat;
-		if (keepTrailingZeros) {
-			if (interimValue >= 1000) {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 4), decimalFormatSymbols);
-			} else if (interimValue >= 100) {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 3), decimalFormatSymbols);
-			} else if (interimValue >= 10) {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 2), decimalFormatSymbols);
-			} else if (interimValue >= 1) {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 1), decimalFormatSymbols);
-			} else {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits), decimalFormatSymbols);
-			}
+		
+		int trailingDigits;
+		if (interimValue >= 1000) {
+			trailingDigits = amountOfSignifiantDigits - 4;
+		} else if (interimValue >= 100) {
+			trailingDigits = amountOfSignifiantDigits - 3;
+		} else if (interimValue >= 10) {
+			trailingDigits = amountOfSignifiantDigits - 2;
+		} else if (interimValue >= 1) {
+			trailingDigits = amountOfSignifiantDigits - 1;
 		} else {
-			if (interimValue >= 1000) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 5), decimalFormatSymbols);
-			} else if (interimValue >= 100) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 4), decimalFormatSymbols);
-			} else if (interimValue >= 10) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 3), decimalFormatSymbols);
-			} else if (interimValue >= 1) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 2), decimalFormatSymbols);
-			} else {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 1), decimalFormatSymbols);
-			}
+			trailingDigits = amountOfSignifiantDigits;
+		}
+
+		if (keepTrailingZeros) {
+			numberFormat = new DecimalFormat("#0." + repeat("0", Math.min(trailingDigits, maxTrailingDigits)), decimalFormatSymbols);
+		} else {
+			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1)), decimalFormatSymbols);
 		}
 
 		return numberFormat.format(interimValue) + unitExtension;
@@ -742,10 +736,12 @@ public class Utilities {
 			final int unit = siUnits ? 1000 : 1024;
 			double interimValue = itemsPerSecond;
 			String unitExtension = "";
+			int maxTrailingDigits = 0;
 			if (interimValue > unit) {
-				final int exp = (int) (Math.log(interimValue) / Math.log(unit));
-				unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
-				interimValue = interimValue / Math.pow(unit, exp);
+				final int exponent = (int) (Math.log(interimValue) / Math.log(unit));
+				unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1) + (siUnits ? "" : "i");
+				interimValue = interimValue / Math.pow(unit, exponent);
+				maxTrailingDigits = exponent * 3;
 			}
 
 			if (isNotBlank(unitTypeSign)) {
@@ -757,17 +753,21 @@ public class Utilities {
 			final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 			final DecimalFormat numberFormat;
 			final int amountOfSignifiantDigits = 5;
+			
+			int trailingDigits;
 			if (interimValue >= 1000) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 5), decimalFormatSymbols);
+				trailingDigits = amountOfSignifiantDigits - 4;
 			} else if (interimValue >= 100) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 4), decimalFormatSymbols);
+				trailingDigits = amountOfSignifiantDigits - 3;
 			} else if (interimValue >= 10) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 3), decimalFormatSymbols);
+				trailingDigits = amountOfSignifiantDigits - 2;
 			} else if (interimValue >= 1) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 2), decimalFormatSymbols);
+				trailingDigits = amountOfSignifiantDigits - 1;
 			} else {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 1), decimalFormatSymbols);
+				trailingDigits = amountOfSignifiantDigits;
 			}
+			
+			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1)), decimalFormatSymbols);
 
 			return numberFormat.format(interimValue) + unitExtension;
 		} else {
@@ -1745,25 +1745,6 @@ public class Utilities {
 			returnList.add(item);
 		}
 		return returnList;
-	}
-
-	public static boolean isZipArchiveFile(final File potentialZipFile) throws FileNotFoundException, IOException {
-		try (FileInputStream inputStream = new FileInputStream(potentialZipFile)) {
-			final byte[] magicBytes = new byte[4];
-			final int readBytes = inputStream.read(magicBytes);
-			return readBytes == 4 && magicBytes[0] == 0x50 && magicBytes[1] == 0x4B && magicBytes[2] == 0x03 && magicBytes[3] == 0x04;
-		}
-	}
-
-	public static List<String> getFilepathsFromZipArchiveFile(final File zipFile) throws FileNotFoundException, IOException {
-		try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
-			final List<String> returnList = new ArrayList<>();
-			ZipEntry zipEntry;
-			while((zipEntry = zipInputStream.getNextEntry()) != null) {
-				returnList.add(zipEntry.getName());
-			}
-			return returnList;
-		}
 	}
 
 	public static String getSystemTempDir() {

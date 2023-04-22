@@ -1,10 +1,19 @@
 package de.soderer.utilities;
 
+import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
 public class LangResources {
 	private static PropertyResourceBundle propertyResourceBundle;
+	
+	public static void enforceDefaultLocale() {
+		try {
+			propertyResourceBundle = (PropertyResourceBundle) ResourceBundle.getBundle("LanguageProperties", Locale.ROOT);
+		} catch (final Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	public static String get(final String resourceKey, final Object... arguments) {
 		if (propertyResourceBundle == null) {

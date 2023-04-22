@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -301,7 +302,7 @@ public class UtilitiesTest {
 	public void testHumanReadable11() {
 		try {
 			final String result = Utilities.getHumanReadableNumber(10000, "Unit", false, 5, false, Locale.GERMAN);
-			Assert.assertEquals("9,7656 KiUnit", result);
+			Assert.assertEquals("9,766 KiUnit", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -362,6 +363,28 @@ public class UtilitiesTest {
 		try {
 			final String result = Utilities.getHumanReadableNumber(100000, null, true, 5, false, Locale.GERMAN);
 			Assert.assertEquals("100,0 k", result);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testHumanReadable12() {
+		try {
+			final String result = Utilities.getHumanReadableNumber(1116, null, true, 5, true, Locale.GERMAN);
+			Assert.assertEquals("1,116 k", result);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testHumanReadableSpeed() {
+		try {
+			LocalDateTime startTime = LocalDateTime.now();
+			LocalDateTime endTime = startTime.plusSeconds(1);
+			final String result = Utilities.getHumanReadableSpeed(startTime, endTime, 1216, null, true, Locale.GERMAN);
+			Assert.assertEquals("1,216 k/s", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
