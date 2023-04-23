@@ -187,7 +187,7 @@ public class DateUtilities {
 		}
 	}
 
-	public static String getShortHumanReadableTimespan(final Duration duration, final boolean showMillis, final boolean showLeadingZeros) {
+	public static String getShortHumanReadableTimespan(final Duration duration, final boolean showLeadingZeros) {
 		final StringBuilder returnValue = new StringBuilder();
 
 		final long millis = duration.toMillisPart();
@@ -198,7 +198,7 @@ public class DateUtilities {
 		final long weeks = duration.toDays() / 7 % 52;
 		final long years = duration.toDays() / 7 / 52;
 
-		if (millis != 0 && showMillis) {
+		if (millis != 0 && minutes == 0 && hours == 0 && days == 0 && weeks == 0 && years == 0) {
 			returnValue.insert(0, "ms");
 			if (showLeadingZeros) {
 				returnValue.insert(0, String.format("%03d", millis));
@@ -207,7 +207,7 @@ public class DateUtilities {
 			}
 		}
 
-		if (seconds != 0) {
+		if (seconds != 0 && hours == 0 && days == 0 && weeks == 0 && years == 0) {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
@@ -219,7 +219,7 @@ public class DateUtilities {
 			}
 		}
 
-		if (minutes != 0) {
+		if (minutes != 0 && days == 0 && weeks == 0 && years == 0) {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
@@ -231,7 +231,7 @@ public class DateUtilities {
 			}
 		}
 
-		if (hours != 0) {
+		if (hours != 0 && weeks == 0 && years == 0) {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
@@ -243,7 +243,7 @@ public class DateUtilities {
 			}
 		}
 
-		if (days != 0) {
+		if (days != 0 && years == 0) {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
@@ -277,17 +277,11 @@ public class DateUtilities {
 
 		if (returnValue.length() > 0) {
 			return returnValue.toString();
-		} else if (!showMillis) {
+		} else {
 			if (showLeadingZeros) {
 				return "00s";
 			} else {
 				return "0s";
-			}
-		} else {
-			if (showLeadingZeros) {
-				return "000ms";
-			} else {
-				return "0ms";
 			}
 		}
 	}
