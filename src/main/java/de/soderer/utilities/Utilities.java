@@ -503,26 +503,26 @@ public class Utilities {
 	 * @return
 	 */
 	@SafeVarargs
-	public static <T extends Comparable<? super T>> List<T> sortButPutItemsFirst(final Collection<T> collection, T... firstItems) {
-		List<T> firstItemsList = new ArrayList<>(Arrays.asList(firstItems));
+	public static <T extends Comparable<? super T>> List<T> sortButPutItemsFirst(final Collection<T> collection, final T... firstItems) {
+		final List<T> firstItemsList = new ArrayList<>(Arrays.asList(firstItems));
 		final List<T> list = new ArrayList<>(collection);
 		Collections.sort(list, new Comparator<T>() {
-		     @Override
-			public int compare(T o1, T o2) {
-		         if (o1.equals(o2)) {
-		        	 return 0;
-		         } else if (firstItemsList.contains(o1)) {
-		        	 if (firstItemsList.contains(o2)) {
-			        	 return firstItemsList.indexOf(o1) < firstItemsList.indexOf(o2) ? -1 : 1;
-		        	 } else {
-		        		 return -1;
-		        	 }
-		         } else if (firstItemsList.contains(o2)) {
-		        	 return 1;
-		         } else {
-		        	 return o1.compareTo(o2);
-		         }
-		     }
+			@Override
+			public int compare(final T o1, final T o2) {
+				if (o1.equals(o2)) {
+					return 0;
+				} else if (firstItemsList.contains(o1)) {
+					if (firstItemsList.contains(o2)) {
+						return firstItemsList.indexOf(o1) < firstItemsList.indexOf(o2) ? -1 : 1;
+					} else {
+						return -1;
+					}
+				} else if (firstItemsList.contains(o2)) {
+					return 1;
+				} else {
+					return o1.compareTo(o2);
+				}
+			}
 		});
 		return list;
 	}
@@ -680,7 +680,7 @@ public class Utilities {
 	 * @param siUnits
 	 * @return
 	 */
-	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignifiantDigits, final boolean keepTrailingZeros, final Locale locale) {
+	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignificantDigits, final boolean keepTrailingZeros, final Locale locale) {
 		final int unit = siUnits ? 1000 : 1024;
 		double interimValue = value.doubleValue();
 		String unitExtension = "";
@@ -705,18 +705,18 @@ public class Utilities {
 
 		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 		DecimalFormat numberFormat;
-		
+
 		int trailingDigits;
 		if (interimValue >= 1000) {
-			trailingDigits = amountOfSignifiantDigits - 4;
+			trailingDigits = amountOfSignificantDigits - 4;
 		} else if (interimValue >= 100) {
-			trailingDigits = amountOfSignifiantDigits - 3;
+			trailingDigits = amountOfSignificantDigits - 3;
 		} else if (interimValue >= 10) {
-			trailingDigits = amountOfSignifiantDigits - 2;
+			trailingDigits = amountOfSignificantDigits - 2;
 		} else if (interimValue >= 1) {
-			trailingDigits = amountOfSignifiantDigits - 1;
+			trailingDigits = amountOfSignificantDigits - 1;
 		} else {
-			trailingDigits = amountOfSignifiantDigits;
+			trailingDigits = amountOfSignificantDigits;
 		}
 
 		if (keepTrailingZeros) {
@@ -752,21 +752,21 @@ public class Utilities {
 
 			final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 			final DecimalFormat numberFormat;
-			final int amountOfSignifiantDigits = 5;
-			
+			final int amountOfSignificantDigits = 5;
+
 			int trailingDigits;
 			if (interimValue >= 1000) {
-				trailingDigits = amountOfSignifiantDigits - 4;
+				trailingDigits = amountOfSignificantDigits - 4;
 			} else if (interimValue >= 100) {
-				trailingDigits = amountOfSignifiantDigits - 3;
+				trailingDigits = amountOfSignificantDigits - 3;
 			} else if (interimValue >= 10) {
-				trailingDigits = amountOfSignifiantDigits - 2;
+				trailingDigits = amountOfSignificantDigits - 2;
 			} else if (interimValue >= 1) {
-				trailingDigits = amountOfSignifiantDigits - 1;
+				trailingDigits = amountOfSignificantDigits - 1;
 			} else {
-				trailingDigits = amountOfSignifiantDigits;
+				trailingDigits = amountOfSignificantDigits;
 			}
-			
+
 			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1)), decimalFormatSymbols);
 
 			return numberFormat.format(interimValue) + unitExtension;
