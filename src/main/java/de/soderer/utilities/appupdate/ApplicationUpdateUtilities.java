@@ -475,14 +475,14 @@ public class ApplicationUpdateUtilities {
 				}
 
 				@Override
-				public void receiveProgressSignal(final LocalDateTime startTime, final long itemsToDo, final long itemsDone) {
+				public void receiveProgressSignal(final LocalDateTime startTime, final long itemsToDo, final long itemsDone, final String itemsUnitSign) {
 					if (updateParent != null) {
 						updateParent.showUpdateProgress(startTime, itemsToDo, itemsDone);
 					}
 				}
 
 				@Override
-				public void receiveDoneSignal(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
+				public void receiveDoneSignal(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 					if (updateParent != null) {
 						updateParent.showUpdateDownloadEnd(startTime, endTime, itemsDone);
 					}

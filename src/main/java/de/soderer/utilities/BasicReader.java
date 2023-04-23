@@ -8,6 +8,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.io.input.CountingInputStream;
+
 public class BasicReader implements Closeable {
 	/** UTF-8 BOM (Byte Order Mark) character for readers. */
 	public static final char BOM_UTF_8_CHAR = (char) 65279;
@@ -26,6 +28,8 @@ public class BasicReader implements Closeable {
 
 	/** Input reader. */
 	private BufferedReader inputReader = null;
+
+	private CountingInputStream countingInputStream = null;
 
 	private Character currentChar;
 	private Character reuseChar = null;
@@ -62,7 +66,8 @@ public class BasicReader implements Closeable {
 			if (inputStream == null) {
 				throw new IllegalStateException("Reader is already closed");
 			}
-			inputReader = new BufferedReader(new InputStreamReader(inputStream, encoding));
+			countingInputStream = new CountingInputStream(inputStream);
+			inputReader = new BufferedReader(new InputStreamReader(countingInputStream, encoding));
 		}
 
 		if (reuseChar != null) {
@@ -283,6 +288,14 @@ public class BasicReader implements Closeable {
 			return true;
 		} else {
 			return character1 != null && character1.equals(character2);
+		}
+	}
+
+	public long getReadDataSize() {
+		if (countingInputStream != null) {
+			return countingInputStream.getByteCount();
+		} else {
+			return 0;
 		}
 	}
 }
