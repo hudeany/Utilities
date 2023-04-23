@@ -223,7 +223,7 @@ public class ConsoleUtilities {
 		}
 
 		final String leftPart = percentageString + " [";
-		final String rightPart = "] " + itemsToDoString + (itemUnitSign == null ? "" : " " + itemUnitSign) + " " + speedString + " " + etaString;
+		final String rightPart = "] " + itemsToDoString + " " + speedString + " " + etaString;
 		final int barWith = lineLength - (leftPart.length() + rightPart.length());
 		int barDone = barWith * percentageDone / 100;
 		if (barDone < 1) {
