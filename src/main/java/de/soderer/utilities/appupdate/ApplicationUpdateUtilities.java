@@ -224,7 +224,7 @@ public class ApplicationUpdateUtilities {
 				}
 
 				if (updateParent != null) {
-					updateParent.showUpdateDone(null, null, 0);
+					updateParent.showUpdateDone(null, null, 0, null);
 				}
 
 				final String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
@@ -477,14 +477,14 @@ public class ApplicationUpdateUtilities {
 				@Override
 				public void receiveProgressSignal(final LocalDateTime startTime, final long itemsToDo, final long itemsDone, final String itemsUnitSign) {
 					if (updateParent != null) {
-						updateParent.showUpdateProgress(startTime, itemsToDo, itemsDone);
+						updateParent.showUpdateProgress(startTime, itemsToDo, itemsDone, itemsUnitSign);
 					}
 				}
 
 				@Override
 				public void receiveDoneSignal(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 					if (updateParent != null) {
-						updateParent.showUpdateDownloadEnd(startTime, endTime, itemsDone);
+						updateParent.showUpdateDownloadEnd(startTime, endTime, itemsDone, itemsUnitSign);
 					}
 				}
 

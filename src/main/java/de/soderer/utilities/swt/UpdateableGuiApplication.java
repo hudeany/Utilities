@@ -73,13 +73,13 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	}
 
 	@Override
-	public void showUpdateProgress(final LocalDateTime itemStart, final long itemsToDo, final long itemsDone) {
+	public void showUpdateProgress(final LocalDateTime itemStart, final long itemsToDo, final long itemsDone, final String itemsUnitSign) {
 		if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
 			getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
 					if (updateProgressDialog != null && !updateProgressDialog.isDisposed()) {
-						updateProgressDialog.receiveProgressSignal(itemStart, itemsToDo, itemsDone, null);
+						updateProgressDialog.receiveProgressSignal(itemStart, itemsToDo, itemsDone, itemsUnitSign);
 					}
 				}
 			});
@@ -87,9 +87,9 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	}
 
 	@Override
-	public void showUpdateDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
+	public void showUpdateDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 		if (updateProgressDialog != null) {
-			updateProgressDialog.receiveDoneSignal(startTime, endTime, itemsDone, null);
+			updateProgressDialog.receiveDoneSignal(startTime, endTime, itemsDone, itemsUnitSign);
 			updateProgressDialog = null;
 		}
 
@@ -126,9 +126,9 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 	}
 
 	@Override
-	public void showUpdateDownloadEnd(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone) {
+	public void showUpdateDownloadEnd(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 		if (updateProgressDialog != null) {
-			updateProgressDialog.receiveDoneSignal(startTime, endTime, itemsDone, null);
+			updateProgressDialog.receiveDoneSignal(startTime, endTime, itemsDone, itemsUnitSign);
 			updateProgressDialog = null;
 		}
 	}

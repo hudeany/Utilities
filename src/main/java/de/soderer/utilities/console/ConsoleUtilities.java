@@ -198,13 +198,14 @@ public class ConsoleUtilities {
 	 * @param itemsDone
 	 * @return
 	 */
-	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone) {
+	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone, String itemUnitSign) {
 		final LocalDateTime now = LocalDateTime.now();
 		String itemsToDoString = "??";
 		String percentageString = " 0%";
 		String speedString = "???/s";
 		String etaString = "eta ???";
 		int percentageDone = 0;
+		
 		if (itemsToDo > 0 && itemsDone > 0) {
 			itemsToDoString = NumberFormat.getNumberInstance(Locale.getDefault()).format(itemsToDo);
 			percentageDone = (int) (itemsDone * 100 / itemsToDo);
@@ -215,7 +216,7 @@ public class ConsoleUtilities {
 				elapsedSeconds = 1;
 			}
 			final int speed = (int) (itemsDone / elapsedSeconds);
-			speedString = Utilities.getHumanReadableNumber(speed, "", true, 5, true, Locale.ENGLISH) + "/s";
+			speedString = Utilities.getHumanReadableNumber(speed, "", true, 5, true, Locale.ENGLISH) + (itemUnitSign == null ? "" : itemUnitSign) + "/s";
 			final LocalDateTime estimatedEnd = DateUtilities.calculateETA(start, itemsToDo, itemsDone);
 			etaString = "eta " + DateUtilities.getShortHumanReadableTimespan(Duration.between(now, estimatedEnd), false, true);
 		} else if (itemsToDo > 0) {
@@ -223,7 +224,7 @@ public class ConsoleUtilities {
 		}
 
 		final String leftPart = percentageString + " [";
-		final String rightPart = "] " + itemsToDoString + " " + speedString + " " + etaString;
+		final String rightPart = "] " + itemsToDoString + (itemUnitSign == null ? "" : " " + itemUnitSign) + " " + speedString + " " + etaString;
 		final int barWith = lineLength - (leftPart.length() + rightPart.length());
 		int barDone = barWith * percentageDone / 100;
 		if (barDone < 1) {
