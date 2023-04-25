@@ -7,7 +7,7 @@ public interface WorkerParentSimple {
 
 	void receiveProgressSignal(LocalDateTime start, long itemsToDo, long itemsDone, String itemsUnitSign);
 
-	void receiveDoneSignal(LocalDateTime start, LocalDateTime end, long itemsDone, String itemsUnitSign);
+	void receiveDoneSignal(LocalDateTime start, LocalDateTime end, long itemsDone, String itemsUnitSign, String resultText);
 
 	void changeTitle(String text);
 

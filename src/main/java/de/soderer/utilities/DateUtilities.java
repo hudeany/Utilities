@@ -179,15 +179,18 @@ public class DateUtilities {
 			final LocalDateTime now = LocalDateTime.now();
 			if (start.isAfter(now)) {
 				return null;
+			} else if (itemsDone >= itemsToDo) {
+				return now;
 			} else {
 				final Duration durationSinceStartToNow = Duration.between(start, now);
-				final Duration durationFromStartToEnd = Duration.ofSeconds(itemsToDo * durationSinceStartToNow.toSeconds() / itemsDone);
-				return start.plus(durationFromStartToEnd);
+				final Duration durationFromStartToEnd = Duration.ofNanos((long) ((float) itemsToDo / itemsDone * durationSinceStartToNow.toNanos()));
+				LocalDateTime estimatedEnd = start.plus(durationFromStartToEnd);
+				return estimatedEnd;
 			}
 		}
 	}
 
-	public static String getShortHumanReadableTimespan(final Duration duration, final boolean showLeadingZeros) {
+	public static String getShortHumanReadableTimespan(final Duration duration, final boolean showMillis, final boolean showLeadingZeros) {
 		final StringBuilder returnValue = new StringBuilder();
 
 		final long millis = duration.toMillisPart();
@@ -198,7 +201,7 @@ public class DateUtilities {
 		final long weeks = duration.toDays() / 7 % 52;
 		final long years = duration.toDays() / 7 / 52;
 
-		if (millis != 0 && minutes == 0 && hours == 0 && days == 0 && weeks == 0 && years == 0) {
+		if (showMillis && millis != 0 && minutes == 0 && hours == 0 && days == 0 && weeks == 0 && years == 0) {
 			returnValue.insert(0, "ms");
 			if (showLeadingZeros) {
 				returnValue.insert(0, String.format("%03d", millis));
@@ -212,6 +215,7 @@ public class DateUtilities {
 				returnValue.insert(0, " ");
 			}
 			returnValue.insert(0, "s");
+			
 			if (showLeadingZeros) {
 				returnValue.insert(0, String.format("%02d", seconds));
 			} else {

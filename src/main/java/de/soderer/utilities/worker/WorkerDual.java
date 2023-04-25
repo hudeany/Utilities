@@ -40,7 +40,15 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	protected void signalItemDone() {
 		endTimeSub = LocalDateTime.now();
 		if (parent != null) {
-			((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign);
+			((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, null);
+			currentItemName = null;
+		}
+	}
+
+	protected void signalItemDone(String resultText) {
+		endTimeSub = LocalDateTime.now();
+		if (parent != null) {
+			((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, resultText);
 			currentItemName = null;
 		}
 	}

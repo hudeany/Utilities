@@ -158,14 +158,14 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void receiveDoneSignal(final LocalDateTime start, final LocalDateTime end, final long itemsDone, final String itemsUnitSign) {
+	public void receiveDoneSignal(final LocalDateTime start, final LocalDateTime end, final long itemsDone, final String itemsUnitSign, final String resultText) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			dispose();
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					receiveDoneSignal(start, end, itemsDone, itemsUnitSign);
+					receiveDoneSignal(start, end, itemsDone, itemsUnitSign, resultText);
 				}
 			});
 		}

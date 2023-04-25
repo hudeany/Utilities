@@ -156,7 +156,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void receiveItemDoneSignal(final LocalDateTime itemStart, final LocalDateTime itemEnd, final long subItemsDone, final String itemsUnitSign) {
+	public void receiveItemDoneSignal(final LocalDateTime itemStart, final LocalDateTime itemEnd, final long subItemsDone, final String itemsUnitSign, final String resultText) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override

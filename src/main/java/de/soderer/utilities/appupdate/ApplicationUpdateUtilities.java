@@ -482,7 +482,7 @@ public class ApplicationUpdateUtilities {
 				}
 
 				@Override
-				public void receiveDoneSignal(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
+				public void receiveDoneSignal(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign, final String resultText) {
 					if (updateParent != null) {
 						updateParent.showUpdateDownloadEnd(startTime, endTime, itemsDone, itemsUnitSign);
 					}

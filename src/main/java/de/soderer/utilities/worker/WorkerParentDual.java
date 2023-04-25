@@ -9,5 +9,5 @@ public interface WorkerParentDual extends WorkerParentSimple {
 
 	void receiveItemProgressSignal(LocalDateTime itemStart, long subItemToDo, long subItemDone, String itemsUnitSign);
 
-	void receiveItemDoneSignal(LocalDateTime itemStart, LocalDateTime itemEnd, long subItemsDone, String itemsUnitSign);
+	void receiveItemDoneSignal(LocalDateTime itemStart, LocalDateTime itemEnd, long subItemsDone, String itemsUnitSign, String resultText);
 }

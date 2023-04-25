@@ -202,7 +202,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void receiveDoneSignal(final LocalDateTime start, final LocalDateTime end, final long itemsDone, final String itemsUnitSign) {
+	public void receiveDoneSignal(final LocalDateTime start, final LocalDateTime end, final long itemsDone, final String itemsUnitSign, final String resultText) {
 		if (!isDisposed()) {
 			getParent().getDisplay().asyncExec(new Runnable() {
 				@Override

@@ -180,10 +180,14 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			}
 			isDone = true;
 			if (parent != null) {
-				parent.receiveDoneSignal(startTime, endTime, itemsDone, itemsUnitSign);
+				parent.receiveDoneSignal(startTime, endTime, itemsDone, itemsUnitSign, getResultText());
 			}
 		}
 	}
 
+	protected String getResultText() {
+		return null;
+	}
+	
 	public abstract T work() throws Exception;
 }

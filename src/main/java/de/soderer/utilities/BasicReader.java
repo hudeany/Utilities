@@ -8,8 +8,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.io.input.CountingInputStream;
-
 public class BasicReader implements Closeable {
 	/** UTF-8 BOM (Byte Order Mark) character for readers. */
 	public static final char BOM_UTF_8_CHAR = (char) 65279;

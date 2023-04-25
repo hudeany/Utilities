@@ -96,7 +96,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	}
 
 	@Override
-	public void receiveItemDoneSignal(final LocalDateTime itemStart, final LocalDateTime itemEnd, final long subItemsDone, final String itemsUnitSign) {
+	public void receiveItemDoneSignal(final LocalDateTime itemStart, final LocalDateTime itemEnd, final long subItemsDone, final String itemsUnitSign, final String resultText) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			updateProgressBar(subItemProgressBar, itemStart, subItemsDone, subItemsDone);
 			final String labelText = subCommentStringFormat.replace("{0}", Long.toString(subItemsDone)).replace("{1}", Long.toString(subItemsDone)).replace("{2}", Long.toString(100));
@@ -105,7 +105,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					receiveItemDoneSignal(itemStart, itemEnd, subItemsDone, itemsUnitSign);
+					receiveItemDoneSignal(itemStart, itemEnd, subItemsDone, itemsUnitSign, resultText);
 				}
 			});
 		}
