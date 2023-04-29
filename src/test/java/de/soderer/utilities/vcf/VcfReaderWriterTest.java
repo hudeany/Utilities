@@ -13,6 +13,7 @@ import org.junit.Test;
 import de.soderer.utilities.BOMInputStream;
 
 public class VcfReaderWriterTest {
+	@SuppressWarnings("resource")
 	@Test
 	public void test1() throws Exception {
 		final File testfile =  new File(getClass().getClassLoader().getResource("vcf/test.vcf").toURI());

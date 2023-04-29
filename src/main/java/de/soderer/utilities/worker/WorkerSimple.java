@@ -185,9 +185,10 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		}
 	}
 
+	@SuppressWarnings("static-method")
 	protected String getResultText() {
 		return null;
 	}
-	
+
 	public abstract T work() throws Exception;
 }

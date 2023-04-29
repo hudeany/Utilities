@@ -165,7 +165,7 @@ public class SecureDataStoreTest {
 		}
 	}
 
-	private void assertArrayEquals(final boolean[] expectedArray, final boolean[] actualArray) {
+	private static void assertArrayEquals(final boolean[] expectedArray, final boolean[] actualArray) {
 		if (expectedArray != actualArray) {
 			if (expectedArray == null || expectedArray.length != actualArray.length) {
 				Assert.fail();
@@ -179,7 +179,7 @@ public class SecureDataStoreTest {
 		}
 	}
 
-	private void assertArrayEquals(final float[] expectedArray, final float[] actualArray) {
+	private static void assertArrayEquals(final float[] expectedArray, final float[] actualArray) {
 		if (expectedArray != actualArray) {
 			if (expectedArray == null || expectedArray.length != actualArray.length) {
 				Assert.fail();
@@ -193,7 +193,7 @@ public class SecureDataStoreTest {
 		}
 	}
 
-	private void assertArrayEquals(final double[] expectedArray, final double[] actualArray) {
+	private static void assertArrayEquals(final double[] expectedArray, final double[] actualArray) {
 		if (expectedArray != actualArray) {
 			if (expectedArray == null || expectedArray.length != actualArray.length) {
 				Assert.fail();
