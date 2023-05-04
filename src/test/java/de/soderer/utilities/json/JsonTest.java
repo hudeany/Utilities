@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -1134,6 +1136,43 @@ public class JsonTest {
 		} catch (final Exception e) {
 			// Expected Exception
 			Assert.assertEquals("Invalid unicode sequence at character: 7", e.getMessage());
+		}
+	}
+
+	@Test
+	public void testStreaming() throws Exception {
+		try {
+			final String data =
+					"[\n"
+							+ "{\n"
+							+ "\"property\": \"value1\"\n"
+							+ "},\n"
+							+ "{\n"
+							+ "\"property\": \"value2\"\n"
+							+ "},\n"
+							+ "{\n"
+							+ "\"property\": \"value3\"\n"
+							+ "},\n"
+							+ "{\n"
+							+ "\"property\": \"value4\"\n"
+							+ "},\n"
+							+ "{\n"
+							+ "\"otherproperty\": \"othervalue\"\n"
+							+ "},\n"
+							+ "{\n"
+							+ "\"property\": \"value5\"\n"
+							+ "}\n"
+							+ "]\n";
+			try (JsonReader jsonReader = new JsonReader(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)))) {
+				final JsonArray jsonArray = ((JsonArray) jsonReader.read().getValue());
+				final List<String> properties = jsonArray.stream().map(x -> (JsonObject) x).map(x -> x.get("property")).map(x -> (String) x).collect(Collectors.toList());
+				Assert.assertEquals(6, properties.size());
+				Assert.assertEquals("value3", properties.get(2));
+				Assert.assertEquals(null, properties.get(4));
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
 		}
 	}
 }
