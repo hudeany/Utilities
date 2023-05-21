@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.InputStreamWithOtherItemsToClose;
 import de.soderer.utilities.Utilities;
 
 public class ZipUtilities {
@@ -35,7 +37,7 @@ public class ZipUtilities {
 			return readBytes == 4 && magicBytes[0] == 0x50 && magicBytes[1] == 0x4B && magicBytes[2] == 0x03 && magicBytes[3] == 0x04;
 		}
 	}
-	
+
 	/**
 	 * Zip a file or recursively all files and subdirectories of a directory. The
 	 * zipped file is placed in the same directory as the zipped file.
@@ -588,6 +590,50 @@ public class ZipUtilities {
 				}
 			}
 			return uncompressedSize;
+		}
+	}
+
+	public static InputStreamWithOtherItemsToClose openZipFile(final String importFilePathOrData) throws Exception {
+		return openZipFile(importFilePathOrData, null);
+	}
+
+	@SuppressWarnings("resource")
+	public static InputStreamWithOtherItemsToClose openZipFile(final String importFilePathOrData, final String zippedFilePathAndName) throws Exception {
+		ZipFile zipFile = null;
+		try {
+			zipFile = new ZipFile(importFilePathOrData);
+			final List<? extends ZipEntry> fileHeaders = Collections.list(zipFile.entries());
+			ZipEntry selectedFileHeader = null;
+
+			if (fileHeaders != null && fileHeaders.size() >= 0) {
+				if (Utilities.isBlank(zippedFilePathAndName)) {
+					if (fileHeaders.size() == 1 && !fileHeaders.get(0).isDirectory()) {
+						selectedFileHeader = fileHeaders.get(0);
+					}
+				} else {
+					for (final ZipEntry fileHeader : fileHeaders) {
+						if (!fileHeader.isDirectory() && fileHeader.getName().equals(zippedFilePathAndName)) {
+							selectedFileHeader = fileHeader;
+							break;
+						}
+					}
+				}
+			}
+
+			if (selectedFileHeader != null) {
+				return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(selectedFileHeader), selectedFileHeader.getName(), zipFile);
+			} else {
+				throw new Exception("Zip file '" + importFilePathOrData + "' does not include defined file");
+			}
+		} catch (final Exception e) {
+			try {
+				if (zipFile != null) {
+					zipFile.close();
+				}
+			} catch (@SuppressWarnings("unused") final IOException e1) {
+				// Do nothing
+			}
+			throw e;
 		}
 	}
 }

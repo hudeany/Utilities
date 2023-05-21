@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import de.soderer.utilities.InputStreamWithOtherItemsToClose;
+import de.soderer.utilities.Utilities;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.FileHeader;
 import net.lingala.zip4j.model.ZipParameters;
@@ -54,41 +55,47 @@ public class Zip4jUtilities {
 		}
 	}
 
+	public static InputStreamWithOtherItemsToClose openPasswordSecuredZipFile(final String importFilePathOrData, final char[] zipPassword) throws Exception {
+		return openPasswordSecuredZipFile(importFilePathOrData, zipPassword, null);
+	}
+
 	@SuppressWarnings("resource")
-	public static InputStream openPasswordSecuredZipFile(final String importFilePathOrData, final char[] zipPassword) throws Exception {
-		final ZipFile zipFile = new ZipFile(importFilePathOrData, zipPassword);
-		final List<FileHeader> fileHeaders = zipFile.getFileHeaders();
-		if (fileHeaders == null || fileHeaders.size() == 0) {
+	public static InputStreamWithOtherItemsToClose openPasswordSecuredZipFile(final String importFilePathOrData, final char[] zipPassword, final String zippedFilePathAndName) throws Exception {
+		ZipFile zipFile = null;
+		try {
+			zipFile = new ZipFile(importFilePathOrData, zipPassword);
+			final List<FileHeader> fileHeaders = zipFile.getFileHeaders();
+			FileHeader selectedFileHeader = null;
+
+			if (fileHeaders != null && fileHeaders.size() >= 0) {
+				if (Utilities.isBlank(zippedFilePathAndName)) {
+					if (fileHeaders.size() == 1 && !fileHeaders.get(0).isDirectory()) {
+						selectedFileHeader = fileHeaders.get(0);
+					}
+				} else {
+					for (final FileHeader fileHeader : fileHeaders) {
+						if (!fileHeader.isDirectory() && fileHeader.getFileName().equals(zippedFilePathAndName)) {
+							selectedFileHeader = fileHeader;
+							break;
+						}
+					}
+				}
+			}
+
+			if (selectedFileHeader != null) {
+				return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(selectedFileHeader), selectedFileHeader.getFileName(), zipFile);
+			} else {
+				throw new Exception("Zip file '" + importFilePathOrData + "' does not include defined file");
+			}
+		} catch (final Exception e) {
 			try {
-				zipFile.close();
-			} catch (@SuppressWarnings("unused") final IOException e) {
+				if (zipFile != null) {
+					zipFile.close();
+				}
+			} catch (@SuppressWarnings("unused") final IOException e1) {
 				// Do nothing
 			}
-			throw new Exception("Zipped file is empty: " + importFilePathOrData);
-		} else if (fileHeaders.size() > 1) {
-			try {
-				zipFile.close();
-			} catch (@SuppressWarnings("unused") final IOException e) {
-				// Do nothing
-			}
-			throw new Exception("Zipped file contains more than one file: " + importFilePathOrData);
+			throw e;
 		}
-		final FileHeader fileHeader = fileHeaders.get(0);
-		if (fileHeader == null) {
-			try {
-				zipFile.close();
-			} catch (@SuppressWarnings("unused") final IOException e) {
-				// Do nothing
-			}
-			throw new Exception("Zipped file is empty: " + importFilePathOrData);
-		} else if (fileHeader.getUncompressedSize() == 0) {
-			try {
-				zipFile.close();
-			} catch (@SuppressWarnings("unused") final IOException e) {
-				// Do nothing
-			}
-			throw new Exception("Zipped file is empty: " + importFilePathOrData + ": " + fileHeader.getFileName());
-		}
-		return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(fileHeader), zipFile);
 	}
 }
