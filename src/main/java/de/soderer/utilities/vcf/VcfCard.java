@@ -23,7 +23,7 @@ public class VcfCard {
 	private LocalDate birthday = null;
 	private boolean birthdayWithoutYear = false;
 	private final List<VcfAttributedValue> telephoneNumbers = new ArrayList<>();
-	private final List<VcfAttributedAddress> adresses = new ArrayList<>();
+	private final List<VcfAttributedAddress> addresses = new ArrayList<>();
 	private final List<VcfAttributedValue> emails = new ArrayList<>();
 
 	public String getLastName() {
@@ -122,12 +122,12 @@ public class VcfCard {
 		return telephoneNumbers;
 	}
 
-	public void addAddress(final VcfAttributedAddress adress) {
-		adresses.add(adress);
+	public void addAddress(final VcfAttributedAddress address) {
+		addresses.add(address);
 	}
 
-	public List<VcfAttributedAddress> getAdresses() {
-		return adresses;
+	public List<VcfAttributedAddress> getAddresses() {
+		return addresses;
 	}
 
 	public void addEmail(final VcfAttributedValue email) {

@@ -608,7 +608,9 @@ public class ZipUtilities {
 			if (fileHeaders != null && fileHeaders.size() >= 0) {
 				if (Utilities.isBlank(zippedFilePathAndName)) {
 					if (fileHeaders.size() == 1 && !fileHeaders.get(0).isDirectory()) {
-						selectedFileHeader = fileHeaders.get(0);
+						return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(fileHeaders.get(0)), fileHeaders.get(0).getName(), zipFile);
+					} else {
+						throw new Exception("Zip file '" + importFilePathOrData + "' contains more than one file");
 					}
 				} else {
 					for (final ZipEntry fileHeader : fileHeaders) {
@@ -617,13 +619,14 @@ public class ZipUtilities {
 							break;
 						}
 					}
+					if (selectedFileHeader != null) {
+						return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(selectedFileHeader), selectedFileHeader.getName(), zipFile);
+					} else {
+						throw new Exception("Zip file '" + importFilePathOrData + "' does not include defined zipped file '" + zippedFilePathAndName + "'");
+					}
 				}
-			}
-
-			if (selectedFileHeader != null) {
-				return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(selectedFileHeader), selectedFileHeader.getName(), zipFile);
 			} else {
-				throw new Exception("Zip file '" + importFilePathOrData + "' does not include defined file");
+				throw new Exception("Zip file '" + importFilePathOrData + "' is empty");
 			}
 		} catch (final Exception e) {
 			try {

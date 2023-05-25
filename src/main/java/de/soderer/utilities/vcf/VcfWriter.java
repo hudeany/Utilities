@@ -1,6 +1,7 @@
 package de.soderer.utilities.vcf;
 
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -22,7 +23,7 @@ import de.soderer.utilities.Utilities;
  *
  * See: https://de.wikipedia.org/wiki/VCard#Eigenschaften
  */
-public class VcfWriter implements AutoCloseable {
+public class VcfWriter implements Closeable {
 	private String defaultVersion = "2.1";
 
 	/** Number of cards written until now. */
@@ -171,8 +172,8 @@ public class VcfWriter implements AutoCloseable {
 			}
 		}
 
-		if (Utilities.isNotEmpty(card.getAdresses())) {
-			for (final VcfAttributedAddress address : card.getAdresses()) {
+		if (Utilities.isNotEmpty(card.getAddresses())) {
+			for (final VcfAttributedAddress address : card.getAddresses()) {
 				final List<String> values = new ArrayList<>();
 				values.addAll(address.getValues());
 
@@ -302,7 +303,7 @@ public class VcfWriter implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		if (bufferedWriter != null) {
 			try {
 				bufferedWriter.flush();

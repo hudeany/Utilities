@@ -1,6 +1,7 @@
 package de.soderer.utilities.vcf;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,7 +21,7 @@ import de.soderer.utilities.Utilities;
  *
  * See: https://de.wikipedia.org/wiki/VCard#Eigenschaften
  */
-public class VcfReader implements AutoCloseable {
+public class VcfReader implements Closeable {
 	private boolean strict = false;
 
 	/** If a single read was done, it is impossible to make a full read at once with readAll(). */
@@ -332,7 +333,7 @@ public class VcfReader implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		if (inputReader != null) {
 			try {
 				inputReader.close();
