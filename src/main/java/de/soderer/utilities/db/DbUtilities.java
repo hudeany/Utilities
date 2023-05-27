@@ -2179,7 +2179,12 @@ public class DbUtilities {
 					final String dataType = getDataType(dbVendor, columnType.getSimpleDataType());
 					int dataLength = 0;
 					if (dbVendor != DbVendor.Cassandra) {
-						dataLength = dataType.toLowerCase().contains("varchar") ? (int) columnType.getCharacterByteSize() : 0;
+						if (dataType.toLowerCase().contains("varchar")) {
+							dataLength = (int) columnType.getCharacterByteSize();
+							if (dataLength <= 0) {
+								dataLength = 1;
+							}
+						}
 					}
 					columnPart += escapeVendorReservedNames(dbVendor, columnAndType.getKey()) + " " + dataType + (dataLength > 0 ? "(" + dataLength + ")" : "");
 				} else {
