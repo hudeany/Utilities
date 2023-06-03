@@ -12,11 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import de.soderer.utilities.DateUtilities;
-import de.soderer.utilities.NumberUtilities;
 import de.soderer.utilities.Utilities;
 
 public class VcfCard {
@@ -266,14 +264,8 @@ public class VcfCard {
 			if (Utilities.isNotBlank(telephoneNumber.getValue())) {
 				telephoneNumberCount++;
 				final String mapKey = "telephoneNumber";
-				if (Utilities.isEmpty(telephoneNumber.getAttributes())) {
-					returnMap.put(mapKey + "_" + telephoneNumberCount, telephoneNumber.getValue());
-				} else if (telephoneNumber.getAttributes().size() == 1 && isSimpleAttribute(telephoneNumber.getAttributes().get(0)) && (mapKey + "_" + telephoneNumber.getAttributes().get(0)).length() <= 30) {
-					returnMap.put(mapKey + "_" + telephoneNumber.getAttributes().get(0), telephoneNumber.getValue());
-				} else {
-					returnMap.put(mapKey + "_" + telephoneNumberCount, telephoneNumber.getValue());
-					returnMap.put(mapKey + "_" + telephoneNumberCount + "_attr", Utilities.joinNotBlank(telephoneNumber.getAttributes(), ", "));
-				}
+				returnMap.put(mapKey + "_" + telephoneNumberCount, telephoneNumber.getValue());
+				returnMap.put(mapKey + "_" + telephoneNumberCount + "_attr", Utilities.joinNotBlank(telephoneNumber.getAttributes(), ", "));
 			}
 		}
 
@@ -283,17 +275,9 @@ public class VcfCard {
 				addressCount++;
 				final String mapKey = "address";
 				List<String> attributes = address.getAttributes();
-				if (Utilities.isEmpty(attributes)) {
-					returnMap.put(mapKey + "_" + addressCount, Utilities.joinNotBlank(address.getValues(), ", "));
-				} else {
-					attributes = attributes.stream().filter(x -> !x.toLowerCase().startsWith("charset=") && !x.toLowerCase().startsWith("encoding=")).collect(Collectors.toList());
-					if (attributes.size() == 1 && isSimpleAttribute(attributes.get(0)) && (mapKey + "_" + attributes.get(0)).length() <= 30) {
-						returnMap.put(mapKey + "_" + attributes.get(0), Utilities.joinNotBlank(address.getValues(), ", "));
-					} else {
-						returnMap.put(mapKey + "_" + addressCount, Utilities.joinNotBlank(address.getValues(), ", "));
-						returnMap.put(mapKey + "_" + addressCount + "_attr", Utilities.joinNotBlank(attributes, ", "));
-					}
-				}
+				attributes = attributes.stream().filter(x -> !x.toLowerCase().startsWith("charset=") && !x.toLowerCase().startsWith("encoding=")).collect(Collectors.toList());
+				returnMap.put(mapKey + "_" + addressCount, Utilities.joinNotBlank(address.getValues(), ", "));
+				returnMap.put(mapKey + "_" + addressCount + "_attr", Utilities.joinNotBlank(attributes, ", "));
 			}
 		}
 
@@ -302,14 +286,8 @@ public class VcfCard {
 			if (Utilities.isNotBlank(email.getValue())) {
 				emailCount++;
 				final String mapKey = "email";
-				if (Utilities.isEmpty(email.getAttributes())) {
-					returnMap.put(mapKey + "_" + emailCount, email.getValue());
-				} else if (email.getAttributes().size() == 1 && isSimpleAttribute(email.getAttributes().get(0)) && (mapKey + "_" + email.getAttributes().get(0)).length() <= 30) {
-					returnMap.put(mapKey + "_" + email.getAttributes().get(0), email.getValue());
-				} else {
-					returnMap.put(mapKey + "_" + emailCount, email.getValue());
-					returnMap.put(mapKey + "_" + emailCount + "_attr", Utilities.joinNotBlank(email.getAttributes(), ", "));
-				}
+				returnMap.put(mapKey + "_" + emailCount, email.getValue());
+				returnMap.put(mapKey + "_" + emailCount + "_attr", Utilities.joinNotBlank(email.getAttributes(), ", "));
 			}
 		}
 
@@ -396,21 +374,15 @@ public class VcfCard {
 				final String keyDataPart = entry.getKey().substring("telephoneNumber_".length());
 				if (!keyDataPart.endsWith("_attr")) {
 					final String value = (String) entry.getValue();
-					if (NumberUtilities.isInteger(keyDataPart)) {
-						final String attributesString = (String) map.get("telephoneNumber_" + keyDataPart + "_attr");
-						if (attributesString != null) {
-							final List<String> attributes = new ArrayList<>();
-							for (final String attributeString : attributesString.split(",")) {
-								attributes.add(attributeString.trim());
-							}
-							newVcfCard.getTelephoneNumbers().add(new VcfAttributedValue(value, attributes));
-						} else {
-							newVcfCard.getTelephoneNumbers().add(new VcfAttributedValue(value, null));
-						}
-					} else {
+					final String attributesString = (String) map.get("telephoneNumber_" + keyDataPart + "_attr");
+					if (attributesString != null) {
 						final List<String> attributes = new ArrayList<>();
-						attributes.add(keyDataPart);
+						for (final String attributeString : attributesString.split(",")) {
+							attributes.add(attributeString.trim());
+						}
 						newVcfCard.getTelephoneNumbers().add(new VcfAttributedValue(value, attributes));
+					} else {
+						newVcfCard.getTelephoneNumbers().add(new VcfAttributedValue(value, null));
 					}
 				}
 			} else if (Utilities.startsWithCaseinsensitive(entry.getKey(), "address_")) {
@@ -420,51 +392,35 @@ public class VcfCard {
 					for (final String addressValueString : ((String) entry.getValue()).split(",")) {
 						addressValues.add(addressValueString.trim());
 					}
-					if (NumberUtilities.isInteger(keyDataPart)) {
-						final String attributesString = (String) map.get("address_" + keyDataPart + "_attr");
-						if (attributesString != null) {
-							final List<String> attributes = new ArrayList<>();
-							for (final String attributeString : attributesString.split(",")) {
-								attributes.add(attributeString.trim());
-							}
-							newVcfCard.getAddresses().add(new VcfAttributedAddress(addressValues, attributes));
-						} else {
-							newVcfCard.getAddresses().add(new VcfAttributedAddress(addressValues, null));
-						}
-					} else {
+					final String attributesString = (String) map.get("address_" + keyDataPart + "_attr");
+					if (attributesString != null) {
 						final List<String> attributes = new ArrayList<>();
-						attributes.add(keyDataPart);
+						for (final String attributeString : attributesString.split(",")) {
+							attributes.add(attributeString.trim());
+						}
 						newVcfCard.getAddresses().add(new VcfAttributedAddress(addressValues, attributes));
+					} else {
+						newVcfCard.getAddresses().add(new VcfAttributedAddress(addressValues, null));
 					}
 				}
 			} else if (Utilities.startsWithCaseinsensitive(entry.getKey(), "email_")) {
 				final String keyDataPart = entry.getKey().substring("email_".length());
 				if (!keyDataPart.endsWith("_attr")) {
 					final String value = (String) entry.getValue();
-					if (NumberUtilities.isInteger(keyDataPart)) {
-						final String attributesString = (String) map.get("email_" + keyDataPart + "_attr");
-						if (attributesString != null) {
-							final List<String> attributes = new ArrayList<>();
-							for (final String attributeString : attributesString.split(",")) {
-								attributes.add(attributeString.trim());
-							}
-							newVcfCard.getEmails().add(new VcfAttributedValue(value, attributes));
-						} else {
-							newVcfCard.getEmails().add(new VcfAttributedValue(value, null));
-						}
-					} else {
+					final String attributesString = (String) map.get("email_" + keyDataPart + "_attr");
+					if (attributesString != null) {
 						final List<String> attributes = new ArrayList<>();
-						attributes.add(keyDataPart);
+						for (final String attributeString : attributesString.split(",")) {
+							attributes.add(attributeString.trim());
+						}
 						newVcfCard.getEmails().add(new VcfAttributedValue(value, attributes));
+					} else {
+						newVcfCard.getEmails().add(new VcfAttributedValue(value, null));
 					}
 				}
 			}
 		}
 
 		return newVcfCard;
-	}
-
-	private static boolean isSimpleAttribute(final String attribute) {
-		return Utilities.isNotBlank(attribute) && Pattern.matches("[a-zA-Z0-9_]*", attribute);
 	}
 }
