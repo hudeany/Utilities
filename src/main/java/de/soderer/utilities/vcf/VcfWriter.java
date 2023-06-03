@@ -8,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -210,10 +211,10 @@ public class VcfWriter implements Closeable {
 
 		if (card.getBirthday() != null) {
 			final String value;
-			if (card.isBirthdayWithoutYear()) {
-				value = DateUtilities.formatDate("--MM-dd", card.getBirthday());
+			if (card.getBirthyear() == null) {
+				value = card.getBirthday().format(DateTimeFormatter.ofPattern("--MM-dd"));
 			} else {
-				value = DateUtilities.formatDate(DateUtilities.YYYY_MM_DD, card.getBirthday());
+				value = card.getBirthday().atYear(card.getBirthyear().getValue()).format(DateTimeFormatter.ofPattern(DateUtilities.YYYY_MM_DD));
 			}
 			writeLine(VcfConstants.BIRTHDAY_PROPERTY + ":" + value);
 		}

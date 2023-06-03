@@ -48,8 +48,11 @@ public class CsvFormat {
 	/** Ignore empty lines */
 	private boolean ignoreEmptyLines = false;
 
-	/** use headers in first csv line */
+	/** Use headers in first csv line */
 	private boolean headerInFirstLine = true;
+
+	/** Use "\n" to escape linebreaks on csv output */
+	private boolean escapeLineBreaks = true;
 
 	/**
 	 * The Enum QuoteMode.
@@ -247,5 +250,13 @@ public class CsvFormat {
 	public CsvFormat setHeaderInFirstLine(final boolean headerInFirstLine) {
 		this.headerInFirstLine = headerInFirstLine;
 		return this;
+	}
+
+	public boolean isEscapeLineBreaks() {
+		return escapeLineBreaks;
+	}
+
+	public void setEscapeLineBreaks(final boolean escapeLineBreaks) {
+		this.escapeLineBreaks = escapeLineBreaks;
 	}
 }

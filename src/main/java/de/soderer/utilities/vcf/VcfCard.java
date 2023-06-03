@@ -1,9 +1,23 @@
 package de.soderer.utilities.vcf;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.MonthDay;
+import java.time.Year;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.NumberUtilities;
+import de.soderer.utilities.Utilities;
 
 public class VcfCard {
 	private String lastName = null;
@@ -20,8 +34,10 @@ public class VcfCard {
 	private ZonedDateTime latestUpdate = null;
 	private String url = null;
 	private String note = null;
-	private LocalDate birthday = null;
-	private boolean birthdayWithoutYear = false;
+
+	private MonthDay birthday = null;
+	private Year birthyear = null;
+
 	private final List<VcfAttributedValue> telephoneNumbers = new ArrayList<>();
 	private final List<VcfAttributedAddress> addresses = new ArrayList<>();
 	private final List<VcfAttributedValue> emails = new ArrayList<>();
@@ -162,20 +178,293 @@ public class VcfCard {
 		this.note = note;
 	}
 
-	public LocalDate getBirthday() {
+	public MonthDay getBirthday() {
 		return birthday;
 	}
 
-	public boolean isBirthdayWithoutYear() {
-		return birthdayWithoutYear;
-	}
-
-	public void setBirthday(final LocalDate birthday) {
+	public void setBirthday(final MonthDay birthday) {
 		this.birthday = birthday;
 	}
 
-	public void setBirthday(final LocalDate birthday, final boolean birthdayWithoutYear) {
-		this.birthday = birthday;
-		this.birthdayWithoutYear = birthdayWithoutYear;
+	public Year getBirthyear() {
+		return birthyear;
+	}
+
+	public void setBirthyear(final Year birthyear) {
+		this.birthyear = birthyear;
+	}
+
+	public static Map<String, Object> toMap(final VcfCard vcfCard) {
+		final Map<String, Object> returnMap = new HashMap<>();
+
+		if (Utilities.isNotBlank(vcfCard.getLastName())) {
+			returnMap.put("lastname", vcfCard.getLastName());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getFirstName())) {
+			returnMap.put("firstname", vcfCard.getFirstName());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getAdditionalFirstName())) {
+			returnMap.put("additionalfirstname", vcfCard.getAdditionalFirstName());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getNamePrefix())) {
+			returnMap.put("nameprefix", vcfCard.getNamePrefix());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getNameSuffix())) {
+			returnMap.put("namesuffix", vcfCard.getNameSuffix());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getFormattedName())) {
+			returnMap.put("formattedName", vcfCard.getFormattedName());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getRole())) {
+			returnMap.put("forrolemattedName", vcfCard.getRole());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getTitle())) {
+			returnMap.put("title", vcfCard.getTitle());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getPhotoUrl())) {
+			returnMap.put("photourl", vcfCard.getPhotoUrl());
+		}
+
+		if (vcfCard.getPhotoData() != null && vcfCard.getPhotoData().length > 0) {
+			returnMap.put("photodata", vcfCard.getPhotoData());
+		}
+
+		if (vcfCard.getLatestUpdate() != null) {
+			returnMap.put("latestupdate", vcfCard.getLatestUpdate());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getUrl())) {
+			returnMap.put("url", vcfCard.getUrl());
+		}
+
+		if (Utilities.isNotBlank(vcfCard.getNote())) {
+			returnMap.put("note", vcfCard.getNote());
+		}
+
+		if (vcfCard.getBirthday() != null) {
+			if (vcfCard.getBirthyear() != null) {
+				returnMap.put("birthday", vcfCard.getBirthday().atYear(vcfCard.getBirthyear().getValue()));
+			} else {
+				returnMap.put("birthday", vcfCard.getBirthday());
+			}
+		}
+
+		if (Utilities.isNotEmpty(vcfCard.getOrganization())) {
+			returnMap.put("organization", Utilities.joinNotBlank(vcfCard.getOrganization(), ", "));
+		}
+
+		int telephoneNumberCount = 0;
+		for (final VcfAttributedValue telephoneNumber : vcfCard.getTelephoneNumbers()) {
+			if (Utilities.isNotBlank(telephoneNumber.getValue())) {
+				telephoneNumberCount++;
+				final String mapKey = "telephoneNumber";
+				if (Utilities.isEmpty(telephoneNumber.getAttributes())) {
+					returnMap.put(mapKey + "_" + telephoneNumberCount, telephoneNumber.getValue());
+				} else if (telephoneNumber.getAttributes().size() == 1 && isSimpleAttribute(telephoneNumber.getAttributes().get(0)) && (mapKey + "_" + telephoneNumber.getAttributes().get(0)).length() <= 30) {
+					returnMap.put(mapKey + "_" + telephoneNumber.getAttributes().get(0), telephoneNumber.getValue());
+				} else {
+					returnMap.put(mapKey + "_" + telephoneNumberCount, telephoneNumber.getValue());
+					returnMap.put(mapKey + "_" + telephoneNumberCount + "_attr", Utilities.joinNotBlank(telephoneNumber.getAttributes(), ", "));
+				}
+			}
+		}
+
+		int addressCount = 0;
+		for (final VcfAttributedAddress address : vcfCard.getAddresses()) {
+			if (Utilities.isNotEmpty(address.getValues())) {
+				addressCount++;
+				final String mapKey = "address";
+				List<String> attributes = address.getAttributes();
+				if (Utilities.isEmpty(attributes)) {
+					returnMap.put(mapKey + "_" + addressCount, Utilities.joinNotBlank(address.getValues(), ", "));
+				} else {
+					attributes = attributes.stream().filter(x -> !x.toLowerCase().startsWith("charset=") && !x.toLowerCase().startsWith("encoding=")).collect(Collectors.toList());
+					if (attributes.size() == 1 && isSimpleAttribute(attributes.get(0)) && (mapKey + "_" + attributes.get(0)).length() <= 30) {
+						returnMap.put(mapKey + "_" + attributes.get(0), Utilities.joinNotBlank(address.getValues(), ", "));
+					} else {
+						returnMap.put(mapKey + "_" + addressCount, Utilities.joinNotBlank(address.getValues(), ", "));
+						returnMap.put(mapKey + "_" + addressCount + "_attr", Utilities.joinNotBlank(attributes, ", "));
+					}
+				}
+			}
+		}
+
+		int emailCount = 0;
+		for (final VcfAttributedValue email : vcfCard.getEmails()) {
+			if (Utilities.isNotBlank(email.getValue())) {
+				emailCount++;
+				final String mapKey = "email";
+				if (Utilities.isEmpty(email.getAttributes())) {
+					returnMap.put(mapKey + "_" + emailCount, email.getValue());
+				} else if (email.getAttributes().size() == 1 && isSimpleAttribute(email.getAttributes().get(0)) && (mapKey + "_" + email.getAttributes().get(0)).length() <= 30) {
+					returnMap.put(mapKey + "_" + email.getAttributes().get(0), email.getValue());
+				} else {
+					returnMap.put(mapKey + "_" + emailCount, email.getValue());
+					returnMap.put(mapKey + "_" + emailCount + "_attr", Utilities.joinNotBlank(email.getAttributes(), ", "));
+				}
+			}
+		}
+
+		return returnMap;
+	}
+
+	public static VcfCard fromMap(final Map<String, Object> map) throws Exception {
+		final VcfCard newVcfCard = new VcfCard();
+
+		for (final Entry<String, Object> entry : map.entrySet()) {
+			if ("lastname".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setLastName(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("firstname".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setFirstName(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("additionalfirstname".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setAdditionalFirstName(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("nameprefix".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setNamePrefix(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("namesuffix".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setNameSuffix(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("formattedName".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setFormattedName(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("role".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setRole(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("title".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setTitle(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("photourl".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setPhotoUrl(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("url".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setUrl(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("note".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setNote(entry.getValue() == null ? null : entry.getValue().toString());
+			} else if ("latestupdate".equalsIgnoreCase(entry.getKey())) {
+				if (entry.getValue() == null) {
+					newVcfCard.setLatestUpdate(null);
+				} else if (entry.getValue() instanceof ZonedDateTime) {
+					newVcfCard.setLatestUpdate((ZonedDateTime) entry.getValue());
+				} else if (entry.getValue() instanceof LocalDateTime) {
+					newVcfCard.setLatestUpdate(((LocalDateTime) entry.getValue()).atZone(ZoneId.systemDefault()));
+				} else if (entry.getValue() instanceof LocalDate) {
+					newVcfCard.setLatestUpdate(((LocalDate) entry.getValue()).atStartOfDay().atZone(ZoneId.systemDefault()));
+				} else {
+					final String value = entry.getValue().toString();
+					newVcfCard.setLatestUpdate(DateUtilities.parseUnknownDateFormat(value));
+				}
+			} else if ("birthday".equalsIgnoreCase(entry.getKey())) {
+				if (entry.getValue() == null) {
+					newVcfCard.setBirthday(null);
+					newVcfCard.setBirthyear(null);
+				} else if (entry.getValue() instanceof ZonedDateTime) {
+					newVcfCard.setBirthday(MonthDay.of(((ZonedDateTime) entry.getValue()).getMonth(), ((ZonedDateTime) entry.getValue()).getDayOfMonth()));
+					newVcfCard.setBirthyear(Year.of(((ZonedDateTime) entry.getValue()).getYear()));
+				} else if (entry.getValue() instanceof LocalDateTime) {
+					newVcfCard.setBirthday(MonthDay.of(((LocalDateTime) entry.getValue()).getMonth(), ((LocalDateTime) entry.getValue()).getDayOfMonth()));
+					newVcfCard.setBirthyear(Year.of(((LocalDateTime) entry.getValue()).getYear()));
+				} else if (entry.getValue() instanceof LocalDate) {
+					newVcfCard.setBirthday(MonthDay.of(((LocalDate) entry.getValue()).getMonth(), ((LocalDate) entry.getValue()).getDayOfMonth()));
+					newVcfCard.setBirthyear(Year.of(((LocalDate) entry.getValue()).getYear()));
+				} else {
+					final String value = entry.getValue().toString();
+					if (value.startsWith("--")) {
+						// Date without year "--12-31"
+						newVcfCard.setBirthday(MonthDay.parse(value, DateTimeFormatter.ofPattern("--MM-dd")));
+						newVcfCard.setBirthyear(null);
+					} else if (value.contains("-")) {
+						final LocalDate birthDay = DateUtilities.parseIso8601DateTimeString(value).toLocalDate();
+						newVcfCard.setBirthday(MonthDay.from(birthDay));
+						newVcfCard.setBirthyear(Year.from(birthDay));
+					} else {
+						final LocalDate birthDay = DateUtilities.parseLocalDate("yyyyMMdd", value);
+						newVcfCard.setBirthday(MonthDay.from(birthDay));
+						newVcfCard.setBirthyear(Year.from(birthDay));
+					}
+				}
+			} else if ("photodata".equalsIgnoreCase(entry.getKey())) {
+				newVcfCard.setPhotoData((byte[]) entry.getValue());
+			} else if ("organization".equalsIgnoreCase(entry.getKey())) {
+				final List<String> organization = new ArrayList<>();
+				for (final String attributeString : ((String) entry.getValue()).split(",")) {
+					organization.add(attributeString.trim());
+				}
+				newVcfCard.setOrganization(organization);
+			} else if (Utilities.startsWithCaseinsensitive(entry.getKey(), "telephoneNumber_")) {
+				final String keyDataPart = entry.getKey().substring("telephoneNumber_".length());
+				if (!keyDataPart.endsWith("_attr")) {
+					final String value = (String) entry.getValue();
+					if (NumberUtilities.isInteger(keyDataPart)) {
+						final String attributesString = (String) map.get("telephoneNumber_" + keyDataPart + "_attr");
+						if (attributesString != null) {
+							final List<String> attributes = new ArrayList<>();
+							for (final String attributeString : attributesString.split(",")) {
+								attributes.add(attributeString.trim());
+							}
+							newVcfCard.getTelephoneNumbers().add(new VcfAttributedValue(value, attributes));
+						} else {
+							newVcfCard.getTelephoneNumbers().add(new VcfAttributedValue(value, null));
+						}
+					} else {
+						final List<String> attributes = new ArrayList<>();
+						attributes.add(keyDataPart);
+						newVcfCard.getTelephoneNumbers().add(new VcfAttributedValue(value, attributes));
+					}
+				}
+			} else if (Utilities.startsWithCaseinsensitive(entry.getKey(), "address_")) {
+				final String keyDataPart = entry.getKey().substring("address_".length());
+				if (!keyDataPart.endsWith("_attr")) {
+					final List<String> addressValues = new ArrayList<>();
+					for (final String addressValueString : ((String) entry.getValue()).split(",")) {
+						addressValues.add(addressValueString.trim());
+					}
+					if (NumberUtilities.isInteger(keyDataPart)) {
+						final String attributesString = (String) map.get("address_" + keyDataPart + "_attr");
+						if (attributesString != null) {
+							final List<String> attributes = new ArrayList<>();
+							for (final String attributeString : attributesString.split(",")) {
+								attributes.add(attributeString.trim());
+							}
+							newVcfCard.getAddresses().add(new VcfAttributedAddress(addressValues, attributes));
+						} else {
+							newVcfCard.getAddresses().add(new VcfAttributedAddress(addressValues, null));
+						}
+					} else {
+						final List<String> attributes = new ArrayList<>();
+						attributes.add(keyDataPart);
+						newVcfCard.getAddresses().add(new VcfAttributedAddress(addressValues, attributes));
+					}
+				}
+			} else if (Utilities.startsWithCaseinsensitive(entry.getKey(), "email_")) {
+				final String keyDataPart = entry.getKey().substring("email_".length());
+				if (!keyDataPart.endsWith("_attr")) {
+					final String value = (String) entry.getValue();
+					if (NumberUtilities.isInteger(keyDataPart)) {
+						final String attributesString = (String) map.get("email_" + keyDataPart + "_attr");
+						if (attributesString != null) {
+							final List<String> attributes = new ArrayList<>();
+							for (final String attributeString : attributesString.split(",")) {
+								attributes.add(attributeString.trim());
+							}
+							newVcfCard.getEmails().add(new VcfAttributedValue(value, attributes));
+						} else {
+							newVcfCard.getEmails().add(new VcfAttributedValue(value, null));
+						}
+					} else {
+						final List<String> attributes = new ArrayList<>();
+						attributes.add(keyDataPart);
+						newVcfCard.getEmails().add(new VcfAttributedValue(value, attributes));
+					}
+				}
+			}
+		}
+
+		return newVcfCard;
+	}
+
+	private static boolean isSimpleAttribute(final String attribute) {
+		return Utilities.isNotBlank(attribute) && Pattern.matches("[a-zA-Z0-9_]*", attribute);
 	}
 }

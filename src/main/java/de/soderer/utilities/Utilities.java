@@ -45,6 +45,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -503,26 +504,26 @@ public class Utilities {
 	 * @return
 	 */
 	@SafeVarargs
-	public static <T extends Comparable<? super T>> List<T> sortButPutItemsFirst(final Collection<T> collection, T... firstItems) {
-		List<T> firstItemsList = new ArrayList<>(Arrays.asList(firstItems));
+	public static <T extends Comparable<? super T>> List<T> sortButPutItemsFirst(final Collection<T> collection, final T... firstItems) {
+		final List<T> firstItemsList = new ArrayList<>(Arrays.asList(firstItems));
 		final List<T> list = new ArrayList<>(collection);
 		Collections.sort(list, new Comparator<T>() {
-		     @Override
-			public int compare(T o1, T o2) {
-		         if (o1.equals(o2)) {
-		        	 return 0;
-		         } else if (firstItemsList.contains(o1)) {
-		        	 if (firstItemsList.contains(o2)) {
-			        	 return firstItemsList.indexOf(o1) < firstItemsList.indexOf(o2) ? -1 : 1;
-		        	 } else {
-		        		 return -1;
-		        	 }
-		         } else if (firstItemsList.contains(o2)) {
-		        	 return 1;
-		         } else {
-		        	 return o1.compareTo(o2);
-		         }
-		     }
+			@Override
+			public int compare(final T o1, final T o2) {
+				if (o1.equals(o2)) {
+					return 0;
+				} else if (firstItemsList.contains(o1)) {
+					if (firstItemsList.contains(o2)) {
+						return firstItemsList.indexOf(o1) < firstItemsList.indexOf(o2) ? -1 : 1;
+					} else {
+						return -1;
+					}
+				} else if (firstItemsList.contains(o2)) {
+					return 1;
+				} else {
+					return o1.compareTo(o2);
+				}
+			}
 		});
 		return list;
 	}
@@ -705,7 +706,7 @@ public class Utilities {
 
 		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 		DecimalFormat numberFormat;
-		
+
 		int trailingDigits;
 		if (interimValue >= 1000) {
 			trailingDigits = amountOfSignifiantDigits - 4;
@@ -753,7 +754,7 @@ public class Utilities {
 			final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 			final DecimalFormat numberFormat;
 			final int amountOfSignifiantDigits = 5;
-			
+
 			int trailingDigits;
 			if (interimValue >= 1000) {
 				trailingDigits = amountOfSignifiantDigits - 4;
@@ -766,7 +767,7 @@ public class Utilities {
 			} else {
 				trailingDigits = amountOfSignifiantDigits;
 			}
-			
+
 			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1)), decimalFormatSymbols);
 
 			return numberFormat.format(interimValue) + unitExtension;
@@ -1833,5 +1834,9 @@ public class Utilities {
 		} else {
 			return comment;
 		}
+	}
+
+	public static String joinNotBlank(final List<String> listOfStrings, final String glue) {
+		return join(listOfStrings.stream().filter(x -> isNotBlank(x)).collect(Collectors.toList()), glue);
 	}
 }

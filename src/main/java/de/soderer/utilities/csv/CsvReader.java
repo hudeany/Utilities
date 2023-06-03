@@ -294,6 +294,10 @@ public class CsvReader extends BasicReader {
 			}
 			returnValue = returnValue.replace("\r\n", "\n").replace('\r', '\n');
 
+			if (csvFormat.isEscapeLineBreaks()) {
+				returnValue = returnValue.replace("\\n", "\n").replace("\\r", "\r");
+			}
+
 			if (!csvFormat.isEscapedStringQuoteInDataAllowed() && returnValue.indexOf(csvFormat.getStringQuote()) >= 0) {
 				throw new CsvDataException("Not allowed stringquote in data in line " + readCsvLines, readCsvLines);
 			}

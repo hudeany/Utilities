@@ -52,6 +52,9 @@ public class CsvWriter implements Closeable {
 	/** Padding locations of columns for beautification (true = right padding = left aligned) */
 	private boolean[] columnPaddings = null;
 
+	/** Use "\n" to escape linebreaks */
+	private final boolean escapeLineBreaks;
+
 	/**
 	 * CSV Writer derived constructor.
 	 *
@@ -107,6 +110,7 @@ public class CsvWriter implements Closeable {
 		separatorString = Character.toString(csvFormat.getSeparator());
 		stringQuoteString = Character.toString(csvFormat.getStringQuote());
 		escapedStringQuoteString = csvFormat.getStringQuoteEscapeCharacter() + stringQuoteString;
+		escapeLineBreaks = csvFormat.isEscapeLineBreaks();
 
 		if (this.encoding == null) {
 			throw new IllegalArgumentException("Encoding is null");
@@ -221,6 +225,10 @@ public class CsvWriter implements Closeable {
 			valueString = value.toString();
 		}
 
+		if (escapeLineBreaks) {
+			valueString = valueString.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
+		}
+
 		final boolean valueNeedsQuotation =
 				valueString.contains(stringQuoteString)
 				|| valueString.contains(separatorString)
@@ -313,8 +321,8 @@ public class CsvWriter implements Closeable {
 	 *            the values
 	 * @return the csv line
 	 */
-	public static String getCsvLine(final char separator, final Character stringQuote, final List<? extends Object> values) {
-		return getCsvLine(separator, stringQuote, values.toArray());
+	public static String getCsvLine(final char separator, final Character stringQuote, final boolean escapeLineBreaks, final List<? extends Object> values) {
+		return getCsvLine(separator, stringQuote, escapeLineBreaks, values.toArray());
 	}
 
 	/**
@@ -328,7 +336,7 @@ public class CsvWriter implements Closeable {
 	 *            the values
 	 * @return the csv line
 	 */
-	public static String getCsvLine(final char separator, final Character stringQuote, final Object... values) {
+	public static String getCsvLine(final char separator, final Character stringQuote, final boolean escapeLineBreaks, final Object... values) {
 		final StringBuilder returnValue = new StringBuilder();
 		final String separatorString = Character.toString(separator);
 		final String stringQuoteString = stringQuote == null ? "" : Character.toString(stringQuote);
@@ -339,7 +347,10 @@ public class CsvWriter implements Closeable {
 					returnValue.append(separator);
 				}
 				if (value != null) {
-					final String valueString = value.toString();
+					String valueString = value.toString();
+					if (escapeLineBreaks) {
+						valueString = valueString.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
+					}
 					if (valueString.contains(separatorString) || valueString.contains("\r") || valueString.contains("\n") || valueString.contains(stringQuoteString)) {
 						returnValue.append(stringQuoteString);
 						returnValue.append(valueString.replace(stringQuoteString, doubleStringQuoteString));

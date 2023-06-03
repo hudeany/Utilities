@@ -6,10 +6,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.MonthDay;
+import java.time.Year;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import de.soderer.utilities.BOMInputStream;
 import de.soderer.utilities.DateUtilities;
@@ -149,11 +154,10 @@ public class VcfReader implements Closeable {
 				}
 				card.setFormattedName(decodedValues.get(0));
 			} else if (VcfConstants.ORGANIZATION_PROPERTY.equals(property)) {
-				final List<String> decodedValues = decodeValues(prefixes, values);
-				if (decodedValues.size() != 1) {
-					throw new Exception("Invalid organization (" + VcfConstants.ORGANIZATION_PROPERTY + ") data (must have 1 part, has " + decodedValues.size() + ") in line " + currentLineNumber);
-				}
-				card.setOrganization(decodedValues);
+				final List<String> decodedValues = decodeValues(prefixes, values).stream().filter(x -> Utilities.isNotBlank(x)).collect(Collectors.toList());
+				final ArrayList<String> organization = new ArrayList<>();
+				organization.add(Utilities.join(decodedValues, ", "));
+				card.setOrganization(organization);
 			} else if (VcfConstants.ROLE_PROPERTY.equals(property)) {
 				final List<String> decodedValues = decodeValues(prefixes, values);
 				if (decodedValues.size() != 1) {
@@ -227,8 +231,10 @@ public class VcfReader implements Closeable {
 				}
 				if (decodedValues.get(0).contains("-")) {
 					card.setLatestUpdate(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0)));
-				} else {
+				} else if (decodedValues.get(0).contains("T")) {
 					card.setLatestUpdate(DateUtilities.parseZonedDateTime("yyyyMMdd'T'HHmmssX", decodedValues.get(0), ZoneId.systemDefault()));
+				} else {
+					card.setLatestUpdate(DateUtilities.parseZonedDateTime("yyyyMMdd", decodedValues.get(0), ZoneId.systemDefault()));
 				}
 			} else if (VcfConstants.URL_PROPERTY.equals(property)) {
 				final List<String> decodedValues = decodeValues(prefixes, values);
@@ -248,12 +254,17 @@ public class VcfReader implements Closeable {
 					throw new Exception("Invalid title (" + VcfConstants.BIRTHDAY_PROPERTY + ") data (must have 1 part, has " + decodedValues.size() + ") in line " + currentLineNumber);
 				}
 				if (decodedValues.get(0).startsWith("--")) {
-					// Date without year
-					card.setBirthday(DateUtilities.parseIso8601DateTimeString("0001" + decodedValues.get(0).substring(1)).toLocalDate(), true);
+					// Date without year "--12-31"
+					card.setBirthday(MonthDay.parse(decodedValues.get(0), DateTimeFormatter.ofPattern("--MM-dd")));
+					card.setBirthyear(null);
 				} else if (decodedValues.get(0).contains("-")) {
-					card.setBirthday(DateUtilities.parseIso8601DateTimeString(decodedValues.get(0)).toLocalDate());
+					final LocalDate birthDay = DateUtilities.parseIso8601DateTimeString(decodedValues.get(0)).toLocalDate();
+					card.setBirthday(MonthDay.from(birthDay));
+					card.setBirthyear(Year.from(birthDay));
 				} else {
-					card.setBirthday(DateUtilities.parseLocalDate("yyyyMMdd", decodedValues.get(0)));
+					final LocalDate birthDay = DateUtilities.parseLocalDate("yyyyMMdd", decodedValues.get(0));
+					card.setBirthday(MonthDay.from(birthDay));
+					card.setBirthyear(Year.from(birthDay));
 				}
 			} else if (VcfConstants.A_ANDROID_CUSTOM_PROPERTY.equals(property)) {
 				// Ignore property

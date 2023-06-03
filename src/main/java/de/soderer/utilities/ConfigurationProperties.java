@@ -170,7 +170,7 @@ public class ConfigurationProperties {
 	}
 
 	public void set(final String name, final List<String> list) {
-		properties.setProperty(name, CsvWriter.getCsvLine(';', '"', list));
+		properties.setProperty(name, CsvWriter.getCsvLine(';', '"', true, list));
 	}
 
 	public void addRecentListEntry(final String name, final String value) {
