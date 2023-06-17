@@ -2,7 +2,6 @@ package de.soderer.utilities.kdbx;
 
 import java.io.ByteArrayOutputStream;
 import java.security.MessageDigest;
-import java.util.Arrays;
 import java.util.Base64;
 
 import org.w3c.dom.Document;
@@ -90,7 +89,7 @@ public class KdbxCredentials {
 							final String dataHexString = XmlUtilities.getNodeValue(dataNode);
 							final byte[] keyBytes = BitUtilities.fromHexString(dataHexString, true);
 							final byte[] keyBytesHash = MessageDigest.getInstance("SHA-256").digest(keyBytes);
-							if (!Arrays.equals(keyBytesHash, 0, 4, hashBytes, 0, 4)) {
+							if (keyBytesHash[0] != hashBytes[0] || keyBytesHash[1] != hashBytes[1] || keyBytesHash[2] != hashBytes[2] || keyBytesHash[3] != hashBytes[3]) {
 								throw new RuntimeException("Keyfile was tampered: Data hash is invalid" );
 							}
 							concat.write(keyBytes, 0, keyBytes.length);
