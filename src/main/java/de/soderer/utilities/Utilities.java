@@ -1232,6 +1232,19 @@ public class Utilities {
 		}
 	}
 
+	public static String leftPad(final String value, final int size, final char padChar) {
+		if (value == null) {
+			return null;
+		} else {
+			final int padsize = size - value.length();
+			if (padsize <= 0) {
+				return value;
+			} else {
+				return repeat(padChar, padsize).concat(value);
+			}
+		}
+	}
+
 	/**
 	 * Append blanks at the right of a string to make if fit the given minimum
 	 *

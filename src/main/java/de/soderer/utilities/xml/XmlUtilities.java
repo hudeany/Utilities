@@ -34,6 +34,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.bouncycastle.util.Arrays;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentType;
@@ -54,6 +55,14 @@ import de.soderer.utilities.Utilities;
  * Utilities class to work with XML documents.
  */
 public class XmlUtilities {
+	public static boolean isXmlDocument(final byte[] data) {
+		if (data == null || data.length < 6) {
+			return false;
+		} else {
+			return "<?xml ".equals(new String(Arrays.copyOfRange(data, 0, 6), StandardCharsets.UTF_8).toLowerCase());
+		}
+	}
+
 	/**
 	 * Gets the empty document.
 	 *
@@ -108,6 +117,24 @@ public class XmlUtilities {
 			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
+			return document;
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return null;
+		}
+	}
+
+
+	/**
+	 * Parse xml bytearray.
+	 *
+	 * @param xmlData bytearray
+	 * @return the document
+	 */
+	public static Document parseXmlFile(final byte[] xmlData) {
+		try (BufferedInputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(xmlData))) {
+			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			final Document document = documentBuilder.parse(inputStream);
 			return document;
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return null;
@@ -944,6 +971,19 @@ public class XmlUtilities {
 		}
 
 		return returnList;
+	}
+
+	public static Map<String, Node> getChildNodesMap(final Node dataNode) {
+		final Map<String, Node> childNodes = new HashMap<>();
+		final NodeList childNodesList = dataNode.getChildNodes();
+		for (int i = 0; i < childNodesList.getLength(); i++) {
+			final Node childNode = childNodesList.item(i);
+			if (childNode.getNodeType() != Node.TEXT_NODE) {
+				childNodes.put(childNode.getNodeName(), childNode);
+			}
+		}
+
+		return childNodes;
 	}
 
 	/**

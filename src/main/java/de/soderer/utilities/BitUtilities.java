@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 public class BitUtilities {
 	private static Pattern BITSTRINGPATTERN_BYTE = Pattern.compile("^[10]{1,8}$");
 	private static Pattern BITSTRINGPATTERN_INTEGER = Pattern.compile("^[10]{1,32}$");
+	private static Pattern HEXADECIMAL_PATTERN = Pattern.compile("\\p{XDigit}+");
 
 	/**
 	 * Returns values from 0 to 255 (value range of byte)
@@ -133,6 +134,36 @@ public class BitUtilities {
 			posValue *= 2;
 		}
 		return result;
+	}
+
+	public static byte[] fromHexString(final String value) {
+		if (value == null) {
+			return null;
+		} else {
+			String decodeValue = value;
+			if (value.toLowerCase().startsWith("0x")) {
+				decodeValue = decodeValue.substring(2);
+			}
+			if (!HEXADECIMAL_PATTERN.matcher(decodeValue).matches()) {
+				throw new RuntimeException("String contains non hexadecimal character: " + value);
+			}
+			final int length = decodeValue.length();
+			final byte[] data = new byte[length / 2];
+			for (int i = 0; i < length; i += 2) {
+				data[i / 2] = (byte) ((Character.digit(decodeValue.charAt(i), 16) << 4) + Character.digit(decodeValue.charAt(i + 1), 16));
+			}
+			return data;
+		}
+	}
+
+	public static byte[] fromHexString(final String value, final boolean ignoreNonHexCharacters) {
+		if (value == null) {
+			return null;
+		} else if (ignoreNonHexCharacters) {
+			return fromHexString(value.toLowerCase().replaceAll("[^abcdef0-9]", ""));
+		} else {
+			return fromHexString(value);
+		}
 	}
 
 	/**
