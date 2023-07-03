@@ -1,5 +1,7 @@
 package de.soderer.utilities.kdbx.util;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,12 +10,27 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class Utilities {
 	private static Pattern HEXADECIMAL_PATTERN = Pattern.compile("\\p{XDigit}+");
@@ -138,22 +155,6 @@ public class Utilities {
 
 	private static final Pattern BASE64_PATTERN = Pattern.compile("^@(?=(.{4})*$)[A-Za-z0-9+/]*={0,2}$");
 
-	public interface IOBiFunction<A, B, C> {
-		C apply(A a, B b) throws IOException;
-	}
-
-	public interface IOFunction<A, B> {
-		B apply(A value) throws IOException;
-	}
-
-	public interface ThrowingConsumer<A> {
-		void consume(A a) throws IOException;
-	}
-
-	public interface ThrowingBiConsumer<A, B> {
-		void consume(A a, B b) throws IOException;
-	}
-
 	public static boolean isBase64(final String s) {
 		if (Utilities.isNotBlank(s)) {
 			return BASE64_PATTERN.matcher(s).matches();
@@ -206,6 +207,20 @@ public class Utilities {
 			final char hi = chars[(value & 0xf0) >>> 4];
 			final char lo = chars[value & 0x0f];
 			buffer.append(hi).append(lo);
+			if ((i + 1) < data.length) {
+				buffer.append(separator);
+			}
+		}
+		return buffer.toString();
+	}
+
+	public static String toByteString(final byte[] data, final String separator) {
+		if (data == null || data.length == 0) {
+			return "<empty>";
+		}
+		final StringBuilder buffer = new StringBuilder();
+		for (int i = 0; i < data.length; i++) {
+			buffer.append(data[i]);
 			if ((i + 1) < data.length) {
 				buffer.append(separator);
 			}
@@ -288,6 +303,18 @@ public class Utilities {
 		return result;
 	}
 
+	public static short readShortFromLittleEndianBytes(final byte[] dataBytes) {
+		if (dataBytes == null || dataBytes.length != 2) {
+			throw new RuntimeException("Invalid data bytes for short value: 2 bytes expected");
+		} else {
+			return ByteBuffer.wrap(dataBytes).order(ByteOrder.LITTLE_ENDIAN).getShort();
+		}
+	}
+
+	public static byte[] getLittleEndianBytes(final short value) {
+		return ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(value).array();
+	}
+
 	public static int readIntFromLittleEndianBytes(final byte[] dataBytes) {
 		if (dataBytes == null || dataBytes.length != 4) {
 			throw new RuntimeException("Invalid data bytes for int value: 4 bytes expected");
@@ -310,5 +337,116 @@ public class Utilities {
 
 	public static byte[] getLittleEndianBytes(final long value) {
 		return ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
+	}
+
+	public static boolean isXmlDocument(final byte[] data) {
+		if (data == null || data.length < 6) {
+			return false;
+		} else {
+			return "<?xml ".equals(new String(Arrays.copyOfRange(data, 0, 6), StandardCharsets.UTF_8).toLowerCase());
+		}
+	}
+
+	public static Document parseXmlFile(final byte[] xmlData) {
+		try (BufferedInputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(xmlData))) {
+			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			final Document document = documentBuilder.parse(inputStream);
+			return document;
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return null;
+		}
+	}
+
+	public static String getNodeValue(final Node pNode) {
+		if (pNode.getNodeValue() != null) {
+			return pNode.getNodeValue();
+		} else if (pNode.getFirstChild() != null) {
+			return getNodeValue(pNode.getFirstChild());
+		} else {
+			return null;
+		}
+	}
+
+	public static String getAttributeValue(final Node pNode, final String pAttributeName) {
+		String returnString = null;
+
+		final NamedNodeMap attributes = pNode.getAttributes();
+		if (attributes != null) {
+			for (int i = 0; i < attributes.getLength(); i++) {
+				if (attributes.item(i).getNodeName().equalsIgnoreCase(pAttributeName)) {
+					returnString = attributes.item(i).getNodeValue();
+					break;
+				}
+			}
+		}
+
+		return returnString;
+	}
+
+	public static Map<String, Node> getChildNodesMap(final Node dataNode) {
+		final Map<String, Node> childNodes = new LinkedHashMap<>();
+		final NodeList childNodesList = dataNode.getChildNodes();
+		for (int i = 0; i < childNodesList.getLength(); i++) {
+			final Node childNode = childNodesList.item(i);
+			if (childNode.getNodeType() != Node.TEXT_NODE) {
+				childNodes.put(childNode.getNodeName(), childNode);
+			}
+		}
+
+		return childNodes;
+	}
+
+	public static Document createNewDocument() throws ParserConfigurationException {
+		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+		final Document document = documentBuilder.newDocument();
+		return document;
+	}
+
+	public static Node appendNode(final Document document, final String tagName) {
+		final Node newNode = document.createElement(tagName);
+		document.appendChild(newNode);
+		return newNode;
+	}
+
+	public static Node appendNode(final Node baseNode, final String tagName) {
+		final Node newNode = baseNode.getOwnerDocument().createElement(tagName);
+		baseNode.appendChild(newNode);
+		return newNode;
+	}
+
+	public static Node appendTextValueNode(final Node baseNode, final String tagName, final String tagValue) {
+		final Node newNode = appendNode(baseNode, tagName);
+		if (tagValue != null) {
+			newNode.appendChild(baseNode.getOwnerDocument().createTextNode(tagValue));
+		}
+		return newNode;
+	}
+
+	public static void appendAttribute(final Element baseNode, final String attributeName, final String attributeValue) {
+		final Attr typeAttribute = baseNode.getOwnerDocument().createAttribute(attributeName);
+		if (attributeValue != null) {
+			typeAttribute.setNodeValue(attributeValue);
+		}
+		baseNode.setAttributeNode(typeAttribute);
+	}
+
+	public static byte[] gzip(final byte[] data) throws Exception {
+		final ByteArrayOutputStream bufferStream = new ByteArrayOutputStream();
+		try (final GZIPOutputStream gzipOut = new GZIPOutputStream(bufferStream)) {
+			gzipOut.write(data);
+		} catch (final IOException e) {
+			throw new Exception("GZIP compression failed", e);
+		}
+		return bufferStream.toByteArray();
+	}
+
+	public static byte[] gunzip(final byte[] compressedData) throws Exception {
+		try (final GZIPInputStream gzipIn = new GZIPInputStream(new ByteArrayInputStream(compressedData))) {
+			return Utilities.toByteArray(gzipIn);
+		} catch (final IOException e) {
+			throw new Exception("GZIP decompression failed", e);
+		}
 	}
 }

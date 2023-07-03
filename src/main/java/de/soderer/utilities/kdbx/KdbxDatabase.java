@@ -2,20 +2,54 @@ package de.soderer.utilities.kdbx;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import de.soderer.utilities.kdbx.data.KdbxBinary;
 import de.soderer.utilities.kdbx.data.KdbxEntry;
 import de.soderer.utilities.kdbx.data.KdbxGroup;
 import de.soderer.utilities.kdbx.data.KdbxMeta;
+import de.soderer.utilities.kdbx.data.KdbxStorageSettings;
 import de.soderer.utilities.kdbx.data.KdbxUUID;
 
 public class KdbxDatabase {
-	public KdbxMeta meta = new KdbxMeta();
-	public List<KdbxGroup> groups = new ArrayList<>();
-	public List<KdbxEntry> entries = new ArrayList<>();
-	public Map<KdbxUUID, ZonedDateTime> deletedObjects = new HashMap<>();
+	private KdbxStorageSettings storageSettings;
+	private List<KdbxBinary> binaryAttachments = null;
+	private KdbxMeta meta = new KdbxMeta();
+	private List<KdbxGroup> groups = new ArrayList<>();
+	private List<KdbxEntry> entries = new ArrayList<>();
+	private final Map<KdbxUUID, ZonedDateTime> deletedObjects = new LinkedHashMap<>();
+
+	public KdbxDatabase setStorageSettings(final KdbxStorageSettings storageSettings) {
+		this.storageSettings = storageSettings;
+		return this;
+	}
+
+	public KdbxStorageSettings getStorageSettings() {
+		return storageSettings;
+	}
+
+	/**
+	 * Binary data of entry attachments.
+	 * Dataversion <= 3.1 --> stored in KdbxMeta binaries
+	 * Dataversion >= 4.0 --> stored in KdbxInnerHeaderType.BINARY_ATTACHMENT
+	 */
+	public KdbxDatabase setBinaryAttachments(final List<KdbxBinary> binaryAttachments) {
+		this.binaryAttachments = binaryAttachments;
+		return this;
+	}
+
+	/**
+	 * Binary data of entry attachments.
+	 * Dataversion <= 3.1 --> stored in KdbxMeta binaries
+	 * Dataversion >= 4.0 --> stored in KdbxInnerHeaderType.BINARY_ATTACHMENT
+	 */
+	public List<KdbxBinary> getBinaryAttachments() {
+		return binaryAttachments;
+	}
 
 	public KdbxDatabase setMeta(final KdbxMeta kdbxMeta) {
 		meta = kdbxMeta;
@@ -95,6 +129,17 @@ public class KdbxDatabase {
 		return null;
 	}
 
+	public List<KdbxGroup> getAllGroups() {
+		final List<KdbxGroup> groupsList = new ArrayList<>();
+		for (final KdbxGroup group : groups) {
+			groupsList.add(group);
+		}
+		for (final KdbxGroup group : groups) {
+			groupsList.addAll(group.getAllGroups());
+		}
+		return groupsList;
+	}
+
 	public List<KdbxEntry> getAllEntries() {
 		final List<KdbxEntry> entriesList = new ArrayList<>();
 		for (final KdbxEntry entry : entries) {
@@ -104,5 +149,22 @@ public class KdbxDatabase {
 			entriesList.addAll(group.getAllEntries());
 		}
 		return entriesList;
+	}
+
+	public void validate() throws Exception {
+		final Set<KdbxUUID> usedUuids = new HashSet<>();
+		for (final KdbxGroup group : getAllGroups()) {
+			if (!usedUuids.add(group.getUuid())) {
+				throw new Exception("Group with duplicate UUID found: " + group.getUuid().toHex());
+			}
+		}
+		for (final KdbxEntry entry : getAllEntries()) {
+			if (!usedUuids.add(entry.getUuid())) {
+				throw new Exception("Entry with duplicate UUID found: " + entry.getUuid().toHex());
+			}
+		}
+		// TODO: check IconIDs
+		// TODO: check ids for binary attachments
+		// TODO: The same binary attachment should not be stored multiple times
 	}
 }

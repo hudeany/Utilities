@@ -8,6 +8,7 @@ import java.util.Map;
 public class KdbxEntry {
 	private KdbxUUID uuid;
 	private int iconID;
+	public KdbxUUID customIconUuid;
 	private String foregroundColor;
 	private String backgroundColor;
 	private String overrideURL;
@@ -16,9 +17,12 @@ public class KdbxEntry {
 	private Map<String, Object> items = new LinkedHashMap<>();
 	private boolean autoTypeEnabled = false;
 	private String autoTypeDataTransferObfuscation;
+	private String autoTypeDefaultSequence;
 	private String autoTypeAssociationWindow;
 	private String autoTypeAssociationKeystrokeSequence;
+	private List<KdbxCustomDataItem> customData;
 	private final List<KdbxEntry> history = new ArrayList<>();
+	private final List<KdbxEntryBinary> binaries = new ArrayList<>();
 
 	public KdbxEntry setUuid(final KdbxUUID uuid) {
 		this.uuid = uuid;
@@ -38,7 +42,7 @@ public class KdbxEntry {
 		return (String) items.get("Title");
 	}
 
-	public KdbxEntry setUsername(final KdbxTimes username) {
+	public KdbxEntry setUsername(final String username) {
 		items.put("Username", username);
 		return this;
 	}
@@ -74,44 +78,58 @@ public class KdbxEntry {
 		return (String) items.get("Notes");
 	}
 
+	public KdbxEntry setIconID(final int iconID) {
+		this.iconID = iconID;
+		return this;
+	}
+
 	public int getIconID() {
 		return iconID;
 	}
 
-	public void setIconID(final int iconID) {
-		this.iconID = iconID;
+	public KdbxEntry setCustomIconUuid(final KdbxUUID customIconUuid) {
+		this.customIconUuid = customIconUuid;
+		return this;
+	}
+
+	public KdbxUUID getCustomIconUuid() {
+		return customIconUuid;
+	}
+
+	public KdbxEntry setForegroundColor(final String foregroundColor) {
+		this.foregroundColor = foregroundColor;
+		return this;
 	}
 
 	public String getForegroundColor() {
 		return foregroundColor;
 	}
 
-	public void setForegroundColor(final String foregroundColor) {
-		this.foregroundColor = foregroundColor;
+	public KdbxEntry setBackgroundColor(final String backgroundColor) {
+		this.backgroundColor = backgroundColor;
+		return this;
 	}
 
 	public String getBackgroundColor() {
 		return backgroundColor;
 	}
 
-	public void setBackgroundColor(final String backgroundColor) {
-		this.backgroundColor = backgroundColor;
+	public KdbxEntry setOverrideURL(final String overrideURL) {
+		this.overrideURL = overrideURL;
+		return this;
 	}
 
 	public String getOverrideURL() {
 		return overrideURL;
 	}
 
-	public void setOverrideURL(final String overrideURL) {
-		this.overrideURL = overrideURL;
+	public KdbxEntry setTags(final String tags) {
+		this.tags = tags;
+		return this;
 	}
 
 	public String getTags() {
 		return tags;
-	}
-
-	public void setTags(final String tags) {
-		this.tags = tags;
 	}
 
 	public KdbxEntry setTimes(final KdbxTimes times) {
@@ -132,27 +150,34 @@ public class KdbxEntry {
 		return (String) items.get(itemKey);
 	}
 
+	public KdbxEntry setItems(final Map<String, Object> items) {
+		this.items = items;
+		return this;
+	}
+
 	public Map<String, Object> getItems() {
 		return items;
 	}
 
-	public void setItems(final Map<String, Object> items) {
-		this.items = items;
-	}
-
-	public void setAutoType(final boolean enabled, final String dataTransferObfuscation, final String associationWindow, final String associationKeystrokeSequence) {
+	public KdbxEntry setAutoType(final boolean enabled, final String dataTransferObfuscation, final String defaultSequence, final String associationWindow, final String associationKeystrokeSequence) {
 		autoTypeEnabled = enabled;
 		autoTypeDataTransferObfuscation = dataTransferObfuscation;
+		autoTypeDefaultSequence = defaultSequence;
 		autoTypeAssociationWindow = associationWindow;
 		autoTypeAssociationKeystrokeSequence = associationKeystrokeSequence;
+		return this;
 	}
 
-	public boolean getAutoTypeEnabled() {
+	public boolean isAutoTypeEnabled() {
 		return autoTypeEnabled;
 	}
 
 	public String getAutoTypeDataTransferObfuscation() {
 		return autoTypeDataTransferObfuscation;
+	}
+
+	public String getAutoTypeDefaultSequence() {
+		return autoTypeDefaultSequence;
 	}
 
 	public String getAutoTypeAssociationWindow() {
@@ -163,7 +188,26 @@ public class KdbxEntry {
 		return autoTypeAssociationKeystrokeSequence;
 	}
 
+	/**
+	 * Data items of stored files for this entry.
+	 */
+	public KdbxEntry setCustomData(final List<KdbxCustomDataItem> customData) {
+		this.customData = customData;
+		return this;
+	}
+
+	/**
+	 * Data items of stored files for this entry.
+	 */
+	public List<KdbxCustomDataItem> getCustomData() {
+		return customData;
+	}
+
 	public List<KdbxEntry> getHistory() {
 		return history;
+	}
+
+	public List<KdbxEntryBinary> getBinaries() {
+		return binaries;
 	}
 }

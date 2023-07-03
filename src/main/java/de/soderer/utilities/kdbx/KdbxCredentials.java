@@ -8,9 +8,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import de.soderer.utilities.BitUtilities;
 import de.soderer.utilities.kdbx.util.Utilities;
-import de.soderer.utilities.xml.XmlUtilities;
 
 /**
  * KeyFile formats<br />
@@ -57,37 +55,37 @@ public class KdbxCredentials {
 		}
 
 		if (keyFileData != null) {
-			if (XmlUtilities.isXmlDocument(keyFileData)) {
+			if (Utilities.isXmlDocument(keyFileData)) {
 				String version = null;
-				final Document document = XmlUtilities.parseXmlFile(keyFileData);
+				final Document document = Utilities.parseXmlFile(keyFileData);
 				final Element rootNode = document.getDocumentElement();
-				final Node metaNode = XmlUtilities.getChildNodesMap(rootNode).get("Meta");
+				final Node metaNode = Utilities.getChildNodesMap(rootNode).get("Meta");
 				if (metaNode != null) {
-					final Node versionNode = XmlUtilities.getChildNodesMap(metaNode).get("Version");
+					final Node versionNode = Utilities.getChildNodesMap(metaNode).get("Version");
 					if (versionNode != null) {
-						version = XmlUtilities.getNodeValue(versionNode);
+						version = Utilities.getNodeValue(versionNode);
 					}
 				}
 				if (version != null && version.startsWith("1.")) {
-					final Node keyNode = XmlUtilities.getChildNodesMap(rootNode).get("Key");
+					final Node keyNode = Utilities.getChildNodesMap(rootNode).get("Key");
 					if (keyNode != null) {
-						final Node dataNode = XmlUtilities.getChildNodesMap(keyNode).get("Data");
+						final Node dataNode = Utilities.getChildNodesMap(keyNode).get("Data");
 						if (dataNode != null) {
-							final String dataBase64String = XmlUtilities.getNodeValue(dataNode);
+							final String dataBase64String = Utilities.getNodeValue(dataNode);
 							final byte[] keyBytes = Base64.getDecoder().decode(dataBase64String);
 							concat.write(keyBytes, 0, keyBytes.length);
 						}
 					}
 				} else if (version != null && version.startsWith("2.")) {
-					final Node keyNode = XmlUtilities.getChildNodesMap(rootNode).get("Key");
+					final Node keyNode = Utilities.getChildNodesMap(rootNode).get("Key");
 					if (keyNode != null) {
-						final Node dataNode = XmlUtilities.getChildNodesMap(keyNode).get("Data");
+						final Node dataNode = Utilities.getChildNodesMap(keyNode).get("Data");
 						if (dataNode != null) {
-							final String hashHexString = XmlUtilities.getAttributeValue(dataNode, "Hash");
-							final byte[] hashBytes = BitUtilities.fromHexString(hashHexString, true);
+							final String hashHexString = Utilities.getAttributeValue(dataNode, "Hash");
+							final byte[] hashBytes = Utilities.fromHexString(hashHexString, true);
 
-							final String dataHexString = XmlUtilities.getNodeValue(dataNode);
-							final byte[] keyBytes = BitUtilities.fromHexString(dataHexString, true);
+							final String dataHexString = Utilities.getNodeValue(dataNode);
+							final byte[] keyBytes = Utilities.fromHexString(dataHexString, true);
 							final byte[] keyBytesHash = MessageDigest.getInstance("SHA-256").digest(keyBytes);
 							if (keyBytesHash[0] != hashBytes[0] || keyBytesHash[1] != hashBytes[1] || keyBytesHash[2] != hashBytes[2] || keyBytesHash[3] != hashBytes[3]) {
 								throw new RuntimeException("Keyfile was tampered: Data hash is invalid" );
@@ -105,9 +103,9 @@ public class KdbxCredentials {
 		}
 
 		if (windowsUserAccount != null) {
-			final byte[] windowsUserAccountHash = null;// = MessageDigest.getInstance("sha256").digest(windowsUserAccount);
-			concat.write(windowsUserAccountHash, 0, windowsUserAccountHash.length);
 			// TODO
+			// final byte[] windowsUserAccountHash = null;// = MessageDigest.getInstance("sha256").digest(windowsUserAccount);
+			// concat.write(windowsUserAccountHash, 0, windowsUserAccountHash.length);
 			throw new RuntimeException("WindowsUserAccount not supported yet");
 		}
 
