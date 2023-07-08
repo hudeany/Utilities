@@ -17,7 +17,7 @@ public class KdbxReaderTest {
 		try (KdbxReader kdbxReader = new KdbxReader(getClass().getClassLoader().getResourceAsStream("kdbx/v4/Database_AES256_AES-KDF.kdbx")).setStrictMode(true)) {
 			database = kdbxReader.readKdbxDatabase("Äbc123@".toCharArray());
 
-			Assert.assertEquals("4.1.0", database.getStorageSettings().getDataFormatVersion().toString());
+			Assert.assertEquals("4.1.0", database.getHeaderFormat().getDataFormatVersion().toString());
 
 			Assert.assertEquals("Test Database", database.getMeta().getDatabaseName());
 
@@ -43,7 +43,7 @@ public class KdbxReaderTest {
 				Assert.fail("Databse is null");
 				throw new RuntimeException();
 			}
-			kdbxWriter.writeKdbxDatabase(database, database.getStorageSettings(), credentials);
+			kdbxWriter.writeKdbxDatabase(database, database.getHeaderFormat(), credentials);
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -55,7 +55,7 @@ public class KdbxReaderTest {
 			final KdbxCredentials credentials = new KdbxCredentials("Äbc123@".toCharArray());
 			database = kdbxReader.readKdbxDatabase(credentials);
 
-			Assert.assertEquals("4.1.0", database.getStorageSettings().getDataFormatVersion().toString());
+			Assert.assertEquals("4.1.0", database.getHeaderFormat().getDataFormatVersion().toString());
 
 			Assert.assertEquals("Test Database", database.getMeta().getDatabaseName());
 
@@ -236,7 +236,7 @@ public class KdbxReaderTest {
 			final KdbxCredentials credentials = new KdbxCredentials("Äbc123@".toCharArray());
 			database = kdbxReader.readKdbxDatabase(credentials);
 
-			Assert.assertEquals("3.1.0", database.getStorageSettings().getDataFormatVersion().toString());
+			Assert.assertEquals("3.1.0", database.getHeaderFormat().getDataFormatVersion().toString());
 
 			Assert.assertEquals(null, database.getMeta().getDatabaseName());
 
@@ -261,7 +261,7 @@ public class KdbxReaderTest {
 				Assert.fail("Databse is null");
 				throw new RuntimeException();
 			}
-			kdbxWriter.writeKdbxDatabase(database, database.getStorageSettings(), credentials);
+			kdbxWriter.writeKdbxDatabase(database, database.getHeaderFormat(), credentials);
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -273,7 +273,7 @@ public class KdbxReaderTest {
 			final KdbxCredentials credentials = new KdbxCredentials("Äbc123@".toCharArray());
 			database = kdbxReader.readKdbxDatabase(credentials);
 
-			Assert.assertEquals("3.1.0", database.getStorageSettings().getDataFormatVersion().toString());
+			Assert.assertEquals("3.1.0", database.getHeaderFormat().getDataFormatVersion().toString());
 
 			Assert.assertEquals(null, database.getMeta().getDatabaseName());
 
