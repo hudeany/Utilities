@@ -8,7 +8,7 @@ public class KdbxGroup {
 	public KdbxUUID uuid;
 	public KdbxTimes times;
 	public String notes;
-	public int iconID;
+	public Integer iconID;
 	public KdbxUUID customIconUuid;
 	public boolean expanded;
 	public String defaultAutoTypeSequence;
@@ -40,6 +40,9 @@ public class KdbxGroup {
 	}
 
 	public KdbxUUID getUuid() {
+		if (uuid == null) {
+			uuid = new KdbxUUID();
+		}
 		return uuid;
 	}
 
@@ -55,6 +58,9 @@ public class KdbxGroup {
 	 * KDBX times of this group
 	 */
 	public KdbxTimes getTimes() {
+		if (times == null) {
+			times = new KdbxTimes();
+		}
 		return times;
 	}
 
@@ -76,7 +82,7 @@ public class KdbxGroup {
 	/**
 	 * Standard icon id for this group
 	 */
-	public KdbxGroup setIconID(final int iconID) {
+	public KdbxGroup setIconID(final Integer iconID) {
 		this.iconID = iconID;
 		return this;
 	}
@@ -84,7 +90,7 @@ public class KdbxGroup {
 	/**
 	 * Standard icon id for this group
 	 */
-	public int getIconID() {
+	public Integer getIconID() {
 		return iconID;
 	}
 

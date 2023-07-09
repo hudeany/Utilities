@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class KdbxEntry {
 	private KdbxUUID uuid;
-	private int iconID;
+	private Integer iconID;
 	public KdbxUUID customIconUuid;
 	private String foregroundColor;
 	private String backgroundColor;
@@ -30,10 +30,13 @@ public class KdbxEntry {
 	}
 
 	public KdbxUUID getUuid() {
+		if (uuid == null) {
+			uuid = new KdbxUUID();
+		}
 		return uuid;
 	}
 
-	public KdbxEntry setTitle(final KdbxTimes title) {
+	public KdbxEntry setTitle(final String title) {
 		items.put("Title", title);
 		return this;
 	}
@@ -48,7 +51,7 @@ public class KdbxEntry {
 	}
 
 	public String getUsername() {
-		return (String) items.get("UserName");
+		return (String) items.get("Username");
 	}
 
 	public KdbxEntry setPassword(final String password) {
@@ -78,12 +81,12 @@ public class KdbxEntry {
 		return (String) items.get("Notes");
 	}
 
-	public KdbxEntry setIconID(final int iconID) {
+	public KdbxEntry setIconID(final Integer iconID) {
 		this.iconID = iconID;
 		return this;
 	}
 
-	public int getIconID() {
+	public Integer getIconID() {
 		return iconID;
 	}
 
@@ -138,6 +141,9 @@ public class KdbxEntry {
 	}
 
 	public KdbxTimes getTimes() {
+		if (times == null) {
+			times = new KdbxTimes();
+		}
 		return times;
 	}
 
