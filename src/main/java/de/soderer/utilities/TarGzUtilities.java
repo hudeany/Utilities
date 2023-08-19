@@ -13,9 +13,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 
 public class TarGzUtilities {
 	public static int getFilesCount(final File tarGzFile) throws Exception {
@@ -70,13 +67,13 @@ public class TarGzUtilities {
 					}
 
 					try(final FileOutputStream fileOutputStream = new FileOutputStream(currentfile)) {
-						IOUtils.copy(tarArchiveInputStream, fileOutputStream);
+						IoUtilities.copy(tarArchiveInputStream, fileOutputStream);
 					}
 				}
 			} catch (final Exception e) {
 				try {
 					if (decompressToPath.exists()) {
-						FileUtils.deleteDirectory(decompressToPath);
+						FileUtilities.delete(decompressToPath);
 					}
 				} catch (@SuppressWarnings("unused") final Exception e1) {
 					// do nothing else
@@ -97,7 +94,7 @@ public class TarGzUtilities {
 		try (TarArchiveOutputStream tarArchiveOutputStream = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(tarGzFile))));
 				FileInputStream fileInputStream = new FileInputStream(fileToCompress)) {
 			tarArchiveOutputStream.putArchiveEntry(new TarArchiveEntry(fileToCompress, filePathInTarGzFile));
-			IOUtils.copy(fileInputStream, tarArchiveOutputStream);
+			IoUtilities.copy(fileInputStream, tarArchiveOutputStream);
 			tarArchiveOutputStream.closeArchiveEntry();
 			tarArchiveOutputStream.finish();
 		} catch (final IOException e) {
@@ -126,7 +123,7 @@ public class TarGzUtilities {
 					if (entry.isDirectory()) {
 						continue;
 					} else {
-						if (StringUtils.isBlank(filePathInTarGzFile)) {
+						if (Utilities.isBlank(filePathInTarGzFile)) {
 							return tarArchiveInputStream;
 						} else {
 							String entryFilePath = entry.getName();
@@ -138,7 +135,7 @@ public class TarGzUtilities {
 					}
 				}
 
-				if (StringUtils.isBlank(filePathInTarGzFile)) {
+				if (Utilities.isBlank(filePathInTarGzFile)) {
 					throw new Exception("TarGz file '" + tarGzFile.getAbsolutePath() + "' is empty");
 				} else {
 					throw new Exception("TarGz file does not contain file '" + filePathInTarGzFile + "'");
