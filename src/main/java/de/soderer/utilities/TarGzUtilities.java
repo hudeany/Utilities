@@ -105,11 +105,19 @@ public class TarGzUtilities {
 		}
 	}
 
-	public static void compress(final File tarGzFile, final File fileToCompress, final String filePathInTarGzFile) throws IOException {
+	public static void compress(final File tarGzFile, final File fileToCompress) throws IOException {
+		compress(tarGzFile, fileToCompress, null);
+	}
+
+	public static void compress(final File tarGzFile, final File fileToCompress, String filePathInTarGzFile) throws IOException {
 		if (tarGzFile.exists()) {
 			throw new IOException("TarGz file already exists: " + tarGzFile.getAbsolutePath());
 		} else if (!tarGzFile.getParentFile().exists()) {
 			throw new IOException("Parent directory for TarGz file does not exist: " + tarGzFile.getParentFile().getAbsolutePath());
+		}
+
+		if (filePathInTarGzFile == null) {
+			filePathInTarGzFile = fileToCompress.getName();
 		}
 
 		try (TarArchiveOutputStream tarArchiveOutputStream = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(tarGzFile))));
