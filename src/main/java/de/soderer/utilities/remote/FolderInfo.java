@@ -23,6 +23,6 @@ public class FolderInfo {
 
 	@Override
 	public String toString() {
-		return folderName + " [" + (getModificationDate() != null ? DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, getModificationDate().toLocalDateTime()) : "Unknown modification date")  + "]";
+		return folderName + " [" + (getModificationDate() != null ? DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, getModificationDate().toLocalDateTime()) : "Unknown modification date") + "]";
 	}
 }

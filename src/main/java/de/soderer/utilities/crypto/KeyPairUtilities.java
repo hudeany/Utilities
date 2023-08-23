@@ -282,7 +282,7 @@ public class KeyPairUtilities {
 				System.arraycopy(javaEncoding, javaEncoding.length - publicKeyDataLength, publicKeyData, 0, publicKeyDataLength);
 				publicKeyWriter.writeData(publicKeyData);
 			} else {
-				throw new Exception("Unsupported  algorithm name: " + algorithmName);
+				throw new Exception("Unsupported algorithm name: " + algorithmName);
 			}
 			return publicKeyWriter.toByteArray();
 		}

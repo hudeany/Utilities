@@ -303,7 +303,7 @@ public class SqlStatementFormatter {
 					}
 				} else if (isOneOf(lines.get(i - 1), "VALUES", "WHERE", "FROM", "GROUP BY", "SORT BY", "ORDER BY", "HAVING", "AND", "OR")) {
 					// do nothing for this is no function
-				} else if (nextIsInsertTableDefinition){
+				} else if (nextIsInsertTableDefinition) {
 					nextIsInsertTableDefinition = false;
 					i = joinWithPreviousLine(lines, i, " ");
 				} else {

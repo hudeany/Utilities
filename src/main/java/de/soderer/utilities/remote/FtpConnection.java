@@ -299,7 +299,7 @@ public class FtpConnection implements RemoteConnection {
 		} else {
 			folderName = folderPath;
 		}
-		if  ("".equals(folderName)) {
+		if ("".equals(folderName)) {
 			folderName = "/";
 		}
 

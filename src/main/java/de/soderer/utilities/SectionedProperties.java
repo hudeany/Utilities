@@ -15,7 +15,7 @@ import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
 public class SectionedProperties {
 	private static final String COMMENT_PREFIX = "#";
 	/**
-	 *  Blanks around KEY_VALUE_SEPARATOR are ignored.
+	 * Blanks around KEY_VALUE_SEPARATOR are ignored.
 	 */
 	private static final String KEY_VALUE_SEPARATOR = "=";
 	private static final String SECTION_PREFIX = "[";
@@ -70,9 +70,9 @@ public class SectionedProperties {
 
 					if (!entries.containsKey(currentSectionName)) {
 						if (useCaseInsensitiveKeys) {
-							entries.put(currentSectionName, new CaseInsensitiveOrderedMap<String>());
+							entries.put(currentSectionName, new CaseInsensitiveOrderedMap<>());
 						} else {
-							entries.put(currentSectionName, new LinkedHashMap<String, String>());
+							entries.put(currentSectionName, new LinkedHashMap<>());
 						}
 					}
 
@@ -137,9 +137,9 @@ public class SectionedProperties {
 
 		if (!entries.containsKey(sectionName)) {
 			if (useCaseInsensitiveKeys) {
-				entries.put(sectionName, new CaseInsensitiveOrderedMap<String>());
+				entries.put(sectionName, new CaseInsensitiveOrderedMap<>());
 			} else {
-				entries.put(sectionName, new LinkedHashMap<String, String>());
+				entries.put(sectionName, new LinkedHashMap<>());
 			}
 		}
 

@@ -225,7 +225,7 @@ public class PGPWorkerTest {
 			in = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			out = new ByteArrayOutputStream();
 
-			final PGPFileEncryptionWorker encryptionWorker = new PGPFileEncryptionWorker(null, in, out,  getPgpSecretKeyElgamal().getPublicKey());
+			final PGPFileEncryptionWorker encryptionWorker = new PGPFileEncryptionWorker(null, in, out, getPgpSecretKeyElgamal().getPublicKey());
 			encryptionWorker.run();
 
 			if (encryptionWorker.getError() != null) {

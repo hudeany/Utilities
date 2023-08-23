@@ -27,7 +27,7 @@ public class SqlScriptReaderTest {
 			nextStatement = sqlScriptReader.readNextStatement();
 			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (3, 'abc')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (4,  'abc')", nextStatement);
+			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (4, 'abc')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
 			Assert.assertNull(nextStatement);
 		} catch (final Exception e) {

@@ -16,7 +16,7 @@ public class VcfReaderWriterTest {
 	@SuppressWarnings("resource")
 	@Test
 	public void test1() throws Exception {
-		final File testfile =  new File(getClass().getClassLoader().getResource("vcf/test.vcf").toURI());
+		final File testfile = new File(getClass().getClassLoader().getResource("vcf/test.vcf").toURI());
 
 		File tempFile = File.createTempFile("VcfReaderWriterTest", ".vcf");
 

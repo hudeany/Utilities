@@ -164,7 +164,7 @@ public class Smb1Connection implements RemoteConnection {
 			} else {
 				folderName = folderPath;
 			}
-			if  ("".equals(folderName)) {
+			if ("".equals(folderName)) {
 				folderName = "/";
 			}
 
@@ -189,7 +189,7 @@ public class Smb1Connection implements RemoteConnection {
 			} else {
 				folderName = folderPath;
 			}
-			if  ("".equals(folderName)) {
+			if ("".equals(folderName)) {
 				folderName = "/";
 			}
 

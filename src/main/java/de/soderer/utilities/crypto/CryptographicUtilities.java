@@ -538,7 +538,7 @@ public class CryptographicUtilities {
 		try (PEMParser pemReader = new PEMParser(new StringReader(certificateString))) {
 			final List<X509Certificate> returnList = new ArrayList<>();
 			Object readObject;
-			while ((readObject = pemReader.readObject()) != null)  {
+			while ((readObject = pemReader.readObject()) != null) {
 				if (readObject instanceof X509Certificate) {
 					returnList.add((X509Certificate) readObject);
 				} else if (readObject instanceof X509CertificateHolder) {
@@ -1727,11 +1727,11 @@ public class CryptographicUtilities {
 	}
 
 	public static final String getEllipticCurveName(final PublicKey publicKey) throws Exception{
-		if (publicKey instanceof ECPublicKey){
+		if (publicKey instanceof ECPublicKey) {
 			final ECPublicKey pk = (ECPublicKey) publicKey;
 			final java.security.spec.ECParameterSpec params = pk.getParams();
 			return getEllipticCurveName(EC5Util.convertSpec(params));
-		} else if(publicKey instanceof org.bouncycastle.jce.interfaces.ECPublicKey){
+		} else if(publicKey instanceof org.bouncycastle.jce.interfaces.ECPublicKey) {
 			final org.bouncycastle.jce.interfaces.ECPublicKey pk = (org.bouncycastle.jce.interfaces.ECPublicKey) publicKey;
 			return getEllipticCurveName(pk.getParameters());
 		} else {
@@ -1740,11 +1740,11 @@ public class CryptographicUtilities {
 	}
 
 	public static final String getEllipticCurveName(final PrivateKey privateKey) throws Exception{
-		if (privateKey instanceof ECPrivateKey){
+		if (privateKey instanceof ECPrivateKey) {
 			final ECPrivateKey pk = (ECPrivateKey) privateKey;
 			final java.security.spec.ECParameterSpec params = pk.getParams();
 			return getEllipticCurveName(EC5Util.convertSpec(params));
-		} else if(privateKey instanceof org.bouncycastle.jce.interfaces.ECPrivateKey){
+		} else if(privateKey instanceof org.bouncycastle.jce.interfaces.ECPrivateKey) {
 			final org.bouncycastle.jce.interfaces.ECPrivateKey pk = (org.bouncycastle.jce.interfaces.ECPrivateKey) privateKey;
 			return getEllipticCurveName(pk.getParameters());
 		} else {
@@ -1760,7 +1760,7 @@ public class CryptographicUtilities {
 			if (params.getN().equals(ecParameterSpec.getN())
 					&& params.getH().equals(ecParameterSpec.getH())
 					&& params.getCurve().equals(ecParameterSpec.getCurve())
-					&& params.getG().equals(ecParameterSpec.getG())){
+					&& params.getG().equals(ecParameterSpec.getG())) {
 				return name;
 			}
 		}

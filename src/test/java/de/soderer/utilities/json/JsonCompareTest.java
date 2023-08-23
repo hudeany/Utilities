@@ -133,7 +133,7 @@ public class JsonCompareTest {
 		final JsonObject compareResultJson = new JsonCompare(jsonObjectLeft, jsonObjectRight).compare();
 
 		Assert.assertEquals(compareResultJson.toString(), 1, ((JsonArray) compareResultJson.get("differences")).size());
-		Assert.assertEquals(compareResultJson.toString(), 2,  ((JsonArray) ((JsonObject) ((JsonArray) compareResultJson.get("differences")).get(0)).get("differences")).size());
+		Assert.assertEquals(compareResultJson.toString(), 2, ((JsonArray) ((JsonObject) ((JsonArray) compareResultJson.get("differences")).get(0)).get("differences")).size());
 	}
 
 	@Test
