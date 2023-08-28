@@ -18,8 +18,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import de.soderer.utilities.Utilities;
-
 public class JarInJarLoader {
 	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
 
@@ -101,7 +99,7 @@ public class JarInJarLoader {
 						final String osArch = System.getProperty("os.arch").toLowerCase();
 						try {
 							for (final String entryName : getZipFileEntries(new File(jarFilePath))) {
-								if (Utilities.endsWithIgnoreCase(entryName, ".jar")) {
+								if (endsWithIgnoreCase(entryName, ".jar")) {
 									if (entryName.startsWith("swt")) {
 										swtFound = true;
 										if (osArch.contains("64") && osName.contains("win") && entryName.contains("win32") && entryName.contains("x86_64")) {
@@ -153,6 +151,25 @@ public class JarInJarLoader {
 				entryList.add(entry.getName());
 			}
 			return entryList.toArray(new String[0]);
+		}
+	}
+
+	private static boolean endsWithIgnoreCase(final String data, final String suffix) {
+		if (data == suffix) {
+			// both null or same object
+			return true;
+		} else if (data == null) {
+			// data is null but suffix is not
+			return false;
+		} else if (suffix == null) {
+			// suffix is null but data is not
+			return true;
+		} else if (data.toLowerCase().endsWith(suffix.toLowerCase())) {
+			// both are set, so ignore the case for standard endsWith-method
+			return true;
+		} else {
+			// anything else
+			return false;
 		}
 	}
 }
