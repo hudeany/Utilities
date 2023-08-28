@@ -215,7 +215,7 @@ public class NetworkUtilities {
 		}
 
 		// Do not allow ".local" top level domain
-		if (asciiDomainName.toLowerCase().endsWith(".local")) {
+		if (Utilities.endsWithIgnoreCase(asciiDomainName, ".local")) {
 			return false;
 		}
 

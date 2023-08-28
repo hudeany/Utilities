@@ -147,7 +147,7 @@ public class TextBookEditor implements AutoCloseable {
 	}
 
 	private static LineReader getTextFileLineReader(final File textFile, final Charset charset) throws Exception {
-		if (textFile.getName().toLowerCase().endsWith(".zip")) {
+		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
 			final ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(textFile)), charset);
 			inputStream.getNextEntry();
 			return new LineReader(inputStream, charset);
@@ -157,7 +157,7 @@ public class TextBookEditor implements AutoCloseable {
 	}
 
 	private static OutputStream getTextFileOutputStream(final File textFile) throws Exception {
-		if (textFile.getName().toLowerCase().endsWith(".zip")) {
+		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
 			final ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(textFile)));
 			outputStream.putNextEntry(new ZipEntry(textFile.getName().substring(0, textFile.getName().length() - 4)));
 			return outputStream;

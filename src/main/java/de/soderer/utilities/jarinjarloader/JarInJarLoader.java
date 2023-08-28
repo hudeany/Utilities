@@ -18,6 +18,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
+import de.soderer.utilities.Utilities;
+
 public class JarInJarLoader {
 	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
 
@@ -99,7 +101,7 @@ public class JarInJarLoader {
 						final String osArch = System.getProperty("os.arch").toLowerCase();
 						try {
 							for (final String entryName : getZipFileEntries(new File(jarFilePath))) {
-								if (entryName.toLowerCase().endsWith(".jar")) {
+								if (Utilities.endsWithIgnoreCase(entryName, ".jar")) {
 									if (entryName.startsWith("swt")) {
 										swtFound = true;
 										if (osArch.contains("64") && osName.contains("win") && entryName.contains("win32") && entryName.contains("x86_64")) {

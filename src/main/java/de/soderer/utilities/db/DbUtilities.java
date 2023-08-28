@@ -1289,7 +1289,7 @@ public class DbUtilities {
 							final int numericScale = -1;
 
 							boolean isNullable;
-							if (type.toLowerCase().endsWith("not null")) {
+							if (Utilities.endsWithIgnoreCase(type, "not null")) {
 								isNullable = false;
 								type = type.substring(0, type.length() - 8).trim();
 							} else {

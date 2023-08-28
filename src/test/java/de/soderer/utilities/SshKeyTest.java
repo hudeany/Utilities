@@ -31,7 +31,7 @@ public class SshKeyTest {
 			for (final File sshkeyFile : sshkeyFileDirectory.listFiles()) {
 				final String filename = sshkeyFile.getName();
 				try {
-					if (filename.endsWith(".ppk")) {
+					if (Utilities.endsWithIgnoreCase(filename, ".ppk")) {
 						final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
 						try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
 							final SshKey sshKey;
@@ -55,7 +55,7 @@ public class SshKeyTest {
 								Assert.assertEquals(filename, md5Hash.toUpperCase(), publicSshKeys.get(0).getMd5Fingerprint().toUpperCase().replace(":", ""));
 							}
 						}
-					} else if (filename.endsWith(".pub")) {
+					} else if (Utilities.endsWithIgnoreCase(filename, ".pub")) {
 						final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
 						try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
 							final SshKey sshKey = SshKeyReader.readKey(inputStream, null);
@@ -69,14 +69,14 @@ public class SshKeyTest {
 							authorizedKeysBuffer.write(("\n\n").getBytes(StandardCharsets.UTF_8));
 							numberOfAuthorizedKeys++;
 						}
-					} else if (filename.endsWith(".pem") && filename.toLowerCase().contains("public")) {
+					} else if (Utilities.endsWithIgnoreCase(filename, ".pem") && filename.toLowerCase().contains("public")) {
 						final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
 						try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
 							final SshKey sshKey = SshKeyReader.readKey(inputStream, null);
 							final String readMd5Fingerprint = sshKey.getMd5Fingerprint();
 							Assert.assertEquals(filename, md5Hash.toUpperCase(), readMd5Fingerprint.toUpperCase().replace(":", ""));
 						}
-					} else if (filename.endsWith(".pem") && filename.toLowerCase().contains("private")) {
+					} else if (Utilities.endsWithIgnoreCase(filename, ".pem") && filename.toLowerCase().contains("private")) {
 						final String md5Hash = filename.substring(filename.indexOf("(") + 1, filename.indexOf(")"));
 						try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("sshkey/" + sshkeyFileDirectory.getName() + "/" + filename)) {
 							final SshKey sshKey;
