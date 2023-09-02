@@ -51,7 +51,7 @@ public class CsvFormat {
 	/** Use headers in first csv line */
 	private boolean headerInFirstLine = true;
 
-	/** Use "\n" to escape linebreaks on csv output */
+	/** Use "\\n" to escape linebreaks on csv output */
 	private boolean escapeLineBreaks = true;
 
 	/**
