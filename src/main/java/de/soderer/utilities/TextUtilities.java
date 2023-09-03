@@ -1175,4 +1175,22 @@ public class TextUtilities {
 	public static String replaceLast(final String text, final String searchText, final String replacement) {
 		return text.replaceFirst("(?s)" + Pattern.quote(searchText) + "(?!.*?" + Pattern.quote(searchText) + ")", replacement);
 	}
+
+	public static String removeHtmlTags(final String data) {
+		String returnValue = data;
+		int nextTagStart = returnValue.indexOf("<");
+		int nextTagEnd = -1;
+		if (nextTagStart > -1) {
+			nextTagEnd = returnValue.indexOf(">", nextTagStart + 1);
+		}
+		while (nextTagStart > -1 && nextTagEnd > -1) {
+			returnValue = returnValue.substring(0, nextTagStart) + returnValue.substring(nextTagEnd + 1);
+			nextTagStart = returnValue.indexOf("<");
+			nextTagEnd = -1;
+			if (nextTagStart > -1) {
+				nextTagEnd = returnValue.indexOf(">", nextTagStart + 1);
+			}
+		}
+		return returnValue;
+	}
 }
