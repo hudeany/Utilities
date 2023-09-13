@@ -729,6 +729,66 @@ public class Utilities {
 		return numberFormat.format(interimValue) + unitExtension;
 	}
 
+	public static float parseHumanReadableNumber(String value, final String unitTypeSign, final boolean siUnits, final Locale locale) {
+		if (isBlank(value)) {
+			throw new RuntimeException("Not a numeric value");
+		} else if (unitTypeSign != null && endsWithIgnoreCase(value, unitTypeSign)) {
+			value = value.substring(0, value.length() - unitTypeSign.length()).trim();
+		}
+
+		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
+
+		value = value.replace(Character.toString(decimalFormatSymbols.getGroupingSeparator()), "").replace(Character.toString(decimalFormatSymbols.getDecimalSeparator()), ".");
+
+		long dimension = 1;
+		if (endsWithIgnoreCase(value, "k")) {
+			if (siUnits) {
+				dimension = 1000;
+			} else {
+				dimension = 1024;
+			}
+			value = value.substring(0, value.length() - 1).trim();
+		} else if (endsWithIgnoreCase(value, "M")) {
+			if (siUnits) {
+				dimension = (long) Math.pow(1000, 2);
+			} else {
+				dimension = (long) Math.pow(1024, 2);
+			}
+			value = value.substring(0, value.length() - 1).trim();
+		} else if (endsWithIgnoreCase(value, "G")) {
+			if (siUnits) {
+				dimension = (long) Math.pow(1000, 3);
+			} else {
+				dimension = (long) Math.pow(1024, 3);
+			}
+			value = value.substring(0, value.length() - 1).trim();
+		} else if (endsWithIgnoreCase(value, "T")) {
+			if (siUnits) {
+				dimension = (long) Math.pow(1000, 4);
+			} else {
+				dimension = (long) Math.pow(1024, 4);
+			}
+			value = value.substring(0, value.length() - 1).trim();
+		} else if (endsWithIgnoreCase(value, "P")) {
+			if (siUnits) {
+				dimension = (long) Math.pow(1000, 5);
+			} else {
+				dimension = (long) Math.pow(1024, 5);
+			}
+			value = value.substring(0, value.length() - 1).trim();
+		} else if (endsWithIgnoreCase(value, "E")) {
+			if (siUnits) {
+				dimension = (long) Math.pow(1000, 6);
+			} else {
+				dimension = (long) Math.pow(1024, 6);
+			}
+			value = value.substring(0, value.length() - 1).trim();
+		}
+
+		final float numericValue = Float.parseFloat(value) * dimension;
+		return numericValue;
+	}
+
 	public static String getHumanReadableSpeed(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String unitTypeSign, final boolean siUnits, final Locale locale) {
 		final long seconds = Duration.between(startTime, endTime).toSeconds();
 		if (seconds > 0) {
@@ -1851,5 +1911,13 @@ public class Utilities {
 
 	public static String joinNotBlank(final List<String> listOfStrings, final String glue) {
 		return join(listOfStrings.stream().filter(x -> isNotBlank(x)).collect(Collectors.toList()), glue);
+	}
+
+	public static String upperCase(final String value) {
+		if (value == null) {
+			return null;
+		} else {
+			return value.toUpperCase();
+		}
 	}
 }

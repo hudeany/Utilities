@@ -12,21 +12,27 @@ public class CaseInsensitiveSet extends AbstractHashSet<String> {
 		super();
 	}
 
-	public CaseInsensitiveSet(int initialCapacity, float loadFactor) {
+	public CaseInsensitiveSet(final int initialCapacity, final float loadFactor) {
 		super(initialCapacity, loadFactor);
 	}
 
-	public CaseInsensitiveSet(int initialCapacity) {
+	public CaseInsensitiveSet(final int initialCapacity) {
 		super(initialCapacity);
 	}
 
-	public CaseInsensitiveSet(Collection<? extends String> collection) {
+	public CaseInsensitiveSet(final Collection<? extends String> collection) {
 		super(collection);
 		addAll(collection);
 	}
 
+	public CaseInsensitiveSet(final String[] values) {
+		for (final String value : values) {
+			add(value.toLowerCase());
+		}
+	}
+
 	@Override
-	protected String convertItem(Object item) {
+	protected String convertItem(final Object item) {
 		return item == null ? null : item.toString().toLowerCase();
 	}
 }

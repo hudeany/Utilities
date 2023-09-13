@@ -1,10 +1,10 @@
 package de.soderer.utilities.sql;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
+import de.soderer.utilities.collection.CaseInsensitiveSet;
 import de.soderer.utilities.db.DbUtilities;
 import de.soderer.utilities.db.DbUtilities.DbVendor;
 
@@ -13,7 +13,7 @@ public class SqlStatementFormatter {
 	 * Oracle misses "dual" as preserved word
 	 * MySQL and MariaDB miss "max" and "min" as preserved words
 	 */
-	public static final List<String> ADDITIONALLY_RESERVED_WORDS_FOR_FORMATING = Arrays.asList(new String[] { "dual", "max", "min", "count", "case" });
+	public static final CaseInsensitiveSet ADDITIONALLY_RESERVED_WORDS_FOR_FORMATING = new CaseInsensitiveSet(new String[] { "dual", "max", "min", "count", "case" });
 
 	private enum IndentationType {
 		Normal,
@@ -180,7 +180,7 @@ public class SqlStatementFormatter {
 	}
 
 	private static void formatAndJoinReservedWords(final List<String> lines, final DbVendor dbVendor) {
-		final List<String> reservedWords;
+		final CaseInsensitiveSet reservedWords;
 		if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 			reservedWords = DbUtilities.RESERVED_WORDS_MYSSQL_MARIADB;
 		} else {
@@ -188,7 +188,7 @@ public class SqlStatementFormatter {
 		}
 		for (int i = 0; i < lines.size(); i++) {
 			final String line = lines.get(i);
-			if (reservedWords.contains(line.toLowerCase()) || ADDITIONALLY_RESERVED_WORDS_FOR_FORMATING.contains(line.toLowerCase())) {
+			if (reservedWords.contains(line) || ADDITIONALLY_RESERVED_WORDS_FOR_FORMATING.contains(line.toLowerCase())) {
 				lines.set(i, line.toUpperCase());
 			}
 		}
