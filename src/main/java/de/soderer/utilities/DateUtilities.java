@@ -1360,4 +1360,8 @@ public class DateUtilities {
 
 		return returnValue;
 	}
+
+	public static LocalDate getLocalDateFor1970Millis(final long date1970Millis) {
+		return getLocalDateForDate(new Date(date1970Millis));
+	}
 }
