@@ -168,6 +168,20 @@
 		</dependency>
 		
 		<dependency>
+			<groupId>de.soderer</groupId>
+			<artifactId>de.soderer.utilities.csv</artifactId>
+			<version>23.0.1</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/csv-23.0.1.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>de.soderer</groupId>
+			<artifactId>de.soderer.utilities.json</artifactId>
+			<version>23.0.1</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/json-23.0.1.jar</systemPath>
+		</dependency>
+		<dependency>
 			<groupId>org.eclipse.swt</groupId>
 			<artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
 			<version>4.22</version>
