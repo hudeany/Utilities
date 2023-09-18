@@ -1920,4 +1920,42 @@ public class Utilities {
 			return value.toUpperCase();
 		}
 	}
+
+	public static <T> boolean arrayContains(final T[] dataArray, final T[] searchArray) {
+		if (dataArray == null || searchArray == null || dataArray.length < searchArray.length) {
+			return false;
+		} else {
+			for (int i = 0; i < dataArray.length; i++){
+				for (int j = 0; j < searchArray.length; j++){
+					if (dataArray[i + j] == searchArray[j]) {
+						if (j == searchArray.length - 1) {
+							return true;
+						}
+					} else {
+						break;
+					}
+				}
+			}
+			return false;
+		}
+	}
+
+	public static boolean arrayContains(final byte[] dataArray, final byte[] searchArray) {
+		if (dataArray == null || searchArray == null || dataArray.length < searchArray.length) {
+			return false;
+		} else {
+			for (int i = 0; i < dataArray.length; i++){
+				for (int j = 0; j < searchArray.length; j++){
+					if (dataArray[i + j] == searchArray[j]) {
+						if (j == searchArray.length - 1) {
+							return true;
+						}
+					} else {
+						break;
+					}
+				}
+			}
+			return false;
+		}
+	}
 }

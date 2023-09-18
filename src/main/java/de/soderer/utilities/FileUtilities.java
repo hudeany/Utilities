@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -688,5 +690,38 @@ public class FileUtilities {
 		}
 
 		return fileType;
+	}
+
+	public static Charset detectFileCharset(final File dataFile, final Charset... charsets) throws FileNotFoundException, IOException {
+		try (BOMInputStream fileInputStream = new BOMInputStream(new FileInputStream(dataFile))) {
+			final byte[] firstBytes = new byte[4096];
+			final int readBytesLength = fileInputStream.read(firstBytes);
+			if (readBytesLength <= 0) {
+				return null;
+			} else if (fileInputStream.getBOM() != null && fileInputStream.getBOM() != BOM.NONE) {
+				if (fileInputStream.getBOM() == BOM.UTF_8) {
+					return StandardCharsets.UTF_8;
+				} else if (fileInputStream.getBOM() == BOM.UTF_16_BE) {
+					return StandardCharsets.UTF_16BE;
+				} else if (fileInputStream.getBOM() == BOM.UTF_16_LE) {
+					return StandardCharsets.UTF_16LE;
+				} else {
+					return null;
+				}
+			} else {
+				for (final Charset charset : charsets) {
+					if (Utilities.arrayContains(firstBytes, charset.encode("ä").array())
+							|| Utilities.arrayContains(firstBytes, charset.encode("ö").array())
+							|| Utilities.arrayContains(firstBytes, charset.encode("ü").array())
+							|| Utilities.arrayContains(firstBytes, charset.encode("Ä").array())
+							|| Utilities.arrayContains(firstBytes, charset.encode("Ö").array())
+							|| Utilities.arrayContains(firstBytes, charset.encode("Ü").array())
+							|| Utilities.arrayContains(firstBytes, charset.encode("ß").array())) {
+						return charset;
+					}
+				}
+				return null;
+			}
+		}
 	}
 }
