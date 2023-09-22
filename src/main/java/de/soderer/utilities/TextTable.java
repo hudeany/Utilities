@@ -30,7 +30,7 @@ public class TextTable {
 		lineColors = new ArrayList<>();
 
 		// First line contains headers
-		columnNames.add(new ArrayList<String>());
+		columnNames.add(new ArrayList<>());
 	}
 
 	public TextTable(final String... columnNames) {
@@ -59,7 +59,7 @@ public class TextTable {
 
 		// Insert second line
 		if (columnNameLine2 != null && columnNames.size() == 1) {
-			columnNames.add(new ArrayList<String>());
+			columnNames.add(new ArrayList<>());
 		}
 
 		if (columnNames.size() > 1) {
@@ -113,7 +113,7 @@ public class TextTable {
 	}
 
 	public void startNewLine(final String farbe) {
-		content.add(new ArrayList<String>());
+		content.add(new ArrayList<>());
 		lineColors.add(farbe);
 		currentLineIndex++;
 		currentColumnIndex = 0;

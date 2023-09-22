@@ -8,6 +8,7 @@ import org.junit.Test;
 import de.soderer.utilities.json.compare.JsonCompare;
 import de.soderer.utilities.json.compare.JsonCompareSettings;
 
+@SuppressWarnings("static-method")
 public class JsonCompareTest {
 	@Test
 	public void testOk() {
@@ -165,8 +166,6 @@ public class JsonCompareTest {
 
 	@Test
 	public void testArrayOrderError() {
-		final LocalDateTime now = LocalDateTime.now();
-
 		final JsonArray jsonArrayLeft = new JsonArray();
 		jsonArrayLeft.add("value1");
 		jsonArrayLeft.add("value2");
@@ -184,8 +183,6 @@ public class JsonCompareTest {
 
 	@Test
 	public void testArrayOrderMixed() {
-		final LocalDateTime now = LocalDateTime.now();
-
 		final JsonArray jsonArrayLeft = new JsonArray();
 		jsonArrayLeft.add("value1");
 		jsonArrayLeft.add("value2");
@@ -203,8 +200,6 @@ public class JsonCompareTest {
 
 	@Test
 	public void testArrayOrderMixedError() {
-		final LocalDateTime now = LocalDateTime.now();
-
 		final JsonArray jsonArrayLeft = new JsonArray();
 		jsonArrayLeft.add("value1");
 		jsonArrayLeft.add("value2");

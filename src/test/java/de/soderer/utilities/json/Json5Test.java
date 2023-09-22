@@ -13,6 +13,7 @@ import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.json.JsonReader.JsonToken;
 
+@SuppressWarnings("static-method")
 public class Json5Test {
 	@Test
 	public void testEmptyArray() {

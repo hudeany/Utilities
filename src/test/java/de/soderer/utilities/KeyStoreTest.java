@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import de.soderer.utilities.crypto.CryptographicUtilities;
 
+@SuppressWarnings("static-method")
 public class KeyStoreTest {
 	@Test
 	public void testWithFixedNullPassword() throws Exception {

@@ -119,7 +119,7 @@ public class SecureDataStore extends UnsecureDataStore {
 										final JsonObject entryObject = (JsonObject) nextJsonNode.getValue();
 										final String className = (String) entryObject.get("class");
 										if (!dataEntries.containsKey(className)) {
-											dataEntries.put(className, new HashMap<String, Object>());
+											dataEntries.put(className, new HashMap<>());
 										}
 										final String entryName = (String) entryObject.get("name");
 										dataEntries.get(className).put(entryName, JsonSerializer.deserialize((JsonObject) entryObject.get("value")));

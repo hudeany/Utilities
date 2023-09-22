@@ -18,6 +18,7 @@ import de.soderer.utilities.crypto.SshKey.SshKeyFormat;
 import de.soderer.utilities.crypto.SshKeyReader;
 import de.soderer.utilities.crypto.SshKeyWriter;
 
+@SuppressWarnings("static-method")
 public class SshKeyTest {
 	private static char[] TESTPASSWORD = "pÄsswOrd".toCharArray();
 	private static String TESTCOMMENT = "Test key with Ümlaut";

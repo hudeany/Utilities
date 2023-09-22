@@ -18,6 +18,7 @@ import org.junit.Test;
 
 import de.soderer.utilities.collection.MapUtilities;
 
+@SuppressWarnings("static-method")
 public class UtilitiesTest {
 	@Test
 	public void test_UUID() {
@@ -241,7 +242,7 @@ public class UtilitiesTest {
 		try {
 			PunycodeCodec.encodeEmailAdress("Jemand@.Östereich.at");
 			Assert.fail("Missing expected exception");
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			// Expected exception
 		}
 	}
@@ -381,8 +382,8 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadableSpeed() {
 		try {
-			LocalDateTime startTime = LocalDateTime.now();
-			LocalDateTime endTime = startTime.plusSeconds(1);
+			final LocalDateTime startTime = LocalDateTime.now();
+			final LocalDateTime endTime = startTime.plusSeconds(1);
 			final String result = Utilities.getHumanReadableSpeed(startTime, endTime, 1216, null, true, Locale.GERMAN);
 			Assert.assertEquals("1,216 k/s", result);
 		} catch (final Exception e) {
@@ -405,7 +406,7 @@ public class UtilitiesTest {
 			final Version versionToFail = new Version("03.x02.01");
 			versionToFail.toString();
 			Assert.fail("Missing error on invalid version string");
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			// Expected exception
 		}
 

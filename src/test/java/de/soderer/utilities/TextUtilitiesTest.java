@@ -11,6 +11,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("static-method")
 public class TextUtilitiesTest {
 	String testStringWindows = "abc\r\ndef\r\näöü\r\n123\r\nabc\r\ndef\r\n123";
 	String testStringUnix = "abc\ndef\näöü\n123\nabc\ndef\n123";
@@ -325,10 +326,10 @@ public class TextUtilitiesTest {
 			final String dataString = "123\r\n456\n789\r101112";
 			final List<Long> result = TextUtilities.scanLineStartIndexes(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)));
 			Assert.assertEquals(4, result.size());
-			Assert.assertEquals(new Long(0), result.get(0));
-			Assert.assertEquals(new Long(5), result.get(1));
-			Assert.assertEquals(new Long(9), result.get(2));
-			Assert.assertEquals(new Long(13), result.get(3));
+			Assert.assertEquals(Long.valueOf(0), result.get(0));
+			Assert.assertEquals(Long.valueOf(5), result.get(1));
+			Assert.assertEquals(Long.valueOf(9), result.get(2));
+			Assert.assertEquals(Long.valueOf(13), result.get(3));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -340,11 +341,11 @@ public class TextUtilitiesTest {
 			final String dataString = "123\r\n456\n789\r101112\r\n";
 			final List<Long> result = TextUtilities.scanLineStartIndexes(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)));
 			Assert.assertEquals(5, result.size());
-			Assert.assertEquals(new Long(0), result.get(0));
-			Assert.assertEquals(new Long(5), result.get(1));
-			Assert.assertEquals(new Long(9), result.get(2));
-			Assert.assertEquals(new Long(13), result.get(3));
-			Assert.assertEquals(new Long(21), result.get(4));
+			Assert.assertEquals(Long.valueOf(0), result.get(0));
+			Assert.assertEquals(Long.valueOf(5), result.get(1));
+			Assert.assertEquals(Long.valueOf(9), result.get(2));
+			Assert.assertEquals(Long.valueOf(13), result.get(3));
+			Assert.assertEquals(Long.valueOf(21), result.get(4));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -356,11 +357,11 @@ public class TextUtilitiesTest {
 			final String dataString = "123\r\n456\n789\r101112\r";
 			final List<Long> result = TextUtilities.scanLineStartIndexes(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)));
 			Assert.assertEquals(5, result.size());
-			Assert.assertEquals(new Long(0), result.get(0));
-			Assert.assertEquals(new Long(5), result.get(1));
-			Assert.assertEquals(new Long(9), result.get(2));
-			Assert.assertEquals(new Long(13), result.get(3));
-			Assert.assertEquals(new Long(20), result.get(4));
+			Assert.assertEquals(Long.valueOf(0), result.get(0));
+			Assert.assertEquals(Long.valueOf(5), result.get(1));
+			Assert.assertEquals(Long.valueOf(9), result.get(2));
+			Assert.assertEquals(Long.valueOf(13), result.get(3));
+			Assert.assertEquals(Long.valueOf(20), result.get(4));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -372,9 +373,9 @@ public class TextUtilitiesTest {
 			final String dataString = "123\r\n456\n789\r101112";
 			final List<Long> result = TextUtilities.scanLinebreakIndexes(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)));
 			Assert.assertEquals(3, result.size());
-			Assert.assertEquals(new Long(3), result.get(0));
-			Assert.assertEquals(new Long(8), result.get(1));
-			Assert.assertEquals(new Long(12), result.get(2));
+			Assert.assertEquals(Long.valueOf(3), result.get(0));
+			Assert.assertEquals(Long.valueOf(8), result.get(1));
+			Assert.assertEquals(Long.valueOf(12), result.get(2));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -386,10 +387,10 @@ public class TextUtilitiesTest {
 			final String dataString = "123\r\n456\n789\r101112\r\n";
 			final List<Long> result = TextUtilities.scanLinebreakIndexes(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)));
 			Assert.assertEquals(4, result.size());
-			Assert.assertEquals(new Long(3), result.get(0));
-			Assert.assertEquals(new Long(8), result.get(1));
-			Assert.assertEquals(new Long(12), result.get(2));
-			Assert.assertEquals(new Long(19), result.get(3));
+			Assert.assertEquals(Long.valueOf(3), result.get(0));
+			Assert.assertEquals(Long.valueOf(8), result.get(1));
+			Assert.assertEquals(Long.valueOf(12), result.get(2));
+			Assert.assertEquals(Long.valueOf(19), result.get(3));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -401,10 +402,10 @@ public class TextUtilitiesTest {
 			final String dataString = "123\r\n456\n789\r101112\r";
 			final List<Long> result = TextUtilities.scanLinebreakIndexes(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)));
 			Assert.assertEquals(4, result.size());
-			Assert.assertEquals(new Long(3), result.get(0));
-			Assert.assertEquals(new Long(8), result.get(1));
-			Assert.assertEquals(new Long(12), result.get(2));
-			Assert.assertEquals(new Long(19), result.get(3));
+			Assert.assertEquals(Long.valueOf(3), result.get(0));
+			Assert.assertEquals(Long.valueOf(8), result.get(1));
+			Assert.assertEquals(Long.valueOf(12), result.get(2));
+			Assert.assertEquals(Long.valueOf(19), result.get(3));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}

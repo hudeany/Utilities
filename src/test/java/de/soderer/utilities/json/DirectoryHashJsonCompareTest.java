@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import de.soderer.utilities.json.compare.DirectoryHashJsonCompare;
 
+@SuppressWarnings("static-method")
 public class DirectoryHashJsonCompareTest {
 	@Test
 	public void testFileOk() {

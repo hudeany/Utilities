@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("static-method")
 public class NetworkUtilitiesTest {
 	@Test
 	public void testIpV4() {

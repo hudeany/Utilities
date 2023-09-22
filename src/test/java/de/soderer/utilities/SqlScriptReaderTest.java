@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("static-method")
 public class SqlScriptReaderTest {
 	@Test
 	public void test1() {

@@ -63,7 +63,7 @@ public class UnsecureDataStore {
 								final JsonObject entryObject = (JsonObject) nextJsonNode.getValue();
 								final String className = (String) entryObject.get("class");
 								if (!dataEntries.containsKey(className)) {
-									dataEntries.put(className, new HashMap<String, Object>());
+									dataEntries.put(className, new HashMap<>());
 								}
 								final String entryName = (String) entryObject.get("name");
 								dataEntries.get(className).put(entryName, JsonSerializer.deserialize((JsonObject) entryObject.get("value")));
@@ -107,7 +107,7 @@ public class UnsecureDataStore {
 
 	public void addEntry(final String entryName, final Object entryValue) {
 		if (dataEntries.get(entryValue.getClass().getName()) == null) {
-			dataEntries.put(entryValue.getClass().getName(), new HashMap<String, Object>());
+			dataEntries.put(entryValue.getClass().getName(), new HashMap<>());
 		}
 		dataEntries.get(entryValue.getClass().getName()).put(entryName, entryValue);
 	}

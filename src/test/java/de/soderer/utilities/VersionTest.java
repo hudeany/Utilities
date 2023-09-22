@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("static-method")
 public class VersionTest {
 	@Test
 	public void test() throws Exception {

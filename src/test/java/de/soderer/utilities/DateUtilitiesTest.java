@@ -18,8 +18,8 @@ import javax.mail.internet.InternetAddress;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("static-method")
 public class DateUtilitiesTest {
-
 	@Test
 	public void test1() {
 		try {
@@ -27,7 +27,7 @@ public class DateUtilitiesTest {
 			participants.add(new InternetAddress("test1@example.com", "First Test"));
 			participants.add(new InternetAddress("test2@example.com"));
 
-			final String result = DateUtilities.createICalEventInvitation(
+			DateUtilities.createICalEventInvitation(
 					"Test date",
 					"Lots of description text and a <a href=\"https://example.com\">link</a>.",
 					ZonedDateTime.now(),
@@ -426,9 +426,9 @@ public class DateUtilitiesTest {
 	public void test6ThursdayInMonth() {
 		try {
 			final ZonedDateTime calulationStartDateTime = ZonedDateTime.of(2019, 3, 1, 0, 0, 1, 0, ZoneId.systemDefault());
-			final ZonedDateTime calculatedNextStartDateTime = DateUtilities.calculateNextJobStart(calulationStartDateTime, "6Th:0000", null);
+			DateUtilities.calculateNextJobStart(calulationStartDateTime, "6Th:0000", null);
 			Assert.fail("Missing expected exception");
-		} catch (final Exception e) {
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			// expected exception
 		}
 	}

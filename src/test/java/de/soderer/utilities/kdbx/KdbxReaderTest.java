@@ -12,6 +12,7 @@ import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.kdbx.data.KdbxEntry;
 import de.soderer.utilities.kdbx.data.KdbxUUID;
 
+@SuppressWarnings("static-method")
 public class KdbxReaderTest {
 	@Test
 	public void test_AES256_AESKDF_GZIP() {

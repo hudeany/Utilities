@@ -32,12 +32,12 @@ import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.crypto.SymmetricDecryptionWorker;
 import de.soderer.utilities.crypto.SymmetricEncryptionWorker;
 
+@SuppressWarnings("static-method")
 public class CryptographicUtilitiesTest {
 	private static KeyPair rsaKeyPairCache = null;
 	private static KeyPair elGamalKeyPairCache = null;
 	private static KeyPair ecKeyPair = null;
 	private static KeyPair dsaKeyPairCache = null;
-	private static KeyPair dhKeyPairCache = null;
 	private static KeyPair ed25519KeyPair = null;
 	private static KeyPair ed448KeyPair = null;
 
@@ -71,14 +71,6 @@ public class CryptographicUtilitiesTest {
 		}
 
 		return dsaKeyPairCache;
-	}
-
-	private static KeyPair getDhKeyPair() throws Exception {
-		if (dhKeyPairCache == null) {
-			dhKeyPairCache = CryptographicUtilities.generateDhKeyPair(512);
-		}
-
-		return dhKeyPairCache;
 	}
 
 	private static KeyPair getEd25519KeyPair() throws Exception {
@@ -217,7 +209,7 @@ public class CryptographicUtilitiesTest {
 			final Signature signature = Signature.getInstance("SHA256WithECDSAInP1363Format");
 			signature.initVerify(keys.getPublic());
 			signature.update("Hello, World".getBytes());
-			final boolean result = signature.verify(blankSignature);
+			signature.verify(blankSignature);
 			System.out.println("Warning: " + "Java JRE accepts invalid empty signature");
 			//			Assert.assertFalse("Java JRE accepts invalid empty signature", result);
 		} catch (final Exception e) {
@@ -436,7 +428,7 @@ public class CryptographicUtilitiesTest {
 	@Test
 	public void testKeyPairStringMethodsECDSA() {
 		try {
-			final String curveName = CryptographicUtilities.getEllipticCurveName(getEcKeyPair().getPrivate());
+			CryptographicUtilities.getEllipticCurveName(getEcKeyPair().getPrivate());
 			final String ecDsaKeyPairString = CryptographicUtilities.getStringFromKeyPair(getEcKeyPair(), null);
 			final PrivateKey ecDsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(ecDsaKeyPairString, null);
 			Assert.assertEquals(CryptographicUtilities.getMd5FingerPrint(getEcKeyPair().getPrivate(), null), CryptographicUtilities.getMd5FingerPrint(ecDsaPrivateKey, null));

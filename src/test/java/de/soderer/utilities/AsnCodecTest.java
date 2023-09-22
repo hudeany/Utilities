@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import de.soderer.utilities.crypto.Asn1Codec;
 
+@SuppressWarnings("static-method")
 public class AsnCodecTest {
 	@Test
 	public void test1() {

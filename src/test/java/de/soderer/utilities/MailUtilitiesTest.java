@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import de.soderer.utilities.mail.MailUtilities;
 
+@SuppressWarnings("static-method")
 public class MailUtilitiesTest {
 	@Test
 	public void testEmailAddressListParsing() {

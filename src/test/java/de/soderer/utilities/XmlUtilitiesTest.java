@@ -5,14 +5,15 @@ import org.junit.Test;
 
 import de.soderer.utilities.xml.XmlUtilities;
 
+@SuppressWarnings("static-method")
 public class XmlUtilitiesTest {
 	@Test
 	public void testRemoveFrameTag() {
 		try {
-			String testString = "<abc def=\"123\">ghi</abc>";
-			String resultString = XmlUtilities.removeFrameTag(testString);
+			final String testString = "<abc def=\"123\">ghi</abc>";
+			final String resultString = XmlUtilities.removeFrameTag(testString);
 			Assert.assertEquals("ghi", resultString);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
 	}

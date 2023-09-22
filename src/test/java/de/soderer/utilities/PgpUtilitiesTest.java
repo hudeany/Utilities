@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import de.soderer.utilities.crypto.PGPUtilities;
 
+@SuppressWarnings("static-method")
 public class PgpUtilitiesTest {
 	private static PGPSecretKey pgpSecretKey1 = null;
 	private static char[] password1 = Utilities.getRandomString(12).toCharArray();

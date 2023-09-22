@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import de.soderer.utilities.crypto.OID;
 
+@SuppressWarnings("static-method")
 public class OidTest {
 	@Test
 	public void test1() {

@@ -15,6 +15,7 @@ import de.soderer.utilities.crypto.PGPFileSignatureWorker;
 import de.soderer.utilities.crypto.PGPFileVerificationWorker;
 import de.soderer.utilities.crypto.PGPUtilities;
 
+@SuppressWarnings("static-method")
 public class PGPWorkerTest {
 	private static PGPSecretKey pgpSecretKeyRSA = null;
 	private static PGPSecretKey pgpSecretKeyDSA = null;

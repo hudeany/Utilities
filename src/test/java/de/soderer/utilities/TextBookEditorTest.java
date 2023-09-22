@@ -13,11 +13,11 @@ import org.junit.Test;
 import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.textbook.TextBookEditor;
 
+@SuppressWarnings("static-method")
 public class TextBookEditorTest {
 	@Test
 	public void testDropEmpty() {
 		File tempTextFile_src = null;
-		final File tempTextFile_dest = null;
 		try {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
@@ -47,16 +47,12 @@ public class TextBookEditorTest {
 			if (tempTextFile_src != null && tempTextFile_src.exists()) {
 				tempTextFile_src.delete();
 			}
-			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
-				tempTextFile_dest.delete();
-			}
 		}
 	}
 
 	@Test
 	public void testDropBlank() {
 		File tempTextFile_src = null;
-		final File tempTextFile_dest = null;
 		try {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
@@ -86,16 +82,12 @@ public class TextBookEditorTest {
 			if (tempTextFile_src != null && tempTextFile_src.exists()) {
 				tempTextFile_src.delete();
 			}
-			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
-				tempTextFile_dest.delete();
-			}
 		}
 	}
 
 	@Test
 	public void testSearch() {
 		File tempTextFile_src = null;
-		final File tempTextFile_dest = null;
 		try {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
@@ -124,16 +116,12 @@ public class TextBookEditorTest {
 			if (tempTextFile_src != null && tempTextFile_src.exists()) {
 				tempTextFile_src.delete();
 			}
-			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
-				tempTextFile_dest.delete();
-			}
 		}
 	}
 
 	@Test
 	public void testSearchWithWindowsLinebreak() {
 		File tempTextFile_src = null;
-		final File tempTextFile_dest = null;
 		try {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
@@ -164,16 +152,12 @@ public class TextBookEditorTest {
 			if (tempTextFile_src != null && tempTextFile_src.exists()) {
 				tempTextFile_src.delete();
 			}
-			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
-				tempTextFile_dest.delete();
-			}
 		}
 	}
 
 	@Test
 	public void testChangeWithBOM() {
 		File tempTextFile_src = null;
-		final File tempTextFile_dest = null;
 		try {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
@@ -214,16 +198,12 @@ public class TextBookEditorTest {
 			if (tempTextFile_src != null && tempTextFile_src.exists()) {
 				tempTextFile_src.delete();
 			}
-			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
-				tempTextFile_dest.delete();
-			}
 		}
 	}
 
 	@Test
 	public void testSearchWithWindowsLinebreakWithBOM() {
 		File tempTextFile_src = null;
-		final File tempTextFile_dest = null;
 		try {
 			tempTextFile_src = File.createTempFile("TextBookEditorTest" + "_", ".txt");
 			try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempTextFile_src))) {
@@ -268,9 +248,6 @@ public class TextBookEditorTest {
 		} finally {
 			if (tempTextFile_src != null && tempTextFile_src.exists()) {
 				tempTextFile_src.delete();
-			}
-			if (tempTextFile_dest != null && tempTextFile_dest.exists()) {
-				tempTextFile_dest.delete();
 			}
 		}
 	}
@@ -352,11 +329,11 @@ public class TextBookEditorTest {
 	public void testNewEmptyTextBookEditor() {
 		File tempTextFile_dest = null;
 		try {
+			tempTextFile_dest = File.createTempFile("TextBookEditorTest" + "_", ".txt");
+			tempTextFile_dest.delete();
+
 			try (TextBookEditor textBookEditor = new TextBookEditor(StandardCharsets.UTF_8)) {
 				textBookEditor.insertLine(0, TextUtilities.GERMAN_TEST_STRING);
-
-				tempTextFile_dest = File.createTempFile("TextBookEditorTest" + "_", ".txt");
-				tempTextFile_dest.delete();
 				textBookEditor.write(tempTextFile_dest);
 			}
 

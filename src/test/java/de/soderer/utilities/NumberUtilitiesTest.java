@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("static-method")
 public class NumberUtilitiesTest {
 	@Test
 	public void test1() {
@@ -19,7 +20,7 @@ public class NumberUtilitiesTest {
 			Assert.assertFalse(NumberUtilities.isInteger("1234890 "));
 			Assert.assertFalse(NumberUtilities.isInteger("1234890abc"));
 			Assert.assertFalse(NumberUtilities.isInteger("ab1234890"));
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
 	}

@@ -6,10 +6,11 @@ import org.junit.Test;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 import de.soderer.utilities.collection.CaseInsensitiveSet;
 
+@SuppressWarnings("static-method")
 public class CollectionsTest {
 	@Test
 	public void testCaseInsensitiveMap() {
-		CaseInsensitiveMap<String> map = new CaseInsensitiveMap<>();
+		final CaseInsensitiveMap<String> map = new CaseInsensitiveMap<>();
 		map.put("AbcD123äÄ", "Test1");
 		map.put("abcd123ää", "Test2");
 		map.put("AbcD123äÄ", "Test3");
@@ -25,7 +26,7 @@ public class CollectionsTest {
 
 	@Test
 	public void testCaseInsensitiveSet() {
-		CaseInsensitiveSet set = new CaseInsensitiveSet();
+		final CaseInsensitiveSet set = new CaseInsensitiveSet();
 		set.add("AbcD123äÄ");
 		set.add("abcd123ää");
 		set.add("AbcD123äÄ");
