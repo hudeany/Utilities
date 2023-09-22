@@ -296,8 +296,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static ZipOutputStream openNewZipOutputStream(final File destinationZipFile, Charset fileNameEncodingCharset)
-			throws IOException {
+	public static ZipOutputStream openNewZipOutputStream(final File destinationZipFile, Charset fileNameEncodingCharset) throws IOException {
 		if (destinationZipFile.exists()) {
 			throw new IOException("DestinationFile already exists");
 		} else if (!destinationZipFile.getParentFile().exists()) {
@@ -408,8 +407,7 @@ public class ZipUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static ZipOutputStream openExistingZipFileForExtensionOrCreateNewZipFile(final File zipFile)
-			throws IOException {
+	public static ZipOutputStream openExistingZipFileForExtensionOrCreateNewZipFile(final File zipFile) throws IOException {
 		if (zipFile.exists()) {
 			return openExistingZipFileForExtension(zipFile);
 		} else {
@@ -427,15 +425,13 @@ public class ZipUtilities {
 	 * @throws ZipException
 	 */
 	public static ZipOutputStream openExistingZipFileForExtension(final File zipFile) throws IOException {
-		final File originalFileTemp = new File(
-				zipFile.getParentFile().getAbsolutePath() + "/" + String.valueOf(System.currentTimeMillis()));
+		final File originalFileTemp = new File(zipFile.getParentFile().getAbsolutePath() + "/" + String.valueOf(System.currentTimeMillis()));
 		zipFile.renameTo(originalFileTemp);
 
-		final ZipOutputStream zipOutputStream = new ZipOutputStream(
-				new BufferedOutputStream(new FileOutputStream(zipFile)));
-
+		ZipOutputStream zipOutputStream = null;
 		ZipFile sourceZipFile = null;
 		try {
+			zipOutputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
 			sourceZipFile = new ZipFile(originalFileTemp);
 			final Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
 			while (srcEntries.hasMoreElements()) {
@@ -467,6 +463,11 @@ public class ZipUtilities {
 			}
 
 			originalFileTemp.renameTo(zipFile);
+
+			if (sourceZipFile != null) {
+				sourceZipFile.close();
+				sourceZipFile = null;
+			}
 			throw e;
 		} finally {
 			Utilities.closeQuietly(sourceZipFile);
