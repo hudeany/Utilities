@@ -19,6 +19,10 @@
 
 	<repositories>
 		<repository>
+			<id>de.soderer</id>
+			<url>http://soderer.de/maven2</url>
+		</repository>
+		<repository>
 			<id>bouncycastle</id>
 			<url>https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on</url>
 		</repository>
@@ -53,11 +57,11 @@
 			<artifactId>jakarta.xml.bind-api</artifactId>
 			<version>3.0.1</version>
 		</dependency>
-<!-- 		<dependency> -->
-<!-- 			<groupId>javax.mail</groupId> -->
-<!-- 			<artifactId>mail</artifactId> -->
-<!-- 			<version>1.4.5</version> -->
-<!-- 		</dependency> -->
+		<!-- 		<dependency> -->
+		<!-- 			<groupId>javax.mail</groupId> -->
+		<!-- 			<artifactId>mail</artifactId> -->
+		<!-- 			<version>1.4.5</version> -->
+		<!-- 		</dependency> -->
 		<dependency>
 			<groupId>com.sun.mail</groupId>
 			<artifactId>javax.mail</artifactId>
@@ -166,24 +170,30 @@
 			<artifactId>java-jwt</artifactId>
 			<version>3.13.0</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>de.soderer</groupId>
-			<artifactId>de.soderer.utilities.csv</artifactId>
-			<version>23.0.1</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/lib/csv-23.0.1.jar</systemPath>
+			<artifactId>csv</artifactId>
+			<version>LATEST</version>
 		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>de.soderer</groupId>-->
+<!--			<artifactId>de.soderer.utilities.csv</artifactId>-->
+<!--			<version>23.0.1</version>-->
+<!--			<scope>system</scope>-->
+<!--			<systemPath>${project.basedir}/lib/csv-23.0.1.jar</systemPath>-->
+<!--		</dependency>-->
+
 		<dependency>
-			<groupId>de.soderer</groupId>
-			<artifactId>de.soderer.utilities.mail.dkim</artifactId>
+			<groupId>de.soderer.local</groupId>
+			<artifactId>dkim</artifactId>
 			<version>23.0.1</version>
 			<scope>system</scope>
 			<systemPath>${project.basedir}/lib/dkim-23.0.1.jar</systemPath>
 		</dependency>
 		<dependency>
-			<groupId>de.soderer</groupId>
-			<artifactId>de.soderer.utilities.json</artifactId>
+			<groupId>de.soderer.local</groupId>
+			<artifactId>json</artifactId>
 			<version>23.0.1</version>
 			<scope>system</scope>
 			<systemPath>${project.basedir}/lib/json-23.0.1.jar</systemPath>
@@ -209,7 +219,7 @@
 			<artifactId>log4j</artifactId>
 			<version>1.2.17</version>
 		</dependency>
-		
+
 		<!-- https://mvnrepository.com/artifact/net.lingala.zip4j/zip4j -->
 		<dependency>
 			<groupId>net.lingala.zip4j</groupId>
