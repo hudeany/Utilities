@@ -174,10 +174,10 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>csv</artifactId>
-			<version>LATEST</version>
+			<version>RELEASE</version>
 		</dependency>
 <!--		<dependency>-->
-<!--			<groupId>de.soderer</groupId>-->
+<!--			<groupId>de.soderer.local</groupId>-->
 <!--			<artifactId>de.soderer.utilities.csv</artifactId>-->
 <!--			<version>23.0.1</version>-->
 <!--			<scope>system</scope>-->
@@ -191,13 +191,20 @@
 			<scope>system</scope>
 			<systemPath>${project.basedir}/lib/dkim-23.0.1.jar</systemPath>
 		</dependency>
+
 		<dependency>
-			<groupId>de.soderer.local</groupId>
+			<groupId>de.soderer</groupId>
 			<artifactId>json</artifactId>
-			<version>23.0.1</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/lib/json-23.0.1.jar</systemPath>
+			<version>RELEASE</version>
 		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>de.soderer.local</groupId>-->
+<!--			<artifactId>json</artifactId>-->
+<!--			<version>23.0.1</version>-->
+<!--			<scope>system</scope>-->
+<!--			<systemPath>${project.basedir}/lib/json-23.0.1.jar</systemPath>-->
+<!--		</dependency>-->
+		
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>
 			<artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
