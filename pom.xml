@@ -185,12 +185,17 @@
 <!--		</dependency>-->
 
 		<dependency>
-			<groupId>de.soderer.local</groupId>
+			<groupId>de.soderer</groupId>
 			<artifactId>dkim</artifactId>
-			<version>23.0.1</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/lib/dkim-23.0.1.jar</systemPath>
+			<version>RELEASE</version>
 		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>de.soderer.local</groupId>-->
+<!--			<artifactId>dkim</artifactId>-->
+<!--			<version>23.0.1</version>-->
+<!--			<scope>system</scope>-->
+<!--			<systemPath>${project.basedir}/lib/dkim-23.0.1.jar</systemPath>-->
+<!--		</dependency>-->
 
 		<dependency>
 			<groupId>de.soderer</groupId>
