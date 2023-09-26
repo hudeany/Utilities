@@ -40,7 +40,11 @@ public class Zip4jUtilities {
 		} else {
 			zipParameters.setEncryptionMethod(EncryptionMethod.ZIP_STANDARD);
 		}
-		zipParameters.setFileNameInZip(new File(originalZipFilePath.substring(0, originalZipFilePath.length() - 4)).getName());
+		String entryFileName = new File(originalZipFilePath).getName();
+		if (entryFileName.toLowerCase().endsWith(".zip")) {
+			entryFileName = entryFileName.substring(0, entryFileName.length() - 4);
+		}
+		zipParameters.setFileNameInZip(entryFileName);
 		try (ZipFile zipFile = new ZipFile(new File(originalZipFilePath + ".tmp"), zipPassword)) {
 			try (ZipFile unencryptedZipFile = new ZipFile(new File(originalZipFilePath))) {
 				try (InputStream inputStream = new InputStreamWithOtherItemsToClose(unencryptedZipFile.getInputStream(unencryptedZipFile.getFileHeaders().get(0)), unencryptedZipFile)) {
