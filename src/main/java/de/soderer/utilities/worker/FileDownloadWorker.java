@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.worker;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -6,8 +6,8 @@ import java.io.FileOutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-import de.soderer.utilities.worker.WorkerParentSimple;
-import de.soderer.utilities.worker.WorkerSimple;
+import de.soderer.utilities.UserError;
+import de.soderer.utilities.Utilities;
 
 public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	private final String downloadUrl;

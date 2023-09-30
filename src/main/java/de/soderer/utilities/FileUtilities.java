@@ -26,7 +26,6 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang3.ArrayUtils;
 
 import de.soderer.utilities.crypto.DirectoryHashingWorker;
 import de.soderer.utilities.crypto.FileHashingWorker;
@@ -244,7 +243,7 @@ public class FileUtilities {
 		try (FileInputStream input = new FileInputStream(dataFile)) {
 			final byte[] encodingBufferInterim = new byte[maxAmountToRead];
 			final int bytesRead = input.read(encodingBufferInterim);
-			final byte[] encodingBuffer = ArrayUtils.subarray(encodingBufferInterim, 0, bytesRead);
+			final byte[] encodingBuffer = subarray(encodingBufferInterim, 0, bytesRead);
 			return encodingBuffer;
 		} catch (final Exception e) {
 			throw e;
@@ -721,6 +720,27 @@ public class FileUtilities {
 					}
 				}
 				return null;
+			}
+		}
+	}
+
+	public static byte[] subarray(final byte[] array, int startIndexInclusive, int endIndexExclusive) {
+		if (array == null) {
+			return null;
+		} else {
+			if (startIndexInclusive < 0) {
+				startIndexInclusive = 0;
+			}
+			if (endIndexExclusive > array.length) {
+				endIndexExclusive = array.length;
+			}
+			final int newSize = endIndexExclusive - startIndexInclusive;
+			if (newSize <= 0) {
+				return new byte[0];
+			} else {
+				final byte[] subarray = new byte[newSize];
+				System.arraycopy(array, startIndexInclusive, subarray, 0, newSize);
+				return subarray;
 			}
 		}
 	}

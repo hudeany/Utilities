@@ -32,7 +32,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import de.soderer.utilities.Credentials;
-import de.soderer.utilities.FileDownloadWorker;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.NetworkUtilities;
 import de.soderer.utilities.SystemUtilities;
@@ -45,6 +44,7 @@ import de.soderer.utilities.http.HttpUtilities;
 import de.soderer.utilities.json.JsonNode;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
+import de.soderer.utilities.worker.FileDownloadWorker;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.xml.XmlUtilities;
 
