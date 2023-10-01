@@ -170,39 +170,18 @@
 			<artifactId>csv</artifactId>
 			<version>RELEASE</version>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>de.soderer.local</groupId>-->
-<!--			<artifactId>de.soderer.utilities.csv</artifactId>-->
-<!--			<version>23.0.1</version>-->
-<!--			<scope>system</scope>-->
-<!--			<systemPath>${project.basedir}/lib/csv-23.0.1.jar</systemPath>-->
-<!--		</dependency>-->
 
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>dkim</artifactId>
 			<version>RELEASE</version>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>de.soderer.local</groupId>-->
-<!--			<artifactId>dkim</artifactId>-->
-<!--			<version>23.0.1</version>-->
-<!--			<scope>system</scope>-->
-<!--			<systemPath>${project.basedir}/lib/dkim-23.0.1.jar</systemPath>-->
-<!--		</dependency>-->
 
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>json</artifactId>
 			<version>RELEASE</version>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>de.soderer.local</groupId>-->
-<!--			<artifactId>json</artifactId>-->
-<!--			<version>23.0.1</version>-->
-<!--			<scope>system</scope>-->
-<!--			<systemPath>${project.basedir}/lib/json-23.0.1.jar</systemPath>-->
-<!--		</dependency>-->
 		
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>
@@ -246,7 +225,6 @@
 				</configuration>
 			</plugin>
 
-			<!-- Remove pom.xml from jar file to keep the passwords secret that would be contained there -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
@@ -257,6 +235,21 @@
 					</archive>
 				</configuration>
 			</plugin>
+			
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.3.0</version>
+				<executions>
+		          <execution>
+		            <id>attach-sources</id>
+		            <phase>verify</phase>
+		            <goals>
+		              <goal>jar-no-fork</goal>
+		            </goals>
+		          </execution>
+		        </executions>
+			</plugin>
 
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
@@ -265,14 +258,13 @@
 					<execution>
 						<phase>package</phase>
 						<configuration>
-							<target>
-								<!-- storepass: +u1F}<}D(Kf_NvFrFX706574780T?LP' -->
-								<!-- maybe keypass: 5veQptNfbMrjcGaEQHh6 -->
-								<signjar destDir="target" alias="soderer-de-java-2021" keystore="../soderer-de-java-2021_keystore.jks" storepass="+u1F}&lt;}D(Kf_NvFrFX706574780T?LP'" preservelastmodified="true" tsaurl="http://sha256timestamp.ws.symantec.com/sha256/timestamp">
+							<available file="${user.home}/git/signing.properties" property="signingPropertiesAvailable" />
+							<target name="sign_jar" if="signingPropertiesAvailable">
+								<property file="${user.home}/git/signing.properties" />
+								<signjar destDir="target" alias="${CaKeyAlias}" keystore="${CaKeyStore}" storepass="${CaKeyStorePass}" keypass="${CaKeyPass}" preservelastmodified="true" tsaurl="${TsaUrl}">
 									<path>
 										<fileset dir="target" includes="soderer-utilities-*.jar" />
 									</path>
-									<flattenmapper />
 								</signjar>
 							</target>
 						</configuration>
