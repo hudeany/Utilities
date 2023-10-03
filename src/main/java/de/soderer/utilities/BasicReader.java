@@ -9,11 +9,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class BasicReader implements Closeable {
-	/** UTF-8 BOM (Byte Order Mark) character for readers. */
-	public static final char BOM_UTF_8_CHAR = (char) 65279;
-
-	/** UTF-8 BOM (Byte Order Mark) first character for wrong encoding ISO-8859. */
-	public static final char BOM_UTF_8_CHAR_ISO_8859 = (char) 239;
+	public static final int EOF = -1;
 
 	/** Default input encoding. */
 	public static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
@@ -75,11 +71,11 @@ public class BasicReader implements Closeable {
 			return currentChar;
 		} else {
 			final int currentCharInt = inputReader.read();
-			if (currentCharInt != -1) {
+			if (currentCharInt != EOF) {
 				// Check for UTF-8 BOM at data start
-				if (readCharacters == 0 && currentCharInt == BOM_UTF_8_CHAR && encoding == StandardCharsets.UTF_8) {
+				if (readCharacters == 0 && currentCharInt == BOM.BOM_UTF_8_CHAR && encoding == StandardCharsets.UTF_8) {
 					return readNextCharacter();
-				} else if (readCharacters == 0 && currentCharInt == BOM_UTF_8_CHAR_ISO_8859 && encoding.displayName().toUpperCase().startsWith("ISO-8859-")) {
+				} else if (readCharacters == 0 && currentCharInt == BOM.BOM_UTF_8_CHAR_ISO_8859 && encoding.displayName().toUpperCase().startsWith("ISO-8859-")) {
 					throw new IOException("Data encoding \"" + encoding + "\" is invalid: UTF-8 BOM detected");
 				} else {
 					final char nextChar = (char) currentCharInt;

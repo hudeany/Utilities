@@ -13,6 +13,8 @@ import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class AsymmetricSignatureWorker extends WorkerSimple<byte[]> {
+	public static final int EOF = -1;
+
 	private InputStream dataInputStream = null;
 	private PrivateKey privateKey = null;
 	private String signatureMethod = null;
@@ -57,7 +59,7 @@ public class AsymmetricSignatureWorker extends WorkerSimple<byte[]> {
 			signature.initSign(privateKey);
 			final byte[] buffer = new byte[4096];
 			int bytesRead;
-			while ((bytesRead = dataStream.read(buffer)) >= 0) {
+			while ((bytesRead = dataStream.read(buffer)) != EOF) {
 				if (cancel) {
 					break;
 				} else {

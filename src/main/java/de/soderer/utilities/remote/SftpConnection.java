@@ -38,6 +38,8 @@ import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
 
 public class SftpConnection implements RemoteConnection {
+	public static final int EOF = -1;
+
 	/** The host. */
 	private String hostname = null;
 
@@ -636,7 +638,7 @@ public class SftpConnection implements RemoteConnection {
 				int charValue = checkAcknowledge(in);
 				StringBuilder inputString = new StringBuilder();
 
-				while (charValue != -1) { // EOF
+				while (charValue != EOF) {
 					if (charValue == '\n') { // EOL
 						returnList.add(inputString.toString());
 						inputString = new StringBuilder();
@@ -732,7 +734,7 @@ public class SftpConnection implements RemoteConnection {
 				int charValue = checkAcknowledge(in);
 				StringBuilder inputString = new StringBuilder();
 
-				while (charValue != -1) { // EOF
+				while (charValue != EOF) {
 					if (charValue == '\n') { // EOL
 						returnText += inputString + "\n";
 						inputString = new StringBuilder();
@@ -746,7 +748,7 @@ public class SftpConnection implements RemoteConnection {
 				int charValueErrorStream = checkAcknowledge(inError);
 				StringBuilder inputStringErrorStream = new StringBuilder();
 
-				while (charValueErrorStream != -1) { // EOF
+				while (charValueErrorStream != EOF) {
 					if (charValueErrorStream == '\n') { // EOL
 						returnError += inputStringErrorStream + "\n";
 						inputStringErrorStream = new StringBuilder();
@@ -848,7 +850,7 @@ public class SftpConnection implements RemoteConnection {
 		// returnCode may be 0 for success,
 		// 1 for error,
 		// 2 for fatal error,
-		// -1
+		// -1 EOF
 		if (returnCode == 1 || returnCode == 2) {
 			final StringBuffer returnTextBuffer = new StringBuffer();
 			int charReadBuffer;
@@ -964,7 +966,7 @@ public class SftpConnection implements RemoteConnection {
 				available--;
 				return dataInputStream.read();
 			} else {
-				return -1;
+				return EOF;
 			}
 		}
 	}

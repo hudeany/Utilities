@@ -24,6 +24,8 @@ import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
+	public static final int EOF = -1;
+
 	private InputStream dataInputStream = null;
 	private OutputStream encryptedDataOutputStream = null;
 	private PublicKey publicKey = null;
@@ -91,7 +93,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 					final int bufferSize = eciesCipher.getBlockSize() <= 0 ? 4096 : eciesCipher.getBlockSize();
 					final byte[] buffer = new byte[bufferSize];
 					int bytesRead;
-					while ((bytesRead = inputStream.read(buffer)) > -1) {
+					while ((bytesRead = inputStream.read(buffer)) != EOF) {
 						if (cancel) {
 							break;
 						} else {
@@ -130,7 +132,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 					final int bufferSize = asymmetricEncryptCipher.getInputBlockSize() <= 0 ? 4096 : asymmetricEncryptCipher.getInputBlockSize();
 					final byte[] buffer = new byte[bufferSize];
 					int bytesRead;
-					while ((bytesRead = dataInputStream.read(buffer)) > -1) {
+					while ((bytesRead = dataInputStream.read(buffer)) != EOF) {
 						if (cancel) {
 							break;
 						} else {

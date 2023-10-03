@@ -31,6 +31,8 @@ import de.soderer.utilities.crypto.DirectoryHashingWorker;
 import de.soderer.utilities.crypto.FileHashingWorker;
 
 public class FileUtilities {
+	public static final int EOF = -1;
+
 	/**
 	 * Delete all subfiles fitting namestart and extension
 	 *
@@ -471,7 +473,7 @@ public class FileUtilities {
 		final ByteArrayOutputStream readData = new ByteArrayOutputStream();
 		int nextByte;
 		int lastByte = 0;
-		while ((nextByte = inputStream.read()) != -1) {
+		while ((nextByte = inputStream.read()) != EOF) {
 			boolean isNewLine = false;
 			if (nextByte == '\r') {
 				// new linebreak (Mac style, possibly Windows style)

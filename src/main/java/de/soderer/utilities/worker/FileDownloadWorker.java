@@ -10,6 +10,8 @@ import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
 
 public class FileDownloadWorker extends WorkerSimple<Boolean> {
+	public static final int EOF = -1;
+
 	private final String downloadUrl;
 	private final File destinationFile;
 
@@ -37,7 +39,7 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 					FileOutputStream fileOutputStream = new FileOutputStream(destinationFile)) {
 				final byte[] buffer = new byte[4096];
 				int readLength;
-				while ((readLength = bufferedInputStream.read(buffer)) != -1) {
+				while ((readLength = bufferedInputStream.read(buffer)) != EOF) {
 					if (cancel) {
 						break;
 					} else {

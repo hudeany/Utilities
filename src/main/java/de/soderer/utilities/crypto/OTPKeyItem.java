@@ -30,6 +30,8 @@ import de.soderer.utilities.xml.XmlUtilities;
 
 // TODO check key id duplicates
 public class OTPKeyItem extends Composite {
+	public static final int EOF = -1;
+
 	protected LabeledFileText textField;
 	protected int id = 0;
 	private InputStream inputStream;
@@ -212,8 +214,8 @@ public class OTPKeyItem extends Composite {
 	public int read(final byte[] data) throws Exception {
 		final int readSize = inputStream.read(data);
 		keyReadPosition += readSize;
-		if (readSize == -1) {
-			return -1;
+		if (readSize == EOF) {
+			return EOF;
 		} else if (keyReadPosition > keyLength) {
 			final int restDataLength = (int)(readSize - (keyReadPosition - keyLength));
 			try {
@@ -246,7 +248,7 @@ public class OTPKeyItem extends Composite {
 		final int maxPartSize = 100;
 		final StringBuilder dataString = new StringBuilder();
 		int dataChar = inputStream.read();
-		while (dataChar > -1 && (char) dataChar != '>' && dataString.length() < maxPartSize) {
+		while (dataChar != EOF && (char) dataChar != '>' && dataString.length() < maxPartSize) {
 			dataString.append((char) dataChar);
 			dataChar = inputStream.read();
 		}
@@ -264,7 +266,7 @@ public class OTPKeyItem extends Composite {
 		final int maxPartSize = 100;
 		final StringBuilder dataString = new StringBuilder();
 		int dataChar = inputStream.read();
-		while (dataChar > -1 && (char) dataChar != '>' && dataString.length() < maxPartSize) {
+		while (dataChar != EOF && (char) dataChar != '>' && dataString.length() < maxPartSize) {
 			dataString.append((char) dataChar);
 			dataChar = inputStream.read();
 		}
@@ -276,7 +278,7 @@ public class OTPKeyItem extends Composite {
 			return null;
 		}
 		dataChar = inputStream.read();
-		while (dataChar > -1 && (char) dataChar != '>' && dataString.length() < maxPartSize) {
+		while (dataChar != EOF && (char) dataChar != '>' && dataString.length() < maxPartSize) {
 			dataString.append((char) dataChar);
 			dataChar = inputStream.read();
 		}

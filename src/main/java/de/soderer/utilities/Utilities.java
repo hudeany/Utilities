@@ -56,6 +56,8 @@ import javax.xml.stream.XMLStreamWriter;
  * Global Utilities
  */
 public class Utilities {
+	public static final int EOF = -1;
+
 	public static final String STANDARD_XML = "<?xml version=\"1.0\" encoding=\"<encoding>\" standalone=\"yes\"?>\n<root>\n</root>\n";
 	public static final String STANDARD_HTML = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=<encoding>\" />\n\t\t<title>HtmlTitle</title>\n\t\t<meta name=\"Title\" content=\"HtmlTitle\" />\n\t</head>\n\t<body>\n\t</body>\n</html>\n";
 	public static final String STANDARD_BASHSCRIPTSTART = "#!/bin/bash\n";
@@ -1365,7 +1367,7 @@ public class Utilities {
 	public static Object toString(final Reader characterStream) throws IOException {
 		final StringBuilder returnValue = new StringBuilder();
 		int characterInt;
-		while ((characterInt = characterStream.read()) > -1) {
+		while ((characterInt = characterStream.read()) != EOF) {
 			returnValue.append((char) characterInt);
 		}
 		return returnValue.toString();

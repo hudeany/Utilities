@@ -71,6 +71,8 @@ import de.soderer.utilities.http.HttpUtilities;
 import de.soderer.utilities.mail.dkim.DkimSignedMessage;
 
 public class Mailer {
+	public static final int EOF = -1;
+
 	private String smtpMailRelayHostname = "localhost";
 	private int smtpMailRelayPort = 0;
 
@@ -427,7 +429,7 @@ public class Mailer {
 				final InputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(messageToSign))) {
 			int readBuffer = 0;
 			final byte[] buffer = new byte[4096];
-			while ((readBuffer = inputStream.read(buffer)) != -1) {
+			while ((readBuffer = inputStream.read(buffer)) != EOF) {
 				pgpSignatureGenerator.update(buffer, 0, readBuffer);
 			}
 			Utilities.clear(buffer);

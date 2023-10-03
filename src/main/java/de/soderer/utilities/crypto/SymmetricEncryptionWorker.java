@@ -16,6 +16,8 @@ import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
+	public static final int EOF = -1;
+
 	private InputStream dataInputStream = null;
 	private OutputStream encryptedDataOutputStream = null;
 	private char[] password = null;
@@ -98,7 +100,7 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 					final int bufferSize = symetricEncryptCipher.getBlockSize() <= 0 ? 4096 : symetricEncryptCipher.getBlockSize();
 					final byte[] buffer = new byte[bufferSize];
 					int bytesRead;
-					while ((bytesRead = inputStream.read(buffer)) > -1) {
+					while ((bytesRead = inputStream.read(buffer)) != EOF) {
 						if (cancel) {
 							break;
 						} else {

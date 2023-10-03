@@ -27,6 +27,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TextFileScanner implements Iterator<String> {
+	public static final int EOF = -1;
+
 	private long dataRead = 0;
 
 	// Internal buffer used to hold input
@@ -459,10 +461,10 @@ public class TextFileScanner implements Iterator<String> {
 			dataRead += n;
 		} catch (final IOException ioe) {
 			lastException = ioe;
-			n = -1;
+			n = EOF;
 		}
 
-		if (n == -1) {
+		if (n == EOF) {
 			sourceClosed = true;
 			needInput = false;
 		}

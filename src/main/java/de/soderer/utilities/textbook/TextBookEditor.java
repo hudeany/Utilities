@@ -37,6 +37,8 @@ import de.soderer.utilities.textbook.action.KeepOnlyLinesNotContainingAction;
 import de.soderer.utilities.textbook.action.TextLineAction;
 
 public class TextBookEditor implements AutoCloseable {
+	public static final int EOF = -1;
+
 	public static final long DEFAULT_MAXIMUM_PAGE_SIZE = 8192;
 	public static final long DEFAULT_MAXIMUM_IN_MEMORY_PAGES = 512;
 
@@ -711,7 +713,7 @@ public class TextBookEditor implements AutoCloseable {
 							currentReadIndex += page.getStartFileIndex() - currentReadIndex;
 							int nextByte;
 							final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-							while (currentReadIndex <= page.getEndFileIndex() && (nextByte = lineReader.readChar()) != -1) {
+							while (currentReadIndex <= page.getEndFileIndex() && (nextByte = lineReader.readChar()) != EOF) {
 								buffer.write(nextByte);
 								if (buffer.size() == 4096) {
 									outputStream.write(buffer.toByteArray());

@@ -11,6 +11,8 @@ import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 
 public class ReaderInputStream extends InputStream {
+	public static final int EOF = -1;
+
 	private static final int DEFAULT_BUFFER_SIZE = 1024;
 
 	private final Reader reader;
@@ -46,7 +48,7 @@ public class ReaderInputStream extends InputStream {
 			encoderIn.compact();
 			final int position = encoderIn.position();
 			final int nextDataSize = reader.read(encoderIn.array(), position, encoderIn.remaining());
-			if (nextDataSize == -1) {
+			if (nextDataSize == EOF) {
 				endOfInput = true;
 			} else {
 				encoderIn.position(position+nextDataSize);
@@ -84,7 +86,7 @@ public class ReaderInputStream extends InputStream {
 				}
 			}
 		}
-		return read == 0 && endOfInput ? -1 : read;
+		return read == 0 && endOfInput ? EOF : read;
 	}
 
 	@Override
@@ -100,7 +102,7 @@ public class ReaderInputStream extends InputStream {
 			}
 			fillBuffer();
 			if (endOfInput && !encoderOut.hasRemaining()) {
-				return -1;
+				return EOF;
 			}
 		}
 	}

@@ -13,6 +13,8 @@ import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
+	public static final int EOF = -1;
+
 	private InputStream dataInputStream = null;
 	private byte[] signatureData = null;
 	private PublicKey publicKey = null;
@@ -59,7 +61,7 @@ public class AsymmetricVerificationWorker extends WorkerSimple<Boolean> {
 			signature.initVerify(publicKey);
 			final byte[] buffer = new byte[4096];
 			int bytesRead;
-			while ((bytesRead = dataStream.read(buffer)) >= 0) {
+			while ((bytesRead = dataStream.read(buffer)) != EOF) {
 				if (cancel) {
 					break;
 				} else {

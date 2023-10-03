@@ -8,6 +8,8 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 
 public class IoUtilities {
+	public static final int EOF = -1;
+
 	public static String toString(final InputStream inputStream, final Charset encoding) throws IOException {
 		return new String(toByteArray(inputStream), encoding);
 	}
@@ -25,9 +27,9 @@ public class IoUtilities {
 
 	public static long copy(final InputStream inputStream, final OutputStream outputStream) throws IOException {
 		final byte[] buffer = new byte[4096];
-		int lengthRead = -1;
+		int lengthRead;
 		long bytesCopied = 0;
-		while ((lengthRead = inputStream.read(buffer)) > -1) {
+		while ((lengthRead = inputStream.read(buffer)) != EOF) {
 			outputStream.write(buffer, 0, lengthRead);
 			bytesCopied += lengthRead;
 		}
@@ -37,9 +39,9 @@ public class IoUtilities {
 
 	public static long copy(final Reader inputReader, final OutputStream outputStream, final Charset encoding) throws IOException {
 		final char[] buffer = new char[4096];
-		int lengthRead = -1;
+		int lengthRead;
 		long bytesCopied = 0;
-		while ((lengthRead = inputReader.read(buffer)) > -1) {
+		while ((lengthRead = inputReader.read(buffer)) != EOF) {
 			final String data = new String(buffer, 0, lengthRead);
 			outputStream.write(data.getBytes(encoding));
 			bytesCopied += lengthRead;
@@ -50,9 +52,9 @@ public class IoUtilities {
 
 	public static long getStreamSize(final InputStream inputStream) throws IOException {
 		final byte[] buffer = new byte[4096];
-		int lengthRead = -1;
+		int lengthRead;
 		long bytesCopied = 0;
-		while ((lengthRead = inputStream.read(buffer)) > -1) {
+		while ((lengthRead = inputStream.read(buffer)) != EOF) {
 			bytesCopied += lengthRead;
 		}
 		return bytesCopied;

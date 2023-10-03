@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.List;
 
 public class FileComparer {
+	public static final int EOF = -1;
+
 	public enum OutputMode {
 		All, DifferencesOnly, CommonalitiesOnly
 	}
@@ -19,7 +21,7 @@ public class FileComparer {
 			try (BufferedInputStream fileInputStream1 = new BufferedInputStream(new FileInputStream(file1));
 					BufferedInputStream fileInputStream2 = new BufferedInputStream(new FileInputStream(file2))) {
 				int buffer = 0;
-				while ((buffer = fileInputStream1.read()) != -1) {
+				while ((buffer = fileInputStream1.read()) != EOF) {
 					if (buffer != fileInputStream2.read()) {
 						return false;
 					}

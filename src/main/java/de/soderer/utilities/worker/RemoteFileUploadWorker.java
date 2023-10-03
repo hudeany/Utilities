@@ -11,6 +11,8 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.remote.RemoteConnection;
 
 public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker> {
+	public static final int EOF = -1;
+
 	private final RemoteConnection connection;
 
 	private final File localFile;
@@ -72,7 +74,7 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 		@Override
 		public int read() throws IOException {
 			final int readByte = super.read();
-			if (readByte != -1) {
+			if (readByte != EOF) {
 				itemsDone ++;
 			}
 			return readByte;
@@ -81,7 +83,7 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 		@Override
 		public int read(final byte b[]) throws IOException {
 			final int readBytes = super.read(b);
-			if (readBytes > 0) {
+			if (readBytes != EOF) {
 				itemsDone += readBytes;
 			}
 			return readBytes;

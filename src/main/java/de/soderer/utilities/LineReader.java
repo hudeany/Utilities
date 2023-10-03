@@ -13,6 +13,8 @@ import java.nio.charset.StandardCharsets;
 import de.soderer.utilities.TextUtilities.LineBreak;
 
 public class LineReader implements Closeable {
+	public static final int EOF = -1;
+
 	private PushbackReader pushbackReader = null;
 
 	private BOM bom = BOM.NONE;
@@ -51,7 +53,7 @@ public class LineReader implements Closeable {
 	public String readLine() throws IOException {
 		StringBuilder returnValue = null;
 		int nextCharInt;
-		while ((nextCharInt = pushbackReader.read()) != -1) {
+		while ((nextCharInt = pushbackReader.read()) != EOF) {
 			final char nextChar = (char) nextCharInt;
 
 			if (returnValue == null) {
@@ -69,7 +71,7 @@ public class LineReader implements Closeable {
 				break;
 			} else if (nextChar == '\r') {
 				nextCharInt = pushbackReader.read();
-				if (nextCharInt == -1) {
+				if (nextCharInt == EOF) {
 					latestLineBreakType = LineBreak.Mac;
 
 					if (globalLineBreakType == LineBreak.Unknown) {
@@ -114,7 +116,7 @@ public class LineReader implements Closeable {
 	public void skipChars(final long charsToSkip) throws IOException {
 		int skipCount = 0;
 		while (true) {
-			if (pushbackReader.read() == -1) {
+			if (pushbackReader.read() == EOF) {
 				throw new IOException("No more chars left to skip");
 			} else {
 				skipCount++;

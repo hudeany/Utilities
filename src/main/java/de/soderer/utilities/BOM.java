@@ -7,6 +7,9 @@ public final class BOM {
 	/** UTF-8 BOM (Byte Order Mark) character for readers. */
 	public static final char BOM_UTF_8_CHAR = (char) 65279;
 
+	/** UTF-8 BOM (Byte Order Mark) first character for wrong encoding ISO-8859. */
+	public static final char BOM_UTF_8_CHAR_ISO_8859 = (char) 239;
+
 	/**
 	 * NONE.
 	 */

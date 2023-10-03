@@ -30,6 +30,8 @@ import de.soderer.utilities.InputStreamWithOtherItemsToClose;
 import de.soderer.utilities.Utilities;
 
 public class ZipUtilities {
+	public static final int EOF = -1;
+
 	public static boolean isZipArchiveFile(final File potentialZipFile) throws FileNotFoundException, IOException {
 		try (FileInputStream inputStream = new FileInputStream(potentialZipFile)) {
 			final byte[] magicBytes = new byte[4];
@@ -258,7 +260,7 @@ public class ZipUtilities {
 						new FileInputStream(sourceFile))) {
 					final byte[] bufferArray = new byte[4096];
 					int byteBufferFillLength;
-					while ((byteBufferFillLength = bufferedFileInputStream.read(bufferArray)) > -1) {
+					while ((byteBufferFillLength = bufferedFileInputStream.read(bufferArray)) != EOF) {
 						destinationZipFileStream.write(bufferArray, 0, byteBufferFillLength);
 					}
 
@@ -442,7 +444,7 @@ public class ZipUtilities {
 						sourceZipFile.getInputStream(sourceZipFileEntry))) {
 					final byte[] bufferArray = new byte[4096];
 					int byteBufferFillLength = bufferedInputStream.read(bufferArray);
-					while (byteBufferFillLength > -1) {
+					while (byteBufferFillLength != EOF) {
 						zipOutputStream.write(bufferArray, 0, byteBufferFillLength);
 						byteBufferFillLength = bufferedInputStream.read(bufferArray);
 					}
@@ -494,7 +496,7 @@ public class ZipUtilities {
 
 					final byte[] bufferArray = new byte[4096];
 					int byteBufferFillLength = bufferedInputStream.read(bufferArray);
-					while (byteBufferFillLength > -1) {
+					while (byteBufferFillLength != EOF) {
 						byteArrayOutputStream.write(bufferArray, 0, byteBufferFillLength);
 						byteBufferFillLength = bufferedInputStream.read(bufferArray);
 					}
@@ -562,7 +564,7 @@ public class ZipUtilities {
 							sourceZipFile.getInputStream(sourceZipFileEntry))) {
 						final byte[] bufferArray = new byte[4096];
 						int byteBufferFillLength = bufferedInputStream.read(bufferArray);
-						while (byteBufferFillLength > -1) {
+						while (byteBufferFillLength != EOF) {
 							destinationZipOutputStream.write(bufferArray, 0, byteBufferFillLength);
 							byteBufferFillLength = bufferedInputStream.read(bufferArray);
 						}

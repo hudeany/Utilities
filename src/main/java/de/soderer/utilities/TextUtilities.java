@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
  * This class does no Logging via Log4J, because it is often used before its initialisation
  */
 public class TextUtilities {
+	public static final int EOF = -1;
+
 	/**
 	 * A simple string for testing, which includes all ASCII characters
 	 */
@@ -850,7 +852,7 @@ public class TextUtilities {
 		int bufferPrevious = 0;
 		int bufferNext;
 		returnList.add(0L);
-		while ((bufferNext = input.read()) != -1) {
+		while ((bufferNext = input.read()) != EOF) {
 			if ((char) bufferNext == '\n') {
 				returnList.add(position + 1);
 			} else if ((char) bufferPrevious == '\r') {
@@ -887,7 +889,7 @@ public class TextUtilities {
 			input.skip(startIndex);
 			position = startIndex;
 		}
-		while ((bufferNext = input.read()) != -1) {
+		while ((bufferNext = input.read()) != EOF) {
 			if ((char) bufferNext == '\n') {
 				returnList.add(position + 1);
 			} else if ((char) bufferPrevious == '\r') {
@@ -917,7 +919,7 @@ public class TextUtilities {
 		long position = 0;
 		int bufferPrevious = 0;
 		int bufferNext;
-		while ((bufferNext = dataInputStream.read()) != -1) {
+		while ((bufferNext = dataInputStream.read()) != EOF) {
 			if ((char) bufferNext == '\n' && (char) bufferPrevious != '\r') {
 				returnList.add(position);
 			} else if ((char) bufferNext == '\r') {

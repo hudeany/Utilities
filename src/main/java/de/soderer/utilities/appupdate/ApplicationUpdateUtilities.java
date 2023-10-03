@@ -58,6 +58,8 @@ import de.soderer.utilities.xml.XmlUtilities;
  * 		&lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
  */
 public class ApplicationUpdateUtilities {
+	public static final int EOF = -1;
+
 	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
 	public static final String CONFIG_NEXT_DAILY_UPDATE_CHECK = "NextDailyUpdateCheck";
 
@@ -558,7 +560,7 @@ public class ApplicationUpdateUtilities {
 
 				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
-					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+					while (jarEntryInputStream.read(buffer, 0, buffer.length) != EOF) {
 						// just read it
 					}
 				}

@@ -11,6 +11,8 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.remote.RemoteConnection;
 
 public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
+	public static final int EOF = -1;
+
 	private final RemoteConnection connection;
 	private final File localDirectory;
 	private String remoteParentDirectoryPath;
@@ -115,7 +117,7 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 		@Override
 		public int read() throws IOException {
 			final int readByte = super.read();
-			if (readByte != -1) {
+			if (readByte != EOF) {
 				subItemsDone ++;
 			}
 			return readByte;
@@ -124,7 +126,7 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 		@Override
 		public int read(final byte b[]) throws IOException {
 			final int readBytes = super.read(b);
-			if (readBytes > 0) {
+			if (readBytes != EOF) {
 				subItemsDone += readBytes;
 			}
 			return readBytes;

@@ -153,6 +153,8 @@ import de.soderer.utilities.zip.ZipUtilities;
 import jdk.security.jarsigner.JarSigner;
 
 public class CryptographicUtilities {
+	public static final int EOF = -1;
+
 	public static final String[] SYMMETRIC_CIPHERS = {
 			// Block chiffre
 			"AES", "AESWrap", "Blowfish	", "Camellia", "CamelliaWrap", "CAST5", "CAST6", "DES", "DESede", "TripleDES", "3DES", "DESedeWrap", "GOST28147", "IDEA", "Noekeon", "RC2", "RC5", "RC5-64", "RC6", "Rijndael",
@@ -608,7 +610,7 @@ public class CryptographicUtilities {
 
 				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
-					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+					while (jarEntryInputStream.read(buffer, 0, buffer.length) != EOF) {
 						// just read it
 					}
 				}
@@ -655,7 +657,7 @@ public class CryptographicUtilities {
 
 				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
-					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+					while (jarEntryInputStream.read(buffer, 0, buffer.length) != EOF) {
 						// just read it
 					}
 				}
@@ -702,7 +704,7 @@ public class CryptographicUtilities {
 
 				try (InputStream jarEntryInputStream = jar.getInputStream(jarEntry)) {
 					// Reading the jarEntry throws a SecurityException if signature/digest check fails.
-					while (jarEntryInputStream.read(buffer, 0, buffer.length) != -1) {
+					while (jarEntryInputStream.read(buffer, 0, buffer.length) != EOF) {
 						// just read it
 					}
 				}
