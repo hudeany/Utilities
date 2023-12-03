@@ -265,9 +265,45 @@ public class DbUtilities {
 		}
 
 		if (DbVendor.Oracle == dbVendor) {
+			if (Utilities.isNotBlank(System.getenv("TNS_ADMIN"))) {
+				final File tnsNamesOraFile = new File(System.getenv("TNS_ADMIN"), "tnsnames.ora");
+				if (tnsNamesOraFile.exists()) {
+					Map<String, Map<String, Object>> tnsNamesValues;
+					try (OracleTnsnamesReader oracleTnsnamesReader = new OracleTnsnamesReader(new FileInputStream(tnsNamesOraFile))) {
+						tnsNamesValues = oracleTnsnamesReader.read();
+					}
+					if (tnsNamesValues != null && tnsNamesValues.containsKey(dbName)) {
+						final String fullEntry = OracleTnsnamesReader.getSingleLineFormatedTnsEntryData(tnsNamesValues.get(dbName));
+						if (Utilities.isNotBlank(fullEntry)) {
+							return "jdbc:oracle:thin:@" + fullEntry;
+						}
+					}
+				}
+			}
+
+			if (Utilities.isNotBlank(System.getenv("ORACLE_HOME"))) {
+				final File tnsNamesOraFile = new File(System.getenv("ORACLE_HOME") + File.separator + "network" + File.separator + "admin" + File.separator + "tnsnames.ora");
+				if (tnsNamesOraFile.exists()) {
+					Map<String, Map<String, Object>> tnsNamesValues;
+					try (OracleTnsnamesReader oracleTnsnamesReader = new OracleTnsnamesReader(new FileInputStream(tnsNamesOraFile))) {
+						tnsNamesValues = oracleTnsnamesReader.read();
+					}
+					if (tnsNamesValues != null && tnsNamesValues.containsKey(dbName)) {
+						final String fullEntry = OracleTnsnamesReader.getSingleLineFormatedTnsEntryData(tnsNamesValues.get(dbName));
+						if (Utilities.isNotBlank(fullEntry)) {
+							return "jdbc:oracle:thin:@" + fullEntry;
+						}
+					}
+				}
+			}
+
+			if (dbName.trim().startsWith("(") && dbName.trim().endsWith(")")) {
+				return "jdbc:oracle:thin:@" + dbName.trim();
+			}
+
 			if (!secureConnection) {
 				if (dbName.startsWith("/")) {
-					// Some Oracle databases only accept the SID separated by a "/"
+					// Newer Oracle databases only accept the SERVICENAME instead of SID. To use a SERVICENAME start it with prefix "/"
 					return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + dbName;
 				} else {
 					return "jdbc:oracle:thin:@" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + ":" + dbName;
