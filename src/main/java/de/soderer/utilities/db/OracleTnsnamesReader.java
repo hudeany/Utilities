@@ -8,14 +8,39 @@ import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
+import de.soderer.utilities.collection.MultiValueCaseInsensitiveOrderedMap;
 
 public class OracleTnsnamesReader implements Closeable {
+	public static final String EXAMPLE =
+			"TNSNAME=\n"
+					+ "\t(DESCRIPTION=\n"
+					+ "\t\t(ADDRESSLIST=\n"
+					+ "\t\t\t(ADDRESS=\n"
+					+ "\t\t\t\t(PROTOCOL=TCPS)\n"
+					+ "\t\t\t\t(HOST=serverHost)\n"
+					+ "\t\t\t\t(PORT=1521)\n"
+					+ "\t\t\t)\n"
+					+ "\t\t\t(ADDRESS=\n"
+					+ "\t\t\t\t(PROTOCOL=TCPS)\n"
+					+ "\t\t\t\t(HOST=serverHost)\n"
+					+ "\t\t\t\t(PORT=1521)\n"
+					+ "\t\t	)\n"
+					+ "\t\t)\n"
+					+ "\t\t(CONNECT_DATA=\n"
+					+ "\t\t\t(SERVICE_NAME=serviceName)\n"
+					+ "\t\t)\n"
+					+ "\t\t(SECURITY=\n"
+					+ "\t\t\t(SSL_SERVER_CERT_DN=\"trusted CN\")\n"
+					+ "\t\t)\n"
+					+ "\t)\n";
+
 	private PushbackReader inputReader = null;
 
 	public OracleTnsnamesReader(final InputStream inputStream) throws Exception {
@@ -75,15 +100,18 @@ public class OracleTnsnamesReader implements Closeable {
 		return textBuilder.toString().trim();
 	}
 
-	public Map<String, Map<String, Object>> read() throws Exception {
+	public Map<String, OracleTnsMapValue> read() throws Exception {
 		if (inputReader == null) {
 			throw new Exception("OracleTnsnamesReader position was already initialized for other read operation");
 		} else {
-			final Map<String, Map<String, Object>> tnsNamesEntries = new CaseInsensitiveOrderedMap<>();
+			final Map<String, OracleTnsMapValue> tnsNamesEntries = new CaseInsensitiveOrderedMap<>();
 
-			Tuple<String, Map<String, Object>> tnsNameEntry;
+			Tuple<String, OracleTnsMapValue> tnsNameEntry;
 			while ((tnsNameEntry = readTnsNameEntry()) != null) {
-				tnsNamesEntries.put(tnsNameEntry.getFirst(), tnsNameEntry.getSecond());
+				final OracleTnsValue previousEntry = tnsNamesEntries.put(tnsNameEntry.getFirst(), tnsNameEntry.getSecond());
+				if (previousEntry != null) {
+					throw new Exception("Multiple entry for the same TNS entry name: " + tnsNameEntry.getFirst());
+				}
 			}
 
 			inputReader.close();
@@ -97,39 +125,39 @@ public class OracleTnsnamesReader implements Closeable {
 		}
 	}
 
-	private Tuple<String, Map<String, Object>> readTnsNameEntry() throws Exception {
+	private Tuple<String, OracleTnsMapValue> readTnsNameEntry() throws Exception {
 		final String tnsName = readUntilAndTrim('=');
 		if (Utilities.isBlank(tnsName)) {
 			return null;
 		}
 
 		if (previewNextNonWhitespaceCharacter() == '(') {
-			final Map<String, Object> tnsValues = new CaseInsensitiveOrderedMap<>();
-			Tuple<String, Object> tnsValue;
+			final MultiValueCaseInsensitiveOrderedMap<OracleTnsValue> tnsValues = new MultiValueCaseInsensitiveOrderedMap<>();
+			Tuple<String, OracleTnsValue> tnsValue;
 			while ((tnsValue = readValue()) != null) {
 				tnsValues.put(tnsValue.getFirst(), tnsValue.getSecond());
 			}
-			return new Tuple<>(tnsName, tnsValues);
+			return new Tuple<>(tnsName, new OracleTnsMapValue(tnsValues));
 		} else {
 			throw new Exception("Premature end of data when reading TNS value");
 		}
 	}
 
-	private Tuple<String, Object> readValue() throws Exception {
+	private Tuple<String, OracleTnsValue> readValue() throws Exception {
 		if (previewNextNonWhitespaceCharacter() == '(') {
 			readNextCharacter();
 			final String key = readUntilAndTrim('=');
 			if (Utilities.isBlank(key)) {
 				return null;
 			} else if (previewNextNonWhitespaceCharacter() == '(') {
-				final Map<String, Object> tnsValues = new CaseInsensitiveOrderedMap<>();
-				Tuple<String, Object> tnsValue;
+				final MultiValueCaseInsensitiveOrderedMap<OracleTnsValue> tnsValues = new MultiValueCaseInsensitiveOrderedMap<>();
+				Tuple<String, OracleTnsValue> tnsValue;
 				while ((tnsValue = readValue()) != null) {
 					tnsValues.put(tnsValue.getFirst(), tnsValue.getSecond());
 				}
 				if (previewNextNonWhitespaceCharacter() == ')') {
 					readNextCharacter();
-					return new Tuple<>(key, tnsValues);
+					return new Tuple<>(key, new OracleTnsMapValue(tnsValues));
 				} else {
 					throw new Exception("Unexpected data when reading TNS value");
 				}
@@ -137,32 +165,105 @@ public class OracleTnsnamesReader implements Closeable {
 				String value = readUntilAndTrim(')');
 				value = value.trim();
 				value = Utilities.trim(Utilities.trim(value, '\''), '\"').trim();
-				return new Tuple<>(key, value);
+				return new Tuple<>(key, new OracleTnsStringValue(value));
 			}
 		} else {
 			return null;
 		}
 	}
 
-	public static String getSingleLineFormatedTnsEntryData(final Map<String, Object> tnsEntryData) throws Exception {
-		String returnValue = "";
-		for (final Entry<String, Object> entry : tnsEntryData.entrySet()) {
-			if (entry.getValue() instanceof Map) {
-				@SuppressWarnings("unchecked")
-				final Map<String, Object> valueMap = (Map<String, Object>) entry.getValue();
-				returnValue = returnValue + "(" + entry.getKey().toUpperCase() + "=" + getSingleLineFormatedTnsEntryData(valueMap) + ")";
-			} else {
-				String valueString = entry.getValue().toString();
-				if (valueString.contains("(")
-						|| valueString.contains(")")
-						|| valueString.contains("=")
-						|| valueString.contains(" ")
-						|| valueString.contains("\n")
-						|| valueString.contains("\r")
-						|| valueString.contains("\t")) {
-					valueString = "\"" + valueString + "\"";
+	public static String getSingleLineFormatedTnsEntryData(final OracleTnsValue tnsEntryData) throws Exception {
+		if (tnsEntryData instanceof OracleTnsMapValue) {
+			String returnValue = "";
+			for (final Entry<String, ArrayList<OracleTnsValue>> entry : ((OracleTnsMapValue) tnsEntryData).getValue().entrySet()) {
+				for (final OracleTnsValue item : entry.getValue()) {
+					if (item instanceof OracleTnsMapValue) {
+						final OracleTnsMapValue tnsValue = (OracleTnsMapValue) item;
+						returnValue = returnValue + "(" + entry.getKey().toUpperCase() + "=" + getSingleLineFormatedTnsEntryData(tnsValue) + ")";
+					} else if (item instanceof OracleTnsStringValue) {
+						String valueString = ((OracleTnsStringValue) item).getValue();
+						if (valueString.contains("(")
+								|| valueString.contains(")")
+								|| valueString.contains("=")
+								|| valueString.contains(" ")
+								|| valueString.contains("\n")
+								|| valueString.contains("\r")
+								|| valueString.contains("\t")) {
+							valueString = "\"" + valueString + "\"";
+						}
+						returnValue = returnValue + "(" + entry.getKey().toUpperCase() + "=" + valueString + ")";
+					} else {
+						throw new Exception("Unknown TNS value type");
+					}
 				}
-				returnValue = returnValue + "(" + entry.getKey().toUpperCase() + "=" + valueString + ")";
+			}
+			return returnValue;
+		} else if (tnsEntryData instanceof OracleTnsStringValue) {
+			return ((OracleTnsStringValue) tnsEntryData).getValue();
+		} else {
+			throw new Exception("Unknown TNS value type");
+		}
+	}
+
+	public static String format(final Map<String, OracleTnsMapValue> tnsnamesData) throws Exception {
+		String returnValue = "";
+		for (final Entry<String, OracleTnsMapValue> tnsNamesEntry : tnsnamesData.entrySet()) {
+			if (returnValue.length() > 0) {
+				returnValue = returnValue + "\n";
+			}
+			returnValue = returnValue + tnsNamesEntry.getKey().toUpperCase() + "=\n";
+
+			for (final Entry<String, ArrayList<OracleTnsValue>> entry : tnsNamesEntry.getValue().getValue().entrySet()) {
+				for (final OracleTnsValue item : entry.getValue()) {
+					if (item instanceof OracleTnsMapValue) {
+						final OracleTnsMapValue valueMap = (OracleTnsMapValue) item;
+						returnValue = returnValue + "\t" + "(" + entry.getKey().toUpperCase() + "=\n";
+						returnValue = returnValue + format(valueMap, 2);
+						returnValue = returnValue + "\t" + ")\n";
+					} else if (item instanceof OracleTnsStringValue) {
+						String valueString = ((OracleTnsStringValue) item).getValue();
+						if (valueString.contains("(")
+								|| valueString.contains(")")
+								|| valueString.contains("=")
+								|| valueString.contains(" ")
+								|| valueString.contains("\n")
+								|| valueString.contains("\r")
+								|| valueString.contains("\t")) {
+							valueString = "\"" + valueString + "\"";
+						}
+						returnValue = returnValue + "\t" + "(" + entry.getKey().toUpperCase() + "=" + valueString + ")\n";
+					} else {
+						throw new Exception("Unknown TNS value type");
+					}
+				}
+			}
+		}
+		return returnValue;
+	}
+
+	private static String format(final OracleTnsMapValue tnsnamesData, final int indentationLevel) throws Exception {
+		String returnValue = "";
+		for (final Entry<String, ArrayList<OracleTnsValue>> entry : tnsnamesData.getValue().entrySet()) {
+			for (final OracleTnsValue tnsValue : entry.getValue()) {
+				if (tnsValue instanceof OracleTnsMapValue) {
+					returnValue = returnValue + Utilities.repeat("\t", indentationLevel) + "(" + entry.getKey().toUpperCase() + "=\n";
+					returnValue = returnValue + format((OracleTnsMapValue) tnsValue, indentationLevel + 1);
+					returnValue = returnValue + Utilities.repeat("\t", indentationLevel) + ")\n";
+				} else if (tnsValue instanceof OracleTnsStringValue) {
+					String valueString = ((OracleTnsStringValue) tnsValue).getValue();
+					if (valueString.contains("(")
+							|| valueString.contains(")")
+							|| valueString.contains("=")
+							|| valueString.contains(" ")
+							|| valueString.contains("\n")
+							|| valueString.contains("\r")
+							|| valueString.contains("\t")) {
+						valueString = "\"" + valueString + "\"";
+					}
+					returnValue = returnValue + Utilities.repeat("\t", indentationLevel) + "(" + entry.getKey().toUpperCase() + "=" + valueString + ")\n";
+				} else {
+					throw new Exception("Unknown TNS value type");
+				}
 			}
 		}
 		return returnValue;

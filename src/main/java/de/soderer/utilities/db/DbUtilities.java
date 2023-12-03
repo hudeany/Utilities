@@ -268,7 +268,7 @@ public class DbUtilities {
 			if (Utilities.isNotBlank(System.getenv("TNS_ADMIN"))) {
 				final File tnsNamesOraFile = new File(System.getenv("TNS_ADMIN"), "tnsnames.ora");
 				if (tnsNamesOraFile.exists()) {
-					Map<String, Map<String, Object>> tnsNamesValues;
+					Map<String, OracleTnsMapValue> tnsNamesValues;
 					try (OracleTnsnamesReader oracleTnsnamesReader = new OracleTnsnamesReader(new FileInputStream(tnsNamesOraFile))) {
 						tnsNamesValues = oracleTnsnamesReader.read();
 					}
@@ -284,7 +284,7 @@ public class DbUtilities {
 			if (Utilities.isNotBlank(System.getenv("ORACLE_HOME"))) {
 				final File tnsNamesOraFile = new File(System.getenv("ORACLE_HOME") + File.separator + "network" + File.separator + "admin" + File.separator + "tnsnames.ora");
 				if (tnsNamesOraFile.exists()) {
-					Map<String, Map<String, Object>> tnsNamesValues;
+					Map<String, OracleTnsMapValue> tnsNamesValues;
 					try (OracleTnsnamesReader oracleTnsnamesReader = new OracleTnsnamesReader(new FileInputStream(tnsNamesOraFile))) {
 						tnsNamesValues = oracleTnsnamesReader.read();
 					}

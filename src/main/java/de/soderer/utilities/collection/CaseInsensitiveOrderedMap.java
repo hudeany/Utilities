@@ -3,7 +3,7 @@ package de.soderer.utilities.collection;
 import java.util.Map;
 
 /**
- * Generic String keyed Map that ignores the String case
+ * Generic String keyed Map that ignores the String case but keeps the order of key entries
  */
 public class CaseInsensitiveOrderedMap<V> extends AbstractLinkedHashMap<String, V> {
 	private static final long serialVersionUID = 7467218114617744333L;
