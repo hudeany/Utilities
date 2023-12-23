@@ -362,7 +362,7 @@ public class CosmosDbRestfulClient {
 	}
 
 	/**
-	 * Generate the sigature for cosmos db auth header
+	 * Generate the sigature for cosmos database auth header
 	 *
 	 * @param httpVerb GET, POST, PUT
 	 * @param resourceType "dbs", "colls", "docs"

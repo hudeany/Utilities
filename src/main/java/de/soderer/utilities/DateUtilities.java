@@ -1237,6 +1237,12 @@ public class DateUtilities {
 		return localDate;
 	}
 
+	public static LocalDate parseStrictLocalDate(final String dateFormatPattern, final String dateString) {
+		final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(dateFormatPattern.replace("yyyy", "uuuu")).withResolverStyle(ResolverStyle.STRICT);
+		final LocalDate localDate = LocalDate.parse(dateString, dateTimeFormatter);
+		return localDate;
+	}
+
 	public static LocalDateTime parseLocalDateTime(final String dateTimeFormatPattern, final String dateTimeString) {
 		final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(dateTimeFormatPattern);
 		final LocalDateTime localDateTime = LocalDateTime.parse(dateTimeString, dateTimeFormatter);

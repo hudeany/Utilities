@@ -7,13 +7,13 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.db.DbUtilities.DbVendor;
 
 public class DbDefinition {
-	/** The db vendor. */
+	/** The database vendor. */
 	protected DbUtilities.DbVendor dbVendor = null;
 
 	/** The hostname. */
 	protected String hostnameAndPort;
 
-	/** The db name. */
+	/** The database name. */
 	protected String dbName;
 
 	/** The username. */
@@ -119,38 +119,38 @@ public class DbDefinition {
 		if (getDbVendor() != null) {
 			try {
 				if (!new DbDriverSupplier(null, getDbVendor()).supplyDriver(applicationName, configurationFile)) {
-					throw new DbDefinitionException("Cannot aquire db driver for db vendor: " + getDbVendor());
+					throw new DbDefinitionException("Cannot aquire database driver for database vendor: " + getDbVendor());
 				}
 			} catch (final Exception e) {
-				throw new DbDefinitionException("Cannot aquire db driver for db vendor: " + getDbVendor(), e);
+				throw new DbDefinitionException("Cannot aquire database driver for database vendor: " + getDbVendor(), e);
 			}
 		}
 
 		if (dbVendor == DbVendor.SQLite) {
 			if (Utilities.isNotBlank(hostnameAndPort)) {
-				throw new DbDefinitionException("SQLite db connections do not support the hostname parameter");
+				throw new DbDefinitionException("SQLite database connections do not support the hostname parameter");
 			} else if (Utilities.isNotBlank(username)) {
-				throw new DbDefinitionException("SQLite db connections do not support the username parameter");
+				throw new DbDefinitionException("SQLite database connections do not support the username parameter");
 			} else if (Utilities.isNotBlank(password)) {
-				throw new DbDefinitionException("SQLite db connections do not support the password parameter");
+				throw new DbDefinitionException("SQLite database connections do not support the password parameter");
 			}
 		} else if (dbVendor == DbVendor.Derby) {
 			if (Utilities.isNotBlank(hostnameAndPort)) {
-				throw new DbDefinitionException("Derby db connections do not support the hostname parameter");
+				throw new DbDefinitionException("Derby ddatabaseb connections do not support the hostname parameter");
 			} else if (Utilities.isNotBlank(username)) {
-				throw new DbDefinitionException("Derby db connections do not support the username parameter");
+				throw new DbDefinitionException("Derby database connections do not support the username parameter");
 			} else if (Utilities.isNotBlank(password)) {
-				throw new DbDefinitionException("Derby db connections do not support the password parameter");
+				throw new DbDefinitionException("Derby database connections do not support the password parameter");
 			}
 		} else if (dbVendor == DbVendor.HSQL) {
 			dbName = Utilities.replaceUsersHome(dbName);
 			if (dbName.startsWith("/")) {
 				if (Utilities.isNotBlank(hostnameAndPort)) {
-					throw new DbDefinitionException("HSQL file db connections do not support the hostname parameter");
+					throw new DbDefinitionException("HSQL file database connections do not support the hostname parameter");
 				} else if (Utilities.isNotBlank(username)) {
-					throw new DbDefinitionException("HSQL file db connections do not support the username parameter");
+					throw new DbDefinitionException("HSQL file database connections do not support the username parameter");
 				} else if (Utilities.isNotBlank(password)) {
-					throw new DbDefinitionException("HSQL file db connections do not support the password parameter");
+					throw new DbDefinitionException("HSQL file database connections do not support the password parameter");
 				}
 			}
 		} else if (dbVendor == DbVendor.Cassandra) {

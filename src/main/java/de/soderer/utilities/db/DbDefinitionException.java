@@ -8,7 +8,7 @@ public class DbDefinitionException extends Exception {
 	private static final long serialVersionUID = 6039775378389122712L;
 
 	/**
-	 * Instantiates a new db definition exception.
+	 * Instantiates a new database definition exception.
 	 *
 	 * @param errorMessage
 	 *            the error message

@@ -1195,4 +1195,24 @@ public class TextUtilities {
 		}
 		return returnValue;
 	}
+
+	public static String decodeUnicodeEncoding(final String input) {
+		final Pattern pattern = Pattern.compile("\\\\u[0-9a-fA-F]{4}");
+		final Matcher matcher = pattern.matcher(input);
+
+		final StringBuilder decodedString = new StringBuilder();
+
+		while (matcher.find()) {
+			final String unicodeSequence = matcher.group();
+			final char unicodeChar = (char) Integer.parseInt(unicodeSequence.substring(2), 16);
+			matcher.appendReplacement(decodedString, Character.toString(unicodeChar));
+		}
+
+		matcher.appendTail(decodedString);
+		return decodedString.toString();
+	}
+
+	public static int getUnicodeStringLength(final String input) {
+		return input.codePointCount(0, input.length());
+	}
 }

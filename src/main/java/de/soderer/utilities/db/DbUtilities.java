@@ -204,7 +204,7 @@ public class DbUtilities {
 	};
 
 	/**
-	 * In an Oracle DB the statement "SELECT CURRENT_TIMESTAMP FROM DUAL" return this special Oracle type "oracle.sql.TIMESTAMPTZ",
+	 * In an Oracle database the statement "SELECT CURRENT_TIMESTAMP FROM DUAL" return this special Oracle type "oracle.sql.TIMESTAMPTZ",
 	 * which is not listed in java.sql.Types, but can be read via ResultSet.getTimestamp(i) into a normal java.sql.Timestamp object
 	 */
 	public static final int ORACLE_TIMESTAMPTZ_TYPECODE = -101;
@@ -232,7 +232,7 @@ public class DbUtilities {
 			} else if ("hypersql".equalsIgnoreCase(dbVendorName)) {
 				return DbVendor.HSQL;
 			} else {
-				throw new Exception("Invalid db vendor: " + dbVendorName);
+				throw new Exception("Invalid database vendor: " + dbVendorName);
 			}
 		}
 
@@ -261,7 +261,7 @@ public class DbUtilities {
 
 	public static String generateUrlConnectionString(final DbVendor dbVendor, String dbServerHostname, int dbServerPort, String dbName, final boolean secureConnection, final File trustStoreFile, final char[] trustStorePassword, final String trustedCN) throws Exception {
 		if (secureConnection && dbVendor != DbVendor.Oracle && dbVendor != DbVendor.MySQL && dbVendor != DbVendor.MariaDB) {
-			throw new Exception("Secure connection is only supported for db vendors Oracle, MySQL, MariaDB");
+			throw new Exception("Secure connection is only supported for database vendors Oracle, MySQL, MariaDB");
 		}
 
 		if (DbVendor.Oracle == dbVendor) {
@@ -375,13 +375,13 @@ public class DbUtilities {
 		} else if (DbVendor.Cassandra == dbVendor) {
 			return "jdbc:cassandra://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?primarydc=DC1&backupdc=DC2&consistency=QUORUM";
 		} else {
-			throw new Exception("Unknown db vendor");
+			throw new Exception("Unknown database vendor");
 		}
 	}
 
 	public static Connection createNewDatabase(final DbVendor dbVendor, String dbPath) throws Exception {
 		if (dbVendor == null) {
-			throw new Exception("Unknown db vendor");
+			throw new Exception("Unknown database vendor");
 		}
 
 		if (dbVendor == DbVendor.Derby) {
@@ -394,20 +394,20 @@ public class DbUtilities {
 		if (dbVendor == DbVendor.SQLite) {
 			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
-				throw new Exception("SQLite db file '" + dbPath + "' already exists");
+				throw new Exception("SQLite database file '" + dbPath + "' already exists");
 			}
 			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath, false, null, null, null));
 		} else if (dbVendor == DbVendor.Derby) {
 			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (new File(dbPath).exists()) {
-				throw new Exception("Derby db directory '" + dbPath + "' already exists");
+				throw new Exception("Derby database directory '" + dbPath + "' already exists");
 			}
 			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath, false, null, null, null) + ";create=true");
 		} else if (dbVendor == DbVendor.HSQL) {
 			dbPath = Utilities.replaceUsersHome(dbPath);
 			if (dbPath.startsWith("/")) {
 				if (FileUtilities.getFilesByPattern(new File(dbPath.substring(0, dbPath.lastIndexOf("/"))), dbPath.substring(dbPath.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() > 0) {
-					throw new Exception("HSQL db '" + dbPath + "' already exists");
+					throw new Exception("HSQL database '" + dbPath + "' already exists");
 				}
 			}
 
@@ -417,13 +417,13 @@ public class DbUtilities {
 
 			return DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbPath, false, null, null, null));
 		} else {
-			throw new Exception("Invalid db vendor '" + dbVendor.toString() + "'. Only SQLite, HSQL or Derby db can be created this way.");
+			throw new Exception("Invalid database vendor '" + dbVendor.toString() + "'. Only SQLite, HSQL or Derby database can be created this way.");
 		}
 	}
 
 	public static boolean deleteDatabase(final DbVendor dbVendor, String dbPath) throws Exception {
 		if (dbVendor == null) {
-			throw new Exception("Unknown db vendor");
+			throw new Exception("Unknown database vendor");
 		}
 
 		if (dbVendor == DbVendor.SQLite) {
@@ -454,7 +454,7 @@ public class DbUtilities {
 				for (final File fileToDelete : baseDirectory.listFiles()) {
 					if (fileToDelete.getName().startsWith(basename)) {
 						if (!Utilities.delete(fileToDelete)) {
-							throw new Exception("Cannot delete db file '" + fileToDelete.getAbsolutePath() + "'");
+							throw new Exception("Cannot delete database file '" + fileToDelete.getAbsolutePath() + "'");
 						}
 					}
 				}
@@ -465,7 +465,7 @@ public class DbUtilities {
 				for (final File fileToDelete : baseDirectory.listFiles()) {
 					if (fileToDelete.getName().startsWith(basename)) {
 						if (!Utilities.delete(fileToDelete)) {
-							throw new Exception("Cannot delete db file '" + fileToDelete.getAbsolutePath() + "'");
+							throw new Exception("Cannot delete database file '" + fileToDelete.getAbsolutePath() + "'");
 						}
 					}
 				}
@@ -474,7 +474,7 @@ public class DbUtilities {
 				return false;
 			}
 		} else {
-			throw new Exception("Invalid db vendor '" + dbVendor.toString() + "'. Only SQLite, HSQL or Derby db can be deleted this way.");
+			throw new Exception("Invalid database vendor '" + dbVendor.toString() + "'. Only SQLite, HSQL or Derby database can be deleted this way.");
 		}
 	}
 
@@ -490,17 +490,17 @@ public class DbUtilities {
 		final char[] trustStorePassword = dbDefinition.getTrustStorePassword();
 
 		if (dbVendor == null) {
-			throw new Exception("Unknown db vendor");
+			throw new Exception("Unknown database vendor");
 		} else if (Utilities.isEmpty(hostnameAndPort) && dbVendor != DbVendor.HSQL && dbVendor != DbVendor.SQLite && dbVendor != DbVendor.Derby) {
-			throw new Exception("Cannot create db connection: Missing hostname");
+			throw new Exception("Cannot create database connection: Missing hostname");
 		} else if (Utilities.isEmpty(dbName)) {
-			throw new Exception("Cannot create db connection: Missing dbName");
+			throw new Exception("Cannot create database connection: Missing dbName");
 		} else if (trustStoreFile != null && !trustStoreFile.exists()) {
-			throw new Exception("Cannot create db connection: Configured trustStoreFile '" + trustStoreFile.getAbsolutePath() + "' does not exist");
+			throw new Exception("Cannot create database connection: Configured trustStoreFile '" + trustStoreFile.getAbsolutePath() + "' does not exist");
 		}
 
 		if (secureConnection && dbVendor != DbVendor.Oracle && dbVendor != DbVendor.MySQL && dbVendor != DbVendor.MariaDB) {
-			throw new Exception("Secure connection is only supported for db vendors Oracle, MySQL, MariaDB");
+			throw new Exception("Secure connection is only supported for database vendors Oracle, MySQL, MariaDB");
 		}
 
 		try {
@@ -511,7 +511,7 @@ public class DbUtilities {
 
 			Class.forName(dbVendor.getDriverClassName());
 		} catch (final Exception e) {
-			throw new Exception("Cannot create db connection, caused by unknown DriverClassName: " + e.getMessage());
+			throw new Exception("Cannot create database connection, caused by unknown DriverClassName: " + e.getMessage());
 		}
 
 		try {
@@ -519,24 +519,24 @@ public class DbUtilities {
 			if (dbVendor == DbVendor.SQLite) {
 				dbName = Utilities.replaceUsersHome(dbName);
 				if (!new File(dbName).exists()) {
-					throw new DbNotExistsException("SQLite db file '" + dbName + "' is not available");
+					throw new DbNotExistsException("SQLite database file '" + dbName + "' is not available");
 				} else if (!new File(dbName).isFile()) {
-					throw new Exception("SQLite db file '" + dbName + "' is not a file");
+					throw new Exception("SQLite database file '" + dbName + "' is not a file");
 				}
 				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName, false, null, null, null));
 			} else if (dbVendor == DbVendor.Derby) {
 				dbName = Utilities.replaceUsersHome(dbName);
 				if (!new File(dbName).exists()) {
-					throw new DbNotExistsException("Derby db directory '" + dbName + "' is not available");
+					throw new DbNotExistsException("Derby database directory '" + dbName + "' is not available");
 				} else if (!new File(dbName).isDirectory()) {
-					throw new Exception("Derby db directory '" + dbName + "' is not a directory");
+					throw new Exception("Derby database directory '" + dbName + "' is not a directory");
 				}
 				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, "", 0, dbName, false, null, null, null));
 			} else if (dbVendor == DbVendor.HSQL) {
 				dbName = Utilities.replaceUsersHome(dbName);
 				if (dbName.startsWith("/")) {
 					if (FileUtilities.getFilesByPattern(new File(dbName.substring(0, dbName.lastIndexOf("/"))), dbName.substring(dbName.lastIndexOf("/") + 1).replace(".", "\\.") + "\\..*", false).size() <= 0) {
-						throw new DbNotExistsException("HSQL db '" + dbName + "' is not available");
+						throw new DbNotExistsException("HSQL database '" + dbName + "' is not available");
 					}
 				}
 				int port;
@@ -681,9 +681,9 @@ public class DbUtilities {
 				}
 
 				// No Exception from testConnection, so it must be some other problem
-				throw new Exception("Cannot create db connection: " + e.getMessage(), e);
+				throw new Exception("Cannot create database connection: " + e.getMessage(), e);
 			} catch (final Exception e1) {
-				throw new Exception("Cannot create db connection, caused by Url (" + hostnameAndPort + "): " + e1.getMessage(), e1);
+				throw new Exception("Cannot create database connection, caused by Url (" + hostnameAndPort + "): " + e1.getMessage(), e1);
 			}
 		}
 	}
@@ -716,7 +716,7 @@ public class DbUtilities {
 								|| metaData.getColumnType(i) == Types.VARBINARY
 								|| metaData.getColumnType(i) == Types.LONGVARBINARY) {
 							if (dbVendor == DbVendor.SQLite || dbVendor == DbVendor.PostgreSQL || dbVendor == DbVendor.Cassandra) {
-								// DB vendor does not allow "resultSet.getBlob(i)"
+								// Database vendor does not allow "resultSet.getBlob(i)"
 								try (InputStream input = resultSet.getBinaryStream(metaData.getColumnName(i))) {
 									if (input != null) {
 										final byte[] data = IoUtilities.toByteArray(input);
@@ -940,7 +940,7 @@ public class DbUtilities {
 		try (Connection connection = dataSource.getConnection()) {
 			return getDbVendor(connection);
 		} catch (final SQLException e) {
-			throw new Exception("Cannot check db vendor: " + e.getMessage(), e);
+			throw new Exception("Cannot check database vendor: " + e.getMessage(), e);
 		}
 	}
 
@@ -968,13 +968,13 @@ public class DbUtilities {
 				} else if (productName != null && productName.toLowerCase().contains("cassandra")) {
 					return DbVendor.Cassandra;
 				} else {
-					throw new Exception("Unknown db vendor: " + productName);
+					throw new Exception("Unknown database vendor: " + productName);
 				}
 			} else {
-				throw new Exception("Undetectable db vendor");
+				throw new Exception("Undetectable database vendor");
 			}
 		} catch (final SQLException e) {
-			throw new Exception("Error while detecting db vendor: " + e.getMessage(), e);
+			throw new Exception("Error while detecting database vendor: " + e.getMessage(), e);
 		}
 	}
 
@@ -1474,7 +1474,7 @@ public class DbUtilities {
 					}
 				}
 			} else {
-				throw new Exception("Unsupported db vendor");
+				throw new Exception("Unsupported database vendor");
 			}
 			return returnMap;
 		}
@@ -1691,7 +1691,7 @@ public class DbUtilities {
 			} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 				return "current_timestamp";
 			} else {
-				throw new Exception("Unsupported db vendor");
+				throw new Exception("Unsupported database vendor");
 			}
 		} else {
 			if (dbVendor == DbVendor.Oracle) {
@@ -1699,7 +1699,7 @@ public class DbUtilities {
 			} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 				return "'" + fieldDefault + "'";
 			} else {
-				throw new Exception("Unsupported db vendor");
+				throw new Exception("Unsupported database vendor");
 			}
 		}
 	}
@@ -1803,7 +1803,7 @@ public class DbUtilities {
 			} else if (DbVendor.MySQL == dbVendor || DbVendor.MariaDB == dbVendor) {
 				changeColumnStatement = "ALTER TABLE " + tablename + " MODIFY " + changeColumnStatementPart;
 			} else {
-				throw new Exception("Unsupported db vendor");
+				throw new Exception("Unsupported database vendor");
 			}
 
 			try (Connection connection = dataSource.getConnection();
@@ -1828,7 +1828,7 @@ public class DbUtilities {
 		try (Connection connection = dataSource.getConnection()) {
 			return checkOracleTablespaceExists(connection, tablespaceName);
 		} catch (final SQLException e) {
-			throw new Exception("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
+			throw new Exception("Cannot check database tablespace " + tablespaceName + ": " + e.getMessage(), e);
 		}
 	}
 
@@ -1850,7 +1850,7 @@ public class DbUtilities {
 					return resultSet.getInt(1) > 0;
 				}
 			} catch (final Exception e) {
-				throw new Exception("Cannot check db tablespace " + tablespaceName + ": " + e.getMessage(), e);
+				throw new Exception("Cannot check database tablespace " + tablespaceName + ": " + e.getMessage(), e);
 			}
 		} else {
 			return false;
@@ -2155,7 +2155,7 @@ public class DbUtilities {
 				}
 
 			} else {
-				throw new Exception("Unknown db vendor");
+				throw new Exception("Unknown database vendor");
 			}
 		}
 	}
@@ -2378,7 +2378,7 @@ public class DbUtilities {
 		} else if (dbVendor == DbVendor.MsSQL) {
 			return DOWNLOAD_LOCATION_MSSQL;
 		} else {
-			throw new Exception("Invalid db vendor");
+			throw new Exception("Invalid database vendor");
 		}
 	}
 
@@ -2706,7 +2706,7 @@ public class DbUtilities {
 			} else if (dbVendor == DbVendor.Cassandra) {
 				statement.execute("UPDATE " + tableName + " SET " + indexColumnName + " = " + getPrimaryKeyColumns(connection, tableName).iterator().next());
 			} else {
-				throw new Exception("Unsupported db vendor");
+				throw new Exception("Unsupported database vendor");
 			}
 			connection.commit();
 		} catch (final Exception e) {
@@ -3027,7 +3027,7 @@ public class DbUtilities {
 
 	/**
 	 * Check for existing index
-	 * Returns null, if check cannot be executed (happens on some db vendors)
+	 * Returns null, if check cannot be executed (happens on some database vendors)
 	 *
 	 * @param connection
 	 * @param tableName
@@ -3140,7 +3140,7 @@ public class DbUtilities {
 	}
 
 	/**
-	 * Special shutdown command to free single user derby db for next connection maybe of another thread
+	 * Special shutdown command to free single user derby database for next connection maybe of another thread
 	 *
 	 * @param dbName
 	 * @throws Exception
@@ -3148,9 +3148,9 @@ public class DbUtilities {
 	public static void shutDownDerbyDb(String dbName) throws Exception {
 		dbName = Utilities.replaceUsersHome(dbName);
 		if (!new File(dbName).exists()) {
-			throw new DbNotExistsException("Derby db directory '" + dbName + "' is not available");
+			throw new DbNotExistsException("Derby database directory '" + dbName + "' is not available");
 		} else if (!new File(dbName).isDirectory()) {
-			throw new Exception("Derby db directory '" + dbName + "' is not a directory");
+			throw new Exception("Derby database directory '" + dbName + "' is not a directory");
 		}
 		try (Connection connection = DriverManager.getConnection("jdbc:derby:" + Utilities.replaceUsersHome(dbName) + ";shutdown=true")) {
 			// do nothing
@@ -3211,7 +3211,7 @@ public class DbUtilities {
 					if (resultSet.next()) {
 						username = resultSet.getString(1);
 					} else {
-						throw new Exception("Cannot detect oracle db username");
+						throw new Exception("Cannot detect oracle database username");
 					}
 				}
 
@@ -3266,7 +3266,7 @@ public class DbUtilities {
 				}
 			}
 		} else {
-			throw new Exception("getTableStorageSize is not supported by this db vendor");
+			throw new Exception("getTableStorageSize is not supported by this database vendor");
 		}
 	}
 
@@ -3295,7 +3295,7 @@ public class DbUtilities {
 				}
 			}
 		} else {
-			throw new Exception("getTableIndexNames is not supported by this db vendor");
+			throw new Exception("getTableIndexNames is not supported by this database vendor");
 		}
 	}
 

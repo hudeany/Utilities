@@ -23,7 +23,7 @@ public class DbDriverSupplier {
 
 	public DbDriverSupplier(final Window parent, final DbVendor dbVendor) throws Exception {
 		if (dbVendor == null) {
-			throw new Exception("Invalid empty db vendor");
+			throw new Exception("Invalid empty database vendor");
 		}
 
 		this.parent = parent;
@@ -61,7 +61,7 @@ public class DbDriverSupplier {
 			System.out.println(LangResources.get("emptyForCancel"));
 			return new SimpleConsoleInput().setPrompt(LangResources.get("enterDriverFile") + ": ").readInput();
 		} else {
-			new QuestionDialog(parent, applicationName + " DB driver", LangResources.get("driverIsMissing", dbVendor.toString() + "(" + dbVendor.getDriverClassName() + ")\nDownload URL: " + DbUtilities.getDownloadUrl(dbVendor), configurationFile), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
+			new QuestionDialog(parent, applicationName + " database driver", LangResources.get("driverIsMissing", dbVendor.toString() + "(" + dbVendor.getDriverClassName() + ")\nDownload URL: " + DbUtilities.getDownloadUrl(dbVendor), configurationFile), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 			final JFileChooser fileChooser = new JFileChooser();
 			fileChooser.setDialogTitle(applicationName + " " + LangResources.get("driverFileSelectTitle", dbVendor.toString()));
 			if (JFileChooser.APPROVE_OPTION == fileChooser.showOpenDialog(parent)) {

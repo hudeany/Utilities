@@ -1,5 +1,6 @@
 package de.soderer.utilities;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,13 +11,13 @@ public class InputStreamWithOtherItemsToClose extends InputStream {
 	private Closeable[] otherItemsToClose = null;
 
 	public InputStreamWithOtherItemsToClose(final InputStream baseInputStream, final String name, final Closeable... otherItemsToClose) {
-		this.baseInputStream = baseInputStream;
+		this.baseInputStream = new BufferedInputStream(baseInputStream);
 		this.name = name;
 		this.otherItemsToClose = otherItemsToClose;
 	}
 
 	public InputStreamWithOtherItemsToClose(final InputStream baseInputStream, final Closeable... otherItemsToClose) {
-		this.baseInputStream = baseInputStream;
+		this.baseInputStream = new BufferedInputStream(baseInputStream);
 		this.otherItemsToClose = otherItemsToClose;
 	}
 
