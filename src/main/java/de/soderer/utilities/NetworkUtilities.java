@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.KeyStore;
@@ -270,7 +271,8 @@ public class NetworkUtilities {
 
 	public static boolean isValidUri(final String uri) {
 		try {
-			new URL(uri).toURI();
+			@SuppressWarnings("unused")
+			final URI unused = new URI(uri);
 			return true;
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
