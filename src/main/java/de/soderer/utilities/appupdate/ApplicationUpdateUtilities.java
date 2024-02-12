@@ -571,7 +571,7 @@ public class ApplicationUpdateUtilities {
 
 					final Certificate[] certificates = jarEntry.getCertificates();
 					if ((certificates == null) || (certificates.length == 0)) {
-						throw new SecurityException("The jar file contains unsigned files.");
+						throw new SecurityException("The jar file contains unsigned files: " + jarEntry.getName());
 					} else {
 						for (final Certificate chainRootCertificate : certificates) {
 							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCertificates)) {
@@ -589,7 +589,8 @@ public class ApplicationUpdateUtilities {
 			}
 
 			return true;
-		} catch (@SuppressWarnings("unused") final Exception e) {
+		} catch (final Exception e) {
+			e.printStackTrace();
 			return false;
 		}
 	}

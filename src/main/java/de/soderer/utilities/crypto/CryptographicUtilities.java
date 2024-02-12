@@ -714,7 +714,7 @@ public class CryptographicUtilities {
 					final Certificate[] certificates = jarEntry.getCertificates();
 					if ((certificates == null) || (certificates.length == 0)) {
 						if (!jarEntry.getName().startsWith("META-INF")) {
-							throw new SecurityException("The jar file contains unsigned files.");
+							throw new SecurityException("The jar file contains unsigned files: " + jarEntry.getName());
 						}
 					} else {
 						boolean isSignedByTrustedCert = false;
