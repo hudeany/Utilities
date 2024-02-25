@@ -43,6 +43,21 @@ public class NumberUtilities {
 	}
 
 	/**
+	 * Check for a long integer value without decimals
+	 *
+	 * @param value
+	 * @return
+	 */
+	public static boolean isBigInteger(final String value) {
+		try {
+			Long.parseLong(value);
+			return true;
+		} catch (@SuppressWarnings("unused") final NumberFormatException e) {
+			return false;
+		}
+	}
+
+	/**
 	 * Check for a double value with optional decimals after a dot(.) and exponent
 	 *
 	 * @param value
