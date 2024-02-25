@@ -52,6 +52,8 @@ public class DbColumnType {
 			return SimpleDataType.String;
 		} else if ("blob".equals(typeName.toLowerCase()) ||"bytea".equals( typeName.toLowerCase())) {
 			return SimpleDataType.Blob;
+		} else if (typeName.toLowerCase().contains("bigint")) {
+			return SimpleDataType.BigInteger;
 		} else if (typeName.toLowerCase().contains("int")) {
 			return SimpleDataType.Integer;
 		} else {
@@ -65,7 +67,7 @@ public class DbColumnType {
 		final SimpleDataType simpleDataType = getSimpleDataType();
 		return typeName
 				+ (simpleDataType == SimpleDataType.String ? "(" + characterByteSize + ")" : "")
-				+ (simpleDataType == SimpleDataType.Integer || simpleDataType == SimpleDataType.Float ? "(" + numericPrecision + ", " + numericScale + ")" : "")
+				+ (simpleDataType == SimpleDataType.Float ? "(" + numericPrecision + ", " + numericScale + ")" : "")
 				+ (nullable ? " nullable": " not nullable")
 				+ (autoIncrement ? " autoIncrement": "");
 	}

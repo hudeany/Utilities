@@ -2216,6 +2216,7 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP";
 				case Date: return "DATE";
 				case Integer: return "NUMBER";
+				case BigInteger: return "NUMBER";
 				case Float: return "NUMBER";
 				case String: return "VARCHAR2";
 				default: return "VARCHAR2";
@@ -2227,6 +2228,7 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP NULL";
 				case Date: return "DATE";
 				case Integer: return "INT";
+				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
@@ -2238,6 +2240,7 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP NULL";
 				case Date: return "DATE";
 				case Integer: return "INT";
+				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
@@ -2249,6 +2252,7 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP";
 				case Date: return "DATE";
 				case Integer: return "INTEGER";
+				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
@@ -2260,6 +2264,7 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP";
 				case Date: return "DATE";
 				case Integer: return "INTEGER";
+				case BigInteger: return "BIGINT";
 				case Float: return "REAL";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
@@ -2271,6 +2276,7 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP";
 				case Date: return "DATE";
 				case Integer: return "INTEGER";
+				case BigInteger: return "INTEGER";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
@@ -2282,6 +2288,7 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP";
 				case Date: return "DATE";
 				case Integer: return "INTEGER";
+				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
@@ -2293,6 +2300,7 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP";
 				case Date: return "DATE";
 				case Integer: return "INTEGER";
+				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE PRECISION";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
@@ -2304,7 +2312,20 @@ public class DbUtilities {
 				case DateTime: return "TIMESTAMP";
 				case Date: return "DATE";
 				case Integer: return "INT";
+				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
+				case String: return "VARCHAR";
+				default: return "VARCHAR";
+			}
+		} else if (dbVendor == DbVendor.MsSQL) {
+			switch (simpleDataType) {
+				case Blob: return "VARBINARY";
+				case Clob: return "TEXT";
+				case DateTime: return "DATETIME";
+				case Date: return "DATE";
+				case Integer: return "INT";
+				case BigInteger: return "BIGINT";
+				case Float: return "REAL";
 				case String: return "VARCHAR";
 				default: return "VARCHAR";
 			}
@@ -2516,7 +2537,7 @@ public class DbUtilities {
 		}
 
 		try (Statement statement = connection.createStatement()) {
-			statement.execute("ALTER TABLE " + tableName + " ADD " + columnName + " " + DbUtilities.getDataType(dbVendor, SimpleDataType.Integer));
+			statement.execute("ALTER TABLE " + tableName + " ADD " + columnName + " " + DbUtilities.getDataType(dbVendor, SimpleDataType.BigInteger));
 			if (dbVendor != DbVendor.Cassandra) {
 				try {
 					statement.execute("CREATE INDEX tmp" + new Random().nextInt(100000000) + "_idx ON " + tableName + " (" + columnName + ")");
@@ -2798,8 +2819,6 @@ public class DbUtilities {
 						String typeString = columnDataType.getValue().getTypeName();
 						if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.String) {
 							typeString += "(" + (Long.toString(columnDataType.getValue().getCharacterByteSize())) + ")";
-						} else if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.Integer) {
-							typeString += "(" + (Integer.toString(columnDataType.getValue().getNumericPrecision())) + ")";
 						} else if (columnDataType.getValue().getSimpleDataType() == SimpleDataType.Float) {
 							typeString += "(" + (Integer.toString(columnDataType.getValue().getNumericPrecision())) + ")";
 						}
