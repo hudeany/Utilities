@@ -2,6 +2,7 @@ package de.soderer.utilities.db;
 
 public enum SimpleDataType {
 	Integer,
+	LongInteger,
 	Float,
 	Date,
 	DateTime,
