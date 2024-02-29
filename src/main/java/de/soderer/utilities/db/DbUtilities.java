@@ -1179,7 +1179,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, NVL(substr(data_type, 1, instr(data_type, '(') - 1), data_type) AS data_type, data_length, data_precision, data_scale, nullable FROM user_tab_columns WHERE LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					preparedStatement.setNString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							int characterLength = resultSet.getInt("data_length");
@@ -1205,7 +1205,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					preparedStatement.setNString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 						while (resultSet.next()) {
 							long characterLength = resultSet.getLong("character_maximum_length");
@@ -1231,7 +1231,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					preparedStatement.setNString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 						while (resultSet.next()) {
 							long characterLength = resultSet.getLong("character_maximum_length");
@@ -1257,7 +1257,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, type_name, column_size, decimal_digits, is_nullable, is_autoincrement FROM information_schema.system_columns WHERE LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					preparedStatement.setNString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							long characterLength = resultSet.getLong("column_size");
@@ -1283,7 +1283,7 @@ public class DbUtilities {
 				final String sql = "SELECT columnname, columndatatype, autoincrementvalue FROM sys.systables, sys.syscolumns WHERE tableid = referenceid AND LOWER(tablename) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					preparedStatement.setNString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							String type = resultSet.getString("columndatatype");
@@ -1316,7 +1316,7 @@ public class DbUtilities {
 						+ " FROM rdb$fields f JOIN rdb$relation_fields rf ON rf.rdb$field_source = f.rdb$field_name WHERE rf.rdb$relation_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName.toUpperCase());
+					preparedStatement.setNString(1, tableName.toUpperCase());
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							long characterLength = resultSet.getLong("rdb$field_length");
@@ -1376,7 +1376,7 @@ public class DbUtilities {
 					// sqlite_sequence only exists if there is any table with auto_increment
 					try (PreparedStatement preparedStatement2 = connection.prepareStatement("SELECT COUNT(*) FROM sqlite_sequence WHERE LOWER(name) = LOWER(?)")) {
 						preparedStatement2.setFetchSize(100);
-						preparedStatement2.setString(1, tableName);
+						preparedStatement2.setNString(1, tableName);
 						try (ResultSet resultSet2 = preparedStatement2.executeQuery()) {
 							if (resultSet2.next()) {
 								hasAutoIncrement = resultSet2.getInt(1) > 0;
@@ -1412,7 +1412,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					preparedStatement.setNString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							long characterLength = resultSet.getLong("character_maximum_length");
@@ -1446,8 +1446,8 @@ public class DbUtilities {
 					final String sql = "SELECT column_name, kind, type FROM system_schema.columns WHERE keyspace_name = ? AND table_name = ?";
 					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 						preparedStatement.setFetchSize(100);
-						preparedStatement.setString(1, keySpaceName);
-						preparedStatement.setString(2, tableNameInKeySpace);
+						preparedStatement.setNString(1, keySpaceName);
+						preparedStatement.setNString(2, tableNameInKeySpace);
 						try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 							while (resultSet.next()) {
 								returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("type"), -1, -1, -1, !resultSet.getString("kind").equalsIgnoreCase("partition_key"), false));
@@ -1458,7 +1458,7 @@ public class DbUtilities {
 					final String sql = "SELECT keyspace_name, column_name, kind, type FROM system_schema.columns WHERE table_name = ? ALLOW FILTERING";
 					try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 						preparedStatement.setFetchSize(100);
-						preparedStatement.setString(1, tableName);
+						preparedStatement.setNString(1, tableName);
 						try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 							String keyspace = null;
 							while (resultSet.next()) {
@@ -1543,8 +1543,8 @@ public class DbUtilities {
 				final String sql = "SELECT data_default FROM user_tab_cols WHERE table_name = ? AND column_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName.toUpperCase());
-					preparedStatement.setString(2, columnName.toUpperCase());
+					preparedStatement.setNString(1, tableName.toUpperCase());
+					preparedStatement.setNString(2, columnName.toUpperCase());
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String defaultvalue = resultSet.getString(1);
@@ -1566,8 +1566,8 @@ public class DbUtilities {
 				final String sql = "SELECT column_default FROM information_schema.columns WHERE table_name = ? AND column_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
-					preparedStatement.setString(2, columnName);
+					preparedStatement.setNString(1, tableName);
+					preparedStatement.setNString(2, columnName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String returnValue = resultSet.getString(1);
@@ -1585,8 +1585,8 @@ public class DbUtilities {
 				final String sql = "SELECT column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ? AND column_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
-					preparedStatement.setString(2, columnName);
+					preparedStatement.setNString(1, tableName);
+					preparedStatement.setNString(2, columnName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String returnValue = resultSet.getString(1);
@@ -1629,7 +1629,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, data_default FROM user_tab_cols WHERE table_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName.toUpperCase());
+					preparedStatement.setNString(1, tableName.toUpperCase());
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
@@ -1650,7 +1650,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, column_default FROM information_schema.columns WHERE table_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					preparedStatement.setNString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
@@ -1666,7 +1666,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					preparedStatement.setNString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
@@ -1845,7 +1845,7 @@ public class DbUtilities {
 		if (dbVendor == DbVendor.Oracle && tablespaceName != null) {
 			try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT COUNT(*) FROM dba_tablespaces WHERE LOWER(tablespace_name) = ?")) {
 				preparedStatement.setFetchSize(100);
-				preparedStatement.setString(1, tablespaceName.toLowerCase());
+				preparedStatement.setNString(1, tablespaceName.toLowerCase());
 				try (ResultSet resultSet = preparedStatement.executeQuery()) {
 					return resultSet.getInt(1) > 0;
 				}
@@ -1878,8 +1878,8 @@ public class DbUtilities {
 						final String sql = "SELECT column_name FROM system_schema.columns WHERE keyspace_name = ? AND table_name = ? AND kind = 'partition_key'";
 						try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 							preparedStatement.setFetchSize(100);
-							preparedStatement.setString(1, keySpaceName);
-							preparedStatement.setString(2, tableNameInKeySpace);
+							preparedStatement.setNString(1, keySpaceName);
+							preparedStatement.setNString(2, tableNameInKeySpace);
 							final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
 							try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 								while (resultSet.next()) {
@@ -1892,7 +1892,7 @@ public class DbUtilities {
 						final String sql = "SELECT keyspace_name, column_name FROM system_schema.columns WHERE table_name = ? AND kind = 'partition_key' ALLOW FILTERING";
 						try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 							preparedStatement.setFetchSize(100);
-							preparedStatement.setString(1, tableName);
+							preparedStatement.setNString(1, tableName);
 							try (ResultSet resultSet = preparedStatement.executeQuery() ) {
 								String keyspace = null;
 								final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
@@ -3060,8 +3060,8 @@ public class DbUtilities {
 			try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM user_ind_columns WHERE LOWER(table_name) = ? AND LOWER(column_name) = ?")) {
 				for (String keyColumn : keyColumns) {
 					keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
-					statement.setString(1, tableName.toLowerCase());
-					statement.setString(2, keyColumn.toLowerCase());
+					statement.setNString(1, tableName.toLowerCase());
+					statement.setNString(2, keyColumn.toLowerCase());
 					try (ResultSet resultSet = statement.executeQuery()) {
 						if (!resultSet.next() || resultSet.getInt(1) <= 0) {
 							return false;
@@ -3074,7 +3074,7 @@ public class DbUtilities {
 			try (PreparedStatement statement = connection.prepareStatement("SHOW INDEX FROM " + tableName.toLowerCase() + " WHERE column_name = ?")) {
 				for (String keyColumn : keyColumns) {
 					keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
-					statement.setString(1, keyColumn.toLowerCase());
+					statement.setNString(1, keyColumn.toLowerCase());
 					try (ResultSet resultSet = statement.executeQuery()) {
 						if (!resultSet.next()) {
 							return false;
@@ -3087,7 +3087,7 @@ public class DbUtilities {
 			try (PreparedStatement statement = connection.prepareStatement("SHOW INDEX FROM " + tableName.toLowerCase() + " WHERE column_name = ?")) {
 				for (String keyColumn : keyColumns) {
 					keyColumn = escapeVendorReservedNames(dbVendor, keyColumn);
-					statement.setString(1, keyColumn.toLowerCase());
+					statement.setNString(1, keyColumn.toLowerCase());
 					try (ResultSet resultSet = statement.executeQuery()) {
 						if (!resultSet.next()) {
 							return false;
@@ -3101,7 +3101,7 @@ public class DbUtilities {
 			indexedColumns.addAll(getPrimaryKeyColumns(connection, tableName));
 
 			try (PreparedStatement statement = connection.prepareStatement("SELECT options FROM system_schema.indexes WHERE table_name = ? ALLOW FILTERING")) {
-				statement.setString(1, tableName);
+				statement.setNString(1, tableName);
 				try (ResultSet resultSet = statement.executeQuery()) {
 					while (resultSet.next()) {
 						final String options = resultSet.getString("options");
@@ -3259,10 +3259,10 @@ public class DbUtilities {
 			final List<String> indexNames = getTableIndexNames(connection, tableName);
 			final String sql = "SELECT SUM(bytes) FROM user_segments WHERE segment_name in (SELECT segment_name FROM user_lobs WHERE table_name = ?) OR segment_name IN (?" + Utilities.repeat(", ?", indexNames.size()) + ")";
 			try (final PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-				preparedStatement.setString(1, tableName.toUpperCase());
-				preparedStatement.setString(2, tableName.toUpperCase());
+				preparedStatement.setNString(1, tableName.toUpperCase());
+				preparedStatement.setNString(2, tableName.toUpperCase());
 				for (int i = 0; i < indexNames.size(); i++) {
-					preparedStatement.setString(3 + i, indexNames.get(i).toUpperCase());
+					preparedStatement.setNString(3 + i, indexNames.get(i).toUpperCase());
 				}
 				try (final ResultSet resultSet = preparedStatement.executeQuery()) {
 					if (resultSet.next()) {
@@ -3275,7 +3275,7 @@ public class DbUtilities {
 		} else if (getDbVendor(connection) == DbVendor.MariaDB || getDbVendor(connection) == DbVendor.MySQL) {
 			final String sql = "SELECT data_length + data_free FROM information_schema.tables WHERE LOWER(table_name) = ?";
 			try (final PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-				preparedStatement.setString(1, tableName.toLowerCase());
+				preparedStatement.setNString(1, tableName.toLowerCase());
 				try (final ResultSet resultSet = preparedStatement.executeQuery()) {
 					if (resultSet.next()) {
 						return resultSet.getLong(1);
@@ -3293,7 +3293,7 @@ public class DbUtilities {
 		if (getDbVendor(connection) == DbVendor.Oracle) {
 			final String query = "SELECT index_name FROM user_ind_columns WHERE LOWER(table_name) = ?";
 			try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-				preparedStatement.setString(1, tableName.toLowerCase());
+				preparedStatement.setNString(1, tableName.toLowerCase());
 				try (final ResultSet resultSet = preparedStatement.executeQuery()) {
 					final List<String> resultList = new ArrayList<>();
 					while (resultSet.next()) {
@@ -3463,7 +3463,7 @@ public class DbUtilities {
 							"SELECT user_constraints.constraint_name, user_constraints.constraint_type, user_cons_columns.column_name"
 									+ " FROM user_constraints JOIN user_cons_columns ON user_constraints.constraint_name = user_cons_columns.constraint_name AND user_constraints.table_name = user_cons_columns.table_name"
 									+ " WHERE user_constraints.table_name = ? ORDER BY user_constraints.constraint_name")) {
-						preparedStatement.setString(1, tableName);
+						preparedStatement.setNString(1, tableName);
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
 							final List<DatabaseConstraint> returnList = new ArrayList<>();
 							while (resultSet.next()) {
@@ -3479,7 +3479,7 @@ public class DbUtilities {
 				} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
 					final List<DatabaseConstraint> returnList = new ArrayList<>();
 					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_name = ? ORDER BY constraint_name")) {
-						preparedStatement.setString(1, tableName);
+						preparedStatement.setNString(1, tableName);
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
 							while (resultSet.next()) {
 								final String constraintName = resultSet.getString("constraint_name").toLowerCase();
@@ -3491,7 +3491,7 @@ public class DbUtilities {
 					}
 
 					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, check_clause FROM information_schema.check_constraints WHERE table_name = ?")) {
-						preparedStatement.setString(1, tableName);
+						preparedStatement.setNString(1, tableName);
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
 							while (resultSet.next()) {
 								final String constraintName = resultSet.getString("constraint_name").toLowerCase();
@@ -3531,7 +3531,7 @@ public class DbUtilities {
 				if (dbVendor == DbVendor.Oracle) {
 					try (Statement statement = connection.createStatement()) {
 						try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT index_name, column_name FROM all_ind_columns WHERE table_name = ?")) {
-							preparedStatement.setString(1, tableName);
+							preparedStatement.setNString(1, tableName);
 							try (ResultSet resultSet = preparedStatement.executeQuery()) {
 								final Map<String, List<String>> interimMap = new HashMap<>();
 
