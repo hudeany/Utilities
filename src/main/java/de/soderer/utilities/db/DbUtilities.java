@@ -1283,7 +1283,7 @@ public class DbUtilities {
 				final String sql = "SELECT columnname, columndatatype, autoincrementvalue FROM sys.systables, sys.syscolumns WHERE tableid = referenceid AND LOWER(tablename) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setNString(1, tableName);
+					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							String type = resultSet.getString("columndatatype");
@@ -1316,7 +1316,7 @@ public class DbUtilities {
 						+ " FROM rdb$fields f JOIN rdb$relation_fields rf ON rf.rdb$field_source = f.rdb$field_name WHERE rf.rdb$relation_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setNString(1, tableName.toUpperCase());
+					preparedStatement.setString(1, tableName.toUpperCase());
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							long characterLength = resultSet.getLong("rdb$field_length");
@@ -1374,12 +1374,12 @@ public class DbUtilities {
 				boolean hasAutoIncrement = false;
 				if (checkTableExist(connection, "sqlite_sequence")) {
 					// sqlite_sequence only exists if there is any table with auto_increment
-					try (PreparedStatement preparedStatement2 = connection.prepareStatement("SELECT COUNT(*) FROM sqlite_sequence WHERE LOWER(name) = LOWER(?)")) {
-						preparedStatement2.setFetchSize(100);
-						preparedStatement2.setNString(1, tableName);
-						try (ResultSet resultSet2 = preparedStatement2.executeQuery()) {
-							if (resultSet2.next()) {
-								hasAutoIncrement = resultSet2.getInt(1) > 0;
+					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT COUNT(*) FROM sqlite_sequence WHERE LOWER(name) = LOWER(?)")) {
+						preparedStatement.setFetchSize(100);
+						preparedStatement.setString(1, tableName);
+						try (ResultSet resultSet = preparedStatement.executeQuery()) {
+							if (resultSet.next()) {
+								hasAutoIncrement = resultSet.getInt(1) > 0;
 							}
 						}
 					}
