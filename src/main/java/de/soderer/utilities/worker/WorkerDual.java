@@ -19,7 +19,11 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 		currentItemName = itemName;
 		startTimeSub = LocalDateTime.now();
 		if (parent != null && !cancel) {
-			((WorkerParentDual) parent).receiveItemStartSignal(currentItemName, description);
+			if (parent instanceof WorkerParentDual) {
+				((WorkerParentDual) parent).receiveItemStartSignal(currentItemName, description);
+			} else {
+				parent.receiveUnlimitedProgressSignal();
+			}
 		}
 	}
 
@@ -31,7 +35,11 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 		if (parent != null && !cancel) {
 			if (Duration.between(lastProgressShow, LocalDateTime.now()).toMillis() > progressDisplayDelayMilliseconds
 					|| overrideRefreshTime) {
-				((WorkerParentDual) parent).receiveItemProgressSignal(startTimeSub, subItemsToDo, subItemsDone, subItemsUnitSign);
+				if (parent instanceof WorkerParentDual) {
+					((WorkerParentDual) parent).receiveItemProgressSignal(startTimeSub, subItemsToDo, subItemsDone, subItemsUnitSign);
+				} else {
+					parent.receiveProgressSignal(startTimeSub, subItemsToDo, subItemsDone, subItemsUnitSign);
+				}
 				lastProgressShow = LocalDateTime.now();
 			}
 		}
@@ -40,22 +48,34 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	protected void signalItemDone() {
 		endTimeSub = LocalDateTime.now();
 		if (parent != null) {
-			((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, null);
+			if (parent instanceof WorkerParentDual) {
+				((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, null);
+			} else {
+				parent.receiveDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, null);
+			}
 			currentItemName = null;
 		}
 	}
 
-	protected void signalItemDone(String resultText) {
+	protected void signalItemDone(final String resultText) {
 		endTimeSub = LocalDateTime.now();
 		if (parent != null) {
-			((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, resultText);
+			if (parent instanceof WorkerParentDual) {
+				((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, resultText);
+			} else {
+				parent.receiveDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, resultText);
+			}
 			currentItemName = null;
 		}
 	}
 
 	protected void signalUnlimitedSubProgress() {
 		if (parent != null) {
-			((WorkerParentDual) parent).receiveUnlimitedSubProgressSignal();
+			if (parent instanceof WorkerParentDual) {
+				((WorkerParentDual) parent).receiveUnlimitedSubProgressSignal();
+			} else {
+				parent.receiveUnlimitedProgressSignal();
+			}
 		}
 	}
 }

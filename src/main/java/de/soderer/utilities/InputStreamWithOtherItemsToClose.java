@@ -31,6 +31,11 @@ public class InputStreamWithOtherItemsToClose extends InputStream {
 	}
 
 	@Override
+	public int read(final byte[] bts, final int off, final int len) throws IOException {
+		return baseInputStream.read(bts, off, len);
+	}
+
+	@Override
 	public void close() throws IOException {
 		baseInputStream.close();
 		if (otherItemsToClose != null) {

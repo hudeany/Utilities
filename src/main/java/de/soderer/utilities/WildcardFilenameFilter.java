@@ -114,13 +114,11 @@ public class WildcardFilenameFilter implements FileFilter, FilenameFilter {
 							break;
 						}
 						anyChars = false;
-
 					} else if (wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex].equals("*")) {
 						anyChars = true;
 						if (wildcardFilenamePatternPartsIndex == wildcardFilenamePatternParts.length - 1) {
 							textIndex = fileName.length();
 						}
-
 					} else {
 						if (anyChars) {
 							textIndex = checkIndexOf(fileName, textIndex, wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex], caseSensitive);
@@ -129,10 +127,12 @@ public class WildcardFilenameFilter implements FileFilter, FilenameFilter {
 							}
 							final int repeat = checkIndexOf(fileName, textIndex + 1, wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex], caseSensitive);
 							if (repeat >= 0) {
-								backtrack.push(new int[] {wildcardFilenamePatternPartsIndex, repeat});
+								backtrack.push(new int[] { wildcardFilenamePatternPartsIndex, repeat });
 							}
 						} else {
-							if (!fileName.regionMatches(!caseSensitive, textIndex, wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex], 0, wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex].length())) {
+							if (!fileName.regionMatches(!caseSensitive, textIndex,
+									wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex], 0,
+									wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex].length())) {
 								break;
 							}
 						}
@@ -190,7 +190,7 @@ public class WildcardFilenameFilter implements FileFilter, FilenameFilter {
 		final int endIndex = str.length() - search.length();
 		if (endIndex >= strStartIndex) {
 			for (int i = strStartIndex; i <= endIndex; i++) {
-				if (str.regionMatches(!caseSensitive, strStartIndex, search, 0, search.length())) {
+				if (str.regionMatches(!caseSensitive, i, search, 0, search.length())) {
 					return i;
 				}
 			}

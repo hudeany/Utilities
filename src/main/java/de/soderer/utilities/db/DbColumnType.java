@@ -46,11 +46,11 @@ public class DbColumnType {
 			return SimpleDataType.DateTime;
 		} else if (typeName.toLowerCase().contains("date")) {
 			return SimpleDataType.Date;
-		} else if ("clob".equals(typeName.toLowerCase()) || "longtext".equals(typeName.toLowerCase())) {
+		} else if (typeName.toLowerCase().contains("clob") || typeName.toLowerCase().contains("text")) {
 			return SimpleDataType.Clob;
 		} else if (typeName.toLowerCase().startsWith("varchar") || typeName.toLowerCase().startsWith("char") || typeName.toLowerCase().contains("text") || typeName.toLowerCase().startsWith("character")) {
 			return SimpleDataType.String;
-		} else if ("blob".equals(typeName.toLowerCase()) ||"bytea".equals( typeName.toLowerCase())) {
+		} else if (typeName.toLowerCase().contains("blob") ||"bytea".equals( typeName.toLowerCase())) {
 			return SimpleDataType.Blob;
 		} else if (typeName.toLowerCase().contains("bigint")) {
 			return SimpleDataType.BigInteger;
