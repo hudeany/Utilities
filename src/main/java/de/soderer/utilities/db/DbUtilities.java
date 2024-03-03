@@ -320,32 +320,34 @@ public class DbUtilities {
 				+ ")";
 			}
 		} else if (DbVendor.MySQL == dbVendor) {
+			final String additionalParameters = "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
 			if (secureConnection) {
 				if (trustStoreFile != null) {
 					if (trustStorePassword != null) {
-						return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=true&trustStore=" + trustStoreFile.getAbsolutePath() + "&trustStorePassword=" + new String(trustStorePassword);
+						return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + additionalParameters + "&useSSL=true&trustStore=" + trustStoreFile.getAbsolutePath() + "&trustStorePassword=" + new String(trustStorePassword);
 					} else {
-						return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=true&trustStore=" + trustStoreFile.getAbsolutePath();
+						return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + additionalParameters + "&useSSL=true&trustStore=" + trustStoreFile.getAbsolutePath();
 					}
 				} else {
-					return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=true&trustServerCertificate=true";
+					return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + additionalParameters + "&useSSL=true&trustServerCertificate=true";
 				}
 			} else {
-				return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+				return "jdbc:mysql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + additionalParameters;
 			}
 		} else if (DbVendor.MariaDB == dbVendor) {
+			final String additionalParameters = "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
 			if (secureConnection) {
 				if (trustStoreFile != null) {
 					if (trustStorePassword != null) {
-						return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=true&trustStore=" + trustStoreFile.getAbsolutePath() + "&trustStorePassword=" + new String(trustStorePassword);
+						return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + additionalParameters + "&useSSL=true&trustStore=" + trustStoreFile.getAbsolutePath() + "&trustStorePassword=" + new String(trustStorePassword);
 					} else {
-						return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=true&trustStore=" + trustStoreFile.getAbsolutePath();
+						return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + additionalParameters + "&useSSL=true&trustStore=" + trustStoreFile.getAbsolutePath();
 					}
 				} else {
-					return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=true&trustServerCertificate=true";
+					return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + additionalParameters + "&useSSL=true&trustServerCertificate=true";
 				}
 			} else {
-				return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?useEncoding=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+				return "jdbc:mariadb://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + additionalParameters;
 			}
 		} else if (DbVendor.PostgreSQL == dbVendor) {
 			return "jdbc:postgresql://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName;
@@ -3206,12 +3208,76 @@ public class DbUtilities {
 
 	public static void updateBlob(final DbDefinition dbDefinition, final String sqlUpdateStatementWithPlaceholder, final String filePath) throws Exception {
 		try (Connection connection = createConnection(dbDefinition, false)) {
+			if (dbDefinition.getDbVendor() == DbVendor.MySQL) {
+				final long maxPacketSize = getMysqlConnectionNumericVariable(connection, "max_allowed_packet");
+				if (new File(filePath).length() > maxPacketSize) {
+					throw new Exception("File size is too big for current database settings. Please adjust MySQL server variable 'max_allowed_packet' to at least " + new File(filePath).length());
+				}
+			} else if (dbDefinition.getDbVendor() == DbVendor.MariaDB) {
+				final long maxPacketSize = getMariaDBConnectionNumericVariable(connection, "max_allowed_packet");
+				if (new File(filePath).length() > maxPacketSize) {
+					throw new Exception("File size is too big for current database settings. Please adjust MariaDB server variable 'max_allowed_packet' to at least " + new File(filePath).length());
+				}
+			}
+
 			try (FileInputStream inputStream = new FileInputStream(new File(filePath))) {
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sqlUpdateStatementWithPlaceholder)) {
 					preparedStatement.setBinaryStream(1, inputStream);
 					preparedStatement.execute();
+				} catch (final Exception e) {
+					throw e;
 				}
 			}
+		}
+	}
+
+	public static long getMysqlConnectionNumericVariable(final Connection connection, final String variableName) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement("SHOW VARIABLES WHERE variable_name = ?")) {
+			preparedStatement.setString(1, variableName);
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					final Object value = resultSet.getObject("value");
+					if (value != null) {
+						return Integer.parseInt(value.toString());
+					} else {
+						return 0;
+					}
+				} else {
+					return 0;
+				}
+			}
+		}
+	}
+
+	public static long getMariaDBConnectionNumericVariable(final Connection connection, final String variableName) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement("SHOW VARIABLES WHERE variable_name = ?")) {
+			preparedStatement.setString(1, variableName);
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					final Object value = resultSet.getObject("value");
+					if (value != null) {
+						return Integer.parseInt(value.toString());
+					} else {
+						return 0;
+					}
+				} else {
+					return 0;
+				}
+			}
+		}
+	}
+
+	public static void setMaysqlDBConnectionNumericVariable(final Connection connection, final String variableName, final long variableValue) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement("SET GLOBAL " + variableName + " = ?")) {
+			preparedStatement.setLong(1, variableValue);
+			preparedStatement.execute();
+		}
+	}
+
+	public static void setMariaDBConnectionNumericVariable(final Connection connection, final String variableName, final long variableValue) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement("SET GLOBAL " + variableName + " = ?")) {
+			preparedStatement.setLong(1, variableValue);
+			preparedStatement.execute();
 		}
 	}
 
