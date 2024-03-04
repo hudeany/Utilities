@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 import de.soderer.utilities.crypto.DirectoryHashingWorker;
 import de.soderer.utilities.crypto.FileHashingWorker;
@@ -75,7 +74,7 @@ public class FileUtilities {
 	public static List<File> getFilesWithWildcards(final File startDirectory, final String fileFilterWithWildcards, final boolean traverseCompletely) {
 		final List<File> files = new ArrayList<>();
 		if (startDirectory.isDirectory()) {
-			final FileFilter fileFilter = new WildcardFileFilter(fileFilterWithWildcards);
+			final FileFilter fileFilter = new WildcardFilenameFilter(fileFilterWithWildcards);
 			for (final File file : startDirectory.listFiles(fileFilter)) {
 				if (file.isFile()) {
 					files.add(file);
