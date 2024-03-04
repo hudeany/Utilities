@@ -24,26 +24,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipInputStream;
 
-import org.apache.commons.io.FileUtils;
-
 import de.soderer.utilities.crypto.DirectoryHashingWorker;
 import de.soderer.utilities.crypto.FileHashingWorker;
 
 public class FileUtilities {
 	public static final int EOF = -1;
-
-	/**
-	 * Delete all subfiles fitting namestart and extension
-	 *
-	 * @param directory
-	 * @param nameStart
-	 * @param extension
-	 */
-	public static void deleteSubfilesByNameAndExtension(final File directory, final String nameStart, final String extension) {
-		for (final File file : getSubfilesByNameAndExtension(directory, nameStart, extension)) {
-			FileUtils.deleteQuietly(file);
-		}
-	}
 
 	/**
 	 * Read a directory and return all files fitting namestart and extension

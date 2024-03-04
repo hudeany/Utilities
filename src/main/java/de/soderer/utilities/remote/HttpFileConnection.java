@@ -14,8 +14,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
@@ -128,7 +126,7 @@ public class HttpFileConnection implements RemoteConnection {
 	 */
 	@Override
 	public void uploadFile(final String filePath, final InputStream inputStream) throws Exception {
-		throw new NotImplementedException("uploadFile is not supported by HttpFileConnection");
+		throw new Exception("uploadFile is not supported by HttpFileConnection");
 	}
 
 	/**
@@ -158,17 +156,17 @@ public class HttpFileConnection implements RemoteConnection {
 
 	@Override
 	public void deleteFile(final String filePath) throws Exception {
-		throw new NotImplementedException("deleteFile is not supported by HttpFileConnection");
+		throw new Exception("deleteFile is not supported by HttpFileConnection");
 	}
 
 	@Override
 	public void deleteFolder(final String folderPath) throws Exception {
-		throw new NotImplementedException("deleteFolder is not supported by HttpFileConnection");
+		throw new Exception("deleteFolder is not supported by HttpFileConnection");
 	}
 
 	@Override
 	public void createFolder(final String parentFolderPath, final String folderName) throws Exception {
-		throw new NotImplementedException("createFolder is not supported by HttpFileConnection");
+		throw new Exception("createFolder is not supported by HttpFileConnection");
 	}
 
 	@Override
