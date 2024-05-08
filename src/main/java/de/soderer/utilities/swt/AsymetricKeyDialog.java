@@ -88,31 +88,31 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintMd5"));
 
-				publicKeyMd5Text = addSizeLimitedTextField(composite, CryptographicUtilities.getMd5FingerPrint(publicKey, ":").toUpperCase());
+				publicKeyMd5Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintMd5(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha1"));
 
-				publicKeySha1Text = addSizeLimitedTextField(composite, CryptographicUtilities.getSha1FingerPrint(publicKey, ":").toUpperCase());
+				publicKeySha1Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha1(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha256"));
 
-				publicKeySha256Text = addSizeLimitedTextField(composite, CryptographicUtilities.getSha256FingerPrintBase64(publicKey).toUpperCase());
+				publicKeySha256Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha256Base64(publicKey));
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha384"));
 
-				publicKeySha384Text = addSizeLimitedTextField(composite, CryptographicUtilities.getSha384FingerPrintBase64(publicKey).toUpperCase());
+				publicKeySha384Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha384Base64(publicKey));
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha512"));
 
-				publicKeySha512Text = addSizeLimitedTextField(composite, CryptographicUtilities.getSha512FingerPrintBase64(publicKey).toUpperCase());
+				publicKeySha512Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha512Base64(publicKey));
 			} else if (publicKey instanceof BCECPublicKey) {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
@@ -126,31 +126,31 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintMd5"));
 
-				publicKeyMd5Text = addSizeLimitedTextField(composite, CryptographicUtilities.getMd5FingerPrint(publicKey, ":").toUpperCase());
+				publicKeyMd5Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintMd5(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha1"));
 
-				publicKeySha1Text = addSizeLimitedTextField(composite, CryptographicUtilities.getSha1FingerPrint(publicKey, ":").toUpperCase());
+				publicKeySha1Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha1(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha256"));
 
-				publicKeySha256Text = addSizeLimitedTextField(composite, CryptographicUtilities.getSha256FingerPrint(publicKey, ":").toUpperCase());
+				publicKeySha256Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha256(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha384"));
 
-				publicKeySha384Text = addSizeLimitedTextField(composite, CryptographicUtilities.getSha384FingerPrint(publicKey, ":").toUpperCase());
+				publicKeySha384Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha384(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
 				label.setText(LangResources.get("fingerprintSha512"));
 
-				publicKeySha512Text = addSizeLimitedTextField(composite, CryptographicUtilities.getSha512FingerPrint(publicKey, ":").toUpperCase());
+				publicKeySha512Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha512(publicKey, ":").toUpperCase());
 			} else {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
@@ -304,7 +304,12 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		buttonHex.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				displayHexFormat();
+				try {
+					displayHexFormat();
+				} catch (final Exception e) {
+					showErrorMessage("Error in fingerprint creation", "Cannot create key fingerprint: " + e.getMessage());
+					e.printStackTrace();
+				}
 			}
 		});
 
@@ -314,7 +319,12 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		buttonHexColon.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				displayHexColonFormat();
+				try {
+					displayHexColonFormat();
+				} catch (final Exception e) {
+					showErrorMessage("Error in fingerprint creation", "Cannot create key fingerprint: " + e.getMessage());
+					e.printStackTrace();
+				}
 			}
 		});
 
@@ -324,7 +334,12 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		buttonBase64.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				displayBase64Format();
+				try {
+					displayBase64Format();
+				} catch (final Exception e) {
+					showErrorMessage("Error in fingerprint creation", "Cannot create key fingerprint: " + e.getMessage());
+					e.printStackTrace();
+				}
 			}
 		});
 
@@ -359,63 +374,63 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		return textField;
 	}
 
-	private void displayHexFormat() {
+	private void displayHexFormat() throws Exception {
 		try {
 			if (publicKey != null) {
-				publicKeyMd5Text.setText(CryptographicUtilities.getMd5FingerPrint(publicKey, "").toUpperCase());
-				publicKeySha1Text.setText(CryptographicUtilities.getSha1FingerPrint(publicKey, "").toUpperCase());
-				publicKeySha256Text.setText(CryptographicUtilities.getSha256FingerPrint(publicKey, "").toUpperCase());
-				publicKeySha384Text.setText(CryptographicUtilities.getSha384FingerPrint(publicKey, "").toUpperCase());
-				publicKeySha512Text.setText(CryptographicUtilities.getSha512FingerPrint(publicKey, "").toUpperCase());
+				publicKeyMd5Text.setText(CryptographicUtilities.getOpenSshFingerPrintMd5(publicKey, "").toUpperCase());
+				publicKeySha1Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha1(publicKey, "").toUpperCase());
+				publicKeySha256Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha256(publicKey, "").toUpperCase());
+				publicKeySha384Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha384(publicKey, "").toUpperCase());
+				publicKeySha512Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha512(publicKey, "").toUpperCase());
 			}
 			if (privateKey != null) {
-				privateKeyMd5Text.setText(CryptographicUtilities.getMd5FingerPrint(privateKey, "").toUpperCase());
-				privateKeySha1Text.setText(CryptographicUtilities.getSha1FingerPrint(privateKey, "").toUpperCase());
-				privateKeySha256Text.setText(CryptographicUtilities.getSha256FingerPrint(privateKey, "").toUpperCase());
-				privateKeySha384Text.setText(CryptographicUtilities.getSha384FingerPrint(privateKey, "").toUpperCase());
-				privateKeySha512Text.setText(CryptographicUtilities.getSha512FingerPrint(privateKey, "").toUpperCase());
+				privateKeyMd5Text.setText(CryptographicUtilities.getOpenSshFingerPrintMd5(privateKey, "").toUpperCase());
+				privateKeySha1Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha1(privateKey, "").toUpperCase());
+				privateKeySha256Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha256(privateKey, "").toUpperCase());
+				privateKeySha384Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha384(privateKey, "").toUpperCase());
+				privateKeySha512Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha512(privateKey, "").toUpperCase());
 			}
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			// do nothing, won't happen
 		}
 	}
 
-	private void displayHexColonFormat() {
+	private void displayHexColonFormat() throws Exception {
 		try {
 			if (publicKey != null) {
-				publicKeyMd5Text.setText(CryptographicUtilities.getMd5FingerPrint(publicKey, ":").toUpperCase());
-				publicKeySha1Text.setText(CryptographicUtilities.getSha1FingerPrint(publicKey, ":").toUpperCase());
-				publicKeySha256Text.setText(CryptographicUtilities.getSha256FingerPrint(publicKey, ":").toUpperCase());
-				publicKeySha384Text.setText(CryptographicUtilities.getSha384FingerPrint(publicKey, ":").toUpperCase());
-				publicKeySha512Text.setText(CryptographicUtilities.getSha512FingerPrint(publicKey, ":").toUpperCase());
+				publicKeyMd5Text.setText(CryptographicUtilities.getOpenSshFingerPrintMd5(publicKey, ":").toUpperCase());
+				publicKeySha1Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha1(publicKey, ":").toUpperCase());
+				publicKeySha256Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha256(publicKey, ":").toUpperCase());
+				publicKeySha384Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha384(publicKey, ":").toUpperCase());
+				publicKeySha512Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha512(publicKey, ":").toUpperCase());
 			}
 			if (privateKey != null) {
-				privateKeyMd5Text.setText(CryptographicUtilities.getMd5FingerPrint(privateKey, ":").toUpperCase());
-				privateKeySha1Text.setText(CryptographicUtilities.getSha1FingerPrint(privateKey, ":").toUpperCase());
-				privateKeySha256Text.setText(CryptographicUtilities.getSha256FingerPrint(privateKey, ":").toUpperCase());
-				privateKeySha384Text.setText(CryptographicUtilities.getSha384FingerPrint(privateKey, ":").toUpperCase());
-				privateKeySha512Text.setText(CryptographicUtilities.getSha512FingerPrint(privateKey, ":").toUpperCase());
+				privateKeyMd5Text.setText(CryptographicUtilities.getOpenSshFingerPrintMd5(privateKey, ":").toUpperCase());
+				privateKeySha1Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha1(privateKey, ":").toUpperCase());
+				privateKeySha256Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha256(privateKey, ":").toUpperCase());
+				privateKeySha384Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha384(privateKey, ":").toUpperCase());
+				privateKeySha512Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha512(privateKey, ":").toUpperCase());
 			}
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			// do nothing, won't happen
 		}
 	}
 
-	private void displayBase64Format() {
+	private void displayBase64Format() throws Exception {
 		try {
 			if (publicKey != null) {
-				publicKeyMd5Text.setText(CryptographicUtilities.getMd5FingerPrintBase64(publicKey).toUpperCase());
-				publicKeySha1Text.setText(CryptographicUtilities.getSha1FingerPrintBase64(publicKey).toUpperCase());
-				publicKeySha256Text.setText(CryptographicUtilities.getSha256FingerPrintBase64(publicKey).toUpperCase());
-				publicKeySha384Text.setText(CryptographicUtilities.getSha384FingerPrintBase64(publicKey).toUpperCase());
-				publicKeySha512Text.setText(CryptographicUtilities.getSha512FingerPrintBase64(publicKey).toUpperCase());
+				publicKeyMd5Text.setText(CryptographicUtilities.getOpenSshFingerPrintMd5Base64(publicKey));
+				publicKeySha1Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha1Base64(publicKey));
+				publicKeySha256Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha256Base64(publicKey));
+				publicKeySha384Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha384Base64(publicKey));
+				publicKeySha512Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha512Base64(publicKey));
 			}
 			if (privateKey != null) {
-				privateKeyMd5Text.setText(CryptographicUtilities.getMd5FingerPrintBase64(privateKey).toUpperCase());
-				privateKeySha1Text.setText(CryptographicUtilities.getSha1FingerPrintBase64(privateKey).toUpperCase());
-				privateKeySha256Text.setText(CryptographicUtilities.getSha256FingerPrintBase64(privateKey).toUpperCase());
-				privateKeySha384Text.setText(CryptographicUtilities.getSha384FingerPrintBase64(privateKey).toUpperCase());
-				privateKeySha512Text.setText(CryptographicUtilities.getSha512FingerPrintBase64(privateKey).toUpperCase());
+				privateKeyMd5Text.setText(CryptographicUtilities.getOpenSshFingerPrintMd5Base64(privateKey));
+				privateKeySha1Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha1Base64(privateKey));
+				privateKeySha256Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha256Base64(privateKey));
+				privateKeySha384Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha384Base64(privateKey));
+				privateKeySha512Text.setText(CryptographicUtilities.getOpenSshFingerPrintSha512Base64(privateKey));
 			}
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			// do nothing, won't happen

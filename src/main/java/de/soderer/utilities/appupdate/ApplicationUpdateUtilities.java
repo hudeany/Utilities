@@ -18,6 +18,7 @@ import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -63,7 +64,7 @@ public class ApplicationUpdateUtilities {
 	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
 	public static final String CONFIG_NEXT_DAILY_UPDATE_CHECK = "NextDailyUpdateCheck";
 
-	public static void executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
+	public static void executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
 		try {
 			if (Utilities.isEmpty(versionIndexFileLocation)) {
 				throw new Exception("Invalid version index location");
@@ -71,7 +72,7 @@ public class ApplicationUpdateUtilities {
 
 			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(updateParent, versionIndexFileLocation, applicationName, applicationVersion);
 			if (askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
-				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, trustedCaCertificateFileName, username, password, restartParameter, restartAfterUpdate);
+				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, trustedCaCertificateFileNames, username, password, restartParameter, restartAfterUpdate);
 			}
 		} catch (final Exception e) {
 			if (updateParent != null) {
@@ -174,7 +175,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final String trustedCaCertificateFileName, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
+	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
 				throw new Exception("Mandatory updateFileLocation is empty");
@@ -201,20 +202,26 @@ public class ApplicationUpdateUtilities {
 
 			final boolean downloadSuccess = getNewApplicationVersionFile(updateParent, username, password, updateFileLocation, downloadTempFile);
 			if (downloadSuccess) {
-				if (Utilities.isNotEmpty(trustedCaCertificateFileName)) {
-					Collection<? extends Certificate> trustedCertificates = null;
+				if (Utilities.isNotEmpty(trustedCaCertificateFileNames)) {
 					final ClassLoader applicationClassLoader = updateParent.getClass().getClassLoader();
 					if (applicationClassLoader == null) {
 						showUpdateError(updateParent, "Update error:\nApplications classloader is not readable");
 						return;
 					}
-					try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
-						trustedCertificates = CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(trustedUpdateCertificatesStream));
-					} catch (final Exception e) {
-						showUpdateError(updateParent, "Update error:\nTrusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
-						return;
+
+					final Collection<Certificate> trustedCertificates = new ArrayList<>();
+					for (final String trustedCaCertificateFileName : Utilities.splitAndTrimList(trustedCaCertificateFileNames)) {
+						try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
+							for (final Certificate trustedCaCertificate : CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(trustedUpdateCertificatesStream))) {
+								trustedCertificates.add(trustedCaCertificate);
+							}
+						} catch (final Exception e) {
+							showUpdateError(updateParent, "Update error:\nTrusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
+							return;
+						}
 					}
-					if (trustedCertificates == null || trustedCertificates.size() == 0) {
+
+					if (trustedCertificates.size() == 0) {
 						showUpdateError(updateParent, "Update error:\nTrusted CA certificate is missing");
 						return;
 					} else if (!verifyJarSignature(downloadTempFile, trustedCertificates)) {

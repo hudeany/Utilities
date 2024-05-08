@@ -1,5 +1,7 @@
 package de.soderer.utilities.crypto;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -861,10 +863,22 @@ public class CryptographicUtilities {
 		return BitUtilities.toHexString(md.digest());
 	}
 
+	public static String getSha1FingerPrintBase64(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-1");
+		md.update(certificate.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
+	}
+
 	public static String getSha256FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-256");
 		md.update(certificate.getEncoded());
 		return BitUtilities.toHexString(md.digest());
+	}
+
+	public static String getSha256FingerPrintBase64(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-256");
+		md.update(certificate.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
 	}
 
 	public static String getSha384FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
@@ -873,70 +887,154 @@ public class CryptographicUtilities {
 		return BitUtilities.toHexString(md.digest());
 	}
 
+	public static String getSha384FingerPrintBase64(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		final MessageDigest md = MessageDigest.getInstance("SHA-384");
+		md.update(certificate.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
+	}
+
 	public static String getSha512FingerPrint(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-512");
 		md.update(certificate.getEncoded());
 		return BitUtilities.toHexString(md.digest());
 	}
 
-	public static String getMd5FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("MD5");
-		md.update(key.getEncoded());
-		return BitUtilities.toHexString(md.digest(), byteSeparator);
-	}
-
-	public static String getMd5FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("MD5");
-		md.update(key.getEncoded());
-		return Base64.getEncoder().encodeToString(md.digest());
-	}
-
-	public static String getSha1FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("SHA-1");
-		md.update(key.getEncoded());
-		return BitUtilities.toHexString(md.digest(), byteSeparator);
-	}
-
-	public static String getSha1FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("SHA-1");
-		md.update(key.getEncoded());
-		return Base64.getEncoder().encodeToString(md.digest());
-	}
-
-	public static String getSha256FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("SHA-256");
-		md.update(key.getEncoded());
-		return BitUtilities.toHexString(md.digest(), byteSeparator);
-	}
-
-	public static String getSha256FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("SHA-256");
-		md.update(key.getEncoded());
-		return Base64.getEncoder().encodeToString(md.digest());
-	}
-
-	public static String getSha384FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("SHA-384");
-		md.update(key.getEncoded());
-		return BitUtilities.toHexString(md.digest(), byteSeparator);
-	}
-
-	public static String getSha384FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("SHA-384");
-		md.update(key.getEncoded());
-		return Base64.getEncoder().encodeToString(md.digest());
-	}
-
-	public static String getSha512FingerPrint(final Key key, final String byteSeparator) throws NoSuchAlgorithmException {
+	public static String getSha512FingerPrintBase64(final X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
 		final MessageDigest md = MessageDigest.getInstance("SHA-512");
-		md.update(key.getEncoded());
-		return BitUtilities.toHexString(md.digest(), byteSeparator);
+		md.update(certificate.getEncoded());
+		return Base64.getEncoder().encodeToString(md.digest());
 	}
 
-	public static String getSha512FingerPrintBase64(final Key key) throws NoSuchAlgorithmException {
-		final MessageDigest md = MessageDigest.getInstance("SHA-512");
-		md.update(key.getEncoded());
-		return Base64.getEncoder().encodeToString(md.digest());
+	public static byte[] getOpenSshFingerPrintData(final Key key) throws Exception {
+		if (key instanceof PublicKey) {
+			return KeyPairUtilities.getPublicKeyBytes((PublicKey) key);
+		} else if (key instanceof RSAPrivateCrtKey) {
+			final RSAPrivateCrtKey rsaPrivateCrtKey = (RSAPrivateCrtKey) key;
+			final byte[] n = rsaPrivateCrtKey.getModulus().toByteArray();
+			final byte[] e = rsaPrivateCrtKey.getPublicExponent().toByteArray();
+			final byte[] tag = "ssh-rsa".getBytes(StandardCharsets.UTF_8);
+			final ByteArrayOutputStream os = new ByteArrayOutputStream();
+			final DataOutputStream dos = new DataOutputStream(os);
+			dos.writeInt(tag.length);
+			dos.write(tag);
+			dos.writeInt(e.length);
+			dos.write(e);
+			dos.writeInt(n.length);
+			dos.write(n);
+			return os.toByteArray();
+		} else {
+			return null;
+		}
+	}
+
+	public static String getOpenSshFingerPrintMd5(final Key key, final String byteSeparator) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("MD5");
+			md.update(openSshFingerPrintData);
+			return BitUtilities.toHexString(md.digest(), byteSeparator);
+		}
+	}
+
+	public static String getOpenSshFingerPrintMd5Base64(final Key key) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("MD5");
+			md.update(openSshFingerPrintData);
+			return Base64.getEncoder().encodeToString(md.digest());
+		}
+	}
+
+	public static String getOpenSshFingerPrintSha1(final Key key, final String byteSeparator) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("SHA-1");
+			md.update(openSshFingerPrintData);
+			return BitUtilities.toHexString(md.digest(), byteSeparator);
+		}
+	}
+
+	public static String getOpenSshFingerPrintSha1Base64(final Key key) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("SHA-1");
+			md.update(openSshFingerPrintData);
+			return Base64.getEncoder().encodeToString(md.digest());
+		}
+	}
+
+	public static String getOpenSshFingerPrintSha256(final Key key, final String byteSeparator) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("SHA-256");
+			md.update(openSshFingerPrintData);
+			return BitUtilities.toHexString(md.digest(), byteSeparator);
+		}
+	}
+
+	public static String getOpenSshFingerPrintSha256Base64(final Key key) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("SHA-256");
+			md.update(openSshFingerPrintData);
+			return Base64.getEncoder().encodeToString(md.digest());
+		}
+	}
+
+	public static String getOpenSshFingerPrintSha384(final Key key, final String byteSeparator) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("SHA-384");
+			md.update(openSshFingerPrintData);
+			return BitUtilities.toHexString(md.digest(), byteSeparator);
+		}
+	}
+
+	public static String getOpenSshFingerPrintSha384Base64(final Key key) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("SHA-384");
+			md.update(openSshFingerPrintData);
+			return Base64.getEncoder().encodeToString(md.digest());
+		}
+	}
+
+	public static String getOpenSshFingerPrintSha512(final Key key, final String byteSeparator) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("SHA-512");
+			md.update(openSshFingerPrintData);
+			return BitUtilities.toHexString(md.digest(), byteSeparator);
+		}
+	}
+
+	public static String getOpenSshFingerPrintSha512Base64(final Key key) throws Exception {
+		final byte[] openSshFingerPrintData = getOpenSshFingerPrintData(key);
+		if (openSshFingerPrintData == null) {
+			return "No public key available";
+		} else {
+			final MessageDigest md = MessageDigest.getInstance("SHA-512");
+			md.update(openSshFingerPrintData);
+			return Base64.getEncoder().encodeToString(md.digest());
+		}
 	}
 
 	public static KeyPair convertPEMKeyPairToKeyPair(final PEMKeyPair keyPair) throws PEMException {
@@ -1065,18 +1163,18 @@ public class CryptographicUtilities {
 		dataOutput += "\n";
 		dataOutput += "MD5 fingerprint: " + CryptographicUtilities.getMd5FingerPrint(certificate);
 		dataOutput += "\n";
-		dataOutput += "SHA1 fingerprint: " + CryptographicUtilities.getSha1FingerPrint(certificate);
+		dataOutput += "SHA1 fingerprint: " + CryptographicUtilities.getSha1FingerPrintBase64(certificate);
 		dataOutput += "\n";
-		dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getSha256FingerPrint(certificate);
+		dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getSha256FingerPrintBase64(certificate);
 		dataOutput += "\n";
-		dataOutput += "SHA384 fingerprint: " + CryptographicUtilities.getSha384FingerPrint(certificate);
+		dataOutput += "SHA384 fingerprint: " + CryptographicUtilities.getSha384FingerPrintBase64(certificate);
 		dataOutput += "\n";
-		dataOutput += "SHA512 fingerprint: " + CryptographicUtilities.getSha512FingerPrint(certificate);
+		dataOutput += "SHA512 fingerprint: " + CryptographicUtilities.getSha512FingerPrintBase64(certificate);
 		dataOutput += "\n";
 		return dataOutput;
 	}
 
-	public static String getKeyInfo(final Key key) {
+	public static String getKeyInfo(final Key key) throws Exception {
 		String dataOutput = "";
 		dataOutput += "Algorithm: " + key.getAlgorithm();
 		dataOutput += "\n";
@@ -1108,35 +1206,35 @@ public class CryptographicUtilities {
 		}
 
 		try {
-			dataOutput += "MD5 fingerprint: " + CryptographicUtilities.getMd5FingerPrint(key, null);
+			dataOutput += "MD5 fingerprint: " + CryptographicUtilities.getOpenSshFingerPrintMd5(key, null);
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			dataOutput += "MD5 fingerprint: Unknown";
 		}
 		dataOutput += "\n";
 
 		try {
-			dataOutput += "SHA1 fingerprint: " + CryptographicUtilities.getSha1FingerPrint(key, null);
+			dataOutput += "SHA1 fingerprint: " + CryptographicUtilities.getOpenSshFingerPrintSha1(key, null);
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			dataOutput += "SHA1 fingerprint: Unknown";
 		}
 		dataOutput += "\n";
 
 		try {
-			dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getSha256FingerPrint(key, null);
+			dataOutput += "SHA256 fingerprint: " + CryptographicUtilities.getOpenSshFingerPrintSha256(key, null);
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			dataOutput += "SHA256 fingerprint: Unknown";
 		}
 		dataOutput += "\n";
 
 		try {
-			dataOutput += "SHA384 fingerprint: " + CryptographicUtilities.getSha384FingerPrint(key, null);
+			dataOutput += "SHA384 fingerprint: " + CryptographicUtilities.getOpenSshFingerPrintSha384(key, null);
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			dataOutput += "SHA384 fingerprint: Unknown";
 		}
 		dataOutput += "\n";
 
 		try {
-			dataOutput += "SHA512 fingerprint: " + CryptographicUtilities.getSha512FingerPrint(key, null);
+			dataOutput += "SHA512 fingerprint: " + CryptographicUtilities.getOpenSshFingerPrintSha512(key, null);
 		} catch (@SuppressWarnings("unused") final NoSuchAlgorithmException e) {
 			dataOutput += "SHA512 fingerprint: Unknown";
 		}

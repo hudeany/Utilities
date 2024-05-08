@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -480,7 +481,6 @@ public class DbUtilities {
 		}
 	}
 
-	@SuppressWarnings("resource")
 	public static Connection createConnection(final DbDefinition dbDefinition, final boolean retryOnError) throws Exception {
 		final DbVendor dbVendor = dbDefinition.getDbVendor();
 		final String hostnameAndPort = dbDefinition.getHostnameAndPort();
@@ -2879,6 +2879,41 @@ public class DbUtilities {
 			connection.rollback();
 			throw new Exception("Cannot insert: " + e.getMessage(), e);
 		}
+	}
+
+	public static int removeNewEntriesWithInvalidNullValues(final Connection connection, final String tempTableName, final String destinationTableName, List<String> columnsToInsert, final String duplicateInDestinationTableColumn) throws Exception {
+		if (columnsToInsert != null) {
+			columnsToInsert = columnsToInsert.stream().map(x -> x.toLowerCase()).collect(Collectors.toList());
+		}
+
+		String notNullableDestinationColumnsPart = "";
+		for (final Entry<String, DbColumnType> entry : DbUtilities.getColumnDataTypes(connection, destinationTableName).entrySet()) {
+			if (!entry.getValue().isNullable() && (columnsToInsert == null || columnsToInsert.contains(entry.getKey().toLowerCase()))) {
+				final String defaultValue = DbUtilities.getColumnDefaultValue(connection, destinationTableName, entry.getKey());
+				if (Utilities.isEmpty(defaultValue)) {
+					if (notNullableDestinationColumnsPart.length() > 0) {
+						notNullableDestinationColumnsPart += " OR ";
+					}
+					if (entry.getValue().getSimpleDataType() == SimpleDataType.String) {
+						notNullableDestinationColumnsPart += "(" + entry.getKey() + " IS NULL OR " + entry.getKey() + " = '')";
+					} else {
+						notNullableDestinationColumnsPart += entry.getKey() + " IS NULL";
+					}
+				}
+			}
+		}
+
+		int removedItems = 0;
+		if (notNullableDestinationColumnsPart.length() > 0) {
+			try (Statement statement = connection.createStatement()) {
+				if (duplicateInDestinationTableColumn != null) {
+					removedItems = statement.executeUpdate("DELETE FROM " + tempTableName + " WHERE (" + duplicateInDestinationTableColumn + " = 0 OR " + duplicateInDestinationTableColumn + " IS NULL) AND (" + notNullableDestinationColumnsPart + ")");
+				} else {
+					removedItems = statement.executeUpdate("DELETE FROM " + tempTableName + " WHERE " + notNullableDestinationColumnsPart);
+				}
+			}
+		}
+		return removedItems;
 	}
 
 	public static int insertAllItems(final Connection connection, final String sourceTableName, final String destinationTableName, final List<String> insertColumns, final String additionalInsertValues) throws Exception {

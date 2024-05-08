@@ -68,6 +68,9 @@ public class SqlScriptReader extends BasicReader {
 			throw new Exception("Unclosed sql string");
 		} else if (withinMultiLineComment) {
 			throw new Exception("Unclosed multiline comment");
+		} else if ("/".equals(nextStatement.toString().trim())) {
+			// Skip empty Oracle statement: "/" is a code sign for finalizing Oracle SQL scripts
+			return readNextStatement();
 		} else if (Utilities.isNotBlank(nextStatement.toString())) {
 			return nextStatement.toString().trim();
 		} else if (nextCharacter == null) {

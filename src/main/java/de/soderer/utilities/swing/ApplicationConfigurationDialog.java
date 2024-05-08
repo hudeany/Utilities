@@ -50,7 +50,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final byte[] iconImageDataWindows;
 	private final Image iconImageLinux;
 	private final String versioninfoDownloadURL;
-	private final String trustedUpdateCaCertificate;
+	private final String trustedUpdateCaCertificates;
 	private List<String> availableLanguages = Utilities.getList("de", "en");
 	private String language;
 
@@ -87,7 +87,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		return this;
 	}
 
-	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificate) {
+	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates) {
 		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")");
 
 		this.updateParent = updateParent;
@@ -100,7 +100,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		this.iconImageDataWindows = iconImageDataWindows;
 		this.iconImageLinux = iconImageLinux;
 		this.versioninfoDownloadURL = versioninfoDownloadURL;
-		this.trustedUpdateCaCertificate = trustedUpdateCaCertificate;
+		this.trustedUpdateCaCertificates = trustedUpdateCaCertificates;
 
 		if (iconImageLinux != null) {
 			setIconImage(iconImageLinux);
@@ -313,7 +313,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				try {
-					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, applicationName, applicationVersion, trustedUpdateCaCertificate, null, null, "gui", true);
+					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, "gui", true);
 				} catch (final Exception e) {
 					new QuestionDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 				}
