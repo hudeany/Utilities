@@ -249,7 +249,8 @@ public class KeyPairUtilities {
 					final OID ecDsaCurveOid = new OID(sshAlgorithmDerTags.get(1).getData());
 					if (Arrays.equals(OID.ECDSA_CURVE_NISTP256_ARRAY, ecDsaCurveOid.getByteArrayEncoding())
 							|| Arrays.equals(OID.ECDSA_CURVE_NISTP384_ARRAY, ecDsaCurveOid.getByteArrayEncoding())
-							|| Arrays.equals(OID.ECDSA_CURVE_NISTP521_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+							|| Arrays.equals(OID.ECDSA_CURVE_NISTP521_ARRAY, ecDsaCurveOid.getByteArrayEncoding())
+							|| Arrays.equals(OID.ECDSA_CURVE_ANSIP256K1_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
 						if (Asn1Codec.DER_TAG_BIT_STRING != derDataTags.get(1).getTagId()) {
 							throw new Exception("Invalid key data found");
 						} else {

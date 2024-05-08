@@ -1785,6 +1785,8 @@ public class CryptographicUtilities {
 				return "nistp384";
 			} else if (Arrays.equals(OID.ECDSA_CURVE_NISTP521_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
 				return "nistp521";
+			} else if (Arrays.equals(OID.ECDSA_CURVE_ANSIP256K1_ARRAY, ecDsaCurveOid.getByteArrayEncoding())) {
+				return "ansip256";
 			} else {
 				throw new Exception("Unknown SSH EcDSA curve OID: " + ecDsaCurveOid.getStringEncoding());
 			}

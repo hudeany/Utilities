@@ -433,7 +433,8 @@ public class CryptographicUtilitiesTest {
 			final PrivateKey ecDsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(ecDsaKeyPairString, null);
 			Assert.assertEquals(CryptographicUtilities.getOpenSshFingerPrintMd5(getEcKeyPair().getPrivate(), null), CryptographicUtilities.getOpenSshFingerPrintMd5(ecDsaPrivateKey, null));
 
-			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getOpenSshFingerPrintMd5(CryptographicUtilities.getPublicKeyFromPrivateKey(getEcKeyPair().getPrivate()), null);
+			PublicKey publicKeyFromPrivateKey = CryptographicUtilities.getPublicKeyFromPrivateKey(getEcKeyPair().getPrivate());
+			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getOpenSshFingerPrintMd5(publicKeyFromPrivateKey, null);
 			final String pubKeyFingerPrint = CryptographicUtilities.getOpenSshFingerPrintMd5(getEcKeyPair().getPublic(), null);
 			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
 
