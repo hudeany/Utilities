@@ -1484,6 +1484,12 @@ public class CryptographicUtilities {
 		return writer.toString();
 	}
 
+	public static String generatePKCS10CertificationRequestString(final PrivateKey privateKey, final PublicKey publicKey, final String commonName, final String organizationalUnit, final String organizationName, final String location, final String state, final String country, final String email) throws Exception {
+		final PKCS10CertificationRequest certificationRequest = generatePKCS10CertificationRequest(privateKey, publicKey, commonName, organizationalUnit, organizationName, location, state, country, email, DEFAULT_SIGNATURE_METHOD_RSA);
+		final String csrDataString = CryptographicUtilities.getStringFromCertificationRequest(certificationRequest);
+		return csrDataString;
+	}
+
 	public static PKCS10CertificationRequest getCertificationRequestFromString(final String encodedCertificationRequest) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -1497,8 +1503,17 @@ public class CryptographicUtilities {
 		return certificationRequest;
 	}
 
+	public static String getCertificationRequestSubjectFromString(final String csrDataString) throws Exception {
+		final PKCS10CertificationRequest certificationRequest = getCertificationRequestFromString(csrDataString);
+		return certificationRequest.getSubject().toString();
+	}
+
 	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCaCertificateLevels, final BigInteger serialNo, final int validityDays) throws Exception {
 		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, certificationRequest, allowedSubCaCertificateLevels, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD_RSA);
+	}
+
+	public static X509Certificate signPKCS10CertificateRequestString(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final String csrDataString, final int allowedSubCaCertificateLevels, final BigInteger serialNo, final int validityDays) throws Exception {
+		return signPKCS10CertificateRequest(caCertificate, caPrivateKey, caCrlEndpointUrl, caOcspEndpointUrl, getCertificationRequestFromString(csrDataString), allowedSubCaCertificateLevels, serialNo, validityDays, DEFAULT_SIGNATURE_METHOD_RSA);
 	}
 
 	public static X509Certificate signPKCS10CertificateRequest(final X509Certificate caCertificate, final PrivateKey caPrivateKey, final String caCrlEndpointUrl, final String caOcspEndpointUrl, final PKCS10CertificationRequest certificationRequest, final int allowedSubCaCertificateLevels, final BigInteger serialNo, final int validityDays, final String signatureMethod) throws Exception {
