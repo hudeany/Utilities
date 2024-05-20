@@ -14,12 +14,26 @@ public class VersionInfo {
 	}
 
 	public static String getVersionInfoText() {
-		try (InputStream inputStream = VersionInfo.class.getClassLoader().getResourceAsStream("VersionInfo.txt")) {
-			if (inputStream == null) {
-				return getVersionText();
-			} else {
-				return new String(IoUtilities.toByteArray(inputStream), StandardCharsets.UTF_8);
+		String buildVersionString = null;
+		try (InputStream buildVersionInputStream = VersionInfo.class.getClassLoader().getResourceAsStream("build.version")) {
+			if (buildVersionInputStream != null) {
+				buildVersionString = IoUtilities.toString(buildVersionInputStream, StandardCharsets.UTF_8);
 			}
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return "build.version not found";
+		}
+
+		try (InputStream inputStream = VersionInfo.class.getClassLoader().getResourceAsStream("VersionInfo.txt")) {
+			String versionInfoText;
+			if (inputStream == null) {
+				versionInfoText = getVersionText();
+			} else {
+				versionInfoText = new String(IoUtilities.toByteArray(inputStream), StandardCharsets.UTF_8);
+			}
+			if (buildVersionString != null && versionInfoText != null) {
+				versionInfoText = versionInfoText.replace("${build.version}", buildVersionString);
+			}
+			return versionInfoText;
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return "VersionInfo not found";
 		}
