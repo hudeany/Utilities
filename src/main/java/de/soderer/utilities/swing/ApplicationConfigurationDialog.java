@@ -8,6 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -35,11 +37,15 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 import de.soderer.utilities.appupdate.ApplicationUpdateUtilities;
+import de.soderer.utilities.http.ProxyConfiguration;
+import de.soderer.utilities.http.ProxyConfiguration.ProxyConfigurationType;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private static final long serialVersionUID = 422519084107817691L;
 
 	public static final String CONFIG_LANGUAGE = "Application.Language";
+	public static final String CONFIG_PROXY_CONFIGURATION_TYPE = "Application.ProxyConfigurationType";
+	public static final String CONFIG_PROXY_URL = "Application.ProxyUrl";
 
 	private final UpdateableGuiApplication updateParent;
 	private final String applicationName;
@@ -53,10 +59,15 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final String trustedUpdateCaCertificates;
 	private List<String> availableLanguages = Utilities.getList("de", "en");
 	private String language;
+	private String proxyConfigurationType;
+	private String proxyUrl;
 
 	private JPanel configurationValuesPanel;
 
 	private JComboBox<String> languageCombo;
+
+	private JComboBox<String> proxyCombo;
+	private JTextField proxyUrlText;
 
 	public String getLanguage() {
 		return language;
@@ -67,6 +78,22 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		if (language != null) {
 			languageCombo.setSelectedItem(language);
 		}
+	}
+
+	public String getProxyConfigurationType() {
+		return proxyConfigurationType;
+	}
+
+	public void setProxyConfigurationType(final String proxyConfigurationType) {
+		this.proxyConfigurationType = proxyConfigurationType;
+	}
+
+	public String getProxyUrl() {
+		return proxyUrl;
+	}
+
+	public void setProxyUrl(final String proxyUrl) {
+		this.proxyUrl = proxyUrl;
 	}
 
 	public List<String> getAvailableLanguages() {
@@ -97,6 +124,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		this.applicationBuildTime = applicationBuildTime;
 		this.applicationConfiguration = applicationConfiguration;
 		language = applicationConfiguration.get(CONFIG_LANGUAGE);
+		proxyConfigurationType = applicationConfiguration.get(CONFIG_PROXY_CONFIGURATION_TYPE);
+		proxyUrl = applicationConfiguration.get(CONFIG_PROXY_URL);
 		this.iconImageDataWindows = iconImageDataWindows;
 		this.iconImageLinux = iconImageLinux;
 		this.versioninfoDownloadURL = versioninfoDownloadURL;
@@ -144,6 +173,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 		configurationValuesPanel.add(createBuildTimePanel());
 		configurationValuesPanel.add(createLanguagePanel());
+		configurationValuesPanel.add(createProxyPanel());
+		configurationValuesPanel.add(createProxyUrlPanel());
 
 		return configurationValuesPanel;
 	}
@@ -185,6 +216,69 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		languagePanel.add(languageCombo, BorderLayout.EAST);
 
 		return languagePanel;
+	}
+
+	private JPanel createProxyPanel() {
+		final JPanel proxyPanel = new JPanel();
+		proxyPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+
+		final JLabel proxyLabel = new JLabel(LangResources.get("proxy"));
+		proxyPanel.add(proxyLabel);
+		proxyCombo = new JComboBox<>();
+
+		proxyCombo.addItem("None");
+		proxyCombo.addItem("System");
+		proxyCombo.addItem("Proxy-URL");
+		proxyCombo.addItem("WPAD");
+		proxyCombo.addItem("PAC-URL");
+
+		if (proxyConfigurationType != null) {
+			proxyCombo.setSelectedItem(proxyConfigurationType);
+		}
+		proxyCombo.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(final ItemEvent event) {
+				proxyConfigurationType = (String) event.getItem();
+				if ("Proxy-URL".equals(proxyConfigurationType)
+						|| "PAC-URL".equals(proxyConfigurationType)) {
+					proxyUrlText.setEnabled(true);
+				} else {
+					proxyUrlText.setEnabled(false);
+				}
+			}
+		});
+		proxyPanel.add(proxyCombo, BorderLayout.EAST);
+
+		return proxyPanel;
+	}
+
+	private JPanel createProxyUrlPanel() {
+		final JPanel proxyUrlPanel = new JPanel();
+		proxyUrlPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+
+		final JLabel proxyUrlLabel = new JLabel(LangResources.get("proxyUrl"));
+		proxyUrlPanel.add(proxyUrlLabel);
+		proxyUrlText = new JTextField();
+		proxyUrlText.setEditable(true);
+		if (proxyUrl != null) {
+			proxyUrlText.setText(proxyUrl);
+		}
+		proxyUrlText.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyTyped(final KeyEvent event) {
+				proxyUrl = proxyUrlText.getText();
+			}
+		});
+		proxyUrlText.setPreferredSize(new Dimension(150, 20));
+		if ("Proxy-URL".equals(proxyConfigurationType)
+				|| "PAC-URL".equals(proxyConfigurationType)) {
+			proxyUrlText.setEnabled(true);
+		} else {
+			proxyUrlText.setEnabled(false);
+		}
+		proxyUrlPanel.add(proxyUrlText, BorderLayout.EAST);
+
+		return proxyUrlPanel;
 	}
 
 	private JPanel createAdministrativePanel() {
@@ -313,7 +407,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				try {
-					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, "gui", true);
+					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), proxyUrl), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, "gui", true);
 				} catch (final Exception e) {
 					new QuestionDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 				}
@@ -338,6 +432,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				applicationConfiguration.set(CONFIG_LANGUAGE, language);
+				applicationConfiguration.set(CONFIG_PROXY_CONFIGURATION_TYPE, proxyConfigurationType);
+				applicationConfiguration.set(CONFIG_PROXY_URL, proxyUrl);
 				returnValue = Result.OK;
 				dispose();
 			}

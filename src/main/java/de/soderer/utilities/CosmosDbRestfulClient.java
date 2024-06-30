@@ -1,6 +1,7 @@
 
 package de.soderer.utilities;
 
+import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import de.soderer.utilities.http.HttpRequest;
 import de.soderer.utilities.http.HttpRequest.HttpMethod;
 import de.soderer.utilities.http.HttpResponse;
 import de.soderer.utilities.http.HttpUtilities;
+import de.soderer.utilities.http.ProxyConfiguration;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
@@ -36,6 +38,8 @@ public class CosmosDbRestfulClient {
 	private final String databaseID;
 	private final String collectionID;
 
+	private ProxyConfiguration proxyConfiguration = null;
+
 	public CosmosDbRestfulClient(final String cosmosDbEndpoint, final String masterkeyBase64, final String databaseID, String collectionID) throws Exception {
 		// trim trailing slash
 		if (collectionID != null && collectionID.endsWith("/")) {
@@ -53,6 +57,11 @@ public class CosmosDbRestfulClient {
 		sha256HMAC = Mac.getInstance("HmacSHA256");
 		final SecretKeySpec secret_key = new SecretKeySpec(masterkey, "HmacSHA256");
 		sha256HMAC.init(secret_key);
+	}
+
+	public CosmosDbRestfulClient setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
+		this.proxyConfiguration = proxyConfiguration;
+		return this;
 	}
 
 	/**
@@ -94,7 +103,8 @@ public class CosmosDbRestfulClient {
 	 * @throws Exception
 	 */
 	public boolean storeDocument(final String documentJsonContent, final boolean overwriteIfExists, final Map<String, String> additionalHeaders) throws Exception {
-		final HttpRequest request = new HttpRequest(HttpMethod.POST, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs");
+		final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs";
+		final HttpRequest request = new HttpRequest(HttpMethod.POST, requestUrl);
 		request.setRequestBody(documentJsonContent);
 
 		final String authDate = getCurrentDateRFC7231();
@@ -120,7 +130,7 @@ public class CosmosDbRestfulClient {
 		//		request.addHeader("x-ms-documentdb-pre-trigger-include", "CreateNewDocument");
 		//		request.addHeader("content-type", "application/json");
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() == 200) {
 			// Replaced existing document
@@ -166,7 +176,8 @@ public class CosmosDbRestfulClient {
 	 * @throws Exception
 	 */
 	public boolean removeDocument(final String documentID, final boolean throwExceptionIfNotExists) throws Exception {
-		final HttpRequest request = new HttpRequest(HttpMethod.DELETE, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID);
+		final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID;
+		final HttpRequest request = new HttpRequest(HttpMethod.DELETE, requestUrl);
 
 		final String authDate = getCurrentDateRFC7231();
 
@@ -174,7 +185,7 @@ public class CosmosDbRestfulClient {
 		request.addHeader("x-ms-date", authDate);
 		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("DELETE", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), StandardCharsets.UTF_8));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() == 204) {
 			// Removed existing document
@@ -201,7 +212,8 @@ public class CosmosDbRestfulClient {
 	 * Get a specific document by its id
 	 */
 	public String getDocument(final String documentID) throws Exception {
-		final HttpRequest request = new HttpRequest(HttpMethod.GET, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID);
+		final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID;
+		final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
 
 		final String authDate = getCurrentDateRFC7231();
 
@@ -209,7 +221,7 @@ public class CosmosDbRestfulClient {
 		request.addHeader("x-ms-date", authDate);
 		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("GET", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), StandardCharsets.UTF_8));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() == 200) {
 			// Document was found
@@ -249,7 +261,8 @@ public class CosmosDbRestfulClient {
 	 *     "@idname" = "abc"
 	 */
 	public String executeSqlQuery(final String sqlQuery, final Map<String, Object> parameters) throws Exception {
-		final HttpRequest request = new HttpRequest(HttpMethod.POST, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs");
+		final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs";
+		final HttpRequest request = new HttpRequest(HttpMethod.POST, requestUrl);
 
 		final String authDate = getCurrentDateRFC7231();
 
@@ -275,7 +288,7 @@ public class CosmosDbRestfulClient {
 
 		request.setRequestBody(JsonWriter.getJsonItemString(requestObject));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() == 200) {
 			return response.getContent();
@@ -307,7 +320,8 @@ public class CosmosDbRestfulClient {
 		String continuationID = null;
 
 		do {
-			final HttpRequest request = new HttpRequest(HttpMethod.POST, cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs");
+			final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs";
+			final HttpRequest request = new HttpRequest(HttpMethod.POST, requestUrl);
 
 			final String authDate = getCurrentDateRFC7231();
 
@@ -326,7 +340,7 @@ public class CosmosDbRestfulClient {
 
 			request.setRequestBody(JsonWriter.getJsonItemString(requestObject));
 
-			final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+			final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 			if (response.getHttpCode() == 200) {
 				final JsonObject queryResponseJsonObject = ((JsonObject) JsonReader.readJsonItemString(response.getContent()).getValue());

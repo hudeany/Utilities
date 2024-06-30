@@ -4,7 +4,9 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.Proxy;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.cert.CertPathBuilder;
@@ -42,6 +44,7 @@ import de.soderer.utilities.UserError.Reason;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 import de.soderer.utilities.http.HttpUtilities;
+import de.soderer.utilities.http.ProxyConfiguration;
 import de.soderer.utilities.json.JsonNode;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
@@ -64,15 +67,15 @@ public class ApplicationUpdateUtilities {
 	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
 	public static final String CONFIG_NEXT_DAILY_UPDATE_CHECK = "NextDailyUpdateCheck";
 
-	public static void executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
+	public static void executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
 		try {
 			if (Utilities.isEmpty(versionIndexFileLocation)) {
 				throw new Exception("Invalid version index location");
 			}
 
-			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(updateParent, versionIndexFileLocation, applicationName, applicationVersion);
+			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(updateParent, versionIndexFileLocation, proxyConfiguration, applicationName, applicationVersion);
 			if (askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
-				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, trustedCaCertificateFileNames, username, password, restartParameter, restartAfterUpdate);
+				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, restartParameter, restartAfterUpdate);
 			}
 		} catch (final Exception e) {
 			if (updateParent != null) {
@@ -83,13 +86,13 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	public static Tuple<Version, String> checkForNewVersionAvailable(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final String applicationName, final Version applicationVersion) throws Exception {
+	public static Tuple<Version, String> checkForNewVersionAvailable(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion) throws Exception {
 		try {
 			if (Utilities.isEmpty(versionIndexFileLocation)) {
 				throw new Exception("Invalid version index location");
 			} else if (!NetworkUtilities.checkForNetworkConnection()) {
 				throw new Exception("error.missingNetworkConnection");
-			} else if (!NetworkUtilities.ping(versionIndexFileLocation)) {
+			} else if (!NetworkUtilities.ping(versionIndexFileLocation, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation))) {
 				throw new Exception("error.missingInternetConnection");
 			}
 
@@ -97,7 +100,8 @@ public class ApplicationUpdateUtilities {
 			String updateFileLocation = null;
 
 			if (versionIndexFileLocation.toLowerCase().contains("json")) {
-				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(new URL(versionIndexFileLocation).openStream()))) {
+				final URLConnection urlConnection = new URL(versionIndexFileLocation).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
 					final JsonNode jsonNode = jsonReader.read();
 					if (!jsonNode.isJsonObject()) {
 						throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "'");
@@ -121,7 +125,7 @@ public class ApplicationUpdateUtilities {
 			} else {
 				Document versionsDocument = null;
 				if (versionIndexFileLocation.toLowerCase().startsWith("http")) {
-					versionsDocument = XmlUtilities.downloadAndParseXmlFile(versionIndexFileLocation);
+					versionsDocument = XmlUtilities.downloadAndParseXmlFile(versionIndexFileLocation, null);
 				} else if (new File(versionIndexFileLocation).exists()) {
 					versionsDocument = XmlUtilities.parseXmlFile(new File(versionIndexFileLocation));
 				}
@@ -175,7 +179,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
+	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
 				throw new Exception("Mandatory updateFileLocation is empty");
@@ -200,7 +204,7 @@ public class ApplicationUpdateUtilities {
 
 			final File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
 
-			final boolean downloadSuccess = getNewApplicationVersionFile(updateParent, username, password, updateFileLocation, downloadTempFile);
+			final boolean downloadSuccess = getNewApplicationVersionFile(updateParent, username, password, updateFileLocation, proxyConfiguration, downloadTempFile);
 			if (downloadSuccess) {
 				if (Utilities.isNotEmpty(trustedCaCertificateFileNames)) {
 					final ClassLoader applicationClassLoader = updateParent.getClass().getClassLoader();
@@ -248,7 +252,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static boolean getNewApplicationVersionFile(final ApplicationUpdateParent updateParent, final String username, final char[] password, final String updateFileLocation, final File downloadTempFile) throws Exception {
+	private static boolean getNewApplicationVersionFile(final ApplicationUpdateParent updateParent, final String username, final char[] password, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final File downloadTempFile) throws Exception {
 		if (updateFileLocation.toLowerCase().startsWith("http")) {
 			// Download file
 			boolean retryDownload = true;
@@ -322,7 +326,7 @@ public class ApplicationUpdateUtilities {
 					if (downloadTempFile.exists()) {
 						downloadTempFile.delete();
 					}
-					final boolean success = downloadUpdateFile(updateParent, downloadTempFile, downloadUrlWithCredentials);
+					final boolean success = downloadUpdateFile(updateParent, downloadTempFile, downloadUrlWithCredentials, proxyConfiguration);
 					if (!success) {
 						// download stopped by user
 						updateParent.showUpdateError(getI18NString("canceledByUser"));
@@ -475,7 +479,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static boolean downloadUpdateFile(final ApplicationUpdateParent updateParent, final File downloadTempFile, final String downloadUrl) throws Exception {
+	private static boolean downloadUpdateFile(final ApplicationUpdateParent updateParent, final File downloadTempFile, final String downloadUrl, final ProxyConfiguration proxyConfiguration) throws Exception {
 		try {
 			final WorkerParentSimple workerParentAdapter = new WorkerParentSimple() {
 				@Override
@@ -508,7 +512,7 @@ public class ApplicationUpdateUtilities {
 					// do nothing
 				}
 			};
-			final FileDownloadWorker fileDownloadWorker = new FileDownloadWorker(workerParentAdapter, downloadUrl, downloadTempFile);
+			final FileDownloadWorker fileDownloadWorker = new FileDownloadWorker(workerParentAdapter, downloadUrl, downloadTempFile).setProxyConfiguration(proxyConfiguration);
 			new Thread(fileDownloadWorker).start();
 
 			if (updateParent != null) {

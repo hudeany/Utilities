@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.Proxy;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.security.interfaces.RSAPrivateKey;
@@ -28,6 +29,7 @@ import de.soderer.utilities.http.HttpRequest;
 import de.soderer.utilities.http.HttpRequest.HttpMethod;
 import de.soderer.utilities.http.HttpResponse;
 import de.soderer.utilities.http.HttpUtilities;
+import de.soderer.utilities.http.ProxyConfiguration;
 import de.soderer.utilities.json.Json5Reader;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonDataType;
@@ -43,6 +45,8 @@ import de.soderer.utilities.remote.RemoteConnection;
 public class GoogleCloudConnection implements RemoteConnection {
 	private final String applicationCredentialsJsonString;
 
+	private final ProxyConfiguration proxyConfiguration;
+
 	private String accessToken = null;
 
 	/**
@@ -51,11 +55,13 @@ public class GoogleCloudConnection implements RemoteConnection {
 	 * @param applicationCredentialsJsonString
 	 * @throws Exception
 	 */
-	public GoogleCloudConnection(final String applicationCredentialsJsonString) throws Exception {
+	public GoogleCloudConnection(final String applicationCredentialsJsonString, final ProxyConfiguration proxyConfiguration) throws Exception {
 		this.applicationCredentialsJsonString = applicationCredentialsJsonString;
 		if (Utilities.isBlank(applicationCredentialsJsonString)) {
 			throw new Exception("Mandatory applicationCredentialsJsonString is missing");
 		}
+
+		this.proxyConfiguration = proxyConfiguration;
 
 		connect();
 	}
@@ -90,11 +96,12 @@ public class GoogleCloudConnection implements RemoteConnection {
 				.withIssuedAt(DateUtilities.getDateForLocalDateTime(LocalDateTime.now()))
 				.sign(algorithm);
 
-		final HttpRequest accessTokenRequest = new HttpRequest(HttpMethod.POST, "https://oauth2.googleapis.com/token");
+		final String oauthUrl = "https://oauth2.googleapis.com/token";
+		final HttpRequest accessTokenRequest = new HttpRequest(HttpMethod.POST, oauthUrl);
 		accessTokenRequest.addPostParameter("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
 		accessTokenRequest.addPostParameter("assertion", signedJwtToken);
 
-		final HttpResponse accessTokenResponse = HttpUtilities.executeHttpRequest(accessTokenRequest);
+		final HttpResponse accessTokenResponse = HttpUtilities.executeHttpRequest(accessTokenRequest, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(oauthUrl));
 
 		if (accessTokenResponse.getHttpCode() != 200) {
 			throw new Exception("Request for access token failed: " + accessTokenResponse.toString());
@@ -119,10 +126,11 @@ public class GoogleCloudConnection implements RemoteConnection {
 
 		final Tuple<String, String> pathForExecution = prepareFilePath(filePath);
 
-		final HttpRequest request = new HttpRequest(HttpMethod.DELETE, "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond()));
+		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond());
+		final HttpRequest request = new HttpRequest(HttpMethod.DELETE, requestUrl);
 		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() != 204) {
 			throw new Exception("Request for deleteFile failed: " + response.toString());
@@ -140,10 +148,11 @@ public class GoogleCloudConnection implements RemoteConnection {
 
 		final List<FileInfo> files = new ArrayList<>();
 
-		final HttpRequest request = new HttpRequest(HttpMethod.GET, "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o");
+		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o";
+		final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
 		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() == 200) {
 			final JsonNode responseNode = Json5Reader.readJsonItemString(response.getContent());
@@ -209,10 +218,11 @@ public class GoogleCloudConnection implements RemoteConnection {
 
 		final Tuple<String, String> pathForExecution = prepareFilePath(folderPath);
 
-		final HttpRequest request = new HttpRequest(HttpMethod.GET, "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o");
+		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o";
+		final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
 		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() == 200) {
 			final JsonNode responseNode = Json5Reader.readJsonItemString(response.getContent());
@@ -271,10 +281,11 @@ public class GoogleCloudConnection implements RemoteConnection {
 			deleteFolder(folderPath + "/" + folderInfo.getFolderName());
 		}
 
-		final HttpRequest request = new HttpRequest(HttpMethod.DELETE, "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond() + "/"));
+		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond() + "/");
+		final HttpRequest request = new HttpRequest(HttpMethod.DELETE, requestUrl);
 		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() == 404) {
 			// Deletion of pseudo folders leads to 404
@@ -294,12 +305,13 @@ public class GoogleCloudConnection implements RemoteConnection {
 			mimeType = "application/octet-stream";
 		}
 
-		final HttpRequest request = new HttpRequest(HttpMethod.POST, "https://storage.googleapis.com/upload/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o?uploadType=media&name=" + urlEncodePath(pathForExecution.getSecond() + "/" + folderName + "/"));
+		final String requestUrl = "https://storage.googleapis.com/upload/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o?uploadType=media&name=" + urlEncodePath(pathForExecution.getSecond() + "/" + folderName + "/");
+		final HttpRequest request = new HttpRequest(HttpMethod.POST, requestUrl);
 		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
 		request.setRequestBodyContentStream(new ByteArrayInputStream(new byte[0]));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() != 200) {
 			throw new Exception("Request for createFolder failed: " + response.toString());
@@ -312,10 +324,11 @@ public class GoogleCloudConnection implements RemoteConnection {
 
 		final Tuple<String, String> pathForExecution = prepareFilePath(filePath);
 
-		final HttpRequest request = new HttpRequest(HttpMethod.GET, "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o");
+		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o";
+		final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
 		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() == 200) {
 			final JsonNode responseNode = Json5Reader.readJsonItemString(response.getContent());
@@ -357,12 +370,13 @@ public class GoogleCloudConnection implements RemoteConnection {
 		final HttpResponse response;
 		final File tempFile = File.createTempFile("GoogleCloudConnection_Download_", "");
 		try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
-			final HttpRequest request = new HttpRequest(HttpMethod.GET, "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond()) + "?alt=media");
+			final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond()) + "?alt=media";
+			final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
 			request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
 			request.setDownloadStream(outputStream);
 
-			response = HttpUtilities.executeHttpRequest(request);
+			response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 		}
 
 		if (response == null) {
@@ -391,13 +405,14 @@ public class GoogleCloudConnection implements RemoteConnection {
 			mimeType = "application/octet-stream";
 		}
 
-		final HttpRequest request = new HttpRequest(HttpMethod.POST, "https://storage.googleapis.com/upload/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o?uploadType=media&name=" + urlEncodePath(pathForExecution.getSecond()));
+		final String requestUrl = "https://storage.googleapis.com/upload/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o?uploadType=media&name=" + urlEncodePath(pathForExecution.getSecond());
+		final HttpRequest request = new HttpRequest(HttpMethod.POST, requestUrl);
 		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 		request.addHeader("Content-Type", mimeType);
 
 		request.setRequestBodyContentStream(fileInputStream);
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 		if (response.getHttpCode() != 200) {
 			throw new Exception("Request for uploadFile '" + filePath + "' failed: " + response.toString());

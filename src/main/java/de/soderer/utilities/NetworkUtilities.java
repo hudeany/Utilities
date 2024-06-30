@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.Proxy;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
@@ -89,28 +90,40 @@ public class NetworkUtilities {
 		}
 	}
 
-	public static boolean ping(final String ipOrHostname) {
+	public static boolean ping(final String ipOrHostname, final Proxy proxy) {
 		try {
 			if (ipOrHostname.toLowerCase().trim().startsWith("http://")) {
 				final URL url = new URL("http://" + getHostnameFromRequestString(ipOrHostname));
-				final HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-				httpURLConnection.setConnectTimeout(2000);
-				httpURLConnection.setReadTimeout(2000);
+				HttpURLConnection httpURLConnection;
+				if (proxy == null) {
+					httpURLConnection = (HttpURLConnection) url.openConnection();
+				} else {
+					httpURLConnection = (HttpURLConnection) url.openConnection(proxy);
+				}
+				httpURLConnection.setConnectTimeout(20000);
+				httpURLConnection.setReadTimeout(20000);
 				httpURLConnection.setAllowUserInteraction(false);
 				httpURLConnection.connect();
 				return true;
 			} else if (ipOrHostname.toLowerCase().trim().startsWith("https://")) {
 				final URL url = new URL("https://" + getHostnameFromRequestString(ipOrHostname));
-				final HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-				httpURLConnection.setConnectTimeout(2000);
-				httpURLConnection.setReadTimeout(2000);
+				HttpURLConnection httpURLConnection;
+				if (proxy == null) {
+					httpURLConnection = (HttpURLConnection) url.openConnection();
+				} else {
+					httpURLConnection = (HttpURLConnection) url.openConnection(proxy);
+				}
+
+				httpURLConnection.setConnectTimeout(20000);
+				httpURLConnection.setReadTimeout(20000);
 				httpURLConnection.setAllowUserInteraction(false);
 				httpURLConnection.connect();
 				return true;
 			} else {
 				return InetAddress.getByName(getHostnameFromRequestString(ipOrHostname)).isReachable(5000);
 			}
-		} catch (@SuppressWarnings("unused") final Exception e) {
+		} catch (final Exception e) {
+			e.printStackTrace();
 			return false;
 		}
 	}

@@ -10,8 +10,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.SocketTimeoutException;
 import java.net.URL;
@@ -42,7 +40,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import de.soderer.utilities.IoUtilities;
-import de.soderer.utilities.NumberUtilities;
 import de.soderer.utilities.PasswordGenerator;
 import de.soderer.utilities.PasswordGeneratorCharacterGroup;
 import de.soderer.utilities.Triple;
@@ -79,10 +76,6 @@ public class HttpUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest) throws Exception {
-		return executeHttpRequest(httpRequest, null);
-	}
-
 	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy) throws Exception {
 		try {
 			String requestedUrl = httpRequest.getUrlWithProtocol();
@@ -117,13 +110,7 @@ public class HttpUtilities {
 				System.out.println("Requested URL: " + requestedUrl);
 			}
 
-			HttpURLConnection urlConnection;
-			if (proxy == null) {
-				urlConnection = (HttpURLConnection) new URL(requestedUrl).openConnection(getProxyFromSystem(requestedUrl));
-			} else {
-				urlConnection = (HttpURLConnection) new URL(requestedUrl).openConnection(proxy);
-			}
-
+			final HttpURLConnection urlConnection = (HttpURLConnection) new URL(requestedUrl).openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
 			if (httpRequest.getRequestMethod() != null) {
 				urlConnection.setRequestMethod(httpRequest.getRequestMethod().name());
 			}
@@ -295,7 +282,7 @@ public class HttpUtilities {
 				final String redirectUrl = urlConnection.getHeaderField("Location");
 				if (Utilities.isNotBlank(redirectUrl)) {
 					final HttpRequest redirectedHttpRequest = new HttpRequest(httpRequest.getRequestMethod(), redirectUrl);
-					return executeHttpRequest(redirectedHttpRequest);
+					return executeHttpRequest(redirectedHttpRequest, proxy);
 				} else {
 					throw new Exception("Redirection url was empty");
 				}
@@ -360,66 +347,7 @@ public class HttpUtilities {
 		}
 	}
 
-	/**
-	 * This proxy will be used as default proxy.
-	 * To override default proxy usage use "Proxy.NO_PROXY"
-	 *
-	 * It is set via JVM properties on startup:
-	 * java ... -Dhttp.proxyHost=proxy.url.local -Dhttp.proxyPort=8080 -Dhttp.nonProxyHosts='127.0.0.1|localhost'
-	 */
-	public static Proxy getProxyFromSystem(final String url) {
-		final String proxyHost = System.getProperty("http.proxyHost");
-		if (Utilities.isNotBlank(proxyHost)) {
-			final String proxyPort = System.getProperty("http.proxyPort");
-			final String nonProxyHosts = System.getProperty("http.nonProxyHosts");
-
-			if (Utilities.isBlank(nonProxyHosts)) {
-				if (Utilities.isNotBlank(proxyHost)) {
-					if (Utilities.isNotBlank(proxyPort) && NumberUtilities.isNumber(proxyPort)) {
-						return new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, Integer.parseInt(proxyPort)));
-					} else {
-						return new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, 8080));
-					}
-				}
-			} else {
-				boolean ignoreProxy = false;
-				final String urlDomain = getDomainFromUrl(url);
-				for (String nonProxyHost : nonProxyHosts.split("\\|")) {
-					nonProxyHost = nonProxyHost.trim();
-					if (urlDomain == null || urlDomain.equalsIgnoreCase(url)) {
-						ignoreProxy = true;
-						break;
-					}
-				}
-				if (!ignoreProxy) {
-					if (Utilities.isNotBlank(proxyHost)) {
-						if (Utilities.isNotBlank(proxyPort) && NumberUtilities.isNumber(proxyPort)) {
-							return new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, Integer.parseInt(proxyPort)));
-						} else {
-							return new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, 8080));
-						}
-					}
-				}
-			}
-		}
-
-		return Proxy.NO_PROXY;
-	}
-
-	public static String getDomainFromUrl(String url) {
-		if (!url.startsWith("http") && !url.startsWith("https")) {
-			url = "http://" + url;
-		}
-		URL netUrl;
-		try {
-			netUrl = new URL(url);
-		} catch (@SuppressWarnings("unused") final MalformedURLException e) {
-			return null;
-		}
-		return netUrl.getHost();
-	}
-
-	public static void pingUrlWithoutSslCheckNoWaitForAnswer(final String pingUrl) throws IOException, NoSuchAlgorithmException, KeyManagementException {
+	public static void pingUrlWithoutSslCheckNoWaitForAnswer(final String pingUrl, final Proxy proxy) throws IOException, NoSuchAlgorithmException, KeyManagementException {
 		InputStream downloadStream = null;
 		try {
 			if (pingUrl.startsWith("https")) {
@@ -445,22 +373,22 @@ public class HttpUtilities {
 				};
 				sslContext.init(null, tms, null);
 				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-				final HttpsURLConnection connection = (HttpsURLConnection) new URL(pingUrl).openConnection();
-				connection.setSSLSocketFactory(sslSocketFactory);
-				connection.setRequestMethod("POST");
-				connection.setConnectTimeout(5000);
-				connection.setReadTimeout(100);
-				connection.setDoInput(true);
-				connection.setDoOutput(false);
-				downloadStream = connection.getInputStream();
+				final HttpsURLConnection urlConnection = (HttpsURLConnection) new URL(pingUrl).openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
+				urlConnection.setSSLSocketFactory(sslSocketFactory);
+				urlConnection.setRequestMethod("POST");
+				urlConnection.setConnectTimeout(5000);
+				urlConnection.setReadTimeout(100);
+				urlConnection.setDoInput(true);
+				urlConnection.setDoOutput(false);
+				downloadStream = urlConnection.getInputStream();
 			} else {
-				final HttpURLConnection connection = (HttpURLConnection) new URL(pingUrl).openConnection();
-				connection.setRequestMethod("POST");
-				connection.setConnectTimeout(5000);
-				connection.setReadTimeout(100);
-				connection.setDoInput(true);
-				connection.setDoOutput(false);
-				downloadStream = connection.getInputStream();
+				final HttpURLConnection urlConnection = (HttpURLConnection) new URL(pingUrl).openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
+				urlConnection.setRequestMethod("POST");
+				urlConnection.setConnectTimeout(5000);
+				urlConnection.setReadTimeout(100);
+				urlConnection.setDoInput(true);
+				urlConnection.setDoOutput(false);
+				downloadStream = urlConnection.getInputStream();
 			}
 		} catch (@SuppressWarnings("unused") final SocketTimeoutException stex) {
 			// This Exception is expected for the real short timeout
@@ -716,8 +644,8 @@ public class HttpUtilities {
 		return new String(PasswordGenerator.generatePassword(groups, 32, 32));
 	}
 
-	public static X509Certificate getServerTlsCertificate(final String hostnameOrIp, final int port) throws Exception {
-		final HttpsURLConnection urlConnection = (HttpsURLConnection) new URL("https://" + hostnameOrIp + ":" + port).openConnection();
+	public static X509Certificate getServerTlsCertificate(final String hostnameOrIp, final int port, final Proxy proxy) throws Exception {
+		final HttpsURLConnection urlConnection = (HttpsURLConnection) new URL("https://" + hostnameOrIp + ":" + port).openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
 		final SSLContext sslContext = SSLContext.getInstance("TLS");
 		sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new java.security.SecureRandom());
 		final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
@@ -742,7 +670,7 @@ public class HttpUtilities {
 		return null;
 	}
 
-	public static void createTrustStoreFile(final String hostnameOrIpAndPort, final int defaultPort, final File trustStoreFile, final char[] trustStorePassword) throws Exception {
+	public static void createTrustStoreFile(final String hostnameOrIpAndPort, final int defaultPort, final File trustStoreFile, final char[] trustStorePassword, final Proxy proxy) throws Exception {
 		if (trustStoreFile.exists()) {
 			throw new Exception("File '" + trustStoreFile.getAbsolutePath() + "' already exists");
 		}
@@ -762,7 +690,7 @@ public class HttpUtilities {
 			port = defaultPort;
 		}
 
-		final X509Certificate certificate = getServerTlsCertificate(hostnameOrIp, port);
+		final X509Certificate certificate = getServerTlsCertificate(hostnameOrIp, port, proxy);
 		if (certificate == null) {
 			throw new Exception("Cannot get TLS certificate for '" + hostnameOrIp + ":" + port + "'");
 		}

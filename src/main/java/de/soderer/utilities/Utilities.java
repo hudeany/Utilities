@@ -15,9 +15,11 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.net.Proxy;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -972,8 +974,9 @@ public class Utilities {
 	 * @param localeDestionationPath
 	 * @throws Exception
 	 */
-	public static void downloadFile(final String url, final String localeDestionationPath) throws Exception {
-		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new URL(url).openStream());
+	public static void downloadFile(final String url, final String localeDestionationPath, final Proxy proxy) throws Exception {
+		final URLConnection urlConnection = new URL(url).openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
+		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
 				FileOutputStream fileOutputStream = new FileOutputStream(localeDestionationPath)) {
 			IoUtilities.copy(bufferedInputStream, fileOutputStream);
 		} catch (final Exception e) {

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.net.MalformedURLException;
+import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +21,7 @@ import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.http.HttpUtilities;
+import de.soderer.utilities.http.ProxyConfiguration;
 
 /**
  * HttpFileConnection
@@ -27,6 +29,8 @@ import de.soderer.utilities.http.HttpUtilities;
 public class HttpFileConnection implements RemoteConnection {
 	/** The useTLS. */
 	private boolean useTLS = false;
+
+	private ProxyConfiguration proxyConfiguration = null;
 
 	/** The host. */
 	private String hostname = null;
@@ -118,6 +122,11 @@ public class HttpFileConnection implements RemoteConnection {
 		}
 	}
 
+	public HttpFileConnection setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
+		this.proxyConfiguration = proxyConfiguration;
+		return this;
+	}
+
 	/**
 	 * Put a file on the server.
 	 *
@@ -139,7 +148,7 @@ public class HttpFileConnection implements RemoteConnection {
 	public InputStream downloadFile(String filePath) throws Exception {
 		filePath = FileUtilities.trimLeadingFileSeparator(filePath);
 		try {
-			final URLConnection urlConnection = getUrl(filePath).openConnection();
+			final URLConnection urlConnection = getUrl(filePath).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(filePath));
 			return new BufferedInputStream(urlConnection.getInputStream());
 		} catch (final Exception e) {
 			throw new Exception("Cannot download file '" + filePath + "': " + e.getMessage(), e);
@@ -175,7 +184,8 @@ public class HttpFileConnection implements RemoteConnection {
 		final String folderPath = FileUtilities.getParentFromPath(filePath);
 		final String fileName = FileUtilities.getFilenameFromPath(filePath);
 		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection();
+			final URLConnection urlConnection = getUrl(folderPath).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(folderPath));
+
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				final byte[] data = IoUtilities.toByteArray(inputStream);
 				for (final String fileLine : getFileLines(data)) {
@@ -202,7 +212,8 @@ public class HttpFileConnection implements RemoteConnection {
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
 		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
 		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection();
+			final URLConnection urlConnection = getUrl(folderPath).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(folderPath));
+
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				// Check existence only. Modification date is not available in general.
 				return new FolderInfo(folderName, null);
@@ -309,7 +320,8 @@ public class HttpFileConnection implements RemoteConnection {
 	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String folderPath) throws Exception {
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
 		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection();
+			final URLConnection urlConnection = getUrl(folderPath).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(folderPath));
+
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				final byte[] data = IoUtilities.toByteArray(inputStream);
 				final List<FolderInfo> folderInfoList = new ArrayList<>();

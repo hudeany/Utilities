@@ -11,7 +11,9 @@ import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
+import java.net.Proxy;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -87,16 +89,29 @@ public class XmlUtilities {
 	 * @throws IOException
 	 *             the IO exception
 	 */
-	public static Document downloadAndParseXmlFile(final String url) throws Exception {
-		try (BufferedInputStream inputStream = new BufferedInputStream(new URL(url).openStream())) {
+	public static Document downloadAndParseXmlFile(final String url, final Proxy proxy) throws Exception {
+		final URLConnection urlConnection;
+		if (proxy == null) {
+			urlConnection = new URL(url).openConnection();
+		} else {
+			urlConnection = new URL(url).openConnection(proxy);
+		}
+
+		try (final BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
 		} catch (final Exception e) {
-			final HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-			connection.connect();
-			final int httpCode = connection.getResponseCode();
+			final HttpURLConnection urlConnection2;
+			if (proxy == null) {
+				urlConnection2 = (HttpURLConnection) new URL(url).openConnection();
+			} else {
+				urlConnection2 = (HttpURLConnection) new URL(url).openConnection(proxy);
+			}
+
+			urlConnection2.connect();
+			final int httpCode = urlConnection2.getResponseCode();
 			if (httpCode != 200) {
 				throw new Exception("Cannot retrieve xml document from Url '" + url + "'. HTTP code was: " + httpCode);
 			} else {

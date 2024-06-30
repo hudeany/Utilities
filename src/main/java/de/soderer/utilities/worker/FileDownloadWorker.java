@@ -3,23 +3,31 @@ package de.soderer.utilities.worker;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.http.ProxyConfiguration;
 
 public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	public static final int EOF = -1;
 
 	private final String downloadUrl;
 	private final File destinationFile;
+	private ProxyConfiguration proxyConfiguration = null;
 
 	public FileDownloadWorker(final WorkerParentSimple parent, final String downloadUrl, final File destinationFile) {
 		super(parent);
 
 		this.destinationFile = destinationFile;
 		this.downloadUrl = downloadUrl;
+	}
+
+	public FileDownloadWorker setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
+		this.proxyConfiguration = proxyConfiguration;
+		return this;
 	}
 
 	@Override
@@ -32,7 +40,7 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 			}
 
 			signalUnlimitedProgress();
-			final URLConnection urlConnection = new URL(downloadUrl).openConnection();
+			final URLConnection urlConnection = new URL(downloadUrl).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(downloadUrl));
 			itemsToDo = urlConnection.getContentLength();
 			signalProgress(true);
 			try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
