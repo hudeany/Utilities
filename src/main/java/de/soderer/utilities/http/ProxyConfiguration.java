@@ -24,7 +24,7 @@ public class ProxyConfiguration {
 					return dataType;
 				}
 			}
-			throw new RuntimeException("Unknown ProxyConfigurationType: " + proxyConfigurationTypeString);
+			return ProxyConfigurationType.None;
 		}
 	}
 
