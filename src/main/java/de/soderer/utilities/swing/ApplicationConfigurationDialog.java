@@ -124,8 +124,17 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		this.applicationBuildTime = applicationBuildTime;
 		this.applicationConfiguration = applicationConfiguration;
 		language = applicationConfiguration.get(CONFIG_LANGUAGE);
+		if (language == null) {
+			language = "";
+		}
 		proxyConfigurationType = applicationConfiguration.get(CONFIG_PROXY_CONFIGURATION_TYPE);
+		if (proxyConfigurationType == null) {
+			proxyConfigurationType = "en";
+		}
 		proxyUrl = applicationConfiguration.get(CONFIG_PROXY_URL);
+		if (proxyUrl == null) {
+			proxyUrl = "";
+		}
 		this.iconImageDataWindows = iconImageDataWindows;
 		this.iconImageLinux = iconImageLinux;
 		this.versioninfoDownloadURL = versioninfoDownloadURL;
@@ -232,7 +241,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		proxyCombo.addItem("WPAD");
 		proxyCombo.addItem("PAC-URL");
 
-		if (proxyConfigurationType != null) {
+		if (proxyConfigurationType != null && proxyConfigurationType.trim().length() > 0) {
 			proxyCombo.setSelectedItem(proxyConfigurationType);
 		}
 		proxyCombo.addItemListener(new ItemListener() {
