@@ -87,7 +87,7 @@ public class ConfigurationProperties {
 	}
 
 	public void set(final String name, final String value) {
-		properties.setProperty(name, value);
+		properties.setProperty(name, value == null ? "" : value);
 	}
 
 	public void set(final String name, final int value) {
