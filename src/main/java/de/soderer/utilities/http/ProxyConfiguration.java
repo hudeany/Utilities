@@ -19,12 +19,16 @@ public class ProxyConfiguration {
 		PACURL;
 
 		public static ProxyConfigurationType getFromString(final String proxyConfigurationTypeString) {
-			for (final ProxyConfigurationType dataType : ProxyConfigurationType.values()) {
-				if (dataType.toString().equalsIgnoreCase(proxyConfigurationTypeString.replace("_", "").replace("-", ""))) {
-					return dataType;
+			if (proxyConfigurationTypeString == null) {
+				return ProxyConfigurationType.None;
+			} else {
+				for (final ProxyConfigurationType dataType : ProxyConfigurationType.values()) {
+					if (dataType.toString().equalsIgnoreCase(proxyConfigurationTypeString.replace("_", "").replace("-", ""))) {
+						return dataType;
+					}
 				}
+				return ProxyConfigurationType.None;
 			}
-			return ProxyConfigurationType.None;
 		}
 	}
 
