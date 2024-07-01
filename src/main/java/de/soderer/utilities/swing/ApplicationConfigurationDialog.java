@@ -59,8 +59,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final String trustedUpdateCaCertificates;
 	private List<String> availableLanguages = Utilities.getList("de", "en");
 	private String language;
-	private String proxyConfigurationType;
-	private String proxyUrl;
+	private String proxyConfigurationType = "";
+	private String proxyUrl = "";
 
 	private JPanel configurationValuesPanel;
 
