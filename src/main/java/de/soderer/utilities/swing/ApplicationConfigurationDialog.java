@@ -431,9 +431,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				applicationConfiguration.set(CONFIG_LANGUAGE, language);
-				applicationConfiguration.set(CONFIG_PROXY_CONFIGURATION_TYPE, proxyConfigurationType);
-				applicationConfiguration.set(CONFIG_PROXY_URL, proxyUrl);
+				applicationConfiguration.set(CONFIG_LANGUAGE, language == null ? "" : language);
+				applicationConfiguration.set(CONFIG_PROXY_CONFIGURATION_TYPE, proxyConfigurationType == null ? "" : proxyConfigurationType);
+				applicationConfiguration.set(CONFIG_PROXY_URL, proxyUrl == null ? "" : proxyUrl);
 				returnValue = Result.OK;
 				dispose();
 			}
