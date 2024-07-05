@@ -33,8 +33,10 @@ public class LineReader implements Closeable {
 		return latestLineBreakType;
 	}
 
+	@SuppressWarnings("resource")
 	public LineReader(final InputStream inputStream, final Charset charset) throws IOException {
-		final BOMInputStream bomInputStream = new BOMInputStream(inputStream).skipBOM();
+		final BOMInputStream bomInputStream = new BOMInputStream(inputStream);
+		bomInputStream.skipBOM();
 		bom = bomInputStream.getBOM();
 		if (bom == BOM.UTF_8 && charset != StandardCharsets.UTF_8) {
 			throw new IOException("Invalid charset for inputstream with UTF-8 BOM: " + charset.displayName());

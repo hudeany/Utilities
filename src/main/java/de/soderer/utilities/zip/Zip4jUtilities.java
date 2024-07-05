@@ -57,7 +57,7 @@ public class Zip4jUtilities {
 	}
 
 	public static long getUncompressedSize(final File zipFilePath, final char[] zipPassword) throws IOException {
-		try (final ZipFile zipFile = new ZipFile(zipFilePath, zipPassword)) {
+		try (ZipFile zipFile = new ZipFile(zipFilePath, zipPassword)) {
 			final List<FileHeader> fileHeaders = zipFile.getFileHeaders();
 			long uncompressedSize = 0;
 			for (final FileHeader fileHeader : fileHeaders) {

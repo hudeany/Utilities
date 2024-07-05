@@ -100,7 +100,7 @@ public class ZipUtilities {
 		}
 
 		final byte[] buffer = new byte[1024];
-		try (final InputStream inputStream = new FileInputStream(zipFile);
+		try (InputStream inputStream = new FileInputStream(zipFile);
 				final ZipInputStream zis = new ZipInputStream(inputStream, fileNameEncodingCharset)) {
 			ZipEntry zipEntry = zis.getNextEntry();
 			while (zipEntry != null) {
@@ -116,7 +116,7 @@ public class ZipUtilities {
 								+ parentDirectory.getAbsolutePath());
 					}
 
-					try (final FileOutputStream fos = new FileOutputStream(destFile)) {
+					try (FileOutputStream fos = new FileOutputStream(destFile)) {
 						int len;
 						while ((len = zis.read(buffer)) > 0) {
 							fos.write(buffer, 0, len);
@@ -152,7 +152,7 @@ public class ZipUtilities {
 
 		final String destinationDirectoryPath = destinationDirectory.getCanonicalPath();
 		final byte[] buffer = new byte[1024];
-		try (final InputStream inputStream = new FileInputStream(zipFile);
+		try (InputStream inputStream = new FileInputStream(zipFile);
 				final ZipInputStream zis = new ZipInputStream(inputStream, fileNameEncodingCharset)) {
 			ZipEntry zipEntry = zis.getNextEntry();
 			while (zipEntry != null) {
@@ -186,7 +186,7 @@ public class ZipUtilities {
 								+ parentDirectory.getAbsolutePath());
 					}
 
-					try (final FileOutputStream fos = new FileOutputStream(destFile)) {
+					try (FileOutputStream fos = new FileOutputStream(destFile)) {
 						int len;
 						while ((len = zis.read(buffer)) > 0) {
 							fos.write(buffer, 0, len);
@@ -579,7 +579,7 @@ public class ZipUtilities {
 	}
 
 	public static long getDataSizeUncompressed(final File zippedFile) throws ZipException, IOException {
-		try (final ZipFile zipFile = new ZipFile(zippedFile)) {
+		try (ZipFile zipFile = new ZipFile(zippedFile)) {
 			long uncompressedSize = 0;
 			final Enumeration<? extends ZipEntry> e = zipFile.entries();
 			while (e.hasMoreElements()) {

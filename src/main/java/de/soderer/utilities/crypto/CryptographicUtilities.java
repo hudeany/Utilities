@@ -1055,10 +1055,9 @@ public class CryptographicUtilities {
 	}
 
 	public static PrivateKey getPrivateKeyFromString(final String keyDataString, final char[] password) throws Exception {
-		try {
+		try (PEMParser pemParser = new PEMParser(new StringReader(keyDataString))) {
 			Security.addProvider(new BouncyCastleProvider());
 
-			final PEMParser pemParser = new PEMParser(new StringReader(keyDataString));
 			Object object;
 			while ((object = pemParser.readObject()) != null) {
 				if (object instanceof PEMKeyPair) {
@@ -1116,10 +1115,9 @@ public class CryptographicUtilities {
 	}
 
 	public static PublicKey getPublicKeyFromString(final String keyDataString) throws Exception {
-		try {
+		try (PEMParser pemParser = new PEMParser(new StringReader(keyDataString))) {
 			Security.addProvider(new BouncyCastleProvider());
 
-			final PEMParser pemParser = new PEMParser(new StringReader(keyDataString));
 			Object object;
 			while ((object = pemParser.readObject()) != null) {
 				if (object instanceof PEMKeyPair) {
@@ -1476,7 +1474,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final StringWriter writer = new StringWriter();
-		try (final JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(writer)) {
+		try (JcaPEMWriter jcaPEMWriter = new JcaPEMWriter(writer)) {
 			jcaPEMWriter.writeObject(certificationRequest);
 		} catch (final Exception e) {
 			throw new Exception("Cannot create certification signing request string: " + e.getMessage(), e);
@@ -1494,8 +1492,7 @@ public class CryptographicUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		PKCS10CertificationRequest certificationRequest;
-		try {
-			final PEMParser pemParser = new PEMParser(new StringReader(encodedCertificationRequest));
+		try (PEMParser pemParser = new PEMParser(new StringReader(encodedCertificationRequest))) {
 			certificationRequest = (PKCS10CertificationRequest) pemParser.readObject();
 		} catch (final IOException e) {
 			throw new Exception("Error in reading the certificate signing request: " + e.getMessage(), e);

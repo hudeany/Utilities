@@ -412,7 +412,7 @@ public class Mailer {
 		updateHeaders(bodyPart);
 
 		final ByteArrayOutputStream messageToSignBuffer = new ByteArrayOutputStream();
-		try (final CRLFOutputStream canonicalLinebreakOutputStream = new CRLFOutputStream(messageToSignBuffer)) {
+		try (CRLFOutputStream canonicalLinebreakOutputStream = new CRLFOutputStream(messageToSignBuffer)) {
 			bodyPart.writeTo(canonicalLinebreakOutputStream);
 		}
 		final byte[] messageToSign = messageToSignBuffer.toByteArray();
@@ -425,7 +425,7 @@ public class Mailer {
 		pgpSignatureGenerator.init(PGPSignature.BINARY_DOCUMENT, pgpPrivKey);
 
 		final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-		try (final ArmoredOutputStream armoredOutput = new ArmoredOutputStream(byteOut);
+		try (ArmoredOutputStream armoredOutput = new ArmoredOutputStream(byteOut);
 				final InputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(messageToSign))) {
 			int readBuffer = 0;
 			final byte[] buffer = new byte[4096];
@@ -473,7 +473,7 @@ public class Mailer {
 		updateHeaders(contentPart);
 
 		final ByteArrayOutputStream messageToEncryptBuffer = new ByteArrayOutputStream();
-		try (final CRLFOutputStream canonicalLinebreakOutputStream = new CRLFOutputStream(messageToEncryptBuffer)) {
+		try (CRLFOutputStream canonicalLinebreakOutputStream = new CRLFOutputStream(messageToEncryptBuffer)) {
 			contentPart.writeTo(canonicalLinebreakOutputStream);
 		}
 

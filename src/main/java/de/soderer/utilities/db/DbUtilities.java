@@ -1107,7 +1107,7 @@ public class DbUtilities {
 		try (Connection connection = datasource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(selectString)) {
 			preparedStatement.setFetchSize(100);
-			try (final ResultSet resultSet = preparedStatement.executeQuery()) {
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				final TextTable textTable = new TextTable();
 				for (int columnIndex = 1; columnIndex <= resultSet.getMetaData().getColumnCount(); columnIndex++) {
 					textTable.addColumn(resultSet.getMetaData().getColumnLabel(columnIndex));
@@ -3359,13 +3359,13 @@ public class DbUtilities {
 		if (getDbVendor(connection) == DbVendor.Oracle) {
 			final List<String> indexNames = getTableIndexNames(connection, tableName);
 			final String sql = "SELECT SUM(bytes) FROM user_segments WHERE segment_name in (SELECT segment_name FROM user_lobs WHERE table_name = ?) OR segment_name IN (?" + Utilities.repeat(", ?", indexNames.size()) + ")";
-			try (final PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+			try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 				preparedStatement.setNString(1, tableName.toUpperCase());
 				preparedStatement.setNString(2, tableName.toUpperCase());
 				for (int i = 0; i < indexNames.size(); i++) {
 					preparedStatement.setNString(3 + i, indexNames.get(i).toUpperCase());
 				}
-				try (final ResultSet resultSet = preparedStatement.executeQuery()) {
+				try (ResultSet resultSet = preparedStatement.executeQuery()) {
 					if (resultSet.next()) {
 						return resultSet.getLong(1);
 					} else {
@@ -3375,9 +3375,9 @@ public class DbUtilities {
 			}
 		} else if (getDbVendor(connection) == DbVendor.MariaDB || getDbVendor(connection) == DbVendor.MySQL) {
 			final String sql = "SELECT data_length + data_free FROM information_schema.tables WHERE LOWER(table_name) = ?";
-			try (final PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+			try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 				preparedStatement.setNString(1, tableName.toLowerCase());
-				try (final ResultSet resultSet = preparedStatement.executeQuery()) {
+				try (ResultSet resultSet = preparedStatement.executeQuery()) {
 					if (resultSet.next()) {
 						return resultSet.getLong(1);
 					} else {
@@ -3393,9 +3393,9 @@ public class DbUtilities {
 	public static List<String> getTableIndexNames(final Connection connection, final String tableName) throws Exception {
 		if (getDbVendor(connection) == DbVendor.Oracle) {
 			final String query = "SELECT index_name FROM user_ind_columns WHERE LOWER(table_name) = ?";
-			try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+			try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 				preparedStatement.setNString(1, tableName.toLowerCase());
-				try (final ResultSet resultSet = preparedStatement.executeQuery()) {
+				try (ResultSet resultSet = preparedStatement.executeQuery()) {
 					final List<String> resultList = new ArrayList<>();
 					while (resultSet.next()) {
 						resultList.add(resultSet.getString(1));
@@ -3405,8 +3405,8 @@ public class DbUtilities {
 			}
 		} else if (getDbVendor(connection) == DbVendor.MariaDB || getDbVendor(connection) == DbVendor.MySQL) {
 			final String query = "SHOW INDEX FROM " + tableName.toLowerCase();
-			try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-				try (final ResultSet resultSet = preparedStatement.executeQuery()) {
+			try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+				try (ResultSet resultSet = preparedStatement.executeQuery()) {
 					final List<String> resultList = new ArrayList<>();
 					while (resultSet.next()) {
 						resultList.add(resultSet.getString(1));

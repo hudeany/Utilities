@@ -143,7 +143,7 @@ public class SmbConnection implements RemoteConnection {
 		} else {
 			fileName = filePath;
 		}
-		try (final File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+		try (File remoteSmbjFile = diskShare.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
 			final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
 			final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(fileAllInformation.getBasicInformation().getLastWriteTime().toDate()).atZone(ZoneId.systemDefault());
 			return new FileInfo(fileName, fileAllInformation.getStandardInformation().getAllocationSize(), changeDate);
@@ -162,7 +162,7 @@ public class SmbConnection implements RemoteConnection {
 	public void uploadFile(String filePath, final InputStream fileInputStream) throws Exception {
 		checkForConnection();
 		filePath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(filePath.replace("\\", "/")));
-		try (final File newFile = diskShare.openFile(filePath, new HashSet<>(Arrays.asList(new AccessMask[]{AccessMask.GENERIC_ALL})), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_CREATE, null)) {
+		try (File newFile = diskShare.openFile(filePath, new HashSet<>(Arrays.asList(new AccessMask[]{AccessMask.GENERIC_ALL})), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_CREATE, null)) {
 			try (OutputStream outputStream = newFile.getOutputStream()) {
 				IoUtilities.copy(fileInputStream, outputStream);
 			}
@@ -189,7 +189,7 @@ public class SmbConnection implements RemoteConnection {
 		for (final FileIdBothDirectoryInformation fileIdBothDirectoryInformation : diskShare.list(folderPath, "*")) {
 			final String entryName = fileIdBothDirectoryInformation.getFileName();
 			if (".".equals(entryName)) {
-				try (final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+				try (File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
 					final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
 					modificationDate = DateUtilities.getLocalDateTimeForDate(fileAllInformation.getBasicInformation().getLastWriteTime().toDate()).atZone(ZoneId.systemDefault());
 				}
@@ -289,7 +289,7 @@ public class SmbConnection implements RemoteConnection {
 				if (EnumWithValue.EnumUtils.isSet(fileIdBothDirectoryInformation.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
 					folderInfoList.add(getFolderInfo(folderPath + "/" + entryName));
 				} else {
-					try (final File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+					try (File remoteSmbjFile = diskShare.openFile(folderPath + "/" + entryName, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
 						final FileAllInformation fileAllInformation = remoteSmbjFile.getFileInformation();
 						final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(fileAllInformation.getBasicInformation().getLastWriteTime().toDate()).atZone(ZoneId.systemDefault());
 						fileInfoList.add(new FileInfo(entryName, fileAllInformation.getStandardInformation().getAllocationSize(), changeDate));

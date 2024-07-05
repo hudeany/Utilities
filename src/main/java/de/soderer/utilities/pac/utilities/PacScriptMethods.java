@@ -94,12 +94,9 @@ public class PacScriptMethods {
 
 			if (startPos == 0 && !shexp.startsWith("*") && temp != 0) {
 				return false;
-			}
-			if (!tokenizer.hasMoreTokens() && !shexp.endsWith("*") && !str.endsWith(token)) {
+			} else if (!tokenizer.hasMoreTokens() && !shexp.endsWith("*") && !str.endsWith(token)) {
 				return false;
-			}
-
-			if (temp == -1) {
+			} else if (temp == -1) {
 				return false;
 			} else {
 				startPos = temp + token.length();

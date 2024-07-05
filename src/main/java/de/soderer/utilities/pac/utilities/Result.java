@@ -4,14 +4,19 @@ import java.util.List;
 import java.util.Map;
 
 public class Result implements Statement {
-	private Expression expression;
+	private final Expression expression;
 
-	public Result(List<String> expressionTokens) {
-		this.expression = new Expression(expressionTokens);
+	public Result(final List<String> expressionTokens) {
+		expression = new Expression(expressionTokens);
 	}
 
 	@Override
-	public Object execute(Map<String, Object> environmentVariables, Map<String, Method> definedMethods) {
+	public Object execute(final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods) {
 		return expression.execute(environmentVariables, definedMethods);
+	}
+
+	@Override
+	public String toString() {
+		return "return " + expression.toString() + ";";
 	}
 }

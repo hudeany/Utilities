@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
@@ -51,12 +52,12 @@ public class PacScriptParserUtilities {
 						} else if (currentChar == '/' && textScanner.hasNext()) {
 							final String nextCharString = textScanner.next();
 							final char nextChar = nextCharString.charAt(0);
-							if (nextChar == '/')
+							if (nextChar == '/') {
 								currentState = insideSinglelineComment;
-							else if (nextChar == '*') {
+							} else if (nextChar == '*') {
 								currentState = insideMultilineComment;
 							} else
-								result += currentChar + nextChar;
+								result = result + currentChar + nextChar;
 						} else {
 							result += currentChar;
 						}
@@ -143,6 +144,7 @@ public class PacScriptParserUtilities {
 			final List<String> tokens = new ArrayList<>();
 
 			String nextToken = "";
+			Character previousCharacter = null;
 			while (textScanner.hasNext()) {
 				final String currentCharString = textScanner.next();
 				final Character currentCharacter = currentCharString.charAt(0);
@@ -166,19 +168,40 @@ public class PacScriptParserUtilities {
 								nextToken = "";
 							}
 						} else if (currentCharacter == ',' || currentCharacter == ';'
-								|| currentCharacter == '/' || currentCharacter == '*' || currentCharacter == '^') {
+								|| currentCharacter == '/' || currentCharacter == '*' || currentCharacter == '^'
+								|| currentCharacter == '>' || currentCharacter == '<' || currentCharacter == '%'
+								|| currentCharacter == '!') {
 							if (nextToken.length() > 0) {
 								tokens.add(nextToken);
 								nextToken = "";
 							}
 							tokens.add(currentCharString);
-						} else if (currentCharacter == '+' || currentCharacter == '-' || currentCharacter == '&' || currentCharacter == '|') {
+						} else if (currentCharacter == '+' || currentCharacter == '-'
+								|| currentCharacter == '&' || currentCharacter == '|') {
 							if (nextToken.length() > 0) {
 								tokens.add(nextToken);
 								nextToken = "";
 							}
-							if (tokens.get(tokens.size() - 1).equals(currentCharString)) {
-								tokens.add(tokens.size() - 1, currentCharString + currentCharString);
+							if (previousCharacter == currentCharacter) {
+								tokens.set(tokens.size() - 1, currentCharString + currentCharString);
+							} else {
+								tokens.add(currentCharString);
+							}
+						} else if (currentCharacter == '=') {
+							if (nextToken.length() > 0) {
+								tokens.add(nextToken);
+								nextToken = "";
+							}
+							if (previousCharacter != null && (
+									'=' == previousCharacter
+									|| '!' == previousCharacter
+									|| '>' == previousCharacter
+									|| '<' == previousCharacter
+									|| '+' == previousCharacter
+									|| '-' == previousCharacter
+									|| '*' == previousCharacter
+									|| '/' == previousCharacter)) {
+								tokens.set(tokens.size() - 1, previousCharacter + "=");
 							} else {
 								tokens.add(currentCharString);
 							}
@@ -202,8 +225,8 @@ public class PacScriptParserUtilities {
 					default:
 						throw new RuntimeException("Invalid state");
 				}
+				previousCharacter = currentCharacter;
 			}
-
 			return tokens;
 		}
 	}
@@ -287,7 +310,7 @@ public class PacScriptParserUtilities {
 				statements.add(parentCondition);
 
 				boolean foundElseIf = true;
-				while (foundElseIf) {
+				while (foundElseIf && tokenIndex < codeBlockTokens.size()) {
 					foundElseIf = false;
 
 					nextToken = codeBlockTokens.get(tokenIndex);
@@ -358,27 +381,6 @@ public class PacScriptParserUtilities {
 						tokenIndex--;
 					}
 				}
-			} else if ("var".equals(nextToken)) {
-				tokenIndex++;
-				final String variableName = codeBlockTokens.get(tokenIndex);
-
-				tokenIndex++;
-				nextToken = codeBlockTokens.get(tokenIndex);
-
-				if (!"=".equals(nextToken)) {
-					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
-				}
-
-				tokenIndex++;
-				final int assignementStart = tokenIndex;
-				while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
-					tokenIndex++;
-				}
-				if (!";".equals(codeBlockTokens.get(tokenIndex))) {
-					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
-				}
-
-				statements.add(new Assignment(variableName, codeBlockTokens.subList(assignementStart, tokenIndex)));
 			} else if ("return".equals(nextToken)) {
 				tokenIndex++;
 				final int expressionStart = tokenIndex;
@@ -391,11 +393,248 @@ public class PacScriptParserUtilities {
 
 				final int expressionEnd = tokenIndex;
 				statements.add(new Result(codeBlockTokens.subList(expressionStart, expressionEnd)));
+			} else if ("++".equals(nextToken)) {
+				if (codeBlockTokens.size() > tokenIndex + 2) {
+					tokenIndex++;
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					statements.add(new Assignment(false, variableName, Arrays.asList(variableName, "+", "1")));
+				} else {
+					throw new RuntimeException("Unsupported code found: " + nextToken);
+				}
+			} else if ("--".equals(nextToken)) {
+				if (codeBlockTokens.size() > tokenIndex + 2) {
+					tokenIndex++;
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					statements.add(new Assignment(false, variableName, Arrays.asList(variableName, "-", "1")));
+				} else {
+					throw new RuntimeException("Unsupported code found: " + nextToken);
+				}
+			} else if ("var".equals(nextToken)) {
+				tokenIndex++;
+				final String variableName = codeBlockTokens.get(tokenIndex);
+
+				tokenIndex++;
+				nextToken = codeBlockTokens.get(tokenIndex);
+
+				if (!"=".equals(nextToken)) {
+					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+				}
+
+				tokenIndex++;
+				final int assignmentStart = tokenIndex;
+				while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+					tokenIndex++;
+				}
+				if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+				}
+
+				statements.add(new Assignment(false, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
+			} else if ("let".equals(nextToken)) {
+				tokenIndex++;
+				final String variableName = codeBlockTokens.get(tokenIndex);
+
+				tokenIndex++;
+				nextToken = codeBlockTokens.get(tokenIndex);
+
+				if (!"=".equals(nextToken)) {
+					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+				}
+
+				tokenIndex++;
+				final int assignmentStart = tokenIndex;
+				while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+					tokenIndex++;
+				}
+				if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+				}
+
+				statements.add(new Assignment(true, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
 			} else {
-				throw new RuntimeException("Unsupported code found: " + nextToken);
+				if (codeBlockTokens.size() > tokenIndex + 2 && "=".equals(codeBlockTokens.get(tokenIndex + 1))) {
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					nextToken = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					final int assignmentStart = tokenIndex;
+					while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+						tokenIndex++;
+					}
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					statements.add(new Assignment(false, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
+				} else if (codeBlockTokens.size() > tokenIndex + 2 && "+=".equals(codeBlockTokens.get(tokenIndex + 1))) {
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					nextToken = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					final int assignmentStart = tokenIndex;
+					while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+						tokenIndex++;
+					}
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					final List<String> assignmentExpressionTokens = new ArrayList<>(codeBlockTokens.subList(assignmentStart, tokenIndex));
+					assignmentExpressionTokens.add(0, variableName);
+					assignmentExpressionTokens.add(1, "+");
+					statements.add(new Assignment(false, variableName, assignmentExpressionTokens));
+				} else if (codeBlockTokens.size() > tokenIndex + 2 && "-=".equals(codeBlockTokens.get(tokenIndex + 1))) {
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					nextToken = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					final int assignmentStart = tokenIndex;
+					while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+						tokenIndex++;
+					}
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					final List<String> assignmentExpressionTokens = new ArrayList<>(codeBlockTokens.subList(assignmentStart, tokenIndex));
+					assignmentExpressionTokens.add(0, variableName);
+					assignmentExpressionTokens.add(1, "-");
+					statements.add(new Assignment(false, variableName, assignmentExpressionTokens));
+				} else if (codeBlockTokens.size() > tokenIndex + 2 && "*=".equals(codeBlockTokens.get(tokenIndex + 1))) {
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					nextToken = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					final int assignmentStart = tokenIndex;
+					while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+						tokenIndex++;
+					}
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					final List<String> assignmentExpressionTokens = new ArrayList<>(codeBlockTokens.subList(assignmentStart, tokenIndex));
+					assignmentExpressionTokens.add(0, variableName);
+					assignmentExpressionTokens.add(1, "*");
+					statements.add(new Assignment(false, variableName, assignmentExpressionTokens));
+				} else if (codeBlockTokens.size() > tokenIndex + 2 && "/=".equals(codeBlockTokens.get(tokenIndex + 1))) {
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					nextToken = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					final int assignmentStart = tokenIndex;
+					while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+						tokenIndex++;
+					}
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					final List<String> assignmentExpressionTokens = new ArrayList<>(codeBlockTokens.subList(assignmentStart, tokenIndex));
+					assignmentExpressionTokens.add(0, variableName);
+					assignmentExpressionTokens.add(1, "/");
+					statements.add(new Assignment(false, variableName, assignmentExpressionTokens));
+				} else if (codeBlockTokens.size() > tokenIndex + 1 && "++".equals(codeBlockTokens.get(tokenIndex + 1))) {
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					nextToken = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					statements.add(new Assignment(false, variableName, Arrays.asList(variableName, "+", "1")));
+				} else if (codeBlockTokens.size() > tokenIndex + 1 && "--".equals(codeBlockTokens.get(tokenIndex + 1))) {
+					final String variableName = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					nextToken = codeBlockTokens.get(tokenIndex);
+
+					tokenIndex++;
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					}
+
+					statements.add(new Assignment(false, variableName, Arrays.asList(variableName, "-", "1")));
+				} else {
+					throw new RuntimeException("Unsupported code found: " + nextToken);
+				}
 			}
-			// TODO Execution of simple Expression for side effects
 		}
 		return statements;
+	}
+
+	public static String join(final String[] dataArray, final String separator) {
+		String result = "";
+		for (int i = 0; i < dataArray.length; i++) {
+			if (i > 0) {
+				result += separator;
+			}
+			result += dataArray[i];
+		}
+		return result;
+	}
+
+	public static String join(final List<String> dataList, final String separator) {
+		String result = "";
+		for (int i = 0; i < dataList.size(); i++) {
+			if (i > 0) {
+				result += separator;
+			}
+			result += dataList.get(i);
+		}
+		return result;
+	}
+
+	public static int indexOfOperatorOutsideOfBrackets(final List<String> tokens, final List<String> operators) {
+		int openBrackets = 0;
+		for (int tokenIndex = 0; tokenIndex < tokens.size(); tokenIndex++) {
+			final String token = tokens.get(tokenIndex);
+			if ("(".equals(token)) {
+				openBrackets++;
+			} else if (")".equals(token)) {
+				openBrackets--;
+			} else if (openBrackets == 0 && operators.contains(token)) {
+				return tokenIndex;
+			}
+		}
+		return -1;
+	}
+
+	public static String indentLines(final String text) {
+		return "\t" + text.replace("\n", "\n" + "\t");
+	}
+
+	public static List<String> replaceAliases(final List<String> tokens) {
+		for (int tokenIndex = 0; tokenIndex < tokens.size(); tokenIndex++) {
+			if ("not".equals(tokens.get(tokenIndex))) {
+				tokens.set(tokenIndex, "!");
+			}
+		}
+		return tokens;
 	}
 }

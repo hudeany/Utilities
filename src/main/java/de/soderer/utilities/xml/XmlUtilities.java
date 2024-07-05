@@ -97,7 +97,7 @@ public class XmlUtilities {
 			urlConnection = new URL(url).openConnection(proxy);
 		}
 
-		try (final BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+		try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
@@ -676,7 +676,7 @@ public class XmlUtilities {
 			}
 
 			domSource = new DOMSource(pDocument);
-			try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+			try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 				result = new StreamResult(outputStream);
 
 				transformer.transform(domSource, result);

@@ -118,4 +118,19 @@ public class Condition implements Statement {
 		}
 	}
 
+	@Override
+	public String toString() {
+		String returnValue = "if (" + condition.toString() + ") {\n";
+		for (final Statement ifStatement : ifStatements) {
+			returnValue += PacScriptParserUtilities.indentLines(ifStatement.toString()) + "\n";
+		}
+		if (elseStatements != null && !elseStatements.isEmpty()) {
+			returnValue += "} else {\n";
+			for (final Statement elseStatement : elseStatements) {
+				returnValue += PacScriptParserUtilities.indentLines(elseStatement.toString()) + "\n";
+			}
+		}
+		returnValue += "}";
+		return returnValue;
+	}
 }
