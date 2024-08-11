@@ -1215,4 +1215,12 @@ public class TextUtilities {
 	public static int getUnicodeStringLength(final String input) {
 		return input.codePointCount(0, input.length());
 	}
+
+	public static int getMaximumLineLength(final String text) throws IOException {
+		int maximum = 0;
+		for (final String line : getLines(text)) {
+			maximum = Math.max(maximum, line.length());
+		}
+		return maximum;
+	}
 }

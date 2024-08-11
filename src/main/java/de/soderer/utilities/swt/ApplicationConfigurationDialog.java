@@ -35,6 +35,10 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
+	public static final String CONFIG_LANGUAGE = "Application.Language";
+	public static final String CONFIG_PROXY_CONFIGURATION_TYPE = "Application.ProxyConfigurationType";
+	public static final String CONFIG_PROXY_URL = "Application.ProxyUrl";
+
 	private final String applicationName;
 	private final ConfigurationProperties applicationConfiguration;
 	private final byte[] iconImageDataWindows;
