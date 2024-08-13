@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -20,6 +21,7 @@ import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
@@ -83,7 +85,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		scrolledPart.setExpandVertical(true);
 
 		for (final String key : Utilities.asSortedList(applicationConfiguration.getKeyList())) {
-			if (!key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION)) {
+			if (!key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION) && !key.endsWith(ConfigurationProperties.ENUM_EXTENSION)) {
 				String description = key;
 				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(LangResources.get("conf." + key))) {
 					description = LangResources.get("conf." + key);
@@ -107,6 +109,18 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					valueTextfield.addModifyListener(new TextValueChangeListener(key));
 					final GridData gridData2 = new GridData(SWT.FILL, SWT.UP, true, false, 1, 1);
 					valueTextfield.setLayoutData(gridData2);
+				} else if (applicationConfiguration.containsKey(key + ConfigurationProperties.ENUM_EXTENSION)) {
+					final List<String> items = Utilities.splitAndTrimList(applicationConfiguration.get(key + ConfigurationProperties.ENUM_EXTENSION));
+					final Combo comboBox = new Combo(dataPart, SWT.DROP_DOWN);
+					comboBox.setItems(items.toArray(new String[0]));
+					comboBox.addSelectionListener(new ComboBoxButtonSelectionListener(key));
+					if (Utilities.isBlank(applicationConfiguration.get(key))) {
+						comboBox.select(0);
+					} else {
+						comboBox.setText(applicationConfiguration.get(key));
+					}
+					final GridData gridData1 = new GridData(SWT.FILL, SWT.UP, true, false, 2, 1);
+					comboBox.setLayoutData(gridData1);
 				} else if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
 					final Button keyCheckBox = new Button(dataPart, SWT.CHECK);
 					final GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1);
@@ -356,6 +370,19 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		@Override
 		public void modifyText(final ModifyEvent event) {
 			applicationConfiguration.set(key, Integer.toString(((Spinner) event.widget).getSelection()));
+		}
+	}
+
+	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
+		private final String key;
+
+		private ComboBoxButtonSelectionListener(final String key) {
+			this.key = key;
+		}
+
+		@Override
+		public void widgetSelected(final SelectionEvent event) {
+			applicationConfiguration.set(key, ((Combo) event.widget).getText());
 		}
 	}
 

@@ -61,7 +61,7 @@ public class ProxyConfiguration {
 			case System:
 				return getSystemProxy(url);
 			case ProxyURL:
-				if (proxyOrPacUrl == null || proxyOrPacUrl.trim().length() == 0) {
+				if (proxyOrPacUrl == null || proxyOrPacUrl.trim().length() == 0 || "DIRECT".equalsIgnoreCase(proxyOrPacUrl)) {
 					return Proxy.NO_PROXY;
 				} else {
 					String proxyHost = proxyOrPacUrl;

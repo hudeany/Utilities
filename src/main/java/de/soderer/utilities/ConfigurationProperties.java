@@ -20,6 +20,7 @@ import de.soderer.utilities.csv.CsvWriter;
 
 public class ConfigurationProperties {
 	public static String MAXSIZE_EXTENSION = ".maxSize";
+	public static String ENUM_EXTENSION = ".enum";
 
 	private final Properties properties = new Properties();
 	private final String applicationName;
@@ -87,7 +88,7 @@ public class ConfigurationProperties {
 	}
 
 	public void set(final String name, final String value) {
-		properties.setProperty(name, value == null ? "" : value);
+		properties.remove(name, value == null ? "" : value);
 	}
 
 	public void set(final String name, final int value) {
@@ -220,6 +221,10 @@ public class ConfigurationProperties {
 
 	public boolean containsKey(final String name) {
 		return properties.containsKey(name);
+	}
+
+	public void removeKey(final String name) {
+		properties.remove(name);
 	}
 
 	public static String escape(final String value) {
