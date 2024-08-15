@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 public class VersionInfo {
 	private static Version APPLICATION_VERSION = null;
 
-	public static Version getApplicationVersion() throws Exception {
+	public static Version getApplicationVersion() {
 		if (APPLICATION_VERSION == null) {
 			String buildVersionString = null;
 			try (InputStream buildVersionInputStream = VersionInfo.class.getClassLoader().getResourceAsStream("build.version")) {
@@ -37,7 +37,7 @@ public class VersionInfo {
 					}
 					return Version.getFirstFullVersionNumberFromText(versionInfoText);
 				} catch (@SuppressWarnings("unused") final Exception e) {
-					APPLICATION_VERSION = new Version("0.0.0");
+					APPLICATION_VERSION = new Version(0, 0, 0);
 				}
 			}
 		}
