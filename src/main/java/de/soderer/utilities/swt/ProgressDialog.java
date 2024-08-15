@@ -35,6 +35,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	protected boolean canceledByUser = false;
 
+	protected boolean unlimitedProgressGoingUp = true;
+
 	public ProgressDialog(final Shell shell, final String title, final String commentStringFormat) {
 		this(shell, title, commentStringFormat, (T) null);
 	}
@@ -119,6 +121,8 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 								final String labelText = commentStringFormat.replace("{0}", Long.toString(itemsDone)).replace("{1}", Long.toString(itemsToDo)).replace("{2}", Long.toString(itemsDone * 100 / itemsToDo));
 								commentLabel.setText(labelText);
 							}
+						} else if (itemsToDo < 0) {
+							receiveUnlimitedProgressSignal();
 						} else {
 							if (progressBar != null) {
 								progressBar.setSelection(0);
@@ -141,19 +145,20 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 							@Override
 							public void run() {
 								if (!isDisposed()) {
+									progressBar.setMaximum(100);
 									int nextValue;
-									if (progressBar.getMaximum() == 100) {
+									if (unlimitedProgressGoingUp) {
 										nextValue = progressBar.getSelection() + 10;
 									} else {
 										nextValue = progressBar.getSelection() - 10;
 									}
 
-									if (nextValue > 100) {
-										nextValue = 100;
-										progressBar.setMaximum(101);
-									} else if (nextValue < 0) {
-										nextValue = 0;
-										progressBar.setMaximum(100);
+									if (nextValue > 90) {
+										nextValue = 90;
+										unlimitedProgressGoingUp = false;
+									} else if (nextValue < 10 && !unlimitedProgressGoingUp) {
+										nextValue = 10;
+										unlimitedProgressGoingUp = true;
 									}
 
 									progressBar.setSelection(nextValue);
