@@ -1223,4 +1223,16 @@ public class TextUtilities {
 		}
 		return maximum;
 	}
+
+	public static String ensureMaximumLineLength(final String text, final int maxLineLength) throws IOException {
+		String returnText = "";
+		for (String line : getLines(text)) {
+			while (line.length() > maxLineLength) {
+				returnText += line.substring(0, maxLineLength) + "\n";
+				line = line.substring(maxLineLength);
+			}
+			returnText += line + "\n";
+		}
+		return returnText;
+	}
 }
