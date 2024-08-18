@@ -87,8 +87,12 @@ public class ConfigurationProperties {
 		}
 	}
 
+	public void remove(final String name) {
+		properties.remove(name);
+	}
+
 	public void set(final String name, final String value) {
-		properties.remove(name, value == null ? "" : value);
+		properties.setProperty(name, value == null ? "" : value);
 	}
 
 	public void set(final String name, final int value) {

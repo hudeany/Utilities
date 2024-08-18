@@ -111,13 +111,14 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					valueTextfield.setLayoutData(gridData2);
 				} else if (applicationConfiguration.containsKey(key + ConfigurationProperties.ENUM_EXTENSION)) {
 					final List<String> items = Utilities.splitAndTrimList(applicationConfiguration.get(key + ConfigurationProperties.ENUM_EXTENSION));
+					items.replaceAll(x -> "None".equalsIgnoreCase(x) ? LangResources.get("None") : x);
 					final Combo comboBox = new Combo(dataPart, SWT.DROP_DOWN);
 					comboBox.setItems(items.toArray(new String[0]));
 					comboBox.addSelectionListener(new ComboBoxButtonSelectionListener(key));
 					if (Utilities.isBlank(applicationConfiguration.get(key))) {
 						comboBox.select(0);
 					} else {
-						comboBox.setText(applicationConfiguration.get(key));
+						comboBox.setText(applicationConfiguration.get(key).replace("None", LangResources.get("None")));
 					}
 					final GridData gridData1 = new GridData(SWT.FILL, SWT.UP, true, false, 2, 1);
 					comboBox.setLayoutData(gridData1);
@@ -382,7 +383,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		@Override
 		public void widgetSelected(final SelectionEvent event) {
-			applicationConfiguration.set(key, ((Combo) event.widget).getText());
+			applicationConfiguration.set(key, ((Combo) event.widget).getText().replace(LangResources.get("None"), "None"));
 		}
 	}
 
