@@ -41,7 +41,13 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 
 			signalUnlimitedProgress();
 			final URLConnection urlConnection = new URL(downloadUrl).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(downloadUrl));
-			itemsToDo = urlConnection.getContentLength();
+			itemsToDo = urlConnection.getContentLengthLong();
+			if (itemsToDo < 0) {
+				itemsToDo = urlConnection.getContentLength();
+			}
+			if (itemsToDo < 0) {
+				itemsToDo = urlConnection.getHeaderFieldLong("Original-Content-Length", 0);
+			}
 			signalProgress(true);
 			try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
 					FileOutputStream fileOutputStream = new FileOutputStream(destinationFile)) {
