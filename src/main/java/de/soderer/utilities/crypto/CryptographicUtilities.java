@@ -1613,35 +1613,7 @@ public class CryptographicUtilities {
 		if (potentialPrivateKeyFile != null && potentialPrivateKeyFile.exists()) {
 			try {
 				final String dataString = FileUtilities.readFileToString(potentialPrivateKeyFile, StandardCharsets.UTF_8);
-
-				final String pemRsaBegin = "-----BEGIN RSA PRIVATE KEY-----";
-				final String pemRsaEnd = "-----END RSA PRIVATE KEY-----";
-
-				final String pemEcBegin = "-----BEGIN EC PRIVATE KEY-----";
-				final String pemEcEnd = "-----END EC PRIVATE KEY-----";
-
-				final String pemBegin = "-----BEGIN PRIVATE KEY-----";
-				final String pemEnd = "-----END PRIVATE KEY-----";
-
-				final String pemOpenSshBegin = "-----BEGIN OPENSSH PRIVATE KEY-----";
-				final String pemOpenSshEnd = "-----END OPENSSH PRIVATE KEY-----";
-
-				final String pemEncryptedBegin = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
-				final String pemEncryptedEnd = "-----END ENCRYPTED PRIVATE KEY-----";
-
-				if (dataString.contains(pemRsaBegin) && dataString.contains(pemRsaEnd) && dataString.indexOf(pemRsaBegin) < dataString.indexOf(pemRsaEnd)) {
-					return true;
-				} else if (dataString.contains(pemEcBegin) && dataString.contains(pemEcEnd) && dataString.indexOf(pemEcBegin) < dataString.indexOf(pemEcEnd)) {
-					return true;
-				} else if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
-					return true;
-				} else if (dataString.contains(pemOpenSshBegin) && dataString.contains(pemOpenSshEnd) && dataString.indexOf(pemOpenSshBegin) < dataString.indexOf(pemOpenSshEnd)) {
-					return true;
-				} else if (dataString.contains(pemEncryptedBegin) && dataString.contains(pemEncryptedEnd) && dataString.indexOf(pemEncryptedBegin) < dataString.indexOf(pemEncryptedEnd)) {
-					return true;
-				} else {
-					return false;
-				}
+				return isPrivateKeyString(dataString);
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				return false;
 			}
@@ -1650,28 +1622,70 @@ public class CryptographicUtilities {
 		}
 	}
 
+	public static boolean isPrivateKeyString(final String potentialPrivateKeyString) {
+		try {
+			final String pemRsaBegin = "-----BEGIN RSA PRIVATE KEY-----";
+			final String pemRsaEnd = "-----END RSA PRIVATE KEY-----";
+
+			final String pemEcBegin = "-----BEGIN EC PRIVATE KEY-----";
+			final String pemEcEnd = "-----END EC PRIVATE KEY-----";
+
+			final String pemBegin = "-----BEGIN PRIVATE KEY-----";
+			final String pemEnd = "-----END PRIVATE KEY-----";
+
+			final String pemOpenSshBegin = "-----BEGIN OPENSSH PRIVATE KEY-----";
+			final String pemOpenSshEnd = "-----END OPENSSH PRIVATE KEY-----";
+
+			final String pemEncryptedBegin = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
+			final String pemEncryptedEnd = "-----END ENCRYPTED PRIVATE KEY-----";
+
+			if (potentialPrivateKeyString.contains(pemRsaBegin) && potentialPrivateKeyString.contains(pemRsaEnd) && potentialPrivateKeyString.indexOf(pemRsaBegin) < potentialPrivateKeyString.indexOf(pemRsaEnd)) {
+				return true;
+			} else if (potentialPrivateKeyString.contains(pemEcBegin) && potentialPrivateKeyString.contains(pemEcEnd) && potentialPrivateKeyString.indexOf(pemEcBegin) < potentialPrivateKeyString.indexOf(pemEcEnd)) {
+				return true;
+			} else if (potentialPrivateKeyString.contains(pemBegin) && potentialPrivateKeyString.contains(pemEnd) && potentialPrivateKeyString.indexOf(pemBegin) < potentialPrivateKeyString.indexOf(pemEnd)) {
+				return true;
+			} else if (potentialPrivateKeyString.contains(pemOpenSshBegin) && potentialPrivateKeyString.contains(pemOpenSshEnd) && potentialPrivateKeyString.indexOf(pemOpenSshBegin) < potentialPrivateKeyString.indexOf(pemOpenSshEnd)) {
+				return true;
+			} else if (potentialPrivateKeyString.contains(pemEncryptedBegin) && potentialPrivateKeyString.contains(pemEncryptedEnd) && potentialPrivateKeyString.indexOf(pemEncryptedBegin) < potentialPrivateKeyString.indexOf(pemEncryptedEnd)) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return false;
+		}
+	}
+
 	public static boolean isPublicKeyFile(final File potentialPublicKeyFile) {
 		if (potentialPublicKeyFile != null && potentialPublicKeyFile.exists()) {
 			try {
-				final String dataString = FileUtilities.readFileToString(potentialPublicKeyFile, StandardCharsets.UTF_8);
-
-				final String pemRsaBegin = "-----BEGIN RSA PUBLIC KEY-----";
-				final String pemRsaEnd = "-----END RSA PUBLIC KEY-----";
-
-				final String pemBegin = "-----BEGIN PUBLIC KEY-----";
-				final String pemEnd = "-----END PUBLIC KEY-----";
-
-				if (dataString.contains(pemRsaBegin) && dataString.contains(pemRsaEnd) && dataString.indexOf(pemRsaBegin) < dataString.indexOf(pemRsaEnd)) {
-					return true;
-				} else if (dataString.contains(pemBegin) && dataString.contains(pemEnd) && dataString.indexOf(pemBegin) < dataString.indexOf(pemEnd)) {
-					return true;
-				} else {
-					return false;
-				}
+				final String potentialPublicKeyString = FileUtilities.readFileToString(potentialPublicKeyFile, StandardCharsets.UTF_8);
+				return isPublicKeyString(potentialPublicKeyString);
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				return false;
 			}
 		} else {
+			return false;
+		}
+	}
+
+	public static boolean isPublicKeyString(final String potentialPublicKeyString) {
+		try {
+			final String pemRsaBegin = "-----BEGIN RSA PUBLIC KEY-----";
+			final String pemRsaEnd = "-----END RSA PUBLIC KEY-----";
+
+			final String pemBegin = "-----BEGIN PUBLIC KEY-----";
+			final String pemEnd = "-----END PUBLIC KEY-----";
+
+			if (potentialPublicKeyString.contains(pemRsaBegin) && potentialPublicKeyString.contains(pemRsaEnd) && potentialPublicKeyString.indexOf(pemRsaBegin) < potentialPublicKeyString.indexOf(pemRsaEnd)) {
+				return true;
+			} else if (potentialPublicKeyString.contains(pemBegin) && potentialPublicKeyString.contains(pemEnd) && potentialPublicKeyString.indexOf(pemBegin) < potentialPublicKeyString.indexOf(pemEnd)) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (@SuppressWarnings("unused") final Exception e) {
 			return false;
 		}
 	}
