@@ -353,7 +353,7 @@ public class ApplicationUpdateUtilities {
 				} catch (final Exception e) {
 					if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
 						if (updateParent != null) {
-							updateParent.showUpdateError("Update error:\n" + ((UserError) e.getCause()).getMessage());
+							updateParent.showUpdateError("Update error:\n" + e.getCause().getMessage());
 
 							if (((UserError) e.getCause()).getReason() == Reason.UnauthenticatedOrUnauthorized) {
 								if (updateFileLocation.contains("<username>") || updateFileLocation.contains("<password>")) {
@@ -366,7 +366,7 @@ public class ApplicationUpdateUtilities {
 								return false;
 							}
 						} else {
-							System.err.println("Update error while downloading new version:\n" + ((UserError) e.getCause()).getMessage());
+							System.err.println("Update error while downloading new version:\n" + e.getCause().getMessage());
 							return false;
 						}
 					} else {
