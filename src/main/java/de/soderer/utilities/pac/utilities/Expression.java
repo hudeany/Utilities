@@ -22,6 +22,10 @@ public class Expression implements Statement {
 	private String operator;
 	private Expression expression2;
 
+	public List<String> getExpressionTokens() {
+		return expressionTokens;
+	}
+
 	public Expression(final List<String> expressionTokens) {
 		if ("(".equals(expressionTokens.get(0))) {
 			final int bracketEnd = PacScriptParserUtilities.findClosingBracketToken(expressionTokens, 0);
@@ -29,6 +33,12 @@ public class Expression implements Statement {
 			if (bracketEnd < expressionTokens.size() - 1) {
 				operator = expressionTokens.get(bracketEnd + 1);
 				expression2 = new Expression(expressionTokens.subList(bracketEnd + 2, expressionTokens.size()));
+			}
+		} else if ("[".equals(expressionTokens.get(0))) {
+			final int bracketEnd = PacScriptParserUtilities.findClosingBracketToken(expressionTokens, 0);
+			this.expressionTokens = expressionTokens.subList(0, bracketEnd + 1);
+			if (bracketEnd < expressionTokens.size() - 1) {
+				throw new RuntimeException("Unsupported expression with operator for array found: " + expressionTokens.get(bracketEnd + 1));
 			}
 		} else {
 			final int operatorIndex = PacScriptParserUtilities.indexOfOperatorOutsideOfBrackets(expressionTokens, twoParameterOperators);
@@ -60,12 +70,16 @@ public class Expression implements Statement {
 			final Object result2 = expression2 == null ? null : expression2.execute(environmentVariables, definedMethods);
 			if (result1 == null) {
 				if ("++".equals(operator) && result2 != null && result2 instanceof Integer) {
-					final int value = ((Integer) result2);
-					environmentVariables.put(expression2.getVariableName(), value);
+					final int value = ((Integer) result2) + 1;
+					if (expression2.getExpressionTokens() != null && expression2.getExpressionTokens().size() == 1 && environmentVariables.containsKey(expression2.getExpressionTokens().get(0))) {
+						environmentVariables.put(expression2.getExpressionTokens().get(0), value);
+					}
 					return value;
 				} else if ("--".equals(operator) && result2 != null && result2 instanceof Integer) {
-					final int value = ((Integer) result2);
-					environmentVariables.put(expression2.getVariableName(), value);
+					final int value = ((Integer) result2) - 1;
+					if (expression2.getExpressionTokens() != null && expression2.getExpressionTokens().size() == 1 && environmentVariables.containsKey(expression2.getExpressionTokens().get(0))) {
+						environmentVariables.put(expression2.getExpressionTokens().get(0), value);
+					}
 					return value;
 				} else if ("==".equals(operator) && result2 == null) {
 					return true;
@@ -79,12 +93,16 @@ public class Expression implements Statement {
 			} else if (result2 == null) {
 				if ("++".equals(operator) && result1 instanceof Integer) {
 					final int value = ((Integer) result1) + 1;
-					environmentVariables.put(expression1.getVariableName(), value);
-					return value;
+					if (expression1.getExpressionTokens() != null && expression1.getExpressionTokens().size() == 1 && environmentVariables.containsKey(expression1.getExpressionTokens().get(0))) {
+						environmentVariables.put(expression1.getExpressionTokens().get(0), value);
+					}
+					return result1;
 				} else if ("--".equals(operator) && result1 instanceof Integer) {
 					final int value = ((Integer) result1) - 1;
-					environmentVariables.put(expression2.getVariableName(), value);
-					return value;
+					if (expression1.getExpressionTokens() != null && expression1.getExpressionTokens().size() == 1 && environmentVariables.containsKey(expression1.getExpressionTokens().get(0))) {
+						environmentVariables.put(expression1.getExpressionTokens().get(0), value);
+					}
+					return result1;
 				} else if (operator != null) {
 					throw new RuntimeException("Unsupported operator: " + operator);
 				} else {
@@ -252,84 +270,104 @@ public class Expression implements Statement {
 				}
 			}
 		} else {
-			final String currentToken = expressionTokens.get(0);
-			if (expressionTokens.size() > 1 && expressionTokens.get(1).equals("(")) {
+			final String firstToken = expressionTokens.get(0);
+			if (expressionTokens.size() > 1 && firstToken.equals("[") && expressionTokens.get(expressionTokens.size() - 1).equals("]")) {
+				final List<Object> array = new ArrayList<>();
+				for (int i = 1; i < expressionTokens.size() - 1; i++) {
+					final String nextItemExpression = expressionTokens.get(i);
+					if (!",".equals(nextItemExpression)) {
+						final Object nextItem = new Expression(PacScriptParserUtilities.tokenize(nextItemExpression)).execute(environmentVariables, definedMethods);
+						array.add(nextItem);
+					}
+				}
+				return array;
+			} else if (expressionTokens.size() > 1 && expressionTokens.get(1).equals("(")) {
 				final List<Object> methodCallParameters = readMethodParameters(environmentVariables, definedMethods, 1);
 
-				if (definedMethods.containsKey(currentToken)) {
-					return definedMethods.get(currentToken).executeMethod(methodCallParameters, environmentVariables, definedMethods);
-				} else if ("isPlainHostName".equals(currentToken)) {
+				if (definedMethods.containsKey(firstToken)) {
+					return definedMethods.get(firstToken).executeMethod(methodCallParameters, environmentVariables, definedMethods);
+				} else if ("isPlainHostName".equals(firstToken)) {
 					return PacScriptMethods.isPlainHostName((String) methodCallParameters.get(0));
-				} else if ("dnsDomainIs".equals(currentToken)) {
+				} else if ("dnsDomainIs".equals(firstToken)) {
 					return PacScriptMethods.dnsDomainIs((String) methodCallParameters.get(0), (String) methodCallParameters.get(1));
-				} else if ("localHostOrDomainIs".equals(currentToken)) {
+				} else if ("localHostOrDomainIs".equals(firstToken)) {
 					return PacScriptMethods.localHostOrDomainIs((String) methodCallParameters.get(0), (String) methodCallParameters.get(1));
-				} else if ("isResolvable".equals(currentToken)) {
+				} else if ("isResolvable".equals(firstToken)) {
 					return PacScriptMethods.isResolvable((String) methodCallParameters.get(0));
-				} else if ("isInNet".equals(currentToken)) {
+				} else if ("isInNet".equals(firstToken)) {
 					return PacScriptMethods.isInNet((String) methodCallParameters.get(0), (String) methodCallParameters.get(1), (String) methodCallParameters.get(2));
-				} else if ("dnsResolve".equals(currentToken)) {
+				} else if ("dnsResolve".equals(firstToken)) {
 					return PacScriptMethods.dnsResolve((String) methodCallParameters.get(0));
-				} else if ("myIpAddress".equals(currentToken)) {
+				} else if ("myIpAddress".equals(firstToken)) {
 					return PacScriptMethods.myIpAddress();
-				} else if ("dnsDomainLevels".equals(currentToken)) {
+				} else if ("dnsDomainLevels".equals(firstToken)) {
 					return PacScriptMethods.dnsDomainLevels((String) methodCallParameters.get(0));
-				} else if ("shExpMatch".equals(currentToken)) {
+				} else if ("shExpMatch".equals(firstToken)) {
 					return PacScriptMethods.shExpMatch((String) methodCallParameters.get(0), (String) methodCallParameters.get(1));
-				} else if ("weekdayRange".equals(currentToken)) {
+				} else if ("weekdayRange".equals(firstToken)) {
 					return PacScriptMethods.weekdayRange((String) methodCallParameters.get(0), (String) methodCallParameters.get(1), (String) methodCallParameters.get(2));
-				} else if ("dateRange".equals(currentToken)) {
+				} else if ("dateRange".equals(firstToken)) {
 					return PacScriptMethods.dateRange(methodCallParameters.get(0), methodCallParameters.get(1), methodCallParameters.get(2), methodCallParameters.get(3), methodCallParameters.get(4), methodCallParameters.get(5), methodCallParameters.get(6));
-				} else if ("timeRange".equals(currentToken)) {
+				} else if ("timeRange".equals(firstToken)) {
 					return PacScriptMethods.timeRange(methodCallParameters.get(0), methodCallParameters.get(1), methodCallParameters.get(2), methodCallParameters.get(3), methodCallParameters.get(4), methodCallParameters.get(5), methodCallParameters.get(6));
-				} else if ("isResolvableEx".equals(currentToken)) {
+				} else if ("isResolvableEx".equals(firstToken)) {
 					return PacScriptMethods.isResolvableEx((String) methodCallParameters.get(0));
-				} else if ("isInNetEx".equals(currentToken)) {
+				} else if ("isInNetEx".equals(firstToken)) {
 					return PacScriptMethods.isInNetEx((String) methodCallParameters.get(0), (String) methodCallParameters.get(1));
-				} else if ("dnsResolveEx".equals(currentToken)) {
+				} else if ("dnsResolveEx".equals(firstToken)) {
 					return PacScriptMethods.dnsResolveEx((String) methodCallParameters.get(0));
-				} else if ("myIpAddressEx".equals(currentToken)) {
+				} else if ("myIpAddressEx".equals(firstToken)) {
 					return PacScriptMethods.myIpAddressEx();
-				} else if ("sortIpAddressList".equals(currentToken)) {
+				} else if ("sortIpAddressList".equals(firstToken)) {
 					return PacScriptMethods.sortIpAddressList((String) methodCallParameters.get(0));
-				} else if ("getClientVersion".equals(currentToken)) {
+				} else if ("getClientVersion".equals(firstToken)) {
 					return PacScriptMethods.getClientVersion();
 				} else {
-					throw new RuntimeException("Call of undefined method: " + currentToken);
+					throw new RuntimeException("Call of undefined method: " + firstToken);
+				}
+			} else if (expressionTokens.size() > 1 && expressionTokens.get(1).equals("[")) {
+				if (environmentVariables.containsKey(firstToken)) {
+					final int arrayIndex = readArrayIndex(environmentVariables, definedMethods, 1);
+					final Object arrayObject = environmentVariables.get(firstToken);
+					if (arrayObject == null || !(arrayObject instanceof List)) {
+						throw new RuntimeException("Invalid array reference: " + firstToken);
+					} else {
+						@SuppressWarnings("unchecked")
+						final List<Object> array = (List<Object>) arrayObject;
+						if (array.size() <= arrayIndex) {
+							throw new RuntimeException("Invalid array index: " + arrayIndex);
+						} else {
+							return array.get(arrayIndex);
+						}
+					}
+				} else {
+					throw new RuntimeException("Array Index call for undefined variable: " + firstToken);
 				}
 			} else {
-				if ("true".equals(currentToken)) {
+				if ("true".equals(firstToken)) {
 					return true;
-				} else if ("false".equals(currentToken)) {
+				} else if ("false".equals(firstToken)) {
 					return false;
-				} else if (environmentVariables.containsKey(currentToken)) {
-					return environmentVariables.get(currentToken);
-				} else if (currentToken.startsWith("\"") && currentToken.endsWith("\"")) {
-					return currentToken.substring(1, currentToken.length() - 1);
+				} else if (environmentVariables.containsKey(firstToken)) {
+					return environmentVariables.get(firstToken);
+				} else if (firstToken.startsWith("\"") && firstToken.endsWith("\"")) {
+					return firstToken.substring(1, firstToken.length() - 1);
 				} else {
 					try {
-						return Integer.parseInt(currentToken);
+						return Integer.parseInt(firstToken);
 					} catch (@SuppressWarnings("unused") final NumberFormatException e1) {
 						try {
-							return Float.parseFloat(currentToken);
+							return Float.parseFloat(firstToken);
 						} catch (@SuppressWarnings("unused") final NumberFormatException e2) {
 							try {
-								return Double.parseDouble(currentToken);
+								return Double.parseDouble(firstToken);
 							} catch (@SuppressWarnings("unused") final NumberFormatException e3) {
-								throw new RuntimeException("Unexpected code in expression: " + currentToken);
+								throw new RuntimeException("Unexpected code in expression: " + firstToken);
 							}
 						}
 					}
 				}
 			}
-		}
-	}
-
-	private String getVariableName() {
-		if (expressionTokens != null && expressionTokens.size() == 1) {
-			return expressionTokens.get(0);
-		} else {
-			throw new RuntimeException("Unexpected expression when expecting variablename");
 		}
 	}
 
@@ -350,6 +388,24 @@ public class Expression implements Statement {
 			bracketStartTokenIndex = nextParameterEnd + 1;
 		}
 		return methodCallParameters;
+	}
+
+	private int readArrayIndex(final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods, final int bracketStartTokenIndex) {
+		final int arrayIndexEnd = PacScriptParserUtilities.findClosingBracketToken(expressionTokens, bracketStartTokenIndex);
+		if (arrayIndexEnd == -1) {
+			throw new RuntimeException("Missing array index closing operator");
+		}
+
+		final Object arrayIndexObject = new Expression(expressionTokens.subList(bracketStartTokenIndex + 1, arrayIndexEnd)).execute(environmentVariables, definedMethods);
+		if (arrayIndexObject == null || !(arrayIndexObject instanceof Integer)) {
+			throw new RuntimeException("Invalid array index value: " + arrayIndexObject);
+		}
+
+		final int arrayIndex = ((Integer) arrayIndexObject).intValue();
+		if (arrayIndex < 0) {
+			throw new RuntimeException("Invalid array index value: " + arrayIndexObject);
+		}
+		return arrayIndex;
 	}
 
 	@Override

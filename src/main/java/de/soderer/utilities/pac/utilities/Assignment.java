@@ -22,7 +22,9 @@ public class Assignment implements Statement {
 		if (isLetDeclaration && environmentVariables.containsKey(variableName)) {
 			throw new RuntimeException("Multiple declaration of variablename by 'let' keyword");
 		} else {
-			environmentVariables.put(variableName, expression.execute(environmentVariables, definedMethods));
+			// Expression must be executed always for concurrency results of unary operators
+			final Object result = expression.execute(environmentVariables, definedMethods);
+			environmentVariables.put(variableName, result);
 			return null;
 		}
 	}

@@ -153,9 +153,21 @@ public class PacScriptParserUtilities {
 						if (currentCharacter == '\"') {
 							nextToken += currentCharString;
 							currentState = insideStringLiteral;
-						} else if (currentCharacter == '(' || currentCharacter == ')'
-								|| currentCharacter == '[' || currentCharacter == ']'
-								|| currentCharacter == '{' || currentCharacter == '}') {
+						} else if (currentCharacter == '(' || currentCharacter == ')') {
+							if (nextToken.length() > 0) {
+								tokens.add(nextToken);
+								nextToken = "";
+							}
+							tokens.add(currentCharString);
+							nextToken = "";
+						} else if (currentCharacter == '[' || currentCharacter == ']') { // TODO
+							if (nextToken.length() > 0) {
+								tokens.add(nextToken);
+								nextToken = "";
+							}
+							tokens.add(currentCharString);
+							nextToken = "";
+						} else if (currentCharacter == '{' || currentCharacter == '}') {
 							if (nextToken.length() > 0) {
 								tokens.add(nextToken);
 								nextToken = "";
@@ -227,6 +239,9 @@ public class PacScriptParserUtilities {
 				}
 				previousCharacter = currentCharacter;
 			}
+			if (nextToken.trim().length() > 0) {
+				tokens.add(nextToken);
+			}
 			return tokens;
 		}
 	}
@@ -242,7 +257,11 @@ public class PacScriptParserUtilities {
 		for (int tokenIndex = startIndex + 1; tokenIndex < tokens.size(); tokenIndex++) {
 			currentToken = tokens.get(tokenIndex);
 			final Character firstTokenCharacter = currentToken.charAt(0);
-			if (firstTokenCharacter == '(' || firstTokenCharacter == '[' || firstTokenCharacter == '{') {
+			if (firstTokenCharacter == '(') {
+				openBrackets.push(firstTokenCharacter);
+			} else if (firstTokenCharacter == '[') {
+				openBrackets.push(firstTokenCharacter);
+			} else if (firstTokenCharacter == '{') {
 				openBrackets.push(firstTokenCharacter);
 			} else if (firstTokenCharacter == ')') {
 				if ('(' != openBrackets.pop()) {
@@ -463,6 +482,8 @@ public class PacScriptParserUtilities {
 				}
 
 				statements.add(new Assignment(true, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
+			} else if ("[".equals(nextToken)) { // TODO
+				final int arrayIndexEnd = findClosingBracketToken(codeBlockTokens, tokenIndex);
 			} else {
 				if (codeBlockTokens.size() > tokenIndex + 2 && "=".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);
@@ -617,6 +638,10 @@ public class PacScriptParserUtilities {
 			if ("(".equals(token)) {
 				openBrackets++;
 			} else if (")".equals(token)) {
+				openBrackets--;
+			} else if ("[".equals(token)) {
+				openBrackets++;
+			} else if ("]".equals(token)) {
 				openBrackets--;
 			} else if (openBrackets == 0 && operators.contains(token)) {
 				return tokenIndex;
