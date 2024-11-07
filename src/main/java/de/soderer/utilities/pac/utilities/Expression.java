@@ -27,7 +27,9 @@ public class Expression implements Statement {
 	}
 
 	public Expression(final List<String> expressionTokens) {
-		if ("(".equals(expressionTokens.get(0))) {
+		if (expressionTokens == null || expressionTokens.size() == 0) {
+			throw new RuntimeException("Unsupported empty expression");
+		} else if ("(".equals(expressionTokens.get(0))) {
 			final int bracketEnd = PacScriptParserUtilities.findClosingBracketToken(expressionTokens, 0);
 			expression1 = new Expression(expressionTokens.subList(1, bracketEnd));
 			if (bracketEnd < expressionTokens.size() - 1) {
@@ -273,12 +275,10 @@ public class Expression implements Statement {
 			final String firstToken = expressionTokens.get(0);
 			if (expressionTokens.size() > 1 && firstToken.equals("[") && expressionTokens.get(expressionTokens.size() - 1).equals("]")) {
 				final List<Object> array = new ArrayList<>();
-				for (int i = 1; i < expressionTokens.size() - 1; i++) {
-					final String nextItemExpression = expressionTokens.get(i);
-					if (!",".equals(nextItemExpression)) {
-						final Object nextItem = new Expression(PacScriptParserUtilities.tokenize(nextItemExpression)).execute(environmentVariables, definedMethods);
-						array.add(nextItem);
-					}
+				final List<List<String>> arrayItemTokens = readArrayItems(expressionTokens.subList(1, expressionTokens.size() - 1));
+				for (final List<String> itemTokens : arrayItemTokens) {
+					final Object nextItem = new Expression(itemTokens).execute(environmentVariables, definedMethods);
+					array.add(nextItem);
 				}
 				return array;
 			} else if (expressionTokens.size() > 1 && expressionTokens.get(1).equals("(")) {
@@ -327,7 +327,7 @@ public class Expression implements Statement {
 				}
 			} else if (expressionTokens.size() > 1 && expressionTokens.get(1).equals("[")) {
 				if (environmentVariables.containsKey(firstToken)) {
-					final int arrayIndex = readArrayIndex(environmentVariables, definedMethods, 1);
+					final int arrayIndex = readArrayIndex(expressionTokens, environmentVariables, definedMethods, 1);
 					final Object arrayObject = environmentVariables.get(firstToken);
 					if (arrayObject == null || !(arrayObject instanceof List)) {
 						throw new RuntimeException("Invalid array reference: " + firstToken);
@@ -390,7 +390,7 @@ public class Expression implements Statement {
 		return methodCallParameters;
 	}
 
-	private int readArrayIndex(final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods, final int bracketStartTokenIndex) {
+	private static int readArrayIndex(final List<String> expressionTokens, final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods, final int bracketStartTokenIndex) {
 		final int arrayIndexEnd = PacScriptParserUtilities.findClosingBracketToken(expressionTokens, bracketStartTokenIndex);
 		if (arrayIndexEnd == -1) {
 			throw new RuntimeException("Missing array index closing operator");
@@ -406,6 +406,21 @@ public class Expression implements Statement {
 			throw new RuntimeException("Invalid array index value: " + arrayIndexObject);
 		}
 		return arrayIndex;
+	}
+
+	private static List<List<String>> readArrayItems(final List<String> expressionTokens) {
+		final List<List<String>> arrayItemTokens = new ArrayList<>();
+		List<String> nextItemTokens = new ArrayList<>();
+		for (final String nextToken : expressionTokens) {
+			if (",".equals(nextToken)) {
+				arrayItemTokens.add(nextItemTokens);
+				nextItemTokens = new ArrayList<>();
+			} else {
+				nextItemTokens.add(nextToken);
+			}
+		}
+		arrayItemTokens.add(nextItemTokens);
+		return arrayItemTokens;
 	}
 
 	@Override
