@@ -3,6 +3,7 @@ package de.soderer.utilities.pac;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -23,12 +25,26 @@ import de.soderer.utilities.pac.utilities.PacScriptParserUtilities;
 //	'*.aadrm.com'
 //]
 //
-//for(var i=0; i<bypassList.length; i++){
-//	bypassList[i];
+//array.length
+//
+//while (condition) {
+//  // code block to be executed
 //}
 
 public class PacScriptParser {
 	private String pacScriptData = null;
+	private Map<String, Method> pacScriptMethods = null;
+
+	private final Map<String, List<String>> pacProxyCache = new HashMap<>();
+
+	/**
+	 * Default: CacheByDomain
+	 */
+	public enum CacheType {
+		None,
+		CacheByDomain,
+		CacheByFullUrl
+	}
 
 	public PacScriptParser(final URL pacUrl) {
 		pacScriptData = PacScriptParserUtilities.readPacData(pacUrl);
@@ -134,9 +150,46 @@ public class PacScriptParser {
 		}
 	}
 
-	public List<String> discoverProxySettings(final String destinationUrl) {
+	public List<String> discoverProxySettings(final String destinationUrl) throws Exception {
+		return discoverProxySettings(destinationUrl, null);
+	}
+
+	public List<String> discoverProxySettings(final String destinationUrl, final CacheType cacheType) throws Exception {
+		if (cacheType == CacheType.None) {
+			return discoverProxySettingsInternal(destinationUrl);
+		} else if (cacheType == CacheType.CacheByFullUrl) {
+			if (pacProxyCache.containsKey(destinationUrl)) {
+				return pacProxyCache.get(destinationUrl);
+			} else {
+				final List<String> result = discoverProxySettingsInternal(destinationUrl);
+				pacProxyCache.put(destinationUrl, result);
+				return result;
+			}
+		} else {
+			final String domain = getDomainFromUrl(destinationUrl);
+			if (pacProxyCache.containsKey(domain)) {
+				return pacProxyCache.get(domain);
+			} else {
+				final List<String> result = discoverProxySettingsInternal(destinationUrl);
+				pacProxyCache.put(domain, result);
+				return result;
+			}
+		}
+	}
+
+	public List<Proxy> discoverProxy(final String destinationUrl) throws Exception {
+		return discoverProxy(destinationUrl, null);
+	}
+
+	public List<Proxy> discoverProxy(final String destinationUrl, final CacheType cacheType) throws Exception {
+		return discoverProxyInternal(destinationUrl, cacheType);
+	}
+
+	private List<String> discoverProxySettingsInternal(final String destinationUrl) {
 		final String hostname = PacScriptParserUtilities.getHostnameFromRequestString(destinationUrl);
-		final Map<String, Method> pacScriptMethods = parsePacScript();
+		if (pacScriptMethods == null) {
+			pacScriptMethods = parsePacScript();
+		}
 		final Map<String, Object> environmentVariables = new HashMap<>();
 		final List<Object> methodParameters = new ArrayList<>();
 		methodParameters.add(destinationUrl);
@@ -152,8 +205,8 @@ public class PacScriptParser {
 		}
 	}
 
-	public List<Proxy> discoverProxy(final String destinationUrl) {
-		final List<String> proxySettings = discoverProxySettings(destinationUrl);
+	private List<Proxy> discoverProxyInternal(final String destinationUrl, final CacheType cacheType) throws Exception {
+		final List<String> proxySettings = discoverProxySettings(destinationUrl, cacheType);
 		final List<Proxy> proxyConfigurations = new ArrayList<>();
 		if (proxySettings != null) {
 			for (String proxyConfigurationString : proxySettings) {
@@ -183,5 +236,28 @@ public class PacScriptParser {
 			proxyConfigurations.add(null);
 		}
 		return proxyConfigurations;
+	}
+
+	public static String getDomainFromUrl(final String url) throws Exception {
+		final URI uri = new URI(url);
+		final String domain = uri.getHost();
+		return domain.startsWith("www.") ? domain.substring(4) : domain;
+	}
+
+	@Override
+	public String toString() {
+		if (pacScriptMethods == null) {
+			pacScriptMethods = parsePacScript();
+		}
+		String returnValue = "";
+		if (pacScriptMethods.containsKey("FindProxyForURL")) {
+			returnValue += pacScriptMethods.get("FindProxyForURL").toString() + "\n";
+		}
+		for (final Entry<String, Method> method : pacScriptMethods.entrySet()) {
+			if (!("FindProxyForURL").equals(method.getKey())) {
+				returnValue += method.getValue().toString() + "\n";
+			}
+		}
+		return returnValue;
 	}
 }

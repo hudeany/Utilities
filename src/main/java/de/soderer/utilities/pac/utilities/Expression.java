@@ -446,7 +446,7 @@ public class Expression implements Statement {
 				returnValue += operator;
 			}
 			if (expression2 != null) {
-				returnValue = "(" + returnValue + " " + expression2.toString() + ")";
+				returnValue = returnValue + " " + expression2.toString();
 			}
 			return returnValue;
 		}

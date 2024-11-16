@@ -136,10 +136,11 @@ public class PacScriptParserUtilities {
 		return bytesCopied;
 	}
 
-	public static List<String> tokenize(final String pacScriptString) {
+	public static List<String> tokenize(final String pacScript) {
 		final int outsideStringLiteral = 0;
 		final int insideStringLiteral = 1;
 		int currentState = outsideStringLiteral;
+		final String pacScriptString = pacScript.replace("\r\n", "\n").replace("\r", "\n");
 		try (Scanner textScanner = new Scanner(pacScriptString).useDelimiter("")) {
 			final List<String> tokens = new ArrayList<>();
 
@@ -160,7 +161,7 @@ public class PacScriptParserUtilities {
 							}
 							tokens.add(currentCharString);
 							nextToken = "";
-						} else if (currentCharacter == '[' || currentCharacter == ']') { // TODO
+						} else if (currentCharacter == '[' || currentCharacter == ']') {
 							if (nextToken.length() > 0) {
 								tokens.add(nextToken);
 								nextToken = "";
@@ -400,6 +401,40 @@ public class PacScriptParserUtilities {
 						tokenIndex--;
 					}
 				}
+			} else if ("for".equals(nextToken)) {
+				tokenIndex++;
+				nextToken = codeBlockTokens.get(tokenIndex);
+				if (!"(".equals(nextToken)) {
+					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+				}
+				final int loopHeadStart = tokenIndex;
+				final int loopHeadEnd = PacScriptParserUtilities.findClosingBracketToken(codeBlockTokens, loopHeadStart);
+
+				tokenIndex = loopHeadEnd + 1;
+				nextToken = codeBlockTokens.get(tokenIndex);
+
+				List<String> loopCodeBlockTokens;
+				if ("{".equals(nextToken)) {
+					final int loopCodeBlockStart = tokenIndex;
+					final int loopCodeBlockEnd = PacScriptParserUtilities.findClosingBracketToken(codeBlockTokens, loopCodeBlockStart);
+					loopCodeBlockTokens = codeBlockTokens.subList(loopCodeBlockStart + 1, loopCodeBlockEnd);
+					tokenIndex = loopCodeBlockEnd;
+				} else {
+					final int loopCodeBlockStart = tokenIndex;
+					while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+						tokenIndex++;
+					}
+					if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+					} else {
+						final int loopCodeBlockEnd = tokenIndex;
+						loopCodeBlockTokens = codeBlockTokens.subList(loopCodeBlockStart, loopCodeBlockEnd + 1);
+						tokenIndex = loopCodeBlockEnd;
+					}
+				}
+
+				final Loop loop = new Loop(codeBlockTokens.subList(loopHeadStart + 1, loopHeadEnd), loopCodeBlockTokens);
+				statements.add(loop);
 			} else if ("return".equals(nextToken)) {
 				tokenIndex++;
 				final int expressionStart = tokenIndex;
@@ -482,8 +517,6 @@ public class PacScriptParserUtilities {
 				}
 
 				statements.add(new Assignment(true, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
-			} else if ("[".equals(nextToken)) { // TODO
-				final int arrayIndexEnd = findClosingBracketToken(codeBlockTokens, tokenIndex);
 			} else {
 				if (codeBlockTokens.size() > tokenIndex + 2 && "=".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);

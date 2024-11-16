@@ -54,7 +54,7 @@ public class ProxyConfiguration {
 		return proxyOrPacUrl;
 	}
 
-	public Proxy getProxy(final String url) {
+	public Proxy getProxy(final String url) throws Exception {
 		switch (proxyConfigurationType) {
 			case None:
 				return Proxy.NO_PROXY;
