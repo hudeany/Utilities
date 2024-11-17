@@ -472,9 +472,16 @@ public class Expression implements Statement {
 					returnValue += " ";
 				}
 				returnValue += operator;
+				if ("!".equals(operator)) {
+					returnValue += "(";
+				}
 			}
 			if (expression2 != null) {
-				returnValue = returnValue + " " + expression2.toString();
+				if (operator != null && "!".equals(operator)) {
+					returnValue = returnValue + expression2.toString() + ")";
+				} else {
+					returnValue = returnValue + " " + expression2.toString();
+				}
 			}
 			return returnValue;
 		}
