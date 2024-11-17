@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import de.soderer.utilities.pac.utilities.exception.BreakLoopException;
+import de.soderer.utilities.pac.utilities.exception.ContinueLoopException;
+
 public class Expression implements Statement {
 	private final static List<String> twoParameterOperators = Arrays.asList(new String[] {
 			"+", "-", "*", "/",
@@ -360,7 +363,7 @@ public class Expression implements Statement {
 					final String arrayName = firstToken.substring(0, firstToken.length() - 7);
 					if (environmentVariables.containsKey(arrayName)) {
 						final Object arrayObject = environmentVariables.get(arrayName);
-						if (arrayObject instanceof List<?>) {
+						if (arrayObject != null && arrayObject instanceof List<?>) {
 							return ((List<?>) arrayObject).size();
 						} else {
 							throw new RuntimeException("Variable for length is not an array: " + firstToken);
@@ -451,7 +454,7 @@ public class Expression implements Statement {
 				String returnValue = "";
 				for (final String expressionToken : expressionTokens) {
 					if (returnValue.length() > 0) {
-						if (!returnValue.endsWith("(") && !returnValue.endsWith("[") && !expressionToken.equals("(") && !expressionToken.equals("]") && !expressionToken.equals(",")) {
+						if (!returnValue.endsWith("(") && !returnValue.endsWith("[") && !expressionToken.equals("(") && !expressionToken.equals(")") && !expressionToken.equals("]") && !expressionToken.equals(",")) {
 							returnValue += " ";
 						}
 					}

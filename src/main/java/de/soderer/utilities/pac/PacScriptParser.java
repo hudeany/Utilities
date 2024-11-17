@@ -19,12 +19,6 @@ import javax.net.ssl.HttpsURLConnection;
 import de.soderer.utilities.pac.utilities.Method;
 import de.soderer.utilities.pac.utilities.PacScriptParserUtilities;
 
-// TODO:
-//const bypassList = [
-//	'*.*.aadrm.com',
-//	'*.aadrm.com'
-//]
-
 public class PacScriptParser {
 	private String pacScriptData = null;
 	private Map<String, Method> pacScriptMethods = null;
