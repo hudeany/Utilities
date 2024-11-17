@@ -356,6 +356,18 @@ public class Expression implements Statement {
 					return environmentVariables.get(firstToken);
 				} else if (firstToken.startsWith("\"") && firstToken.endsWith("\"")) {
 					return firstToken.substring(1, firstToken.length() - 1);
+				} else if (firstToken.endsWith(".length")) {
+					final String arrayName = firstToken.substring(0, firstToken.length() - 7);
+					if (environmentVariables.containsKey(arrayName)) {
+						final Object arrayObject = environmentVariables.get(arrayName);
+						if (arrayObject instanceof List<?>) {
+							return ((List<?>) arrayObject).size();
+						} else {
+							throw new RuntimeException("Variable for length is not an array: " + firstToken);
+						}
+					} else {
+						throw new RuntimeException("Undefined variable name in expression: " + firstToken);
+					}
 				} else {
 					try {
 						return Integer.parseInt(firstToken);

@@ -24,8 +24,6 @@ import de.soderer.utilities.pac.utilities.PacScriptParserUtilities;
 //	'*.*.aadrm.com',
 //	'*.aadrm.com'
 //]
-//
-//array.length
 
 public class PacScriptParser {
 	private String pacScriptData = null;
