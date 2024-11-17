@@ -273,7 +273,11 @@ public class Expression implements Statement {
 			}
 		} else {
 			final String firstToken = expressionTokens.get(0);
-			if (expressionTokens.size() > 1 && firstToken.equals("[") && expressionTokens.get(expressionTokens.size() - 1).equals("]")) {
+			if ("break".equals(firstToken)) {
+				throw new BreakLoopException();
+			} else if ("continue".equals(firstToken)) {
+				throw new ContinueLoopException();
+			} else if (expressionTokens.size() > 1 && firstToken.equals("[") && expressionTokens.get(expressionTokens.size() - 1).equals("]")) {
 				final List<Object> array = new ArrayList<>();
 				final List<List<String>> arrayItemTokens = readArrayItems(expressionTokens.subList(1, expressionTokens.size() - 1));
 				for (final List<String> itemTokens : arrayItemTokens) {
@@ -426,14 +430,23 @@ public class Expression implements Statement {
 	@Override
 	public String toString() {
 		if (expressionTokens != null && !expressionTokens.isEmpty()) {
-			String returnValue = "";
-			for (final String expressionToken : expressionTokens) {
-				if (returnValue.length() > 0) {
-					returnValue += " ";
+			final String firstToken = expressionTokens.get(0);
+			if ("break".equals(firstToken)) {
+				return "break;";
+			} else if ("continue".equals(firstToken)) {
+				return "continue;";
+			} else {
+				String returnValue = "";
+				for (final String expressionToken : expressionTokens) {
+					if (returnValue.length() > 0) {
+						if (!returnValue.endsWith("(") && !returnValue.endsWith("[") && !expressionToken.equals("(") && !expressionToken.equals("]") && !expressionToken.equals(",")) {
+							returnValue += " ";
+						}
+					}
+					returnValue += expressionToken;
 				}
-				returnValue += expressionToken;
+				return returnValue;
 			}
-			return returnValue;
 		} else {
 			String returnValue = "";
 			if (expression1 != null) {
