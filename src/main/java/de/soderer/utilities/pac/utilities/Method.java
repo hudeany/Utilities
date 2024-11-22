@@ -1,8 +1,6 @@
 package de.soderer.utilities.pac.utilities;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Method {
 	private final String methodName;
@@ -19,15 +17,15 @@ public class Method {
 		return methodParameterNames;
 	}
 
-	public Object executeMethod(final List<Object> methodParameters, final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods) {
-		final Map<String, Object> subEnvironmentVariables = new HashMap<>(environmentVariables);
+	public Object executeMethod(final Context context, final List<Object> methodParameters) {
+		final Context methodContext = context.createSubContext();
 		for (int i = 0; i < methodParameterNames.size(); i++) {
 			final String methodParameterName = methodParameterNames.get(i);
 			final Object methodParameter = methodParameters.get(i);
-			subEnvironmentVariables.put(methodParameterName, methodParameter);
+			methodContext.setEnvironmentVariable(methodParameterName, methodParameter);
 		}
 		for (final Statement statement : statements) {
-			final Object result = statement.execute(subEnvironmentVariables, definedMethods);
+			final Object result = statement.execute(methodContext);
 			if (result != null) {
 				return result;
 			}

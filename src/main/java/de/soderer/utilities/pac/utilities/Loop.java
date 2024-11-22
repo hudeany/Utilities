@@ -3,7 +3,6 @@ package de.soderer.utilities.pac.utilities;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import de.soderer.utilities.pac.utilities.exception.BreakLoopException;
 import de.soderer.utilities.pac.utilities.exception.ContinueLoopException;
@@ -70,24 +69,24 @@ public class Loop implements Statement {
 	}
 
 	@Override
-	public Object execute(final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods) {
+	public Object execute(final Context context) {
 		if (loopInit != null) {
-			loopInit.execute(environmentVariables, definedMethods);
+			loopInit.execute(context);
 			try {
 				while (true) {
-					final Object expressionResult = loopCondition.execute(environmentVariables, definedMethods);
+					final Object expressionResult = loopCondition.execute(context);
 					if (!(expressionResult instanceof Boolean)) {
 						throw new RuntimeException("Unsupported loop init expression result type");
 					} else if ((Boolean) expressionResult) {
 						for (final Statement loopStatement : loopStatements) {
 							try {
-								loopStatement.execute(environmentVariables, definedMethods);
+								loopStatement.execute(context);
 							} catch (@SuppressWarnings("unused") final ContinueLoopException e) {
 								break;
 							}
 						}
 
-						loopStep.execute(environmentVariables, definedMethods);
+						loopStep.execute(context);
 					} else {
 						break;
 					}
@@ -98,13 +97,13 @@ public class Loop implements Statement {
 		} else {
 			try {
 				while (true) {
-					final Object expressionResult = loopCondition.execute(environmentVariables, definedMethods);
+					final Object expressionResult = loopCondition.execute(context);
 					if (!(expressionResult instanceof Boolean)) {
 						throw new RuntimeException("Unsupported loop init expression result type");
 					} else if ((Boolean) expressionResult) {
 						for (final Statement loopStatement : loopStatements) {
 							try {
-								loopStatement.execute(environmentVariables, definedMethods);
+								loopStatement.execute(context);
 							} catch (@SuppressWarnings("unused") final ContinueLoopException e) {
 								break;
 							}

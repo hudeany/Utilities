@@ -3,7 +3,6 @@ package de.soderer.utilities.pac.utilities;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import de.soderer.utilities.pac.utilities.exception.BreakLoopException;
 import de.soderer.utilities.pac.utilities.exception.ContinueLoopException;
@@ -69,21 +68,21 @@ public class Expression implements Statement {
 	}
 
 	@Override
-	public Object execute(final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods) {
+	public Object execute(final Context context) {
 		if (expressionTokens == null) {
-			final Object result1 = expression1 == null ? null : expression1.execute(environmentVariables, definedMethods);
-			final Object result2 = expression2 == null ? null : expression2.execute(environmentVariables, definedMethods);
+			final Object result1 = expression1 == null ? null : expression1.execute(context);
+			final Object result2 = expression2 == null ? null : expression2.execute(context);
 			if (result1 == null) {
 				if ("++".equals(operator) && result2 != null && result2 instanceof Integer) {
 					final int value = ((Integer) result2) + 1;
-					if (expression2.getExpressionTokens() != null && expression2.getExpressionTokens().size() == 1 && environmentVariables.containsKey(expression2.getExpressionTokens().get(0))) {
-						environmentVariables.put(expression2.getExpressionTokens().get(0), value);
+					if (expression2.getExpressionTokens() != null && expression2.getExpressionTokens().size() == 1 && context.hasVariable(expression2.getExpressionTokens().get(0))) {
+						context.setEnvironmentVariable(expression2.getExpressionTokens().get(0), value);
 					}
 					return value;
 				} else if ("--".equals(operator) && result2 != null && result2 instanceof Integer) {
 					final int value = ((Integer) result2) - 1;
-					if (expression2.getExpressionTokens() != null && expression2.getExpressionTokens().size() == 1 && environmentVariables.containsKey(expression2.getExpressionTokens().get(0))) {
-						environmentVariables.put(expression2.getExpressionTokens().get(0), value);
+					if (expression2.getExpressionTokens() != null && expression2.getExpressionTokens().size() == 1 && context.hasVariable(expression2.getExpressionTokens().get(0))) {
+						context.setEnvironmentVariable(expression2.getExpressionTokens().get(0), value);
 					}
 					return value;
 				} else if ("==".equals(operator) && result2 == null) {
@@ -98,14 +97,14 @@ public class Expression implements Statement {
 			} else if (result2 == null) {
 				if ("++".equals(operator) && result1 instanceof Integer) {
 					final int value = ((Integer) result1) + 1;
-					if (expression1.getExpressionTokens() != null && expression1.getExpressionTokens().size() == 1 && environmentVariables.containsKey(expression1.getExpressionTokens().get(0))) {
-						environmentVariables.put(expression1.getExpressionTokens().get(0), value);
+					if (expression1.getExpressionTokens() != null && expression1.getExpressionTokens().size() == 1 && context.hasVariable(expression1.getExpressionTokens().get(0))) {
+						context.setEnvironmentVariable(expression1.getExpressionTokens().get(0), value);
 					}
 					return result1;
 				} else if ("--".equals(operator) && result1 instanceof Integer) {
 					final int value = ((Integer) result1) - 1;
-					if (expression1.getExpressionTokens() != null && expression1.getExpressionTokens().size() == 1 && environmentVariables.containsKey(expression1.getExpressionTokens().get(0))) {
-						environmentVariables.put(expression1.getExpressionTokens().get(0), value);
+					if (expression1.getExpressionTokens() != null && expression1.getExpressionTokens().size() == 1 && context.hasVariable(expression1.getExpressionTokens().get(0))) {
+						context.setEnvironmentVariable(expression1.getExpressionTokens().get(0), value);
 					}
 					return result1;
 				} else if (operator != null) {
@@ -284,15 +283,15 @@ public class Expression implements Statement {
 				final List<Object> array = new ArrayList<>();
 				final List<List<String>> arrayItemTokens = readArrayItems(expressionTokens.subList(1, expressionTokens.size() - 1));
 				for (final List<String> itemTokens : arrayItemTokens) {
-					final Object nextItem = new Expression(itemTokens).execute(environmentVariables, definedMethods);
+					final Object nextItem = new Expression(itemTokens).execute(context);
 					array.add(nextItem);
 				}
 				return array;
 			} else if (expressionTokens.size() > 1 && expressionTokens.get(1).equals("(")) {
-				final List<Object> methodCallParameters = readMethodParameters(environmentVariables, definedMethods, 1);
+				final List<Object> methodCallParameters = readMethodParameters(context, 1);
 
-				if (definedMethods.containsKey(firstToken)) {
-					return definedMethods.get(firstToken).executeMethod(methodCallParameters, environmentVariables, definedMethods);
+				if (context.hasDefinedMethod(firstToken)) {
+					return context.getDefinedMethod(firstToken).executeMethod(context, methodCallParameters);
 				} else if ("isPlainHostName".equals(firstToken)) {
 					return PacScriptMethods.isPlainHostName((String) methodCallParameters.get(0));
 				} else if ("dnsDomainIs".equals(firstToken)) {
@@ -333,9 +332,9 @@ public class Expression implements Statement {
 					throw new RuntimeException("Call of undefined method: " + firstToken);
 				}
 			} else if (expressionTokens.size() > 1 && expressionTokens.get(1).equals("[")) {
-				if (environmentVariables.containsKey(firstToken)) {
-					final int arrayIndex = readArrayIndex(expressionTokens, environmentVariables, definedMethods, 1);
-					final Object arrayObject = environmentVariables.get(firstToken);
+				if (context.hasVariable(firstToken)) {
+					final int arrayIndex = readArrayIndex(context, expressionTokens, 1);
+					final Object arrayObject = context.getEnvironmentVariable(firstToken);
 					if (arrayObject == null || !(arrayObject instanceof List)) {
 						throw new RuntimeException("Invalid array reference: " + firstToken);
 					} else {
@@ -355,14 +354,14 @@ public class Expression implements Statement {
 					return true;
 				} else if ("false".equals(firstToken)) {
 					return false;
-				} else if (environmentVariables.containsKey(firstToken)) {
-					return environmentVariables.get(firstToken);
+				} else if (context.hasVariable(firstToken)) {
+					return context.getEnvironmentVariable(firstToken);
 				} else if (firstToken.startsWith("\"") && firstToken.endsWith("\"")) {
 					return firstToken.substring(1, firstToken.length() - 1);
 				} else if (firstToken.endsWith(".length")) {
 					final String arrayName = firstToken.substring(0, firstToken.length() - 7);
-					if (environmentVariables.containsKey(arrayName)) {
-						final Object arrayObject = environmentVariables.get(arrayName);
+					if (context.hasVariable(arrayName)) {
+						final Object arrayObject = context.getEnvironmentVariable(arrayName);
 						if (arrayObject != null && arrayObject instanceof List<?>) {
 							return ((List<?>) arrayObject).size();
 						} else {
@@ -390,7 +389,7 @@ public class Expression implements Statement {
 		}
 	}
 
-	private List<Object> readMethodParameters(final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods, int bracketStartTokenIndex) {
+	private List<Object> readMethodParameters(final Context context, int bracketStartTokenIndex) {
 		final int parametersEnd = PacScriptParserUtilities.findClosingBracketToken(expressionTokens, bracketStartTokenIndex);
 		bracketStartTokenIndex++;
 		final List<Object> methodCallParameters = new ArrayList<>();
@@ -402,20 +401,20 @@ public class Expression implements Statement {
 				nextParameterEnd++;
 				parameterToken = expressionTokens.get(nextParameterEnd);
 			}
-			final Object parameterValue = new Expression(expressionTokens.subList(nextParameterStart, nextParameterEnd)).execute(environmentVariables, definedMethods);
+			final Object parameterValue = new Expression(expressionTokens.subList(nextParameterStart, nextParameterEnd)).execute(context);
 			methodCallParameters.add(parameterValue);
 			bracketStartTokenIndex = nextParameterEnd + 1;
 		}
 		return methodCallParameters;
 	}
 
-	private static int readArrayIndex(final List<String> expressionTokens, final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods, final int bracketStartTokenIndex) {
+	private static int readArrayIndex(final Context context, final List<String> expressionTokens, final int bracketStartTokenIndex) {
 		final int arrayIndexEnd = PacScriptParserUtilities.findClosingBracketToken(expressionTokens, bracketStartTokenIndex);
 		if (arrayIndexEnd == -1) {
 			throw new RuntimeException("Missing array index closing operator");
 		}
 
-		final Object arrayIndexObject = new Expression(expressionTokens.subList(bracketStartTokenIndex + 1, arrayIndexEnd)).execute(environmentVariables, definedMethods);
+		final Object arrayIndexObject = new Expression(expressionTokens.subList(bracketStartTokenIndex + 1, arrayIndexEnd)).execute(context);
 		if (arrayIndexObject == null || !(arrayIndexObject instanceof Integer)) {
 			throw new RuntimeException("Invalid array index value: " + arrayIndexObject);
 		}

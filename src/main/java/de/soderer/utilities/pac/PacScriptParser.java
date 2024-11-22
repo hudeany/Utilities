@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import de.soderer.utilities.pac.utilities.Context;
 import de.soderer.utilities.pac.utilities.Method;
 import de.soderer.utilities.pac.utilities.PacScriptParserUtilities;
 
@@ -178,12 +179,16 @@ public class PacScriptParser {
 		if (pacScriptMethods == null) {
 			pacScriptMethods = parsePacScript();
 		}
-		final Map<String, Object> environmentVariables = new HashMap<>();
+		final Context context = new Context();
+		for (final Entry<String, Method> pacScriptMethodEntry : pacScriptMethods.entrySet()) {
+			context.setDefinedMethod(pacScriptMethodEntry.getKey(), pacScriptMethodEntry.getValue());
+		}
+
 		final List<Object> methodParameters = new ArrayList<>();
 		methodParameters.add(destinationUrl);
 		methodParameters.add(hostname);
 
-		final Object pacScriptMethodReturnValue = pacScriptMethods.get("FindProxyForURL").executeMethod(methodParameters, environmentVariables, pacScriptMethods);
+		final Object pacScriptMethodReturnValue = pacScriptMethods.get("FindProxyForURL").executeMethod(context, methodParameters);
 		if (pacScriptMethodReturnValue == null) {
 			return null;
 		} else if (pacScriptMethodReturnValue instanceof String) {

@@ -1,7 +1,6 @@
 package de.soderer.utilities.pac.utilities;
 
 import java.util.List;
-import java.util.Map;
 
 public class Assignment implements Statement {
 	/**
@@ -18,13 +17,13 @@ public class Assignment implements Statement {
 	}
 
 	@Override
-	public Object execute(final Map<String, Object> environmentVariables, final Map<String, Method> definedMethods) {
-		if (isLetDeclaration && environmentVariables.containsKey(variableName)) {
+	public Object execute(final Context context) {
+		if (isLetDeclaration && context.hasVariable(variableName)) {
 			throw new RuntimeException("Multiple declaration of variablename by 'let' keyword");
 		} else {
 			// Expression must be executed always for concurrency results of unary operators
-			final Object result = expression.execute(environmentVariables, definedMethods);
-			environmentVariables.put(variableName, result);
+			final Object result = expression.execute(context);
+			context.setEnvironmentVariable(variableName, result);
 			return null;
 		}
 	}
