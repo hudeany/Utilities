@@ -16,6 +16,8 @@ import java.util.Stack;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import de.soderer.utilities.pac.utilities.Assignment.Scope;
+
 public class PacScriptParserUtilities {
 	public static String readPacData(final URL pacUrl) {
 		try {
@@ -493,7 +495,7 @@ public class PacScriptParserUtilities {
 						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
 					}
 
-					statements.add(new Assignment(false, variableName, Arrays.asList(variableName, "+", "1")));
+					statements.add(new Assignment(variableName, Arrays.asList(variableName, "+", "1")));
 				} else {
 					throw new RuntimeException("Unsupported code found: " + nextToken);
 				}
@@ -507,7 +509,7 @@ public class PacScriptParserUtilities {
 						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
 					}
 
-					statements.add(new Assignment(false, variableName, Arrays.asList(variableName, "-", "1")));
+					statements.add(new Assignment(variableName, Arrays.asList(variableName, "-", "1")));
 				} else {
 					throw new RuntimeException("Unsupported code found: " + nextToken);
 				}
@@ -531,7 +533,7 @@ public class PacScriptParserUtilities {
 					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
 				}
 
-				statements.add(new Assignment(false, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
+				statements.add(new Assignment(Scope.VAR, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
 			} else if ("let".equals(nextToken)) {
 				tokenIndex++;
 				final String variableName = codeBlockTokens.get(tokenIndex);
@@ -552,13 +554,32 @@ public class PacScriptParserUtilities {
 					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
 				}
 
-				statements.add(new Assignment(true, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
+				statements.add(new Assignment(Scope.LET, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
 			} else if ("break".equals(nextToken)) {
 				statements.add(new Expression(Collections.singletonList("break")));
 			} else if ("continue".equals(nextToken)) {
 				statements.add(new Expression(Collections.singletonList("continue")));
 			} else if ("const".equals(nextToken)) {
-				// do nothing
+				tokenIndex++;
+				final String variableName = codeBlockTokens.get(tokenIndex);
+
+				tokenIndex++;
+				nextToken = codeBlockTokens.get(tokenIndex);
+
+				if (!"=".equals(nextToken)) {
+					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+				}
+
+				tokenIndex++;
+				final int assignmentStart = tokenIndex;
+				while (tokenIndex < codeBlockTokens.size() && !";".equals(codeBlockTokens.get(tokenIndex))) {
+					tokenIndex++;
+				}
+				if (!";".equals(codeBlockTokens.get(tokenIndex))) {
+					throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
+				}
+
+				statements.add(new Assignment(Scope.CONST, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
 			} else {
 				if (codeBlockTokens.size() > tokenIndex + 2 && "=".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);
@@ -575,7 +596,7 @@ public class PacScriptParserUtilities {
 						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
 					}
 
-					statements.add(new Assignment(false, variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
+					statements.add(new Assignment(variableName, codeBlockTokens.subList(assignmentStart, tokenIndex)));
 				} else if (codeBlockTokens.size() > tokenIndex + 2 && "+=".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);
 
@@ -594,7 +615,7 @@ public class PacScriptParserUtilities {
 					final List<String> assignmentExpressionTokens = new ArrayList<>(codeBlockTokens.subList(assignmentStart, tokenIndex));
 					assignmentExpressionTokens.add(0, variableName);
 					assignmentExpressionTokens.add(1, "+");
-					statements.add(new Assignment(false, variableName, assignmentExpressionTokens));
+					statements.add(new Assignment(variableName, assignmentExpressionTokens));
 				} else if (codeBlockTokens.size() > tokenIndex + 2 && "-=".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);
 
@@ -613,7 +634,7 @@ public class PacScriptParserUtilities {
 					final List<String> assignmentExpressionTokens = new ArrayList<>(codeBlockTokens.subList(assignmentStart, tokenIndex));
 					assignmentExpressionTokens.add(0, variableName);
 					assignmentExpressionTokens.add(1, "-");
-					statements.add(new Assignment(false, variableName, assignmentExpressionTokens));
+					statements.add(new Assignment(variableName, assignmentExpressionTokens));
 				} else if (codeBlockTokens.size() > tokenIndex + 2 && "*=".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);
 
@@ -632,7 +653,7 @@ public class PacScriptParserUtilities {
 					final List<String> assignmentExpressionTokens = new ArrayList<>(codeBlockTokens.subList(assignmentStart, tokenIndex));
 					assignmentExpressionTokens.add(0, variableName);
 					assignmentExpressionTokens.add(1, "*");
-					statements.add(new Assignment(false, variableName, assignmentExpressionTokens));
+					statements.add(new Assignment(variableName, assignmentExpressionTokens));
 				} else if (codeBlockTokens.size() > tokenIndex + 2 && "/=".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);
 
@@ -651,7 +672,7 @@ public class PacScriptParserUtilities {
 					final List<String> assignmentExpressionTokens = new ArrayList<>(codeBlockTokens.subList(assignmentStart, tokenIndex));
 					assignmentExpressionTokens.add(0, variableName);
 					assignmentExpressionTokens.add(1, "/");
-					statements.add(new Assignment(false, variableName, assignmentExpressionTokens));
+					statements.add(new Assignment(variableName, assignmentExpressionTokens));
 				} else if (codeBlockTokens.size() > tokenIndex + 1 && "++".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);
 
@@ -663,7 +684,7 @@ public class PacScriptParserUtilities {
 						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
 					}
 
-					statements.add(new Assignment(false, variableName, Arrays.asList(variableName, "+", "1")));
+					statements.add(new Assignment(variableName, Arrays.asList(variableName, "+", "1")));
 				} else if (codeBlockTokens.size() > tokenIndex + 1 && "--".equals(codeBlockTokens.get(tokenIndex + 1))) {
 					final String variableName = codeBlockTokens.get(tokenIndex);
 
@@ -675,7 +696,7 @@ public class PacScriptParserUtilities {
 						throw new RuntimeException("Unexpected code at token index " + tokenIndex + ": " + nextToken);
 					}
 
-					statements.add(new Assignment(false, variableName, Arrays.asList(variableName, "-", "1")));
+					statements.add(new Assignment(variableName, Arrays.asList(variableName, "-", "1")));
 				} else {
 					throw new RuntimeException("Unsupported code found: " + nextToken);
 				}

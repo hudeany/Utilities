@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import de.soderer.utilities.pac.utilities.Assignment.Scope;
 import de.soderer.utilities.pac.utilities.exception.BreakLoopException;
 import de.soderer.utilities.pac.utilities.exception.ContinueLoopException;
 
@@ -41,16 +42,27 @@ public class Loop implements Statement {
 			throw new RuntimeException("Unsupported loop empty step expression");
 		}
 
-		if ("var".equals(loopInitTokens.get(0)) || "let".equals(loopInitTokens.get(0))) {
+		Scope scope = null;
+		if ("var".equals(loopInitTokens.get(0))) {
+			scope = Scope.VAR;
+		} else if ("let".equals(loopInitTokens.get(0))) {
+			scope = Scope.LET;
+		} else if ("const".equals(loopInitTokens.get(0))) {
+			scope = Scope.CONST;
+		}
+
+		if (scope == null) {
+			throw new RuntimeException("Unsupported loop init expression");
+		} else if (scope == Scope.CONST) {
+			throw new RuntimeException("Unsupported loop init expression with const");
+		} else {
 			final String variableName = loopInitTokens.get(1);
 
 			if (!"=".equals(loopInitTokens.get(2))) {
 				throw new RuntimeException("Unexpected code in loop init: " + loopInitTokens.get(2));
 			}
 
-			loopInit = new Assignment("let".equals(loopInitTokens.get(0)), variableName, loopInitTokens.subList(3, loopInitTokens.size()));
-		} else {
-			throw new RuntimeException("Unsupported loop init expression");
+			loopInit = new Assignment(scope, variableName, loopInitTokens.subList(3, loopInitTokens.size()));
 		}
 
 		loopCondition = new Expression(loopConditionTokens);
