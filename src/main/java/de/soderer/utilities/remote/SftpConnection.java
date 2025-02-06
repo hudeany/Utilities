@@ -117,8 +117,10 @@ public class SftpConnection implements RemoteConnection {
 
 			if (keyFileData != null) {
 				jsch.addIdentity(username, keyFileData, null, password == null ? new byte[0] : new String(password).getBytes(StandardCharsets.UTF_8));
-			} else {
+			} else if (password != null) {
 				session.setPassword(new String(password));
+			} else {
+				throw new Exception("At least one of keyFileData or password is expected");
 			}
 
 			boolean checkHostKeyFingerprint = false;
@@ -147,6 +149,9 @@ public class SftpConnection implements RemoteConnection {
 
 			// If new hostkeys are added, they are stored in hashed format
 			session.setConfig("HashKnownHosts", "yes");
+
+			// Do not prefer Kerberos authentication
+			session.setConfig("PreferredAuthentications", "publickey,password,keyboard-interactive");
 
 			// Workaround fix for "ecdsa-sha2-nistp256" knownhostkeys
 			// Otherwise the command "ssh-keyscan -H -t rsa <hostname> >> ~/.ssh/known_hosts" may help
@@ -384,6 +389,12 @@ public class SftpConnection implements RemoteConnection {
 
 			// send '\0' to start data transfer
 			sendZeroByte(outStream);
+
+			if (channel.getExitStatus() > 0) {
+				final byte[] errortextData = readStream(inStream);
+				final String errortext = new String(errortextData, StandardCharsets.UTF_8).trim();
+				throw new Exception("Download of file '" + filePath + "' failed: " + errortext);
+			}
 
 			// read rights key like '0644 ' (5 bytes)
 			final byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
@@ -892,6 +903,24 @@ public class SftpConnection implements RemoteConnection {
 		outputStream.flush();
 	}
 
+	private static byte[] readStream(final InputStream inStream) throws IOException {
+		final ByteArrayOutputStream returnData = new ByteArrayOutputStream();
+		int nextByte;
+		while (true) {
+			nextByte = inStream.read();
+			if (nextByte == 0) {
+				// end
+				break;
+			} else if (nextByte < 0) {
+				// error
+				break;
+			} else {
+				returnData.write(nextByte);
+			}
+		}
+		return returnData.toByteArray();
+	}
+
 	private static byte[] readStreamUntilBlankOrEndOrLinefeed(final InputStream inStream) throws IOException {
 		final ByteArrayOutputStream returnData = new ByteArrayOutputStream();
 		int nextByte;
@@ -1035,7 +1064,11 @@ public class SftpConnection implements RemoteConnection {
 		final List<FolderInfo> folderInfoList = new ArrayList<>();
 
 		for (final String subFolderName : subFolderNames) {
-			folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
+			FolderInfo folderInfo = getFolderInfo(folderPath + "/" + subFolderName);
+			if (folderInfo == null) {
+				folderInfo = new FolderInfo(subFolderName, null);
+			}
+			folderInfoList.add(folderInfo);
 		}
 
 		if (Utilities.isEmpty(folderName)) {

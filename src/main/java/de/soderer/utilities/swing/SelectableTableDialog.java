@@ -184,6 +184,8 @@ public class SelectableTableDialog extends ModalDialog<Boolean> {
 					}
 				}
 
+				returnValue = true;
+
 				dialog.dispose();
 			}
 		});
@@ -196,6 +198,7 @@ public class SelectableTableDialog extends ModalDialog<Boolean> {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				selectedItems = null;
+				returnValue = false;
 				dialog.dispose();
 			}
 		});

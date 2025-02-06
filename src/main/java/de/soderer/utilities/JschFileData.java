@@ -32,6 +32,9 @@ public class JschFileData {
 		// -rw-rw-r-- 1 user group 8 Feb 2 23:22 test with blank.txt
 		// drwx------ 2 root root 4096 Feb 2 21:19 dirname
 		// lrwxrwxrwx 1 root root 33 Jun 29 06:23 //initrd.img -> boot/initrd.img-4.4.0-154-generic
+		// -rw-------. 1 user@local.com namex 1176 Jan 23 15:03 /home/user/.ssh/authorized_keys
+		// -rw-r--r-- 1 user@local.com namex 1182 Jun 14  2024 /home/user/.ssh/authorized_keys
+
 
 		try (BasicReader reader = new BasicReader(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)))) {
 			reader.readNextNonWhitespace();
@@ -144,10 +147,10 @@ public class JschFileData {
 				try {
 					final String changeDateString = DateUtilities.parseThreeLetterMonth(dateString1) + " " + dateString2 + " " + dateString3;
 					try {
-						changeDate = DateUtilities.parseLocalDateTime("MM d HH:mm yyyy", changeDateString + " " + new GregorianCalendar().get(Calendar.YEAR));
+						changeDate = DateUtilities.parseLocalDateTime("M d HH:mm yyyy", changeDateString + " " + new GregorianCalendar().get(Calendar.YEAR));
 					} catch (@SuppressWarnings("unused") final Exception e) {
 						try {
-							changeDate = DateUtilities.parseLocalDateTime("MM d yyyy", changeDateString);
+							changeDate = DateUtilities.parseLocalDate("M d yyyy", changeDateString).atStartOfDay();
 						} catch (@SuppressWarnings("unused") final Exception e1) {
 							throw new Exception("Invalid changeDate");
 						}
