@@ -428,19 +428,6 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
-	/**
-	 * Löschen von Dateien via SSH
-	 *
-	 * @param remoteHostname
-	 * @param checkHostKey
-	 * @param remoteHostPathAndFileName
-	 *            auch Wildcards(*?) sind erlaubt
-	 * @param username
-	 * @param privateKey
-	 * @param password
-	 *            des PrivateKey falls notwendig
-	 * @throws Exception
-	 */
 	@Override
 	public void deleteFile(final String remoteHostPathAndFileName) throws Exception {
 		Channel channel = null;
@@ -457,19 +444,12 @@ public class SftpConnection implements RemoteConnection {
 				checkAcknowledge(inStream);
 			}
 		} catch (final Exception e) {
-			throw new Exception("Fehler bei SSH-Delete: " + e.getMessage());
+			throw new Exception("Error in SSH delete: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
 		}
 	}
 
-	/**
-	 * Delete a folder via SSH
-	 *
-	 * @param session
-	 * @param remoteHostPathAndFileName
-	 * @throws Exception
-	 */
 	@Override
 	public void deleteFolder(final String remoteHostPathAndFolderName) throws Exception {
 		Channel channel = null;
@@ -485,34 +465,19 @@ public class SftpConnection implements RemoteConnection {
 				checkAcknowledge(inStream);
 			}
 		} catch (final Exception e) {
-			throw new Exception("Fehler bei SSH-Delete: " + e.getMessage());
+			throw new Exception("Error in SSH delete: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
 		}
 	}
 
-	/**
-	 * Upload von Dateien via SSH
-	 *
-	 * @param remoteHostname
-	 * @param checkHostKey
-	 * @param remoteHostPathAndFileName
-	 *            Verzeichnis ist als Ziel erlaubt, muß aber bereits existieren
-	 * @param localPathAndFileName
-	 *            KEINE Wildcards(*?) erlaubt
-	 * @param username
-	 * @param privateKey
-	 * @param password
-	 *            des PrivateKey falls notwendig
-	 * @throws Exception
-	 */
 	public void uploadFile(final String remoteHostPathAndFileName, final String localPathAndFileName) throws Exception {
 		if (localPathAndFileName.contains("*") || localPathAndFileName.contains("?")) {
-			throw new Exception("Fehler bei SSH-Upload: Wildcards in localPathAndFileName sind bei SSH-Upload nicht erlaubt");
+			throw new Exception("Error in SSH upload: Wildcards in localPathAndFileName are not allowed in SSH upload");
 		}
 
 		if (!new File(localPathAndFileName).exists()) {
-			throw new Exception("Fehler bei SSH-Upload: Quelldatei '" + localPathAndFileName + "' existiert nicht");
+			throw new Exception("Error in SSH upload: Source file '" + localPathAndFileName + "' does not exist");
 		}
 
 		final String remoteHostPath = getPathOfPathAndFileName(remoteHostPathAndFileName);
@@ -523,10 +488,10 @@ public class SftpConnection implements RemoteConnection {
 
 		final List<String> directory = listFiles(remoteHostPath);
 		if (!directory.contains(".")) {
-			throw new Exception("Fehler bei SSH-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
+			throw new Exception("Error in SSH upload: Destination folder '" + remoteHostPath + "' does not exist on destination host");
 		}
 		if (directory.contains(remoteHostFileName)) {
-			throw new Exception("Fehler bei SSH-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
+			throw new Exception("Error in SSH upload: File '" + remoteHostFileName + "' already exists on destination host");
 		}
 
 		Channel channel = null;
@@ -572,20 +537,19 @@ public class SftpConnection implements RemoteConnection {
 				}
 			}
 		} catch (final Exception e) {
-			throw new Exception("Fehler bei SSH-Upload: " + e.getMessage());
+			throw new Exception("Error in SSH upload: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
 		}
 	}
 
 	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData) throws Exception {
-		// Directory auslesen um zu Prüfen, ob das Verzeichnis existiert aber die Datei noch nicht
 		final List<String> directory = listFiles(remoteHostPath);
 		if (!directory.contains(".")) {
-			throw new Exception("Fehler bei SSH-Upload: ZielVerzeichnis '" + remoteHostPath + "' existiert nicht auf Zielrechner");
+			throw new Exception("Error in SSH upload: Destination folder '" + remoteHostPath + "' does not exist on destination host");
 		}
 		if (directory.contains(remoteHostFileName)) {
-			throw new Exception("Fehler bei SSH-Upload: Datei '" + remoteHostFileName + "' existiert bereits auf Zielrechner");
+			throw new Exception("Error in SSH upload: File '" + remoteHostFileName + "' already exists on destination host");
 		}
 
 		Channel channel = null;
@@ -620,7 +584,7 @@ public class SftpConnection implements RemoteConnection {
 				channel.disconnect();
 			}
 		} catch (final Exception e) {
-			throw new Exception("Fehler bei SSH-Upload: " + e.getMessage());
+			throw new Exception("Error in SSH upload: " + e.getMessage());
 		} finally {
 			closeQuietly(channel);
 		}
@@ -662,7 +626,7 @@ public class SftpConnection implements RemoteConnection {
 				return returnList;
 			}
 		} catch (final Exception e) {
-			throw new Exception("Fehler bei SSH-Download\n" + ExceptionUtilities.toString(e), e);
+			throw new Exception("Error in SSH download\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
 		}
@@ -776,7 +740,7 @@ public class SftpConnection implements RemoteConnection {
 				}
 			}
 		} catch (final Exception e) {
-			throw new Exception("Fehler bei SSH-Command\n" + ExceptionUtilities.toString(e), e);
+			throw new Exception("Error in SSH command\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
 		}

@@ -590,7 +590,7 @@ public class DbUtilities {
 				}
 
 				//				if (dbVendor == DbVendor.Oracle && new File("/dev/urandom").exists()) {
-				//					// Set the alternative random generator to improve the connection creation speed, which may even cause a "I/O-Fehler: Connection reset"-error on low performance systems
+				//					// Set the alternative random generator to improve the connection creation speed, which may even cause a "I/O-Error: Connection reset"-error on low performance systems
 				//					System.setProperty("java.security.egd", "file:///dev/./urandom");
 				//
 				//					// Alternatively you can change the file $JAVA_HOME/jre/lib/security/java.security and add following line:
