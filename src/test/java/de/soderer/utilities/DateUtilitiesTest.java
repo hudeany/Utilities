@@ -9,7 +9,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -35,6 +37,27 @@ public class DateUtilitiesTest {
 					"here",
 					new InternetAddress("test@example.com"),
 					participants);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void gregorianDateTest() {
+		try {
+			// Format with 'X' may lead to Problem on Dates without TimeZone
+			final GregorianCalendar originalCalendar = new GregorianCalendar();
+			final String resultString = DateUtilities.formatDate("HH X", originalCalendar.getTime());
+			Assert.assertTrue(resultString.startsWith(originalCalendar.get(Calendar.HOUR_OF_DAY) + " "));
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+
+		try {
+			// Format with 'X' may lead to Problem on Dates without TimeZone
+			final GregorianCalendar originalCalendar = new GregorianCalendar();
+			final String resultString = DateUtilities.formatDate("HH X", originalCalendar.getTime(), ZoneId.of("UTC"));
+			Assert.assertNotNull(resultString);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
