@@ -29,7 +29,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import javax.mail.internet.InternetAddress;
+import jakarta.mail.internet.InternetAddress;
 
 public class DateUtilities {
 	public static final String DD_MM_YYYY_HH_MM_SS = "dd.MM.yyyy HH:mm:ss";
@@ -1168,7 +1168,7 @@ public class DateUtilities {
 		if (date == null) {
 			return null;
 		} else {
-			return DateTimeFormatter.ofPattern(format).format(getLocalDateTimeForDate(date));
+			return DateTimeFormatter.ofPattern(format).format(getLocalDateTimeForDate(date).atOffset(ZoneOffset.UTC));
 		}
 	}
 

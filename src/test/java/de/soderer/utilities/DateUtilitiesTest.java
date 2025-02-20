@@ -13,10 +13,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import javax.mail.internet.InternetAddress;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import jakarta.mail.internet.InternetAddress;
 
 @SuppressWarnings("static-method")
 public class DateUtilitiesTest {

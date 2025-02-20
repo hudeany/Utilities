@@ -103,6 +103,9 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 						}
 					}
 					Utilities.clear(buffer);
+				} catch (final Exception e) {
+					e.printStackTrace();
+					throw e;
 				}
 			} else {
 				AsymmetricBlockCipher asymmetricEncryptCipher;

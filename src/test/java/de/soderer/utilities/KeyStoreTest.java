@@ -37,8 +37,7 @@ public class KeyStoreTest {
 
 		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
 
-		// This is the problem case of unfixed trustore with empty password
-		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
+		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, null));
 
 		Utilities.convertPkcs12TrustStoreToJKS(new File(tempJksFilePath));
 

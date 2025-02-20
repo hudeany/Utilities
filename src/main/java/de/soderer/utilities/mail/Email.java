@@ -9,8 +9,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.mail.internet.InternetAddress;
-
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPSecretKey;
 
@@ -19,6 +17,7 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.mail.dkim.DkimUtilities;
 import de.soderer.utilities.mail.dkim.DomainKey;
+import jakarta.mail.internet.InternetAddress;
 
 public class Email {
 	private final InternetAddress fromAddress;

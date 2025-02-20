@@ -8,14 +8,13 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-
 import org.eclipse.swt.program.Program;
 
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.http.HttpUtilities;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 
 public class MailUtilities {
 	private static final String SPECIAL_CHARS_REGEXP = "\\p{Cntrl}\\(\\)<>@,;:'\\\\\\\"\\.\\[\\]";

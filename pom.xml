@@ -7,7 +7,7 @@
 
 	<groupId>de.soderer</groupId>
 	<artifactId>soderer-utilities</artifactId>
-	<version>25.1.0</version>
+	<version>25.1.1</version>
 	<packaging>jar</packaging>
 
 	<name>soderer-utilities</name>
@@ -23,8 +23,12 @@
 			<url>http://soderer.de/maven2</url>
 		</repository>
 		<repository>
-			<id>bouncycastle</id>
+			<id>bcprov-jdk15on</id>
 			<url>https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on</url>
+		</repository>
+		<repository>
+			<id>bcjmail-jdk15on</id>
+			<url>https://mvnrepository.com/artifact/org.bouncycastle/bcjmail-jdk15on</url>
 		</repository>
 		<repository>
 			<id>snapshots</id>
@@ -33,6 +37,10 @@
 		<repository>
 			<id>jakarta.mail</id>
 			<url>https://mvnrepository.com/artifact/jakarta.mail/jakarta.mail-api</url>
+		</repository>
+		<repository>
+			<id>angus-mail</id>
+			<url>https://mvnrepository.com/artifact/org.eclipse.angus/angus-mail</url>
 		</repository>
 		<repository>
 			<id>jcifs</id>
@@ -56,16 +64,6 @@
 			<groupId>jakarta.xml.bind</groupId>
 			<artifactId>jakarta.xml.bind-api</artifactId>
 			<version>3.0.1</version>
-		</dependency>
-		<!-- 		<dependency> -->
-		<!-- 			<groupId>javax.mail</groupId> -->
-		<!-- 			<artifactId>mail</artifactId> -->
-		<!-- 			<version>1.4.5</version> -->
-		<!-- 		</dependency> -->
-		<dependency>
-			<groupId>com.sun.mail</groupId>
-			<artifactId>javax.mail</artifactId>
-			<version>1.6.2</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -106,36 +104,45 @@
 		<dependency>
 			<groupId>jakarta.mail</groupId>
 			<artifactId>jakarta.mail-api</artifactId>
-			<version>2.0.1</version>
+			<version>2.1.3</version>
 		</dependency>
 		<dependency>
-			<groupId>com.sun.mail</groupId>
-			<artifactId>smtp</artifactId>
-			<version>2.0.1</version>
+			<!-- https://mvnrepository.com/artifact/org.eclipse.angus/angus-mail -->
+		    <groupId>org.eclipse.angus</groupId>
+		    <artifactId>angus-mail</artifactId>
+		    <version>2.0.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.jcraft</groupId>
 			<artifactId>jsch</artifactId>
 			<version>0.1.55</version>
 		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on -->
 		<dependency>
-			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on -->
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcpg-jdk15on</artifactId>
-			<version>1.69</version>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bcpkix-jdk18on</artifactId>
+		    <version>1.80</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on -->
 		<dependency>
-			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on -->
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcmail-jdk15on</artifactId>
-			<version>1.69</version>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bcprov-jdk18on</artifactId>
+		    <version>1.80</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk18on -->
 		<dependency>
-			<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcpkix-jdk15on</artifactId>
-			<version>1.69</version>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bcpg-jdk18on</artifactId>
+		    <version>1.80</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcjmail-jdk18on -->
+		<dependency>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bcjmail-jdk18on</artifactId>
+		    <version>1.80</version>
+		</dependency>
+		
 		<dependency>
 			<groupId>com.hierynomus</groupId>
 			<artifactId>smbj</artifactId>
@@ -168,19 +175,17 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>csv</artifactId>
-			<version>RELEASE</version>
+			<version>24.1.0</version>
 		</dependency>
-
-		<dependency>
-			<groupId>de.soderer</groupId>
-			<artifactId>dkim</artifactId>
-			<version>RELEASE</version>
-		</dependency>
-
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>json</artifactId>
-			<version>RELEASE</version>
+			<version>25.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>de.soderer</groupId>
+			<artifactId>dkim</artifactId>
+			<version>25.1.0</version>
 		</dependency>
 		
 		<dependency>

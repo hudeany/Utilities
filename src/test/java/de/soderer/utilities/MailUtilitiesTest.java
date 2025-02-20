@@ -1,11 +1,10 @@
 package de.soderer.utilities;
 
-import javax.mail.internet.InternetAddress;
-
 import org.junit.Assert;
 import org.junit.Test;
 
 import de.soderer.utilities.mail.MailUtilities;
+import jakarta.mail.internet.InternetAddress;
 
 @SuppressWarnings("static-method")
 public class MailUtilitiesTest {

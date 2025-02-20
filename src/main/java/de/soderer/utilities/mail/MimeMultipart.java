@@ -3,17 +3,16 @@ package de.soderer.utilities.mail;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.mail.internet.ContentType;
-
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.http.HttpUtilities;
+import jakarta.mail.internet.ContentType;
 
-public class MimeMultipart extends javax.mail.internet.MimeMultipart {
+public class MimeMultipart extends jakarta.mail.internet.MimeMultipart {
 	public MimeMultipart(final String multipartSubtype, final String boundary) throws Exception {
 		this(multipartSubtype, boundary, null);
 	}
 
-	public MimeMultipart(final javax.mail.internet.MimeMultipart mimeMultipart) throws Exception {
+	public MimeMultipart(final jakarta.mail.internet.MimeMultipart mimeMultipart) throws Exception {
 		super(getMultipartSubtypeFromContentType(mimeMultipart.getContentType()));
 
 		final ContentType newContentType = new ContentType(mimeMultipart.getContentType());

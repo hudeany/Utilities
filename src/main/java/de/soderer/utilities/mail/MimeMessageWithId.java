@@ -1,8 +1,8 @@
 package de.soderer.utilities.mail;
 
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 
 public class MimeMessageWithId extends MimeMessage {
 	private String messageID = null;
