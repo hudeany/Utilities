@@ -74,7 +74,8 @@ public class ApplicationUpdateUtilities {
 			}
 
 			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(updateParent, versionIndexFileLocation, proxyConfiguration, applicationName, applicationVersion);
-			if (askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
+			if ((newVersionAvailable != null && username != null)
+					|| askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
 				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, restartParameter, restartAfterUpdate);
 			}
 		} catch (final Exception e) {
