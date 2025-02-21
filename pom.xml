@@ -23,14 +23,6 @@
 			<url>http://soderer.de/maven2</url>
 		</repository>
 		<repository>
-			<id>bcprov-jdk15on</id>
-			<url>https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on</url>
-		</repository>
-		<repository>
-			<id>bcjmail-jdk15on</id>
-			<url>https://mvnrepository.com/artifact/org.bouncycastle/bcjmail-jdk15on</url>
-		</repository>
-		<repository>
 			<id>snapshots</id>
 			<url>https://repository.apache.org/content/repositories/snapshots</url>
 		</repository>
@@ -180,7 +172,7 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>json</artifactId>
-			<version>25.1.0</version>
+			<version>25.1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
