@@ -417,7 +417,7 @@ public class Mailer {
 		final JcePBESecretKeyDecryptorBuilder jcePBESecretKeyDecryptorBuilder = new JcePBESecretKeyDecryptorBuilder().setProvider(new BouncyCastleProvider());
 		final PBESecretKeyDecryptor pbeSecretKeyDecryptor = jcePBESecretKeyDecryptorBuilder.build(password);
 		final PGPPrivateKey pgpPrivKey = privateKey.extractPrivateKey(pbeSecretKeyDecryptor);
-		final PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(privateKey.getPublicKey().getAlgorithm(), PgpHashMethod.getByName(signatureMethodName).getId()).setProvider(new BouncyCastleProvider()));
+		final PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(privateKey.getPublicKey().getAlgorithm(), PgpHashMethod.getByName(signatureMethodName).getId()).setProvider(new BouncyCastleProvider()), privateKey.getPublicKey());
 
 		pgpSignatureGenerator.init(PGPSignature.BINARY_DOCUMENT, pgpPrivKey);
 

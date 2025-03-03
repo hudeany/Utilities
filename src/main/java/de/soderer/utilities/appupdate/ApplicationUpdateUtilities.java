@@ -241,9 +241,9 @@ public class ApplicationUpdateUtilities {
 					updateParent.showUpdateDone(null, null, 0, null);
 				}
 
-				final String restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+				final String[] restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
 				if (restartCommand != null) {
-					Runtime.getRuntime().exec(restartCommand);
+					Runtime.getRuntime().exec(restartCommand, null, null);
 					Runtime.getRuntime().exit(0);
 				}
 			}
@@ -386,7 +386,7 @@ public class ApplicationUpdateUtilities {
 		return downloadTempFile.exists();
 	}
 
-	private static String createUpdateBatchFile(final String jarFilePath, final File downloadTempFile, final boolean restartApplicationAfterUpdate, final String restartParameter) throws Exception {
+	private static String[] createUpdateBatchFile(final String jarFilePath, final File downloadTempFile, final boolean restartApplicationAfterUpdate, final String restartParameter) throws Exception {
 		String javaBinPath = SystemUtilities.getJavaBinPath();
 		if (Utilities.isBlank(javaBinPath)) {
 			javaBinPath = "java";
@@ -414,7 +414,7 @@ public class ApplicationUpdateUtilities {
 							+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n"
 							+ ")\r\n");
 
-			return "cmd /c start /B " + batchFile.getAbsolutePath();
+			return new String[]{ "cmd", "/c", "start", "/B", batchFile.getAbsolutePath() };
 		} else if (SystemUtilities.isLinuxSystem()) {
 			final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".sh");
 			writeFile(batchFile,
@@ -438,7 +438,7 @@ public class ApplicationUpdateUtilities {
 							+ "rm \"" + batchFile.getAbsolutePath() + "\"\n"
 							+ "fi\n");
 
-			return "sh " + batchFile.getAbsolutePath();
+			return new String[]{ "sh", batchFile.getAbsolutePath() };
 		} else {
 			return null;
 		}

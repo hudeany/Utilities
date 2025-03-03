@@ -27,10 +27,10 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 	private JPanel panel;
 
-	private JTextArea textField;
+	private JTextArea inputField;
 	private JButton okButton;
 
-	private String currentText = "";
+	private String currentInputText = "";
 	private int currentPosition = 0;
 	private Pattern inputPattern = null;
 	private boolean isTechnicalChange = false;
@@ -43,13 +43,15 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 		setResizable(false);
 
-		createComponents(this);
+		createComponents();
 
 		returnValue = null;
 	}
 
-	public void setDefaultText(final String defaultText) {
+	public SimpleInputDialog setDefaultText(final String defaultText) {
 		this.defaultText = defaultText;
+		createComponents();
+		return this;
 	}
 
 	public void setInputPattern(final String patternString) {
@@ -60,7 +62,9 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		}
 	}
 
-	protected void createComponents(@SuppressWarnings("unused") final SimpleInputDialog adminDialog) {
+	protected void createComponents() {
+		removeAll();
+
 		panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 
@@ -87,28 +91,28 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 		panel.add(Box.createRigidArea(new Dimension(5, 5)));
 
-		textField = new JTextArea();
-		textField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-		textField.setPreferredSize(new Dimension(200, textField.getPreferredSize().height));
-		textField.setText(defaultText != null ? defaultText : "");
-		textField.addKeyListener(new KeyAdapter() {
+		inputField = new JTextArea();
+		inputField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		inputField.setPreferredSize(new Dimension(200, inputField.getPreferredSize().height));
+		inputField.setText(defaultText != null ? defaultText : "");
+		inputField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(final KeyEvent event) {
 				if (!isTechnicalChange) {
-					if (inputPattern == null || inputPattern.matcher(textField.getText()).matches()) {
-						currentText = textField.getText();
+					if (inputPattern == null || inputPattern.matcher(inputField.getText()).matches()) {
+						currentInputText = inputField.getText();
 					} else {
 						// Remove the invalid input character
-						currentPosition = textField.getCaretPosition();
+						currentPosition = inputField.getCaretPosition();
 						isTechnicalChange = true;
-						textField.setText(currentText);
-						textField.setSelectionStart(Math.min(currentText.length(), Math.max(0, currentPosition - 1)));
-						textField.setSelectionEnd(Math.min(currentText.length(), Math.max(0, currentPosition - 1)));
+						inputField.setText(currentInputText);
+						inputField.setSelectionStart(Math.min(currentInputText.length(), Math.max(0, currentPosition - 1)));
+						inputField.setSelectionEnd(Math.min(currentInputText.length(), Math.max(0, currentPosition - 1)));
 						isTechnicalChange = false;
 					}
 
 					if (event.getKeyChar() == '\n') {
-						returnValue = textField.getText();
+						returnValue = inputField.getText();
 						dispose();
 					}
 				}
@@ -116,7 +120,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 				checkButtonStatus();
 			}
 		});
-		panel.add(textField);
+		panel.add(inputField);
 
 		panel.add(Box.createRigidArea(new Dimension(5, 5)));
 
@@ -129,7 +133,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				returnValue = textField.getText();
+				returnValue = inputField.getText();
 				dispose();
 			}
 		});
@@ -160,12 +164,12 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 		setLocationRelativeTo(getOwner());
 
-		textField.requestFocus();
+		inputField.requestFocus();
 
 		checkButtonStatus();
 	}
 
 	private void checkButtonStatus() {
-		okButton.setEnabled(Utilities.isNotEmpty(textField.getText()));
+		okButton.setEnabled(Utilities.isNotEmpty(inputField.getText()));
 	}
 }

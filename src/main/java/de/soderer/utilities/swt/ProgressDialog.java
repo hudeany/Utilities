@@ -30,6 +30,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	protected Button buttonClose;
 
 	private Thread unlimitedRunner = null;
+	private boolean showUnlimitedProgress = false;
 
 	protected T worker;
 
@@ -137,10 +138,11 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	@Override
 	public void receiveUnlimitedProgressSignal() {
 		if (!isDisposed()) {
+			showUnlimitedProgress = true;
 			unlimitedRunner = new Thread(new Runnable() {
 				@Override
 				public void run() {
-					while (!isDisposed()) {
+					while (!isDisposed() && showUnlimitedProgress) {
 						getParent().getDisplay().asyncExec(new Runnable() {
 							@Override
 							public void run() {
@@ -180,13 +182,9 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private void stopUnlimitedProgress() {
-		if (unlimitedRunner != null) {
-			unlimitedRunner.stop();
-			unlimitedRunner = null;
-			progressBar.setMaximum(100);
-		}
+		showUnlimitedProgress = false;
+		progressBar.setMaximum(100);
 	}
 
 	@Override

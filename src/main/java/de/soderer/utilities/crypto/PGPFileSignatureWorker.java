@@ -61,7 +61,7 @@ public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 			outputStream = new ByteArrayOutputStream();
 			outputStream2 = new ArmoredOutputStream(outputStream);
 			final JcaPGPContentSignerBuilder contentSignerBuilder = new JcaPGPContentSignerBuilder(secretKey.getPublicKey().getAlgorithm(), PgpHashMethod.getByName(hashingMethod).getId());
-			final PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(contentSignerBuilder);
+			final PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(contentSignerBuilder, secretKey.getPublicKey());
 			pgpSignatureGenerator.init(PGPSignature.BINARY_DOCUMENT, privateKey);
 
 			bcpgOutputStream = new BCPGOutputStream(outputStream2);

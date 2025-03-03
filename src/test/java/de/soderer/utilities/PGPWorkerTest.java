@@ -40,7 +40,7 @@ public class PGPWorkerTest {
 
 	private static PGPSecretKey getPgpSecretKeyElgamal() throws Exception {
 		if (pgpSecretKeyElgamal == null) {
-			pgpSecretKeyElgamal = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.ELGAMAL_GENERAL, "Test identity", password, LocalDateTime.now().plusMinutes(1));
+			pgpSecretKeyElgamal = PGPUtilities.generatePGPSecretKey(1024, PGPUtilities.PgpPublicEncryptionMethod.ELGAMAL_ENCRYPT, "Test identity", password, LocalDateTime.now().plusMinutes(1));
 		}
 
 		return pgpSecretKeyElgamal;

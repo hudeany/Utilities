@@ -236,7 +236,7 @@ public class MailUtilities {
 				}
 			} else {
 				try {
-					Runtime.getRuntime().exec("xdg-open " + mailtoString);
+					Runtime.getRuntime().exec(new String[]{ "xdg-open", mailtoString }, null, null);
 					return true;
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					// Try some other method of mail creation
@@ -245,7 +245,7 @@ public class MailUtilities {
 				try {
 					// For using the parameters check the following description
 					// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
-					Runtime.getRuntime().exec("thunderbird -compose");
+					Runtime.getRuntime().exec(new String[]{ "thunderbird", "-compose"}, null, null);
 					if (Program.launch(mailtoString)) {
 						return true;
 					}

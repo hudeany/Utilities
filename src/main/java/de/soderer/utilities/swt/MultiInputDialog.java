@@ -63,11 +63,11 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 				public void keyReleased(final KeyEvent event) {
 					// on Enter-key
 					if (event.keyCode == SWT.CR || event.keyCode == SwtUtilities.BOTTOM_RIGHT_ENTER_KEY) {
-						final List<String> retunValueList = new ArrayList<>();
+						final List<String> returnValueList = new ArrayList<>();
 						for (final Text textFieldForReturnValue: textFields) {
-							retunValueList.add(textFieldForReturnValue.getText());
+							returnValueList.add(textFieldForReturnValue.getText());
 						}
-						setReturnValue(retunValueList);
+						setReturnValue(returnValueList);
 						getParent().close();
 					}
 				}

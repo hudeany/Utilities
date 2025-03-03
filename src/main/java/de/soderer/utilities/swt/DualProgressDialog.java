@@ -19,6 +19,7 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 	private String subCommentStringFormat;
 
 	private Thread unlimitedSubRunner = null;
+	private boolean showUnlimitedProgress = false;
 
 	private ProgressBar subItemProgressBar;
 
@@ -72,10 +73,11 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 				@Override
 				public void run() {
 					if (!isDisposed()) {
+						showUnlimitedProgress = true;
 						unlimitedSubRunner = new Thread(new Runnable() {
 							@Override
 							public void run() {
-								while (!isDisposed()) {
+								while (!isDisposed() && showUnlimitedProgress) {
 									getParent().getDisplay().asyncExec(new Runnable() {
 										@Override
 										public void run() {
@@ -117,13 +119,9 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private void stopUnlimitedProgress() {
-		if (unlimitedSubRunner != null) {
-			unlimitedSubRunner.stop();
-			unlimitedSubRunner = null;
-			subItemProgressBar.setMaximum(100);
-		}
+		showUnlimitedProgress = false;
+		subItemProgressBar.setMaximum(100);
 	}
 
 	@Override

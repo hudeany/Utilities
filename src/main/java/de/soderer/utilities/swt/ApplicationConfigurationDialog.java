@@ -232,7 +232,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 						try {
 							FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), StandardCharsets.UTF_8);
 
-							Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
+							Runtime.getRuntime().exec(new String[]{ "wscript", "\"" + tempScriptFile + "\"" }, null, null);
 
 							final MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
 							messageBox.setText(LangResources.get("createDesktopLink"));

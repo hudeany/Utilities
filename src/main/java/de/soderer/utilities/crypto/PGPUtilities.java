@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
+import org.bouncycastle.bcpg.PublicKeyPacket;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
@@ -117,10 +118,7 @@ public class PGPUtilities {
 
 	public enum PgpPublicEncryptionMethod {
 		RSA_GENERAL(PublicKeyAlgorithmTags.RSA_GENERAL),
-		RSA_ENCRYPT(PublicKeyAlgorithmTags.RSA_ENCRYPT),
-		RSA_SIGN(PublicKeyAlgorithmTags.RSA_SIGN),
 
-		ELGAMAL_GENERAL(PublicKeyAlgorithmTags.ELGAMAL_GENERAL),
 		ELGAMAL_ENCRYPT(PublicKeyAlgorithmTags.ELGAMAL_ENCRYPT),
 
 		DSA(PublicKeyAlgorithmTags.DSA),
@@ -229,16 +227,13 @@ public class PGPUtilities {
 
 		final PGPKeyPair masterKeyPair;
 		PGPKeyPair subKeyPair = null;
-		if (keyType == PgpPublicEncryptionMethod.RSA_GENERAL
-				|| keyType == PgpPublicEncryptionMethod.RSA_ENCRYPT
-				|| keyType == PgpPublicEncryptionMethod.RSA_SIGN) {
-			masterKeyPair = new JcaPGPKeyPair(keyType.getId(), CryptographicUtilities.generateRsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
-		} else if (keyType == PgpPublicEncryptionMethod.ELGAMAL_GENERAL
-				|| keyType == PgpPublicEncryptionMethod.ELGAMAL_ENCRYPT) {
-			masterKeyPair = new JcaPGPKeyPair(PublicKeyAlgorithmTags.DSA, CryptographicUtilities.generateDsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
-			subKeyPair = new JcaPGPKeyPair(PgpPublicEncryptionMethod.ELGAMAL_GENERAL.getId(), CryptographicUtilities.generateElGamalKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
+		if (keyType == PgpPublicEncryptionMethod.RSA_GENERAL) {
+			masterKeyPair = new JcaPGPKeyPair(PublicKeyPacket.VERSION_4, keyType.getId(), CryptographicUtilities.generateRsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
+		} else if (keyType == PgpPublicEncryptionMethod.ELGAMAL_ENCRYPT) {
+			masterKeyPair = new JcaPGPKeyPair(PublicKeyPacket.VERSION_4, PublicKeyAlgorithmTags.DSA, CryptographicUtilities.generateDsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
+			subKeyPair = new JcaPGPKeyPair(PublicKeyPacket.VERSION_4, PgpPublicEncryptionMethod.ELGAMAL_ENCRYPT.getId(), CryptographicUtilities.generateElGamalKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 		} else if (keyType == PgpPublicEncryptionMethod.DSA) {
-			masterKeyPair = new JcaPGPKeyPair(keyType.getId(), CryptographicUtilities.generateDsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
+			masterKeyPair = new JcaPGPKeyPair(PublicKeyPacket.VERSION_4, keyType.getId(), CryptographicUtilities.generateDsaKeyPair(keyStrength), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 		} else {
 			throw new Exception("Unsupported keytype: " + keyType.name());
 		}
@@ -303,9 +298,9 @@ public class PGPUtilities {
 		final KeyPair keyPair2 = CryptographicUtilities.generateRsaKeyPair(keyStrength);
 
 		// First create the master (signing) key with the generator.
-		final PGPKeyPair rsakp_sign = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_SIGN, keyPair1, DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
+		final PGPKeyPair rsakp_sign = new JcaPGPKeyPair(PublicKeyPacket.VERSION_4, PublicKeyAlgorithmTags.RSA_GENERAL, keyPair1, DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 		// Then an encryption subkey.
-		final PGPKeyPair rsakp_enc = new JcaPGPKeyPair(PublicKeyAlgorithmTags.RSA_ENCRYPT, keyPair2, DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
+		final PGPKeyPair rsakp_enc = new JcaPGPKeyPair(PublicKeyPacket.VERSION_4, PublicKeyAlgorithmTags.RSA_GENERAL, keyPair2, DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 
 		// Add a self-signature on the id
 		final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
@@ -487,7 +482,7 @@ public class PGPUtilities {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final PGPPrivateKey pgpPrivKey = readPGPPrivateKey(pgpSecretKey, password);
-		final PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(PgpPublicEncryptionMethod.RSA_GENERAL.getId(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()));
+		final PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(PgpPublicEncryptionMethod.RSA_GENERAL.getId(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()), pgpSecretKey.getPublicKey());
 		signatureGenerator.init(PGPSignature.DIRECT_KEY, pgpPrivKey);
 
 		if (notationData == null) {
@@ -515,7 +510,7 @@ public class PGPUtilities {
 	public static PGPPublicKey signPublicKey(final PGPPrivateKey pgpPrivKey, final PGPPublicKey pgpPublicKey, final PGPPublicKey publicKeyToBeSigned, final Map<String, String> notationData) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(PgpPublicEncryptionMethod.RSA_GENERAL.getId(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()));
+		final PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(PgpPublicEncryptionMethod.RSA_GENERAL.getId(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()), pgpPublicKey);
 		signatureGenerator.init(PGPSignature.DIRECT_KEY, pgpPrivKey);
 
 		if (notationData == null) {

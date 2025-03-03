@@ -347,7 +347,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 						try {
 							FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), StandardCharsets.UTF_8);
 
-							Runtime.getRuntime().exec("wscript \"" + tempScriptFile + "\"");
+							Runtime.getRuntime().exec(new String[]{ "wscript", "\"" + tempScriptFile + "\"" }, null, null);
 
 							JOptionPane.showMessageDialog(getParent(), LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
 
