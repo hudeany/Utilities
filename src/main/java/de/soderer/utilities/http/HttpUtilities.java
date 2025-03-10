@@ -231,6 +231,12 @@ public class HttpUtilities {
 					contentType = contentType.toLowerCase();
 					encoding = Charset.forName(contentType.substring(contentType.indexOf("charset=") + 8).trim());
 				}
+			} else if (headers.containsKey("Content-Type")) {
+				String contentType = headers.get("Content-Type");
+				if (contentType != null && contentType.toLowerCase().contains("charset=")) {
+					contentType = contentType.toLowerCase();
+					encoding = Charset.forName(contentType.substring(contentType.indexOf("charset=") + 8).trim());
+				}
 			}
 
 			Map<String, String> cookiesMap = null;

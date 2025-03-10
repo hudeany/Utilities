@@ -309,4 +309,9 @@ public class HttpRequest {
 
 		return this;
 	}
+
+	@Override
+	public String toString() {
+		return requestMethod.name() + " " + url;
+	}
 }
