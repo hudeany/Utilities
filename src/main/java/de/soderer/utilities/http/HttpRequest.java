@@ -53,7 +53,7 @@ public class HttpRequest {
 	private final Map<String, Object> pathParameterData = new LinkedHashMap<>();
 	private final Map<String, String> cookieData = new LinkedHashMap<>();
 
-	private boolean checkSslCertificates = true;
+	private boolean checkTlsCertificates = true;
 	private boolean followRedirects = false;
 
 	/**
@@ -74,12 +74,12 @@ public class HttpRequest {
 		this.url = url;
 	}
 
-	public boolean isCheckSslCertificates() {
-		return checkSslCertificates;
+	public boolean isCheckTlsCertificates() {
+		return checkTlsCertificates;
 	}
 
-	public HttpRequest setCheckSslCertificates(final boolean checkSslCertificates) {
-		this.checkSslCertificates = checkSslCertificates;
+	public HttpRequest setCheckTlsCertificates(final boolean checkTlsCertificates) {
+		this.checkTlsCertificates = checkTlsCertificates;
 
 		return this;
 	}
@@ -101,10 +101,10 @@ public class HttpRequest {
 	public String getUrlWithProtocol() throws Exception {
 		if (Utilities.isBlank(url)) {
 			throw new Exception("Invalid empty URL for http request");
-		} else if (url.startsWith(SECURE_HTTP_PROTOCOL_SIGN) || url.startsWith(HTTP_PROTOCOL_SIGN)) {
+		} else if (url.toLowerCase().startsWith(SECURE_HTTP_PROTOCOL_SIGN) || url.toLowerCase().startsWith(HTTP_PROTOCOL_SIGN)) {
 			return url;
 		} else {
-			return HTTP_PROTOCOL_SIGN + url;
+			return SECURE_HTTP_PROTOCOL_SIGN + url;
 		}
 	}
 

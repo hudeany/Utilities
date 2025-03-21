@@ -2,6 +2,7 @@ package de.soderer.utilities.http;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -37,6 +39,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import de.soderer.utilities.IoUtilities;
@@ -70,13 +73,31 @@ public class HttpUtilities {
 
 	/**
 	 * Use systems default proxy, if set on JVM start.
+	 * Use systems default KeyStore to check TLS server certificates.
+	 *
+	 * @param httpRequest
+	 * @return
+	 * @throws Exception
+	 */
+	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest) throws Exception {
+		return executeHttpRequest(httpRequest, null, null);
+	}
+
+	/**
+	 * Use systems default proxy, if set on JVM start.
 	 * To override default proxy usage use "executeHttpRequest(httpRequest, Proxy.NO_PROXY)"
+	 *
+	 * Use systems default KeyStore to check TLS server certificates.
 	 *
 	 * @param httpRequest
 	 * @return
 	 * @throws Exception
 	 */
 	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy) throws Exception {
+		return executeHttpRequest(httpRequest, proxy, null);
+	}
+
+	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy, final KeyStore trustedKeyStore) throws Exception {
 		try {
 			String requestedUrl = httpRequest.getUrlWithProtocol();
 
@@ -115,12 +136,28 @@ public class HttpUtilities {
 				urlConnection.setRequestMethod(httpRequest.getRequestMethod().name());
 			}
 
-			if (requestedUrl.startsWith(HttpRequest.SECURE_HTTP_PROTOCOL_SIGN) && !httpRequest.isCheckSslCertificates()) {
-				final SSLContext sslContext = SSLContext.getInstance("TLS");
-				sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new java.security.SecureRandom());
-				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-				((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
-				((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
+			if (requestedUrl.toLowerCase().startsWith(HttpRequest.SECURE_HTTP_PROTOCOL_SIGN)) {
+				if (httpRequest.isCheckTlsCertificates()) {
+					if (trustedKeyStore != null) {
+						// Use special trustmanager
+						if (trustedKeyStore.size() <= 0) {
+							throw new Exception("No trusted certificate aliases found in defined trusted keystore");
+						}
+
+						final SSLContext sslContext = SSLContext.getInstance("TLS");
+						sslContext.init(null, new TrustManager[] { createTrustmanagerForKeyStore(trustedKeyStore) }, new SecureRandom());
+						final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+						((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
+						((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
+					}
+				} else {
+					// Trust all TLS server certs
+					final SSLContext sslContext = SSLContext.getInstance("TLS");
+					sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new SecureRandom());
+					final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+					((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
+					((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
+				}
 			}
 
 			if (httpRequest.getConnectTimeoutMillis() >= 0) {
@@ -310,6 +347,67 @@ public class HttpUtilities {
 		} catch (final Exception e) {
 			throw e;
 		}
+	}
+
+	/**
+	 * Use systems default trusted keystore and define an additionlaly used trusted keystore
+	 *
+	 * Usage:
+	 *   SSLContext sslContext = SSLContext.getInstance("TLS");
+	 *   sslContext.init(null, new TrustManager[] { getDefaultTrustManagers() }, null);
+	 *   SSLContext.setDefault(sslContext);
+	 *
+	 * @param trustedKeyStore
+	 * @return
+	 * @throws Exception
+	 */
+	public static TrustManager[] getDefaultTrustManagers() throws Exception {
+		final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+
+		// Init the TrustmanagerFactory with systems default trust store.
+		trustManagerFactory.init((KeyStore) null);
+
+		return trustManagerFactory.getTrustManagers();
+	}
+
+	public static KeyStore readTrustStore(final File keystoreFile) throws Exception {
+		KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+		try (FileInputStream myKeys = new FileInputStream(keystoreFile)) {
+			trustedKeyStore.load(myKeys, "".toCharArray());
+		}
+		if (trustedKeyStore.size() == 0) {
+			trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			try (FileInputStream myKeys = new FileInputStream(keystoreFile)) {
+				trustedKeyStore.load(myKeys, null);
+			}
+		}
+		return trustedKeyStore;
+	}
+
+	/**
+	 * Override systems default trusted keystore and define a trusted keystore to be used as single trusted keystore for certificate checks
+	 *
+	 * Usage:
+	 *   SSLContext sslContext = SSLContext.getInstance("TLS");
+	 *   sslContext.init(null, new TrustManager[] { createTrustmanagerForKeyStore(myOnlyTrustedKeyStore) }, null);
+	 *   SSLContext.setDefault(sslContext);
+	 *
+	 * @param trustedKeyStore
+	 * @return
+	 * @throws Exception
+	 */
+	public static TrustManager createTrustmanagerForKeyStore(final KeyStore trustedKeyStore) throws Exception {
+		TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		trustManagerFactory.init(trustedKeyStore);
+
+		for (final TrustManager trustManager : trustManagerFactory.getTrustManagers()) {
+			if (trustManager instanceof X509TrustManager) {
+				return trustManager;
+			}
+		}
+
+		throw new Exception("Cannot create TrustManager");
 	}
 
 	public static String convertToParameterString(final List<Tuple<String, Object>> parameters, Charset encoding) {
