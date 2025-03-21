@@ -58,7 +58,7 @@ import de.soderer.utilities.collection.CaseInsensitiveSet;
 import de.soderer.utilities.csv.CsvFormat;
 import de.soderer.utilities.csv.CsvWriter;
 import de.soderer.utilities.db.DatabaseConstraint.ConstraintType;
-import de.soderer.utilities.http.HttpUtilities;
+import de.soderer.utilities.http.TrustManagerUtilities;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
 
@@ -648,7 +648,7 @@ public class DbUtilities {
 							temporaryTrustStoreFilePath = Files.createTempFile("TempTrustStore", ".jks").toString();
 							new File(temporaryTrustStoreFilePath).delete();
 							trustStoreFile = new File(temporaryTrustStoreFilePath);
-							HttpUtilities.createTrustStoreFile(hostParts[0], port, trustStoreFile, null, null);
+							TrustManagerUtilities.createTrustStoreFile(hostParts[0], port, trustStoreFile, null, null);
 
 							props.setProperty("javax.net.ssl.trustStore", trustStoreFile.getAbsolutePath());
 							props.setProperty("javax.net.ssl.trustStoreType", "JKS");
