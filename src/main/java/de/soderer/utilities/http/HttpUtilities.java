@@ -52,23 +52,6 @@ import de.soderer.utilities.Utilities;
 public class HttpUtilities {
 	private static boolean debugLog = false;
 
-	private static TrustManager TRUSTALLCERTS_TRUSTMANAGER = new X509TrustManager() {
-		@Override
-		public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-			return null;
-		}
-
-		@Override
-		public void checkClientTrusted(final java.security.cert.X509Certificate[] certificates, final String authType) {
-			// nothing to do
-		}
-
-		@Override
-		public void checkServerTrusted(final java.security.cert.X509Certificate[] certificates, final String authType) {
-			// nothing to do
-		}
-	};
-
 	private static HostnameVerifier TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER = (hostname, session) -> true;
 
 	/**
@@ -80,7 +63,7 @@ public class HttpUtilities {
 	 * @throws Exception
 	 */
 	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest) throws Exception {
-		return executeHttpRequest(httpRequest, null, null);
+		return executeHttpRequest(httpRequest, null, (TrustManager) null);
 	}
 
 	/**
@@ -94,10 +77,18 @@ public class HttpUtilities {
 	 * @throws Exception
 	 */
 	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy) throws Exception {
-		return executeHttpRequest(httpRequest, proxy, null);
+		return executeHttpRequest(httpRequest, proxy, (TrustManager) null);
 	}
 
 	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy, final KeyStore trustedKeyStore) throws Exception {
+		if (trustedKeyStore.size() <= 0) {
+			throw new Exception("No trusted certificate aliases found in defined trusted keystore");
+		} else {
+			return executeHttpRequest(httpRequest, proxy, createTrustManagerForKeyStore(trustedKeyStore));
+		}
+	}
+
+	public static HttpResponse executeHttpRequest(final HttpRequest httpRequest, final Proxy proxy, final TrustManager trustManager) throws Exception {
 		try {
 			String requestedUrl = httpRequest.getUrlWithProtocol();
 
@@ -136,28 +127,13 @@ public class HttpUtilities {
 				urlConnection.setRequestMethod(httpRequest.getRequestMethod().name());
 			}
 
-			if (requestedUrl.toLowerCase().startsWith(HttpRequest.SECURE_HTTP_PROTOCOL_SIGN)) {
-				if (httpRequest.isCheckTlsCertificates()) {
-					if (trustedKeyStore != null) {
-						// Use special trustmanager
-						if (trustedKeyStore.size() <= 0) {
-							throw new Exception("No trusted certificate aliases found in defined trusted keystore");
-						}
-
-						final SSLContext sslContext = SSLContext.getInstance("TLS");
-						sslContext.init(null, new TrustManager[] { createTrustmanagerForKeyStore(trustedKeyStore) }, new SecureRandom());
-						final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-						((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
-						((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
-					}
-				} else {
-					// Trust all TLS server certs
-					final SSLContext sslContext = SSLContext.getInstance("TLS");
-					sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new SecureRandom());
-					final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-					((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
-					((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
-				}
+			if (requestedUrl.toLowerCase().startsWith(HttpRequest.SECURE_HTTP_PROTOCOL_SIGN) && trustManager != null) {
+				// Use special trustmanager
+				final SSLContext sslContext = SSLContext.getInstance("TLS");
+				sslContext.init(null, new TrustManager[] { trustManager }, new SecureRandom());
+				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+				((HttpsURLConnection) urlConnection).setSSLSocketFactory(sslSocketFactory);
+				((HttpsURLConnection) urlConnection).setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);
 			}
 
 			if (httpRequest.getConnectTimeoutMillis() >= 0) {
@@ -325,7 +301,7 @@ public class HttpUtilities {
 				final String redirectUrl = urlConnection.getHeaderField("Location");
 				if (Utilities.isNotBlank(redirectUrl)) {
 					final HttpRequest redirectedHttpRequest = new HttpRequest(httpRequest.getRequestMethod(), redirectUrl);
-					return executeHttpRequest(redirectedHttpRequest, proxy);
+					return executeHttpRequest(redirectedHttpRequest, proxy, trustManager);
 				} else {
 					throw new Exception("Redirection url was empty");
 				}
@@ -370,18 +346,49 @@ public class HttpUtilities {
 		return trustManagerFactory.getTrustManagers();
 	}
 
-	public static KeyStore readTrustStore(final File keystoreFile) throws Exception {
+	public static TrustManager createTrustAllTrustManager() throws Exception {
+		return new X509TrustManager() {
+			@Override
+			public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+				return null;
+			}
+
+			@Override
+			public void checkClientTrusted(final java.security.cert.X509Certificate[] certificates, final String authType) {
+				// nothing to do
+			}
+
+			@Override
+			public void checkServerTrusted(final java.security.cert.X509Certificate[] certificates, final String authType) {
+				// nothing to do
+			}
+		};
+	}
+
+	public static KeyStore readKeyStore(final File keystoreFile) throws Exception {
+		return readKeyStore(keystoreFile, null);
+	}
+
+	public static KeyStore readKeyStore(final File keystoreFile, final char[] keystorePassword) throws Exception {
 		KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 		try (FileInputStream myKeys = new FileInputStream(keystoreFile)) {
-			trustedKeyStore.load(myKeys, "".toCharArray());
+			trustedKeyStore.load(myKeys, keystorePassword);
 		}
-		if (trustedKeyStore.size() == 0) {
+		if (trustedKeyStore.size() == 0 && keystorePassword == null) {
 			trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			try (FileInputStream myKeys = new FileInputStream(keystoreFile)) {
-				trustedKeyStore.load(myKeys, null);
+				trustedKeyStore.load(myKeys, "".toCharArray());
 			}
 		}
 		return trustedKeyStore;
+	}
+
+	public static TrustManager createTrustManagerForKeyStore(final File keystoreFile) throws Exception {
+		return createTrustManagerForKeyStore(readKeyStore(keystoreFile, null));
+	}
+
+	public static TrustManager createTrusManagerForKeyStore(final File keystoreFile, final char[] keystorePassword) throws Exception {
+		return createTrustManagerForKeyStore(readKeyStore(keystoreFile, keystorePassword));
 	}
 
 	/**
@@ -396,7 +403,7 @@ public class HttpUtilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static TrustManager createTrustmanagerForKeyStore(final KeyStore trustedKeyStore) throws Exception {
+	public static TrustManager createTrustManagerForKeyStore(final KeyStore trustedKeyStore) throws Exception {
 		TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		trustManagerFactory.init(trustedKeyStore);
@@ -751,7 +758,7 @@ public class HttpUtilities {
 	public static X509Certificate getServerTlsCertificate(final String hostnameOrIp, final int port, final Proxy proxy) throws Exception {
 		final HttpsURLConnection urlConnection = (HttpsURLConnection) new URL("https://" + hostnameOrIp + ":" + port).openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
 		final SSLContext sslContext = SSLContext.getInstance("TLS");
-		sslContext.init(null, new TrustManager[] { TRUSTALLCERTS_TRUSTMANAGER }, new java.security.SecureRandom());
+		sslContext.init(null, new TrustManager[] { createTrustAllTrustManager() }, new java.security.SecureRandom());
 		final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 		urlConnection.setSSLSocketFactory(sslSocketFactory);
 		urlConnection.setHostnameVerifier(TRUSTALLHOSTNAMES_HOSTNAMEVERIFIER);

@@ -53,7 +53,6 @@ public class HttpRequest {
 	private final Map<String, Object> pathParameterData = new LinkedHashMap<>();
 	private final Map<String, String> cookieData = new LinkedHashMap<>();
 
-	private boolean checkTlsCertificates = true;
 	private boolean followRedirects = false;
 
 	/**
@@ -72,16 +71,6 @@ public class HttpRequest {
 		}
 		this.requestMethod = requestMethod == null ? HttpMethod.GET : requestMethod;
 		this.url = url;
-	}
-
-	public boolean isCheckTlsCertificates() {
-		return checkTlsCertificates;
-	}
-
-	public HttpRequest setCheckTlsCertificates(final boolean checkTlsCertificates) {
-		this.checkTlsCertificates = checkTlsCertificates;
-
-		return this;
 	}
 
 	public HttpMethod getRequestMethod() {
