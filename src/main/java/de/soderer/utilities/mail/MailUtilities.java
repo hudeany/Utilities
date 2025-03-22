@@ -10,9 +10,9 @@ import java.util.regex.Pattern;
 
 import org.eclipse.swt.program.Program;
 
+import de.soderer.network.HttpUtilities;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.http.HttpUtilities;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 

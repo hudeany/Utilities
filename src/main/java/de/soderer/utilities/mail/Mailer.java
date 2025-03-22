@@ -40,13 +40,13 @@ import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import org.eclipse.angus.mail.smtp.SMTPAddressFailedException;
 import org.eclipse.angus.mail.util.CRLFOutputStream;
 
+import de.soderer.network.HttpUtilities;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 import de.soderer.utilities.crypto.PGPFileEncryptionWorker;
 import de.soderer.utilities.crypto.PGPUtilities;
 import de.soderer.utilities.crypto.PGPUtilities.PgpHashMethod;
-import de.soderer.utilities.http.HttpUtilities;
 import de.soderer.utilities.mail.dkim.DkimSignedMessage;
 import jakarta.activation.DataHandler;
 import jakarta.mail.Address;

@@ -15,11 +15,11 @@ import java.util.Map.Entry;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.soderer.utilities.http.HttpRequest;
-import de.soderer.utilities.http.HttpRequest.HttpMethod;
-import de.soderer.utilities.http.HttpResponse;
-import de.soderer.utilities.http.HttpUtilities;
-import de.soderer.utilities.http.ProxyConfiguration;
+import de.soderer.network.HttpRequest;
+import de.soderer.network.HttpRequest.HttpMethod;
+import de.soderer.network.HttpResponse;
+import de.soderer.network.HttpUtilities;
+import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.json.JsonArray;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;

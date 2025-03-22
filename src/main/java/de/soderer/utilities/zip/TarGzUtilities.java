@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.zip;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -13,6 +13,10 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+
+import de.soderer.utilities.FileUtilities;
+import de.soderer.utilities.IoUtilities;
+import de.soderer.utilities.Utilities;
 
 public class TarGzUtilities {
 	public static long getUncompressedSize(final File tarGzFile) throws Exception {

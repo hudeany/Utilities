@@ -7,9 +7,9 @@ import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 
+import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.http.ProxyConfiguration;
 
 public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	public static final int EOF = -1;

@@ -2,6 +2,8 @@ package de.soderer.utilities;
 
 import java.net.IDN;
 
+import de.soderer.network.NetworkUtilities;
+
 public class PunycodeCodec {
 	private final static int TMIN = 1;
 	private final static int TMAX = 26;

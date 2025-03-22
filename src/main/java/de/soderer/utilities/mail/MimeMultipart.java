@@ -3,8 +3,8 @@ package de.soderer.utilities.mail;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import de.soderer.network.HttpUtilities;
 import de.soderer.utilities.Utilities;
-import de.soderer.utilities.http.HttpUtilities;
 import jakarta.mail.internet.ContentType;
 
 public class MimeMultipart extends jakarta.mail.internet.MimeMultipart {

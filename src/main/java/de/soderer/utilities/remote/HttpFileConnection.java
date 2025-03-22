@@ -15,13 +15,13 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.soderer.network.HttpUtilities;
+import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
-import de.soderer.utilities.http.HttpUtilities;
-import de.soderer.utilities.http.ProxyConfiguration;
 
 /**
  * HttpFileConnection

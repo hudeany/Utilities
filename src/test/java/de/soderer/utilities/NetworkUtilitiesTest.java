@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.soderer.network.NetworkUtilities;
+
 @SuppressWarnings("static-method")
 public class NetworkUtilitiesTest {
 	@Test

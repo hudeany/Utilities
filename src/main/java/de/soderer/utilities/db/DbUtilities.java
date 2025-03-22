@@ -46,10 +46,11 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import de.soderer.network.NetworkUtilities;
+import de.soderer.network.TrustManagerUtilities;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
-import de.soderer.utilities.NetworkUtilities;
 import de.soderer.utilities.TextTable;
 import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.Utilities;
@@ -58,7 +59,6 @@ import de.soderer.utilities.collection.CaseInsensitiveSet;
 import de.soderer.utilities.csv.CsvFormat;
 import de.soderer.utilities.csv.CsvWriter;
 import de.soderer.utilities.db.DatabaseConstraint.ConstraintType;
-import de.soderer.utilities.http.TrustManagerUtilities;
 import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.json.JsonReader;
 
