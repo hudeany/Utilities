@@ -84,7 +84,7 @@ public class MapStringReader extends BasicReader {
 				case '\'':
 				case '"':
 					// Start quoted value
-					final String quotedText = readQuotedText(currentChar, '\\');
+					final String quotedText = readQuotedText('\\');
 					if (inValue) {
 						nextValue = new StringBuilder(quotedText);
 						valueWasQuoted = true;
