@@ -1188,6 +1188,14 @@ public class DateUtilities {
 		}
 	}
 
+	public static String formatDate(final String format, final LocalTime time) {
+		if (time == null) {
+			return null;
+		} else {
+			return DateTimeFormatter.ofPattern(format).format(time);
+		}
+	}
+
 	public static String formatDate(final String format, final Date date, final Locale locale, final ZoneId zoneId) {
 		if (date == null) {
 			return null;
