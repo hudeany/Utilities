@@ -87,7 +87,7 @@ public class NumberUtilities {
 	}
 
 	public static boolean isNumber(final String numberString) {
-		return Pattern.matches("[+|-]?[0-9]*(\\.[0-9]*)?([e|E][+|-]?[0-9]*)?", numberString);
+		return Pattern.matches("[+|-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)([e|E][+|-]?[0-9]*)?", numberString);
 	}
 
 	/**
