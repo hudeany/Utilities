@@ -64,11 +64,15 @@ public class PropertiesWriter implements Closeable {
 	 * @return the string
 	 */
 	private String escapeValue(String valueString) throws Exception {
-		if (encodeJavaEncoding) {
-			valueString = StringEscapeUtils.escapeJava(valueString);
+		if (valueString == null) {
+			return "";
+		} else {
+			if (encodeJavaEncoding) {
+				valueString = StringEscapeUtils.escapeJava(valueString);
+			}
+			valueString = valueString.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
+			return valueString;
 		}
-		valueString = valueString.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
-		return valueString;
 	}
 
 	public void writeComment(final String comment) throws Exception {

@@ -108,4 +108,11 @@ public class SwtUtilities {
 		gridLayout.marginHeight = 0;
 		return gridLayout;
 	}
+
+	public static GridLayout createSmallMarginGridLayout(final int columns, final boolean equalWidth) {
+		final GridLayout gridLayout = new GridLayout(columns, equalWidth);
+		gridLayout.marginWidth = 5;
+		gridLayout.marginHeight = 5;
+		return gridLayout;
+	}
 }
