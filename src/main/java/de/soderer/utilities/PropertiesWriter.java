@@ -72,6 +72,13 @@ public class PropertiesWriter implements Closeable {
 	}
 
 	public void writeComment(final String comment) throws Exception {
+		if (outputWriter == null) {
+			if (outputStream == null) {
+				throw new IllegalStateException("PropertiesWriter is already closed");
+			}
+			outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, encoding));
+		}
+
 		for (final String commentLine : comment.replace("\r\n", "\n").replace("\r", "\n").split("\n")) {
 			outputWriter.write("# " + commentLine + "\n");
 		}
