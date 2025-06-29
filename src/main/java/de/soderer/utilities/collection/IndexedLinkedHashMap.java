@@ -37,6 +37,15 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 		return keyList;
 	}
 
+	public int getIndexOfKey(final K key) {
+		for (int i = 0; i < getKeyList().size(); i++) {
+			if (getKeyList().get(i).equals(key)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
 	public K getKey(final int i) {
 		return getKeyList().get(i);
 	}
