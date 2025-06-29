@@ -1,0 +1,38 @@
+package de.soderer.utilities;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+public class PropertiesWriterTest {
+	@SuppressWarnings("static-method")
+	@Test
+	public void test() {
+		try {
+			final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			try (PropertiesWriter propertiesWriter = new PropertiesWriter(byteArrayOutputStream)) {
+				propertiesWriter.setEncodeJavaEncoding(true);
+
+				propertiesWriter.writeProperty("key1", "value 1");
+				propertiesWriter.writeComment("Comment for key2\nComment line2 for key2");
+				propertiesWriter.writeProperty("key2", "Valü 2");
+				propertiesWriter.writeProperty("key3", "value31\nvalue32");
+				propertiesWriter.writeProperty("key4", "value 4");
+			}
+
+			final String data = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
+			final String dataExpected = "key1=value 1\n"
+					+ "# Comment for key2\n"
+					+ "# Comment line2 for key2\n"
+					+ "key2=Val\\u00FC 2\n"
+					+ "key3=value31\\nvalue32\n"
+					+ "key4=value 4\n";
+
+			Assert.assertEquals(dataExpected, data);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+}
