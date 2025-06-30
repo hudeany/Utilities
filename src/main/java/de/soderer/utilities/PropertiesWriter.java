@@ -5,7 +5,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.text.StringEscapeUtils;
@@ -14,38 +13,20 @@ import de.soderer.utilities.TextUtilities.LineBreak;
 
 public class PropertiesWriter implements Closeable {
 	private final LineBreak linebreakType = LineBreak.Unix;
-	private boolean encodeJavaEncoding = false;
 	private final String keyValueSeparator = "=";
 
 	private OutputStream outputStream;
-	private final Charset encoding;
 	private int writtenProperties = 0;
 	private BufferedWriter outputWriter = null;
 
-	public PropertiesWriter(final OutputStream outputStream) throws Exception {
-		this(outputStream, StandardCharsets.UTF_8);
-	}
-
-	public PropertiesWriter(final OutputStream outputStream, final Charset encoding) {
+	public PropertiesWriter(final OutputStream outputStream) {
 		this.outputStream = outputStream;
-		this.encoding = encoding;
-	}
-
-	public boolean isEncodeJavaEncoding() {
-		return encodeJavaEncoding;
-	}
-
-	public PropertiesWriter setEncodeJavaEncoding(final boolean encodeJavaEncoding) {
-		this.encodeJavaEncoding = encodeJavaEncoding;
-		return this;
+		outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.ISO_8859_1));
 	}
 
 	public void writeProperty(final String key, final String value) throws Exception {
-		if (outputWriter == null) {
-			if (outputStream == null) {
-				throw new IllegalStateException("PropertiesWriter is already closed");
-			}
-			outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, encoding));
+		if (outputStream == null) {
+			throw new IllegalStateException("PropertiesWriter is already closed");
 		}
 
 		outputWriter.write(key);
@@ -63,24 +44,19 @@ public class PropertiesWriter implements Closeable {
 	 *            the value
 	 * @return the string
 	 */
-	private String escapeValue(String valueString) throws Exception {
+	private static String escapeValue(String valueString) throws Exception {
 		if (valueString == null) {
 			return "";
 		} else {
-			if (encodeJavaEncoding) {
-				valueString = StringEscapeUtils.escapeJava(valueString);
-			}
+			valueString = StringEscapeUtils.escapeJava(valueString);
 			valueString = valueString.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
 			return valueString;
 		}
 	}
 
 	public void writeComment(final String comment) throws Exception {
-		if (outputWriter == null) {
-			if (outputStream == null) {
-				throw new IllegalStateException("PropertiesWriter is already closed");
-			}
-			outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, encoding));
+		if (outputStream == null) {
+			throw new IllegalStateException("PropertiesWriter is already closed");
 		}
 
 		for (final String commentLine : comment.replace("\r\n", "\n").replace("\r", "\n").split("\n")) {

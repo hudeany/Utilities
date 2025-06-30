@@ -13,7 +13,7 @@ public class PropertiesReaderTest {
 	public void test() {
 		try {
 			final String dataString = "key1 value 1" + "\n"
-					+ " key2=Valü 2" + "\r\n"
+					+ " key2=Val\u00FC 2" + "\r\n"
 					+ "   ! Comment for key3" + "\n"
 					+ "key3 = value 3 " + "\r"
 					+ "key4=value 41 \\" + "\n"
@@ -24,7 +24,7 @@ public class PropertiesReaderTest {
 					+ "key6 : value6" + "\n";
 			Map<String, String> properties;
 			Map<String, String> comments;
-			try (PropertiesReader propertiesReader = new PropertiesReader(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)))) {
+			try (PropertiesReader propertiesReader = new PropertiesReader(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.ISO_8859_1)))) {
 				properties = propertiesReader.read();
 				comments = propertiesReader.getComments();
 			}

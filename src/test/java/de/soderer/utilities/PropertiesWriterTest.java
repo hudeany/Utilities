@@ -13,7 +13,6 @@ public class PropertiesWriterTest {
 		try {
 			final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 			try (PropertiesWriter propertiesWriter = new PropertiesWriter(byteArrayOutputStream)) {
-				propertiesWriter.setEncodeJavaEncoding(true);
 
 				propertiesWriter.writeProperty("key1", "value 1");
 				propertiesWriter.writeComment("Comment for key2\nComment line2 for key2");
@@ -22,7 +21,7 @@ public class PropertiesWriterTest {
 				propertiesWriter.writeProperty("key4", "value 4");
 			}
 
-			final String data = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
+			final String data = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.ISO_8859_1);
 			final String dataExpected = "key1=value 1\n"
 					+ "# Comment for key2\n"
 					+ "# Comment line2 for key2\n"

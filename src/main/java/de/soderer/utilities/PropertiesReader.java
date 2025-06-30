@@ -19,7 +19,6 @@ public class PropertiesReader implements Closeable {
 	private BufferedReader inputReader;
 
 	private boolean readKeysCaseInsensitive = true;
-	private boolean decodeJavaEncoding = true;
 
 	private String pendingCommentLines = "";
 	private final Map<String, String> comments = new HashMap<>();
@@ -28,7 +27,7 @@ public class PropertiesReader implements Closeable {
 		if (inputStream == null) {
 			throw new Exception("Invalid empty inputStream");
 		} else {
-			inputReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+			inputReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.ISO_8859_1));
 		}
 	}
 
@@ -46,15 +45,6 @@ public class PropertiesReader implements Closeable {
 
 	public PropertiesReader setReadKeysCaseInsensitive(final boolean readKeysCaseInsensitive) {
 		this.readKeysCaseInsensitive = readKeysCaseInsensitive;
-		return this;
-	}
-
-	public boolean isDecodeJavaEncoding() {
-		return decodeJavaEncoding;
-	}
-
-	public PropertiesReader setDecodeJavaEncoding(final boolean decodeJavaEncoding) {
-		this.decodeJavaEncoding = decodeJavaEncoding;
 		return this;
 	}
 
@@ -134,26 +124,25 @@ public class PropertiesReader implements Closeable {
 		return -1;
 	}
 
-	private String unescapeKey(final String rawKey) throws Exception {
+	private static String unescapeKey(final String rawKey) throws Exception {
 		String key = rawKey.trim().replace("\\=", "=").replace("\\:", ":").replace("\\r", "\r").replace("\\n", "\n").replace("\\\\", "\\");
-		if (decodeJavaEncoding) {
-			try {
-				key = StringEscapeUtils.unescapeJava(key);
-			} catch (final Exception e) {
-				throw new Exception("Invalid JAVA endoded text: " + rawKey, e);
-			}
+
+		try {
+			key = StringEscapeUtils.unescapeJava(key);
+		} catch (final Exception e) {
+			throw new Exception("Invalid JAVA endoded text: " + rawKey, e);
 		}
+
 		return key;
 	}
 
-	private String unescapeValue(final String rawValue) throws Exception {
+	private static String unescapeValue(final String rawValue) throws Exception {
 		String value = rawValue.trim().replace("\\r", "\r").replace("\\n", "\n").replace("\\\\", "\\");
-		if (decodeJavaEncoding) {
-			try {
-				value = StringEscapeUtils.unescapeJava(value);
-			} catch (final Exception e) {
-				throw new Exception("Invalid JAVA endoded text: " + rawValue, e);
-			}
+
+		try {
+			value = StringEscapeUtils.unescapeJava(value);
+		} catch (final Exception e) {
+			throw new Exception("Invalid JAVA endoded text: " + rawValue, e);
 		}
 		return value;
 	}
