@@ -49,6 +49,9 @@ public class PropertiesWriter implements Closeable {
 			return "";
 		} else {
 			valueString = StringEscapeUtils.escapeJava(valueString);
+			if (valueString.length() > 0 && Character.isWhitespace(valueString.charAt(0))) {
+				valueString = "\\" + valueString;
+			}
 			valueString = valueString.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
 			return valueString;
 		}

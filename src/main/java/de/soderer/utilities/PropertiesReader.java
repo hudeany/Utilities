@@ -137,7 +137,7 @@ public class PropertiesReader implements Closeable {
 	}
 
 	private static String unescapeValue(final String rawValue) throws Exception {
-		String value = rawValue.trim().replace("\\r", "\r").replace("\\n", "\n").replace("\\\\", "\\");
+		String value = Utilities.trimLeft(rawValue).replace("\\r", "\r").replace("\\n", "\n").replace("\\\\", "\\");
 
 		try {
 			value = StringEscapeUtils.unescapeJava(value);

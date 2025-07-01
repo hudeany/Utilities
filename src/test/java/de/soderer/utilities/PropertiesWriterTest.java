@@ -19,6 +19,7 @@ public class PropertiesWriterTest {
 				propertiesWriter.writeProperty("key2", "Valü 2");
 				propertiesWriter.writeProperty("key3", "value31\nvalue32");
 				propertiesWriter.writeProperty("key4", "value 4");
+				propertiesWriter.writeProperty("key5", " value 5 ");
 			}
 
 			final String data = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.ISO_8859_1);
@@ -27,7 +28,8 @@ public class PropertiesWriterTest {
 					+ "# Comment line2 for key2\n"
 					+ "key2=Val\\u00FC 2\n"
 					+ "key3=value31\\nvalue32\n"
-					+ "key4=value 4\n";
+					+ "key4=value 4\n"
+					+ "key5=\\ value 5 \n";
 
 			Assert.assertEquals(dataExpected, data);
 		} catch (final Exception e) {

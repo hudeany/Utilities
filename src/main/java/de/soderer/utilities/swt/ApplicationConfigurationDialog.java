@@ -42,22 +42,25 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	public static final String CONFIG_PROXY_URL = "Application.ProxyUrl";
 
 	private final String applicationName;
+	private final String startUpClassName;
 	private final ConfigurationProperties applicationConfiguration;
 	private final byte[] iconImageDataWindows;
 	private final Image iconImageLinux;
 
-	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName) {
+	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final String startUpClassName) {
 		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
+		this.startUpClassName = startUpClassName;
 		iconImageDataWindows = null;
 		iconImageLinux = null;
 	}
 
-	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final byte[] iconImageWindows, final Image iconImageLinux) {
+	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final String startUpClassName, final byte[] iconImageWindows, final Image iconImageLinux) {
 		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
+		this.startUpClassName = startUpClassName;
 		iconImageDataWindows = iconImageWindows;
 		this.iconImageLinux = iconImageLinux;
 	}
@@ -283,8 +286,10 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 						data.append("Terminal=false\n");
 						data.append("Type=Application\n");
 
-						// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
-						data.append("StartupWMClass=" + applicationName + "\n");
+						if (startUpClassName != null) {
+							// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
+							data.append("StartupWMClass=" + startUpClassName + "\n");
+						}
 
 						try {
 							FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), StandardCharsets.UTF_8);
