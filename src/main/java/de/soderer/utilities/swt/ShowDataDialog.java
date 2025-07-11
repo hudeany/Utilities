@@ -22,6 +22,9 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 	private boolean wordWrap = false;
 	private final boolean showSaveButton;
 
+	private int width = 300;
+	private int height = 300;
+
 	public ShowDataDialog(final Shell shell, final String title, final String dataString, final boolean showSaveButton) {
 		super(shell, SWT.RESIZE, title);
 		this.dataString = dataString;
@@ -76,7 +79,13 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		});
 
 		shell.pack();
-		shell.setSize(300, 300);
+		shell.setSize(width, height);
+	}
+
+	public ShowDataDialog setSize(final int width, final int height) {
+		this.width = width;
+		this.height = height;
+		return this;
 	}
 
 	public static String saveDataInteractive(final Shell shell, final String title, final byte[] data) {
