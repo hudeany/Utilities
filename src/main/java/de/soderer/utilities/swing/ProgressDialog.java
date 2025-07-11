@@ -230,8 +230,18 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void changeTitle(final String newTitle) {
-		setTitle(newTitle);
+	public void changeTitle(final String newCommentStringFormat) {
+		if (SwingUtilities.isEventDispatchThread()) {
+			dispose();
+		} else {
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					commentStringFormat = newCommentStringFormat;
+					commentLabel.setText(commentStringFormat.replace("{0}", "n/a").replace("{1}", "n/a").replace("{2}", "n/a"));
+				}
+			});
+		}
 	}
 
 	private static String getI18NString(final String resourceKey, final Object... arguments) {

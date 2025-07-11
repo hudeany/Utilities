@@ -221,8 +221,20 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 	}
 
 	@Override
-	public void changeTitle(final String text) {
-		// Do nothing
+	public void changeTitle(final String newCommentStringFormat) {
+		if (commentLabel != null) {
+			if (!isDisposed()) {
+				getParent().getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						if (!isDisposed()) {
+							commentStringFormat = newCommentStringFormat;
+							commentLabel.setText(commentStringFormat.replace("{0}", "n/a").replace("{1}", "n/a").replace("{2}", "n/a"));
+						}
+					}
+				});
+			}
+		}
 	}
 
 	@Override
