@@ -2,6 +2,7 @@ package de.soderer.utilities;
 
 import static org.junit.Assert.assertEquals;
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -48,7 +49,7 @@ public class DateUtilitiesTest {
 			// Format with 'X' may lead to Problem on Dates without TimeZone
 			final GregorianCalendar originalCalendar = new GregorianCalendar();
 			final String resultString = DateUtilities.formatDate("HH X", originalCalendar.getTime());
-			Assert.assertTrue(resultString.startsWith(originalCalendar.get(Calendar.HOUR_OF_DAY) + " "));
+			Assert.assertTrue(resultString.startsWith(new DecimalFormat("00").format(originalCalendar.get(Calendar.HOUR_OF_DAY)) + " "));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}

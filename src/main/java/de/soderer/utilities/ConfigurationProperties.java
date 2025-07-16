@@ -39,7 +39,7 @@ public class ConfigurationProperties {
 				final Properties propertiesLoaded = new Properties();
 				propertiesLoaded.load(fileInputStream);
 				for (final Entry<Object, Object> entry : propertiesLoaded.entrySet()) {
-					properties.setProperty((String) entry.getKey(), unEscape((String) entry.getValue()));
+					properties.setProperty((String) entry.getKey(), (String) entry.getValue());
 				}
 			} catch (final IOException e) {
 				e.printStackTrace();
@@ -207,7 +207,7 @@ public class ConfigurationProperties {
 		try (FileOutputStream fileOutputStream = new FileOutputStream(System.getProperty("user.home") + (useSubDirectory ? File.separator + "." + applicationName : "") + File.separator + "." + applicationName + ".config")) {
 			final Properties propertiesToStore = new Properties();
 			for (final Entry<Object, Object> entry : properties.entrySet()) {
-				propertiesToStore.setProperty((String) entry.getKey(), escape((String) entry.getValue()));
+				propertiesToStore.setProperty((String) entry.getKey(), (String) entry.getValue());
 			}
 			propertiesToStore.store(fileOutputStream, applicationName + ".config");
 		} catch (final IOException e) {
@@ -229,13 +229,5 @@ public class ConfigurationProperties {
 
 	public void removeKey(final String name) {
 		properties.remove(name);
-	}
-
-	public static String escape(final String value) {
-		return value.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t").replace("\\", "\\\\");
-	}
-
-	public static String unEscape(final String value) {
-		return value.replace("\\\\", "\\").replace("\\t", "\t").replace("\\n", "\n").replace("\\r", "\r");
 	}
 }

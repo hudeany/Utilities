@@ -98,7 +98,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 				label.setText(description);
 
-				final String value = ConfigurationProperties.escape(applicationConfiguration.get(key));
+				final String value = applicationConfiguration.get(key);
 				if (applicationConfiguration.containsKey(key + ConfigurationProperties.MAXSIZE_EXTENSION)) {
 					final Spinner maxSizeTextfield = new Spinner(dataPart, SWT.NONE);
 					maxSizeTextfield.setValues(applicationConfiguration.getInteger(key + ConfigurationProperties.MAXSIZE_EXTENSION), 1, 50, 0, 1, 10);
@@ -401,7 +401,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		@Override
 		public void modifyText(final ModifyEvent event) {
-			applicationConfiguration.set(key, ConfigurationProperties.unEscape(((Text) event.widget).getText()));
+			applicationConfiguration.set(key, ((Text) event.widget).getText());
 		}
 	}
 
