@@ -73,15 +73,15 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		final Composite mainComposite = new Composite(shell, SWT.NONE);
 		mainComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
-		mainComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
+		mainComposite.setLayout(SwtUtilities.createSmallMarginGridLayout(1, false));
 
 		final ScrolledComposite scrolledPart = new ScrolledComposite(mainComposite, SWT.H_SCROLL | SWT.V_SCROLL);
 		scrolledPart.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
-		scrolledPart.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
+		scrolledPart.setLayout(SwtUtilities.createSmallMarginGridLayout(1, false));
 
 		final Composite dataPart = new Composite(scrolledPart, SWT.NONE);
 		dataPart.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		dataPart.setLayout(SwtUtilities.createNoMarginGridLayout(4, false));
+		dataPart.setLayout(SwtUtilities.createSmallMarginGridLayout(4, false));
 
 		scrolledPart.setContent(dataPart);
 		scrolledPart.setExpandHorizontal(true);
@@ -167,7 +167,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		final Composite buttonArea = new Composite(mainComposite, SWT.NONE);
 		buttonArea.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1));
-		buttonArea.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
+		buttonArea.setLayout(SwtUtilities.createSmallMarginGridLayout(2, true));
 
 		final Button storeButton = new Button(buttonArea, SWT.PUSH);
 		storeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
