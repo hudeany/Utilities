@@ -1,6 +1,5 @@
 package de.soderer.utilities;
 
-import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
@@ -105,34 +104,6 @@ public class DateUtilities {
 				return null;
 			}
 		}
-	}
-
-	/**
-	 * Format a timestamp (Nanos in .Net format)
-	 *
-	 * @param ts
-	 *            a Timestamp
-	 * @return a String in format 'yyyy-mm-dd HH:MM:SS.NNNNNN'
-	 */
-	public static String formatTimestamp_yyyyMMdd_HHmmssNNNNNN(final Timestamp ts) {
-		String returnString = "";
-
-		if (ts != null) {
-			final String s = DateTimeFormatter.ofPattern(YYYY_MM_DD_HHMMSS).withResolverStyle(ResolverStyle.STRICT).format(DateUtilities.getLocalDateForDate(ts));
-			String nanosString = Integer.toString(ts.getNanos());
-
-			if (nanosString.length() > 6) {
-				nanosString = nanosString.substring(0, 6);
-			} else {
-				while (nanosString.length() < 6) {
-					nanosString += "0";
-				}
-			}
-
-			returnString = s + nanosString;
-		}
-
-		return returnString;
 	}
 
 	/**
