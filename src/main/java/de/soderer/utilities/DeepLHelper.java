@@ -14,7 +14,8 @@ import de.soderer.utilities.json.JsonReader;
 import de.soderer.utilities.json.JsonWriter;
 
 public class DeepLHelper {
-	private final static String DEEPL_BASEURL_DEFAULT = "https://api-free.deepl.com";
+	public final static String DEEPL_BASEURL_FREE_DEFAULT = "https://api-free.deepl.com";
+	public final static String DEEPL_BASEURL_DEFAULT = "https://api.deepl.com";
 
 	private final String baseUrl;
 	private final String apiKey;
@@ -22,7 +23,7 @@ public class DeepLHelper {
 	private List<String> supportedLanguages = null;
 
 	public DeepLHelper(final String apiKey) {
-		baseUrl = DEEPL_BASEURL_DEFAULT;
+		baseUrl = DEEPL_BASEURL_FREE_DEFAULT;
 		this.apiKey = apiKey;
 	}
 
