@@ -5,8 +5,8 @@ import java.util.List;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
@@ -36,9 +36,8 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 	@Override
 	protected void createComponents(final Shell shell) throws Exception {
-		shell.setLayout(new FillLayout());
-		shell.setSize(475, 120);
-		shell.setMinimumSize(475, 120);
+		shell.setLayout(new GridLayout(1, true));
+
 		final Composite composite = new Composite(shell, SWT.NONE);
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
 		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
@@ -70,6 +69,9 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new CancelButtonSelectionListener());
+
+		shell.setMinimumSize(250, 50);
+		shell.pack();
 	}
 
 	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
