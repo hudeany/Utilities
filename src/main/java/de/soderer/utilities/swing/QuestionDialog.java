@@ -19,7 +19,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.Utilities;
 
 public class QuestionDialog extends ModalDialog<Integer> {
@@ -62,14 +61,8 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			textField.setBackground(backgroundcolor);
 		}
 
-		final int linesCount = TextUtilities.getLineCount(text);
-		if (linesCount > 1) {
-			textField.setSize(textField.getSize().width, linesCount * 20);
-			textField.setPreferredSize(new Dimension(600, linesCount * 20));
-		}
-
 		final JScrollPane textScrollpane = new JScrollPane(textField);
-		textScrollpane.setPreferredSize(new Dimension(Math.min(textField.getPreferredSize().width + 5, 600), Math.min(textField.getPreferredSize().height + 5, 400)));
+		textScrollpane.setPreferredSize(new Dimension(Math.min(textScrollpane.getPreferredSize().width, 600), Math.min(textScrollpane.getPreferredSize().height, 400)));
 
 		// Text Panel
 		final JPanel textPanel = new JPanel();
@@ -144,6 +137,12 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		add(panel);
 
 		pack();
+
+		if (textScrollpane.getHorizontalScrollBar().isVisible()) {
+			textScrollpane.setPreferredSize(new Dimension(textScrollpane.getPreferredSize().width, textScrollpane.getPreferredSize().height + 20));
+			textScrollpane.setSize(new Dimension(textScrollpane.getPreferredSize().width, textScrollpane.getPreferredSize().height));
+			pack();
+		}
 
 		setLocationRelativeTo(getOwner());
 
