@@ -63,8 +63,6 @@ public class SimpleInputDialog extends ModalDialog<String> {
 	}
 
 	protected void createComponents() {
-		removeAll();
-
 		panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 
