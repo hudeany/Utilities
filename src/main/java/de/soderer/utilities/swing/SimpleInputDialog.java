@@ -25,7 +25,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 	private final String text;
 
-	private JPanel panel;
+	private final JPanel panel;
 
 	private JTextArea inputField;
 	private JButton okButton;
@@ -42,6 +42,9 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		this.text = text;
 
 		setResizable(false);
+
+		panel = new JPanel();
+		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 
 		createComponents();
 
@@ -63,8 +66,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 	}
 
 	protected void createComponents() {
-		panel = new JPanel();
-		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+		panel.removeAll();
 
 		panel.add(Box.createRigidArea(new Dimension(5, 5)));
 
