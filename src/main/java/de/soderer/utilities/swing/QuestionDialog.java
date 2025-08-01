@@ -19,6 +19,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.Utilities;
 
 public class QuestionDialog extends ModalDialog<Integer> {
@@ -59,6 +60,12 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		textField.setEditable(false);
 		if (backgroundcolor != null) {
 			textField.setBackground(backgroundcolor);
+		}
+
+		final int linesCount = TextUtilities.getLineCount(text);
+		if (linesCount > 1) {
+			textField.setSize(textField.getSize().width, linesCount * 20);
+			textField.setPreferredSize(new Dimension(600, linesCount * 20));
 		}
 
 		final JScrollPane textScrollpane = new JScrollPane(textField);

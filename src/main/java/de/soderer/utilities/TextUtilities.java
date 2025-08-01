@@ -266,7 +266,7 @@ public class TextUtilities {
 	 * @return
 	 * @throws IOException
 	 */
-	public static int getLineCount(final String dataString) throws IOException {
+	public static int getLineCount(final String dataString) {
 		if (dataString == null) {
 			return 0;
 		} else if ("".equals(dataString)) {
@@ -278,6 +278,8 @@ public class TextUtilities {
 				}
 
 				return lineNumberReader.getLineNumber();
+			} catch (final IOException e) {
+				throw new RuntimeException(e);
 			}
 		}
 	}
@@ -550,9 +552,6 @@ public class TextUtilities {
 					lineNumber++;
 				}
 				return lineNumber;
-			} catch (final IOException e) {
-				e.printStackTrace();
-				return -1;
 			} catch (final Exception e) {
 				e.printStackTrace();
 				return -1;
