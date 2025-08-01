@@ -544,11 +544,15 @@ public class SftpConnection implements RemoteConnection {
 	}
 
 	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData) throws Exception {
+		uploadFileData(remoteHostPath, remoteHostFileName, fileData, false);
+	}
+
+	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData, final boolean overwriteIfExists) throws Exception {
 		final List<String> directory = listFiles(remoteHostPath);
 		if (!directory.contains(".")) {
 			throw new Exception("Error in SSH upload: Destination folder '" + remoteHostPath + "' does not exist on destination host");
 		}
-		if (directory.contains(remoteHostFileName)) {
+		if (directory.contains(remoteHostFileName) && !overwriteIfExists) {
 			throw new Exception("Error in SSH upload: File '" + remoteHostFileName + "' already exists on destination host");
 		}
 
