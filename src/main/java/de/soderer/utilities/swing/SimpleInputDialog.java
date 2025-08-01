@@ -7,6 +7,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.text.MessageFormat;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
@@ -70,14 +72,15 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 		panel.add(Box.createRigidArea(new Dimension(5, 5)));
 
+		JScrollPane textScrollpane = null;
 		if (Utilities.isNotBlank(text)) {
 			final JTextArea textField = new JTextArea();
 			textField.setText(text);
 			textField.setEditable(false);
 			textField.setBackground(Color.LIGHT_GRAY);
 
-			final JScrollPane textScrollpane = new JScrollPane(textField);
-			textScrollpane.setPreferredSize(new Dimension(textField.getPreferredSize().width + 5, textField.getPreferredSize().height + 5));
+			textScrollpane = new JScrollPane(textField);
+			textScrollpane.setPreferredSize(new Dimension(Math.min(textScrollpane.getPreferredSize().width, 600), Math.min(textScrollpane.getPreferredSize().height, 400)));
 
 			// Text Panel
 			final JPanel textPanel = new JPanel();
@@ -120,7 +123,13 @@ public class SimpleInputDialog extends ModalDialog<String> {
 				checkButtonStatus();
 			}
 		});
-		panel.add(inputField);
+		final JPanel textPanel = new JPanel();
+		textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.LINE_AXIS));
+
+		textPanel.add(Box.createRigidArea(new Dimension(5, 0)));
+		textPanel.add(inputField);
+		textPanel.add(Box.createRigidArea(new Dimension(5, 0)));
+		panel.add(textPanel);
 
 		panel.add(Box.createRigidArea(new Dimension(5, 5)));
 
@@ -129,7 +138,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
 
 		// ok Button
-		okButton = new JButton(LangResources.get("ok"));
+		okButton = new JButton(getI18NString("ok"));
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
@@ -142,7 +151,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		buttonPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 
 		// Close Button
-		final JButton closeButton = new JButton(LangResources.get("cancel"));
+		final JButton closeButton = new JButton(getI18NString("cancel"));
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
@@ -162,6 +171,12 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 		pack();
 
+		if (textScrollpane != null && textScrollpane.getHorizontalScrollBar().isVisible()) {
+			textScrollpane.setPreferredSize(new Dimension(textScrollpane.getPreferredSize().width, textScrollpane.getPreferredSize().height + 20));
+			textScrollpane.setSize(new Dimension(textScrollpane.getPreferredSize().width, textScrollpane.getPreferredSize().height));
+			pack();
+		}
+
 		setLocationRelativeTo(getOwner());
 
 		inputField.requestFocus();
@@ -171,5 +186,27 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 	private void checkButtonStatus() {
 		okButton.setEnabled(Utilities.isNotEmpty(inputField.getText()));
+	}
+
+	private static String getI18NString(final String resourceKey, final Object... arguments) {
+		if (LangResources.existsKey(resourceKey)) {
+			return LangResources.get(resourceKey, arguments);
+		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
+			String pattern;
+			switch(resourceKey) {
+				case "ok": pattern = "OK"; break;
+				case "cancel": pattern = "Abbrechen"; break;
+				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		} else {
+			String pattern;
+			switch(resourceKey) {
+				case "ok": pattern = "OK"; break;
+				case "cancel": pattern = "Cancel"; break;
+				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		}
 	}
 }
