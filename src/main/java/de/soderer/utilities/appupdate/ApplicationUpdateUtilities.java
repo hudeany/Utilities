@@ -102,6 +102,7 @@ public class ApplicationUpdateUtilities {
 
 			if (versionIndexFileLocation.toLowerCase().contains("json")) {
 				final URLConnection urlConnection = new URL(versionIndexFileLocation).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+				urlConnection.setRequestProperty("Pragma", "no-cache");
 				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
 					final JsonNode jsonNode = jsonReader.read();
 					if (!jsonNode.isJsonObject()) {
