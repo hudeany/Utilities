@@ -544,10 +544,10 @@ public class SftpConnection implements RemoteConnection {
 	}
 
 	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData) throws Exception {
-		uploadFileData(remoteHostPath, remoteHostFileName, fileData, false);
+		uploadFileData(remoteHostPath, remoteHostFileName, fileData, null, false);
 	}
 
-	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData, final boolean overwriteIfExists) throws Exception {
+	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData, final FilePermissions filePermissions, final boolean overwriteIfExists) throws Exception {
 		final List<String> directory = listFiles(remoteHostPath);
 		if (!directory.contains(".")) {
 			throw new Exception("Error in SSH upload: Destination folder '" + remoteHostPath + "' does not exist on destination host");
@@ -570,8 +570,13 @@ public class SftpConnection implements RemoteConnection {
 
 				checkAcknowledge(in);
 
+				String permissionsString = "664";
+				if (filePermissions != null) {
+					permissionsString = filePermissions.getPermissionMapString();
+				}
+
 				// send command "C0664 filesize filename"
-				command = "C0664 " + fileData.length + " " + remoteHostFileName + "\n";
+				command = "C0" + permissionsString + " " + fileData.length + " " + remoteHostFileName + "\n";
 				out.write(command.getBytes(StandardCharsets.UTF_8));
 				out.flush();
 				checkAcknowledge(in);
