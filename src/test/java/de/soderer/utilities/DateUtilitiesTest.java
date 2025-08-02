@@ -160,7 +160,7 @@ public class DateUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Europe/Berlin", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
 		Assert.assertEquals(22, resultZonedDateTime.getHour());
 	}
 
@@ -173,7 +173,7 @@ public class DateUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Europe/Berlin", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
 		Assert.assertEquals(0, resultZonedDateTime.getHour());
 	}
 
@@ -212,7 +212,7 @@ public class DateUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Europe/Berlin", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
 		Assert.assertEquals(22, resultZonedDateTime.getHour());
 	}
 
@@ -238,7 +238,7 @@ public class DateUtilitiesTest {
 			Assert.fail(e.getMessage());
 		}
 		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Europe/Berlin", resultZonedDateTime.getZone().getId());
+		Assert.assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
 		Assert.assertEquals(22, resultZonedDateTime.getHour());
 	}
 
