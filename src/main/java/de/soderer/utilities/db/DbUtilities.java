@@ -72,7 +72,6 @@ public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_SQLITE = "https://bitbucket.org/xerial/sqlite-jdbc/downloads";
 	public static final String DOWNLOAD_LOCATION_HSQL = "http://hsqldb.org/download";
 	public static final String DOWNLOAD_LOCATION_MSSQL = "https://msdn.microsoft.com/de-de/library/mt683464(v=sql.110).aspx";
-	public static final String DOWNLOAD_LOCATION_MONGODB = "https://repo1.maven.org/maven2/org/mongodb/mongodb-jdbc/2.2.0/mongodb-jdbc-2.2.0.jar";
 
 	public static final List<String> SQL_OPERATORS = Arrays.asList(new String[] { "+", "-", "*", "/", "%", "&", "|",
 			"^", "=", "!=", ">", "<", ">=", "<=", "<>", "+=", "-=", "*=", "/=", "%=", "&=", "||", "^-=", "|*=" });
@@ -221,8 +220,7 @@ public class DbUtilities {
 		Derby("org.apache.derby.jdbc.EmbeddedDriver", 0, "SELECT 1 FROM SYSIBM.SYSDUMMY1"),
 		HSQL("org.hsqldb.jdbc.JDBCDriver", 0, "SELECT 1 FROM SYSIBM.SYSDUMMY1"),
 		Cassandra("com.simba.cassandra.jdbc42.Driver", 9042, ""),
-		MsSQL("com.microsoft.sqlserver.jdbc.SQLServerDriver", 1433, "SELECT 1"),
-		MongoDB("com.mongodb.jdbc.MongoDriver", 27017, null);
+		MsSQL("com.microsoft.sqlserver.jdbc.SQLServerDriver", 1433, "SELECT 1");
 
 		public static DbVendor getDbVendorByName(final String dbVendorName) throws Exception {
 			for (final DbVendor dbVendor : DbVendor.values()) {
@@ -379,8 +377,6 @@ public class DbUtilities {
 			}
 		} else if (DbVendor.Cassandra == dbVendor) {
 			return "jdbc:cassandra://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?primarydc=DC1&backupdc=DC2&consistency=QUORUM";
-		} else if (DbVendor.MongoDB == dbVendor) {
-			return "jdbc:mongo://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName;
 		} else {
 			throw new Exception("Unknown database vendor");
 		}
@@ -562,20 +558,6 @@ public class DbUtilities {
 				dbLogger.setLevel(Level.WARNING);
 
 				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, false, null, null, null), (Utilities.isNotEmpty(userName) ? userName : "SA"), (password != null ? new String(password) : ""));
-			} else if (dbVendor == DbVendor.MongoDB) {
-				int port;
-				final String[] hostParts = hostnameAndPort.split(":");
-				if (hostParts.length == 2) {
-					try {
-						port = Integer.parseInt(hostParts[1]);
-					} catch (@SuppressWarnings("unused") final Exception e) {
-						throw new Exception("Invalid port: " + hostParts[1]);
-					}
-				} else {
-					port = dbVendor.getDefaultPort();
-				}
-
-				connection = DriverManager.getConnection(generateUrlConnectionString(dbVendor, hostParts[0], port, dbName, false, null, null, null), userName, new String(password));
 			} else {
 				int port;
 				final String[] hostParts = hostnameAndPort.split(":");
@@ -987,8 +969,6 @@ public class DbUtilities {
 					return DbVendor.Firebird;
 				} else if (productName != null && productName.toLowerCase().contains("cassandra")) {
 					return DbVendor.Cassandra;
-				} else if (productName != null && productName.toLowerCase().contains("mongo")) {
-					return DbVendor.MongoDB;
 				} else {
 					throw new Exception("Unknown database vendor: " + productName);
 				}
