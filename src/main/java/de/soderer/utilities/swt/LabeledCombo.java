@@ -10,7 +10,6 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.TypedListener;
 
 public class LabeledCombo extends Composite {
 	protected Combo comboBox;
@@ -65,8 +64,7 @@ public class LabeledCombo extends Composite {
 		if (listener == null) {
 			throw new Exception("Missing listener");
 		} else {
-			final TypedListener typedListener = new TypedListener(listener);
-			addListener(SWT.Modify, typedListener);
+			addTypedListener(listener, SWT.Modify);
 		}
 	}
 

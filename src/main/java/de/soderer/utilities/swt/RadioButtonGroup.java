@@ -13,7 +13,6 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.TypedListener;
 
 public class RadioButtonGroup extends Composite {
 	private final List<Button> radioButtons;
@@ -78,8 +77,7 @@ public class RadioButtonGroup extends Composite {
 		if (listener == null) {
 			throw new Exception("Missing listener");
 		} else {
-			final TypedListener typedListener = new TypedListener(listener);
-			addListener(SWT.Modify, typedListener);
+			addTypedListener(listener, SWT.Modify);
 		}
 	}
 
