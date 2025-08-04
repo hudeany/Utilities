@@ -70,6 +70,12 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	@Override
 	public void showUpdateError(final String errorText) {
 		System.err.println(errorText);
+		final Console console = System.console();
+		if (console != null) {
+			System.out.println();
+			System.out.println("Press enter to continue");
+			System.console().readLine();
+		}
 	}
 
 	@Override
