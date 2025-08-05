@@ -1,8 +1,8 @@
 package de.soderer.utilities.swing;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -11,6 +11,7 @@ import java.awt.event.KeyEvent;
 import java.text.MessageFormat;
 import java.util.Locale;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -85,11 +86,15 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 		if (Utilities.isNotBlank(text)) {
 			final JTextArea textField = new JTextArea();
+			final Font f = textField.getFont();
+			final Font f2 = new Font("Arial", f.getStyle(), f.getSize());
+			textField.setFont(f2);
 			textField.setText(text);
 			textField.setEditable(false);
-			textField.setBackground(Color.LIGHT_GRAY);
+			textField.setBackground(panel.getBackground());
 
 			final JScrollPane textScrollpane = new JScrollPane(textField);
+			textScrollpane.setBorder(BorderFactory.createEmptyBorder());
 			textScrollpane.setPreferredSize(new Dimension(textField.getPreferredSize().width + 5, textField.getPreferredSize().height + 5));
 
 			// Text Panel

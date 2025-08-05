@@ -1,7 +1,9 @@
 package de.soderer.utilities.swt;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
@@ -88,7 +90,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 		final Button okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.CENTER, SWT.UP, true, false));
-		okButton.setText(LangResources.get("ok"));
+		okButton.setText(getI18NString("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -107,7 +109,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.CENTER, SWT.UP, true, false));
-		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.setText(getI18NString("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -121,5 +123,27 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 		cancelButton.setLayoutData(gridDataCancel);
 
 		shell.pack();
+	}
+
+	private static String getI18NString(final String resourceKey, final Object... arguments) {
+		if (LangResources.existsKey(resourceKey)) {
+			return LangResources.get(resourceKey, arguments);
+		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
+			String pattern;
+			switch(resourceKey) {
+				case "ok": pattern = "OK"; break;
+				case "cancel": pattern = "Abbrechen"; break;
+				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		} else {
+			String pattern;
+			switch(resourceKey) {
+				case "ok": pattern = "OK"; break;
+				case "cancel": pattern = "Cancel"; break;
+				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		}
 	}
 }

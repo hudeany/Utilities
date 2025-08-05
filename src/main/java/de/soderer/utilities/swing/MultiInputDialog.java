@@ -1,14 +1,17 @@
 package de.soderer.utilities.swing;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -62,11 +65,15 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 		if (Utilities.isNotBlank(text)) {
 			final JTextArea textField = new JTextArea();
+			final Font f = textField.getFont();
+			final Font f2 = new Font("Arial", f.getStyle(), f.getSize());
+			textField.setFont(f2);
 			textField.setText(text);
 			textField.setEditable(false);
-			textField.setBackground(Color.LIGHT_GRAY);
+			textField.setBackground(panel.getBackground());
 
 			final JScrollPane textScrollpane = new JScrollPane(textField);
+			textScrollpane.setBorder(BorderFactory.createEmptyBorder());
 			textScrollpane.setPreferredSize(new Dimension(textField.getPreferredSize().width + 5, textField.getPreferredSize().height + 5));
 
 			// Text Panel
@@ -96,6 +103,9 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 			panel.add(label, labelGridBagConstraints);
 
 			final JTextField inputField = new JTextField();
+			final Font f = inputField.getFont();
+			final Font f2 = new Font("Arial", f.getStyle(), f.getSize() + 2);
+			inputField.setFont(f2);
 			inputField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 			inputField.setPreferredSize(new Dimension(250, inputField.getPreferredSize().height));
 			if (defaultTexts != null && defaultTexts.length > index && defaultTexts[index] != null) {
@@ -118,7 +128,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
 
 		// ok Button
-		final JButton okButton = new JButton(LangResources.get("ok"));
+		final JButton okButton = new JButton(getI18NString("ok"));
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
@@ -136,7 +146,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 		buttonPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 
 		// Close Button
-		final JButton closeButton = new JButton(LangResources.get("cancel"));
+		final JButton closeButton = new JButton(getI18NString("cancel"));
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
@@ -163,5 +173,27 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 		setLocationRelativeTo(getOwner());
 
 		textFields.get(0).requestFocus();
+	}
+
+	private static String getI18NString(final String resourceKey, final Object... arguments) {
+		if (LangResources.existsKey(resourceKey)) {
+			return LangResources.get(resourceKey, arguments);
+		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
+			String pattern;
+			switch(resourceKey) {
+				case "ok": pattern = "OK"; break;
+				case "cancel": pattern = "Abbrechen"; break;
+				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		} else {
+			String pattern;
+			switch(resourceKey) {
+				case "ok": pattern = "OK"; break;
+				case "cancel": pattern = "Cancel"; break;
+				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		}
 	}
 }
