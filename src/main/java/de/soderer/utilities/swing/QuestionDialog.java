@@ -10,6 +10,7 @@ import java.awt.event.ActionListener;
 import java.text.MessageFormat;
 import java.util.Locale;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -52,16 +53,19 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		final JTextArea textField = new JTextArea();
 
 		final Font f = textField.getFont();
-		final Font f2 = new Font("Arial", f.getStyle(), f.getSize() - 1);
+		final Font f2 = new Font("Arial", f.getStyle(), f.getSize());
 		textField.setFont(f2);
 
 		textField.setText(text);
 		textField.setEditable(false);
 		if (backgroundcolor != null) {
 			textField.setBackground(backgroundcolor);
+		} else {
+			textField.setBackground(panel.getBackground());
 		}
 
 		final JScrollPane textScrollpane = new JScrollPane(textField);
+		textScrollpane.setBorder(BorderFactory.createEmptyBorder());
 		textScrollpane.setPreferredSize(new Dimension(Math.min(textScrollpane.getPreferredSize().width, 600), Math.min(textScrollpane.getPreferredSize().height, 400)));
 
 		// Text Panel

@@ -2,6 +2,7 @@ package de.soderer.utilities.swing;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -75,11 +76,15 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		JScrollPane textScrollpane = null;
 		if (Utilities.isNotBlank(text)) {
 			final JTextArea textField = new JTextArea();
+			final Font f = textField.getFont();
+			final Font f2 = new Font("Arial", f.getStyle(), f.getSize());
+			textField.setFont(f2);
 			textField.setText(text);
 			textField.setEditable(false);
-			textField.setBackground(Color.LIGHT_GRAY);
+			textField.setBackground(panel.getBackground());
 
 			textScrollpane = new JScrollPane(textField);
+			textScrollpane.setBorder(BorderFactory.createEmptyBorder());
 			textScrollpane.setPreferredSize(new Dimension(Math.min(textScrollpane.getPreferredSize().width, 600), Math.min(textScrollpane.getPreferredSize().height, 400)));
 
 			// Text Panel
@@ -95,6 +100,9 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		panel.add(Box.createRigidArea(new Dimension(5, 5)));
 
 		inputField = new JTextArea();
+		final Font f = inputField.getFont();
+		final Font f2 = new Font("Arial", f.getStyle(), f.getSize());
+		inputField.setFont(f2);
 		inputField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 		inputField.setPreferredSize(new Dimension(200, inputField.getPreferredSize().height));
 		inputField.setText(defaultText != null ? defaultText : "");
