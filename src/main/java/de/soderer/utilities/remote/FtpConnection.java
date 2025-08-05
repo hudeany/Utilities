@@ -3,6 +3,7 @@ package de.soderer.utilities.remote;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Proxy;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
+import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.ServerAccessData;
@@ -42,6 +44,8 @@ public class FtpConnection implements RemoteConnection {
 	 * Currently connected client
 	 */
 	private FTPClient ftpClient = null;
+
+	private ProxyConfiguration proxyConfiguration = null;
 
 	/**
 	 * Instantiates a new FtpConnection.
@@ -116,12 +120,25 @@ public class FtpConnection implements RemoteConnection {
 		}
 	}
 
+	public FtpConnection setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
+		this.proxyConfiguration = proxyConfiguration;
+		return this;
+	}
+
 	/**
 	 * Connect.
 	 */
 	private void connect() throws Exception {
 		try {
 			ftpClient = new FTPClient();
+
+			if (proxyConfiguration != null) {
+				final Proxy proxy = proxyConfiguration.getProxy(hostname);
+				if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
+					ftpClient.setProxy(proxy);
+				}
+			}
+
 			ftpClient.connect(hostname, port);
 			if (usePassiveMode) {
 				ftpClient.enterLocalPassiveMode();

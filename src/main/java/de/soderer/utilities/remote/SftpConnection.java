@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
@@ -24,8 +26,10 @@ import com.jcraft.jsch.HostKey;
 import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.ProxyHTTP;
 import com.jcraft.jsch.Session;
 
+import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.ExceptionUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
@@ -51,6 +55,8 @@ public class SftpConnection implements RemoteConnection {
 
 	/** The password. */
 	private char[] password = null;
+
+	private ProxyConfiguration proxyConfiguration = null;
 
 	/**
 	 * The port.<br />
@@ -109,11 +115,24 @@ public class SftpConnection implements RemoteConnection {
 		connect();
 	}
 
+	public SftpConnection setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
+		this.proxyConfiguration = proxyConfiguration;
+		return this;
+	}
+
 	private void connect() throws Exception {
 		JSch jsch = null;
 		try {
 			jsch = new JSch();
 			session = jsch.getSession(username, hostname, port);
+
+			if (proxyConfiguration != null) {
+				final Proxy proxy = proxyConfiguration.getProxy(hostname);
+				if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
+					final InetSocketAddress proxyAdress = (InetSocketAddress) proxy.address();
+					session.setProxy(new ProxyHTTP(proxyAdress.getHostName(), proxyAdress.getPort()));
+				}
+			}
 
 			if (keyFileData != null) {
 				jsch.addIdentity(username, keyFileData, null, password == null ? new byte[0] : new String(password).getBytes(StandardCharsets.UTF_8));

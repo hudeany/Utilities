@@ -19,6 +19,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
@@ -30,7 +31,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 	private final JPanel panel;
 
-	private JTextArea inputField;
+	private JTextField inputField;
 	private JButton okButton;
 
 	private String currentInputText = "";
@@ -99,12 +100,11 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 		panel.add(Box.createRigidArea(new Dimension(5, 5)));
 
-		inputField = new JTextArea();
+		inputField = new JTextField();
 		final Font f = inputField.getFont();
-		final Font f2 = new Font("Arial", f.getStyle(), f.getSize());
+		final Font f2 = new Font("Arial", f.getStyle(), f.getSize() + 2);
 		inputField.setFont(f2);
 		inputField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-		inputField.setPreferredSize(new Dimension(200, inputField.getPreferredSize().height));
 		inputField.setText(defaultText != null ? defaultText : "");
 		inputField.addKeyListener(new KeyAdapter() {
 			@Override
