@@ -73,21 +73,21 @@ public class ApplicationUpdateUtilities {
 				throw new Exception("Invalid version index location");
 			}
 
-			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(updateParent, versionIndexFileLocation, proxyConfiguration, applicationName, applicationVersion);
+			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(versionIndexFileLocation, proxyConfiguration, applicationName, applicationVersion);
 			if ((newVersionAvailable != null && username != null)
 					|| askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
 				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, restartParameter, restartAfterUpdate);
 			}
 		} catch (final Exception e) {
 			if (updateParent != null) {
-				showUpdateError(updateParent, "Update error while executing update:\n" + e.getMessage());
+				showUpdateError(updateParent, getI18NString("updateErrorVersionCheck", e.getMessage()));
 			} else {
 				throw e;
 			}
 		}
 	}
 
-	public static Tuple<Version, String> checkForNewVersionAvailable(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion) throws Exception {
+	public static Tuple<Version, String> checkForNewVersionAvailable(final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion) throws Exception {
 		try {
 			if (Utilities.isEmpty(versionIndexFileLocation)) {
 				throw new Exception("Invalid version index location");
@@ -163,12 +163,7 @@ public class ApplicationUpdateUtilities {
 				return null;
 			}
 		} catch (final Exception e) {
-			if (updateParent != null) {
-				showUpdateError(updateParent, "Update error while checking for new version:\n" + e.getMessage());
-				return null;
-			} else {
-				throw e;
-			}
+			throw e;
 		}
 	}
 
@@ -645,6 +640,7 @@ public class ApplicationUpdateUtilities {
 				case "enterDownloadCredentials": pattern = "Bitte Userdaten für den Download eingeben"; break;
 				case "enterDownloadUserName": pattern = "Bitte Passwort für Download eingeben"; break;
 				case "enterDownloadPassword": pattern = "Bitte Usernamen für Download eingeben"; break;
+				case "updateErrorVersionCheck": pattern = "Fehler beim Ermitteln der aktuellsten Version für ein Update der Applikation:\n{0}"; break;
 				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
@@ -658,6 +654,7 @@ public class ApplicationUpdateUtilities {
 				case "enterDownloadCredentials": pattern = "Enter credentials for download"; break;
 				case "enterDownloadUserName": pattern = "Enter password for download"; break;
 				case "enterDownloadPassword": pattern = "Enter username for download"; break;
+				case "updateErrorVersionCheck": pattern = "Update error while checking for new version:\n{0}"; break;
 				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
