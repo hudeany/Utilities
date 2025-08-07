@@ -94,7 +94,11 @@ public class ApplicationUpdateUtilities {
 			} else if (!NetworkUtilities.checkForNetworkConnection()) {
 				throw new Exception("error.missingNetworkConnection");
 			} else if (!NetworkUtilities.ping(versionIndexFileLocation, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation))) {
-				throw new Exception("error.missingInternetConnection");
+				if (proxyConfiguration == null) {
+					throw new Exception("error.missingInternetConnection: " + versionIndexFileLocation);
+				} else {
+					throw new Exception("error.missingInternetConnection (using ProxyConfiguration " + proxyConfiguration.getProxyConfigurationType() + "): " + versionIndexFileLocation);
+				}
 			}
 
 			Version availableVersion = null;
