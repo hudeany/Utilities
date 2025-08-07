@@ -67,7 +67,7 @@ public class ApplicationUpdateUtilities {
 	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
 	public static final String CONFIG_NEXT_DAILY_UPDATE_CHECK = "NextDailyUpdateCheck";
 
-	public static void executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
+	public static boolean executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
 		try {
 			if (Utilities.isEmpty(versionIndexFileLocation)) {
 				throw new Exception("Invalid version index location");
@@ -78,9 +78,11 @@ public class ApplicationUpdateUtilities {
 					|| askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
 				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, restartParameter, restartAfterUpdate);
 			}
+			return true;
 		} catch (final Exception e) {
 			if (updateParent != null) {
 				showUpdateError(updateParent, getI18NString("updateErrorVersionCheck", e.getMessage()));
+				return false;
 			} else {
 				throw e;
 			}
