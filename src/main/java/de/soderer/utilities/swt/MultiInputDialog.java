@@ -60,7 +60,6 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 			label.setText(text);
 
 			final Text textField = new Text(shell, SWT.BORDER);
-			textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 			if (defaultTexts != null && defaultTexts.length > index && defaultTexts[index] != null) {
 				textField.setText(defaultTexts[index]);
 			}

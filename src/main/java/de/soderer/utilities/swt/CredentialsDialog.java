@@ -66,7 +66,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 
 	@Override
 	protected void createComponents(final Shell shell) throws Exception {
-		shell.setLayout(new GridLayout(1, true));
+		shell.setLayout(new GridLayout(1, false));
 
 		if (Utilities.isNotBlank(text)) {
 			final StyledText styledText = new StyledText(shell, SWT.NONE);
@@ -77,13 +77,20 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			styledText.setEditable(false);
 		}
 
+		final Composite credentialsComposite = new Composite(shell, SWT.NONE);
+		credentialsComposite.setLayout(new GridLayout(2, false));
+
 		if (aquireUsername) {
-			final Label usernameLabel = new Label(shell, SWT.NONE);
-			usernameLabel.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, true));
+			final Label usernameLabel = new Label(credentialsComposite, SWT.NONE);
+			usernameLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 			usernameLabel.setText(text_Username);
 
-			final Text usernameTextField = new Text(shell, SWT.BORDER);
-			usernameTextField.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
+			final Text usernameTextField = new Text(credentialsComposite, SWT.BORDER);
+
+			final GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1);
+			gridData.widthHint = 200;
+			usernameTextField.setLayoutData(gridData);
+
 			usernameTextField.setText("");
 			usernameTextField.addModifyListener(new ModifyListener() {
 				@Override
@@ -105,12 +112,16 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		}
 
 		if (aquirePassword) {
-			final Label passwordLabel = new Label(shell, SWT.NONE);
-			passwordLabel.setLayoutData(new GridData(SWT.LEFT, SWT.UP, true, true));
+			final Label passwordLabel = new Label(credentialsComposite, SWT.NONE);
+			passwordLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 			passwordLabel.setText(text_Password);
 
-			final Text passwordTextField = new Text(shell, SWT.BORDER | SWT.PASSWORD);
-			passwordTextField.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
+			final Text passwordTextField = new Text(credentialsComposite, SWT.BORDER | SWT.PASSWORD);
+
+			final GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, true, true, 1, 1);
+			gridData.widthHint = 200;
+			passwordTextField.setLayoutData(gridData);
+
 			passwordTextField.setText("");
 			password = "".toCharArray();
 			passwordTextField.addModifyListener(new ModifyListener() {
