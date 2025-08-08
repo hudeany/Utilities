@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
@@ -15,7 +16,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
@@ -32,7 +32,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 	private String defaultText = null;
 
 	public SimpleInputDialog(final Shell shell, final String title, final String text) {
-		super(shell, title);
+		super(SwtUtilities.createCenteredShellIfNeeded(shell), title);
 
 		this.text = text;
 	}
@@ -53,11 +53,19 @@ public class SimpleInputDialog extends ModalDialog<String> {
 	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
 
-		final Label label = new Label(shell, SWT.NONE);
-		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
-		label.setText(text);
+		final StyledText styledText = new StyledText(shell, SWT.V_SCROLL | SWT.H_SCROLL | SWT.MULTI);
+		styledText.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
+		styledText.setLayout(SwtUtilities.createSmallMarginGridLayout(1, false));
+		styledText.setText(text);
+		styledText.setBackground(shell.getBackground());
+		styledText.setAlwaysShowScrollBars(false);
+		styledText.setEditable(false);
 
-		textField = new Text(shell, SWT.BORDER);
+		final Composite textFieldComposite = new Composite(shell, SWT.NONE);
+		textFieldComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		textFieldComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
+
+		textField = new Text(textFieldComposite, SWT.BORDER);
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 		textField.setText(defaultText != null ? defaultText : "");
 		textField.addModifyListener(new ModifyListener() {
@@ -115,6 +123,15 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		});
 
 		shell.pack();
+
+		if (shell.getSize().x > 600 || shell.getSize().y > 400) {
+			shell.setSize(Math.min(600, shell.getSize().x), Math.min(400, shell.getSize().y));
+		}
+		if (!styledText.getHorizontalBar().getVisible()) {
+			styledText.setSize(styledText.getSize().x, styledText.getSize().y - styledText.getHorizontalBar().getSize().y);
+			shell.setSize(shell.getSize().x, shell.getSize().y - styledText.getHorizontalBar().getSize().y);
+		}
+		textField.forceFocus();
 	}
 
 	private static String getI18NString(final String resourceKey, final Object... arguments) {

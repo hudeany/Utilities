@@ -21,7 +21,7 @@ public class SwtSimpleInputDialogManuallyTest {
 
 			String bigText = "";
 			for (int i = 0; i < 100; i++) {
-				bigText += "Long text multiple lines. Long text multiple lines. Long text multiple lines. Long text multiple lines. Long text multiple lines.\n";
+				bigText += "Line " + i + ": Long text multiple lines. Long text multiple lines. Long text multiple lines. Long text multiple lines. Long text multiple lines.\n";
 			}
 			new SimpleInputDialog(null, "Test Title", bigText).open();
 		} catch (final Exception e) {

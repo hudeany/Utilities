@@ -8,11 +8,14 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Path;
 import org.eclipse.swt.graphics.Pattern;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.graphics.TextLayout;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Monitor;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
@@ -114,5 +117,19 @@ public class SwtUtilities {
 		gridLayout.marginWidth = 5;
 		gridLayout.marginHeight = 5;
 		return gridLayout;
+	}
+
+	public static Shell createCenteredShellIfNeeded(final Shell shell) {
+		Shell newShell = shell;
+		if (newShell == null) {
+			newShell = new Shell();
+			final Monitor primary = newShell.getDisplay().getPrimaryMonitor ();
+			final Rectangle bounds = primary.getBounds ();
+			final Rectangle rect = newShell.getBounds ();
+			final int x = bounds.x + (bounds.width - rect.width) / 2;
+			final int y = bounds.y + (bounds.height - rect.height) / 2;
+			newShell.setLocation (x, y);
+		}
+		return newShell;
 	}
 }

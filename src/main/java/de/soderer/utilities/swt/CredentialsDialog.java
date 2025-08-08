@@ -4,6 +4,7 @@ import java.text.MessageFormat;
 import java.util.Locale;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
@@ -46,7 +47,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 	private boolean rememberCredentials = false;
 
 	public CredentialsDialog(final Shell shell, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword) {
-		this(shell, title, text, aquireUsername, aquirePassword, getI18NString("username"), getI18NString("password"), getI18NString("ok"), getI18NString("cancel"));
+		this(SwtUtilities.createCenteredShellIfNeeded(shell), title, text, aquireUsername, aquirePassword, getI18NString("username"), getI18NString("password"), getI18NString("ok"), getI18NString("cancel"));
 	}
 
 	public CredentialsDialog(final Shell shell, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword,
@@ -68,9 +69,12 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		shell.setLayout(new GridLayout(1, true));
 
 		if (Utilities.isNotBlank(text)) {
-			final Label label = new Label(shell, SWT.NONE);
-			label.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
-			label.setText(text);
+			final StyledText styledText = new StyledText(shell, SWT.NONE);
+			styledText.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
+			styledText.setLayout(SwtUtilities.createSmallMarginGridLayout(1, false));
+			styledText.setText(text);
+			styledText.setBackground(shell.getBackground());
+			styledText.setEditable(false);
 		}
 
 		if (aquireUsername) {
@@ -97,6 +101,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 					}
 				}
 			});
+			usernameTextField.forceFocus();
 		}
 
 		if (aquirePassword) {
@@ -124,6 +129,9 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 					}
 				}
 			});
+			if (!aquireUsername) {
+				passwordTextField.forceFocus();
+			}
 		}
 
 		if (Utilities.isNotBlank(rememberCredentialsText)) {

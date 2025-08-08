@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -28,7 +29,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 	private final List<Text> textFields = new ArrayList<>();
 
 	public MultiInputDialog(final Shell shell, final String title, final String prologText, final String... labelTexts) {
-		super(shell, title);
+		super(SwtUtilities.createCenteredShellIfNeeded(shell), title);
 
 		this.prologText = prologText;
 		this.labelTexts = labelTexts;
@@ -44,9 +45,12 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 		shell.setLayout(new GridLayout(2, false));
 
 		if (Utilities.isNotBlank(prologText)) {
-			final Label label = new Label(shell, SWT.NONE);
-			label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
-			label.setText(prologText);
+			final StyledText styledText = new StyledText(shell, SWT.NONE);
+			styledText.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
+			styledText.setLayout(SwtUtilities.createSmallMarginGridLayout(1, false));
+			styledText.setText(prologText);
+			styledText.setBackground(shell.getBackground());
+			styledText.setEditable(false);
 		}
 
 		int index = 0;
@@ -78,6 +82,10 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 			final GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
 			gridData.widthHint = 200;
 			textField.setLayoutData(gridData);
+
+			if (index == 0) {
+				textField.forceFocus();
+			}
 
 			textFields.add(textField);
 
