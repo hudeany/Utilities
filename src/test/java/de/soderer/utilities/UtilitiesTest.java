@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +50,27 @@ public class UtilitiesTest {
 			final String encodedData = Utilities.encodeBase64(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
 			final byte[] decodedData = Utilities.decodeBase64(encodedData);
 			Assert.assertEquals(TextUtilities.GERMAN_TEST_STRING, new String(decodedData, StandardCharsets.UTF_8));
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void test_Base64_maxLineLength() {
+		try {
+			final String shortDataString = "R0lGODdhDQAIAIAAAAAAANnZ2SwAAAAADQAIAAACF4SDGQar3xxbJ9p0qa7R0YxwzaFME1IAADs=";
+			final byte[] shortData = Utilities.decodeBase64(shortDataString);
+			final String encodedShortData = Utilities.encodeBase64(shortData, 80, "\n");
+			Assert.assertEquals(shortDataString, encodedShortData);
+			final byte[] decodedShortData = Utilities.decodeBase64(encodedShortData);
+			Assert.assertTrue(Arrays.equals(shortData, decodedShortData));
+
+			final String dataString = "R0lGODdhDQAIAIAAAAAAANnZ2SwAAAAADQAIAAACF4SDGQar3xxbJ9p0qa7R0YxwzYxwzYxwzYxwzYxwzYxwzaFME1IAADs=";
+			final byte[] data = Utilities.decodeBase64(dataString);
+			final String encodedData = Utilities.encodeBase64(data, 80, "\n");
+			Assert.assertEquals("R0lGODdhDQAIAIAAAAAAANnZ2SwAAAAADQAIAAACF4SDGQar3xxbJ9p0qa7R0YxwzYxwzYxwzYxwzYxw\nzYxwzaFME1IAADs=", encodedData);
+			final byte[] decodedData = Utilities.decodeBase64(encodedData);
+			Assert.assertTrue(Arrays.equals(data, decodedData));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
