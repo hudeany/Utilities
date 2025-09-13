@@ -1418,7 +1418,7 @@ public class DbUtilities {
 				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setNString(1, tableName);
+					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							long characterLength = resultSet.getLong("character_maximum_length");
@@ -1688,6 +1688,22 @@ public class DbUtilities {
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
 					preparedStatement.setNString(1, tableName);
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						if (resultSet.next()) {
+							final String columnName = resultSet.getString(1);
+							String returnValue = resultSet.getString(2);
+							if ("NULL".equalsIgnoreCase(returnValue)) {
+								returnValue = null;
+							}
+							returnMap.put(columnName.toLowerCase(), returnValue);
+						}
+					}
+				}
+			} else if (DbVendor.PostgreSQL == dbVendor) {
+				final String sql = "SELECT column_name, column_default FROM information_schema.columns WHERE table_name = ?";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					preparedStatement.setString(1, tableName);
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);

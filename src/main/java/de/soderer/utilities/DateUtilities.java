@@ -127,20 +127,24 @@ public class DateUtilities {
 	}
 
 	public static String replaceDatePatternInString(final String stringWithPattern, final LocalDateTime localDateTime) {
-		String returnString = stringWithPattern;
-		returnString = returnString.replace("[yyyy]", String.format("%04d", localDateTime.getYear()));
-		returnString = returnString.replace("[YYYY]", String.format("%04d", localDateTime.getYear()));
-		returnString = returnString.replace("[MM]", String.format("%02d", localDateTime.getMonthValue()));
-		returnString = returnString.replace("[dd]", String.format("%02d", localDateTime.getDayOfMonth()));
-		returnString = returnString.replace("[DD]", String.format("%02d", localDateTime.getDayOfMonth()));
-		returnString = returnString.replace("[HH]", String.format("%02d", localDateTime.getHour()));
-		returnString = returnString.replace("[hh]", String.format("%02d", localDateTime.getHour()));
-		returnString = returnString.replace("[mm]", String.format("%02d", localDateTime.getMinute()));
-		returnString = returnString.replace("[SS]", String.format("%02d", localDateTime.getSecond()));
-		returnString = returnString.replace("[ss]", String.format("%02d", localDateTime.getSecond()));
-		returnString = returnString.replace("\\[", "[");
-		returnString = returnString.replace("\\]", "]");
-		return returnString;
+		if (stringWithPattern == null) {
+			return null;
+		} else {
+			String returnString = stringWithPattern;
+			returnString = returnString.replace("[yyyy]", String.format("%04d", localDateTime.getYear()));
+			returnString = returnString.replace("[YYYY]", String.format("%04d", localDateTime.getYear()));
+			returnString = returnString.replace("[MM]", String.format("%02d", localDateTime.getMonthValue()));
+			returnString = returnString.replace("[dd]", String.format("%02d", localDateTime.getDayOfMonth()));
+			returnString = returnString.replace("[DD]", String.format("%02d", localDateTime.getDayOfMonth()));
+			returnString = returnString.replace("[HH]", String.format("%02d", localDateTime.getHour()));
+			returnString = returnString.replace("[hh]", String.format("%02d", localDateTime.getHour()));
+			returnString = returnString.replace("[mm]", String.format("%02d", localDateTime.getMinute()));
+			returnString = returnString.replace("[SS]", String.format("%02d", localDateTime.getSecond()));
+			returnString = returnString.replace("[ss]", String.format("%02d", localDateTime.getSecond()));
+			returnString = returnString.replace("\\[", "[");
+			returnString = returnString.replace("\\]", "]");
+			return returnString;
+		}
 	}
 
 	public static LocalDateTime calculateETA(final LocalDateTime start, final long itemsToDo, final long itemsDone) {
