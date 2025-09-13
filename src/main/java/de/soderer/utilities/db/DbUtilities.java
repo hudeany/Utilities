@@ -2196,9 +2196,9 @@ public class DbUtilities {
 					if (Utilities.isNotBlank(tablePattern)) {
 						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						if (tablePattern.startsWith("!")) {
-							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "' ESCAPE '\\'";
+							tableQuery += " WHERE table_name NOT LIKE '" + tablePattern.substring(1) + "' ESCAPE '\\'";
 						} else {
-							tableQuery += " AND table_name LIKE '" + tablePattern + "' ESCAPE '\\'";
+							tableQuery += " WHERE table_name LIKE '" + tablePattern + "' ESCAPE '\\'";
 						}
 					}
 				}
