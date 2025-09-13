@@ -378,7 +378,7 @@ public class DbUtilities {
 		} else if (DbVendor.Cassandra == dbVendor) {
 			return "jdbc:cassandra://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + "/" + dbName + "?primarydc=DC1&backupdc=DC2&consistency=QUORUM";
 		} else if (DbVendor.MsSQL == dbVendor) {
-			return "jdbc:sqlserver://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + ";database=" + dbName;
+			return "jdbc:sqlserver://" + dbServerHostname + ":" + (dbServerPort <= 0 ? dbVendor.defaultPort : dbServerPort) + ";database=" + dbName + ";integratedSecurity=true";
 		} else {
 			throw new Exception("Unknown database vendor");
 		}
