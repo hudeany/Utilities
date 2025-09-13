@@ -971,6 +971,8 @@ public class DbUtilities {
 					return DbVendor.Firebird;
 				} else if (productName != null && productName.toLowerCase().contains("cassandra")) {
 					return DbVendor.Cassandra;
+				} else if (productName != null && productName.toLowerCase().contains("microsoft")) {
+					return DbVendor.MsSQL;
 				} else {
 					throw new Exception("Unknown database vendor: " + productName);
 				}
