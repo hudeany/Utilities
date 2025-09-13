@@ -1479,6 +1479,37 @@ public class DbUtilities {
 						}
 					}
 				}
+			} else if (DbVendor.MsSQL == dbVendor) {
+				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE LOWER(table_name) = LOWER(?)";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					preparedStatement.setNString(1, tableName);
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						while (resultSet.next()) {
+							long characterLength = resultSet.getLong("character_maximum_length");
+							if (resultSet.wasNull()) {
+								characterLength = -1;
+							}
+							int numericPrecision = resultSet.getInt("numeric_precision");
+							if (resultSet.wasNull()) {
+								numericPrecision = -1;
+							}
+							int numericScale = resultSet.getInt("numeric_scale");
+							if (resultSet.wasNull()) {
+								numericScale = -1;
+							}
+							final boolean isNullable = "yes".equalsIgnoreCase(resultSet.getString("is_nullable"));
+
+							final String defaultValue = resultSet.getString("column_default");
+							boolean isAutoIncrement = false;
+							if (defaultValue != null && defaultValue.toLowerCase().startsWith("nextval(")) {
+								isAutoIncrement = true;
+							}
+
+							returnMap.put(resultSet.getString("column_name"), new DbColumnType(resultSet.getString("data_type"), characterLength, numericPrecision, numericScale, isNullable, isAutoIncrement));
+						}
+					}
+				}
 			} else {
 				throw new Exception("Unsupported database vendor");
 			}
@@ -2159,7 +2190,28 @@ public class DbUtilities {
 					}
 					return tableNamesToExport;
 				}
+			} else if (DbVendor.MsSQL == dbVendor) {
+				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables";
+				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
+					if (Utilities.isNotBlank(tablePattern)) {
+						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						if (tablePattern.startsWith("!")) {
+							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "' ESCAPE '\\'";
+						} else {
+							tableQuery += " AND table_name LIKE '" + tablePattern + "' ESCAPE '\\'";
+						}
+					}
+				}
+				tableQuery += " ORDER BY table_name";
 
+				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
+					statement.setFetchSize(100);
+					final List<String> tableNamesToExport = new ArrayList<>();
+					while (resultSet.next()) {
+						tableNamesToExport.add(resultSet.getString("table_name"));
+					}
+					return tableNamesToExport;
+				}
 			} else {
 				throw new Exception("Unknown database vendor");
 			}
