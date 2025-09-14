@@ -507,7 +507,7 @@ public class DbUtilities {
 			throw new Exception("Cannot create database connection: Configured trustStoreFile '" + trustStoreFile.getAbsolutePath() + "' does not exist");
 		}
 
-		if (secureConnection && dbVendor != DbVendor.Oracle && dbVendor != DbVendor.MySQL && dbVendor != DbVendor.MariaDB) {
+		if (secureConnection && dbVendor != DbVendor.Oracle && dbVendor != DbVendor.MySQL && dbVendor != DbVendor.MariaDB && dbVendor != DbVendor.MsSQL) {
 			throw new Exception("Secure connection is only supported for database vendors Oracle, MySQL, MariaDB");
 		}
 
