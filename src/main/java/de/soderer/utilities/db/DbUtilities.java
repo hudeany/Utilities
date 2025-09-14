@@ -508,7 +508,7 @@ public class DbUtilities {
 		}
 
 		if (secureConnection && dbVendor != DbVendor.Oracle && dbVendor != DbVendor.MySQL && dbVendor != DbVendor.MariaDB && dbVendor != DbVendor.MsSQL) {
-			throw new Exception("Secure connection is only supported for database vendors Oracle, MySQL, MariaDB");
+			throw new Exception("Secure connection is only supported for database vendors Oracle, MySQL, MariaDB, MsSQL");
 		}
 
 		try {
