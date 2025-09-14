@@ -261,8 +261,8 @@ public class DbUtilities {
 	}
 
 	public static String generateUrlConnectionString(final DbVendor dbVendor, String dbServerHostname, int dbServerPort, String dbName, final boolean secureConnection, final File trustStoreFile, final char[] trustStorePassword, final String trustedCN) throws Exception {
-		if (secureConnection && dbVendor != DbVendor.Oracle && dbVendor != DbVendor.MySQL && dbVendor != DbVendor.MariaDB) {
-			throw new Exception("Secure connection is only supported for database vendors Oracle, MySQL, MariaDB");
+		if (secureConnection && dbVendor != DbVendor.Oracle && dbVendor != DbVendor.MySQL && dbVendor != DbVendor.MariaDB && dbVendor != DbVendor.MsSQL) {
+			throw new Exception("Secure connection is only supported for database vendors Oracle, MySQL, MariaDB, MsSQL");
 		}
 
 		if (DbVendor.Oracle == dbVendor) {
