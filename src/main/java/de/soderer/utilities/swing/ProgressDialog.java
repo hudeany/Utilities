@@ -237,8 +237,10 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					commentStringFormat = newCommentStringFormat;
-					commentLabel.setText(commentStringFormat.replace("{0}", "n/a").replace("{1}", "n/a").replace("{2}", "n/a"));
+					if (commentLabel != null) {
+						commentStringFormat = newCommentStringFormat;
+						commentLabel.setText(commentStringFormat.replace("{0}", "n/a").replace("{1}", "n/a").replace("{2}", "n/a"));
+					}
 				}
 			});
 		}

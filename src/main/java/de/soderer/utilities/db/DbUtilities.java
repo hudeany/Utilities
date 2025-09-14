@@ -2397,8 +2397,8 @@ public class DbUtilities {
 			}
 		} else if (dbVendor == DbVendor.MsSQL) {
 			switch (simpleDataType) {
-				case Blob: return "VARBINARY";
-				case Clob: return "TEXT";
+				case Blob: return "VARBINARY(MAX)";
+				case Clob: return "VARCHAR(MAX)";
 				case DateTime: return "DATETIME";
 				case Date: return "DATE";
 				case Integer: return "INT";
