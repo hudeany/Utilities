@@ -1646,7 +1646,7 @@ public class DbUtilities {
 	}
 
 
-	public static CaseInsensitiveMap<String> getColumnDefaultValues(final DataSource dataSource, final String tableName) throws Exception {
+	public static CaseInsensitiveMap<Object> getColumnDefaultValues(final DataSource dataSource, final String tableName) throws Exception {
 		if (dataSource == null) {
 			throw new Exception("Invalid empty dataSource for getColumnDefaultValue");
 		} else if (Utilities.isBlank(tableName)) {
@@ -1658,13 +1658,13 @@ public class DbUtilities {
 		}
 	}
 
-	public static CaseInsensitiveMap<String> getColumnDefaultValues(final Connection connection, final String tableName) throws Exception {
+	public static CaseInsensitiveMap<Object> getColumnDefaultValues(final Connection connection, final String tableName) throws Exception {
 		if (connection == null) {
 			throw new Exception("Invalid empty connection for getColumnDefaultValue");
 		} else if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getColumnDefaultValues");
 		} else {
-			final CaseInsensitiveMap<String> returnMap = new CaseInsensitiveMap<>();
+			final CaseInsensitiveMap<Object> returnMap = new CaseInsensitiveMap<>();
 			final DbVendor dbVendor = getDbVendor(connection);
 			if (DbVendor.Oracle == dbVendor) {
 				final String sql = "SELECT column_name, data_default FROM user_tab_cols WHERE table_name = ?";
@@ -1675,15 +1675,13 @@ public class DbUtilities {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
 							final String defaultvalue = resultSet.getString(2);
-							String returnValue;
 							if (defaultvalue == null || "null".equalsIgnoreCase(defaultvalue)) {
-								returnValue = null;
+								returnMap.put(columnName.toLowerCase(), null);
 							} else if (defaultvalue.startsWith("'") && defaultvalue.endsWith("'")) {
-								returnValue = defaultvalue.substring(1, defaultvalue.length() - 1);
+								returnMap.put(columnName.toLowerCase(), defaultvalue.substring(1, defaultvalue.length() - 1));
 							} else {
-								returnValue = defaultvalue;
+								returnMap.put(columnName.toLowerCase(), defaultvalue);
 							}
-							returnMap.put(columnName.toLowerCase(), returnValue);
 						}
 					}
 				}
@@ -1695,11 +1693,11 @@ public class DbUtilities {
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
-							String returnValue = resultSet.getString(2);
-							if ("NULL".equalsIgnoreCase(returnValue)) {
-								returnValue = null;
+							String defaultvalue = resultSet.getString(2);
+							if ("NULL".equalsIgnoreCase(defaultvalue)) {
+								defaultvalue = null;
 							}
-							returnMap.put(columnName.toLowerCase(), returnValue);
+							returnMap.put(columnName.toLowerCase(), defaultvalue);
 						}
 					}
 				}
@@ -1711,11 +1709,19 @@ public class DbUtilities {
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
-							String returnValue = resultSet.getString(2);
-							if ("NULL".equalsIgnoreCase(returnValue)) {
-								returnValue = null;
+							String defaultvalue = resultSet.getString(2);
+							if (defaultvalue != null && defaultvalue.toLowerCase().endsWith("::integer")) {
+								defaultvalue = defaultvalue.substring(0, defaultvalue.toLowerCase().indexOf("::integer"));
+								if (defaultvalue.trim().startsWith("'") && defaultvalue.trim().endsWith("'")) {
+									defaultvalue = defaultvalue.trim().substring(1, defaultvalue.trim().length() - 1);
+								}
+								returnMap.put(columnName.toLowerCase(), Integer.parseInt(defaultvalue));
+							} else if ("NULL".equalsIgnoreCase(defaultvalue)) {
+								defaultvalue = null;
+								returnMap.put(columnName.toLowerCase(), defaultvalue);
+							} else {
+								returnMap.put(columnName.toLowerCase(), defaultvalue);
 							}
-							returnMap.put(columnName.toLowerCase(), returnValue);
 						}
 					}
 				}
@@ -1727,11 +1733,11 @@ public class DbUtilities {
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
-							String returnValue = resultSet.getString(2);
-							if ("NULL".equalsIgnoreCase(returnValue)) {
-								returnValue = null;
+							String defaultvalue = resultSet.getString(2);
+							if ("NULL".equalsIgnoreCase(defaultvalue)) {
+								defaultvalue = null;
 							}
-							returnMap.put(columnName.toLowerCase(), returnValue);
+							returnMap.put(columnName.toLowerCase(), defaultvalue);
 						}
 					}
 				}
