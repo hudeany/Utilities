@@ -1525,13 +1525,16 @@ public class DbUtilities {
 		if (Utilities.isBlank(tableName)) {
 			throw new Exception("Invalid empty tableName for getTableEntriesNumber");
 		} else {
+			final String sqlStatmentString = "SELECT COUNT(*) FROM " + getSQLSafeString(tableName);
 			try (Statement statement = connection.createStatement();
-					ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM " + getSQLSafeString(tableName))) {
+					ResultSet resultSet = statement.executeQuery(sqlStatmentString)) {
 				if (resultSet.next()) {
 					return resultSet.getInt(1);
 				} else {
 					return 0;
 				}
+			} catch(final Exception e) {
+				throw new Exception("Cannot count lines of table '" + tableName + "': " + sqlStatmentString + "\n" + e.getMessage(), e);
 			}
 		}
 	}
