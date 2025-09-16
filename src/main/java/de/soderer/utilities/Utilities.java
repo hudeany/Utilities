@@ -685,7 +685,7 @@ public class Utilities {
 	 * @param siUnits
 	 * @return
 	 */
-	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignifiantDigits, final boolean keepTrailingZeros, final Locale locale) {
+	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignificantDigits, final boolean keepTrailingZeros, final Locale locale) {
 		final int unit = siUnits ? 1000 : 1024;
 		double interimValue = value.doubleValue();
 		String unitExtension = "";
@@ -713,15 +713,15 @@ public class Utilities {
 
 		int trailingDigits;
 		if (interimValue >= 1000) {
-			trailingDigits = amountOfSignifiantDigits - 4;
+			trailingDigits = amountOfSignificantDigits - 4;
 		} else if (interimValue >= 100) {
-			trailingDigits = amountOfSignifiantDigits - 3;
+			trailingDigits = amountOfSignificantDigits - 3;
 		} else if (interimValue >= 10) {
-			trailingDigits = amountOfSignifiantDigits - 2;
+			trailingDigits = amountOfSignificantDigits - 2;
 		} else if (interimValue >= 1) {
-			trailingDigits = amountOfSignifiantDigits - 1;
+			trailingDigits = amountOfSignificantDigits - 1;
 		} else {
-			trailingDigits = amountOfSignifiantDigits;
+			trailingDigits = amountOfSignificantDigits;
 		}
 
 		if (keepTrailingZeros) {
@@ -817,19 +817,19 @@ public class Utilities {
 
 			final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 			final DecimalFormat numberFormat;
-			final int amountOfSignifiantDigits = 5;
+			final int amountOfSignificantDigits = 5;
 
 			int trailingDigits;
 			if (interimValue >= 1000) {
-				trailingDigits = amountOfSignifiantDigits - 4;
+				trailingDigits = amountOfSignificantDigits - 4;
 			} else if (interimValue >= 100) {
-				trailingDigits = amountOfSignifiantDigits - 3;
+				trailingDigits = amountOfSignificantDigits - 3;
 			} else if (interimValue >= 10) {
-				trailingDigits = amountOfSignifiantDigits - 2;
+				trailingDigits = amountOfSignificantDigits - 2;
 			} else if (interimValue >= 1) {
-				trailingDigits = amountOfSignifiantDigits - 1;
+				trailingDigits = amountOfSignificantDigits - 1;
 			} else {
-				trailingDigits = amountOfSignifiantDigits;
+				trailingDigits = amountOfSignificantDigits;
 			}
 
 			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1)), decimalFormatSymbols);
