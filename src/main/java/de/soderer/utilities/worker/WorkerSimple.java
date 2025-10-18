@@ -53,6 +53,15 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 				parent.receiveProgressSignal(startTime, itemsToDo, itemsDone, itemsUnitSign);
 				lastProgressShow = LocalDateTime.now();
 			}
+
+			if (itemsToDo == itemsDone) {
+				// Ensure to let display show 100%
+				try {
+					Thread.sleep(progressDisplayDelayMilliseconds);
+				} catch (final InterruptedException e) {
+					// DO nothing
+				}
+			}
 		}
 	}
 
