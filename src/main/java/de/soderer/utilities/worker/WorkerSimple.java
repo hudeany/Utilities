@@ -58,7 +58,7 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 				// Ensure to let display show 100%
 				try {
 					Thread.sleep(progressDisplayDelayMilliseconds);
-				} catch (final InterruptedException e) {
+				} catch (@SuppressWarnings("unused") final InterruptedException e) {
 					// DO nothing
 				}
 			}
