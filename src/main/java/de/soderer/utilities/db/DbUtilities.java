@@ -2086,24 +2086,54 @@ public class DbUtilities {
 					return tableNamesToExport;
 				}
 			} else if (DbVendor.PostgreSQL == dbVendor) {
-				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog')";
+				tableQuery = "SELECT DISTINCT table_schema, table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog')";
+				final List<String> inclusionPatterns = new ArrayList<>();
 				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
 					if (Utilities.isNotBlank(tablePattern)) {
-						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						boolean exlusionPattern = false;
 						if (tablePattern.startsWith("!")) {
-							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "' ESCAPE '\\'";
+							tablePattern = tablePattern.substring(1);
+							exlusionPattern = true;
+						}
+						String schemaName;
+						String tableNamePattern;
+						if (tablePattern.contains(".")) {
+							schemaName = tablePattern.substring(0, tablePattern.lastIndexOf("."));
+							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						} else {
-							tableQuery += " AND table_name LIKE '" + tablePattern + "' ESCAPE '\\'";
+							schemaName = null;
+							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						}
+
+						if (exlusionPattern) {
+							if (schemaName == null) {
+								tableQuery += " AND table_name NOT LIKE '" + tableNamePattern + "' ESCAPE '\\'";
+							} else {
+								tableQuery += " AND NOT (table_schema = '" + schemaName + "' AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')";
+							}
+						} else {
+							if (schemaName == null) {
+								inclusionPatterns.add("table_name LIKE '" + tableNamePattern + "' ESCAPE '\\'");
+							} else {
+								inclusionPatterns.add("(table_schema = '" + schemaName + "' AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							}
 						}
 					}
 				}
-				tableQuery += " ORDER BY table_name";
+				if (inclusionPatterns.size() > 0) {
+					tableQuery += " AND (" + Utilities.join(inclusionPatterns, " OR ") + ")";
+				}
+				tableQuery += " ORDER BY table_schema, table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
 					statement.setFetchSize(100);
 					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
-						tableNamesToExport.add(resultSet.getString("table_name"));
+						if (Utilities.isNotBlank(resultSet.getString("table_schema"))) {
+							tableNamesToExport.add(resultSet.getString("table_schema") + "." + resultSet.getString("table_name"));
+						} else {
+							tableNamesToExport.add(resultSet.getString("table_name"));
+						}
 					}
 					return tableNamesToExport;
 				}
