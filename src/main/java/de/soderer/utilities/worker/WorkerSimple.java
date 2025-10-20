@@ -53,15 +53,6 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 				parent.receiveProgressSignal(startTime, itemsToDo, itemsDone, itemsUnitSign);
 				lastProgressShow = LocalDateTime.now();
 			}
-
-			if (itemsToDo == itemsDone) {
-				// Ensure to let display show 100%
-				try {
-					Thread.sleep(progressDisplayDelayMilliseconds);
-				} catch (@SuppressWarnings("unused") final InterruptedException e) {
-					// DO nothing
-				}
-			}
 		}
 	}
 
@@ -189,6 +180,12 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			}
 			isDone = true;
 			if (parent != null) {
+				// Ensure to let display show 100%
+				try {
+					Thread.sleep(progressDisplayDelayMilliseconds);
+				} catch (@SuppressWarnings("unused") final InterruptedException e) {
+					// Do nothing
+				}
 				parent.receiveDoneSignal(startTime, endTime, itemsDone, itemsUnitSign, getResultText());
 			}
 		}
