@@ -2031,57 +2031,118 @@ public class DbUtilities {
 					return tableNamesToExport;
 				}
 			} else if (DbVendor.MySQL == dbVendor) {
-				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema = SCHEMA()";
+				final List<String> inclusionPatterns = new ArrayList<>();
+				final List<String> exclusionPatterns = new ArrayList<>();
 				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
 					if (Utilities.isNotBlank(tablePattern)) {
-						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						boolean exlusionPattern = false;
 						if (tablePattern.startsWith("!")) {
-							tableQuery += " AND table_name NOT LIKE '" + tablePattern.substring(1) + "'";
+							tablePattern = tablePattern.substring(1);
+							exlusionPattern = true;
+						}
+						String schemaName;
+						String tableNamePattern;
+						if (tablePattern.contains(".")) {
+							schemaName = tablePattern.substring(0, tablePattern.lastIndexOf("."));
+							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						} else {
-							tableQuery += " AND table_name LIKE '" + tablePattern + "'";
+							schemaName = null;
+							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						}
+
+						if (exlusionPattern) {
+							if (schemaName == null) {
+								exclusionPatterns.add("NOT (table_schema = SCHEMA() AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							} else {
+								exclusionPatterns.add("NOT (table_schema = '" + schemaName + "' AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							}
+						} else {
+							if (schemaName == null) {
+								inclusionPatterns.add("(table_schema = SCHEMA() AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							} else {
+								inclusionPatterns.add("(table_schema = '" + schemaName + "' AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							}
 						}
 					}
 				}
-				tableQuery += " ORDER BY table_name";
+				tableQuery = "SELECT DISTINCT table_schema, table_name FROM information_schema.tables";
+				if (inclusionPatterns.size() > 0) {
+					tableQuery += " WHERE (" + Utilities.join(inclusionPatterns, " OR ") + ")";
+					if (exclusionPatterns.size() > 0) {
+						tableQuery += " AND " + Utilities.join(exclusionPatterns, " AND ");
+					}
+				} else if (exclusionPatterns.size() > 0) {
+					tableQuery += " WHERE " + Utilities.join(exclusionPatterns, " AND ");
+				}
+				tableQuery += " ORDER BY table_schema, table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
 					statement.setFetchSize(100);
 					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
-						tableNamesToExport.add(resultSet.getString("table_name"));
+						if (Utilities.isNotBlank(resultSet.getString("table_schema"))) {
+							tableNamesToExport.add(resultSet.getString("table_schema") + "." + resultSet.getString("table_name"));
+						} else {
+							tableNamesToExport.add(resultSet.getString("table_name"));
+						}
 					}
 					return tableNamesToExport;
 				}
 			} else if (DbVendor.MariaDB == dbVendor) {
-				tableQuery = "SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema = SCHEMA()";
-				final List<String> positivePatterns = new ArrayList<>();
-				final List<String> negativePatterns = new ArrayList<>();
+				final List<String> inclusionPatterns = new ArrayList<>();
+				final List<String> exclusionPatterns = new ArrayList<>();
 				for (String tablePattern : tablePatternExpression.split(",| |;|\\||\n")) {
 					if (Utilities.isNotBlank(tablePattern)) {
-						tablePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						boolean exlusionPattern = false;
 						if (tablePattern.startsWith("!")) {
-							negativePatterns.add(tablePattern.substring(1));
+							tablePattern = tablePattern.substring(1);
+							exlusionPattern = true;
+						}
+						String schemaName;
+						String tableNamePattern;
+						if (tablePattern.contains(".")) {
+							schemaName = tablePattern.substring(0, tablePattern.lastIndexOf("."));
+							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						} else {
-							positivePatterns.add(tablePattern);
+							schemaName = null;
+							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+						}
+
+						if (exlusionPattern) {
+							if (schemaName == null) {
+								exclusionPatterns.add("NOT (table_schema = SCHEMA() AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							} else {
+								exclusionPatterns.add("NOT (table_schema = '" + schemaName + "' AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							}
+						} else {
+							if (schemaName == null) {
+								inclusionPatterns.add("(table_schema = SCHEMA() AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							} else {
+								inclusionPatterns.add("(table_schema = '" + schemaName + "' AND table_name LIKE '" + tableNamePattern + "' ESCAPE '\\')");
+							}
 						}
 					}
 				}
-				if (positivePatterns.size() > 0) {
-					tableQuery += " AND (";
-					tableQuery += "table_name LIKE '" + Utilities.join(positivePatterns, "' OR table_name LIKE '") + "'";
-					tableQuery += ")";
+				tableQuery = "SELECT DISTINCT table_schema, table_name FROM information_schema.tables";
+				if (inclusionPatterns.size() > 0) {
+					tableQuery += " WHERE (" + Utilities.join(inclusionPatterns, " OR ") + ")";
+					if (exclusionPatterns.size() > 0) {
+						tableQuery += " AND " + Utilities.join(exclusionPatterns, " AND ");
+					}
+				} else if (exclusionPatterns.size() > 0) {
+					tableQuery += " WHERE " + Utilities.join(exclusionPatterns, " AND ");
 				}
-				if (negativePatterns.size() > 0) {
-					tableQuery += " AND (";
-					tableQuery += "table_name NOT LIKE '" + Utilities.join(negativePatterns, "' OR table_name LIKE '") + "'";
-					tableQuery += ")";
-				}
+				tableQuery += " ORDER BY table_schema, table_name";
 
 				try (ResultSet resultSet = statement.executeQuery(tableQuery)) {
 					statement.setFetchSize(100);
 					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
-						tableNamesToExport.add(resultSet.getString("table_name"));
+						if (Utilities.isNotBlank(resultSet.getString("table_schema"))) {
+							tableNamesToExport.add(resultSet.getString("table_schema") + "." + resultSet.getString("table_name"));
+						} else {
+							tableNamesToExport.add(resultSet.getString("table_name"));
+						}
 					}
 					return tableNamesToExport;
 				}
