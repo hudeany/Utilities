@@ -1212,7 +1212,7 @@ public class DbUtilities {
 					}
 				}
 			} else if (DbVendor.MySQL == dbVendor) {
-				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
+				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE LOWER(table_schema) = SCHEMA() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
 					preparedStatement.setNString(1, tableName);
@@ -1238,7 +1238,7 @@ public class DbUtilities {
 					}
 				}
 			} else if (DbVendor.MariaDB == dbVendor) {
-				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE table_schema = schema() AND LOWER(table_name) = LOWER(?)";
+				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, extra FROM information_schema.columns WHERE LOWER(table_schema) = SCHEMA() AND LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
 					preparedStatement.setNString(1, tableName);
@@ -1419,10 +1419,25 @@ public class DbUtilities {
 					}
 				}
 			} else if (DbVendor.PostgreSQL == dbVendor) {
-				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND LOWER(table_name) = LOWER(?)";
+				String schemaName;
+				String tableNameWithoutSchema;
+				if (tableName.contains(".")) {
+					schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+					tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+				} else {
+					schemaName = null;
+					tableNameWithoutSchema = tableName;
+				}
+				final String sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns"
+						+ " WHERE " + (schemaName != null ? "LOWER(table_schema) = LOWER(?) AND " : "") + "LOWER(table_name) = LOWER(?)";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					if (schemaName == null) {
+						preparedStatement.setString(1, tableNameWithoutSchema);
+					} else {
+						preparedStatement.setString(1, schemaName);
+						preparedStatement.setString(2, tableNameWithoutSchema);
+					}
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						while (resultSet.next()) {
 							long characterLength = resultSet.getLong("character_maximum_length");
@@ -1705,10 +1720,25 @@ public class DbUtilities {
 					}
 				}
 			} else if (DbVendor.PostgreSQL == dbVendor) {
-				final String sql = "SELECT column_name, column_default FROM information_schema.columns WHERE table_name = ?";
+				String schemaName;
+				String tableNameWithoutSchema;
+				if (tableName.contains(".")) {
+					schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+					tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+				} else {
+					schemaName = null;
+					tableNameWithoutSchema = tableName;
+				}
+
+				final String sql = "SELECT column_name, column_default FROM information_schema.columns WHERE " + (schemaName != null ? "LOWER(table_schema) = LOWER(?) AND " : "") + "table_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 					preparedStatement.setFetchSize(100);
-					preparedStatement.setString(1, tableName);
+					if (schemaName == null) {
+						preparedStatement.setString(1, tableNameWithoutSchema);
+					} else {
+						preparedStatement.setString(1, schemaName);
+						preparedStatement.setString(2, tableNameWithoutSchema);
+					}
 					try (ResultSet resultSet = preparedStatement.executeQuery()) {
 						if (resultSet.next()) {
 							final String columnName = resultSet.getString(1);
@@ -1980,8 +2010,18 @@ public class DbUtilities {
 						tableName = tableName.toUpperCase();
 					}
 
+					String schemaName;
+					String tableNameWithoutSchema;
+					if (tableName.contains(".")) {
+						schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+						tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+					} else {
+						schemaName = null;
+						tableNameWithoutSchema = tableName;
+					}
+
 					final DatabaseMetaData metaData = connection.getMetaData();
-					try (ResultSet resultSet = metaData.getPrimaryKeys(connection.getCatalog(), null, tableName)) {
+					try (ResultSet resultSet = metaData.getPrimaryKeys(connection.getCatalog(), schemaName, tableNameWithoutSchema)) {
 						final CaseInsensitiveSet returnList = new CaseInsensitiveSet();
 						while (resultSet.next()) {
 							returnList.add(resultSet.getString("COLUMN_NAME"));
@@ -2047,7 +2087,7 @@ public class DbUtilities {
 							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						} else {
 							schemaName = null;
-							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+							tableNamePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						}
 
 						if (exlusionPattern) {
@@ -2105,7 +2145,7 @@ public class DbUtilities {
 							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						} else {
 							schemaName = null;
-							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+							tableNamePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						}
 
 						if (exlusionPattern) {
@@ -2163,7 +2203,7 @@ public class DbUtilities {
 							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						} else {
 							schemaName = null;
-							tableNamePattern = tablePattern.substring(tablePattern.lastIndexOf(".") + 1).trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
+							tableNamePattern = tablePattern.trim().replace("%", "\\%").replace("_", "\\_").replace("*", "%").replace("?", "_");
 						}
 
 						if (exlusionPattern) {
@@ -2190,7 +2230,7 @@ public class DbUtilities {
 					statement.setFetchSize(100);
 					final List<String> tableNamesToExport = new ArrayList<>();
 					while (resultSet.next()) {
-						if (Utilities.isNotBlank(resultSet.getString("table_schema"))) {
+						if (Utilities.isNotBlank(resultSet.getString("table_schema")) && !"public".equalsIgnoreCase(resultSet.getString("table_schema"))) {
 							tableNamesToExport.add(resultSet.getString("table_schema") + "." + resultSet.getString("table_name"));
 						} else {
 							tableNamesToExport.add(resultSet.getString("table_name"));
@@ -3704,8 +3744,18 @@ public class DbUtilities {
 					tableName = tableName.toUpperCase();
 				}
 
+				String schemaName;
+				String tableNameWithoutSchema;
+				if (tableName.contains(".")) {
+					schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+					tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+				} else {
+					schemaName = null;
+					tableNameWithoutSchema = tableName;
+				}
+
 				final DatabaseMetaData metaData = connection.getMetaData();
-				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), null, tableName)) {
+				try (ResultSet resultSet = metaData.getImportedKeys(connection.getCatalog(), schemaName, tableNameWithoutSchema)) {
 					final List<DatabaseForeignKey> returnList = new ArrayList<>();
 					while (resultSet.next()) {
 						String foreignKeyName = resultSet.getString("FK_NAME");
@@ -3754,9 +3804,25 @@ public class DbUtilities {
 						}
 					}
 				} else if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB) {
+					String schemaName;
+					String tableNameWithoutSchema;
+					if (tableName.contains(".")) {
+						schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+						tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+					} else {
+						schemaName = null;
+						tableNameWithoutSchema = tableName;
+					}
+
 					final List<DatabaseConstraint> returnList = new ArrayList<>();
-					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_name = ? ORDER BY constraint_name")) {
-						preparedStatement.setNString(1, tableName);
+					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, constraint_type FROM information_schema.table_constraints"
+							+ " WHERE " + (schemaName != null ? "LOWER(table_schema) = LOWER(?) AND " : "") + "table_name = ? ORDER BY constraint_name")) {
+						if (schemaName == null) {
+							preparedStatement.setNString(1, tableNameWithoutSchema);
+						} else {
+							preparedStatement.setNString(1, schemaName);
+							preparedStatement.setNString(2, tableNameWithoutSchema);
+						}
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
 							while (resultSet.next()) {
 								final String constraintName = resultSet.getString("constraint_name").toLowerCase();
@@ -3767,8 +3833,14 @@ public class DbUtilities {
 						}
 					}
 
-					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, check_clause FROM information_schema.check_constraints WHERE table_name = ?")) {
-						preparedStatement.setNString(1, tableName);
+					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, check_clause FROM information_schema.check_constraints"
+							+ " WHERE " + (schemaName != null ? "LOWER(table_schema) = LOWER(?) AND " : "") + "table_name = ?")) {
+						if (schemaName == null) {
+							preparedStatement.setNString(1, tableNameWithoutSchema);
+						} else {
+							preparedStatement.setNString(1, schemaName);
+							preparedStatement.setNString(2, tableNameWithoutSchema);
+						}
 						try (ResultSet resultSet = preparedStatement.executeQuery()) {
 							while (resultSet.next()) {
 								final String constraintName = resultSet.getString("constraint_name").toLowerCase();
@@ -3783,6 +3855,37 @@ public class DbUtilities {
 						}
 					} catch (final Exception e) {
 						System.err.println("Cannot read constraint conditions of table '" + tableName + "': " + e.getMessage());
+					}
+
+					return returnList;
+				} else if (dbVendor == DbVendor.PostgreSQL) {
+					String schemaName;
+					String tableNameWithoutSchema;
+					if (tableName.contains(".")) {
+						schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+						tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+					} else {
+						schemaName = null;
+						tableNameWithoutSchema = tableName;
+					}
+
+					final List<DatabaseConstraint> returnList = new ArrayList<>();
+					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT constraint_name, constraint_type FROM information_schema.table_constraints"
+							+ " WHERE " + (schemaName != null ? "LOWER(table_schema) = LOWER(?) AND " : "") + "table_name = ? ORDER BY constraint_name")) {
+						if (schemaName == null) {
+							preparedStatement.setString(1, tableNameWithoutSchema);
+						} else {
+							preparedStatement.setString(1, schemaName);
+							preparedStatement.setString(2, tableNameWithoutSchema);
+						}
+						try (ResultSet resultSet = preparedStatement.executeQuery()) {
+							while (resultSet.next()) {
+								final String constraintName = resultSet.getString("constraint_name").toLowerCase();
+								final String constraintType = resultSet.getString("constraint_type");
+
+								returnList.add(new DatabaseConstraint(tableName.toLowerCase(), constraintName, ConstraintType.fromName(constraintType), null, null));
+							}
+						}
 					}
 
 					return returnList;
@@ -3854,11 +3957,79 @@ public class DbUtilities {
 							return returnList;
 						}
 					}
+				} else if (dbVendor == DbVendor.PostgreSQL) {
+					String schemaName;
+					String tableNameWithoutSchema;
+					if (tableName.contains(".")) {
+						schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+						tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+					} else {
+						schemaName = null;
+						tableNameWithoutSchema = tableName;
+					}
+
+					try (Statement statement = connection.createStatement()) {
+						try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM pg_indexes WHERE " + (schemaName != null ? "LOWER(schemaname) = LOWER(?) AND " : "") + "tablename = ?")) {
+							if (schemaName == null) {
+								preparedStatement.setString(1, tableNameWithoutSchema);
+							} else {
+								preparedStatement.setString(1, schemaName);
+								preparedStatement.setString(2, tableNameWithoutSchema);
+							}
+
+							final Map<String, List<String>> interimMap = new HashMap<>();
+
+							final List<DatabaseIndex> returnList = new ArrayList<>();
+							try (ResultSet resultSet = preparedStatement.executeQuery()) {
+								while (resultSet.next()) {
+									final String indexName = resultSet.getString("indexname").toLowerCase();
+									final String columnName = resultSet.getString("indexdef".toLowerCase());
+
+									if (!interimMap.containsKey(indexName)) {
+										interimMap.put(indexName, new ArrayList<>());
+									}
+
+									interimMap.get(indexName).add(columnName.toLowerCase());
+								}
+							}
+
+							for (final String indexName : Utilities.sortButPutItemsFirst(interimMap.keySet(), "primary")) {
+								returnList.add(new DatabaseIndex(tableName.toLowerCase(), indexName, interimMap.get(indexName)));
+							}
+							return returnList;
+						}
+					}
 				} else {
 					return null;
 				}
 			} catch (final Exception e) {
 				throw new Exception("Cannot read indexed columns for table " + tableName + ": " + e.getMessage(), e);
+			}
+		}
+	}
+
+	public static boolean checkSchemaExist(final Connection connection, final String schemaName) throws Exception {
+		if (Utilities.isBlank(schemaName)) {
+			return false;
+		} else {
+			final DbVendor dbVendor = getDbVendor(connection);
+			try {
+				if (dbVendor == DbVendor.MySQL || dbVendor == DbVendor.MariaDB || dbVendor == DbVendor.PostgreSQL) {
+					try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1 FROM information_schema.schemata WHERE schema_name = ?")) {
+						preparedStatement.setString(1, schemaName);
+						try (ResultSet resultSet = preparedStatement.executeQuery()) {
+							if (resultSet.next()) {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					}
+				} else {
+					throw new Exception("Unsupported db vendor for checkSchemaExist: " + dbVendor.name());
+				}
+			} catch (final Exception e) {
+				throw new Exception("Cannot check for existing schema '" + schemaName + "': " + e.getMessage(), e);
 			}
 		}
 	}
