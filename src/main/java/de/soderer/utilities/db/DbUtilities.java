@@ -3630,6 +3630,35 @@ public class DbUtilities {
 					return resultList;
 				}
 			}
+		} else if (getDbVendor(connection) == DbVendor.PostgreSQL) {
+			String schemaName;
+			String tableNameWithoutSchema;
+			if (tableName.contains(".")) {
+				schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+				tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+			} else {
+				schemaName = null;
+				tableNameWithoutSchema = tableName;
+			}
+			try (Statement statement = connection.createStatement()) {
+				try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM pg_indexes WHERE " + (schemaName != null ? "LOWER(schemaname) = LOWER(?) AND " : "") + "tablename = ?")) {
+					if (schemaName == null) {
+						preparedStatement.setString(1, tableNameWithoutSchema);
+					} else {
+						preparedStatement.setString(1, schemaName);
+						preparedStatement.setString(2, tableNameWithoutSchema);
+					}
+
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						final List<String> resultList = new ArrayList<>();
+						while (resultSet.next()) {
+							final String indexName = resultSet.getString("indexname").toLowerCase();
+							resultList.add(indexName);
+						}
+						return resultList;
+					}
+				}
+			}
 		} else {
 			throw new Exception("getTableIndexNames is not supported by this database vendor");
 		}
@@ -3969,7 +3998,11 @@ public class DbUtilities {
 					}
 
 					try (Statement statement = connection.createStatement()) {
-						try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM pg_indexes WHERE " + (schemaName != null ? "LOWER(schemaname) = LOWER(?) AND " : "") + "tablename = ?")) {
+						try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT t.relnamespace, i.relname AS index_name, a.attname as column_name"
+								+ " FROM pg_class t, pg_class i, pg_index ix, pg_attribute a"
+								+ " WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND a.attnum = ANY(ix.indkey) AND t.relkind = 'r'"
+								+ (schemaName != null ? " AND t.relnamespace = ?::regnamespace" : "") + " AND LOWER(t.relname) = LOWER(?)"
+								+ " ORDER BY t.relname, i.relname")) {
 							if (schemaName == null) {
 								preparedStatement.setString(1, tableNameWithoutSchema);
 							} else {
@@ -3982,8 +4015,8 @@ public class DbUtilities {
 							final List<DatabaseIndex> returnList = new ArrayList<>();
 							try (ResultSet resultSet = preparedStatement.executeQuery()) {
 								while (resultSet.next()) {
-									final String indexName = resultSet.getString("indexname").toLowerCase();
-									final String columnName = resultSet.getString("indexdef".toLowerCase());
+									final String indexName = resultSet.getString("index_name").toLowerCase();
+									final String columnName = resultSet.getString("column_name".toLowerCase());
 
 									if (!interimMap.containsKey(indexName)) {
 										interimMap.put(indexName, new ArrayList<>());
