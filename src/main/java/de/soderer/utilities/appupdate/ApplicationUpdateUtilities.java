@@ -38,6 +38,7 @@ import de.soderer.network.HttpUtilities;
 import de.soderer.network.NetworkUtilities;
 import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.Credentials;
+import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Tuple;
@@ -261,11 +262,32 @@ public class ApplicationUpdateUtilities {
 					showUpdateError(updateParent, "Update error:\nTrusted CA certificate file name is missing");
 				}
 
+				final String[] restartCommand;
+				if (updateParent != null) {
+					InputStream updaterInputStream = ApplicationUpdateUtilities.class.getResourceAsStream("Updater.jar");
+					if (updaterInputStream != null) {
+						final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_"+ new File(jarFilePath).getName() +".jar");
+						try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
+							IoUtilities.copy(updaterInputStream, updaterOut);
+						}
+
+						String javaBinPath = SystemUtilities.getJavaBinPath();
+						if (Utilities.isBlank(javaBinPath)) {
+							javaBinPath = "java";
+						}
+
+						restartCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+					} else {
+						restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+					}
+				} else {
+					restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+				}
+
 				if (updateParent != null) {
 					updateParent.showUpdateDone(null, null, 0, null);
 				}
 
-				final String[] restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
 				if (restartCommand != null) {
 					Runtime.getRuntime().exec(restartCommand, null, null);
 					Runtime.getRuntime().exit(0);
