@@ -242,8 +242,10 @@ public class ApplicationUpdateUtilities {
 					final Collection<Certificate> trustedCertificates = new ArrayList<>();
 					for (final String trustedCaCertificateFileName : Utilities.splitAndTrimList(trustedCaCertificateFileNames)) {
 						try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
-							for (final Certificate trustedCaCertificate : CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(trustedUpdateCertificatesStream))) {
-								trustedCertificates.add(trustedCaCertificate);
+							if (trustedUpdateCertificatesStream != null) {
+								for (final Certificate trustedCaCertificate : CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(trustedUpdateCertificatesStream))) {
+									trustedCertificates.add(trustedCaCertificate);
+								}
 							}
 						} catch (final Exception e) {
 							showUpdateError(updateParent, "Update error:\nTrusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
@@ -264,9 +266,12 @@ public class ApplicationUpdateUtilities {
 
 				final String[] restartCommand;
 				if (updateParent != null) {
-					InputStream updaterInputStream = ApplicationUpdateUtilities.class.getResourceAsStream("Updater.jar");
+					InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
 					if (updaterInputStream != null) {
 						final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_"+ new File(jarFilePath).getName() +".jar");
+						if (updaterFile.exists()) {
+							updaterFile.delete();
+						}
 						try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
 							IoUtilities.copy(updaterInputStream, updaterOut);
 						}
@@ -670,6 +675,14 @@ public class ApplicationUpdateUtilities {
 			return result != null;
 		} catch (@SuppressWarnings("unused") final Exception cpbe) {
 			return false;
+		}
+	}
+
+	public static void removeUpdateLeftovers() {
+		String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
+		final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_"+ new File(jarFilePath).getName() +".jar");
+		if (updaterFile.exists()) {
+			updaterFile.delete();
 		}
 	}
 
