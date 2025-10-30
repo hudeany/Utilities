@@ -299,6 +299,9 @@ public class ApplicationUpdateUtilities {
 				}
 			}
 		} catch (final Exception e) {
+			System.err.println("Update error while updating to new version:\n" + e.getMessage());
+			e.printStackTrace();
+
 			showUpdateError(updateParent, "Update error while updating to new version:\n" + e.getMessage());
 			return;
 		}
