@@ -687,9 +687,11 @@ public class ApplicationUpdateUtilities {
 
 	public static void removeUpdateLeftovers() {
 		String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
-		final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_"+ new File(jarFilePath).getName() +".jar");
-		if (updaterFile.exists()) {
-			updaterFile.delete();
+		if (Utilities.isNotBlank(jarFilePath)) {
+			final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_"+ new File(jarFilePath).getName() +".jar");
+			if (updaterFile.exists()) {
+				updaterFile.delete();
+			}
 		}
 	}
 
