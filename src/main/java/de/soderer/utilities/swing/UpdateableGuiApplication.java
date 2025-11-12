@@ -131,7 +131,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 				case "no": pattern = "Nein"; break;
 				case "close": pattern = "Schließen"; break;
 				case "updateDone": pattern = "Upgedatete Anwendung kann neugestartet werden"; break;
-				case "restartNow": pattern = "Jetzt neustarten"; break;
+				case "restartNow": pattern = "Jetzt Anwendung neustarten"; break;
 				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
@@ -145,7 +145,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 				case "no": pattern = "No"; break;
 				case "close": pattern = "Close"; break;
 				case "updateDone": pattern = "Updated application may be restarted"; break;
-				case "restartNow": pattern = "Restart now"; break;
+				case "restartNow": pattern = "Restart application now"; break;
 				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
 			}
 			return MessageFormat.format(pattern, arguments);
