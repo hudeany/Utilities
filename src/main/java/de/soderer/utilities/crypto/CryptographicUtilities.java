@@ -844,7 +844,7 @@ public class CryptographicUtilities {
 	}
 
 	public static CaseInsensitiveMap<String> getValuesFromX500Principal(final X500Principal x500Principal) throws Exception {
-		return new CaseInsensitiveMap<>(MapStringReader.readMap(x500Principal.toString()));
+		return new CaseInsensitiveMap<>(MapStringReader.readMap(x500Principal.toString().replace("'", "\\'")));
 	}
 
 	public static boolean checkForCaCertificate(final X509Certificate certificate) {
@@ -1442,7 +1442,7 @@ public class CryptographicUtilities {
 
 	public static Map<String, String> parseX500PrincipalString(final String x500NameString) {
 		try {
-			final Map<String, String> dataMap = MapStringReader.readMap(x500NameString);
+			final Map<String, String> dataMap = MapStringReader.readMap(x500NameString.replace("'", "\\'"));
 			final LinkedHashMap<String, String> returnMap = new LinkedHashMap<>();
 			for (final String keyName : new String[] { "CN", "OU", "O", "L", "S", "ST", "C", "E", "EMAIL", "EMAILADDRESS" }) {
 				if (dataMap.containsKey(keyName)) {
