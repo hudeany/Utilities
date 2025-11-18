@@ -51,6 +51,7 @@ public class MapStringReader extends BasicReader {
 				switch (currentChar) {
 					case '\\':
 						escapeNextChar = true;
+						currentChar = readNextCharacter();
 						break;
 					case ' ':
 						if (useBlankAsSeparator) {
