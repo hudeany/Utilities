@@ -35,14 +35,57 @@ public class MapStringReader extends BasicReader {
 		boolean keyWasQuoted = false;
 		StringBuilder nextValue = new StringBuilder();
 		boolean valueWasQuoted = false;
+		boolean escapeNextChar = false;
 
 		Character currentChar = readNextNonWhitespace();
 		while (currentChar != null) {
-			switch (currentChar) {
-				case ' ':
-					if (useBlankAsSeparator) {
+			if (escapeNextChar) {
+				escapeNextChar = false;
+				if (inValue) {
+					nextValue.append(currentChar);
+				} else {
+					nextKey.append(currentChar);
+				}
+				currentChar = readNextCharacter();
+			} else {
+				switch (currentChar) {
+					case '\\':
+						escapeNextChar = true;
+						break;
+					case ' ':
+						if (useBlankAsSeparator) {
+							if (nextKey.length() > 0 || nextValue.length() > 0) {
+								returnMap.put(nextKey.toString(), nextValue.toString());
+								inValue = false;
+								nextKey = new StringBuilder();
+								keyWasQuoted = false;
+								nextValue = new StringBuilder();
+								valueWasQuoted = false;
+							}
+							currentChar = readNextNonWhitespace();
+							break;
+						} else {
+							// Item content, maybe quoted
+							if (inValue) {
+								if (!valueWasQuoted) {
+									nextValue.append(currentChar);
+								}
+							} else {
+								if (!keyWasQuoted) {
+									nextKey.append(currentChar);
+								}
+							}
+							currentChar = readNextCharacter();
+							break;
+						}
+					case ',':
+					case ';':
+					case '\n':
+					case '\r':
+					case '\t':
 						if (nextKey.length() > 0 || nextValue.length() > 0) {
-							returnMap.put(nextKey.toString(), nextValue.toString());
+							returnMap.put(keyWasQuoted ? nextKey.toString() : nextKey.toString().trim(),
+									valueWasQuoted ? nextValue.toString() : nextValue.toString().trim());
 							inValue = false;
 							nextKey = new StringBuilder();
 							keyWasQuoted = false;
@@ -51,68 +94,43 @@ public class MapStringReader extends BasicReader {
 						}
 						currentChar = readNextNonWhitespace();
 						break;
-					} else {
-						// Item content, maybe quoted
+					case '\'':
+					case '"':
+						// Start quoted value
+						final String quotedText = readQuotedText('\\');
 						if (inValue) {
-							if (!valueWasQuoted) {
-								nextValue.append(currentChar);
-							}
+							nextValue = new StringBuilder(quotedText);
+							valueWasQuoted = true;
 						} else {
-							if (!keyWasQuoted) {
-								nextKey.append(currentChar);
-							}
+							nextKey = new StringBuilder(quotedText);
+							keyWasQuoted = true;
 						}
 						currentChar = readNextCharacter();
 						break;
-					}
-				case ',':
-				case ';':
-				case '\n':
-				case '\r':
-				case '\t':
-					if (nextKey.length() > 0 || nextValue.length() > 0) {
-						returnMap.put(keyWasQuoted ? nextKey.toString() : nextKey.toString().trim(),
-								valueWasQuoted ? nextValue.toString() : nextValue.toString().trim());
-						inValue = false;
-						nextKey = new StringBuilder();
-						keyWasQuoted = false;
-						nextValue = new StringBuilder();
-						valueWasQuoted = false;
-					}
-					currentChar = readNextNonWhitespace();
-					break;
-				case '\'':
-				case '"':
-					// Start quoted value
-					final String quotedText = readQuotedText('\\');
-					if (inValue) {
-						nextValue = new StringBuilder(quotedText);
-						valueWasQuoted = true;
-					} else {
-						nextKey = new StringBuilder(quotedText);
-						keyWasQuoted = true;
-					}
-					currentChar = readNextCharacter();
-					break;
-				case '=':
-					// Key value separator
-					if (!inValue) {
-						inValue = true;
-					} else {
-						nextValue.append(currentChar);
-					}
-					currentChar = readNextNonWhitespace();
-					break;
-				default:
-					// Item content, maybe quoted
-					if (inValue) {
-						nextValue.append(currentChar);
-					} else {
-						nextKey.append(currentChar);
-					}
-					currentChar = readNextCharacter();
-					break;
+					case '=':
+						// Key value separator
+						if (!inValue) {
+							inValue = true;
+						} else {
+							nextValue.append(currentChar);
+						}
+						currentChar = readNextNonWhitespace();
+						break;
+					default:
+						// Item content, maybe quoted
+						if (inValue) {
+							nextValue.append(currentChar);
+						} else {
+							nextKey.append(currentChar);
+						}
+						currentChar = readNextCharacter();
+						break;
+				}
 			}
+		}
+
+		if (escapeNextChar) {
+			throw new Exception("Unexpected start of escape sequence (\\)");
 		}
 
 		if (inValue || nextKey.length() > 0) {
