@@ -653,12 +653,11 @@ public class FileUtilities {
 			filePathWithoutCompressionPart = filePath;
 		}
 
-
 		if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".csv")) {
 			fileType.setFileDataType(FileDataType.CSV);
 		} else if (Utilities.endsWithIgnoreCase(filePath, ".xls") || Utilities.endsWithIgnoreCase(filePath, ".xlsx")) {
 			fileType.setFileDataType(FileDataType.EXCEL);
-		} else if (Utilities.endsWithIgnoreCase(filePath, ".json")) {
+		} else if (Utilities.endsWithIgnoreCase(filePath, ".jsn") || Utilities.endsWithIgnoreCase(filePath, ".json")) {
 			fileType.setFileDataType(FileDataType.JSON);
 		} else if (Utilities.endsWithIgnoreCase(filePath, ".kdbx")) {
 			fileType.setFileDataType(FileDataType.KDBX);
