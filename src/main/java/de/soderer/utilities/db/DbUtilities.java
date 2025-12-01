@@ -1640,6 +1640,47 @@ public class DbUtilities {
 						}
 					}
 				}
+			} else if (DbVendor.PostgreSQL == dbVendor) {
+				String schemaName;
+				String tableNameWithoutSchema;
+				if (tableName.contains(".")) {
+					schemaName = tableName.substring(0, tableName.lastIndexOf("."));
+					tableNameWithoutSchema = tableName.substring(tableName.lastIndexOf(".") + 1);
+				} else {
+					schemaName = null;
+					tableNameWithoutSchema = tableName;
+				}
+
+				final String sql = "SELECT column_default FROM information_schema.columns WHERE " + (schemaName != null ? "LOWER(table_schema) = LOWER(?) AND " : "") + "table_name = ? AND column_name = ?";
+				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+					preparedStatement.setFetchSize(100);
+					if (schemaName == null) {
+						preparedStatement.setString(1, tableNameWithoutSchema);
+						preparedStatement.setString(3, columnName);
+					} else {
+						preparedStatement.setString(1, schemaName);
+						preparedStatement.setString(2, tableNameWithoutSchema);
+						preparedStatement.setString(3, columnName);
+					}
+					try (ResultSet resultSet = preparedStatement.executeQuery()) {
+						if (resultSet.next()) {
+							String defaultvalue = resultSet.getString(1);
+							if (defaultvalue != null && defaultvalue.toLowerCase().endsWith("::integer")) {
+								defaultvalue = defaultvalue.substring(0, defaultvalue.toLowerCase().indexOf("::integer"));
+								if (defaultvalue.trim().startsWith("'") && defaultvalue.trim().endsWith("'")) {
+									defaultvalue = defaultvalue.trim().substring(1, defaultvalue.trim().length() - 1);
+								}
+								return defaultvalue;
+							} else if ("NULL".equalsIgnoreCase(defaultvalue)) {
+								return null;
+							} else {
+								return defaultvalue;
+							}
+						} else {
+							return null;
+						}
+					}
+				}
 			} else {
 				final String sql = "SELECT column_default FROM information_schema.columns WHERE table_schema = (SELECT schema()) AND table_name = ? AND column_name = ?";
 				try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
