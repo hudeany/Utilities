@@ -1722,6 +1722,32 @@ public class CryptographicUtilities {
 		}
 	}
 
+	public static void convertKeyStoreFileType(File sourceKeyStoreFile, String sourceKeyStoreType, char[] sourceKeyStorePassword, File destinationKeyStoreFile, String destinationKeyStoreType, char[] destinationKeyStorePassword) throws Exception {
+		try {
+			KeyStore sourceKeyStore = KeyStore.getInstance(sourceKeyStoreType.toUpperCase());
+			try (FileInputStream sourceKeyStoreInputStream = new FileInputStream(sourceKeyStoreFile)) {
+				sourceKeyStore.load(sourceKeyStoreInputStream, sourceKeyStorePassword);
+			}
+
+			KeyStore destinationKeyStore = KeyStore.getInstance(destinationKeyStoreType.toUpperCase());
+			destinationKeyStore.load(null, null);
+
+			for (final String alias : Utilities.asSortedList(Collections.list(sourceKeyStore.aliases()))) {
+				if (sourceKeyStore.isKeyEntry(alias)) {
+					java.security.cert.Certificate[] chain = sourceKeyStore.getCertificateChain(alias);
+					java.security.Key key = sourceKeyStore.getKey(alias, sourceKeyStorePassword);
+					destinationKeyStore.setKeyEntry(alias, key, destinationKeyStorePassword, chain);
+				}
+			}
+
+			try (FileOutputStream destinationKeyStoreOutputStream = new FileOutputStream(destinationKeyStoreFile)) {
+				destinationKeyStore.store(destinationKeyStoreOutputStream, destinationKeyStorePassword);
+			}
+		} catch (Exception e) {
+			throw new Exception("Cannot convert KeyStore file: " + e.getMessage(), e);
+		}
+	}
+
 	public static PublicKey getPublicKeyFromPrivateKey(final PrivateKey privateKey) throws Exception {
 		if (privateKey == null) {
 			throw new Exception("Cannot extract PublicKey from empty PrivateKey");
