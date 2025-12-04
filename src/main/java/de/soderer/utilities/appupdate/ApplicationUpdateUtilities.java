@@ -502,6 +502,38 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
+	public static String[] createRestartBatchFile(final String jarFilePath, final String restartParameter) throws Exception {
+		String javaBinPath = SystemUtilities.getJavaBinPath();
+		if (Utilities.isBlank(javaBinPath)) {
+			javaBinPath = "java";
+		}
+		if (SystemUtilities.isWindowsSystem()) {
+			final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "restart_" + new File(jarFilePath).getName() + ".cmd");
+			if (batchFile.exists()) {
+				batchFile.delete();
+			}
+			writeFile(batchFile,
+					"@echo off\r\n"
+							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n"
+							+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n");
+
+			return new String[]{ "cmd", "/c", "start", "/B", batchFile.getAbsolutePath() };
+		} else if (SystemUtilities.isLinuxSystem()) {
+			final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "restart_" + new File(jarFilePath).getName() + ".sh");
+			if (batchFile.exists()) {
+				batchFile.delete();
+			}
+			writeFile(batchFile,
+					"#!/bin/bash\n"
+							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n"
+							+ "rm \"" + batchFile.getAbsolutePath() + "\"\n");
+
+			return new String[]{ "sh", batchFile.getAbsolutePath() };
+		} else {
+			return null;
+		}
+	}
+
 	private static String replacePlaceholders(String value) {
 		if (value == null) {
 			return null;
