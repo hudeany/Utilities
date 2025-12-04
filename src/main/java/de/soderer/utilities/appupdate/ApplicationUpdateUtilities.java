@@ -514,6 +514,16 @@ public class ApplicationUpdateUtilities {
 			}
 			writeFile(batchFile,
 					"@echo off\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
+							+ "ping -n 3 127.0.0.1 >nul\r\n"
 							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n"
 							+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n");
 
@@ -525,6 +535,7 @@ public class ApplicationUpdateUtilities {
 			}
 			writeFile(batchFile,
 					"#!/bin/bash\n"
+							+ "sleep 10\n"
 							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n"
 							+ "rm \"" + batchFile.getAbsolutePath() + "\"\n");
 
