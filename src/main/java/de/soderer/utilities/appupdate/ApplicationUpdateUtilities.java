@@ -65,6 +65,7 @@ import de.soderer.utilities.xml.XmlUtilities;
  */
 public class ApplicationUpdateUtilities {
 	public static final boolean DEBUGGING_UPDATER = true;
+	public static final boolean DEBUGGING_RESTARTER = true;
 
 	public static final int EOF = -1;
 
@@ -207,6 +208,55 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
+	public static void restart(final String jarFilePath, final String restartParameter) {
+		try {
+			final String[] restarterCommand;
+
+			InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Restarter.jar");
+			if (updaterInputStream == null) {
+				throw new Exception("Restarter binary not available");
+			}
+
+			final File restarterFile = new File(System.getProperty("java.io.tmpdir"), "Restarter_" + new File(jarFilePath).getName() +".jar");
+			if (restarterFile.exists()) {
+				restarterFile.delete();
+			}
+			try (FileOutputStream updaterOut = new FileOutputStream(restarterFile)) {
+				IoUtilities.copy(updaterInputStream, updaterOut);
+			}
+
+			String javaBinPath = SystemUtilities.getJavaBinPath();
+			if (Utilities.isBlank(javaBinPath)) {
+				if (SystemUtilities.isWindowsSystem()) {
+					javaBinPath = "java.exe";
+				} else {
+					javaBinPath = "java";
+				}
+			}
+
+			if (Utilities.isNotBlank(restartParameter)) {
+				if (DEBUGGING_RESTARTER) {
+					restarterCommand = new String[]{ javaBinPath, "-jar", restarterFile.getAbsolutePath(), "-log", jarFilePath, "-restartParameter", restartParameter };
+				} else {
+					restarterCommand = new String[]{ javaBinPath, "-jar", restarterFile.getAbsolutePath(), jarFilePath, "-restartParameter", restartParameter };
+				}
+			} else {
+				if (DEBUGGING_RESTARTER) {
+					restarterCommand = new String[]{ javaBinPath, "-jar", restarterFile.getAbsolutePath(), "-log", jarFilePath };
+				} else {
+					restarterCommand = new String[]{ javaBinPath, "-jar", restarterFile.getAbsolutePath(), jarFilePath };
+				}
+			}
+
+			Runtime.getRuntime().exec(restarterCommand, null, null);
+			Runtime.getRuntime().exit(0);
+		} catch (final Exception e) {
+			System.err.println("Update error while updating to new version:\n" + e.getMessage());
+			e.printStackTrace();
+			return;
+		}
+	}
+
 	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
@@ -270,7 +320,7 @@ public class ApplicationUpdateUtilities {
 				if (updateParent != null) {
 					InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
 					if (updaterInputStream != null) {
-						final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_"+ new File(jarFilePath).getName() +".jar");
+						final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() +".jar");
 						if (updaterFile.exists()) {
 							updaterFile.delete();
 						}
@@ -280,7 +330,11 @@ public class ApplicationUpdateUtilities {
 
 						String javaBinPath = SystemUtilities.getJavaBinPath();
 						if (Utilities.isBlank(javaBinPath)) {
-							javaBinPath = "java";
+							if (SystemUtilities.isWindowsSystem()) {
+								javaBinPath = "java.exe";
+							} else {
+								javaBinPath = "java";
+							}
 						}
 
 						if (Utilities.isNotBlank(restartParameter)) {
@@ -457,7 +511,11 @@ public class ApplicationUpdateUtilities {
 	private static String[] createUpdateBatchFile(final String jarFilePath, final File downloadTempFile, final boolean restartApplicationAfterUpdate, final String restartParameter) throws Exception {
 		String javaBinPath = SystemUtilities.getJavaBinPath();
 		if (Utilities.isBlank(javaBinPath)) {
-			javaBinPath = "java";
+			if (SystemUtilities.isWindowsSystem()) {
+				javaBinPath = "java.exe";
+			} else {
+				javaBinPath = "java";
+			}
 		}
 		if (SystemUtilities.isWindowsSystem()) {
 			final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "batchUpdate_" + new File(jarFilePath).getName() + ".cmd");
@@ -515,7 +573,11 @@ public class ApplicationUpdateUtilities {
 	public static String[] createRestartBatchFile(final String jarFilePath, final String restartParameter) throws Exception {
 		String javaBinPath = SystemUtilities.getJavaBinPath();
 		if (Utilities.isBlank(javaBinPath)) {
-			javaBinPath = "java";
+			if (SystemUtilities.isWindowsSystem()) {
+				javaBinPath = "java.exe";
+			} else {
+				javaBinPath = "java";
+			}
 		}
 		if (SystemUtilities.isWindowsSystem()) {
 			final File batchFile = new File(new File(jarFilePath).getParent() + File.separator + "restart_" + new File(jarFilePath).getName() + ".cmd");
