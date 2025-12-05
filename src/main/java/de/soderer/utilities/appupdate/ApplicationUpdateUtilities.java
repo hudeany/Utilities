@@ -64,6 +64,8 @@ import de.soderer.utilities.xml.XmlUtilities;
  * 		&lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
  */
 public class ApplicationUpdateUtilities {
+	public static final boolean DEBUGGING_UPDATER = true;
+
 	public static final int EOF = -1;
 
 	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
@@ -264,7 +266,7 @@ public class ApplicationUpdateUtilities {
 					showUpdateError(updateParent, "Update error:\nTrusted CA certificate file name is missing");
 				}
 
-				final String[] restartCommand;
+				final String[] updaterCommand;
 				if (updateParent != null) {
 					InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
 					if (updaterInputStream != null) {
@@ -282,23 +284,31 @@ public class ApplicationUpdateUtilities {
 						}
 
 						if (Utilities.isNotBlank(restartParameter)) {
-							restartCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+							if (DEBUGGING_UPDATER) {
+								updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+							} else {
+								updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+							}
 						} else {
-							restartCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath() };
+							if (DEBUGGING_UPDATER) {
+								updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath() };
+							} else {
+								updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath() };
+							}
 						}
 					} else {
-						restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+						updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
 					}
 				} else {
-					restartCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+					updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
 				}
 
 				if (updateParent != null) {
 					updateParent.showUpdateDone(null, null, 0, null);
 				}
 
-				if (restartCommand != null) {
-					Runtime.getRuntime().exec(restartCommand, null, null);
+				if (updaterCommand != null) {
+					Runtime.getRuntime().exec(updaterCommand, null, null);
 					Runtime.getRuntime().exit(0);
 				}
 			}
