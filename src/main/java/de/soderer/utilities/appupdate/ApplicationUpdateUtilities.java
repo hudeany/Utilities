@@ -64,8 +64,8 @@ import de.soderer.utilities.xml.XmlUtilities;
  * 		&lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
  */
 public class ApplicationUpdateUtilities {
-	public static final boolean DEBUGGING_UPDATER = false;
-	public static final boolean DEBUGGING_RESTARTER = false;
+	public static boolean DEBUGGING_UPDATER = false;
+	public static boolean DEBUGGING_RESTARTER = false;
 
 	public static final int EOF = -1;
 
