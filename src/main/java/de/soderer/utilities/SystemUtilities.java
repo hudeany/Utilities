@@ -109,11 +109,11 @@ public class SystemUtilities {
 			try {
 				final FileStore store = Files.getFileStore(root);
 				if (humanReadable) {
-					resultMap.put("storageSpace.'" + root + "'.available", Long.toString(store.getUsableSpace()));
-					resultMap.put("storageSpace.'" + root + "'.total", Long.toString(store.getTotalSpace()));
-				} else {
 					resultMap.put("storageSpace.'" + root + "'.available", Utilities.getHumanReadableNumber(store.getTotalSpace(), "Byte", false, 5, false, Locale.ENGLISH));
 					resultMap.put("storageSpace.'" + root + "'.total", Utilities.getHumanReadableNumber(store.getTotalSpace(), "Byte", false, 5, false, Locale.ENGLISH));
+				} else {
+					resultMap.put("storageSpace.'" + root + "'.available", Long.toString(store.getUsableSpace()));
+					resultMap.put("storageSpace.'" + root + "'.total", Long.toString(store.getTotalSpace()));
 				}
 			} catch (@SuppressWarnings("unused") final IOException e) {
 				// Do nothing
