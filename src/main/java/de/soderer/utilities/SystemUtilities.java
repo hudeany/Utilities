@@ -2,8 +2,13 @@ package de.soderer.utilities;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -99,6 +104,21 @@ public class SystemUtilities {
 		resultMap.put("process.jar", getCurrentlyRunningJarFilePath() == null ? "<unknown>" : getCurrentlyRunningJarFilePath());
 
 		resultMap.put("cryptography.unlimitedKeyStrength", isUnlimitedKeyStrengthAllowed() ? "true" : "false");
+
+		for (final Path root : FileSystems.getDefault().getRootDirectories()) {
+			try {
+				final FileStore store = Files.getFileStore(root);
+				if (humanReadable) {
+					resultMap.put("storageSpace.'" + root + "'.available", Long.toString(store.getUsableSpace()));
+					resultMap.put("storageSpace.'" + root + "'.total", Long.toString(store.getTotalSpace()));
+				} else {
+					resultMap.put("storageSpace.'" + root + "'.available", Utilities.getHumanReadableNumber(store.getTotalSpace(), "Byte", false, 5, false, Locale.ENGLISH));
+					resultMap.put("storageSpace.'" + root + "'.total", Utilities.getHumanReadableNumber(store.getTotalSpace(), "Byte", false, 5, false, Locale.ENGLISH));
+				}
+			} catch (@SuppressWarnings("unused") final IOException e) {
+				// Do nothing
+			}
+		}
 
 		return resultMap;
 	}
