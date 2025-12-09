@@ -621,48 +621,39 @@ public class ApplicationUpdateUtilities {
 	private static boolean getNewNonInteractiveApplicationVersionFile(final String username, final char[] password, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final File downloadTempFile) throws Exception {
 		if (updateFileLocation.toLowerCase().startsWith("http")) {
 			// Download file
-			boolean retryDownload = true;
-			boolean firstRequest = true;
-			while (retryDownload) {
-				String downloadUrlWithCredentials = updateFileLocation;
+			String downloadUrlWithCredentials = updateFileLocation;
 
-				// Only use preconfigured credentials in first try only
-				if (firstRequest) {
-					if (username != null) {
-						downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(username, StandardCharsets.UTF_8));
-					}
-					if (password != null) {
-						downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(password), StandardCharsets.UTF_8));
-					}
+			if (username != null) {
+				downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(username, StandardCharsets.UTF_8));
+			}
+			if (password != null) {
+				downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(password), StandardCharsets.UTF_8));
+			}
+
+			if (downloadUrlWithCredentials.contains("<username>") && downloadUrlWithCredentials.contains("<password>")) {
+				throw new Exception("Requiring username and password for update");
+			} else if (downloadUrlWithCredentials.contains("<username>")) {
+				throw new Exception("Requiring username for update");
+			} else if (downloadUrlWithCredentials.contains("<password>")) {
+				throw new Exception("Requiring password for update");
+			}
+
+			try {
+				if (downloadTempFile.exists()) {
+					downloadTempFile.delete();
 				}
-
-				if (downloadUrlWithCredentials.contains("<username>") && downloadUrlWithCredentials.contains("<password>")) {
-					throw new Exception("Requiring username and password for update");
-				} else if (downloadUrlWithCredentials.contains("<username>")) {
-					throw new Exception("Requiring username for update");
-				} else if (downloadUrlWithCredentials.contains("<password>")) {
-					throw new Exception("Requiring password for update");
+				final boolean success = downloadUpdateFile(null, downloadTempFile, downloadUrlWithCredentials, proxyConfiguration);
+				if (!success) {
+					throw new Exception("Download failed");
 				}
-
-				try {
-					if (downloadTempFile.exists()) {
-						downloadTempFile.delete();
-					}
-					final boolean success = downloadUpdateFile(null, downloadTempFile, downloadUrlWithCredentials, proxyConfiguration);
-					if (!success) {
-						throw new Exception("Download failed");
-					}
-				} catch (final UserError e) {
-					throw new Exception("Update error while downloading new version:\n" + e.getMessage(), e);
-				} catch (final Exception e) {
-					if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
-						throw new Exception("Update error while downloading new version:\n" + e.getCause().getMessage(), e);
-					} else {
-						throw new Exception("Update error:\n" + e.getMessage(), e);
-					}
+			} catch (final UserError e) {
+				throw new Exception("Update error while downloading new version:\n" + e.getMessage(), e);
+			} catch (final Exception e) {
+				if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
+					throw new Exception("Update error while downloading new version:\n" + e.getCause().getMessage(), e);
+				} else {
+					throw new Exception("Update error:\n" + e.getMessage(), e);
 				}
-
-				firstRequest = false;
 			}
 		} else {
 			// Copy file
