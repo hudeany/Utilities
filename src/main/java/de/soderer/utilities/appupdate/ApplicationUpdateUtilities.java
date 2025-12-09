@@ -807,6 +807,10 @@ public class ApplicationUpdateUtilities {
 			if (updaterFile.exists()) {
 				updaterFile.delete();
 			}
+			final File restarterFile = new File(System.getProperty("java.io.tmpdir"), "Restarter_" + new File(jarFilePath).getName() +".jar");
+			if (restarterFile.exists()) {
+				restarterFile.delete();
+			}
 		}
 	}
 
