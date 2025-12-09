@@ -5,10 +5,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.Proxy;
-import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
@@ -113,7 +113,7 @@ public class ApplicationUpdateUtilities {
 			String updateFileLocation = null;
 			if ("soderer.de".equalsIgnoreCase(hostname)) {
 				if (versionIndexFileLocation.toLowerCase().contains("json")) {
-					final URLConnection urlConnection = new URL(versionIndexFileLocation).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+					final URLConnection urlConnection = Paths.get(versionIndexFileLocation).toUri().toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
 					urlConnection.setRequestProperty("Pragma", "no-cache");
 					try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
 						final JsonNode jsonNode = jsonReader.read();
@@ -163,7 +163,7 @@ public class ApplicationUpdateUtilities {
 					}
 				}
 			} else if ("api.github.com".equalsIgnoreCase(hostname)) {
-				final URLConnection urlConnection = new URL(versionIndexFileLocation).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+				final URLConnection urlConnection = Paths.get(versionIndexFileLocation).toUri().toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
 				urlConnection.setRequestProperty("Pragma", "no-cache");
 				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
 					final JsonNode jsonNode = jsonReader.read();
@@ -257,7 +257,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static void updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
+	private static boolean updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
 				throw new Exception("Mandatory updateFileLocation is empty");
@@ -288,7 +288,7 @@ public class ApplicationUpdateUtilities {
 					final ClassLoader applicationClassLoader = updateParent.getClass().getClassLoader();
 					if (applicationClassLoader == null) {
 						showUpdateError(updateParent, "Update error:\nApplications classloader is not readable");
-						return;
+						return false;
 					}
 
 					final Collection<Certificate> trustedCertificates = new ArrayList<>();
@@ -301,16 +301,16 @@ public class ApplicationUpdateUtilities {
 							}
 						} catch (final Exception e) {
 							showUpdateError(updateParent, "Update error:\nTrusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
-							return;
+							return false;
 						}
 					}
 
 					if (trustedCertificates.size() == 0) {
 						showUpdateError(updateParent, "Update error:\nTrusted CA certificate is missing");
-						return;
+						return false;
 					} else if (!verifyJarSignature(downloadTempFile, trustedCertificates)) {
 						showUpdateError(updateParent, "Update error:\nSignature of updatefile is invalid");
-						return;
+						return false;
 					}
 				} else {
 					showUpdateError(updateParent, "Update error:\nTrusted CA certificate file name is missing");
@@ -365,13 +365,123 @@ public class ApplicationUpdateUtilities {
 					Runtime.getRuntime().exec(updaterCommand, null, null);
 					Runtime.getRuntime().exit(0);
 				}
+
+				return true;
+			} else {
+				return false;
 			}
 		} catch (final Exception e) {
 			System.err.println("Update error while updating to new version:\n" + e.getMessage());
 			e.printStackTrace();
 
 			showUpdateError(updateParent, "Update error while updating to new version:\n" + e.getMessage());
-			return;
+			return false;
+		}
+	}
+
+	public static boolean updateNonInteractiveApplication(Class<? extends ApplicationUpdateParent> applicationClass, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
+		try {
+			if (Utilities.isBlank(updateFileLocation)) {
+				throw new Exception("Mandatory updateFileLocation is empty");
+			}
+
+			String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
+
+			if (jarFilePath == null) {
+				try {
+					final String currentJarUrlPath = applicationClass.getResource(applicationClass.getSimpleName() + ".class").toString();
+					jarFilePath = currentJarUrlPath.substring(0, currentJarUrlPath.lastIndexOf("!")).replaceFirst("jar:file:", "");
+				} catch (@SuppressWarnings("unused") final Exception e) {
+					jarFilePath = null;
+				}
+			}
+
+			jarFilePath = Utilities.replaceUsersHome(jarFilePath);
+
+			if (jarFilePath == null || !new File(jarFilePath).exists()) {
+				throw new Exception("Current running jar file was not found");
+			}
+
+			final File downloadTempFile = new File(new File(jarFilePath).getParent() + File.separator + "temp_" + new File(jarFilePath).getName());
+
+			final boolean downloadSuccess = getNewNonInteractiveApplicationVersionFile(username, password, updateFileLocation, proxyConfiguration, downloadTempFile);
+			if (downloadSuccess) {
+				if (Utilities.isNotEmpty(trustedCaCertificateFileNames)) {
+					final ClassLoader applicationClassLoader = applicationClass.getClassLoader();
+					if (applicationClassLoader == null) {
+						throw new Exception("Update error:\nApplications classloader is not readable");
+					}
+
+					final Collection<Certificate> trustedCertificates = new ArrayList<>();
+					for (final String trustedCaCertificateFileName : Utilities.splitAndTrimList(trustedCaCertificateFileNames)) {
+						try (InputStream trustedUpdateCertificatesStream = applicationClassLoader.getResourceAsStream(trustedCaCertificateFileName)) {
+							if (trustedUpdateCertificatesStream != null) {
+								for (final Certificate trustedCaCertificate : CertificateFactory.getInstance("X.509").generateCertificates(new BufferedInputStream(trustedUpdateCertificatesStream))) {
+									trustedCertificates.add(trustedCaCertificate);
+								}
+							}
+						} catch (final Exception e) {
+							throw new Exception("Update error:\nTrusted CA certificate '" + trustedCaCertificateFileName + "' is not readable: " + e.getMessage());
+						}
+					}
+
+					if (trustedCertificates.size() == 0) {
+						throw new Exception("Update error:\nTrusted CA certificate is missing");
+					} else if (!verifyJarSignature(downloadTempFile, trustedCertificates)) {
+						throw new Exception("Update error:\nSignature of updatefile is invalid");
+					}
+				} else {
+					throw new Exception("Update error:\nTrusted CA certificate file name is missing");
+				}
+
+				final String[] updaterCommand;
+				InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
+				if (updaterInputStream != null) {
+					final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() +".jar");
+					if (updaterFile.exists()) {
+						updaterFile.delete();
+					}
+					try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
+						IoUtilities.copy(updaterInputStream, updaterOut);
+					}
+
+					String javaBinPath = SystemUtilities.getJavaBinPath();
+					if (Utilities.isBlank(javaBinPath)) {
+						if (SystemUtilities.isWindowsSystem()) {
+							javaBinPath = "java.exe";
+						} else {
+							javaBinPath = "java";
+						}
+					}
+
+					if (Utilities.isNotBlank(restartParameter)) {
+						if (DEBUGGING_UPDATER) {
+							updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+						} else {
+							updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+						}
+					} else {
+						if (DEBUGGING_UPDATER) {
+							updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath() };
+						} else {
+							updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath() };
+						}
+					}
+				} else {
+					updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+				}
+
+				if (updaterCommand != null) {
+					Runtime.getRuntime().exec(updaterCommand, null, null);
+					Runtime.getRuntime().exit(0);
+				}
+
+				return true;
+			} else {
+				return false;
+			}
+		} catch (final Exception e) {
+			throw new Exception("Update error while updating to new version:\n" + e.getMessage(), e);
 		}
 	}
 
@@ -495,6 +605,60 @@ public class ApplicationUpdateUtilities {
 					} else {
 						showUpdateError(updateParent, "Update error:\n" + e.getMessage());
 						return false;
+					}
+				}
+
+				firstRequest = false;
+			}
+		} else {
+			// Copy file
+			Files.copy(new File(updateFileLocation).toPath(), downloadTempFile.toPath());
+		}
+
+		return downloadTempFile.exists();
+	}
+
+	private static boolean getNewNonInteractiveApplicationVersionFile(final String username, final char[] password, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final File downloadTempFile) throws Exception {
+		if (updateFileLocation.toLowerCase().startsWith("http")) {
+			// Download file
+			boolean retryDownload = true;
+			boolean firstRequest = true;
+			while (retryDownload) {
+				String downloadUrlWithCredentials = updateFileLocation;
+
+				// Only use preconfigured credentials in first try only
+				if (firstRequest) {
+					if (username != null) {
+						downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(username, StandardCharsets.UTF_8));
+					}
+					if (password != null) {
+						downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(password), StandardCharsets.UTF_8));
+					}
+				}
+
+				if (downloadUrlWithCredentials.contains("<username>") && downloadUrlWithCredentials.contains("<password>")) {
+					throw new Exception("Requiring username and password for update");
+				} else if (downloadUrlWithCredentials.contains("<username>")) {
+					throw new Exception("Requiring username for update");
+				} else if (downloadUrlWithCredentials.contains("<password>")) {
+					throw new Exception("Requiring password for update");
+				}
+
+				try {
+					if (downloadTempFile.exists()) {
+						downloadTempFile.delete();
+					}
+					final boolean success = downloadUpdateFile(null, downloadTempFile, downloadUrlWithCredentials, proxyConfiguration);
+					if (!success) {
+						throw new Exception("Download failed");
+					}
+				} catch (final UserError e) {
+					throw new Exception("Update error while downloading new version:\n" + e.getMessage(), e);
+				} catch (final Exception e) {
+					if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
+						throw new Exception("Update error while downloading new version:\n" + e.getCause().getMessage(), e);
+					} else {
+						throw new Exception("Update error:\n" + e.getMessage(), e);
 					}
 				}
 
