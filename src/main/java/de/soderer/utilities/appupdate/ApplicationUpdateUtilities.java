@@ -5,10 +5,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.Proxy;
+import java.net.URI;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
@@ -113,7 +113,7 @@ public class ApplicationUpdateUtilities {
 			String updateFileLocation = null;
 			if ("soderer.de".equalsIgnoreCase(hostname)) {
 				if (versionIndexFileLocation.toLowerCase().contains("json")) {
-					final URLConnection urlConnection = Paths.get(versionIndexFileLocation).toUri().toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+					final URLConnection urlConnection = URI.create(versionIndexFileLocation).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
 					urlConnection.setRequestProperty("Pragma", "no-cache");
 					try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
 						final JsonNode jsonNode = jsonReader.read();
@@ -163,7 +163,7 @@ public class ApplicationUpdateUtilities {
 					}
 				}
 			} else if ("api.github.com".equalsIgnoreCase(hostname)) {
-				final URLConnection urlConnection = Paths.get(versionIndexFileLocation).toUri().toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+				final URLConnection urlConnection = URI.create(versionIndexFileLocation).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
 				urlConnection.setRequestProperty("Pragma", "no-cache");
 				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
 					final JsonNode jsonNode = jsonReader.read();
