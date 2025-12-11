@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.Proxy;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -224,14 +225,14 @@ public class HttpFileConnection implements RemoteConnection {
 	}
 
 	private URL getUrl(final String path) throws IOException, MalformedURLException {
-		return new URL(
+		return URI.create(
 				(useTLS ? "https://" : "http://")
 				+ hostname
 				+ (useTLS ? (port == 443 ? "" : ":" + port) : (port == 80 ? "" : ":" + port))
 				+ (startPath != null ? "/" + startPath : "")
 				+ "/" + path
 				+ (username != null ? "?username=" + HttpUtilities.urlEncode(username, StandardCharsets.UTF_8) + (password != null ? "&password=" + HttpUtilities.urlEncode(password, StandardCharsets.UTF_8) : "") : "")
-				);
+				).toURL();
 	}
 
 	private static List<String> getEntryLines(final byte[] data) throws Exception {

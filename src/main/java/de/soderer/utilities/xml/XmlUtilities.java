@@ -12,7 +12,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.Proxy;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -92,9 +92,9 @@ public class XmlUtilities {
 	public static Document downloadAndParseXmlFile(final String url, final Proxy proxy) throws Exception {
 		final URLConnection urlConnection;
 		if (proxy == null) {
-			urlConnection = new URL(url).openConnection();
+			urlConnection = URI.create(url).toURL().openConnection();
 		} else {
-			urlConnection = new URL(url).openConnection(proxy);
+			urlConnection = URI.create(url).toURL().openConnection(proxy);
 		}
 
 		try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
@@ -105,9 +105,9 @@ public class XmlUtilities {
 		} catch (final Exception e) {
 			final HttpURLConnection urlConnection2;
 			if (proxy == null) {
-				urlConnection2 = (HttpURLConnection) new URL(url).openConnection();
+				urlConnection2 = (HttpURLConnection) URI.create(url).toURL().openConnection();
 			} else {
-				urlConnection2 = (HttpURLConnection) new URL(url).openConnection(proxy);
+				urlConnection2 = (HttpURLConnection) URI.create(url).toURL().openConnection(proxy);
 			}
 
 			urlConnection2.connect();

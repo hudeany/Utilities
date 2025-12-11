@@ -975,7 +975,7 @@ public class Utilities {
 	 * @throws Exception
 	 */
 	public static void downloadFile(final String url, final String localeDestionationPath, final Proxy proxy) throws Exception {
-		final URLConnection urlConnection = new URL(url).openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
+		final URLConnection urlConnection = URI.create(url).toURL().openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
 		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
 				FileOutputStream fileOutputStream = new FileOutputStream(localeDestionationPath)) {
 			IoUtilities.copy(bufferedInputStream, fileOutputStream);
@@ -1399,7 +1399,7 @@ public class Utilities {
 		try {
 			final Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
 			method.setAccessible(true);
-			method.invoke(ClassLoader.getSystemClassLoader(), new Object[] { new URL(new File(filePath).toURI().toString()) });
+			method.invoke(ClassLoader.getSystemClassLoader(), new Object[] { URI.create(new File(filePath).toURI().toString()).toURL() });
 		} catch (final Throwable t) {
 			throw new IOException("Error, could not add file to system classloader: " + t.getMessage(), t);
 		}

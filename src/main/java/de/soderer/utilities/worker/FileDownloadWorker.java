@@ -4,7 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.Proxy;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLConnection;
 
 import de.soderer.pac.utilities.ProxyConfiguration;
@@ -40,7 +40,7 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 			}
 
 			signalUnlimitedProgress();
-			final URLConnection urlConnection = new URL(downloadUrl).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(downloadUrl));
+			final URLConnection urlConnection = URI.create(downloadUrl).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(downloadUrl));
 			itemsToDo = urlConnection.getContentLengthLong();
 			if (itemsToDo < 0) {
 				itemsToDo = urlConnection.getContentLength();
