@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -99,7 +100,7 @@ public class SystemUtilities {
 		resultMap.put("processors.available", Long.toString(runtime.availableProcessors()));
 		resultMap.put("process.id", Integer.toString(SystemUtilities.getProcessId()));
 		resultMap.put("process.uptime", Long.toString(getUptimeInMillis()));
-		resultMap.put("process.starttime", getStarttime().toString());
+		resultMap.put("process.starttime", DateUtilities.formatZonedDateTimeWithZuluTimezone(getStarttime().atZone(ZoneId.systemDefault())));
 		resultMap.put("process.javastartuparguments", getJavaStartupArguments().toString());
 		resultMap.put("process.jar", getCurrentlyRunningJarFilePath() == null ? "<unknown>" : getCurrentlyRunningJarFilePath());
 
