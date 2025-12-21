@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,8 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.apache.commons.text.StringEscapeUtils;
 
 import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
 
@@ -128,7 +127,7 @@ public class PropertiesReader implements Closeable {
 		String key = rawKey.trim().replace("\\=", "=").replace("\\:", ":").replace("\\r", "\r").replace("\\n", "\n").replace("\\\\", "\\");
 
 		try {
-			key = StringEscapeUtils.unescapeJava(key);
+			key = Utilities.unescapeJavaString(key);
 		} catch (final Exception e) {
 			throw new Exception("Invalid JAVA endoded text: " + rawKey, e);
 		}
@@ -140,7 +139,7 @@ public class PropertiesReader implements Closeable {
 		String value = Utilities.trimLeft(rawValue).replace("\\r", "\r").replace("\\n", "\n").replace("\\\\", "\\");
 
 		try {
-			value = StringEscapeUtils.unescapeJava(value);
+			value = Utilities.unescapeJavaString(value);
 		} catch (final Exception e) {
 			throw new Exception("Invalid JAVA endoded text: " + rawValue, e);
 		}
@@ -186,5 +185,11 @@ public class PropertiesReader implements Closeable {
 
 	public Map<String, String> getComments() {
 		return comments;
+	}
+
+	public static Map<String, String> readPropertiesString(final String propertiesString) throws Exception {
+		try (PropertiesReader reader = new PropertiesReader(new ByteArrayInputStream(propertiesString.getBytes(StandardCharsets.UTF_8)))) {
+			return reader.read();
+		}
 	}
 }

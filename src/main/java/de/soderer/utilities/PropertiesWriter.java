@@ -7,8 +7,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.text.StringEscapeUtils;
-
 import de.soderer.utilities.TextUtilities.LineBreak;
 
 public class PropertiesWriter implements Closeable {
@@ -48,7 +46,7 @@ public class PropertiesWriter implements Closeable {
 		if (valueString == null) {
 			return "";
 		} else {
-			valueString = StringEscapeUtils.escapeJava(valueString);
+			valueString = Utilities.escapeJavaString(valueString);
 			if (valueString.length() > 0 && Character.isWhitespace(valueString.charAt(0))) {
 				valueString = "\\" + valueString;
 			}

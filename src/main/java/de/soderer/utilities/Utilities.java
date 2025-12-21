@@ -1963,4 +1963,114 @@ public class Utilities {
 			return false;
 		}
 	}
+
+	public static String escapeJavaString(final String text) {
+		final StringBuilder escapedTextBuilder = new StringBuilder();
+
+		for (final char nextChar : text.toCharArray()) {
+			switch (nextChar) {
+				case '\\':
+					escapedTextBuilder.append("\\\\");
+					break;
+				case '\"':
+					escapedTextBuilder.append("\\\"");
+					break;
+				case '\n':
+					escapedTextBuilder.append("\\n");
+					break;
+				case '\r':
+					escapedTextBuilder.append("\\r");
+					break;
+				case '\t':
+					escapedTextBuilder.append("\\t");
+					break;
+				case '\b':
+					escapedTextBuilder.append("\\b");
+					break;
+				case '\f':
+					escapedTextBuilder.append("\\f");
+					break;
+				default:
+					if (nextChar < 32 || nextChar > 126) {
+						escapedTextBuilder.append(String.format("\\u%04x", (int) nextChar));
+					} else {
+						escapedTextBuilder.append(nextChar);
+					}
+			}
+		}
+
+		return escapedTextBuilder.toString();
+	}
+
+	public static String unescapeJavaString(final String javaEscapedText) {
+		final StringBuilder unescapedTextBuilder = new StringBuilder();
+		final int length = javaEscapedText.length();
+
+		for (int i = 0; i < length; i++) {
+			final char nextChar = javaEscapedText.charAt(i);
+
+			if (nextChar == '\\' && i + 1 < length) {
+				final char oneMoreChar = javaEscapedText.charAt(i + 1);
+				switch (oneMoreChar) {
+					case 'n':
+						unescapedTextBuilder.append('\n');
+						i++;
+						break;
+					case 'r':
+						unescapedTextBuilder.append('\r');
+						i++;
+						break;
+					case 't':
+						unescapedTextBuilder.append('\t');
+						i++;
+						break;
+					case 'b':
+						unescapedTextBuilder.append('\b');
+						i++;
+						break;
+					case 'f':
+						unescapedTextBuilder.append('\f');
+						i++;
+						break;
+					case '\\':
+						unescapedTextBuilder.append('\\');
+						i++;
+						break;
+					case '\'':
+						unescapedTextBuilder.append('\'');
+						i++;
+						break;
+					case '\"':
+						unescapedTextBuilder.append('\"');
+						i++;
+						break;
+					case 'u':
+						if (i + 5 < length) {
+							final String hex = javaEscapedText.substring(i + 2, i + 6);
+							try {
+								final int code = Integer.parseInt(hex, 16);
+								unescapedTextBuilder.append((char) code);
+								i += 5;
+							} catch (final NumberFormatException e) {
+								unescapedTextBuilder.append("\\u").append(hex);
+								i += 5;
+							}
+						} else {
+							unescapedTextBuilder.append("\\u");
+							i++;
+						}
+						break;
+					default:
+						unescapedTextBuilder.append(oneMoreChar);
+						i++;
+						break;
+				}
+			} else {
+				unescapedTextBuilder.append(nextChar);
+			}
+		}
+
+		return unescapedTextBuilder.toString();
+	}
+
 }
