@@ -1992,7 +1992,7 @@ public class Utilities {
 					break;
 				default:
 					if (nextChar < 32 || nextChar > 126) {
-						escapedTextBuilder.append(String.format("\\u%04x", (int) nextChar));
+						escapedTextBuilder.append(String.format("\\u%04X", (int) nextChar));
 					} else {
 						escapedTextBuilder.append(nextChar);
 					}
