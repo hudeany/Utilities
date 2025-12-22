@@ -5,7 +5,7 @@ public enum MailerConnectionSecurity {
 	STARTTLS,
 	SSL_TLS;
 
-	public static MailerConnectionSecurity getHttpContentTypeByName(final String mailerConnectionSecurityString) throws Exception {
+	public static MailerConnectionSecurity getMailerConnectionSecurityByName(final String mailerConnectionSecurityString) throws Exception {
 		if (mailerConnectionSecurityString != null) {
 			for (final MailerConnectionSecurity mailerConnectionSecurity : MailerConnectionSecurity.values()) {
 				if (mailerConnectionSecurity.name().replace("_", "").equalsIgnoreCase(mailerConnectionSecurityString.replace("_", ""))) {
