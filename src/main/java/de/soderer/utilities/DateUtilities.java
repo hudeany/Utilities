@@ -474,12 +474,12 @@ public class DateUtilities {
 			return null;
 		}
 
-		if (calulationStartDateTime == null) {
-			calulationStartDateTime = ZonedDateTime.now();
-		}
-
 		if (zoneId == null) {
 			zoneId = ZoneId.systemDefault();
+		}
+
+		if (calulationStartDateTime == null) {
+			calulationStartDateTime = ZonedDateTime.now(zoneId);
 		}
 
 		ZonedDateTime returnStart = null;
