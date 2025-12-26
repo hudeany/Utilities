@@ -33,7 +33,6 @@ public class LineReader implements Closeable {
 		return latestLineBreakType;
 	}
 
-	@SuppressWarnings("resource")
 	public LineReader(final InputStream inputStream, final Charset charset) throws IOException {
 		final BOMInputStream bomInputStream = new BOMInputStream(inputStream);
 		bomInputStream.skipBOM();
