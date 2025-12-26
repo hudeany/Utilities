@@ -13,7 +13,7 @@ public class NumberUtilities {
 	public static DecimalFormat NUMBER_WITH_MIN_7_DIGITS = new DecimalFormat("0000000");
 
 	/**
-	 * Check for a single digit
+	 * Check for String of digits
 	 *
 	 * @param value
 	 * @return
@@ -25,6 +25,16 @@ public class NumberUtilities {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Check for a single digit
+	 *
+	 * @param value
+	 * @return
+	 */
+	public static boolean isDigit(final char characterToCheck) {
+		return characterToCheck >= '0' && characterToCheck <= '9';
 	}
 
 	/**

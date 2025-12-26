@@ -2002,7 +2002,7 @@ public class Utilities {
 		return escapedTextBuilder.toString();
 	}
 
-	public static String unescapeJavaString(final String javaEscapedText) {
+	public static String unescapeJavaString(final String javaEscapedText) throws Exception {
 		final StringBuilder unescapedTextBuilder = new StringBuilder();
 		final int length = javaEscapedText.length();
 
@@ -2052,18 +2052,15 @@ public class Utilities {
 								unescapedTextBuilder.append((char) code);
 								i += 5;
 							} catch (final NumberFormatException e) {
-								unescapedTextBuilder.append("\\u").append(hex);
-								i += 5;
+								throw new Exception("Invalid unicode sequence at character index " + i + " ('" + "\\u" + hex + "')", e);
 							}
 						} else {
-							unescapedTextBuilder.append("\\u");
-							i++;
+							final String invalidHex = javaEscapedText.substring(i + 2);
+							throw new Exception("Invalid unicode sequence at character index " + i + " ('" + "\\u" + invalidHex + "')");
 						}
 						break;
 					default:
-						unescapedTextBuilder.append(oneMoreChar);
-						i++;
-						break;
+						throw new Exception("Invalid escape sequence at character index " + i + " ('" + "\\" + oneMoreChar + "')");
 				}
 			} else {
 				unescapedTextBuilder.append(nextChar);
