@@ -20,8 +20,13 @@ import java.util.Map;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
+import de.soderer.json.Json5Reader;
+import de.soderer.json.JsonArray;
+import de.soderer.json.JsonDataType;
+import de.soderer.json.JsonNode;
+import de.soderer.json.JsonObject;
+import de.soderer.network.HttpMethod;
 import de.soderer.network.HttpRequest;
-import de.soderer.network.HttpRequest.HttpMethod;
 import de.soderer.network.HttpResponse;
 import de.soderer.network.HttpUtilities;
 import de.soderer.pac.utilities.ProxyConfiguration;
@@ -30,11 +35,6 @@ import de.soderer.utilities.TempFileInputStream;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.crypto.CryptographicUtilities;
-import de.soderer.utilities.json.Json5Reader;
-import de.soderer.utilities.json.JsonArray;
-import de.soderer.utilities.json.JsonDataType;
-import de.soderer.utilities.json.JsonNode;
-import de.soderer.utilities.json.JsonObject;
 import de.soderer.utilities.remote.FileInfo;
 import de.soderer.utilities.remote.FolderInfo;
 import de.soderer.utilities.remote.RemoteConnection;
@@ -73,12 +73,12 @@ public class GoogleCloudConnection implements RemoteConnection {
 		if (credentialsNode.getJsonDataType() != JsonDataType.OBJECT) {
 			throw new Exception("Invalid credentials data. Must be JsonObject");
 		} else {
-			final JsonObject credentials = (JsonObject) credentialsNode.getValue();
-			clientEmail = (String) credentials.get("client_email");
+			final JsonObject credentials = (JsonObject) credentialsNode;
+			clientEmail = (String) credentials.getSimpleValue("client_email");
 			if (Utilities.isBlank(clientEmail)) {
 				throw new Exception("Mandatory credentials data is missing: client_email");
 			}
-			final String privateKeyString = (String) credentials.get("private_key");
+			final String privateKeyString = (String) credentials.getSimpleValue("private_key");
 			if (Utilities.isBlank(clientEmail)) {
 				throw new Exception("Mandatory credentials data is missing: private_key");
 			}
@@ -112,7 +112,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 			throw new Exception("Request for access token returned invalid data: Must be JsonObject, but was " + accessTokenResponseNode.getJsonDataType());
 		}
 
-		accessToken = (String) ((JsonObject) accessTokenResponseNode.getValue()).get("access_token");
+		accessToken = (String) ((JsonObject) accessTokenResponseNode).getSimpleValue("access_token");
 	}
 
 	@Override
@@ -159,7 +159,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 			if (responseNode.getJsonDataType() != JsonDataType.OBJECT) {
 				throw new Exception("Request for getDirectory returned invalid data: Must be JsonObject, but was " + responseNode.getJsonDataType());
 			}
-			final Object itemsArrayObject = ((JsonObject) responseNode.getValue()).get("items");
+			final Object itemsArrayObject = ((JsonObject) responseNode).get("items");
 			if (itemsArrayObject instanceof JsonArray) {
 				String filePathToCheck = pathForExecution.getSecond();
 				if (filePathToCheck.length() > 0) {
@@ -168,19 +168,19 @@ public class GoogleCloudConnection implements RemoteConnection {
 
 				boolean pathExists = false;
 				for (final Object itemObject : (JsonArray) itemsArrayObject) {
-					final String name = (String) ((JsonObject) itemObject).get("name");
+					final String name = (String) ((JsonObject) itemObject).getSimpleValue("name");
 					if (name.startsWith(filePathToCheck)) {
 						pathExists = true;
 						final String relativeObjectPath = name.substring(filePathToCheck.length());
 						if (relativeObjectPath.length() > 0) {
 							if (!relativeObjectPath.contains("/")) {
 								// file found
-								final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
-								final long size = Long.parseLong((String) ((JsonObject) itemObject).get("size"));
+								final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).getSimpleValue("updated"));
+								final long size = Long.parseLong((String) ((JsonObject) itemObject).getSimpleValue("size"));
 								files.add(new FileInfo(relativeObjectPath, size, modificationDate));
 							} else if (relativeObjectPath.indexOf("/") == relativeObjectPath.lastIndexOf("/")) {
 								// real folder found
-								final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
+								final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).getSimpleValue("updated"));
 								final String folderName = relativeObjectPath.substring(0, relativeObjectPath.indexOf("/"));
 								interimFolders.put(folderName, new FolderInfo(folderName, modificationDate));
 							} else {
@@ -229,7 +229,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 			if (responseNode.getJsonDataType() != JsonDataType.OBJECT) {
 				throw new Exception("Request for getFolderInfo returned invalid data: Must be JsonObject, but was " + responseNode.getJsonDataType());
 			}
-			final Object itemsArrayObject = ((JsonObject) responseNode.getValue()).get("items");
+			final Object itemsArrayObject = ((JsonObject) responseNode).getSimpleValue("items");
 			if (itemsArrayObject instanceof JsonArray) {
 				String filePathToCheck = pathForExecution.getSecond();
 				if (filePathToCheck.length() > 0) {
@@ -239,12 +239,12 @@ public class GoogleCloudConnection implements RemoteConnection {
 				FolderInfo pseudoFolder = null;
 
 				for (final Object itemObject : (JsonArray) itemsArrayObject) {
-					final String name = (String) ((JsonObject) itemObject).get("name");
+					final String name = (String) ((JsonObject) itemObject).getSimpleValue("name");
 					if (name.startsWith(filePathToCheck)) {
 						final String relativeObjectPath = name.substring(filePathToCheck.length());
 						if (relativeObjectPath.length() == 0) {
 							// real folder found
-							final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
+							final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).getSimpleValue("updated"));
 							final String folderName = pathForExecution.getSecond().substring(pathForExecution.getSecond().lastIndexOf("/") + 1);
 							return new FolderInfo(folderName, modificationDate);
 						} else if (relativeObjectPath.contains("/")) {
@@ -335,15 +335,15 @@ public class GoogleCloudConnection implements RemoteConnection {
 			if (responseNode.getJsonDataType() != JsonDataType.OBJECT) {
 				throw new Exception("Request for getFolderInfo returned invalid data: Must be JsonObject, but was " + responseNode.getJsonDataType());
 			}
-			final Object itemsArrayObject = ((JsonObject) responseNode.getValue()).get("items");
+			final Object itemsArrayObject = ((JsonObject) responseNode).get("items");
 			if (itemsArrayObject instanceof JsonArray) {
 				final String filePathToCheck = pathForExecution.getSecond();
 
 				for (final Object itemObject : (JsonArray) itemsArrayObject) {
-					final String name = (String) ((JsonObject) itemObject).get("name");
+					final String name = (String) ((JsonObject) itemObject).getSimpleValue("name");
 					if (name.equals(filePathToCheck)) {
-						final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).get("updated"));
-						final long size = Long.parseLong((String) ((JsonObject) itemObject).get("size"));
+						final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).getSimpleValue("updated"));
+						final long size = Long.parseLong((String) ((JsonObject) itemObject).getSimpleValue("size"));
 						return new FileInfo(name.substring(name.lastIndexOf("/") + 1), size, modificationDate);
 					}
 				}

@@ -46,6 +46,8 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import de.soderer.json.JsonObject;
+import de.soderer.json.JsonReader;
 import de.soderer.network.NetworkUtilities;
 import de.soderer.network.TrustManagerUtilities;
 import de.soderer.utilities.DateUtilities;
@@ -59,8 +61,6 @@ import de.soderer.utilities.collection.CaseInsensitiveSet;
 import de.soderer.utilities.csv.CsvFormat;
 import de.soderer.utilities.csv.CsvWriter;
 import de.soderer.utilities.db.DatabaseConstraint.ConstraintType;
-import de.soderer.utilities.json.JsonObject;
-import de.soderer.utilities.json.JsonReader;
 
 public class DbUtilities {
 	public static final String DOWNLOAD_LOCATION_MYSQL = "https://dev.mysql.com/downloads/connector/j";
@@ -3399,7 +3399,7 @@ public class DbUtilities {
 				try (ResultSet resultSet = statement.executeQuery()) {
 					while (resultSet.next()) {
 						final String options = resultSet.getString("options");
-						indexedColumns.add((String) ((JsonObject) JsonReader.readJsonItemString(options).getValue()).get("target"));
+						indexedColumns.add((String) ((JsonObject) JsonReader.readJsonItemString(options)).getSimpleValue("target"));
 					}
 				}
 

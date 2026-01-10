@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,7 +25,7 @@ public class SecureDataStoreTest {
 	public void test() throws Exception {
 		final File testStoreFile = File.createTempFile("test", ".secpref");
 		try {
-			final LocalDateTime now = LocalDateTime.now();
+			final LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
 			final SecureDataStore testKeyStore_ForSave = new SecureDataStore();
 
 			final TestSecureDataStoreEntry secureDataEntry = new TestSecureDataStoreEntry();

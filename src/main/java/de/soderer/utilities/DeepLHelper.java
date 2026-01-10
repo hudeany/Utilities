@@ -4,14 +4,14 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.soderer.json.JsonArray;
+import de.soderer.json.JsonObject;
+import de.soderer.json.JsonReader;
+import de.soderer.json.JsonWriter;
+import de.soderer.network.HttpMethod;
 import de.soderer.network.HttpRequest;
-import de.soderer.network.HttpRequest.HttpMethod;
 import de.soderer.network.HttpResponse;
 import de.soderer.network.HttpUtilities;
-import de.soderer.utilities.json.JsonArray;
-import de.soderer.utilities.json.JsonObject;
-import de.soderer.utilities.json.JsonReader;
-import de.soderer.utilities.json.JsonWriter;
 
 public class DeepLHelper {
 	public final static String DEEPL_BASEURL_FREE_DEFAULT = "https://api-free.deepl.com";
@@ -42,10 +42,10 @@ public class DeepLHelper {
 				final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
 				if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
-					final JsonArray jsonData = (JsonArray) JsonReader.readJsonItemString(response.getContent()).getValue();
+					final JsonArray jsonData = (JsonArray) JsonReader.readJsonItemString(response.getContent());
 					final List<String> languages = new ArrayList<>();
 					for (final Object item : jsonData) {
-						languages.add((String) ((JsonObject) item).get("language"));
+						languages.add((String) ((JsonObject) item).getSimpleValue("language"));
 					}
 					supportedLanguages = languages;
 				} else {
@@ -91,8 +91,8 @@ public class DeepLHelper {
 			final HttpResponse response = HttpUtilities.executeHttpRequest(request);
 
 			if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
-				final JsonObject jsonData = (JsonObject) JsonReader.readJsonItemString(response.getContent()).getValue();
-				return (String) ((JsonObject) ((JsonArray) jsonData.get("translations")).get(0)).get("text");
+				final JsonObject jsonData = (JsonObject) JsonReader.readJsonItemString(response.getContent());
+				return (String) ((JsonObject) ((JsonArray) jsonData.get("translations")).get(0)).getSimpleValue("text");
 			} else {
 				throw new Exception("Error http code: " + response.getHttpCode() + "\nContent: " + response.getContent());
 			}

@@ -36,7 +36,11 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
 				throw new Exception("Compiler unavailable");
 			}
 
-			final String code = "package de.soderer.test;\n" + "public class SimpleWorker {\n" + "public void runJob() throws Exception {\n" + "System.out.println(\"SimpleJobWorker worked\");\n" + "}\n"
+			final String code = "package de.soderer.test;\n"
+					+ "public class SimpleWorker {\n"
+					+ "public void runJob() throws Exception {\n"
+					+ "System.out.println(\"SimpleJobWorker worked\");\n"
+					+ "}\n"
 					+ "}\n";
 
 			final JavaSourceFromString javaSourceFromString = new JavaSourceFromString("de.soderer.test.SimpleWorker", code);

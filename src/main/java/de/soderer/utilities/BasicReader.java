@@ -22,12 +22,17 @@ public class BasicReader implements Closeable {
 	/** Input encoding. */
 	private final Charset encoding;
 
+	/** Normalize linebreaks (\r\n, \n, \r) to unix style (\n) */
+	public boolean normalizeLinebreaks = false;
+
 	/** Input reader. */
 	private PushbackReader inputReader;
 
 	private CountingInputStream countingInputStream;
 
 	private Character currentChar;
+	private int currentIndentationLevel = 0;
+	private boolean countForIndentationLevel = true;
 	private long readCharacters;
 	private long readCharactersInCurrentLine;
 	private long readLines;
@@ -48,6 +53,18 @@ public class BasicReader implements Closeable {
 		}
 	}
 
+	protected boolean isNormalizeLinebreaks() {
+		return normalizeLinebreaks;
+	}
+
+	protected void setNormalizeLinebreaks(final boolean normalizeLinebreaks) {
+		this.normalizeLinebreaks = normalizeLinebreaks;
+	}
+
+	public Character getCurrentChar() {
+		return currentChar;
+	}
+
 	public long getReadCharacters() {
 		return readCharacters;
 	}
@@ -60,41 +77,76 @@ public class BasicReader implements Closeable {
 		return readCharactersInCurrentLine;
 	}
 
-	public void reuse(final char[] charactersToReuse) throws IOException {
+	public int getCurrentIndentationLevel() {
+		return currentIndentationLevel;
+	}
+
+	protected void reuse(final char[] charactersToReuse) throws IOException {
 		if (charactersToReuse != null) {
 			inputReader.unread(charactersToReuse, 0, charactersToReuse.length);
 			readCharacters -= charactersToReuse.length;
 			readCharactersInCurrentLine -= charactersToReuse.length;
+			for (final char characterToReuse : charactersToReuse) {
+				if (characterToReuse == '\n') {
+					readLines--;
+				}
+			}
 		}
 	}
 
-	public void reuse(final Character characterToReuse) throws IOException {
+	protected void reuse(final Character characterToReuse) throws IOException {
 		if (characterToReuse != null) {
 			inputReader.unread(characterToReuse);
 			readCharacters -= 1;
 			readCharactersInCurrentLine -= 1;
+			if (characterToReuse == '\n') {
+				readLines--;
+			}
 		}
 	}
 
-	public void reuseCurrentChar() throws IOException {
+	protected void reuseCurrentChar() throws IOException {
 		reuse(currentChar);
+		currentChar = null;
 	}
 
 	protected Character readNextCharacter() throws IOException {
-		final int currentCharInt = inputReader.read();
-		if (currentCharInt != -1) {
+		final int nextCharInt = inputReader.read();
+
+		if (nextCharInt != -1) {
 			// Check for UTF-8 BOM at data start
-			if (readCharacters == 0 && currentCharInt == BOM_UTF_8_CHAR && encoding == StandardCharsets.UTF_8) {
+			if (readCharacters == 0 && nextCharInt == BOM_UTF_8_CHAR && encoding == StandardCharsets.UTF_8) {
 				return readNextCharacter();
-			} else if (readCharacters == 0 && currentCharInt == BOM_UTF_8_CHAR_ISO_8859 && encoding.displayName().toUpperCase().startsWith("ISO-8859-")) {
+			} else if (readCharacters == 0 && nextCharInt == BOM_UTF_8_CHAR_ISO_8859 && encoding.displayName().toUpperCase().startsWith("ISO-8859-")) {
 				throw new IOException("Data encoding \"" + encoding + "\" is invalid: UTF-8 BOM detected");
 			} else {
-				final char nextChar = (char) currentCharInt;
+				char nextChar = (char) nextCharInt;
 				readCharacters++;
 				readCharactersInCurrentLine++;
-				if (nextChar == '\r' || (nextChar == '\n' && currentCharInt != '\r')) {
+
+				// Normalize linebreaks (\r\n, \n, \r) to unix style (\n)
+				if (nextChar == '\r' && normalizeLinebreaks) {
+					final int checkLinefeedChar = inputReader.read();
+					if (checkLinefeedChar != '\n') {
+						reuse((char) checkLinefeedChar);
+					} else {
+						readCharacters++;
+					}
+					nextChar = '\n';
+				}
+
+				if ((nextChar == '\n' && (currentChar == null || currentChar != '\r'))
+						|| nextChar == '\r') {
 					readLines++;
 					readCharactersInCurrentLine = 0;
+					currentIndentationLevel = 0;
+					countForIndentationLevel = true;
+				} else if (countForIndentationLevel) {
+					if (nextChar == ' ' || nextChar == '\t') {
+						currentIndentationLevel++;
+					} else {
+						countForIndentationLevel = false;
+					}
 				}
 				currentChar = nextChar;
 			}
@@ -107,10 +159,32 @@ public class BasicReader implements Closeable {
 
 	protected Character readNextNonWhitespace() throws Exception {
 		readNextCharacter();
-		while (currentChar != null && Character.isWhitespace(currentChar) ) {
+		while (currentChar != null && Character.isWhitespace(currentChar)) {
 			readNextCharacter();
 		}
 		return currentChar;
+	}
+
+	protected Character readNextNonWhitespaceWithinLine() throws Exception {
+		readNextCharacter();
+		while (currentChar != null && currentChar != '\r' && currentChar != '\n' && Character.isWhitespace(currentChar)) {
+			readNextCharacter();
+		}
+		return currentChar;
+	}
+
+	protected String readNextLine() throws Exception {
+		readNextCharacter();
+		if (currentChar != null) {
+			return null;
+		} else {
+			String nextLine = "";
+			while (currentChar != null && currentChar != '\r' && currentChar != '\n') {
+				nextLine += currentChar;
+				readNextCharacter();
+			}
+			return nextLine;
+		}
 	}
 
 	protected String readUpToNext(final boolean includeEndChar, final Character escapeCharacter, final char... endChars) throws Exception {
@@ -241,11 +315,11 @@ public class BasicReader implements Closeable {
 				returnValue.append(currentChar);
 				for (final String endString : endStrings) {
 					if (returnValue.substring(returnValue.length() - endString.length()).equals(endString)) {
-						if (!includeEndString) {
+						if (includeEndString) {
+							return returnValue.toString();
+						} else {
 							reuse(endString.toCharArray());
 							return returnValue.substring(0, returnValue.length() - endString.length()).toString();
-						} else {
-							return returnValue.toString();
 						}
 					}
 				}
@@ -254,32 +328,39 @@ public class BasicReader implements Closeable {
 	}
 
 	protected String readQuotedText(final Character escapeCharacter) throws Exception {
-		final char quoteChar = currentChar;
-		if (escapeCharacter == null || escapeCharacter != quoteChar) {
-			final String returnValue = readUpToNext(true, escapeCharacter, quoteChar);
-			if (currentChar == null || currentChar != quoteChar) {
-				throw new Exception("Missing closing quote character");
+		final boolean previousSettingNormalizeLinebreaks = normalizeLinebreaks;
+		try {
+			normalizeLinebreaks = false;
+			final char quoteChar = currentChar;
+			if (escapeCharacter == null || escapeCharacter != quoteChar) {
+				final String returnValue = readUpToNext(true, escapeCharacter, quoteChar);
+				if (currentChar == null || currentChar != quoteChar) {
+					throw new Exception("Missing closing quote character");
+				} else {
+					return returnValue.substring(1, returnValue.length() - 1);
+				}
 			} else {
+				String returnValue = readUpToNext(true, null, quoteChar);
+				while (true) {
+					final Character nextCharacter = readNextCharacter();
+					if (nextCharacter == null) {
+						break;
+					} else if (nextCharacter == quoteChar) {
+						returnValue = returnValue + readUpToNext(true, null, quoteChar);
+						if (currentChar != quoteChar) {
+							throw new Exception("Missing closing quote character");
+						}
+					} else {
+						reuse(currentChar);
+						break;
+					}
+				}
+				returnValue = returnValue.replace("" + escapeCharacter + escapeCharacter, "" + quoteChar);
+				returnValue = Utilities.unescapeJavaString(returnValue);
 				return returnValue.substring(1, returnValue.length() - 1);
 			}
-		} else {
-			String returnValue = readUpToNext(true, null, quoteChar);
-			while (true) {
-				final Character nextCharacter = readNextCharacter();
-				if (nextCharacter == null) {
-					break;
-				} else if (nextCharacter == quoteChar) {
-					returnValue = returnValue + readUpToNext(true, null, quoteChar);
-					if (currentChar != quoteChar) {
-						throw new Exception("Missing closing quote character");
-					}
-				} else {
-					reuse(currentChar);
-					break;
-				}
-			}
-			returnValue = returnValue.replace("" + escapeCharacter + escapeCharacter, "" + quoteChar);
-			return returnValue.substring(1, returnValue.length() - 1);
+		} finally {
+			normalizeLinebreaks = previousSettingNormalizeLinebreaks;
 		}
 	}
 
@@ -391,5 +472,31 @@ public class BasicReader implements Closeable {
 		} else {
 			return 0;
 		}
+	}
+
+	protected Character peek() throws IOException {
+		final Character nextChar = readNextCharacter();
+		if (nextChar != null) {
+			reuse(nextChar);
+		}
+		return nextChar;
+	}
+
+	protected Character peekAhead() throws IOException {
+		final Character nextChar1 = readNextCharacter();
+		final Character nextChar2 = readNextCharacter();
+		if (nextChar2 != null) {
+			reuse(nextChar2);
+		}
+		if (nextChar1 != null) {
+			reuse(nextChar1);
+		}
+		return nextChar2;
+	}
+
+	protected boolean isEOF() throws IOException {
+		final Character nextChar = readNextCharacter();
+		reuseCurrentChar();
+		return nextChar == null;
 	}
 }

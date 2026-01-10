@@ -1,4 +1,3 @@
-
 package de.soderer.utilities;
 
 import java.net.Proxy;
@@ -15,15 +14,15 @@ import java.util.Map.Entry;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import de.soderer.json.JsonArray;
+import de.soderer.json.JsonObject;
+import de.soderer.json.JsonReader;
+import de.soderer.json.JsonWriter;
+import de.soderer.network.HttpMethod;
 import de.soderer.network.HttpRequest;
-import de.soderer.network.HttpRequest.HttpMethod;
 import de.soderer.network.HttpResponse;
 import de.soderer.network.HttpUtilities;
 import de.soderer.pac.utilities.ProxyConfiguration;
-import de.soderer.utilities.json.JsonArray;
-import de.soderer.utilities.json.JsonObject;
-import de.soderer.utilities.json.JsonReader;
-import de.soderer.utilities.json.JsonWriter;
 
 /**
  * For documentation see: https://docs.microsoft.com/en-gb/rest/api/cosmos-db/
@@ -308,8 +307,8 @@ public class CosmosDbRestfulClient {
 	 */
 	public int getNumberOfDocuments() throws Exception {
 		final String responseContent = executeSqlQuery("SELECT COUNT(root.id) AS number FROM root");
-		final JsonObject queryResponseJsonObject = ((JsonObject) JsonReader.readJsonItemString(responseContent).getValue());
-		return (int) ((JsonObject) ((JsonArray) queryResponseJsonObject.get("Documents")).get(0)).get("number");
+		final JsonObject queryResponseJsonObject = ((JsonObject) JsonReader.readJsonItemString(responseContent));
+		return (int) ((JsonObject) ((JsonArray) queryResponseJsonObject.get("Documents")).get(0)).getSimpleValue("number");
 	}
 
 	/**
@@ -343,10 +342,10 @@ public class CosmosDbRestfulClient {
 			final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
 
 			if (response.getHttpCode() == 200) {
-				final JsonObject queryResponseJsonObject = ((JsonObject) JsonReader.readJsonItemString(response.getContent()).getValue());
+				final JsonObject queryResponseJsonObject = ((JsonObject) JsonReader.readJsonItemString(response.getContent()));
 				final JsonArray documentsArray = (JsonArray) queryResponseJsonObject.get("Documents");
 				for (final Object documentObject : documentsArray) {
-					documentIDs.add((String) ((JsonObject) documentObject).get("id"));
+					documentIDs.add((String) ((JsonObject) documentObject).getSimpleValue("id"));
 				}
 			} else if (response.getHttpCode() == 401) {
 				// Authentication error. Maybe the masterkey is invalid or the authhashsignature payload is invalid

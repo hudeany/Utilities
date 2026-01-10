@@ -9,12 +9,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import de.soderer.utilities.json.JsonNode;
-import de.soderer.utilities.json.JsonObject;
-import de.soderer.utilities.json.JsonReader;
-import de.soderer.utilities.json.JsonReader.JsonToken;
-import de.soderer.utilities.json.JsonSerializer;
-import de.soderer.utilities.json.JsonWriter;
+import de.soderer.json.JsonNode;
+import de.soderer.json.JsonObject;
+import de.soderer.json.JsonReader;
+import de.soderer.json.JsonReader.JsonToken;
+import de.soderer.json.JsonSerializer;
+import de.soderer.json.JsonWriter;
 
 public class UnsecureDataStore {
 	/**
@@ -34,7 +34,7 @@ public class UnsecureDataStore {
 							final JsonObject entryObject = new JsonObject();
 							entryObject.add("class", entryMap.getKey());
 							entryObject.add("name", entry.getKey());
-							entryObject.add("value", JsonSerializer.serialize(entry.getValue(), false, false, false, true).getValue());
+							entryObject.add("value", JsonSerializer.serialize(entry.getValue(), false, false, false, true));
 							jsonWriter.add(entryObject);
 						}
 					}
@@ -60,12 +60,12 @@ public class UnsecureDataStore {
 						JsonNode nextJsonNode;
 						while ((nextJsonNode = jsonReader.readNextJsonNode()) != null) {
 							if (nextJsonNode.isJsonObject()) {
-								final JsonObject entryObject = (JsonObject) nextJsonNode.getValue();
-								final String className = (String) entryObject.get("class");
+								final JsonObject entryObject = (JsonObject) nextJsonNode;
+								final String className = (String) entryObject.getSimpleValue("class");
 								if (!dataEntries.containsKey(className)) {
 									dataEntries.put(className, new HashMap<>());
 								}
-								final String entryName = (String) entryObject.get("name");
+								final String entryName = (String) entryObject.getSimpleValue("name");
 								dataEntries.get(className).put(entryName, JsonSerializer.deserialize((JsonObject) entryObject.get("value")));
 							} else {
 								throw new Exception("Unexpected JSON data in UnsecureDataStore: " + nextJsonNode.getJsonDataType().getName());

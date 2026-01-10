@@ -34,6 +34,10 @@ import java.util.jar.Manifest;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+import de.soderer.json.JsonArray;
+import de.soderer.json.JsonNode;
+import de.soderer.json.JsonObject;
+import de.soderer.json.JsonReader;
 import de.soderer.network.HttpUtilities;
 import de.soderer.network.NetworkUtilities;
 import de.soderer.pac.utilities.ProxyConfiguration;
@@ -46,10 +50,6 @@ import de.soderer.utilities.UserError;
 import de.soderer.utilities.UserError.Reason;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
-import de.soderer.utilities.json.JsonArray;
-import de.soderer.utilities.json.JsonNode;
-import de.soderer.utilities.json.JsonObject;
-import de.soderer.utilities.json.JsonReader;
 import de.soderer.utilities.worker.FileDownloadWorker;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.xml.XmlUtilities;
@@ -108,7 +108,7 @@ public class ApplicationUpdateUtilities {
 				}
 			}
 
-			String hostname = NetworkUtilities.getHostnameFromRequestString(versionIndexFileLocation);
+			final String hostname = NetworkUtilities.getHostnameFromRequestString(versionIndexFileLocation);
 			Version availableVersion = null;
 			String updateFileLocation = null;
 			if ("soderer.de".equalsIgnoreCase(hostname)) {
@@ -120,14 +120,14 @@ public class ApplicationUpdateUtilities {
 						if (!jsonNode.isJsonObject()) {
 							throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "'");
 						} else {
-							final JsonObject jsonObject = (JsonObject) jsonNode.getValue();
+							final JsonObject jsonObject = (JsonObject) jsonNode;
 							final JsonObject applicationJsonObject = (JsonObject) jsonObject.get(applicationName);
 							if (applicationJsonObject == null) {
 								throw new Exception("Version index not found at location '" + versionIndexFileLocation + "'");
 							} else {
 								try {
-									availableVersion = new Version((String) applicationJsonObject.get("version"));
-									updateFileLocation = (String) applicationJsonObject.get("downloadUrl");
+									availableVersion = new Version((String) applicationJsonObject.getSimpleValue("version"));
+									updateFileLocation = (String) applicationJsonObject.getSimpleValue("downloadUrl");
 								} catch (final Exception e) {
 									throw new Exception("Invalid application version entry at location '" + versionIndexFileLocation + "'", e);
 								}
@@ -170,13 +170,13 @@ public class ApplicationUpdateUtilities {
 					if (!jsonNode.isJsonObject()) {
 						throw new Exception("Invalid github release data found at location '" + versionIndexFileLocation + "'");
 					} else {
-						final JsonObject jsonObject = (JsonObject) jsonNode.getValue();
-						String githubApplicationNameAndVersion = (String) jsonObject.get("name");
+						final JsonObject jsonObject = (JsonObject) jsonNode;
+						final String githubApplicationNameAndVersion = (String) jsonObject.getSimpleValue("name");
 						if (!githubApplicationNameAndVersion.trim().startsWith(applicationName)) {
 							throw new Exception("Invalid github release data found for application '" + applicationName + "' was '" + githubApplicationNameAndVersion + "'");
 						}
-						availableVersion = new Version((String) jsonObject.get("tag_name"));
-						updateFileLocation = (String) ((JsonObject) ((JsonArray) jsonObject.get("assets")).get(0)).get("browser_download_url");
+						availableVersion = new Version((String) jsonObject.getSimpleValue("tag_name"));
+						updateFileLocation = (String) ((JsonObject) ((JsonArray) jsonObject.get("assets")).get(0)).getSimpleValue("browser_download_url");
 					}
 				} catch (final Exception e) {
 					throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
@@ -212,7 +212,7 @@ public class ApplicationUpdateUtilities {
 		try {
 			final String[] restarterCommand;
 
-			InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Restarter.jar");
+			final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Restarter.jar");
 			if (updaterInputStream == null) {
 				throw new Exception("Restarter binary not available");
 			}
@@ -318,7 +318,7 @@ public class ApplicationUpdateUtilities {
 
 				final String[] updaterCommand;
 				if (updateParent != null) {
-					InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
+					final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
 					if (updaterInputStream != null) {
 						final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() +".jar");
 						if (updaterFile.exists()) {
@@ -379,7 +379,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	public static boolean updateNonInteractiveApplication(Class<? extends ApplicationUpdateParent> applicationClass, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
+	public static boolean updateNonInteractiveApplication(final Class<? extends ApplicationUpdateParent> applicationClass, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
 				throw new Exception("Mandatory updateFileLocation is empty");
@@ -435,7 +435,7 @@ public class ApplicationUpdateUtilities {
 				}
 
 				final String[] updaterCommand;
-				InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
+				final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
 				if (updaterInputStream != null) {
 					final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() +".jar");
 					if (updaterFile.exists()) {
@@ -956,7 +956,7 @@ public class ApplicationUpdateUtilities {
 	}
 
 	public static void removeUpdateLeftovers() {
-		String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
+		final String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
 		if (Utilities.isNotBlank(jarFilePath)) {
 			final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_"+ new File(jarFilePath).getName() +".jar");
 			if (updaterFile.exists()) {

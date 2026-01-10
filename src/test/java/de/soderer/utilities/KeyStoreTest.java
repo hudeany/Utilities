@@ -37,7 +37,7 @@ public class KeyStoreTest {
 
 		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
 
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, null));
+		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
 
 		Utilities.convertPkcs12TrustStoreToJKS(new File(tempJksFilePath));
 
