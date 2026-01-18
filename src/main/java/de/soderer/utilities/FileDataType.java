@@ -4,6 +4,7 @@ public enum FileDataType {
 	CSV,
 	EXCEL,
 	JSON,
+	YAML,
 	KDBX,
 	ODS,
 	SQL,

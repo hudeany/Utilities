@@ -659,6 +659,8 @@ public class FileUtilities {
 			fileType.setFileDataType(FileDataType.EXCEL);
 		} else if (Utilities.endsWithIgnoreCase(filePath, ".jsn") || Utilities.endsWithIgnoreCase(filePath, ".json")) {
 			fileType.setFileDataType(FileDataType.JSON);
+		} else if (Utilities.endsWithIgnoreCase(filePath, ".yml") || Utilities.endsWithIgnoreCase(filePath, ".yaml")) {
+			fileType.setFileDataType(FileDataType.YAML);
 		} else if (Utilities.endsWithIgnoreCase(filePath, ".kdbx")) {
 			fileType.setFileDataType(FileDataType.KDBX);
 		} else if (Utilities.endsWithIgnoreCase(filePath, ".ods")) {
