@@ -7,8 +7,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("static-method")
 public class PropertiesReaderTest {
-	@SuppressWarnings("static-method")
 	@Test
 	public void test() {
 		try {
@@ -40,6 +40,23 @@ public class PropertiesReaderTest {
 
 			Assert.assertEquals("Comment for key3", comments.get("key3"));
 			Assert.assertEquals("Comment for key5\nComment line2 for key5", comments.get("key5"));
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void test2() {
+		try {
+			final String dataString = "key1=C:\\\\My Dir" + "\n";
+			Map<String, String> properties;
+			Map<String, String> comments;
+			try (PropertiesReader propertiesReader = new PropertiesReader(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.ISO_8859_1)))) {
+				properties = propertiesReader.read();
+				comments = propertiesReader.getComments();
+			}
+
+			Assert.assertEquals("C:\\My Dir", properties.get("key1"));
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
