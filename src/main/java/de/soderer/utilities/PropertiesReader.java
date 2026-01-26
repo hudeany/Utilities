@@ -124,10 +124,10 @@ public class PropertiesReader implements Closeable {
 	}
 
 	private static String unescapeKey(final String rawKey) throws Exception {
-		String key = rawKey.trim().replace("\\=", "=").replace("\\:", ":").replace("\\r", "\r").replace("\\n", "\n").replace("\\\\", "\\");
+		String key;
 
 		try {
-			key = Utilities.unescapeJavaString(key);
+			key = Utilities.unescapeJavaString(rawKey.trim());
 		} catch (final Exception e) {
 			throw new Exception("Invalid JAVA endoded text: " + rawKey, e);
 		}
@@ -136,10 +136,10 @@ public class PropertiesReader implements Closeable {
 	}
 
 	private static String unescapeValue(final String rawValue) throws Exception {
-		String value = Utilities.trimLeft(rawValue).replace("\\r", "\r").replace("\\n", "\n").replace("\\\\", "\\");
+		String value;
 
 		try {
-			value = Utilities.unescapeJavaString(value);
+			value = Utilities.unescapeJavaString(Utilities.trimLeft(rawValue));
 		} catch (final Exception e) {
 			throw new Exception("Invalid JAVA endoded text: " + rawValue, e);
 		}

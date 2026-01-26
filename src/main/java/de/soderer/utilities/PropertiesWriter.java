@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import de.soderer.utilities.TextUtilities.LineBreak;
 
@@ -33,6 +35,23 @@ public class PropertiesWriter implements Closeable {
 		outputWriter.write(linebreakType.toString());
 
 		writtenProperties++;
+	}
+
+	public void writeProperties(final Map<String, String> properties) throws Exception {
+		writeProperties(properties, null);
+	}
+
+	public void writeProperties(final Map<String, String> properties, final Map<String, String> comments) throws Exception {
+		if (outputStream == null) {
+			throw new IllegalStateException("PropertiesWriter is already closed");
+		}
+
+		for (final Entry<String, String> propertyEntry : properties.entrySet()) {
+			if (comments != null && comments.get(propertyEntry.getKey()) != null) {
+				writeComment(comments.get(propertyEntry.getKey()));
+			}
+			writeProperty(propertyEntry.getKey(), propertyEntry.getValue());
+		}
 	}
 
 	/**
