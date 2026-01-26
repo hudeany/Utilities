@@ -50,10 +50,8 @@ public class PropertiesReaderTest {
 		try {
 			final String dataString = "key1=C:\\\\My Dir" + "\n";
 			Map<String, String> properties;
-			Map<String, String> comments;
 			try (PropertiesReader propertiesReader = new PropertiesReader(new ByteArrayInputStream(dataString.getBytes(StandardCharsets.ISO_8859_1)))) {
 				properties = propertiesReader.read();
-				comments = propertiesReader.getComments();
 			}
 
 			Assert.assertEquals("C:\\My Dir", properties.get("key1"));
