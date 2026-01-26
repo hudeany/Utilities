@@ -65,7 +65,7 @@ import de.soderer.utilities.xml.XmlUtilities;
  */
 public class ApplicationUpdateUtilities {
 	public static boolean DEBUGGING_UPDATER = false;
-	public static boolean DEBUGGING_RESTARTER = false;
+	public static boolean DEBUGGING_RESTARTER = true; // TODO
 
 	public static final int EOF = -1;
 
