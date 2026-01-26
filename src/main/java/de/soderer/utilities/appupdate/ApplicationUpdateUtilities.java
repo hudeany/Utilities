@@ -65,7 +65,7 @@ import de.soderer.utilities.xml.XmlUtilities;
  */
 public class ApplicationUpdateUtilities {
 	public static boolean DEBUGGING_UPDATER = false;
-	public static boolean DEBUGGING_RESTARTER = true; // TODO
+	public static boolean DEBUGGING_RESTARTER = false;
 
 	public static final int EOF = -1;
 
@@ -233,8 +233,6 @@ public class ApplicationUpdateUtilities {
 					javaBinPath = "java";
 				}
 			}
-
-			System.setProperty("log4j.configurationFile", "C:\\Users\\Andreas\\git\\Server\\build\\log4j2.properties"); // TODO
 
 			if (Utilities.isNotBlank(restartParameter)) {
 				if (DEBUGGING_RESTARTER) {
