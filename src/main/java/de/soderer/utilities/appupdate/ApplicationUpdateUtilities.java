@@ -234,6 +234,8 @@ public class ApplicationUpdateUtilities {
 				}
 			}
 
+			System.setProperty("log4j.configurationFile", "C:\\Users\\Andreas\\git\\Server\\build\\log4j2.properties"); // TODO
+
 			if (Utilities.isNotBlank(restartParameter)) {
 				if (DEBUGGING_RESTARTER) {
 					restarterCommand = new String[]{ javaBinPath, "-jar", restarterFile.getAbsolutePath(), "-log", jarFilePath, "-restartParameter", restartParameter };
