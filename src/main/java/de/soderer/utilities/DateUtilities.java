@@ -874,6 +874,10 @@ public class DateUtilities {
 		return Date.from(zonedDateTime.withZoneSameInstant(ZoneId.systemDefault()).toInstant());
 	}
 
+	public static ZonedDateTime getZonedDateTimeForDate(final Date date) {
+		return date.toInstant().atZone(ZoneId.systemDefault());
+	}
+
 	/**
 	 * Parse DateTime strings for ISO 8601
 	 *

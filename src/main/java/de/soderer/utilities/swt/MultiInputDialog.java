@@ -26,6 +26,8 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 	private final String prologText;
 	private final String[] labelTexts;
 	private String[] defaultTexts = null;
+	private int width = 200;
+
 	private final List<Text> textFields = new ArrayList<>();
 
 	public MultiInputDialog(final Shell shell, final String title, final String prologText, final String... labelTexts) {
@@ -37,6 +39,11 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 	public MultiInputDialog setDefaultTexts(final String[] defaultTexts) {
 		this.defaultTexts = defaultTexts;
+		return this;
+	}
+
+	public MultiInputDialog setWidth(final int width) {
+		this.width = width;
 		return this;
 	}
 
@@ -79,7 +86,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 			});
 
 			final GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-			gridData.widthHint = 200;
+			gridData.widthHint = width;
 			textField.setLayoutData(gridData);
 
 			if (index == 0) {

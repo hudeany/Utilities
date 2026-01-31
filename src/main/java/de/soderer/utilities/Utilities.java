@@ -2126,4 +2126,13 @@ public class Utilities {
 
 		return unescapedTextBuilder.toString();
 	}
+
+	public static String getBoxedString(final String text, final char boxCharacter) {
+		String returnString = "";
+		final String boxCharacterString = Character.toString(boxCharacter);
+		returnString += boxCharacterString.repeat(2) + boxCharacterString.repeat(text.length()) + boxCharacterString.repeat(2) + "\n";
+		returnString += boxCharacterString + " " + text + " " + boxCharacterString + "\n";
+		returnString += boxCharacterString.repeat(2) + boxCharacterString.repeat(text.length()) + boxCharacterString.repeat(2);
+		return returnString;
+	}
 }
