@@ -19,6 +19,7 @@ import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
@@ -149,9 +150,12 @@ public class SwtUtilities {
 			@Override
 			public void keyPressed(final KeyEvent keyEvent) {
 				if (keyEvent.keyCode == SWT.BS) {
-					final Combo cmb = ((Combo) keyEvent.getSource());
-					final Point pt = cmb.getSelection();
-					cmb.setSelection(new Point(Math.max(0, pt.x - 1), pt.y));
+					final Combo comboBox = ((Combo) keyEvent.getSource());
+					final Point pt = comboBox.getSelection();
+					comboBox.setSelection(new Point(Math.max(0, pt.x - 1), pt.y));
+				} else if (keyEvent.keyCode == SWT.CR || keyEvent.keyCode == SWT.TAB) {
+					final Combo comboBox = ((Combo) keyEvent.getSource());
+					comboBox.notifyListeners(SWT.Selection, new Event());
 				}
 			}
 
