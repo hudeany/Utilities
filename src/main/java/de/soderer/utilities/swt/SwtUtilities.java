@@ -153,7 +153,7 @@ public class SwtUtilities {
 					final Combo comboBox = ((Combo) keyEvent.getSource());
 					final Point pt = comboBox.getSelection();
 					comboBox.setSelection(new Point(Math.max(0, pt.x - 1), pt.y));
-				} else if (keyEvent.keyCode == SWT.CR) {
+				} else if (keyEvent.keyCode == SWT.CR || keyEvent.keyCode == SWT.KEYPAD_CR) {
 					final Combo comboBox = ((Combo) keyEvent.getSource());
 					comboBox.notifyListeners(SWT.Selection, new Event());
 				}
