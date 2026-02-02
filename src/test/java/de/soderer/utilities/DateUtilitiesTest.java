@@ -473,7 +473,7 @@ public class DateUtilitiesTest {
 		assertEquals(ZonedDateTime.of(2008, 10, 31, 15, 7, 38, 0, ZoneId.of("Z")), DateUtilities.parseIso8601DateTimeString("2008-10-31T15:07:38Z"));
 		assertEquals(ZonedDateTime.of(2008, 10, 31, 15, 7, 38, 0, ZoneId.of("+05:00")), DateUtilities.parseIso8601DateTimeString("2008-10-31T15:07:38+05:00"));
 		assertEquals(ZonedDateTime.of(2008, 10, 31, 15, 7, 38, 0, ZoneId.of("-05:00")), DateUtilities.parseIso8601DateTimeString("2008-10-31T15:07:38-05:00"));
-		assertEquals(ZonedDateTime.of(2017, 11, 23, 20, 56, 40, 186000000, ZoneId.systemDefault()), DateUtilities.parseIso8601DateTimeString("2017-11-23T20:56:40.186"));
-		assertEquals(ZonedDateTime.of(2017, 11, 23, 20, 56, 40, 186000000, ZoneId.systemDefault()), DateUtilities.parseIso8601DateTimeString("2017-11-23T20:56:40.186"));
+		assertEquals(ZonedDateTime.of(2017, 11, 23, 20, 56, 40, 186, ZoneId.systemDefault()), DateUtilities.parseIso8601DateTimeString("2017-11-23T20:56:40.186"));
+		assertEquals(ZonedDateTime.of(2017, 11, 23, 20, 56, 40, 186, ZoneId.systemDefault()), DateUtilities.parseIso8601DateTimeString("2017-11-23T20:56:40.186"));
 	}
 }
