@@ -74,7 +74,7 @@ public class ApplicationUpdateUtilities {
 	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
 	public static final String CONFIG_NEXT_DAILY_UPDATE_CHECK = "NextDailyUpdateCheck";
 
-	public static boolean executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
+	public static boolean executeUpdate(final ApplicationUpdateParent updateParent, final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate, final boolean allowUnsafeUpdates) throws Exception {
 		try {
 			if (Utilities.isEmpty(versionIndexFileLocation)) {
 				throw new Exception("Invalid version index location");
@@ -83,7 +83,7 @@ public class ApplicationUpdateUtilities {
 			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(versionIndexFileLocation, proxyConfiguration, applicationName, applicationVersion);
 			if ((newVersionAvailable != null && username != null)
 					|| askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
-				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, restartParameter, restartAfterUpdate);
+				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, restartParameter, restartAfterUpdate, allowUnsafeUpdates);
 			}
 			return true;
 		} catch (final Exception e) {
@@ -307,7 +307,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static boolean updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate) {
+	private static boolean updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String restartParameter, final boolean restartAfterUpdate, final boolean allowUnsafeUpdates) {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
 				throw new Exception("Mandatory updateFileLocation is empty");
@@ -362,7 +362,7 @@ public class ApplicationUpdateUtilities {
 						showUpdateError(updateParent, "Update error:\nSignature of updatefile is invalid");
 						return false;
 					}
-				} else {
+				} else if (!allowUnsafeUpdates){
 					showUpdateError(updateParent, "Update error:\nTrusted CA certificate file name is missing");
 				}
 

@@ -416,7 +416,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				try {
-					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), proxyUrl), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, "gui", true);
+					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), proxyUrl), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, "gui", true, false);
 				} catch (final Exception e) {
 					new QuestionDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 				}
