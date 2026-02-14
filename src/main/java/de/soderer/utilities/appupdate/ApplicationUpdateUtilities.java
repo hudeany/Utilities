@@ -102,17 +102,18 @@ public class ApplicationUpdateUtilities {
 				throw new Exception("Invalid version index location");
 			} else if (!NetworkUtilities.checkForNetworkConnection()) {
 				throw new Exception("error.missingNetworkConnection");
-			} else if (!NetworkUtilities.ping(versionIndexFileLocation, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation))) {
-				if (proxyConfiguration == null) {
-					throw new Exception("error.missingInternetConnection: " + versionIndexFileLocation);
-				} else {
-					throw new Exception("error.missingInternetConnection (using ProxyConfiguration " + proxyConfiguration.getProxyConfigurationType() + "): " + versionIndexFileLocation);
-				}
 			}
 
 			Version availableVersion = null;
 			String updateFileLocation = null;
 			if (versionIndexFileLocation.toLowerCase().startsWith("http://") || versionIndexFileLocation.toLowerCase().startsWith("https://")) {
+				if (!NetworkUtilities.ping(versionIndexFileLocation, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation))) {
+					if (proxyConfiguration == null) {
+						throw new Exception("error.missingInternetConnection: " + versionIndexFileLocation);
+					} else {
+						throw new Exception("error.missingInternetConnection (using ProxyConfiguration " + proxyConfiguration.getProxyConfigurationType() + "): " + versionIndexFileLocation);
+					}
+				}
 				final String hostname = NetworkUtilities.getHostnameFromRequestString(versionIndexFileLocation);
 				if ("soderer.de".equalsIgnoreCase(hostname)) {
 					if (versionIndexFileLocation.toLowerCase().contains("json")) {
