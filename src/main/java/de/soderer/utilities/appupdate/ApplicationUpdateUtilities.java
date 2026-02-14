@@ -181,6 +181,30 @@ public class ApplicationUpdateUtilities {
 				} catch (final Exception e) {
 					throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
 				}
+			} else {
+				final URLConnection urlConnection = URI.create(versionIndexFileLocation).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+				urlConnection.setRequestProperty("Pragma", "no-cache");
+				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
+					final JsonNode jsonNode = jsonReader.read();
+					if (!jsonNode.isJsonObject()) {
+						throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "'");
+					} else {
+						final JsonObject jsonObject = (JsonObject) jsonNode;
+						final JsonObject applicationJsonObject = (JsonObject) jsonObject.get(applicationName);
+						if (applicationJsonObject == null) {
+							throw new Exception("Version index not found at location '" + versionIndexFileLocation + "'");
+						} else {
+							try {
+								availableVersion = new Version((String) applicationJsonObject.getSimpleValue("version"));
+								updateFileLocation = (String) applicationJsonObject.getSimpleValue("downloadUrl");
+							} catch (final Exception e) {
+								throw new Exception("Invalid application version entry at location '" + versionIndexFileLocation + "'", e);
+							}
+						}
+					}
+				} catch (final Exception e) {
+					throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
+				}
 			}
 
 			if (applicationVersion.compareTo(availableVersion) < 0 && updateFileLocation != null && updateFileLocation.trim().length() > 0) {
