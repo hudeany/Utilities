@@ -39,12 +39,12 @@ public class JwtUtilities {
 							if (expireDateObject == null) {
 								return null;
 							} else if (expireDateObject instanceof Long) {
-								return ZonedDateTime.ofInstant(Instant.ofEpochMilli((Long) expireDateObject * 1000), ZoneId.of("UTC"));
+								return ZonedDateTime.ofInstant(Instant.ofEpochSecond((Long) expireDateObject), ZoneId.of("UTC"));
 							} else if (expireDateObject instanceof Integer) {
-								return ZonedDateTime.ofInstant(Instant.ofEpochMilli((Integer) expireDateObject * 1000), ZoneId.of("UTC"));
+								return ZonedDateTime.ofInstant(Instant.ofEpochSecond((Integer) expireDateObject), ZoneId.of("UTC"));
 							} else if (expireDateObject instanceof String) {
-								final Long millisExpireDate = Long.parseLong((String) expireDateObject) * 1000;
-								return ZonedDateTime.ofInstant(Instant.ofEpochMilli(millisExpireDate), ZoneId.of("UTC"));
+								final Long epochSecondsExpireDate = Long.parseLong((String) expireDateObject);
+								return ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondsExpireDate), ZoneId.of("UTC"));
 							}
 						}
 					} catch (final Exception e) {
