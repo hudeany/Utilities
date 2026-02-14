@@ -4,8 +4,10 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Proxy;
 import java.net.URI;
+import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -108,11 +110,81 @@ public class ApplicationUpdateUtilities {
 				}
 			}
 
-			final String hostname = NetworkUtilities.getHostnameFromRequestString(versionIndexFileLocation);
 			Version availableVersion = null;
 			String updateFileLocation = null;
-			if ("soderer.de".equalsIgnoreCase(hostname)) {
-				if (versionIndexFileLocation.toLowerCase().contains("json")) {
+			if (versionIndexFileLocation.toLowerCase().startsWith("http://") || versionIndexFileLocation.toLowerCase().startsWith("https://")) {
+				final String hostname = NetworkUtilities.getHostnameFromRequestString(versionIndexFileLocation);
+				if ("soderer.de".equalsIgnoreCase(hostname)) {
+					if (versionIndexFileLocation.toLowerCase().contains("json")) {
+						final URLConnection urlConnection = URI.create(versionIndexFileLocation).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+						urlConnection.setRequestProperty("Pragma", "no-cache");
+						try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
+							final JsonNode jsonNode = jsonReader.read();
+							if (!jsonNode.isJsonObject()) {
+								throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "'");
+							} else {
+								final JsonObject jsonObject = (JsonObject) jsonNode;
+								final JsonObject applicationJsonObject = (JsonObject) jsonObject.get(applicationName);
+								if (applicationJsonObject == null) {
+									throw new Exception("Version index not found at location '" + versionIndexFileLocation + "'");
+								} else {
+									try {
+										availableVersion = new Version((String) applicationJsonObject.getSimpleValue("version"));
+										updateFileLocation = (String) applicationJsonObject.getSimpleValue("downloadUrl");
+									} catch (final Exception e) {
+										throw new Exception("Invalid application version entry at location '" + versionIndexFileLocation + "'", e);
+									}
+								}
+							}
+						} catch (final Exception e) {
+							throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
+						}
+					} else {
+						Document versionsDocument = null;
+						if (versionIndexFileLocation.toLowerCase().startsWith("http")) {
+							versionsDocument = XmlUtilities.downloadAndParseXmlFile(versionIndexFileLocation, null);
+						} else if (new File(versionIndexFileLocation).exists()) {
+							versionsDocument = XmlUtilities.parseXmlFile(new File(versionIndexFileLocation));
+						}
+
+						if (versionsDocument == null) {
+							throw new Exception("Version index not found at location '" + versionIndexFileLocation + "'");
+						}
+
+						final Node startFileNameNode = XmlUtilities.getSingleXPathNode(versionsDocument, "ApplicationVersions/" + applicationName);
+						if (startFileNameNode == null) {
+							throw new Exception("error.cannotFindUpdateVersionData");
+						}
+
+						final Node versionNode = startFileNameNode.getAttributes().getNamedItem("version");
+						if (versionNode != null && Utilities.isNotBlank(versionNode.getNodeValue())) {
+							availableVersion = new Version(versionNode.getNodeValue());
+						}
+
+						if (startFileNameNode.getFirstChild() != null && Utilities.isNotBlank(startFileNameNode.getFirstChild().getNodeValue())) {
+							updateFileLocation = startFileNameNode.getFirstChild().getNodeValue();
+						}
+					}
+				} else if ("api.github.com".equalsIgnoreCase(hostname)) {
+					final URLConnection urlConnection = URI.create(versionIndexFileLocation).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
+					urlConnection.setRequestProperty("Pragma", "no-cache");
+					try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
+						final JsonNode jsonNode = jsonReader.read();
+						if (!jsonNode.isJsonObject()) {
+							throw new Exception("Invalid github release data found at location '" + versionIndexFileLocation + "'");
+						} else {
+							final JsonObject jsonObject = (JsonObject) jsonNode;
+							final String githubApplicationNameAndVersion = (String) jsonObject.getSimpleValue("name");
+							if (!githubApplicationNameAndVersion.trim().startsWith(applicationName)) {
+								throw new Exception("Invalid github release data found for application '" + applicationName + "' was '" + githubApplicationNameAndVersion + "'");
+							}
+							availableVersion = new Version((String) jsonObject.getSimpleValue("tag_name"));
+							updateFileLocation = (String) ((JsonObject) ((JsonArray) jsonObject.get("assets")).get(0)).getSimpleValue("browser_download_url");
+						}
+					} catch (final Exception e) {
+						throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
+					}
+				} else {
 					final URLConnection urlConnection = URI.create(versionIndexFileLocation).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
 					urlConnection.setRequestProperty("Pragma", "no-cache");
 					try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
@@ -136,55 +208,10 @@ public class ApplicationUpdateUtilities {
 					} catch (final Exception e) {
 						throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
 					}
-				} else {
-					Document versionsDocument = null;
-					if (versionIndexFileLocation.toLowerCase().startsWith("http")) {
-						versionsDocument = XmlUtilities.downloadAndParseXmlFile(versionIndexFileLocation, null);
-					} else if (new File(versionIndexFileLocation).exists()) {
-						versionsDocument = XmlUtilities.parseXmlFile(new File(versionIndexFileLocation));
-					}
-
-					if (versionsDocument == null) {
-						throw new Exception("Version index not found at location '" + versionIndexFileLocation + "'");
-					}
-
-					final Node startFileNameNode = XmlUtilities.getSingleXPathNode(versionsDocument, "ApplicationVersions/" + applicationName);
-					if (startFileNameNode == null) {
-						throw new Exception("error.cannotFindUpdateVersionData");
-					}
-
-					final Node versionNode = startFileNameNode.getAttributes().getNamedItem("version");
-					if (versionNode != null && Utilities.isNotBlank(versionNode.getNodeValue())) {
-						availableVersion = new Version(versionNode.getNodeValue());
-					}
-
-					if (startFileNameNode.getFirstChild() != null && Utilities.isNotBlank(startFileNameNode.getFirstChild().getNodeValue())) {
-						updateFileLocation = startFileNameNode.getFirstChild().getNodeValue();
-					}
 				}
-			} else if ("api.github.com".equalsIgnoreCase(hostname)) {
-				final URLConnection urlConnection = URI.create(versionIndexFileLocation).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
-				urlConnection.setRequestProperty("Pragma", "no-cache");
-				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
-					final JsonNode jsonNode = jsonReader.read();
-					if (!jsonNode.isJsonObject()) {
-						throw new Exception("Invalid github release data found at location '" + versionIndexFileLocation + "'");
-					} else {
-						final JsonObject jsonObject = (JsonObject) jsonNode;
-						final String githubApplicationNameAndVersion = (String) jsonObject.getSimpleValue("name");
-						if (!githubApplicationNameAndVersion.trim().startsWith(applicationName)) {
-							throw new Exception("Invalid github release data found for application '" + applicationName + "' was '" + githubApplicationNameAndVersion + "'");
-						}
-						availableVersion = new Version((String) jsonObject.getSimpleValue("tag_name"));
-						updateFileLocation = (String) ((JsonObject) ((JsonArray) jsonObject.get("assets")).get(0)).getSimpleValue("browser_download_url");
-					}
-				} catch (final Exception e) {
-					throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
-				}
-			} else {
-				final URLConnection urlConnection = URI.create(versionIndexFileLocation).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(versionIndexFileLocation));
-				urlConnection.setRequestProperty("Pragma", "no-cache");
-				try (JsonReader jsonReader = new JsonReader(new BufferedInputStream(urlConnection.getInputStream()))) {
+			} else if (versionIndexFileLocation.toLowerCase().startsWith("file://") && versionIndexFileLocation.toLowerCase().endsWith(".json")) {
+				final URL versionIndexFileURL = new URL(versionIndexFileLocation);
+				try (JsonReader jsonReader = new JsonReader(versionIndexFileURL.openStream())) {
 					final JsonNode jsonNode = jsonReader.read();
 					if (!jsonNode.isJsonObject()) {
 						throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "'");
@@ -202,8 +229,6 @@ public class ApplicationUpdateUtilities {
 							}
 						}
 					}
-				} catch (final Exception e) {
-					throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
 				}
 			}
 
@@ -510,7 +535,7 @@ public class ApplicationUpdateUtilities {
 	}
 
 	private static boolean getNewApplicationVersionFile(final ApplicationUpdateParent updateParent, final String username, final char[] password, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final File downloadTempFile) throws Exception {
-		if (updateFileLocation.toLowerCase().startsWith("http")) {
+		if (updateFileLocation.toLowerCase().startsWith("http://") || updateFileLocation.toLowerCase().startsWith("https://")) {
 			// Download file
 			boolean retryDownload = true;
 			boolean firstRequest = true;
@@ -633,6 +658,12 @@ public class ApplicationUpdateUtilities {
 				}
 
 				firstRequest = false;
+			}
+		} else if (updateFileLocation.toLowerCase().startsWith("file://")) {
+			final URL updateFileURL = new URL(updateFileLocation);
+			try (InputStream inputStream = updateFileURL.openStream();
+					OutputStream downloadTempFileOutputStream = new FileOutputStream(downloadTempFile)) {
+				IoUtilities.copy(inputStream, downloadTempFileOutputStream);
 			}
 		} else {
 			// Copy file
