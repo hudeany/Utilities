@@ -4,7 +4,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URL;
@@ -52,6 +51,7 @@ import de.soderer.utilities.UserError;
 import de.soderer.utilities.UserError.Reason;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
+import de.soderer.utilities.worker.FileCopyWorker;
 import de.soderer.utilities.worker.FileDownloadWorker;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.xml.XmlUtilities;
@@ -661,10 +661,14 @@ public class ApplicationUpdateUtilities {
 				firstRequest = false;
 			}
 		} else if (updateFileLocation.toLowerCase().startsWith("file://")) {
-			final URL updateFileURL = new URL(updateFileLocation);
-			try (InputStream inputStream = updateFileURL.openStream();
-					OutputStream downloadTempFileOutputStream = new FileOutputStream(downloadTempFile)) {
-				IoUtilities.copy(inputStream, downloadTempFileOutputStream);
+			if (downloadTempFile.exists()) {
+				downloadTempFile.delete();
+			}
+			final boolean success = copyUpdateFile(updateParent, downloadTempFile, updateFileLocation);
+			if (!success) {
+				// download stopped by user
+				updateParent.showUpdateError(getI18NString("canceledByUser"));
+				return false;
 			}
 		} else {
 			// Copy file
@@ -710,6 +714,14 @@ public class ApplicationUpdateUtilities {
 				} else {
 					throw new Exception("Update error:\n" + e.getMessage(), e);
 				}
+			}
+		} else if (updateFileLocation.toLowerCase().startsWith("file://")) {
+			if (downloadTempFile.exists()) {
+				downloadTempFile.delete();
+			}
+			final boolean success = copyUpdateFile(null, downloadTempFile, updateFileLocation);
+			if (!success) {
+				throw new Exception("Download failed");
 			}
 		} else {
 			// Copy file
@@ -914,6 +926,70 @@ public class ApplicationUpdateUtilities {
 			}
 
 			if (!fileDownloadWorker.get()) {
+				throw new Exception("Download was not successful");
+			}
+
+			return true;
+		} catch (final Exception e) {
+			if (e instanceof ExecutionException && e.getCause() instanceof UserError) {
+				throw (UserError) e.getCause();
+			} else {
+				throw e;
+			}
+		}
+	}
+
+	private static boolean copyUpdateFile(final ApplicationUpdateParent updateParent, final File downloadTempFile, final String downloadFile) throws Exception {
+		try {
+			final WorkerParentSimple workerParentAdapter = new WorkerParentSimple() {
+				@Override
+				public void receiveUnlimitedProgressSignal() {
+					// Do nothing
+				}
+
+				@Override
+				public void receiveProgressSignal(final LocalDateTime startTime, final long itemsToDo, final long itemsDone, final String itemsUnitSign) {
+					if (updateParent != null) {
+						updateParent.showUpdateProgress(startTime, itemsToDo, itemsDone, itemsUnitSign);
+					}
+				}
+
+				@Override
+				public void receiveDoneSignal(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign, final String resultText) {
+					if (updateParent != null) {
+						updateParent.showUpdateDownloadEnd(startTime, endTime, itemsDone, itemsUnitSign);
+					}
+				}
+
+				@Override
+				public boolean cancel() {
+					// Do nothing
+					return true;
+				}
+
+				@Override
+				public void changeTitle(final String text) {
+					// do nothing
+				}
+			};
+
+			final FileCopyWorker fileCopyWorker = new FileCopyWorker(workerParentAdapter, downloadFile, downloadTempFile);
+			new Thread(fileCopyWorker).start();
+
+			if (updateParent != null) {
+				updateParent.showUpdateDownloadStart(fileCopyWorker);
+			}
+
+			while (!fileCopyWorker.isDone()) {
+				// Wait for download process
+				Thread.sleep(1000);
+			}
+
+			if (fileCopyWorker.isCancelled()) {
+				return false;
+			}
+
+			if (!fileCopyWorker.get()) {
 				throw new Exception("Download was not successful");
 			}
 
