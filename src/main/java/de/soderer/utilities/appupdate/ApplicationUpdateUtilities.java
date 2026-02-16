@@ -9,7 +9,6 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
@@ -672,7 +671,15 @@ public class ApplicationUpdateUtilities {
 			}
 		} else {
 			// Copy file
-			Files.copy(new File(updateFileLocation).toPath(), downloadTempFile.toPath());
+			if (downloadTempFile.exists()) {
+				downloadTempFile.delete();
+			}
+			final boolean success = copyUpdateFile(updateParent, downloadTempFile, updateFileLocation);
+			if (!success) {
+				// download stopped by user
+				updateParent.showUpdateError(getI18NString("canceledByUser"));
+				return false;
+			}
 		}
 
 		return downloadTempFile.exists();
@@ -725,7 +732,13 @@ public class ApplicationUpdateUtilities {
 			}
 		} else {
 			// Copy file
-			Files.copy(new File(updateFileLocation).toPath(), downloadTempFile.toPath());
+			if (downloadTempFile.exists()) {
+				downloadTempFile.delete();
+			}
+			final boolean success = copyUpdateFile(null, downloadTempFile, updateFileLocation);
+			if (!success) {
+				throw new Exception("Download failed");
+			}
 		}
 
 		return downloadTempFile.exists();
