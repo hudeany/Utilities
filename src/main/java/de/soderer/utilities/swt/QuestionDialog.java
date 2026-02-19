@@ -4,6 +4,7 @@ import java.text.MessageFormat;
 import java.util.Locale;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
@@ -11,7 +12,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.LangResources;
@@ -34,13 +34,14 @@ public class QuestionDialog extends ModalDialog<Integer> {
 	@Override
 	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(1, true));
-		
-		final Label label = new Label(shell, SWT.NONE);
-		label.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		label.setText(text);
+
+		final StyledText textField = new StyledText(shell, SWT.READ_ONLY | SWT.BORDER | SWT.MULTI);
+		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		textField.setText(text);
+		textField.setWordWrap(true);
 
 		if (backgroundcolor != null) {
-			label.setBackground(backgroundcolor);
+			textField.setBackground(backgroundcolor);
 		}
 
 		if (Utilities.isNotBlank(checkboxText)) {
