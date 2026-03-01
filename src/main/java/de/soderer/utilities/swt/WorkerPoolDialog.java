@@ -109,9 +109,9 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 			col.setText(columnTitles[i]);
 			col.pack();
 			col.addListener(SWT.Selection, e -> {
-				if (sortColumn == colIndex)
+				if (sortColumn == colIndex) {
 					ascending = !ascending;
-				else {
+				} else {
 					sortColumn = colIndex;
 					ascending = true;
 				}
@@ -122,9 +122,9 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 		table.addListener(SWT.SetData, e -> {
 			final TableItem item = (TableItem) e.item;
 			final int index = table.indexOf(item);
-			if (index >= workerStatsList.size())
-				return;
-			fillItem(item, workerStatsList.get(index));
+			if (index < workerStatsList.size()) {
+				fillItem(item, workerStatsList.get(index));
+			}
 		});
 
 		final Composite buttonBar = new Composite(parentShell, SWT.NONE);
@@ -237,8 +237,6 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 		}
 	}
 
-	protected abstract boolean checkForSuccess(Object workerResult);
-
 	private void refreshTableItem(final int idx) {
 		if (idx < table.getItemCount()) {
 			final TableItem item = table.getItem(idx);
@@ -305,26 +303,25 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 		dialog.setFilterExtensions(new String[] { "*.csv" });
 		dialog.setFileName("worker_ergebnisse.csv");
 		final String path = dialog.open();
-		if (path == null)
-			return;
-
-		try (PrintWriter writer = new PrintWriter(path, "UTF-8")) {
-			writer.println("WorkerID;Success count;Error count;Latest duration;Latest status;Minimum duration;Average duration;Maximum duration");
-			for (final WorkerStats ws : workerStatsList) {
-				writer.printf("%d;%d;%d;%s;%s;%s;%s;%s%n",
-						ws.getWorkerId(),
-						ws.getSuccessCount(),
-						ws.getErrorCount(),
-						(ws.getLatestDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getLatestDuration(), true, true)),
-						(ws.getLatestStatusWasSuccess() == null ? "" : (ws.getLatestStatusWasSuccess() ? "success" : "error")),
-						(ws.getMinimumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMinimumDuration(), true, true)),
-						(ws.getAverageDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getAverageDuration(), true, true)),
-						(ws.getMaximumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMaximumDuration(), true, true)));
+		if (path != null) {
+			try (PrintWriter writer = new PrintWriter(path, "UTF-8")) {
+				writer.println("WorkerID;Success count;Error count;Latest duration;Latest status;Minimum duration;Average duration;Maximum duration");
+				for (final WorkerStats ws : workerStatsList) {
+					writer.printf("%d;%d;%d;%s;%s;%s;%s;%s%n",
+							ws.getWorkerId(),
+							ws.getSuccessCount(),
+							ws.getErrorCount(),
+							(ws.getLatestDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getLatestDuration(), true, false)),
+							(ws.getLatestStatusWasSuccess() == null ? "" : (ws.getLatestStatusWasSuccess() ? "success" : "error")),
+							(ws.getMinimumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMinimumDuration(), true, false)),
+							(ws.getAverageDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getAverageDuration(), true, false)),
+							(ws.getMaximumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMaximumDuration(), true, false)));
+				}
+			} catch (final Exception ex) {
+				final MessageBox box = new MessageBox(getParent(), SWT.ICON_ERROR);
+				box.setMessage("Fehler beim Export: " + ex.getMessage());
+				box.open();
 			}
-		} catch (final Exception ex) {
-			final MessageBox box = new MessageBox(getParent(), SWT.ICON_ERROR);
-			box.setMessage("Fehler beim Export: " + ex.getMessage());
-			box.open();
 		}
 	}
 
@@ -336,14 +333,16 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 					ws.getWorkerId(),
 					ws.getSuccessCount(),
 					ws.getErrorCount(),
-					(ws.getLatestDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getLatestDuration(), true, true)),
+					(ws.getLatestDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getLatestDuration(), true, false)),
 					(ws.getLatestStatusWasSuccess() == null ? "" : (ws.getLatestStatusWasSuccess() ? "success" : "error")),
-					(ws.getMinimumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMinimumDuration(), true, true)),
-					(ws.getAverageDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getAverageDuration(), true, true)),
-					(ws.getMaximumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMaximumDuration(), true, true))));
+					(ws.getMinimumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMinimumDuration(), true, false)),
+					(ws.getAverageDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getAverageDuration(), true, false)),
+					(ws.getMaximumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMaximumDuration(), true, false))));
 		}
 		return result.toString();
 	}
 
 	protected abstract WorkerSimple<?> createWorker();
+
+	protected abstract boolean checkForSuccess(Object workerResult);
 }
