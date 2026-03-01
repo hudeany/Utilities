@@ -24,10 +24,8 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
-import de.soderer.restclient.worker.WorkerStats;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.swt.ModalDialog;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
