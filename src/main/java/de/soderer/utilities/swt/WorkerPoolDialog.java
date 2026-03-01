@@ -24,8 +24,10 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
+import de.soderer.restclient.worker.WorkerStats;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.LangResources;
+import de.soderer.utilities.swt.ModalDialog;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
@@ -311,7 +313,7 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 		try (PrintWriter writer = new PrintWriter(path, "UTF-8")) {
 			writer.println("WorkerID;Success count;Error count;Latest duration;Latest status;Minimum duration;Average duration;Maximum duration");
 			for (final WorkerStats ws : workerStatsList) {
-				writer.printf("%d;%d;%d;%s;%s;%s%n",
+				writer.printf("%d;%d;%d;%s;%s;%s;%s;%s%n",
 						ws.getWorkerId(),
 						ws.getSuccessCount(),
 						ws.getErrorCount(),
@@ -332,7 +334,7 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 		final StringBuilder result = new StringBuilder();
 		result.append("WorkerID;Success count;Error count;Latest duration;Latest status;Minimum duration;Average duration;Maximum duration\n");
 		for (final WorkerStats ws : workerStatsList) {
-			result.append(String.format("%d;%d;%d;%s;%s;%s%n",
+			result.append(String.format("%d;%d;%d;%s;%s;%s;%s;%s%n",
 					ws.getWorkerId(),
 					ws.getSuccessCount(),
 					ws.getErrorCount(),
