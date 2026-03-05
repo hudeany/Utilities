@@ -3,103 +3,77 @@ package de.soderer.utilities.swt;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.MouseAdapter;
-import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.TableItem;
 
 import de.soderer.utilities.LangResources;
 
 public class SelectionDialog extends ModalDialog<String> {
-	private String text;
-	private List<String> items;
-	private Table table;
+
+	private final String text;
+	private final List<String> items;
+
+	private org.eclipse.swt.widgets.List list;
 	private Button okButton;
 
-	public SelectionDialog(Shell shell, String title, String text, List<String> items) {
-		super(shell, SWT.RESIZE, title);
-
+	public SelectionDialog(final Shell parent, final String title, final String text, final List<String> items) {
+		super(parent, SWT.RESIZE, title);
 		this.text = text;
 		this.items = items;
 	}
 
 	@Override
-	protected void createComponents(Shell shell) throws Exception {
-		shell.setLayout(new FillLayout());
-		shell.setSize(475, 250);
-		shell.setMinimumSize(475, 250);
-		Composite composite = new Composite(shell, SWT.NONE);
-		composite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
-		composite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
+	protected void createComponents(final Shell shell) {
+		shell.setText(getParent().getText());
+		shell.setLayout(new GridLayout(1, false));
 
-		Label label = new Label(composite, SWT.NONE);
-		label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+		final Label label = new Label(shell, SWT.NONE);
+		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		label.setText(text);
 
-		table = new Table(composite, SWT.FILL);
-		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
-		table.setHeaderVisible(false);
-		table.setLinesVisible(true);
-		table.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				checkStatus();
-			}
-		});
-		if (items != null && items.size() > 0) {
-			for (String itemText : items) {
-				TableItem tableItem = new TableItem(table, SWT.FILL);
-				tableItem.setText(itemText);
-			}
-			table.select(items.size() - 1);
+		list = new org.eclipse.swt.widgets.List(shell, SWT.BORDER | SWT.SINGLE | SWT.V_SCROLL);
+		for (final String item : items) {
+			list.add(item);
 		}
-		table.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseDoubleClick(MouseEvent mouseEvent) {
-				if (table.getSelectionIndex() > -1) {
-					setReturnValue(table.getSelection()[0].getText());
-					getParent().close();
-				}
-			}
-		});
-		table.pack();
-		table.setRedraw(true);
+		final GridData listData = new GridData(SWT.FILL, SWT.TOP, true, false);
+		listData.heightHint = list.getItemHeight() * 5 + 2;
+		list.setLayoutData(listData);
 
-		okButton = new Button(composite, SWT.PUSH);
-		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		list.addListener(SWT.Selection, e -> checkStatus());
+		list.addListener(SWT.DefaultSelection, e -> okPressed(shell));
+
+		final Composite buttonBar = new Composite(shell, SWT.NONE);
+		buttonBar.setLayoutData(new GridData(SWT.END, SWT.CENTER, true, false));
+		buttonBar.setLayout(new GridLayout(2, true));
+
+		okButton = new Button(buttonBar, SWT.PUSH);
 		okButton.setText(LangResources.get("ok"));
-		okButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				if (table.getSelectionIndex() > -1) {
-					setReturnValue(table.getSelection()[0].getText());
-				}
-				getParent().close();
-			}
-		});
+		okButton.setLayoutData(new GridData(90, SWT.DEFAULT));
+		okButton.addListener(SWT.Selection, e -> okPressed(shell));
 
-		Button cancelButton = new Button(composite, SWT.PUSH);
-		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+		final Button cancelButton = new Button(buttonBar, SWT.PUSH);
 		cancelButton.setText(LangResources.get("cancel"));
-		cancelButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent event) {
-				getParent().close();
-			}
-		});
+		cancelButton.setLayoutData(new GridData(90, SWT.DEFAULT));
+		cancelButton.addListener(SWT.Selection, e -> shell.close());
+
+		shell.pack();
 
 		checkStatus();
 	}
 
+	private void okPressed(final Shell shell) {
+		final int index = list.getSelectionIndex();
+		if (index >= 0) {
+			setReturnValue(list.getItem(index));
+		}
+		shell.close();
+	}
+
 	private void checkStatus() {
-		okButton.setEnabled(table.getSelectionCount() > 0);
+		okButton.setEnabled(list.getSelectionCount() > 0);
 	}
 }
