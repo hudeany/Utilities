@@ -367,40 +367,41 @@ public class ApplicationUpdateUtilities {
 
 				final String[] updaterCommand;
 				if (updateParent != null) {
-					final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
-					if (updaterInputStream != null) {
-						final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() +".jar");
-						if (updaterFile.exists()) {
-							updaterFile.delete();
-						}
-						try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
-							IoUtilities.copy(updaterInputStream, updaterOut);
-						}
-
-						String javaBinPath = SystemUtilities.getJavaBinPath();
-						if (Utilities.isBlank(javaBinPath)) {
-							if (SystemUtilities.isWindowsSystem()) {
-								javaBinPath = "java.exe";
-							} else {
-								javaBinPath = "java";
+					try (final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar")) {
+						if (updaterInputStream != null) {
+							final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() + ".jar");
+							if (updaterFile.exists()) {
+								updaterFile.delete();
 							}
-						}
+							try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
+								IoUtilities.copy(updaterInputStream, updaterOut);
+							}
 
-						if (Utilities.isNotBlank(restartParameter)) {
-							if (DEBUGGING_UPDATER) {
-								updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+							String javaBinPath = SystemUtilities.getJavaBinPath();
+							if (Utilities.isBlank(javaBinPath)) {
+								if (SystemUtilities.isWindowsSystem()) {
+									javaBinPath = "java.exe";
+								} else {
+									javaBinPath = "java";
+								}
+							}
+
+							if (Utilities.isNotBlank(restartParameter)) {
+								if (DEBUGGING_UPDATER) {
+									updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+								} else {
+									updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+								}
 							} else {
-								updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
+								if (DEBUGGING_UPDATER) {
+									updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath() };
+								} else {
+									updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath() };
+								}
 							}
 						} else {
-							if (DEBUGGING_UPDATER) {
-								updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath() };
-							} else {
-								updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath() };
-							}
+							updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
 						}
-					} else {
-						updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
 					}
 				} else {
 					updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
