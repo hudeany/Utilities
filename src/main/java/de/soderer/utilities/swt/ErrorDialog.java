@@ -158,7 +158,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			return "Details >>>";
 		} else if ("DETAILS_LESS".equalsIgnoreCase(key)) {
 			return "Details <<<";
-		} else if (Locale.getDefault().getLanguage() == "de") {
+		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
 			if ("OPEN_MAIL".equalsIgnoreCase(key)) {
 				return "Mail mit Fehlerdaten an den Entwickler öffnen";
 			} else if ("CANNOT_OPEN_MAIL".equalsIgnoreCase(key)) {
