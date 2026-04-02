@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -54,6 +56,19 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		textField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		textField.setText(dataString);
 		textField.setWordWrap(wordWrap);
+
+		textField.addKeyListener(new KeyAdapter() {
+		    @Override
+		    public void keyPressed(final KeyEvent e) {
+		        if ((e.stateMask & SWT.MOD1) != 0 && (e.keyCode == 'a' || e.keyCode == 'A')) {
+		            textField.selectAll();
+		            e.doit = false;
+		        } else if ((e.stateMask & SWT.MOD1) != 0 && (e.keyCode == 'c' || e.keyCode == 'C')) {
+		            textField.copy();
+		            e.doit = false;
+		        }
+		    }
+		});
 
 		if (showSaveButton) {
 			final Button buttonSave = new Button(composite, SWT.PUSH);
