@@ -43,16 +43,16 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		textField.setWordWrap(true);
 
 		textField.addKeyListener(new KeyAdapter() {
-		    @Override
-		    public void keyPressed(final KeyEvent e) {
-		        if ((e.stateMask & SWT.MOD1) != 0 && (e.keyCode == 'a' || e.keyCode == 'A')) {
-		            textField.selectAll();
-		            e.doit = false;
-		        } else if ((e.stateMask & SWT.MOD1) != 0 && (e.keyCode == 'c' || e.keyCode == 'C')) {
-		            textField.copy();
-		            e.doit = false;
-		        }
-		    }
+			@Override
+			public void keyPressed(final KeyEvent e) {
+				if ((e.stateMask & SWT.MOD1) != 0 && (e.keyCode == 'a' || e.keyCode == 'A')) {
+					textField.selectAll();
+					e.doit = false;
+				} else if ((e.stateMask & SWT.MOD1) != 0 && (e.keyCode == 'c' || e.keyCode == 'C')) {
+					textField.copy();
+					e.doit = false;
+				}
+			}
 		});
 
 		if (backgroundcolor != null) {
