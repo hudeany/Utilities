@@ -627,7 +627,10 @@ public class PGPUtilities {
 		final PGPPrivateKey privateKey = readPGPPrivateKey(secretKey, password);
 		final PGPPublicKey publicKey = secretKey.getPublicKey();
 
-		final long secondsUntilExpiration = Duration.between(LocalDateTime.now(), validity).toSeconds() + 1;
+		final Date creationTime = publicKey.getCreationTime();
+		final LocalDateTime creationLocalDateTime = DateUtilities.getLocalDateTimeForDate(creationTime);
+
+		final long secondsUntilExpiration = Duration.between(creationLocalDateTime, validity).toSeconds() + 1;
 
 		final Iterator<String> userIds = publicKey.getUserIDs();
 		if (!userIds.hasNext()) {
