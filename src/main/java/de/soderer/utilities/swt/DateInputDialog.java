@@ -1,6 +1,6 @@
 package de.soderer.utilities.swt;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Locale;
@@ -22,7 +22,7 @@ import org.eclipse.swt.widgets.Text;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
-public class DateInputDialog extends ModalDialog<LocalDateTime> {
+public class DateInputDialog extends ModalDialog<LocalDate> {
 	private final String text;
 	private final DateTimeFormatter formatter;
 
@@ -100,7 +100,7 @@ public class DateInputDialog extends ModalDialog<LocalDateTime> {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				try {
-					final LocalDateTime parsed = parseDate(textField.getText());
+					final LocalDate parsed = parseDate(textField.getText());
 					setReturnValue(parsed);
 					getParent().close();
 				} catch (@SuppressWarnings("unused") final DateTimeParseException e) {
@@ -124,8 +124,8 @@ public class DateInputDialog extends ModalDialog<LocalDateTime> {
 		textField.forceFocus();
 	}
 
-	private LocalDateTime parseDate(final String value) {
-		return LocalDateTime.parse(value, formatter);
+	private LocalDate parseDate(final String value) {
+		return LocalDate.parse(value, formatter);
 	}
 
 	private static String getI18NString(final String resourceKey, final Object... arguments) {
