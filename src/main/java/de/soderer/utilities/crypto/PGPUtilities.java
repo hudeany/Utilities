@@ -623,7 +623,7 @@ public class PGPUtilities {
 		return TextUtilities.removeLinesContainingText(armoredData, "Version: ");
 	}
 
-	public static void updateKeyExpiration(final PGPSecretKey secretKey, final char[] password, final LocalDateTime validity) throws Exception {
+	public static PGPSecretKey updateKeyExpiration(final PGPSecretKey secretKey, final char[] password, final LocalDateTime validity) throws Exception {
 		final PGPPrivateKey privateKey = readPGPPrivateKey(secretKey, password);
 		final PGPPublicKey publicKey = secretKey.getPublicKey();
 
@@ -652,6 +652,6 @@ public class PGPUtilities {
 
 		final PGPPublicKey updatedPublicKey = PGPPublicKey.addCertification(publicKey, userId, newSignature);
 
-		PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
+		return PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
 	}
 }
