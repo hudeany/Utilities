@@ -629,29 +629,29 @@ public class PGPUtilities {
 
 		final long secondsUntilExpiration = Duration.between(LocalDateTime.now(), validity).toSeconds() + 1;
 
-        final Iterator<String> userIds = publicKey.getUserIDs();
-        if (!userIds.hasNext()) {
-            throw new IllegalStateException("Mandatory User-ID of PGP key is missing");
-        }
-        final String userId = userIds.next();
+		final Iterator<String> userIds = publicKey.getUserIDs();
+		if (!userIds.hasNext()) {
+			throw new IllegalStateException("Mandatory User-ID of PGP key is missing");
+		}
+		final String userId = userIds.next();
 
-        final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
+		final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
 
-        subpacketGenerator.setKeyExpirationTime(false, secondsUntilExpiration);
+		subpacketGenerator.setKeyExpirationTime(false, secondsUntilExpiration);
 
-        subpacketGenerator.setSignatureCreationTime(false, new Date());
+		subpacketGenerator.setSignatureCreationTime(false, new Date());
 
 		subpacketGenerator.addNotationData(false, true, "identity", userId);
 
 		final PGPSignatureGenerator sigGen = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(publicKey.getAlgorithm(), HashAlgorithmTags.SHA256).setProvider("BC"));
 
-        sigGen.init(PGPSignature.POSITIVE_CERTIFICATION, privateKey);
-        sigGen.setHashedSubpackets(subpacketGenerator.generate());
+		sigGen.init(PGPSignature.POSITIVE_CERTIFICATION, privateKey);
+		sigGen.setHashedSubpackets(subpacketGenerator.generate());
 
-        final PGPSignature newSignature = sigGen.generateCertification(userId, publicKey);
+		final PGPSignature newSignature = sigGen.generateCertification(userId, publicKey);
 
 		final PGPPublicKey updatedPublicKey = PGPPublicKey.addCertification(publicKey, userId, newSignature);
 
-        PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
-    }
+		PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
+	}
 }
