@@ -9,6 +9,7 @@ import java.security.Security;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -621,4 +622,36 @@ public class PGPUtilities {
 	public static String removeVersionFromArmoredData(final String armoredData) {
 		return TextUtilities.removeLinesContainingText(armoredData, "Version: ");
 	}
+
+	public static void updateKeyExpiration(final PGPSecretKey secretKey, final char[] password, final LocalDateTime validity) throws Exception {
+		final PGPPrivateKey privateKey = readPGPPrivateKey(secretKey, password);
+		final PGPPublicKey publicKey = secretKey.getPublicKey();
+
+		final long secondsUntilExpiration = Duration.between(LocalDateTime.now(), validity).toSeconds() + 1;
+
+        final Iterator<String> userIds = publicKey.getUserIDs();
+        if (!userIds.hasNext()) {
+            throw new IllegalStateException("Mandatory User-ID of PGP key is missing");
+        }
+        final String userId = userIds.next();
+
+        final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
+
+        subpacketGenerator.setKeyExpirationTime(false, secondsUntilExpiration);
+
+        subpacketGenerator.setSignatureCreationTime(false, new Date());
+
+		subpacketGenerator.addNotationData(false, true, "identity", userId);
+
+		final PGPSignatureGenerator sigGen = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(publicKey.getAlgorithm(), HashAlgorithmTags.SHA256).setProvider("BC"));
+
+        sigGen.init(PGPSignature.POSITIVE_CERTIFICATION, privateKey);
+        sigGen.setHashedSubpackets(subpacketGenerator.generate());
+
+        final PGPSignature newSignature = sigGen.generateCertification(userId, publicKey);
+
+		final PGPPublicKey updatedPublicKey = PGPPublicKey.addCertification(publicKey, userId, newSignature);
+
+        PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
+    }
 }
