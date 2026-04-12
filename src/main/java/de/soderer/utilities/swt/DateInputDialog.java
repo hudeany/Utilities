@@ -1,53 +1,27 @@
 package de.soderer.utilities.swt;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Locale;
-import java.util.regex.Pattern;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.DateTime;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.Utilities;
 
 public class DateInputDialog extends ModalDialog<LocalDate> {
 	private final String text;
-	private final DateTimeFormatter formatter;
 
-	private Text textField;
-	private String currentText = "";
-	private Pattern inputPattern = null;
-	private boolean isTechnicalChange = false;
-	private String defaultText = null;
-
-	public DateInputDialog(final Shell shell, final String title, final String text, final String datePattern) {
+	public DateInputDialog(final Shell shell, final String title, final String text) {
 		super(SwtUtilities.createCenteredShellIfNeeded(shell), title);
 		this.text = text;
-		formatter = DateTimeFormatter.ofPattern(datePattern);
-	}
-
-	public void setDefaultText(final String defaultText) {
-		this.defaultText = defaultText;
-	}
-
-	public void setInputPattern(final String patternString) {
-		if (Utilities.isBlank(patternString)) {
-			inputPattern = null;
-		} else {
-			inputPattern = Pattern.compile(patternString);
-		}
 	}
 
 	@Override
@@ -55,7 +29,7 @@ public class DateInputDialog extends ModalDialog<LocalDate> {
 		shell.setLayout(new GridLayout(1, true));
 
 		final StyledText styledText = new StyledText(shell, SWT.V_SCROLL | SWT.H_SCROLL | SWT.MULTI);
-		styledText.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
+		styledText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		styledText.setText(text);
 		styledText.setBackground(shell.getBackground());
 		styledText.setAlwaysShowScrollBars(false);
@@ -65,29 +39,8 @@ public class DateInputDialog extends ModalDialog<LocalDate> {
 		textFieldComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		textFieldComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
 
-		textField = new Text(textFieldComposite, SWT.BORDER);
-		textField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
-		textField.setText(defaultText != null ? defaultText : "");
-
-		textField.addModifyListener(new ModifyListener() {
-			@Override
-			public void modifyText(final ModifyEvent event) {
-				if (!isTechnicalChange) {
-
-					final String value = textField.getText();
-
-					if (inputPattern == null || inputPattern.matcher(value).matches()) {
-						currentText = value;
-					} else {
-						final int pos = textField.getCaretPosition();
-						isTechnicalChange = true;
-						textField.setText(currentText);
-						textField.setSelection(Math.max(0, pos - 1));
-						isTechnicalChange = false;
-					}
-				}
-			}
-		});
+		final DateTime datePicker = new DateTime(textFieldComposite, SWT.DATE | SWT.DROP_DOWN);
+		datePicker.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
@@ -99,13 +52,9 @@ public class DateInputDialog extends ModalDialog<LocalDate> {
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				try {
-					final LocalDate parsed = parseDate(textField.getText());
-					setReturnValue(parsed);
-					getParent().close();
-				} catch (@SuppressWarnings("unused") final DateTimeParseException e) {
-					textField.setBackground(shell.getDisplay().getSystemColor(SWT.COLOR_RED));
-				}
+				final LocalDate date = LocalDate.of(datePicker.getYear(),  datePicker.getMonth() + 1, datePicker.getDay());
+				setReturnValue(date);
+				getParent().close();
 			}
 		});
 
@@ -121,11 +70,6 @@ public class DateInputDialog extends ModalDialog<LocalDate> {
 		});
 
 		shell.pack();
-		textField.forceFocus();
-	}
-
-	private LocalDate parseDate(final String value) {
-		return LocalDate.parse(value, formatter);
 	}
 
 	private static String getI18NString(final String resourceKey, final Object... arguments) {

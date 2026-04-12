@@ -668,4 +668,13 @@ public class PGPUtilities {
 	    final PGPPublicKey updatedPublicKey = PGPPublicKey.addCertification(cleanedPublicKey, userId, newSignature);
 	    return PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
 	}
+
+	public static PGPSecretKey changeKeyPassword(final PGPSecretKey secretKey,  final char[] oldPassword, final char[] newPassword) throws Exception {
+		final PBESecretKeyDecryptor oldDecryptor = new JcePBESecretKeyDecryptorBuilder().setProvider("BC").build(oldPassword);
+
+		final PBESecretKeyEncryptor newEncryptor = new JcePBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256,
+			new JcaPGPDigestCalculatorProviderBuilder().build().get(HashAlgorithmTags.SHA256)).setProvider("BC").build(newPassword);
+
+		return PGPSecretKey.copyWithNewPassword(secretKey, oldDecryptor, newEncryptor);
+	}
 }
