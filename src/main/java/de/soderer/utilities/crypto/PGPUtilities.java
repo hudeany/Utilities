@@ -632,7 +632,7 @@ public class PGPUtilities {
 	    final PGPPublicKey publicKey = secretKey.getPublicKey();
 
 	    final LocalDateTime creationLocalDateTime = DateUtilities.getLocalDateTimeForDate(publicKey.getCreationTime());
-	    final long secondsUntilExpiration = Duration.between(creationLocalDateTime, validity).toSeconds() + 1;
+	    final long secondsUntilExpiration = Duration.between(creationLocalDateTime, validity).toSeconds();
 
 	    final Iterator<String> userIds = publicKey.getUserIDs();
 	    if (!userIds.hasNext()) {
