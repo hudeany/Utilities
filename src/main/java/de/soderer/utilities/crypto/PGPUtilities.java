@@ -398,13 +398,9 @@ public class PGPUtilities {
 			Iterator keyRingIterator = pgpPublicKeyRingCollection.getKeyRings();
 			while (keyRingIterator.hasNext()) {
 				final PGPPublicKeyRing keyRing = (PGPPublicKeyRing) keyRingIterator.next();
-				@SuppressWarnings("rawtypes")
-				final
-				Iterator publicKeyIterator = keyRing.getPublicKeys();
-				while (publicKeyIterator.hasNext()) {
-					final PGPPublicKey nextPGPPublicKey = (PGPPublicKey) publicKeyIterator.next();
-					if (nextPGPPublicKey.isEncryptionKey()) {
-						return nextPGPPublicKey;
+				for (final PGPPublicKey publicKey : keyRing) {
+					if (publicKey.isMasterKey()) {
+						return publicKey;
 					}
 				}
 			}
@@ -472,6 +468,52 @@ public class PGPUtilities {
 			return null;
 		} else {
 			return pgpSecretKey.getPublicKey();
+		}
+	}
+
+	/**
+	 * Validity in seconds after the key creation time. (Defined by the latest signature)
+	 * 0 means unlimited validity.
+	 */
+	public static long getPgpPublicKeyValiditySeconds(final PGPPublicKey key) {
+		PGPSignature latestSignature = null;
+
+		final Iterator<PGPSignature> signatures = key.getSignatures();
+
+		while (signatures.hasNext()) {
+			final PGPSignature signature = signatures.next();
+
+			if (key.isMasterKey()) {
+				final int type = signature.getSignatureType();
+
+				if (type == PGPSignature.POSITIVE_CERTIFICATION || type == PGPSignature.DEFAULT_CERTIFICATION
+						|| type == PGPSignature.CASUAL_CERTIFICATION || type == PGPSignature.NO_CERTIFICATION) {
+					if (signature.getKeyID() != key.getKeyID()) {
+						continue;
+					} else if (latestSignature == null || signature.getCreationTime().after(latestSignature.getCreationTime())) {
+						latestSignature = signature;
+					}
+				}
+			} else {
+				if (signature.getSignatureType() == PGPSignature.SUBKEY_BINDING) {
+					if (signature.getKeyID() != key.getKeyID()) {
+						continue;
+					} else if (latestSignature == null || signature.getCreationTime().after(latestSignature.getCreationTime())) {
+						latestSignature = signature;
+					}
+				}
+			}
+		}
+
+		if (latestSignature == null) {
+			return 0;
+		} else {
+			final PGPSignatureSubpacketVector hashed = latestSignature.getHashedSubPackets();
+			if (hashed == null || hashed.getKeyExpirationTime() < 0) {
+				return 0;
+			} else {
+				return hashed.getKeyExpirationTime();
+			}
 		}
 	}
 
