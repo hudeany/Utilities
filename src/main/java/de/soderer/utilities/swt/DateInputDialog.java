@@ -26,20 +26,20 @@ public class DateInputDialog extends ModalDialog<LocalDate> {
 
 	@Override
 	protected void createComponents(final Shell shell) throws Exception {
-		shell.setLayout(new GridLayout(1, true));
+		final GridLayout layout = new GridLayout(1, true);
+		layout.verticalSpacing = 0;
+		shell.setLayout(layout);
 
 		final StyledText styledText = new StyledText(shell, SWT.V_SCROLL | SWT.H_SCROLL | SWT.MULTI);
-		styledText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		final GridData textData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		textData.heightHint = 10;
+		styledText.setLayoutData(textData);
 		styledText.setText(text);
 		styledText.setBackground(shell.getBackground());
 		styledText.setAlwaysShowScrollBars(false);
 		styledText.setEditable(false);
 
-		final Composite textFieldComposite = new Composite(shell, SWT.NONE);
-		textFieldComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		textFieldComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
-
-		final DateTime datePicker = new DateTime(textFieldComposite, SWT.DATE | SWT.DROP_DOWN);
+		final DateTime datePicker = new DateTime(shell, SWT.DATE | SWT.DROP_DOWN);
 		datePicker.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);

@@ -671,44 +671,49 @@ public class PGPUtilities {
 	}
 
 	public static PGPSecretKey updateKeyExpiration(final PGPSecretKey secretKey, final PGPPrivateKey privateKey, final LocalDateTime validity) throws Exception {
-	    final PGPPublicKey publicKey = secretKey.getPublicKey();
+		final PGPPublicKey publicKey = secretKey.getPublicKey();
 
-	    final LocalDateTime creationLocalDateTime = DateUtilities.getLocalDateTimeForDate(publicKey.getCreationTime());
-	    final long secondsUntilExpiration = Duration.between(creationLocalDateTime, validity).toSeconds();
+		final long secondsUntilExpiration;
+		if (validity == null) {
+			secondsUntilExpiration = 0;
+		} else {
+			final LocalDateTime creationLocalDateTime = DateUtilities.getLocalDateTimeForDate(publicKey.getCreationTime());
+			secondsUntilExpiration = Duration.between(creationLocalDateTime, validity).toSeconds();
+		}
 
-	    final Iterator<String> userIds = publicKey.getUserIDs();
-	    if (!userIds.hasNext()) {
-	        throw new IllegalStateException("Mandatory User-ID of PGP key is missing");
-	    }
-	    final String userId = userIds.next();
+		final Iterator<String> userIds = publicKey.getUserIDs();
+		if (!userIds.hasNext()) {
+			throw new IllegalStateException("Mandatory User-ID of PGP key is missing");
+		}
+		final String userId = userIds.next();
 
-	    PGPPublicKey cleanedPublicKey = publicKey;
-	    final Iterator<PGPSignature> signaturesIterator = cleanedPublicKey.getSignaturesForID(userId);
-	    while (signaturesIterator.hasNext()) {
-	        final PGPSignature sig = signaturesIterator.next();
-	        if (sig.getKeyID() == publicKey.getKeyID()) {
-		        final boolean hasExpiration = sig.getHashedSubPackets() != null && sig.getHashedSubPackets().getKeyExpirationTime() > 0;
-		        if (hasExpiration) {
-		            cleanedPublicKey = PGPPublicKey.removeCertification(cleanedPublicKey, userId, sig);
-		        }
-	        }
-	    }
+		PGPPublicKey cleanedPublicKey = publicKey;
+		final Iterator<PGPSignature> signaturesIterator = cleanedPublicKey.getSignaturesForID(userId);
+		while (signaturesIterator.hasNext()) {
+			final PGPSignature sig = signaturesIterator.next();
+			if (sig.getKeyID() == publicKey.getKeyID()) {
+				final boolean hasExpiration = sig.getHashedSubPackets() != null && sig.getHashedSubPackets().getKeyExpirationTime() > 0;
+				if (hasExpiration) {
+					cleanedPublicKey = PGPPublicKey.removeCertification(cleanedPublicKey, userId, sig);
+				}
+			}
+		}
 
-	    final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
-	    subpacketGenerator.setKeyExpirationTime(false, secondsUntilExpiration);
-	    subpacketGenerator.setSignatureCreationTime(false, new Date());
-	    subpacketGenerator.addNotationData(false, true, "identity", userId);
+		final PGPSignatureSubpacketGenerator subpacketGenerator = new PGPSignatureSubpacketGenerator();
+		subpacketGenerator.setKeyExpirationTime(false, secondsUntilExpiration);
+		subpacketGenerator.setSignatureCreationTime(false, new Date());
+		subpacketGenerator.addNotationData(false, true, "identity", userId);
 
 		@SuppressWarnings("deprecation")
 		final PGPSignatureGenerator sigGen = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(publicKey.getAlgorithm(), HashAlgorithmTags.SHA256).setProvider("BC"));
 
-	    sigGen.init(PGPSignature.POSITIVE_CERTIFICATION, privateKey);
-	    sigGen.setHashedSubpackets(subpacketGenerator.generate());
+		sigGen.init(PGPSignature.POSITIVE_CERTIFICATION, privateKey);
+		sigGen.setHashedSubpackets(subpacketGenerator.generate());
 
-	    final PGPSignature newSignature = sigGen.generateCertification(userId, publicKey);
+		final PGPSignature newSignature = sigGen.generateCertification(userId, publicKey);
 
-	    final PGPPublicKey updatedPublicKey = PGPPublicKey.addCertification(cleanedPublicKey, userId, newSignature);
-	    return PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
+		final PGPPublicKey updatedPublicKey = PGPPublicKey.addCertification(cleanedPublicKey, userId, newSignature);
+		return PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
 	}
 
 	public static PGPSecretKey changeKeyPassword(final PGPSecretKey secretKey,  final char[] oldPassword, final char[] newPassword) throws Exception {
