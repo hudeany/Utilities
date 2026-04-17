@@ -47,21 +47,35 @@ public class DualProgressDialog<T extends WorkerDual<?>> extends ProgressDialog<
 
 	protected void setSubProgress(final LocalDateTime start, final long todo, final long done) {
 		if (!isDisposed()) {
-			stopUnlimitedProgress();
-			subItemProgressBar.setSelection((int) (done * 100 / todo));
+			if (todo > 0) {
+				stopUnlimitedProgress();
+				subItemProgressBar.setSelection((int) (done * 100 / todo));
 
-			final LocalDateTime estimatedEnd = DateUtilities.calculateETA(start, todo, done);
-			if (estimatedEnd != null) {
-				subItemProgressBar.setToolTipText("ETA: " + DateUtilities.formatDate(DateUtilities.getDateTimeFormatWithSecondsPattern(Locale.getDefault()), estimatedEnd));
+				final LocalDateTime estimatedEnd = DateUtilities.calculateETA(start, todo, done);
+				if (estimatedEnd != null) {
+					subItemProgressBar.setToolTipText("ETA: " + DateUtilities.formatDate(DateUtilities.getDateTimeFormatWithSecondsPattern(Locale.getDefault()), estimatedEnd));
+				} else {
+					subItemProgressBar.setToolTipText(null);
+				}
+
+				try {
+					final String labelText = subCommentStringFormat.replace("{0}", Long.toString(done)).replace("{1}", Long.toString(todo)).replace("{2}", Long.toString(done * 100 / todo));
+					subItemLabel.setText(labelText);
+				} catch (final Exception e) {
+					e.printStackTrace();
+				}
+			} else if (todo < 0) {
+				receiveUnlimitedProgressSignal();
 			} else {
-				subItemProgressBar.setToolTipText(null);
-			}
+				subItemProgressBar.setSelection(0);
+				subItemProgressBar.setToolTipText("ETA: " + DateUtilities.formatDate(DateUtilities.getDateTimeFormatWithSecondsPattern(Locale.getDefault()), LocalDateTime.now()));
 
-			try {
-				final String labelText = subCommentStringFormat.replace("{0}", Long.toString(done)).replace("{1}", Long.toString(todo)).replace("{2}", Long.toString(done * 100 / todo));
-				subItemLabel.setText(labelText);
-			} catch (final Exception e) {
-				e.printStackTrace();
+				try {
+					final String labelText = subCommentStringFormat.replace("{0}", Long.toString(done)).replace("{1}", Long.toString(todo)).replace("{2}", "100");
+					subItemLabel.setText(labelText);
+				} catch (final Exception e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
