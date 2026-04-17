@@ -724,11 +724,18 @@ public class Utilities {
 			trailingDigits = amountOfSignificantDigits;
 		}
 
+		String formatPattern;
 		if (keepTrailingZeros) {
-			numberFormat = new DecimalFormat("#0." + repeat("0", Math.min(trailingDigits, maxTrailingDigits)), decimalFormatSymbols);
+			final int amopuntOfTrailingZeros = Math.min(trailingDigits, maxTrailingDigits);
+			if (amopuntOfTrailingZeros > 0) {
+				formatPattern = "#0." + repeat("0", amopuntOfTrailingZeros);
+			} else {
+				formatPattern = "#0";
+			}
 		} else {
-			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1)), decimalFormatSymbols);
+			formatPattern = "#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1));
 		}
+		numberFormat = new DecimalFormat(formatPattern, decimalFormatSymbols);
 
 		return numberFormat.format(interimValue) + unitExtension;
 	}
