@@ -8,7 +8,8 @@ public enum SimpleDataType {
 	DateTime,
 	String,
 	Clob,
-	Blob;
+	Blob,
+	Boolean;
 
 	public static SimpleDataType getSimpleDataTypeByName(final String name) {
 		for (final SimpleDataType simpleDataType : SimpleDataType.values()) {

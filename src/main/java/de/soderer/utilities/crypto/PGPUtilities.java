@@ -28,6 +28,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPKeyPair;
 import org.bouncycastle.openpgp.PGPKeyRingGenerator;
+import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
@@ -151,11 +152,16 @@ public class PGPUtilities {
 		}
 
 		public static PgpPublicEncryptionMethod getByName(final String methodName) throws Exception {
-			final String searchMethodName = methodName.replace("-", "").replace("_", "");
+			final String searchMethodName = methodName.trim().replace("-", "").replace("_", "");
 			for (final PgpPublicEncryptionMethod encryptionMethod : PgpPublicEncryptionMethod.values()) {
 				if (encryptionMethod.toString().replace("-", "").replace("_", "").equalsIgnoreCase(searchMethodName)) {
 					return encryptionMethod;
 				}
+			}
+			if (searchMethodName.equalsIgnoreCase("RSA")) {
+				return RSA_GENERAL;
+			} else if (searchMethodName.equalsIgnoreCase("ELGAMAL")) {
+				return ELGAMAL_ENCRYPT;
 			}
 			throw new Exception("Invalid PgpPublicEncryptionMethod name: " + methodName);
 		}
@@ -438,6 +444,27 @@ public class PGPUtilities {
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			return null;
 		}
+	}
+
+	public static class PGPKeyRings {
+		public final List<PGPPublicKeyRing> publicKeyRings = new ArrayList<>();
+		public final List<PGPSecretKeyRing> secretKeyRings = new ArrayList<>();
+	}
+
+	public static PGPKeyRings readKeyRings(final InputStream inputStream) throws Exception {
+		final PGPKeyRings result = new PGPKeyRings();
+		try (InputStream decoder = PGPUtil.getDecoderStream(inputStream)) {
+			final PGPObjectFactory factory = new PGPObjectFactory(decoder, new JcaKeyFingerprintCalculator());
+			Object nextObject;
+			while ((nextObject = factory.nextObject()) != null) {
+				if (nextObject instanceof PGPSecretKeyRing) {
+					result.secretKeyRings.add((PGPSecretKeyRing) nextObject);
+				} else if (nextObject instanceof PGPPublicKeyRing) {
+					result.publicKeyRings.add((PGPPublicKeyRing) nextObject);
+				}
+			}
+		}
+		return result;
 	}
 
 	public static PGPPrivateKey readPGPPrivateKey(final PGPSecretKey secretKey, final char[] password) throws Exception {

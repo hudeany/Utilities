@@ -48,7 +48,7 @@ public class DbColumnType {
 			return SimpleDataType.Date;
 		} else if (typeName.toLowerCase().contains("clob") || typeName.toLowerCase().contains("text")) {
 			return SimpleDataType.Clob;
-		} else if (typeName.toLowerCase().startsWith("varchar") || typeName.toLowerCase().startsWith("char") || typeName.toLowerCase().contains("text") || typeName.toLowerCase().startsWith("character")) {
+		} else if (typeName.toLowerCase().startsWith("varchar") || typeName.toLowerCase().startsWith("char") || typeName.toLowerCase().startsWith("character")) {
 			return SimpleDataType.String;
 		} else if (typeName.toLowerCase().contains("blob") ||"bytea".equals( typeName.toLowerCase())) {
 			return SimpleDataType.Blob;
@@ -56,6 +56,8 @@ public class DbColumnType {
 			return SimpleDataType.BigInteger;
 		} else if (typeName.toLowerCase().contains("int")) {
 			return SimpleDataType.Integer;
+		} else if (typeName.toLowerCase().contains("bool")) {
+			return SimpleDataType.Boolean;
 		} else {
 			// e.g.: PostgreSQL "REAL"
 			return SimpleDataType.Float;
