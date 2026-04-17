@@ -11,8 +11,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 
 import de.soderer.utilities.LangResources;
-import de.soderer.utilities.swt.ModalDialog;
-import de.soderer.utilities.swt.SwtUtilities;
 
 public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 	private int workerCount;

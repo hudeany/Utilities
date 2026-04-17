@@ -2478,6 +2478,7 @@ public class DbUtilities {
 				case BigInteger: return "NUMBER";
 				case Float: return "NUMBER";
 				case String: return "VARCHAR2";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR2";
 			}
 		} else if (dbVendor == DbVendor.MySQL) {
@@ -2490,6 +2491,7 @@ public class DbUtilities {
 				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR";
 			}
 		} else if (dbVendor == DbVendor.MariaDB) {
@@ -2502,6 +2504,7 @@ public class DbUtilities {
 				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR";
 			}
 		} else if (dbVendor == DbVendor.HSQL) {
@@ -2514,6 +2517,7 @@ public class DbUtilities {
 				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR";
 			}
 		} else if (dbVendor == DbVendor.PostgreSQL) {
@@ -2526,6 +2530,7 @@ public class DbUtilities {
 				case BigInteger: return "BIGINT";
 				case Float: return "REAL";
 				case String: return "VARCHAR";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR";
 			}
 		} else if (dbVendor == DbVendor.SQLite) {
@@ -2538,6 +2543,7 @@ public class DbUtilities {
 				case BigInteger: return "INTEGER";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR";
 			}
 		} else if (dbVendor == DbVendor.Derby) {
@@ -2550,6 +2556,7 @@ public class DbUtilities {
 				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR";
 			}
 		} else if (dbVendor == DbVendor.Firebird) {
@@ -2562,6 +2569,7 @@ public class DbUtilities {
 				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE PRECISION";
 				case String: return "VARCHAR";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR";
 			}
 		} else if (dbVendor == DbVendor.Cassandra) {
@@ -2574,6 +2582,7 @@ public class DbUtilities {
 				case BigInteger: return "BIGINT";
 				case Float: return "DOUBLE";
 				case String: return "VARCHAR";
+				case Boolean: return "BOOLEAN";
 				default: return "VARCHAR";
 			}
 		} else if (dbVendor == DbVendor.MsSQL) {
@@ -2586,6 +2595,7 @@ public class DbUtilities {
 				case BigInteger: return "BIGINT";
 				case Float: return "REAL";
 				case String: return "VARCHAR";
+				case Boolean: return "BIT";
 				default: return "VARCHAR";
 			}
 		} else {
