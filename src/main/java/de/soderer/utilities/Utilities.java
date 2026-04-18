@@ -36,8 +36,10 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -2141,5 +2143,17 @@ public class Utilities {
 		returnString += boxCharacterString + " " + text + " " + boxCharacterString + "\n";
 		returnString += boxCharacterString.repeat(2) + boxCharacterString.repeat(text.length()) + boxCharacterString.repeat(2);
 		return returnString;
+	}
+
+	public static <T> List<T> getListForIterator(final Iterator<T> iterator) {
+		final List<T> list = new ArrayList<>();
+		iterator.forEachRemaining(list::add);
+		return list;
+	}
+
+	public static <T> List<T> getListForEnumeration(final Enumeration<T> enumeration) {
+		final List<T> list = new ArrayList<>();
+		Collections.list(enumeration);
+		return list;
 	}
 }

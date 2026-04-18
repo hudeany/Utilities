@@ -5,9 +5,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.KeyPair;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -741,6 +744,77 @@ public class PGPUtilities {
 
 		final PGPPublicKey updatedPublicKey = PGPPublicKey.addCertification(cleanedPublicKey, userId, newSignature);
 		return PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
+	}
+
+	public static PGPSecretKeyRing updateKeyExpiration(final PGPSecretKeyRing secretKeyRing, final char[] password, final LocalDateTime expiration) throws Exception {
+		final PGPSecretKey secretKey = secretKeyRing.getSecretKey();
+		if (secretKey == null) {
+			throw new IllegalArgumentException("No secret key found");
+		}
+
+		final PGPPrivateKey privateKey = secretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder().setProvider("BC").build(password));
+		if (privateKey == null) {
+			throw new IllegalArgumentException("Wrong password or cannot unlock key");
+		}
+
+		final PGPPublicKey publicKey = secretKey.getPublicKey();
+
+		@SuppressWarnings("deprecation")
+		final PGPSignatureGenerator sigGen = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(publicKey.getAlgorithm(), HashAlgorithmTags.SHA256).setProvider("BC"));
+
+		sigGen.init(PGPSignature.POSITIVE_CERTIFICATION, privateKey);
+
+		final PGPSignatureSubpacketGenerator spGen = new PGPSignatureSubpacketGenerator();
+
+		if (expiration != null) {
+			final long seconds = Duration.between(
+				Instant.ofEpochMilli(publicKey.getCreationTime().getTime()),
+				expiration.atZone(ZoneId.systemDefault()).toInstant()
+			).getSeconds();
+
+			spGen.setKeyExpirationTime(false, seconds);
+		}
+
+		sigGen.setHashedSubpackets(spGen.generate());
+
+		final PGPSignature newSig = sigGen.generateCertification(publicKey.getUserIDs().next(), publicKey);
+
+		PGPPublicKey updatedPublicKey = PGPPublicKey.removeCertification(publicKey, findSelfSignature(publicKey));
+
+		updatedPublicKey = PGPPublicKey.addCertification(updatedPublicKey, newSig);
+
+		final PGPSecretKey updatedSecretKey = PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
+
+		return PGPSecretKeyRing.insertSecretKey(PGPSecretKeyRing.removeSecretKey(secretKeyRing, secretKey), updatedSecretKey);
+	}
+
+	public static PGPSecretKeyRing changeKeyPassword(final PGPSecretKeyRing secretKeyRing, final char[] oldPassword, final char[] newPassword) throws Exception {
+		PGPSecretKeyRing updatedRing = secretKeyRing;
+
+		final PBESecretKeyDecryptor oldDecryptor = new JcePBESecretKeyDecryptorBuilder().setProvider("BC").build(oldPassword);
+		final PBESecretKeyEncryptor newEncryptor = new JcePBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256).setProvider("BC").setSecureRandom(new SecureRandom()).build(newPassword);
+
+		final Iterator<PGPSecretKey> it = secretKeyRing.getSecretKeys();
+		while (it.hasNext()) {
+			final PGPSecretKey secretKey = it.next();
+			final PGPSecretKey newSecretKey = PGPSecretKey.copyWithNewPassword(secretKey, oldDecryptor, newEncryptor);
+			updatedRing = PGPSecretKeyRing.insertSecretKey(PGPSecretKeyRing.removeSecretKey(updatedRing, secretKey), newSecretKey);
+		}
+
+		return updatedRing;
+	}
+
+	public static PGPSignature findSelfSignature(final PGPPublicKey key) {
+		final Iterator<PGPSignature> it = key.getSignatures();
+
+		while (it.hasNext()) {
+			final PGPSignature sig = it.next();
+			if (sig.getKeyID() == key.getKeyID()) {
+				return sig;
+			}
+		}
+
+		return null;
 	}
 
 	public static PGPSecretKey changeKeyPassword(final PGPSecretKey secretKey,  final char[] oldPassword, final char[] newPassword) throws Exception {
