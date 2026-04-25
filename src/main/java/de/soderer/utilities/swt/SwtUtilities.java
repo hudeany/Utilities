@@ -1,5 +1,9 @@
 package de.soderer.utilities.swt;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Function;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -20,8 +24,11 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
@@ -180,6 +187,55 @@ public class SwtUtilities {
 				}
 			}
 		});
+	}
+
+	public static <T> void makeSortable(final Table table, final List<T> data, final List<Function<T, ? extends Comparable<?>>> valueExtractors) {
+		final TableColumn[] columns = table.getColumns();
+		for (int i = 0; i < columns.length; i++) {
+			final int columnIndex = i;
+			columns[i].addListener(SWT.Selection, new Listener() {
+				@Override
+				public void handleEvent(final Event event) {
+					final TableColumn column = (TableColumn) event.widget;
+
+					int direction = table.getSortDirection();
+					if (table.getSortColumn() == column) {
+						direction = direction == SWT.UP ? SWT.DOWN : SWT.UP;
+					} else {
+						table.setSortColumn(column);
+						direction = SWT.UP;
+					}
+					table.setSortDirection(direction);
+
+					Comparator<T> comparator = buildComparator(valueExtractors.get(columnIndex));
+
+					if (direction == SWT.DOWN) {
+						comparator = comparator.reversed();
+					}
+
+					data.sort(comparator);
+					table.clearAll();
+				}
+			});
+		}
+	}
+
+	private static <T> Comparator<T> buildComparator(final Function<T, ? extends Comparable<?>> extractor) {
+		return (a, b) -> {
+			@SuppressWarnings("unchecked")
+			final Comparable<Object> valA = (Comparable<Object>) extractor.apply(a);
+			@SuppressWarnings("unchecked")
+			final Comparable<Object> valB = (Comparable<Object>) extractor.apply(b);
+			if (valA == null && valB == null) {
+				return 0;
+			} else if (valA == null) {
+				return -1;
+			} else if (valB == null) {
+				return 1;
+			} else {
+				return valA.compareTo(valB);
+			}
+		};
 	}
 }
 
