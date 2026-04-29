@@ -168,7 +168,7 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>csv</artifactId>
-			<version>25.1.1</version>
+			<version>26.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
