@@ -653,7 +653,8 @@ public class FileUtilities {
 			filePathWithoutCompressionPart = filePath;
 		}
 
-		if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".csv")) {
+		if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".csv")
+			|| Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".del")) {
 			fileType.setFileDataType(FileDataType.CSV);
 		} else if (Utilities.endsWithIgnoreCase(filePath, ".xls") || Utilities.endsWithIgnoreCase(filePath, ".xlsx")) {
 			fileType.setFileDataType(FileDataType.EXCEL);
