@@ -168,12 +168,12 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>csv</artifactId>
-			<version>26.0.0</version>
+			<version>26.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>json</artifactId>
-			<version>26.1.10</version>
+			<version>26.1.38</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
