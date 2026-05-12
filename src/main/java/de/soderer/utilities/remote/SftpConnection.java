@@ -623,7 +623,7 @@ public class SftpConnection implements RemoteConnection {
 		try {
 			final List<String> returnList = new ArrayList<>();
 
-			// exec 'ls -1 pathn' remotely
+			// exec 'ls -1a <path>' remotely
 			final String command = "ls -1a \"" + remoteHostPath + "\"";
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
