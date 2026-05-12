@@ -1045,8 +1045,6 @@ public class SftpConnection implements RemoteConnection {
 							isFirstLine = false;
 						}
 					}
-
-
 				}
 			}
 		} finally {
