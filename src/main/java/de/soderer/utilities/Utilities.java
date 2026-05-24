@@ -1358,7 +1358,7 @@ public class Utilities {
 	}
 
 	/**
-	 * Only trim the value when the sourrounding occures on both ends
+	 * Only trim the value when the surrounding occurs on both ends
 	 * @param value
 	 * @param prefix
 	 * @return
