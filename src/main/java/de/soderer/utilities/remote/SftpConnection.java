@@ -803,6 +803,9 @@ public class SftpConnection implements RemoteConnection {
 				final byte[] errorData = IoUtilities.toByteArray(inErrorStream);
 
 				if (errorData != null && errorData.length > 0) {
+					if (new String(errorData, StandardCharsets.UTF_8).toLowerCase().contains("permission denied")) {
+						throw new PermissionDeniedException("Permission denied", folderPath);
+					}
 					return null;
 				} else {
 					try (BufferedReader reader = new BufferedReader(new StringReader(successString))) {
@@ -1054,8 +1057,13 @@ public class SftpConnection implements RemoteConnection {
 		final List<FolderInfo> folderInfoList = new ArrayList<>();
 
 		for (final String subFolderName : subFolderNames) {
-			FolderInfo folderInfo = getFolderInfo(folderPath + "/" + subFolderName);
-			if (folderInfo == null) {
+			FolderInfo folderInfo;
+			try {
+				folderInfo = getFolderInfo(folderPath + "/" + subFolderName);
+				if (folderInfo == null) {
+					folderInfo = new FolderInfo(subFolderName, null);
+				}
+			} catch (@SuppressWarnings("unused") final Exception e) {
 				folderInfo = new FolderInfo(subFolderName, null);
 			}
 			folderInfoList.add(folderInfo);
