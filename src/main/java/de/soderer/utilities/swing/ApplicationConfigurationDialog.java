@@ -318,7 +318,11 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 							new File(desktopLinkFilePath).delete();
 						}
 
-						final String iconPath = System.getProperty("user.home") + File.separator + applicationName + ".ico";
+						final String userHomeApplicationDirectory = System.getProperty("user.home") + File.separator + "." + applicationName;
+						final String iconPath = userHomeApplicationDirectory + File.separator + applicationName + ".ico";
+						if (!new File(userHomeApplicationDirectory).exists()) {
+							new File(userHomeApplicationDirectory).mkdir();
+						}
 						if (new File(iconPath).exists()) {
 							new File(iconPath).delete();
 						}
