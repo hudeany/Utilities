@@ -40,6 +40,8 @@ public class SecureDataGuiApplication extends JFrame {
 
 			if (keystoreExists()) {
 				secureDataStore = openKeystore();
+			} else if (keystoreFile != null && !keystoreFile.getParentFile().exists()) {
+				keystoreFile.getParentFile().mkdirs();
 			}
 
 			if (secureDataStore != null) {
