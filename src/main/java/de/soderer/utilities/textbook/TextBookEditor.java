@@ -2,12 +2,15 @@ package de.soderer.utilities.textbook;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.channels.Channels;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -138,12 +141,8 @@ public class TextBookEditor implements AutoCloseable {
 
 				currentPage.setAmountOfLines(currentPage.getAmountOfLines() + 1);
 
-				index = index + nextLine.length();
-				if (lineReader.getLatestLineBreakType() == LineBreak.Unix || lineReader.getLatestLineBreakType() == LineBreak.Mac) {
-					index = index + 1;
-				} else if (lineReader.getLatestLineBreakType() == LineBreak.Windows) {
-					index = index + 2;
-				}
+				index = index + nextLine.getBytes(charset).length;
+				index = index + getLineBreakByteLength(lineReader.getLatestLineBreakType());
 			}
 			if (currentPage != null) {
 				currentPage.setEndFileIndex(index);
@@ -162,6 +161,19 @@ public class TextBookEditor implements AutoCloseable {
 		revalidateStatisticData = true;
 	}
 
+	/**
+	 * Byte length of a line break in the editor's charset (e.g. 1 byte for "\n" in UTF-8,
+	 * but 2 bytes for "\n" in UTF-16). Unknown/Mixed contributes 0, matching a line with no
+	 * detected line break (e.g. the very last line of a file without a trailing line break).
+	 */
+	private int getLineBreakByteLength(final LineBreak lineBreakTypeOfLine) {
+		if (lineBreakTypeOfLine == LineBreak.Unix || lineBreakTypeOfLine == LineBreak.Mac || lineBreakTypeOfLine == LineBreak.Windows) {
+			return lineBreakTypeOfLine.toString().getBytes(charset).length;
+		} else {
+			return 0;
+		}
+	}
+
 	private static LineReader getTextFileLineReader(final File textFile, final Charset charset) throws Exception {
 		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
 			final ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(textFile)), charset);
@@ -169,6 +181,40 @@ public class TextBookEditor implements AutoCloseable {
 			return new LineReader(inputStream, charset);
 		} else {
 			return new LineReader(new FileInputStream(textFile), charset);
+		}
+	}
+
+	/**
+	 * Opens the textFile (or its single zip entry) as a raw byte stream, positioned at byte 0
+	 * (including any BOM). Used by write() to copy unedited page content byte-for-byte, without
+	 * going through character decoding/encoding at all.
+	 */
+	private static InputStream getTextFileRawInputStream(final File textFile) throws Exception {
+		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
+			final ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(textFile)));
+			inputStream.getNextEntry();
+			return inputStream;
+		} else {
+			return new BufferedInputStream(new FileInputStream(textFile));
+		}
+	}
+
+	/**
+	 * Skips exactly bytesToSkip bytes from inputStream. InputStream#skip may skip fewer bytes than
+	 * requested (this is explicitly allowed by its contract, and ZipInputStream in particular often
+	 * does), so this loops and falls back to reading single bytes when skip() stalls.
+	 */
+	private static void skipBytes(final InputStream inputStream, final long bytesToSkip) throws Exception {
+		long remaining = bytesToSkip;
+		while (remaining > 0) {
+			final long actuallySkipped = inputStream.skip(remaining);
+			if (actuallySkipped > 0) {
+				remaining -= actuallySkipped;
+			} else if (inputStream.read() == EOF) {
+				throw new Exception("Unexpected end of textfile while skipping data");
+			} else {
+				remaining--;
+			}
 		}
 	}
 
@@ -710,32 +756,32 @@ public class TextBookEditor implements AutoCloseable {
 			}
 
 			if (textFile != null) {
-				try (LineReader lineReader = getTextFileLineReader(textFile, charset);
+				try (InputStream inputStream = getTextFileRawInputStream(textFile);
 						OutputStream outputStream = getTextFileOutputStream(interimTextBookFile)) {
 					outputStream.write(bom.getBytes());
+					skipBytes(inputStream, bom.getBytes().length);
 					long currentReadIndex = 0;
+					final byte[] copyBuffer = new byte[4096];
 					for (final Page page : pages) {
 						final List<String> newContentLines = page.getNewContentLines();
 						if (newContentLines != null) {
 							final String newDataString = Utilities.join(newContentLines, null);
 							outputStream.write(newDataString.getBytes(charset));
+							skipBytes(inputStream, page.getEndFileIndex() - currentReadIndex);
+							currentReadIndex = page.getEndFileIndex();
 							page.clear();
 						} else {
-							lineReader.skipChars(page.getStartFileIndex() - currentReadIndex);
-							currentReadIndex += page.getStartFileIndex() - currentReadIndex;
-							int nextByte;
-							final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-							while (currentReadIndex <= page.getEndFileIndex() && (nextByte = lineReader.readChar()) != EOF) {
-								buffer.write(nextByte);
-								if (buffer.size() == 4096) {
-									outputStream.write(buffer.toByteArray());
-									buffer.reset();
+							skipBytes(inputStream, page.getStartFileIndex() - currentReadIndex);
+							currentReadIndex = page.getStartFileIndex();
+							long bytesToCopy = page.getEndFileIndex() - currentReadIndex;
+							while (bytesToCopy > 0) {
+								final int bytesRead = inputStream.read(copyBuffer, 0, (int) Math.min(copyBuffer.length, bytesToCopy));
+								if (bytesRead == EOF) {
+									throw new Exception("Unexpected end of textfile while copying: " + textFile.getCanonicalPath());
 								}
-								currentReadIndex++;
-							}
-							if (buffer.size() > 0) {
-								outputStream.write(buffer.toByteArray());
-								buffer.reset();
+								outputStream.write(copyBuffer, 0, bytesRead);
+								bytesToCopy -= bytesRead;
+								currentReadIndex += bytesRead;
 							}
 						}
 					}
@@ -777,36 +823,60 @@ public class TextBookEditor implements AutoCloseable {
 			throw new Exception("The sourcefile has been tampered meanwile after read");
 		}
 
-		try (LineReader lineReader = getTextFileLineReader(textFile, charset)) {
-			long bytesSkipped = 0;
-			while (bytesSkipped < startFileIndex) {
-				try {
-					lineReader.skipChars(startFileIndex - bytesSkipped);
-				} catch(final Exception e) {
-					throw new Exception("Cannot skip data while reading textfile: " + textFile.getCanonicalPath(), e);
-				}
-				bytesSkipped += startFileIndex - bytesSkipped;
-			}
+		try (LineReader lineReader = openTextFileLineReaderAtByteOffset(startFileIndex)) {
 			long index = startFileIndex;
 			final List<String> dataLines = new ArrayList<>();
 			String nextLine;
 			while (index < endFileIndex && (nextLine = lineReader.readLine()) != null) {
-				index = index + nextLine.length();
+				index = index + nextLine.getBytes(charset).length;
+				index = index + getLineBreakByteLength(lineReader.getLatestLineBreakType());
 				if (lineReader.getLatestLineBreakType() == LineBreak.Unix) {
 					nextLine += LineBreak.Unix.toString();
-					index = index + 1;
 				} else if (lineReader.getLatestLineBreakType() == LineBreak.Mac) {
 					nextLine += LineBreak.Mac.toString();
-					index = index + 1;
 				} else if (lineReader.getLatestLineBreakType() == LineBreak.Windows) {
 					nextLine += LineBreak.Windows.toString();
-					index = index + 2;
 				}
 
 				dataLines.add(nextLine);
 			}
 
 			return dataLines;
+		}
+	}
+
+	/**
+	 * Opens a LineReader positioned exactly at the given byte offset (measured right after any BOM,
+	 * matching how startFileIndex/endFileIndex are tracked in scanTextFile()).
+	 *
+	 * For plain (non-zip) files this seeks directly via RandomAccessFile/FileChannel instead of
+	 * re-scanning the file from the beginning - turning random page access from O(fileSize) into
+	 * effectively O(1) per access, which matters a lot once a file has many pages.
+	 *
+	 * Zip entries are deflate-compressed and cannot be seeked into directly, so those still fall
+	 * back to scanning (skipping) from the start of the decompressed stream.
+	 */
+	private LineReader openTextFileLineReaderAtByteOffset(final long byteOffset) throws Exception {
+		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
+			final LineReader lineReader = getTextFileLineReader(textFile, charset);
+			try {
+				lineReader.skipChars(byteOffset);
+				return lineReader;
+			} catch (final Exception e) {
+				lineReader.close();
+				throw new Exception("Cannot skip data while reading textfile: " + textFile.getCanonicalPath(), e);
+			}
+		} else {
+			@SuppressWarnings("resource")
+			final RandomAccessFile randomAccessFile = new RandomAccessFile(textFile, "r");
+			try {
+				randomAccessFile.seek(bom.getBytes().length + byteOffset);
+				final InputStream inputStream = Channels.newInputStream(randomAccessFile.getChannel());
+				return new LineReader(new InputStreamReader(inputStream, charset));
+			} catch (final Exception e) {
+				randomAccessFile.close();
+				throw new Exception("Cannot seek to position in textfile: " + textFile.getCanonicalPath(), e);
+			}
 		}
 	}
 
