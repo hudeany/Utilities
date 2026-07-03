@@ -102,13 +102,18 @@ public class Page {
 		}
 	}
 
-	public void clear() {
+	public void clear() throws Exception {
 		if (interimStorageFile != null) {
 			interimStorageFile.delete();
 			interimStorageFile = null;
+			getParentTextBookEditor().setNumberOfPagesWithStoredNewContent(getParentTextBookEditor().getNumberOfPagesWithStoredNewContent() - 1);
 		}
 		if (newContentLines != null) {
+			// Preserve the up-to-date line count before dropping the in-memory content,
+			// otherwise getAmountOfLines() falls back to the stale pre-edit "amountOfLines" value
+			amountOfLines = newContentLines.size();
 			newContentLines = null;
+			getParentTextBookEditor().setNumberOfPagesWithNewContent(getParentTextBookEditor().getNumberOfPagesWithNewContent() - 1);
 		}
 	}
 

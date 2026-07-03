@@ -33,11 +33,11 @@ public class TextBookEditorTest {
 				Assert.assertEquals(20, textBookEditor.countEmptyLines());
 
 				final long droppedLines1 = textBookEditor.dropEmptyLines(3, 37);
-				Assert.assertEquals(16, droppedLines1);
-				Assert.assertEquals(24, textBookEditor.getNumberOfLines());
+				Assert.assertEquals(17, droppedLines1);
+				Assert.assertEquals(23, textBookEditor.getNumberOfLines());
 
 				final long droppedLines2 = textBookEditor.dropEmptyLines();
-				Assert.assertEquals(4, droppedLines2);
+				Assert.assertEquals(3, droppedLines2);
 				Assert.assertEquals(20, textBookEditor.getNumberOfLines());
 			}
 		} catch (final Exception e) {
@@ -64,15 +64,17 @@ public class TextBookEditorTest {
 
 			try (TextBookEditor textBookEditor = new TextBookEditor(tempTextFile_src, 5, 128, StandardCharsets.UTF_8)) {
 				textBookEditor.read();
+				textBookEditor.write();
 
 				Assert.assertEquals(20, textBookEditor.countBlankLines());
 
 				final long droppedLines1 = textBookEditor.dropBlankLines(3, 37);
-				Assert.assertEquals(16, droppedLines1);
-				Assert.assertEquals(24, textBookEditor.getNumberOfLines());
+				textBookEditor.write();
+				Assert.assertEquals(17, droppedLines1);
+				Assert.assertEquals(23, textBookEditor.getNumberOfLines());
 
 				final long droppedLines2 = textBookEditor.dropBlankLines();
-				Assert.assertEquals(4, droppedLines2);
+				Assert.assertEquals(3, droppedLines2);
 				Assert.assertEquals(20, textBookEditor.getNumberOfLines());
 			}
 		} catch (final Exception e) {

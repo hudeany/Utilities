@@ -106,6 +106,16 @@ public class TextBookEditor implements AutoCloseable {
 			throw new Exception("Read was already called before");
 		}
 
+		scanTextFile();
+	}
+
+	/**
+	 * (Re-)scans the textFile and rebuilds the page index, size and modification date.
+	 * Used by read() for the initial read, and again after an in-place write(),
+	 * because writing replaces the file on disk (different byte layout), which would
+	 * otherwise leave "size"/"modificationDate" and all page file-offsets stale.
+	 */
+	private void scanTextFile() throws Exception {
 		size = textFile.length();
 		modificationDate = DateUtilities.getLocalDateTime(textFile.lastModified());
 
@@ -146,6 +156,10 @@ public class TextBookEditor implements AutoCloseable {
 			pages = null;
 			throw e;
 		}
+
+		numberOfPagesWithNewContent = 0;
+		numberOfPagesWithStoredNewContent = 0;
+		revalidateStatisticData = true;
 	}
 
 	private static LineReader getTextFileLineReader(final File textFile, final Charset charset) throws Exception {
@@ -219,12 +233,10 @@ public class TextBookEditor implements AutoCloseable {
 		if (startPage == null) {
 			throw new Exception("Error while replacing lines " + startLineNumber + " to " + endLineNumber + ": Cannot find start in data");
 		} else if (startPageLineIndex + startPage.getAmountOfLines() >= endLineNumber) {
-			// End line lies within start page also
 			if (endPage != null) {
 				throw new Exception("Error while replacing lines " + startLineNumber + " to " + endLineNumber + ": Mistake in finding end data");
 			}
 
-			// Process start page
 			List<String> startPageLines = startPage.getNewContentLines();
 			if (startPageLines == null) {
 				startPageLines = readTextFileLines(startPage.getStartFileIndex(), startPage.getEndFileIndex());
@@ -236,17 +248,15 @@ public class TextBookEditor implements AutoCloseable {
 			}
 			if (newContentLines != null) {
 				startPageLines.addAll((int) (startLineNumber - 1 - startPageLineIndex), addMissingLineBreaks(newContentLines));
-				startPage.setNewContentLines(startPageLines);
 			}
+			startPage.setNewContentLines(startPageLines);
 
 			revalidateStatisticData = true;
 		} else {
-			// End line lies in end page
 			if (endPage == null) {
 				throw new Exception("Error while replacing lines " + startLineNumber + " to " + endLineNumber + ": Mistake in finding end data page");
 			}
 
-			// Process start page
 			List<String> startPageLines = startPage.getNewContentLines();
 			if (startPageLines == null) {
 				startPageLines = readTextFileLines(startPage.getStartFileIndex(), startPage.getEndFileIndex());
@@ -258,10 +268,9 @@ public class TextBookEditor implements AutoCloseable {
 			}
 			if (newContentLines != null) {
 				startPageLines.addAll(addMissingLineBreaks(newContentLines));
-				startPage.setNewContentLines(startPageLines);
 			}
+			startPage.setNewContentLines(startPageLines);
 
-			// Process end page
 			List<String> endPageLines = endPage.getNewContentLines();
 			if (endPageLines == null) {
 				endPageLines = readTextFileLines(endPage.getStartFileIndex(), endPage.getEndFileIndex());
@@ -271,6 +280,7 @@ public class TextBookEditor implements AutoCloseable {
 					endPageLines.remove(i);
 				}
 			}
+			endPage.setNewContentLines(endPageLines);
 
 			for (final Page pageToRemove : pagesToRemove) {
 				pageToRemove.clear();
@@ -388,12 +398,10 @@ public class TextBookEditor implements AutoCloseable {
 		if (startPage == null) {
 			throw new Exception("Error while searching lines " + startLineIndex + " to " + endLineIndex + ": Cannot find start in data");
 		} else if (startPageLineIndex + startPage.getAmountOfLines() >= endLineIndex) {
-			// End line lies within start page also
 			if (endPage != null) {
 				throw new Exception("Error while searching lines " + startLineIndex + " to " + endLineIndex + ": Mistake in finding end data");
 			}
 
-			// Process start page
 			List<String> startPageLines = startPage.getNewContentLines();
 			if (startPageLines == null) {
 				startPageLines = readTextFileLines(startPage.getStartFileIndex(), startPage.getEndFileIndex());
@@ -404,12 +412,10 @@ public class TextBookEditor implements AutoCloseable {
 				}
 			}
 		} else {
-			// End line lies in end page
 			if (endPage == null) {
 				throw new Exception("Error while searching lines " + startLineIndex + " to " + endLineIndex + ": Mistake in finding end data page");
 			}
 
-			// Process start page
 			List<String> startPageLines = startPage.getNewContentLines();
 			if (startPageLines == null) {
 				startPageLines = readTextFileLines(startPage.getStartFileIndex(), startPage.getEndFileIndex());
@@ -428,7 +434,6 @@ public class TextBookEditor implements AutoCloseable {
 				returnList.addAll(pageLines);
 			}
 
-			// Process end page
 			List<String> endPageLines = endPage.getNewContentLines();
 			if (endPageLines == null) {
 				endPageLines = readTextFileLines(endPage.getStartFileIndex(), endPage.getEndFileIndex());
@@ -456,36 +461,39 @@ public class TextBookEditor implements AutoCloseable {
 		long lineIndex = 0;
 		for (final Page page : pages) {
 			final long previousAmountOfLines = page.getAmountOfLines();
+			if (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1) {
+				if (end == null || lineIndex <= end.getLine() - 1) {
+					List<String> pageLines = page.getNewContentLines();
+					if (pageLines == null) {
+						pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
+					}
+					for (int pageLineIndex = 0; pageLineIndex < pageLines.size(); pageLineIndex++) {
+						String linePart;
+						if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {
+							linePart = Utilities.substring(pageLines.get(pageLineIndex), start.getColumn());
+						} else if (end != null && pageLineIndex + lineIndex == end.getLine() - 1) {
+							linePart = Utilities.substring(pageLines.get(pageLineIndex), 0, end.getColumn());
+						} else {
+							linePart = pageLines.get(pageLineIndex);
+						}
+
+						if (pattern != null) {
+							final Matcher matcher = pattern.matcher(linePart);
+							if (matcher.matches()) {
+								return new TextPosition(pageLineIndex + lineIndex + 1, matcher.start());
+							}
+						} else {
+							if (caseSensitive && linePart.contains(searchText)) {
+								return new TextPosition(pageLineIndex + lineIndex + 1, linePart.indexOf(searchText));
+							} else if (!caseSensitive && linePart.toLowerCase().contains(searchText.toLowerCase())) {
+								return new TextPosition(pageLineIndex + lineIndex + 1, linePart.toLowerCase().indexOf(searchText.toLowerCase()));
+							}
+						}
+					}
+				}
+			}
 			if (end != null && lineIndex + previousAmountOfLines > end.getLine() - 1) {
 				return null;
-			} else if (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1) {
-				List<String> pageLines = page.getNewContentLines();
-				if (pageLines == null) {
-					pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-				}
-				for (int pageLineIndex = 0; pageLineIndex < pageLines.size(); pageLineIndex++) {
-					String linePart;
-					if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {
-						linePart = Utilities.substring(pageLines.get(pageLineIndex), start.getColumn());
-					} else if (end != null && pageLineIndex + lineIndex == end.getLine() - 1) {
-						linePart = Utilities.substring(pageLines.get(pageLineIndex), 0, end.getColumn());
-					} else {
-						linePart = pageLines.get(pageLineIndex);
-					}
-
-					if (pattern != null) {
-						final Matcher matcher = pattern.matcher(linePart);
-						if (matcher.matches()) {
-							return new TextPosition(pageLineIndex + lineIndex + 1, matcher.start());
-						}
-					} else {
-						if (caseSensitive && linePart.contains(searchText)) {
-							return new TextPosition(pageLineIndex + lineIndex + 1, linePart.indexOf(searchText));
-						} else if (!caseSensitive && linePart.toLowerCase().contains(searchText.toLowerCase())) {
-							return new TextPosition(pageLineIndex + lineIndex + 1, linePart.toLowerCase().indexOf(searchText.toLowerCase()));
-						}
-					}
-				}
 			}
 			lineIndex += previousAmountOfLines;
 		}
@@ -511,48 +519,51 @@ public class TextBookEditor implements AutoCloseable {
 		long lineIndex = 0;
 		for (final Page page : pages) {
 			final long previousAmountOfLines = page.getAmountOfLines();
+			if (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1) {
+				if (end == null || lineIndex <= end.getLine() - 1) {
+					List<String> pageLines = page.getNewContentLines();
+					if (pageLines == null) {
+						pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
+					}
+					for (int pageLineIndex = 0; pageLineIndex < pageLines.size(); pageLineIndex++) {
+						String linePart;
+						if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {
+							linePart = Utilities.substring(pageLines.get(pageLineIndex), start.getColumn());
+						} else if (end != null && pageLineIndex + lineIndex == end.getLine() - 1) {
+							linePart = Utilities.substring(pageLines.get(pageLineIndex), 0, end.getColumn());
+						} else {
+							linePart = pageLines.get(pageLineIndex);
+						}
+
+						if (pattern != null) {
+							final Matcher matcher = pattern.matcher(linePart);
+							while (matcher.find()) {
+								numberOfFindings++;
+							}
+						} else if (caseSensitive) {
+							int lastStart = linePart.indexOf(searchText);
+							int lastEnd = 0;
+							while (lastStart > -1) {
+								lastEnd = lastStart + searchText.length();
+								lastStart = linePart.indexOf(searchText, lastEnd);
+								numberOfFindings++;
+							}
+						} else {
+							searchText = searchText.toLowerCase();
+							final String linePartLower = linePart.toLowerCase();
+							int lastStart = linePartLower.indexOf(searchText);
+							int lastEnd = 0;
+							while (lastStart > -1) {
+								lastEnd = lastStart + searchText.length();
+								lastStart = linePartLower.indexOf(searchText, lastEnd);
+								numberOfFindings++;
+							}
+						}
+					}
+				}
+			}
 			if (end != null && lineIndex + previousAmountOfLines > end.getLine() - 1) {
 				return numberOfFindings;
-			} else if (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1) {
-				List<String> pageLines = page.getNewContentLines();
-				if (pageLines == null) {
-					pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-				}
-				for (int pageLineIndex = 0; pageLineIndex < pageLines.size(); pageLineIndex++) {
-					String linePart;
-					if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {
-						linePart = Utilities.substring(pageLines.get(pageLineIndex), start.getColumn());
-					} else if (end != null && pageLineIndex + lineIndex == end.getLine() - 1) {
-						linePart = Utilities.substring(pageLines.get(pageLineIndex), 0, end.getColumn());
-					} else {
-						linePart = pageLines.get(pageLineIndex);
-					}
-
-					if (pattern != null) {
-						final Matcher matcher = pattern.matcher(linePart);
-						while (matcher.find()) {
-							numberOfFindings++;
-						}
-					} else if (caseSensitive) {
-						int lastStart = linePart.indexOf(searchText);
-						int lastEnd = 0;
-						while (lastStart > -1) {
-							lastEnd = lastStart + searchText.length();
-							lastStart = linePart.indexOf(searchText, lastEnd);
-							numberOfFindings++;
-						}
-					} else {
-						searchText = searchText.toLowerCase();
-						final String linePartLower = linePart.toLowerCase();
-						int lastStart = linePartLower.indexOf(searchText);
-						int lastEnd = 0;
-						while (lastStart > -1) {
-							lastEnd = lastStart + searchText.length();
-							lastStart = linePartLower.indexOf(searchText, lastEnd);
-							numberOfFindings++;
-						}
-					}
-				}
 			}
 			lineIndex += previousAmountOfLines;
 		}
@@ -589,9 +600,7 @@ public class TextBookEditor implements AutoCloseable {
 			}
 
 			final long previousAmountOfLines = page.getAmountOfLines();
-			if (end != null && lineIndex + previousAmountOfLines > end.getLine() - 1) {
-				return numberOfReplacements;
-			} else if (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1) {
+			if ((end == null || lineIndex <= end.getLine() - 1) && (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1)) {
 				List<String> pageLines = page.getNewContentLines();
 				if (pageLines == null) {
 					pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
@@ -669,6 +678,9 @@ public class TextBookEditor implements AutoCloseable {
 					page.setNewContentLines(pageLines);
 				}
 			}
+			if (end != null && lineIndex + previousAmountOfLines > end.getLine() - 1) {
+				return numberOfReplacements;
+			}
 			lineIndex += previousAmountOfLines;
 		}
 		return numberOfReplacements;
@@ -683,7 +695,7 @@ public class TextBookEditor implements AutoCloseable {
 			throw new Exception("No data was available to write");
 		} else if (textFile != null && (size != textFile.length() || !modificationDate.equals(DateUtilities.getLocalDateTime(textFile.lastModified())))) {
 			throw new Exception("The sourcefile has been tampered meanwile after read");
-		} else if (!hasNewContentData() && textFile != null && textFile.getCanonicalPath().equals(destinationFile.getCanonicalPath())) {
+		} else if (!hasNewContentData() && textFile != null && (destinationFile == null || textFile.getCanonicalPath().equals(destinationFile.getCanonicalPath()))) {
 			return;
 		} else if (destinationFile != null && destinationFile.exists()) {
 			throw new Exception("Destination file '" + destinationFile.getCanonicalPath() + "' already exists");
@@ -754,6 +766,9 @@ public class TextBookEditor implements AutoCloseable {
 		}
 		if (destinationFile == null) {
 			interimTextBookFile.renameTo(textFile);
+			if (textFile != null) {
+				scanTextFile();
+			}
 		}
 	}
 
@@ -825,7 +840,12 @@ public class TextBookEditor implements AutoCloseable {
 		this.numberOfPagesWithNewContent = numberOfPagesWithNewContent;
 		if (numberOfPagesWithNewContent > maximumInMemoryPages) {
 			for (final Page page : pages) {
-				page.storeInterimData();
+				if (this.numberOfPagesWithNewContent <= maximumInMemoryPages) {
+					break;
+				}
+				if (page.hasNewContentData()) {
+					page.storeInterimData();
+				}
 			}
 		}
 	}
@@ -945,9 +965,7 @@ public class TextBookEditor implements AutoCloseable {
 		long lineIndex = 0;
 		for (final Page page : pages) {
 			final long previousAmountOfLines = page.getAmountOfLines();
-			if (lineIndex + previousAmountOfLines > endLineNumber - 1) {
-				return action;
-			} else if (lineIndex + previousAmountOfLines >= startLineNumber - 1) {
+			if (lineIndex <= endLineNumber - 1 && lineIndex + previousAmountOfLines >= startLineNumber - 1) {
 				List<String> pageLines = page.getNewContentLines();
 				if (pageLines == null) {
 					pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
@@ -962,6 +980,9 @@ public class TextBookEditor implements AutoCloseable {
 				if (changed) {
 					page.setNewContentLines(pageLines);
 				}
+			}
+			if (lineIndex + previousAmountOfLines > endLineNumber - 1) {
+				return action;
 			}
 			lineIndex += previousAmountOfLines;
 		}
