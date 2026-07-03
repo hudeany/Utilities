@@ -79,7 +79,6 @@ public class Page {
 			getParentTextBookEditor().setNumberOfPagesWithStoredNewContent(getParentTextBookEditor().getNumberOfPagesWithStoredNewContent() - 1);
 		}
 		if (this.newContentLines == null) {
-			// fill newContentLines early, because number change may cause interim file storage
 			this.newContentLines = newContentLines;
 			amountOfLines = newContentLines.size();
 			getParentTextBookEditor().setNumberOfPagesWithNewContent(getParentTextBookEditor().getNumberOfPagesWithNewContent() + 1);
@@ -109,8 +108,6 @@ public class Page {
 			getParentTextBookEditor().setNumberOfPagesWithStoredNewContent(getParentTextBookEditor().getNumberOfPagesWithStoredNewContent() - 1);
 		}
 		if (newContentLines != null) {
-			// Preserve the up-to-date line count before dropping the in-memory content,
-			// otherwise getAmountOfLines() falls back to the stale pre-edit "amountOfLines" value
 			amountOfLines = newContentLines.size();
 			newContentLines = null;
 			getParentTextBookEditor().setNumberOfPagesWithNewContent(getParentTextBookEditor().getNumberOfPagesWithNewContent() - 1);

@@ -467,7 +467,7 @@ public class TextBookEditor implements AutoCloseable {
 					if (pageLines == null) {
 						pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
 					}
-					for (int pageLineIndex = 0; pageLineIndex < pageLines.size(); pageLineIndex++) {
+					for (int pageLineIndex = 0; pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
 						String linePart;
 						if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {
 							linePart = Utilities.substring(pageLines.get(pageLineIndex), start.getColumn());
@@ -525,7 +525,7 @@ public class TextBookEditor implements AutoCloseable {
 					if (pageLines == null) {
 						pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
 					}
-					for (int pageLineIndex = 0; pageLineIndex < pageLines.size(); pageLineIndex++) {
+					for (int pageLineIndex = 0; pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
 						String linePart;
 						if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {
 							linePart = Utilities.substring(pageLines.get(pageLineIndex), start.getColumn());
@@ -605,7 +605,7 @@ public class TextBookEditor implements AutoCloseable {
 				if (pageLines == null) {
 					pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
 				}
-				for (int pageLineIndex = 0; (!changed || !onlyReplaceFirstOccurrence) && pageLineIndex < pageLines.size(); pageLineIndex++) {
+				for (int pageLineIndex = 0; (!changed || !onlyReplaceFirstOccurrence) && pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
 					boolean changedLine = false;
 					String linePart;
 					if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {

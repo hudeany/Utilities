@@ -115,6 +115,9 @@ public class LineReader implements Closeable {
 	}
 
 	public void skipChars(final long charsToSkip) throws IOException {
+		if (charsToSkip <= 0) {
+			return;
+		}
 		int skipCount = 0;
 		while (true) {
 			if (pushbackReader.read() == EOF) {
