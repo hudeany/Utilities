@@ -2,6 +2,7 @@ package de.soderer.utilities.textbook;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -906,6 +907,33 @@ public class TextBookEditor implements AutoCloseable {
 			return readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
 		} else {
 			return newContentLines;
+		}
+	}
+
+	/**
+	 * Builds the full current content (including any unsaved in-memory edits) as a byte array,
+	 * WITHOUT writing anything to disk and WITHOUT mutating page state.
+	 *
+	 * This is deliberately independent from write(): write()'s per-page loop calls page.clear() on
+	 * every page with new content, unconditionally, even when writing to a destinationFile that is
+	 * not the original textFile. That is correct for a true in-place save (destinationFile == null),
+	 * but would be wrong for a "give me the current bytes" use case like Save-As or an export/preview
+	 * feature, since it would mark all pages as clean without the original textFile ever having been
+	 * updated - silently losing track of the unsaved edits.
+	 */
+	public byte[] getFileData() throws Exception {
+		if (pages == null) {
+			throw new Exception("No data was available to build file data from");
+		}
+
+		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+			byteArrayOutputStream.write(bom.getBytes());
+			for (int pageIndex = 0; pageIndex < pages.size(); pageIndex++) {
+				for (final String line : getLinesByPage(pageIndex)) {
+					byteArrayOutputStream.write(line.getBytes(charset));
+				}
+			}
+			return byteArrayOutputStream.toByteArray();
 		}
 	}
 
