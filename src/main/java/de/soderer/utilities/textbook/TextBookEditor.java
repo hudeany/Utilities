@@ -113,6 +113,24 @@ public class TextBookEditor implements AutoCloseable {
 	}
 
 	/**
+	 * Re-scans textFile from scratch, discarding any pages currently held in memory or
+	 * interim storage. Used when the file is known to have changed externally (e.g. a growing
+	 * log file in tail-view mode, or a FileChangeWatcherThread notification) and the in-memory
+	 * page index needs to be brought back in sync.
+	 *
+	 * Any unsaved in-memory edits are discarded by this call - it is not a merge.
+	 */
+	public void reload() throws Exception {
+		if (pages == null) {
+			throw new Exception("Read was never called before");
+		}
+		for (final Page page : pages) {
+			page.clear();
+		}
+		scanTextFile();
+	}
+
+	/**
 	 * (Re-)scans the textFile and rebuilds the page index, size and modification date.
 	 * Used by read() for the initial read, and again after an in-place write(),
 	 * because writing replaces the file on disk (different byte layout), which would
