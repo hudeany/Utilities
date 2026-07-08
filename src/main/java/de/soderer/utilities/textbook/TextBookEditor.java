@@ -16,7 +16,9 @@ import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -64,6 +66,45 @@ public class TextBookEditor implements AutoCloseable {
 	private long numberOfPages;
 	private long numberOfPagesWithNewContent = 0;
 	private long numberOfPagesWithStoredNewContent = 0;
+
+	/**
+	 * Small bounded cache of parsed line lists for unedited pages (pages whose content still
+	 * lives only on disk, i.e. page.getNewContentLines() == null). Without this, every single
+	 * read access to a line - e.g. every getLine() call SWT's StyledText makes while painting or
+	 * scrolling - would re-read and re-parse the entire page from disk from scratch, only to
+	 * extract one line and throw the rest away again. That turned scrolling into a multi-second
+	 * operation for large files. A handful of cached pages is enough to cover normal scrolling
+	 * (including back-and-forth across a page boundary) without meaningfully increasing memory
+	 * use. Edited pages are never put in here - their content already lives in memory via
+	 * page.getNewContentLines() and doesn't need this cache.
+	 */
+	private static final int READ_PAGE_CACHE_SIZE = 4;
+	private final Map<Page, List<String>> readPageCache = new LinkedHashMap<>(READ_PAGE_CACHE_SIZE + 1, 0.75f, true) {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		protected boolean removeEldestEntry(final Map.Entry<Page, List<String>> eldest) {
+			return size() > READ_PAGE_CACHE_SIZE;
+		}
+	};
+
+	/**
+	 * Returns the lines of a page for read access, using the cache above for unedited pages
+	 * instead of re-reading them from disk on every call. Edited pages (getNewContentLines() !=
+	 * null) always return their in-memory content directly, bypassing the cache entirely.
+	 */
+	private List<String> getPageLinesForRead(final Page page) throws Exception {
+		final List<String> newContentLines = page.getNewContentLines();
+		if (newContentLines != null) {
+			return newContentLines;
+		}
+		List<String> cachedLines = readPageCache.get(page);
+		if (cachedLines == null) {
+			cachedLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
+			readPageCache.put(page, cachedLines);
+		}
+		return cachedLines;
+	}
 
 	public TextBookEditor(final File textFile, final Charset charset) throws Exception {
 		this(textFile, DEFAULT_MAXIMUM_PAGE_SIZE, DEFAULT_MAXIMUM_IN_MEMORY_PAGES, charset);
@@ -140,6 +181,10 @@ public class TextBookEditor implements AutoCloseable {
 	private void scanTextFile() throws Exception {
 		size = textFile.length();
 		modificationDate = DateUtilities.getLocalDateTime(textFile.lastModified());
+
+		// The old Page objects (and any cached line lists keyed by them) become invalid once
+		// pages is rebuilt from scratch below - drop them so stale entries can't linger.
+		readPageCache.clear();
 
 		pages = new ArrayList<>();
 
@@ -284,12 +329,12 @@ public class TextBookEditor implements AutoCloseable {
 					break;
 				}
 			} else if (startPage != null) {
-				if (lineIndex + page.getAmountOfLines() <= endLineNumber) {
-					pagesToRemove.add(page);
-				} else if (lineIndex + page.getAmountOfLines() > endLineNumber) {
+				if (lineIndex + page.getAmountOfLines() >= endLineNumber) {
 					endPageLineIndex = lineIndex;
 					endPage = page;
 					break;
+				} else {
+					pagesToRemove.add(page);
 				}
 			}
 			lineIndex += page.getAmountOfLines();
@@ -302,10 +347,7 @@ public class TextBookEditor implements AutoCloseable {
 				throw new Exception("Error while replacing lines " + startLineNumber + " to " + endLineNumber + ": Mistake in finding end data");
 			}
 
-			List<String> startPageLines = startPage.getNewContentLines();
-			if (startPageLines == null) {
-				startPageLines = readTextFileLines(startPage.getStartFileIndex(), startPage.getEndFileIndex());
-			}
+			final List<String> startPageLines = new ArrayList<>(getPageLinesForRead(startPage));
 			for (int i = startPageLines.size() - 1; i >= 0; i--) {
 				if (startLineNumber <= startPageLineIndex + i + 1 && startPageLineIndex + i + 1 <= endLineNumber) {
 					startPageLines.remove(i);
@@ -315,6 +357,7 @@ public class TextBookEditor implements AutoCloseable {
 				startPageLines.addAll((int) (startLineNumber - 1 - startPageLineIndex), addMissingLineBreaks(newContentLines));
 			}
 			startPage.setNewContentLines(startPageLines);
+			readPageCache.remove(startPage);
 
 			revalidateStatisticData = true;
 		} else {
@@ -322,10 +365,7 @@ public class TextBookEditor implements AutoCloseable {
 				throw new Exception("Error while replacing lines " + startLineNumber + " to " + endLineNumber + ": Mistake in finding end data page");
 			}
 
-			List<String> startPageLines = startPage.getNewContentLines();
-			if (startPageLines == null) {
-				startPageLines = readTextFileLines(startPage.getStartFileIndex(), startPage.getEndFileIndex());
-			}
+			final List<String> startPageLines = new ArrayList<>(getPageLinesForRead(startPage));
 			for (int i = startPageLines.size() - 1; i >= 0; i--) {
 				if (startLineNumber <= startPageLineIndex + i + 1) {
 					startPageLines.remove(i);
@@ -335,19 +375,27 @@ public class TextBookEditor implements AutoCloseable {
 				startPageLines.addAll(addMissingLineBreaks(newContentLines));
 			}
 			startPage.setNewContentLines(startPageLines);
+			readPageCache.remove(startPage);
 
-			List<String> endPageLines = endPage.getNewContentLines();
-			if (endPageLines == null) {
-				endPageLines = readTextFileLines(endPage.getStartFileIndex(), endPage.getEndFileIndex());
-			}
+			final List<String> endPageLines = new ArrayList<>(getPageLinesForRead(endPage));
 			for (int i = endPageLines.size() - 1; i >= 0; i--) {
 				if (endPageLineIndex + i + 1 <= endLineNumber) {
 					endPageLines.remove(i);
 				}
 			}
-			endPage.setNewContentLines(endPageLines);
+			readPageCache.remove(endPage);
+			if (endPageLines.isEmpty()) {
+				// endLineNumber landed exactly on this page's last line (e.g. deleting/replacing
+				// through the very last line of the file) - nothing of this page survives, so
+				// drop it entirely instead of leaving an empty Page behind.
+				endPage.clear();
+				removePage(endPage);
+			} else {
+				endPage.setNewContentLines(endPageLines);
+			}
 
 			for (final Page pageToRemove : pagesToRemove) {
+				readPageCache.remove(pageToRemove);
 				pageToRemove.clear();
 				removePage(pageToRemove);
 			}
@@ -369,12 +417,10 @@ public class TextBookEditor implements AutoCloseable {
 		for (final Page page : pages) {
 			if (lineIndex + page.getAmountOfLines() >= insertAfterLineNumber) {
 				if (contentLines != null && contentLines.size() > 0) {
-					List<String> pageLines = page.getNewContentLines();
-					if (pageLines == null) {
-						pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-					}
+					final List<String> pageLines = new ArrayList<>(getPageLinesForRead(page));
 					pageLines.addAll((int) (insertAfterLineNumber - lineIndex), addMissingLineBreaks(contentLines));
 					page.setNewContentLines(pageLines);
+					readPageCache.remove(page);
 				}
 				return;
 			}
@@ -449,7 +495,7 @@ public class TextBookEditor implements AutoCloseable {
 					break;
 				}
 			} else if (startPage != null) {
-				if (lineIndex + page.getAmountOfLines() > endLineIndex) {
+				if (lineIndex + page.getAmountOfLines() >= endLineIndex) {
 					endPageLineIndex = lineIndex;
 					endPage = page;
 					break;
@@ -467,10 +513,7 @@ public class TextBookEditor implements AutoCloseable {
 				throw new Exception("Error while searching lines " + startLineIndex + " to " + endLineIndex + ": Mistake in finding end data");
 			}
 
-			List<String> startPageLines = startPage.getNewContentLines();
-			if (startPageLines == null) {
-				startPageLines = readTextFileLines(startPage.getStartFileIndex(), startPage.getEndFileIndex());
-			}
+			final List<String> startPageLines = getPageLinesForRead(startPage);
 			for (int i = 0; i < startPageLines.size(); i++) {
 				if (startLineIndex <= startPageLineIndex + i && startPageLineIndex + i <= endLineIndex) {
 					returnList.add(startPageLines.get(i));
@@ -481,10 +524,7 @@ public class TextBookEditor implements AutoCloseable {
 				throw new Exception("Error while searching lines " + startLineIndex + " to " + endLineIndex + ": Mistake in finding end data page");
 			}
 
-			List<String> startPageLines = startPage.getNewContentLines();
-			if (startPageLines == null) {
-				startPageLines = readTextFileLines(startPage.getStartFileIndex(), startPage.getEndFileIndex());
-			}
+			final List<String> startPageLines = getPageLinesForRead(startPage);
 			for (int i = 0; i < startPageLines.size(); i++) {
 				if (startLineIndex <= startPageLineIndex + i) {
 					returnList.add(startPageLines.get(i));
@@ -492,17 +532,10 @@ public class TextBookEditor implements AutoCloseable {
 			}
 
 			for (final Page page : interPages) {
-				List<String> pageLines = page.getNewContentLines();
-				if (pageLines == null) {
-					pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-				}
-				returnList.addAll(pageLines);
+				returnList.addAll(getPageLinesForRead(page));
 			}
 
-			List<String> endPageLines = endPage.getNewContentLines();
-			if (endPageLines == null) {
-				endPageLines = readTextFileLines(endPage.getStartFileIndex(), endPage.getEndFileIndex());
-			}
+			final List<String> endPageLines = getPageLinesForRead(endPage);
 			for (int i = 0; i < endPageLines.size(); i++) {
 				if (endPageLineIndex + i <= endLineIndex) {
 					returnList.add(endPageLines.get(i));
@@ -528,10 +561,7 @@ public class TextBookEditor implements AutoCloseable {
 			final long previousAmountOfLines = page.getAmountOfLines();
 			if (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1) {
 				if (end == null || lineIndex <= end.getLine() - 1) {
-					List<String> pageLines = page.getNewContentLines();
-					if (pageLines == null) {
-						pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-					}
+					final List<String> pageLines = getPageLinesForRead(page);
 					for (int pageLineIndex = 0; pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
 						String linePart;
 						if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {
@@ -586,10 +616,7 @@ public class TextBookEditor implements AutoCloseable {
 			final long previousAmountOfLines = page.getAmountOfLines();
 			if (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1) {
 				if (end == null || lineIndex <= end.getLine() - 1) {
-					List<String> pageLines = page.getNewContentLines();
-					if (pageLines == null) {
-						pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-					}
+					final List<String> pageLines = getPageLinesForRead(page);
 					for (int pageLineIndex = 0; pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
 						String linePart;
 						if (start != null && pageLineIndex + lineIndex == start.getLine() - 1) {
@@ -666,10 +693,8 @@ public class TextBookEditor implements AutoCloseable {
 
 			final long previousAmountOfLines = page.getAmountOfLines();
 			if ((end == null || lineIndex <= end.getLine() - 1) && (start == null || lineIndex + previousAmountOfLines >= start.getLine() - 1)) {
-				List<String> pageLines = page.getNewContentLines();
-				if (pageLines == null) {
-					pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-				}
+				final boolean pageWasAlreadyEdited = page.getNewContentLines() != null;
+				final List<String> pageLines = pageWasAlreadyEdited ? getPageLinesForRead(page) : new ArrayList<>(getPageLinesForRead(page));
 				for (int pageLineIndex = 0; (!changed || !onlyReplaceFirstOccurrence) && pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
 					boolean changedLine = false;
 					String linePart;
@@ -741,6 +766,7 @@ public class TextBookEditor implements AutoCloseable {
 
 				if (changed) {
 					page.setNewContentLines(pageLines);
+					readPageCache.remove(page);
 				}
 			}
 			if (end != null && lineIndex + previousAmountOfLines > end.getLine() - 1) {
@@ -900,14 +926,7 @@ public class TextBookEditor implements AutoCloseable {
 	}
 
 	public List<String> getLinesByPage(final int pageIndex) throws Exception {
-		final Page page = pages.get(pageIndex);
-
-		final List<String> newContentLines = page.getNewContentLines();
-		if (newContentLines == null) {
-			return readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-		} else {
-			return newContentLines;
-		}
+		return getPageLinesForRead(pages.get(pageIndex));
 	}
 
 	/**
@@ -1082,10 +1101,8 @@ public class TextBookEditor implements AutoCloseable {
 		for (final Page page : pages) {
 			final long previousAmountOfLines = page.getAmountOfLines();
 			if (lineIndex <= endLineNumber - 1 && lineIndex + previousAmountOfLines >= startLineNumber - 1) {
-				List<String> pageLines = page.getNewContentLines();
-				if (pageLines == null) {
-					pageLines = readTextFileLines(page.getStartFileIndex(), page.getEndFileIndex());
-				}
+				final boolean pageWasAlreadyEdited = page.getNewContentLines() != null;
+				final List<String> pageLines = pageWasAlreadyEdited ? getPageLinesForRead(page) : new ArrayList<>(getPageLinesForRead(page));
 				boolean changed = false;
 				for (int pageLineIndex = pageLines.size() - 1; pageLineIndex >= 0; pageLineIndex--) {
 					if (startLineNumber - 1 <= lineIndex + pageLineIndex && lineIndex + pageLineIndex <= endLineNumber - 1) {
@@ -1095,6 +1112,7 @@ public class TextBookEditor implements AutoCloseable {
 				}
 				if (changed) {
 					page.setNewContentLines(pageLines);
+					readPageCache.remove(page);
 				}
 			}
 			if (lineIndex + previousAmountOfLines > endLineNumber - 1) {
@@ -1113,5 +1131,6 @@ public class TextBookEditor implements AutoCloseable {
 		for (final Page page : pages) {
 			page.clear();
 		}
+		readPageCache.clear();
 	}
 }

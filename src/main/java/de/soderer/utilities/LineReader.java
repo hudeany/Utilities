@@ -52,6 +52,8 @@ public class LineReader implements Closeable {
 	}
 
 	public String readLine() throws IOException {
+		latestLineBreakType = LineBreak.Unknown;
+
 		StringBuilder returnValue = null;
 		int nextCharInt;
 		while ((nextCharInt = pushbackReader.read()) != EOF) {
