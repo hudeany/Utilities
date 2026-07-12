@@ -882,7 +882,23 @@ public class TextUtilities {
 	 * @return
 	 */
 	public static String breakLinesAfterMaximumLength(final String dataString, final int maximumLength) {
-		return Utilities.join(dataString.split("(?<=\\G.{" + maximumLength + "})"), "\n");
+		if (maximumLength <= 0) {
+			return dataString;
+		}
+		final String[] originalLines = dataString.split("\n", -1);
+		final StringBuilder result = new StringBuilder();
+		for (int i = 0; i < originalLines.length; i++) {
+			final String line = originalLines[i];
+			if (line.length() > maximumLength) {
+				result.append(Utilities.join(line.split("(?<=\\G.{" + maximumLength + "})"), "\n"));
+			} else {
+				result.append(line);
+			}
+			if (i < originalLines.length - 1) {
+				result.append("\n");
+			}
+		}
+		return result.toString();
 	}
 
 	/**
