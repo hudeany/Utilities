@@ -1730,7 +1730,7 @@ public class Utilities {
 		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
 		final String[] returnParts = text.split(splitRegex, limit);
 		for (int i = 0; i < returnParts.length; i++) {
-			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
+			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, delimiterCharString);
 		}
 		return returnParts;
 	}
@@ -1741,7 +1741,7 @@ public class Utilities {
 		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
 		final String[] returnParts = text.split(splitRegex);
 		for (int i = 0; i < returnParts.length; i++) {
-			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
+			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, delimiterCharString);
 		}
 		return returnParts;
 	}
