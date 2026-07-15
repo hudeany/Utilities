@@ -563,11 +563,26 @@ public class CryptographicUtilities {
 		return getCertificatesFromString(certificateFileString);
 	}
 
+	/**
+	 * Minimum recommended PBKDF2-HMAC-SHA1 iteration count as of 2024 (OWASP guidance). The previous
+	 * hardcoded value of 1000 iterations was far too weak by modern standards and made brute-forcing
+	 * a derived key significantly easier.
+	 */
+	public static final int DEFAULT_PASSWORD_STRETCH_ITERATIONS = 210_000;
+
 	public static byte[] stretchPassword(final char[] password, final int keyLength, final byte[] salt) {
+		return stretchPassword(password, keyLength, salt, DEFAULT_PASSWORD_STRETCH_ITERATIONS);
+	}
+
+	public static byte[] stretchPassword(final char[] password, final int keyLength, final byte[] salt, final int iterations) {
+		if (iterations <= 0) {
+			throw new IllegalArgumentException("Invalid iterations value: " + iterations);
+		}
+
 		Security.addProvider(new BouncyCastleProvider());
 
 		final PBEParametersGenerator generator = new PKCS5S2ParametersGenerator();
-		generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password), salt, 1000);
+		generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password), salt, iterations);
 		final KeyParameter params = (KeyParameter) generator.generateDerivedParameters(keyLength);
 		return params.getKey();
 	}
@@ -1722,20 +1737,20 @@ public class CryptographicUtilities {
 		}
 	}
 
-	public static void convertKeyStoreFileType(File sourceKeyStoreFile, String sourceKeyStoreType, char[] sourceKeyStorePassword, File destinationKeyStoreFile, String destinationKeyStoreType, char[] destinationKeyStorePassword) throws Exception {
+	public static void convertKeyStoreFileType(final File sourceKeyStoreFile, final String sourceKeyStoreType, final char[] sourceKeyStorePassword, final File destinationKeyStoreFile, final String destinationKeyStoreType, final char[] destinationKeyStorePassword) throws Exception {
 		try {
-			KeyStore sourceKeyStore = KeyStore.getInstance(sourceKeyStoreType.toUpperCase());
+			final KeyStore sourceKeyStore = KeyStore.getInstance(sourceKeyStoreType.toUpperCase());
 			try (FileInputStream sourceKeyStoreInputStream = new FileInputStream(sourceKeyStoreFile)) {
 				sourceKeyStore.load(sourceKeyStoreInputStream, sourceKeyStorePassword);
 			}
 
-			KeyStore destinationKeyStore = KeyStore.getInstance(destinationKeyStoreType.toUpperCase());
+			final KeyStore destinationKeyStore = KeyStore.getInstance(destinationKeyStoreType.toUpperCase());
 			destinationKeyStore.load(null, null);
 
 			for (final String alias : Utilities.asSortedList(Collections.list(sourceKeyStore.aliases()))) {
 				if (sourceKeyStore.isKeyEntry(alias)) {
-					java.security.cert.Certificate[] chain = sourceKeyStore.getCertificateChain(alias);
-					java.security.Key key = sourceKeyStore.getKey(alias, sourceKeyStorePassword);
+					final java.security.cert.Certificate[] chain = sourceKeyStore.getCertificateChain(alias);
+					final java.security.Key key = sourceKeyStore.getKey(alias, sourceKeyStorePassword);
 					destinationKeyStore.setKeyEntry(alias, key, destinationKeyStorePassword, chain);
 				}
 			}
@@ -1743,7 +1758,7 @@ public class CryptographicUtilities {
 			try (FileOutputStream destinationKeyStoreOutputStream = new FileOutputStream(destinationKeyStoreFile)) {
 				destinationKeyStore.store(destinationKeyStoreOutputStream, destinationKeyStorePassword);
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new Exception("Cannot convert KeyStore file: " + e.getMessage(), e);
 		}
 	}
