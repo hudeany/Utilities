@@ -44,6 +44,10 @@ public class MailUtilities {
 	private static final Pattern DOMAIN_NAME_PATTERN = Pattern.compile(DOMAIN_NAME_REGEX);
 
 	public static boolean isEmailValid(final String emailAddress) {
+		if (emailAddress == null) {
+			return false;
+		}
+
 		final Matcher m = EMAIL_PATTERN.matcher(emailAddress);
 
 		// Check, if email address matches outline structure
@@ -99,7 +103,7 @@ public class MailUtilities {
 		}
 
 		// Do not allow ".local" top level domain
-		if (Utilities.endsWithIgnoreCase(asciiDomainName, ".local")) {
+		if (asciiDomainName.toLowerCase().endsWith(".local")) {
 			return false;
 		}
 
