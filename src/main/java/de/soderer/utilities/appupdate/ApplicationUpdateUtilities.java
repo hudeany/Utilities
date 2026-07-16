@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -179,7 +180,29 @@ public class ApplicationUpdateUtilities {
 								throw new Exception("Invalid github release data found for application '" + applicationName + "' was '" + githubApplicationNameAndVersion + "'");
 							}
 							availableVersion = new Version((String) jsonObject.getSimpleValue("tag_name"));
-							updateFileLocation = (String) ((JsonObject) ((JsonArray) jsonObject.get("assets")).get(0)).getSimpleValue("browser_download_url");
+
+							final JsonArray assets = (JsonArray) jsonObject.get("assets");
+							if (assets == null) {
+								throw new Exception("Github release for application '" + applicationName + "' has no assets");
+							}
+							String jarAssetDownloadUrl = null;
+							for (int assetIndex = 0; jarAssetDownloadUrl == null; assetIndex++) {
+								final JsonObject assetObject;
+								try {
+									assetObject = (JsonObject) assets.get(assetIndex);
+								} catch (@SuppressWarnings("unused") final IndexOutOfBoundsException indexOutOfBoundsException) {
+									// Reached the end of the assets list without finding a ".jar" asset
+									break;
+								}
+								final String assetName = (String) assetObject.getSimpleValue("name");
+								if (assetName != null && assetName.toLowerCase().endsWith(".jar")) {
+									jarAssetDownloadUrl = (String) assetObject.getSimpleValue("browser_download_url");
+								}
+							}
+							if (jarAssetDownloadUrl == null) {
+								throw new Exception("Github release for application '" + applicationName + "' has no '.jar' asset");
+							}
+							updateFileLocation = jarAssetDownloadUrl;
 						}
 					} catch (final Exception e) {
 						throw new Exception("Invalid version index found at location '" + versionIndexFileLocation + "':\n" + e.getMessage(), e);
@@ -210,7 +233,7 @@ public class ApplicationUpdateUtilities {
 					}
 				}
 			} else if (versionIndexFileLocation.toLowerCase().startsWith("file://") && versionIndexFileLocation.toLowerCase().endsWith(".json")) {
-				final URL versionIndexFileURL = new URL(versionIndexFileLocation);
+				final URL versionIndexFileURL = URI.create(versionIndexFileLocation).toURL();
 				try (JsonReader jsonReader = new JsonReader(versionIndexFileURL.openStream())) {
 					final JsonNode jsonNode = jsonReader.read();
 					if (!jsonNode.isJsonObject()) {
@@ -267,8 +290,8 @@ public class ApplicationUpdateUtilities {
 			}
 
 			final File restarterFile = new File(System.getProperty("java.io.tmpdir"), "Restarter_" + new File(jarFilePath).getName() +".jar");
-			if (restarterFile.exists()) {
-				restarterFile.delete();
+			if (restarterFile.exists() && !restarterFile.delete()) {
+				throw new Exception("Cannot remove leftover restarter file '" + restarterFile.getAbsolutePath() + "', it may still be in use");
 			}
 			try (FileOutputStream updaterOut = new FileOutputStream(restarterFile)) {
 				IoUtilities.copy(updaterInputStream, updaterOut);
@@ -317,7 +340,10 @@ public class ApplicationUpdateUtilities {
 			if (jarFilePath == null) {
 				try {
 					final String currentJarUrlPath = updateParent.getClass().getResource(updateParent.getClass().getSimpleName() + ".class").toString();
-					jarFilePath = currentJarUrlPath.substring(0, currentJarUrlPath.lastIndexOf("!")).replaceFirst("jar:file:", "");
+					// The class resource URL is percent-encoded (e.g. "%20" for spaces in the path),
+					// so it must be decoded via URI/File instead of just stripping "jar:file:" as plain text
+					final String jarFileUriPart = currentJarUrlPath.substring("jar:".length(), currentJarUrlPath.lastIndexOf("!"));
+					jarFilePath = new File(URI.create(jarFileUriPart)).getAbsolutePath();
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					jarFilePath = null;
 				}
@@ -361,8 +387,9 @@ public class ApplicationUpdateUtilities {
 						showUpdateError(updateParent, "Update error:\nSignature of updatefile is invalid");
 						return false;
 					}
-				} else if (!allowUnsafeUpdates){
+				} else if (!allowUnsafeUpdates) {
 					showUpdateError(updateParent, "Update error:\nTrusted CA certificate file name is missing");
+					return false;
 				}
 
 				final String[] updaterCommand;
@@ -370,8 +397,8 @@ public class ApplicationUpdateUtilities {
 					try (final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar")) {
 						if (updaterInputStream != null) {
 							final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() + ".jar");
-							if (updaterFile.exists()) {
-								updaterFile.delete();
+							if (updaterFile.exists() && !updaterFile.delete()) {
+								throw new Exception("Cannot remove leftover updater file '" + updaterFile.getAbsolutePath() + "' from a previous update, it may still be in use");
 							}
 							try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
 								IoUtilities.copy(updaterInputStream, updaterOut);
@@ -386,19 +413,21 @@ public class ApplicationUpdateUtilities {
 								}
 							}
 
-							if (Utilities.isNotBlank(restartParameter)) {
-								if (DEBUGGING_UPDATER) {
-									updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
-								} else {
-									updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
-								}
-							} else {
-								if (DEBUGGING_UPDATER) {
-									updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath() };
-								} else {
-									updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath() };
-								}
+							final List<String> commandParts = new ArrayList<>(List.of(javaBinPath, "-jar", updaterFile.getAbsolutePath()));
+							if (DEBUGGING_UPDATER) {
+								commandParts.add("-log");
+								commandParts.add("-stepwait");
 							}
+							commandParts.add(jarFilePath);
+							commandParts.add(downloadTempFile.getAbsolutePath());
+							if (!restartAfterUpdate) {
+								commandParts.add("-norestart");
+							}
+							if (Utilities.isNotBlank(restartParameter)) {
+								commandParts.add("-restartParameter");
+								commandParts.add(restartParameter);
+							}
+							updaterCommand = commandParts.toArray(new String[0]);
 						} else {
 							updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
 						}
@@ -440,7 +469,10 @@ public class ApplicationUpdateUtilities {
 			if (jarFilePath == null) {
 				try {
 					final String currentJarUrlPath = applicationClass.getResource(applicationClass.getSimpleName() + ".class").toString();
-					jarFilePath = currentJarUrlPath.substring(0, currentJarUrlPath.lastIndexOf("!")).replaceFirst("jar:file:", "");
+					// The class resource URL is percent-encoded (e.g. "%20" for spaces in the path),
+					// so it must be decoded via URI/File instead of just stripping "jar:file:" as plain text
+					final String jarFileUriPart = currentJarUrlPath.substring("jar:".length(), currentJarUrlPath.lastIndexOf("!"));
+					jarFilePath = new File(URI.create(jarFileUriPart)).getAbsolutePath();
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					jarFilePath = null;
 				}
@@ -488,8 +520,8 @@ public class ApplicationUpdateUtilities {
 				final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
 				if (updaterInputStream != null) {
 					final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() +".jar");
-					if (updaterFile.exists()) {
-						updaterFile.delete();
+					if (updaterFile.exists() && !updaterFile.delete()) {
+						throw new Exception("Cannot remove leftover updater file '" + updaterFile.getAbsolutePath() + "' from a previous update, it may still be in use");
 					}
 					try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
 						IoUtilities.copy(updaterInputStream, updaterOut);
@@ -504,19 +536,21 @@ public class ApplicationUpdateUtilities {
 						}
 					}
 
-					if (Utilities.isNotBlank(restartParameter)) {
-						if (DEBUGGING_UPDATER) {
-							updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
-						} else {
-							updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath(), "-restartParameter", restartParameter };
-						}
-					} else {
-						if (DEBUGGING_UPDATER) {
-							updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), "-log", "-stepwait", jarFilePath, downloadTempFile.getAbsolutePath() };
-						} else {
-							updaterCommand = new String[]{ javaBinPath, "-jar", updaterFile.getAbsolutePath(), jarFilePath, downloadTempFile.getAbsolutePath() };
-						}
+					final List<String> commandParts = new ArrayList<>(List.of(javaBinPath, "-jar", updaterFile.getAbsolutePath()));
+					if (DEBUGGING_UPDATER) {
+						commandParts.add("-log");
+						commandParts.add("-stepwait");
 					}
+					commandParts.add(jarFilePath);
+					commandParts.add(downloadTempFile.getAbsolutePath());
+					if (!restartAfterUpdate) {
+						commandParts.add("-norestart");
+					}
+					if (Utilities.isNotBlank(restartParameter)) {
+						commandParts.add("-restartParameter");
+						commandParts.add(restartParameter);
+					}
+					updaterCommand = commandParts.toArray(new String[0]);
 				} else {
 					updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
 				}
@@ -1051,8 +1085,8 @@ public class ApplicationUpdateUtilities {
 					}
 				}
 
-				// Every file must be signed, except for files in META-INF
-				if (!jarEntry.isDirectory() && !jarEntry.getName().startsWith("META-INF")) {
+				// Every file must be signed, except for files inside the actual META-INF directory
+				if (!jarEntry.isDirectory() && !jarEntry.getName().startsWith("META-INF/")) {
 					boolean isSignedByTrustedCert = false;
 
 					final Certificate[] certificates = jarEntry.getCertificates();
@@ -1060,10 +1094,18 @@ public class ApplicationUpdateUtilities {
 						throw new SecurityException("The jar file contains unsigned files: " + jarEntry.getName());
 					} else {
 						for (final Certificate chainRootCertificate : certificates) {
-							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCertificates)) {
-								// TODO: check certificate validity period: ((X509Certificate) chainRootCertificate).checkValidity();
-								isSignedByTrustedCert = true;
-								break;
+							if (chainRootCertificate instanceof X509Certificate) {
+								final X509Certificate x509ChainRootCertificate = (X509Certificate) chainRootCertificate;
+								try {
+									x509ChainRootCertificate.checkValidity();
+								} catch (@SuppressWarnings("unused") final Exception certificateValidityException) {
+									// Certificate is expired or not yet valid, it must not be trusted
+									continue;
+								}
+								if (verifyChainOfTrust(x509ChainRootCertificate, trustedCertificates)) {
+									isSignedByTrustedCert = true;
+									break;
+								}
 							}
 						}
 					}
@@ -1092,6 +1134,9 @@ public class ApplicationUpdateUtilities {
 		}
 
 		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
+		// Revocation checking (CRL/OCSP) is disabled deliberately: it would require live network access
+		// (CRL/OCSP endpoints) during update verification, which may not be available in all deployment
+		// environments. Certificate validity period is checked separately in verifyJarSignature().
 		params.setRevocationEnabled(false);
 		try {
 			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) certifier.build(params);
@@ -1105,12 +1150,12 @@ public class ApplicationUpdateUtilities {
 		final String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
 		if (Utilities.isNotBlank(jarFilePath)) {
 			final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_"+ new File(jarFilePath).getName() +".jar");
-			if (updaterFile.exists()) {
-				updaterFile.delete();
+			if (updaterFile.exists() && !updaterFile.delete()) {
+				System.err.println("Cannot remove leftover updater file '" + updaterFile.getAbsolutePath() + "'");
 			}
 			final File restarterFile = new File(System.getProperty("java.io.tmpdir"), "Restarter_" + new File(jarFilePath).getName() +".jar");
-			if (restarterFile.exists()) {
-				restarterFile.delete();
+			if (restarterFile.exists() && !restarterFile.delete()) {
+				System.err.println("Cannot remove leftover restarter file '" + restarterFile.getAbsolutePath() + "'");
 			}
 		}
 	}
