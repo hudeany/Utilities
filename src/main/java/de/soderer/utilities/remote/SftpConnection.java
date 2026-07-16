@@ -717,61 +717,72 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
-	public String executeCommand(final String command) throws Exception {
+	/**
+	 * Executes a remote command and returns stdout, stderr and the exit code separately.
+	 * Unlike {@link #executeCommand(String)}, this does NOT throw merely because the exit code
+	 * is non-zero or stderr received output - it only throws on actual connection/channel errors,
+	 * leaving the interpretation of the exit code to the caller.
+	 */
+	public CommandResult executeCommandWithResult(final String command) throws Exception {
 		Channel channel = null;
 		try {
-			String returnText = "";
-
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
-			// get I/O streams for remote scp
-			try (OutputStream out = channel.getOutputStream();
-					InputStream in = channel.getInputStream();
+			// get I/O streams for remote command execution
+			try (InputStream in = channel.getInputStream();
 					InputStream inError = channel.getExtInputStream()) {
 				channel.connect();
 
-				// send '\0'
-				sendZeroByte(out);
+				final String returnText = readCommandOutputStream(in);
+				final String returnError = readCommandOutputStream(inError);
 
-				int charValue = checkAcknowledge(in);
-				StringBuilder inputString = new StringBuilder();
-
-				while (charValue != EOF) {
-					if (charValue == '\n') { // EOL
-						returnText += inputString + "\n";
-						inputString = new StringBuilder();
-					} else {
-						inputString.append((char) charValue);
-					}
-					charValue = checkAcknowledge(in);
+				// Wait until the remote command has actually finished, so getExitStatus() is reliable
+				while (!channel.isClosed()) {
+					Thread.sleep(50);
 				}
+				final int exitStatus = channel.getExitStatus();
 
-				String returnError = "";
-				int charValueErrorStream = checkAcknowledge(inError);
-				StringBuilder inputStringErrorStream = new StringBuilder();
-
-				while (charValueErrorStream != EOF) {
-					if (charValueErrorStream == '\n') { // EOL
-						returnError += inputStringErrorStream + "\n";
-						inputStringErrorStream = new StringBuilder();
-					} else {
-						inputStringErrorStream.append((char) charValueErrorStream);
-					}
-					charValueErrorStream = checkAcknowledge(inError);
-				}
-
-				if (returnError.length() > 0) {
-					throw new Exception(returnError);
-				} else {
-					return returnText;
-				}
+				return new CommandResult(returnText, returnError, exitStatus);
 			}
 		} catch (final Exception e) {
 			throw new Exception("Error in SSH command\n" + ExceptionUtilities.toString(e), e);
 		} finally {
 			closeQuietly(channel);
 		}
+	}
+
+	/**
+	 * Convenience wrapper over {@link #executeCommandWithResult(String)} for callers that just want
+	 * a single text result and are happy with exception-based error handling: throws if the
+	 * command's exit code is non-zero, otherwise returns stdout if it has content, falling back to
+	 * stderr if stdout is blank (some commands write their normal, non-error output to stderr, e.g.
+	 * "java -version").
+	 */
+	public String executeCommand(final String command) throws Exception {
+		final CommandResult result = executeCommandWithResult(command);
+		if (!result.isSuccessful()) {
+			throw new Exception("Command exited with code " + result.getExitCode() + (Utilities.isNotBlank(result.getStdErr()) ? ":\n" + result.getStdErr() : ""));
+		} else if (Utilities.isNotBlank(result.getStdOut())) {
+			return result.getStdOut();
+		} else {
+			// Some commands write to stderr although nothing went wrong
+			return result.getStdErr();
+		}
+	}
+
+	/**
+	 * Reads a command's stdout or stderr stream fully as plain bytes until EOF.
+	 * Unlike {@link #checkAcknowledge(InputStream)}, this does NOT interpret byte values 1/2 as
+	 * SCP-protocol error markers, since this is ordinary command output, not an SCP ack byte stream.
+	 */
+	private static String readCommandOutputStream(final InputStream inputStream) throws IOException {
+		final StringBuilder returnTextBuilder = new StringBuilder();
+		int nextByte;
+		while ((nextByte = inputStream.read()) != EOF) {
+			returnTextBuilder.append((char) nextByte);
+		}
+		return returnTextBuilder.toString();
 	}
 
 	@Override
