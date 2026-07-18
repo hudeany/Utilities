@@ -17,7 +17,8 @@ public class MultiValueCaseInsensitiveOrderedMap<V> {
 	}
 
 	public ArrayList<V> put(final String key, final V value) {
-		final ArrayList<V> previousValue = map.get(key);
+		final ArrayList<V> existingList = map.get(key);
+		final ArrayList<V> previousValue = existingList == null ? null : new ArrayList<>(existingList);
 		map.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
 		return previousValue;
 	}

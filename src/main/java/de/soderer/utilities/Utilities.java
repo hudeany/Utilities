@@ -1369,7 +1369,7 @@ public class Utilities {
 			return null;
 		} else if (isEmpty(sourrounding)) {
 			return value;
-		} else if (value.startsWith(sourrounding) && value.endsWith(sourrounding)) {
+		} else if (value.length() >= sourrounding.length() * 2 && value.startsWith(sourrounding) && value.endsWith(sourrounding)) {
 			return value.substring(sourrounding.length(), value.length() - sourrounding.length());
 		} else {
 			return value;
@@ -1440,7 +1440,9 @@ public class Utilities {
 
 	public static String shortenStringToMaxLengthCutRight(final String value, final int maxLength, final String cutSign) {
 		if (value != null && value.length() > maxLength) {
-			return value.substring(0, maxLength - 4) + cutSign;
+			final int cutSignLength = cutSign == null ? 0 : cutSign.length();
+			final int keepLength = Math.max(0, maxLength - cutSignLength);
+			return value.substring(0, keepLength) + (cutSign == null ? "" : cutSign);
 		} else {
 			return value;
 		}

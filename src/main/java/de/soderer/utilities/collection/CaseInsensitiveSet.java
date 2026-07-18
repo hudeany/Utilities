@@ -22,12 +22,11 @@ public class CaseInsensitiveSet extends AbstractHashSet<String> {
 
 	public CaseInsensitiveSet(final Collection<? extends String> collection) {
 		super(collection);
-		addAll(collection);
 	}
 
 	public CaseInsensitiveSet(final String[] values) {
 		for (final String value : values) {
-			add(value.toLowerCase());
+			add(value);
 		}
 	}
 

@@ -67,5 +67,40 @@ public abstract class AbstractLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 		return super.computeIfPresent(convertKey(key), remappingFunction);
 	}
 
+	@Override
+	public V getOrDefault(final Object key, final V defaultValue) {
+		return super.getOrDefault(convertKey(key), defaultValue);
+	}
+
+	@Override
+	public V putIfAbsent(final K key, final V value) {
+		return super.putIfAbsent(convertKey(key), value);
+	}
+
+	@Override
+	public boolean remove(final Object key, final Object value) {
+		return super.remove(convertKey(key), value);
+	}
+
+	@Override
+	public V replace(final K key, final V value) {
+		return super.replace(convertKey(key), value);
+	}
+
+	@Override
+	public boolean replace(final K key, final V oldValue, final V newValue) {
+		return super.replace(convertKey(key), oldValue, newValue);
+	}
+
+	@Override
+	public V merge(final K key, final V value, final BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+		return super.merge(convertKey(key), value, remappingFunction);
+	}
+
+	@Override
+	public V compute(final K key, final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+		return super.compute(convertKey(key), remappingFunction);
+	}
+
 	protected abstract K convertKey(Object key);
 }
