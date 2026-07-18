@@ -1051,13 +1051,13 @@ public class DateUtilities {
 	}
 
 	public static DateTimeFormatter getDateFormatter(final Locale locale) {
-		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateFormatPattern(locale));
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateFormatPattern(locale).replace("yyyy", "uuuu"));
 		dateTimeFormatter = dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
 		return dateTimeFormatter;
 	}
 
 	public static DateTimeFormatter getDateFormatter(final Locale locale, final ZoneId zoneId) {
-		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateFormatPattern(locale));
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateFormatPattern(locale).replace("yyyy", "uuuu"));
 		dateTimeFormatter = dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
 		dateTimeFormatter = dateTimeFormatter.withZone(zoneId);
 		return dateTimeFormatter;
@@ -1077,26 +1077,26 @@ public class DateUtilities {
 	}
 
 	public static DateTimeFormatter getDateTimeFormatter(final Locale locale) {
-		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateTimeFormatPattern(locale));
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateTimeFormatPattern(locale).replace("yyyy", "uuuu"));
 		dateTimeFormatter = dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
 		return dateTimeFormatter;
 	}
 
 	public static DateTimeFormatter getDateTimeFormatter(final Locale locale, final ZoneId zoneId) {
-		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateTimeFormatPattern(locale));
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateTimeFormatPattern(locale).replace("yyyy", "uuuu"));
 		dateTimeFormatter = dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
 		dateTimeFormatter = dateTimeFormatter.withZone(zoneId);
 		return dateTimeFormatter;
 	}
 
 	public static DateTimeFormatter getDateTimeFormatterWithSeconds(final Locale locale) {
-		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateTimeFormatWithSecondsPattern(locale));
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateTimeFormatWithSecondsPattern(locale).replace("yyyy", "uuuu"));
 		dateTimeFormatter = dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
 		return dateTimeFormatter;
 	}
 
 	public static DateTimeFormatter getDateTimeFormatterWithSeconds(final Locale locale, final ZoneId zoneId) {
-		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateTimeFormatWithSecondsPattern(locale));
+		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateTimeFormatWithSecondsPattern(locale).replace("yyyy", "uuuu"));
 		dateTimeFormatter = dateTimeFormatter.withResolverStyle(ResolverStyle.STRICT);
 		dateTimeFormatter = dateTimeFormatter.withZone(zoneId);
 		return dateTimeFormatter;
