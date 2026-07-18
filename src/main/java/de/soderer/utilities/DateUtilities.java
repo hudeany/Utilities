@@ -62,6 +62,14 @@ public class DateUtilities {
 	public static final String ISO_8601_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssX";
 	/** DateTime format for ISO 8601 */
 	public static final String ISO_8601_DATETIME_WITH_NANOS_FORMAT = "yyyy-MM-dd'T'HH:mm:ss[.n]X";
+	/** DateTime format for ISO 8601 */
+	public static final String ISO_8601_TIME_FORMAT_NO_TIMEZONE = "HH:mm:ss";
+	/** DateTime format for ISO 8601 */
+	public static final String ISO_8601_TIME_WITH_NANOS_FORMAT_NO_TIMEZONE = "HH:mm:ss.SSSSSSSSS";
+	/** DateTime format for ISO 8601 */
+	public static final String ISO_8601_TIME_FORMAT = "HH:mm:ssX";
+	/** DateTime format for ISO 8601 */
+	public static final String ISO_8601_TIME_WITH_NANOS_FORMAT = "HH:mm:ss.SSSSSSSSSX";
 
 	/** ANSI SQL standard date time format */
 	public static final String ANSI_SQL_DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
@@ -419,12 +427,12 @@ public class DateUtilities {
 	 * @return
 	 */
 	public static String getDuration(final Calendar startTime, final Calendar endTime) {
-		final int durationInMilliSeconds = (int) (endTime.getTimeInMillis() - startTime.getTimeInMillis());
-		final int milliSecondsPart = durationInMilliSeconds % 1000;
-		final int secondsPart = durationInMilliSeconds / 1000 % 60;
-		final int minutesPart = durationInMilliSeconds / 1000 / 60 % 60;
-		final int hoursPart = durationInMilliSeconds / 1000 / 60 / 60 % 24;
-		final int days = durationInMilliSeconds / 1000 / 60 / 60 % 24;
+		final long durationInMilliSeconds = endTime.getTimeInMillis() - startTime.getTimeInMillis();
+		final long milliSecondsPart = durationInMilliSeconds % 1000;
+		final long secondsPart = durationInMilliSeconds / 1000 % 60;
+		final long minutesPart = durationInMilliSeconds / 1000 / 60 % 60;
+		final long hoursPart = durationInMilliSeconds / 1000 / 60 / 60 % 24;
+		final long days = durationInMilliSeconds / 1000 / 60 / 60 / 24;
 
 		String returnString = milliSecondsPart + "ms";
 		if (secondsPart > 0) {
@@ -752,7 +760,7 @@ public class DateUtilities {
 	 */
 	public static boolean dayListIncludes(final List<LocalDate> listOfDays, final LocalDate day) {
 		for (final LocalDate listDay : listOfDays) {
-			if (listDay.getDayOfYear() == day.getDayOfYear()) {
+			if (listDay.isEqual(day)) {
 				return true;
 			}
 		}
@@ -1206,6 +1214,12 @@ public class DateUtilities {
 		final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(dateTimeFormatPattern);
 		final LocalDateTime localDateTime = LocalDateTime.parse(dateTimeString, dateTimeFormatter);
 		return localDateTime;
+	}
+
+	public static LocalTime parseLocalTime(final String timeFormatPattern, final String timeString) {
+		final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern(timeFormatPattern).withResolverStyle(ResolverStyle.STRICT);
+		final LocalTime localTime = LocalTime.parse(timeString, timeFormatter);
+		return localTime;
 	}
 
 	public static Date parseDateTime(final String format, final String dateTimeString) {
