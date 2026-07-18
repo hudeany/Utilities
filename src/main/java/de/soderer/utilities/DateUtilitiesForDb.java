@@ -2,7 +2,6 @@ package de.soderer.utilities;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
-import java.time.format.ResolverStyle;
 
 public class DateUtilitiesForDb {
 	public static final String YYYY_MM_DD_HHMMSS = "yyyy-MM-dd HH:mm:ss";
@@ -18,7 +17,7 @@ public class DateUtilitiesForDb {
 		String returnString = "";
 
 		if (ts != null) {
-			final String s = DateTimeFormatter.ofPattern(YYYY_MM_DD_HHMMSS).withResolverStyle(ResolverStyle.STRICT).format(DateUtilities.getLocalDateForDate(ts));
+			final String s = DateTimeFormatter.ofPattern(YYYY_MM_DD_HHMMSS).format(DateUtilities.getLocalDateTimeForDate(ts));
 			String nanosString = Integer.toString(ts.getNanos());
 
 			if (nanosString.length() > 6) {
