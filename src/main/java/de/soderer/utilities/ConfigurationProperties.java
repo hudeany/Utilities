@@ -150,7 +150,7 @@ public class ConfigurationProperties {
 	public List<String> getList(final String name) {
 		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			try {
-				return CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"'), properties.getProperty(name));
+				return CsvReader.parseCsvLine(new CsvFormat().withSeparator(';').withStringQuote('"'), properties.getProperty(name));
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				return new ArrayList<>();
 			}
@@ -162,7 +162,7 @@ public class ConfigurationProperties {
 	public boolean removeFromList(final String name, final String value) {
 		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			try {
-				final List<String> currentList = CsvReader.parseCsvLine(new CsvFormat().setSeparator(';').setStringQuote('"'), properties.getProperty(name));
+				final List<String> currentList = CsvReader.parseCsvLine(new CsvFormat().withSeparator(';').withStringQuote('"'), properties.getProperty(name));
 				final boolean removedValue = currentList.remove(value);
 				set(name, currentList);
 				return removedValue;
