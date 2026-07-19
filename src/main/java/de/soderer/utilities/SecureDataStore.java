@@ -13,11 +13,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.crypto.AEADBadTagException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -29,8 +31,12 @@ import de.soderer.json.JsonSerializer;
 import de.soderer.json.JsonWriter;
 
 public class SecureDataStore extends UnsecureDataStore {
-	private static final String SYMMETRIC_ENCRYPTION_METHOD = "AES";
+	private static final String SYMMETRIC_ENCRYPTION_METHOD = "AES/GCM/NoPadding";
 	private static final int RANDOMSALTSIZE = 16;
+	private static final int GCM_IV_SIZE = 12;
+	private static final int GCM_TAG_LENGTH_BITS = 128;
+	private static final int DERIVED_KEY_LENGTH_BITS = 256;
+	private static final int PBKDF2_ITERATIONS = 210000;
 
 	@Override
 	public void save(final File storeFile) throws Exception {
@@ -46,15 +52,20 @@ public class SecureDataStore extends UnsecureDataStore {
 					password = "".toCharArray();
 				}
 				byte[] salt = null;
+				byte[] iv = null;
 				try (FileOutputStream outputStream = new FileOutputStream(storeFile)) {
 					salt = new byte[RANDOMSALTSIZE];
 					new SecureRandom().nextBytes(salt);
 					outputStream.write(salt);
 
+					iv = new byte[GCM_IV_SIZE];
+					new SecureRandom().nextBytes(iv);
+					outputStream.write(iv);
+
 					final byte[] keyBytes = stretchPassword(password, salt);
 					final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 					final Cipher encryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
-					encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec);
+					encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
 					try (CipherOutputStream cipherOutputStream = new CipherOutputStream(outputStream, encryptCipher)) {
 						try (JsonWriter jsonWriter = new JsonWriter(cipherOutputStream)) {
 							jsonWriter.openJsonArray();
@@ -72,6 +83,7 @@ public class SecureDataStore extends UnsecureDataStore {
 					}
 				} finally {
 					Utilities.clear(salt);
+					Utilities.clear(iv);
 				}
 			}
 		} finally {
@@ -96,6 +108,7 @@ public class SecureDataStore extends UnsecureDataStore {
 				}
 				dataEntries = new HashMap<>();
 				byte[] salt = null;
+				byte[] iv = null;
 				try (FileInputStream inputStream = new FileInputStream(storeFile)) {
 					salt = new byte[RANDOMSALTSIZE];
 					final int readSaltBytes = inputStream.read(salt);
@@ -103,10 +116,16 @@ public class SecureDataStore extends UnsecureDataStore {
 						throw new Exception("Cannot read password salt prefix: Data is too short");
 					}
 
+					iv = new byte[GCM_IV_SIZE];
+					final int readIvBytes = inputStream.read(iv);
+					if (readIvBytes != iv.length) {
+						throw new Exception("Cannot read initialization vector prefix: Data is too short");
+					}
+
 					final byte[] keyBytes = stretchPassword(password, salt);
 					final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 					final Cipher decryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
-					decryptCipher.init(Cipher.DECRYPT_MODE, keySpec);
+					decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
 					try (CipherInputStream cipherInputStream = new CipherInputStream(inputStream, decryptCipher)) {
 						try (JsonReader jsonReader = new JsonReader(cipherInputStream)) {
 							final JsonToken jsonToken = jsonReader.readNextToken();
@@ -130,7 +149,7 @@ public class SecureDataStore extends UnsecureDataStore {
 							}
 						}
 					} catch (final IOException e) {
-						if (e.getCause() != null && e.getCause() instanceof BadPaddingException) {
+						if (e.getCause() != null && (e.getCause() instanceof AEADBadTagException || e.getCause() instanceof BadPaddingException)) {
 							throw new WrongPasswordException();
 						} else {
 							throw e;
@@ -138,6 +157,7 @@ public class SecureDataStore extends UnsecureDataStore {
 					}
 				} finally {
 					Utilities.clear(salt);
+					Utilities.clear(iv);
 				}
 			}
 		} finally {
@@ -147,9 +167,7 @@ public class SecureDataStore extends UnsecureDataStore {
 
 	private static byte[] stretchPassword(final char[] password, final byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
 		final String algorithm = "PBKDF2WithHmacSHA512";
-		final int derivedKeyLength = 128;
-		final int iterations = 5000;
-		final KeySpec spec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
+		final KeySpec spec = new PBEKeySpec(password, salt, PBKDF2_ITERATIONS, DERIVED_KEY_LENGTH_BITS);
 		final SecretKeyFactory f = SecretKeyFactory.getInstance(algorithm);
 		return f.generateSecret(spec).getEncoded();
 	}

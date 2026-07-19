@@ -18,15 +18,22 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 	private static final String ATTRIBUTENAME_ENTRY_NAME = "name";
 	private static final String ATTRIBUTENAME_ENTRY_value = "value";
 
-	private Map<String, String> values = new Hashtable<>();
+	private final Map<String, String> values = new Hashtable<>();
 
 	private boolean foundRootTag = false;
 
-	public ConfigurationXmlHandler(InputStream inputStream) throws Exception {
+	public ConfigurationXmlHandler(final InputStream inputStream) throws Exception {
 		super();
 		try {
-			SAXParserFactory.newInstance().newSAXParser().parse(new InputSource(inputStream), this);
-		} catch (Exception ex) {
+			final SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
+			// Harden against XXE: no DOCTYPE, no external (parameter) entities, no external DTD loading
+			saxParserFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+			saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+			saxParserFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+			saxParserFactory.setXIncludeAware(false);
+			saxParserFactory.newSAXParser().parse(new InputSource(inputStream), this);
+		} catch (final Exception ex) {
 			throw new Exception("Error while parsing XmlConfiguration", ex);
 		}
 	}
@@ -36,7 +43,7 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 	}
 
 	@Override
-	public void startElement(String namespaceURI, String localName, String qName, Attributes attributes) throws SAXException {
+	public void startElement(final String namespaceURI, final String localName, final String qName, final Attributes attributes) throws SAXException {
 		if (!foundRootTag) {
 			if (!qName.equals(TAGNAME_ROOT)) {
 				throw new SAXException("Invalid RootTag in XmlConfiguration: " + qName);
@@ -49,7 +56,7 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 	}
 
 	@Override
-	public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
+	public void endElement(final String namespaceURI, final String localName, final String qName) throws SAXException {
 		if (qName.equals(TAGNAME_ROOT)) {
 			// do noting
 		} else if (qName.equals(TAGNAME_ENTRY)) {

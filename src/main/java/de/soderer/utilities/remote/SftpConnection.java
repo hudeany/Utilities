@@ -65,11 +65,18 @@ public class SftpConnection implements RemoteConnection {
 	private int port = 22;
 
 	/**
+	 * Sentinel value for {@link #hostKey}: pass this value explicitly to disable host key checking entirely.
+	 * This is insecure (no protection against man-in-the-middle attacks) and should only ever be used
+	 * deliberately, e.g. for throwaway test environments. Never rely on this being the default.
+	 */
+	public static final String DISABLE_HOST_KEY_CHECK = "<<INSECURE_DISABLE_HOST_KEY_CHECK>>";
+
+	/**
 	 * The hostKey for ssh and sftp
-	 * if null: do not check<br />
-	 * if empty: check against local known host keys (~/.ssh/known_hosts)<br />
+	 * if null or empty: check against local known host keys (~/.ssh/known_hosts) (secure default)<br />
 	 * if filepath: check against specific known host keys file<br />
 	 * if filled with hash value: check against this fingerprint<br />
+	 * if equal to {@link #DISABLE_HOST_KEY_CHECK}: do not check at all (insecure, explicit opt-in only)<br />
 	 */
 	private String hostKey = null;
 
@@ -143,15 +150,18 @@ public class SftpConnection implements RemoteConnection {
 			}
 
 			boolean checkHostKeyFingerprint = false;
-			if (hostKey == null) {
+			if (DISABLE_HOST_KEY_CHECK.equals(hostKey)) {
+				System.err.println("WARNING: SSH host key checking is explicitly disabled for host '" + hostname
+						+ "'. This connection is not protected against man-in-the-middle attacks.");
 				session.setConfig("StrictHostKeyChecking", "no");
-			} else if (hostKey.matches("[A-Fa-f0-9:]+")) {
+			} else if (hostKey != null && hostKey.matches("[A-Fa-f0-9:]+")) {
 				// Special fingerprint check afterwards
 				session.setConfig("StrictHostKeyChecking", "no");
 				checkHostKeyFingerprint = true;
 			} else {
+				// Secure default: null or empty falls back to the local known_hosts file
 				File knownHostsFile;
-				if ("".equals(hostKey)) {
+				if (hostKey == null || "".equals(hostKey)) {
 					knownHostsFile = new File(Utilities.replaceUsersHome("~/.ssh/known_hosts"));
 				} else {
 					knownHostsFile = new File(Utilities.replaceUsersHome(hostKey));

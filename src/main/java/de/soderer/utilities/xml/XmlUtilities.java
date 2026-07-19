@@ -57,6 +57,36 @@ import de.soderer.utilities.Utilities;
  * Utilities class to work with XML documents.
  */
 public class XmlUtilities {
+	/**
+	 * Creates a DocumentBuilderFactory that is hardened against XXE attacks
+	 * (external entity resolution, external DTD loading, XInclude).
+	 * Use this instead of calling DocumentBuilderFactory.newInstance() directly.
+	 */
+	private static DocumentBuilderFactory createSecureDocumentBuilderFactory() throws ParserConfigurationException {
+		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		documentBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+		documentBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+		documentBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+		documentBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+		documentBuilderFactory.setXIncludeAware(false);
+		documentBuilderFactory.setExpandEntityReferences(false);
+		return documentBuilderFactory;
+	}
+
+	/**
+	 * Same hardening as {@link #createSecureDocumentBuilderFactory()}, but still allows a DOCTYPE
+	 * declaration to be present (needed e.g. for XHTML documents). External entities and external
+	 * DTDs are still never resolved/loaded, which is what actually prevents XXE.
+	 */
+	private static DocumentBuilderFactory createSecureDocumentBuilderFactoryAllowingDoctype() throws ParserConfigurationException {
+		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		documentBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+		documentBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+		documentBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+		documentBuilderFactory.setXIncludeAware(false);
+		return documentBuilderFactory;
+	}
+
 	public static boolean isXmlDocument(final byte[] data) {
 		if (data == null || data.length < 6) {
 			return false;
@@ -73,7 +103,7 @@ public class XmlUtilities {
 	 *             the parser configuration exception
 	 */
 	public static Document getEmptyDocument() throws ParserConfigurationException {
-		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
 		final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 		final Document document = documentBuilder.newDocument();
 		return document;
@@ -98,7 +128,7 @@ public class XmlUtilities {
 		}
 
 		try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
@@ -129,7 +159,7 @@ public class XmlUtilities {
 	 */
 	public static Document parseXmlFile(final File file) {
 		try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file))) {
-			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
@@ -147,7 +177,7 @@ public class XmlUtilities {
 	 */
 	public static Document parseXmlFile(final byte[] xmlData) {
 		try (BufferedInputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(xmlData))) {
-			final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			final Document document = documentBuilder.parse(inputStream);
 			return document;
@@ -200,7 +230,7 @@ public class XmlUtilities {
 		final boolean putCDATAIntoText = true;
 		final boolean createEntityRefs = false;
 
-		final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		final DocumentBuilderFactory dbf = createSecureDocumentBuilderFactory();
 
 		// set the configuration options
 		dbf.setValidating(validation);
@@ -244,7 +274,7 @@ public class XmlUtilities {
 		final boolean putCDATAIntoText = true;
 		final boolean createEntityRefs = false;
 
-		final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		final DocumentBuilderFactory dbf = createSecureDocumentBuilderFactoryAllowingDoctype();
 
 		// set the configuration options
 		dbf.setValidating(validation);
@@ -463,7 +493,7 @@ public class XmlUtilities {
 				pData = new String(pData, StandardCharsets.UTF_8).trim().getBytes(StandardCharsets.UTF_8);
 			}
 
-			final DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilderFactory docBuilderFactory = createSecureDocumentBuilderFactory();
 			if (docBuilderFactory == null) {
 				throw new Exception("DocumentBuilderFactory error");
 			}

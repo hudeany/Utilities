@@ -56,9 +56,9 @@ public class Password implements Closeable {
 			Arrays.fill(passwordChars, (char) 0);
 			passwordChars = null;
 		}
-		if (passwordBytesIsoEncoded != null) {
-			Arrays.fill(passwordBytesIsoEncoded, (byte) 0);
-			passwordBytesIsoEncoded = null;
+		if (passwordBytesUtfEncoded != null) {
+			Arrays.fill(passwordBytesUtfEncoded, (byte) 0);
+			passwordBytesUtfEncoded = null;
 		}
 		if (passwordBytesIsoEncoded != null) {
 			Arrays.fill(passwordBytesIsoEncoded, (byte) 0);
