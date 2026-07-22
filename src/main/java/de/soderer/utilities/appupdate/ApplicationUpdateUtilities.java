@@ -83,35 +83,8 @@ public class ApplicationUpdateUtilities {
 			final String trustedCaCertificateFileNames,
 			final String username,
 			final char[] password,
-			final String restartParameter,
-			final boolean restartAfterUpdate,
-			final boolean allowUnsafeUpdates) throws Exception {
-		return executeUpdate(
-				updateParent,
-				versionIndexFileLocation,
-				proxyConfiguration,
-				applicationName,
-				applicationVersion,
-				trustedCaCertificateFileNames,
-				username,
-				password,
-				null,
-				restartParameter,
-				restartAfterUpdate,
-				allowUnsafeUpdates);
-	}
-
-	public static boolean executeUpdate(
-			final ApplicationUpdateParent updateParent,
-			final String versionIndexFileLocation,
-			final ProxyConfiguration proxyConfiguration,
-			final String applicationName,
-			final Version applicationVersion,
-			final String trustedCaCertificateFileNames,
-			final String username,
-			final char[] password,
-			final String jvmParameter,
-			final String restartParameter,
+			final List<String> jvmParameters,
+			final List<String> appParameters,
 			final boolean restartAfterUpdate,
 			final boolean allowUnsafeUpdates) throws Exception {
 		try {
@@ -122,7 +95,7 @@ public class ApplicationUpdateUtilities {
 			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(versionIndexFileLocation, proxyConfiguration, applicationName, applicationVersion);
 			if ((newVersionAvailable != null && username != null)
 					|| askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
-				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, jvmParameter, restartParameter, restartAfterUpdate, allowUnsafeUpdates);
+				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, jvmParameters, appParameters, restartAfterUpdate, allowUnsafeUpdates);
 			}
 			return true;
 		} catch (final Exception e) {
@@ -319,11 +292,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	public static void restart(final String jarFilePath, final String restartParameter) {
-		restart(jarFilePath, null, restartParameter);
-	}
-
-	public static void restart(final String jarFilePath, final String jvmParameter, final String restartParameter) {
+	public static void restart(final String jarFilePath, final List<String> jvmParameters, final List<String> appParameters) {
 		try {
 			final String[] restarterCommand;
 
@@ -360,14 +329,18 @@ public class ApplicationUpdateUtilities {
 
 			restarterCommandList.add(jarFilePath);
 
-			if (Utilities.isNotBlank(jvmParameter)) {
+			if (jvmParameters != null && jvmParameters.size() > 0) {
 				restarterCommandList.add("-jvmParameter");
-				restarterCommandList.add(jvmParameter);
+				for (final String token : jvmParameters) {
+					restarterCommandList.add(token);
+				}
 			}
 
-			if (Utilities.isNotBlank(restartParameter)) {
-				restarterCommandList.add("-restartParameter");
-				restarterCommandList.add(restartParameter);
+			if (appParameters != null && appParameters.size() > 0) {
+				restarterCommandList.add("-appParameter");
+				for (final String token : appParameters) {
+					restarterCommandList.add(token);
+				}
 			}
 			restarterCommand = restarterCommandList.toArray(new String[0]);
 
@@ -380,7 +353,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	private static boolean updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String jvmParameter, final String restartParameter, final boolean restartAfterUpdate, final boolean allowUnsafeUpdates) {
+	private static boolean updateApplication(final ApplicationUpdateParent updateParent, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final List<String> jvmParameters, final List<String> appParameters, final boolean restartAfterUpdate, final boolean allowUnsafeUpdates) {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
 				throw new Exception("Mandatory updateFileLocation is empty");
@@ -475,23 +448,27 @@ public class ApplicationUpdateUtilities {
 								commandParts.add("-norestart");
 							}
 
-							if (Utilities.isNotBlank(jvmParameter)) {
+							if (jvmParameters != null && jvmParameters.size() > 0) {
 								commandParts.add("-jvmParameter");
-								commandParts.add(jvmParameter);
+								for (final String token : jvmParameters) {
+									commandParts.add(token);
+								}
 							}
 
-							if (Utilities.isNotBlank(restartParameter)) {
-								commandParts.add("-restartParameter");
-								commandParts.add(restartParameter);
+							if (appParameters != null && appParameters.size() > 0) {
+								commandParts.add("-appParameter");
+								for (final String token : appParameters) {
+									commandParts.add(token);
+								}
 							}
 
 							updaterCommand = commandParts.toArray(new String[0]);
 						} else {
-							updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+							updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, null);
 						}
 					}
 				} else {
-					updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+					updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, null);
 				}
 
 				if (updateParent != null) {
@@ -516,7 +493,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	public static boolean updateNonInteractiveApplication(final Class<? extends ApplicationUpdateParent> applicationClass, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final String jvmParameter, final String restartParameter, final boolean restartAfterUpdate) throws Exception {
+	public static boolean updateNonInteractiveApplication(final Class<? extends ApplicationUpdateParent> applicationClass, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final List<String> jvmParameters, final List<String> appParameters, final boolean restartAfterUpdate) throws Exception {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
 				throw new Exception("Mandatory updateFileLocation is empty");
@@ -605,18 +582,23 @@ public class ApplicationUpdateUtilities {
 						commandParts.add("-norestart");
 					}
 
-					if (Utilities.isNotBlank(jvmParameter)) {
+					if (jvmParameters != null && jvmParameters.size() > 0) {
 						commandParts.add("-jvmParameter");
-						commandParts.add(jvmParameter);
+						for (final String token : jvmParameters) {
+							commandParts.add(token);
+						}
 					}
 
-					if (Utilities.isNotBlank(restartParameter)) {
-						commandParts.add("-restartParameter");
-						commandParts.add(restartParameter);
+					if (appParameters != null && appParameters.size() > 0) {
+						commandParts.add("-appParameter");
+						for (final String token : appParameters) {
+							commandParts.add(token);
+						}
 					}
+
 					updaterCommand = commandParts.toArray(new String[0]);
 				} else {
-					updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, restartParameter);
+					updaterCommand = createUpdateBatchFile(jarFilePath, downloadTempFile, restartAfterUpdate, null);
 				}
 
 				if (updaterCommand != null) {
@@ -843,7 +825,7 @@ public class ApplicationUpdateUtilities {
 		return downloadTempFile.exists();
 	}
 
-	private static String[] createUpdateBatchFile(final String jarFilePath, final File downloadTempFile, final boolean restartApplicationAfterUpdate, final String restartParameter) throws Exception {
+	private static String[] createUpdateBatchFile(final String jarFilePath, final File downloadTempFile, final boolean restartApplicationAfterUpdate, final String appParameter) throws Exception {
 		String javaBinPath = SystemUtilities.getJavaBinPath();
 		if (Utilities.isBlank(javaBinPath)) {
 			if (SystemUtilities.isWindowsSystem()) {
@@ -871,7 +853,7 @@ public class ApplicationUpdateUtilities {
 							+ ")\r\n"
 							+ "ren \"" + downloadTempFile.getAbsolutePath() + "\" \"" + new File(jarFilePath).getName() + "\"\r\n"
 							+ "if not exist \"" + downloadTempFile.getAbsolutePath() + "\" (\r\n"
-							+ (restartApplicationAfterUpdate ? "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n" : "")
+							+ (restartApplicationAfterUpdate ? "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (appParameter != null ? " " + appParameter : "") + "\r\n" : "")
 							+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n"
 							+ ")\r\n");
 
@@ -895,7 +877,7 @@ public class ApplicationUpdateUtilities {
 							+ "fi\n"
 							+ "mv \"" + downloadTempFile.getAbsolutePath() + "\" \"" + jarFilePath + "\"\n"
 							+ "if ! [ -f \"" + downloadTempFile.getAbsolutePath() + "\" ]; then\n"
-							+ (restartApplicationAfterUpdate ? "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n": "")
+							+ (restartApplicationAfterUpdate ? "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (appParameter != null ? " " + appParameter : "") + "\n": "")
 							+ "rm \"" + batchFile.getAbsolutePath() + "\"\n"
 							+ "fi\n");
 
@@ -905,7 +887,7 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
-	public static String[] createRestartBatchFile(final String jarFilePath, final String restartParameter) throws Exception {
+	public static String[] createRestartBatchFile(final String jarFilePath, final String appParameter) throws Exception {
 		String javaBinPath = SystemUtilities.getJavaBinPath();
 		if (Utilities.isBlank(javaBinPath)) {
 			if (SystemUtilities.isWindowsSystem()) {
@@ -931,7 +913,7 @@ public class ApplicationUpdateUtilities {
 							+ "ping -n 3 127.0.0.1 >nul\r\n"
 							+ "ping -n 3 127.0.0.1 >nul\r\n"
 							+ "ping -n 3 127.0.0.1 >nul\r\n"
-							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\r\n"
+							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (appParameter != null ? " " + appParameter : "") + "\r\n"
 							+ "del \"" + batchFile.getAbsolutePath() + "\"\r\n");
 
 			return new String[]{ "cmd", "/c", "start", "/B", batchFile.getAbsolutePath() };
@@ -943,7 +925,7 @@ public class ApplicationUpdateUtilities {
 			writeFile(batchFile,
 					"#!/bin/bash\n"
 							+ "sleep 10\n"
-							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (restartParameter != null ? " " + restartParameter : "") + "\n"
+							+ "\"" + javaBinPath + "\" -jar \"" + jarFilePath + "\"" + (appParameter != null ? " " + appParameter : "") + "\n"
 							+ "rm \"" + batchFile.getAbsolutePath() + "\"\n");
 
 			return new String[]{ "sh", batchFile.getAbsolutePath() };
