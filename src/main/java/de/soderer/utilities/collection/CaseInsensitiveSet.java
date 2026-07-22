@@ -1,6 +1,7 @@
 package de.soderer.utilities.collection;
 
 import java.util.Collection;
+import java.util.Locale;
 
 /**
  * Generic String Set that ignores the String case
@@ -32,6 +33,6 @@ public class CaseInsensitiveSet extends AbstractHashSet<String> {
 
 	@Override
 	protected String convertItem(final Object item) {
-		return item == null ? null : item.toString().toLowerCase();
+		return item == null ? null : item.toString().toLowerCase(Locale.ROOT);
 	}
 }

@@ -1,5 +1,6 @@
 package de.soderer.utilities.collection;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -31,6 +32,6 @@ public class CaseInsensitiveLinkedMap<V> extends AbstractLinkedHashMap<String, V
 
 	@Override
 	protected String convertKey(final Object key) {
-		return key == null ? null : key.toString().toLowerCase();
+		return key == null ? null : key.toString().toLowerCase(Locale.ROOT);
 	}
 }
