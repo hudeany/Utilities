@@ -294,8 +294,6 @@ public class ApplicationUpdateUtilities {
 
 	public static void restart(final String jarFilePath, final List<String> jvmParameters, final List<String> appParameters) {
 		try {
-			final String[] restarterCommand;
-
 			final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Restarter.jar");
 			if (updaterInputStream == null) {
 				throw new Exception("Restarter binary not available");
@@ -342,9 +340,15 @@ public class ApplicationUpdateUtilities {
 					restarterCommandList.add(token);
 				}
 			}
-			restarterCommand = restarterCommandList.toArray(new String[0]);
 
-			Runtime.getRuntime().exec(restarterCommand, null, null);
+			final String[] restarterCommand = restarterCommandList.toArray(new String[0]);
+
+			final ProcessBuilder restarterProcessBuilder = new ProcessBuilder(restarterCommand);
+			restarterProcessBuilder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+			restarterProcessBuilder.redirectError(ProcessBuilder.Redirect.DISCARD);
+
+			restarterProcessBuilder.start();
+
 			Runtime.getRuntime().exit(0);
 		} catch (final Exception e) {
 			System.err.println("Update error while updating to new version:\n" + e.getMessage());
@@ -476,7 +480,11 @@ public class ApplicationUpdateUtilities {
 				}
 
 				if (updaterCommand != null) {
-					Runtime.getRuntime().exec(updaterCommand, null, null);
+					final ProcessBuilder restarterProcessBuilder = new ProcessBuilder(updaterCommand);
+					restarterProcessBuilder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+					restarterProcessBuilder.redirectError(ProcessBuilder.Redirect.DISCARD);
+					restarterProcessBuilder.start();
+
 					Runtime.getRuntime().exit(0);
 				}
 
