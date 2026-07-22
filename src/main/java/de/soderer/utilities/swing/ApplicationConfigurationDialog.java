@@ -58,7 +58,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final String versioninfoDownloadURL;
 	private final String trustedUpdateCaCertificates;
 	private final List<String> jvmParameters;
-	private final List<String> startParameters;
+	private final List<String> appParameters;
 	private List<String> availableLanguages = Utilities.getList("de", "en");
 	private String language;
 	private String proxyConfigurationType = "";
@@ -116,7 +116,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		return this;
 	}
 
-	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates, final List<String> jvmParameters, final List<String> startParameters) {
+	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates, final List<String> jvmParameters, final List<String> appParameters) {
 		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")");
 
 		this.updateParent = updateParent;
@@ -142,7 +142,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		this.versioninfoDownloadURL = versioninfoDownloadURL;
 		this.trustedUpdateCaCertificates = trustedUpdateCaCertificates;
 		this.jvmParameters = jvmParameters;
-		this.startParameters = startParameters;
+		this.appParameters = appParameters;
 
 		if (iconImageLinux != null) {
 			setIconImage(iconImageLinux);
@@ -424,7 +424,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
 				try {
-					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), proxyUrl), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, jvmParameters, startParameters, true, false);
+					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), proxyUrl), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, jvmParameters, appParameters, true, false);
 				} catch (final Exception e) {
 					new QuestionDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 				}
