@@ -78,11 +78,6 @@ public abstract class AbstractLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	}
 
 	@Override
-	public boolean remove(final Object key, final Object value) {
-		return super.remove(convertKey(key), value);
-	}
-
-	@Override
 	public V replace(final K key, final V value) {
 		return super.replace(convertKey(key), value);
 	}
