@@ -43,10 +43,6 @@ import de.soderer.utilities.appupdate.ApplicationUpdateUtilities;
 public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private static final long serialVersionUID = 422519084107817691L;
 
-	public static final String CONFIG_LANGUAGE = "Application.Language";
-	public static final String CONFIG_PROXY_CONFIGURATION_TYPE = "Application.ProxyConfigurationType";
-	public static final String CONFIG_PROXY_URL = "Application.ProxyUrl";
-
 	private final UpdateableGuiApplication updateParent;
 	private final String applicationName;
 	private final String applicationClassName;
@@ -128,15 +124,15 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		this.applicationVersion = applicationVersion;
 		this.applicationBuildTime = applicationBuildTime;
 		this.applicationConfiguration = applicationConfiguration;
-		language = applicationConfiguration.get(CONFIG_LANGUAGE);
+		language = applicationConfiguration.get(ConfigurationProperties.CONFIG_KEY_LANGUAGE);
 		if (language == null) {
 			language = "";
 		}
-		proxyConfigurationType = applicationConfiguration.get(CONFIG_PROXY_CONFIGURATION_TYPE);
+		proxyConfigurationType = applicationConfiguration.get(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE);
 		if (proxyConfigurationType == null) {
 			proxyConfigurationType = "en";
 		}
-		proxyUrl = applicationConfiguration.get(CONFIG_PROXY_URL);
+		proxyUrl = applicationConfiguration.get(ConfigurationProperties.CONFIG_KEY_PROXY_URL);
 		if (proxyUrl == null) {
 			proxyUrl = "";
 		}
@@ -463,9 +459,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				applicationConfiguration.set(CONFIG_LANGUAGE, language == null ? "" : language);
-				applicationConfiguration.set(CONFIG_PROXY_CONFIGURATION_TYPE, proxyConfigurationType == null ? "" : proxyConfigurationType);
-				applicationConfiguration.set(CONFIG_PROXY_URL, proxyUrl == null ? "" : proxyUrl);
+				applicationConfiguration.set(ConfigurationProperties.CONFIG_KEY_LANGUAGE, language == null ? "" : language);
+				applicationConfiguration.set(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE, proxyConfigurationType == null ? "" : proxyConfigurationType);
+				applicationConfiguration.set(ConfigurationProperties.CONFIG_KEY_PROXY_URL, proxyUrl == null ? "" : proxyUrl);
 				returnValue = Result.OK;
 				dispose();
 			}
