@@ -9,22 +9,35 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import de.soderer.pac.PacScriptParser;
+import de.soderer.pac.utilities.ProxyConfiguration;
+import de.soderer.pac.utilities.ProxyConfiguration.ProxyConfigurationType;
 import de.soderer.utilities.collection.UniqueFifoQueuedList;
 import de.soderer.utilities.csv.CsvFormat;
 import de.soderer.utilities.csv.CsvReader;
 import de.soderer.utilities.csv.CsvWriter;
 
 public class ConfigurationProperties {
+	public static final String CONFIG_KEY_VERSION = "Application.Version";
+	public static final String CONFIG_KEY_LANGUAGE = "Application.Language";
+	public static final String CONFIG_KEY_PROXY_CONFIGURATION_TYPE = "Application.ProxyConfigurationType";
+	public static final String CONFIG_KEY_PROXY_URL = "Application.ProxyUrl";
+	public static final String CONFIG_KEY_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
+	public static final String CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK = "Application.NextDailyUpdateCheck";
+
 	public static String MAXSIZE_EXTENSION = ".maxSize";
 	public static String ENUM_EXTENSION = ".enum";
 
 	private final Properties properties = new Properties();
 	private final String applicationName;
 	private boolean useSubDirectory = false;
+
+	private ProxyConfiguration proxyConfiguration = null;
 
 	public ConfigurationProperties(final String applicationName) throws Exception {
 		this(applicationName, false);
@@ -87,12 +100,11 @@ public class ConfigurationProperties {
 		}
 	}
 
-	public void remove(final String name) {
-		properties.remove(name);
-	}
-
 	public void set(final String name, final String value) {
 		properties.setProperty(name, value == null ? "" : value);
+		if (CONFIG_KEY_PROXY_CONFIGURATION_TYPE.equals(name) || CONFIG_KEY_PROXY_URL.equals(name)) {
+			proxyConfiguration = null;
+		}
 	}
 
 	public void set(final String name, final int value) {
@@ -229,5 +241,63 @@ public class ConfigurationProperties {
 
 	public void removeKey(final String name) {
 		properties.remove(name);
+	}
+
+	public void setupDefaultConfig() {
+		set(CONFIG_KEY_LANGUAGE + ConfigurationProperties.ENUM_EXTENSION, "de,en");
+		if (!containsKey(CONFIG_KEY_LANGUAGE)) {
+			set(CONFIG_KEY_LANGUAGE, Locale.getDefault().getLanguage());
+		}
+
+		set(CONFIG_KEY_PROXY_CONFIGURATION_TYPE + ConfigurationProperties.ENUM_EXTENSION, "None,System,Proxy-URL,WPAD,PAC-URL");
+		if (!containsKey(CONFIG_KEY_PROXY_CONFIGURATION_TYPE)) {
+			if (PacScriptParser.findPacFileUrlByWpad() != null) {
+				set(CONFIG_KEY_PROXY_CONFIGURATION_TYPE, ProxyConfigurationType.WPAD.name());
+			} else {
+				set(CONFIG_KEY_PROXY_CONFIGURATION_TYPE, ProxyConfigurationType.None.name());
+			}
+			save();
+		}
+		if (!containsKey(CONFIG_KEY_PROXY_URL)) {
+			set(CONFIG_KEY_PROXY_URL, "");
+		}
+
+		if (containsKey("DailyUpdateCheck")) {
+			if (!containsKey(CONFIG_KEY_DAILY_UPDATE_CHECK)) {
+				set(CONFIG_KEY_DAILY_UPDATE_CHECK, getBoolean("DailyUpdateCheck"));
+			}
+			removeKey("DailyUpdateCheck");
+		}
+		if (!containsKey(CONFIG_KEY_DAILY_UPDATE_CHECK)) {
+			set(CONFIG_KEY_DAILY_UPDATE_CHECK, false);
+		}
+
+		if (containsKey("NextDailyUpdateCheck")) {
+			if (!containsKey(CONFIG_KEY_DAILY_UPDATE_CHECK)) {
+				set(CONFIG_KEY_DAILY_UPDATE_CHECK, get("NextDailyUpdateCheck"));
+			}
+			removeKey("NextDailyUpdateCheck");
+		}
+		if (!containsKey(CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK)) {
+			set(CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK, "");
+		}
+
+		// TODO: Remove obsolete old legacy key in future
+		if (containsKey("TlsServerCertificateCheck")) {
+			removeKey("TlsServerCertificateCheck");
+		}
+	}
+
+	public String getLanguage() {
+		return get(CONFIG_KEY_PROXY_CONFIGURATION_TYPE);
+	}
+
+	public ProxyConfiguration getProxyConfiguration() {
+		if (proxyConfiguration == null) {
+			final ProxyConfigurationType proxyConfigurationType = ProxyConfigurationType.getFromString(get(CONFIG_KEY_PROXY_CONFIGURATION_TYPE));
+			final String proxyUrl = get(CONFIG_KEY_PROXY_URL);
+			proxyConfiguration = new ProxyConfiguration(proxyConfigurationType, proxyUrl);
+		}
+		return proxyConfiguration;
 	}
 }

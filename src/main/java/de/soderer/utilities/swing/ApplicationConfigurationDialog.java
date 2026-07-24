@@ -71,6 +71,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private JComboBox<String> proxyCombo;
 	private JTextField proxyUrlText;
 
+	/** Tracks whether any configuration field was modified since the dialog was opened or last saved. */
+	private boolean configurationChanged = false;
+
 	public String getLanguage() {
 		return language;
 	}
@@ -223,7 +226,15 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		languageCombo.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(final ItemEvent event) {
-				language = (String) event.getItem();
+				if (event.getStateChange() == ItemEvent.SELECTED) {
+					final String newLanguage = (String) event.getItem();
+					final boolean valueChanged = language == null ? newLanguage != null : !language.equals(newLanguage);
+					language = newLanguage;
+					if (valueChanged) {
+						configurationChanged = true;
+						JOptionPane.showMessageDialog(getParent(), LangResources.get("languageChangeRequiresRestart"), applicationName + " " + LangResources.get("configuration"), JOptionPane.INFORMATION_MESSAGE);
+					}
+				}
 			}
 		});
 		languagePanel.add(languageCombo, BorderLayout.EAST);
@@ -251,12 +262,15 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		proxyCombo.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(final ItemEvent event) {
-				proxyConfigurationType = (String) event.getItem();
-				if ("Proxy-URL".equals(proxyConfigurationType)
-						|| "PAC-URL".equals(proxyConfigurationType)) {
-					proxyUrlText.setEnabled(true);
-				} else {
-					proxyUrlText.setEnabled(false);
+				if (event.getStateChange() == ItemEvent.SELECTED) {
+					proxyConfigurationType = (String) event.getItem();
+					configurationChanged = true;
+					if ("Proxy-URL".equals(proxyConfigurationType)
+							|| "PAC-URL".equals(proxyConfigurationType)) {
+						proxyUrlText.setEnabled(true);
+					} else {
+						proxyUrlText.setEnabled(false);
+					}
 				}
 			}
 		});
@@ -280,6 +294,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			@Override
 			public void keyTyped(final KeyEvent event) {
 				proxyUrl = proxyUrlText.getText();
+				configurationChanged = true;
 			}
 		});
 		proxyUrlText.setPreferredSize(new Dimension(150, 20));
@@ -464,8 +479,17 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				returnValue = Result.CANCELED;
-				dispose();
+				if (configurationChanged) {
+					final int result = JOptionPane.showConfirmDialog(getParent(), LangResources.get("discardUnsavedConfigurationChanges"), applicationName + " " + LangResources.get("configuration"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					if (result == JOptionPane.YES_OPTION) {
+						returnValue = Result.CANCELED;
+						dispose();
+					}
+					// else: keep the dialog open, discard nothing
+				} else {
+					returnValue = Result.CANCELED;
+					dispose();
+				}
 			}
 		});
 		mainButtonPanel.add(closeButton);

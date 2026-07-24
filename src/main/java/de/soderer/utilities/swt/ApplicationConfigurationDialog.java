@@ -37,15 +37,14 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
-	public static final String CONFIG_LANGUAGE = "Application.Language";
-	public static final String CONFIG_PROXY_CONFIGURATION_TYPE = "Application.ProxyConfigurationType";
-	public static final String CONFIG_PROXY_URL = "Application.ProxyUrl";
-
 	private final String applicationName;
 	private final String startUpClassName;
 	private final ConfigurationProperties applicationConfiguration;
 	private final byte[] iconImageDataWindows;
 	private final Image iconImageLinux;
+
+	private boolean configurationChanged = false;
+	private final Map<String, Object> pendingChanges = new java.util.LinkedHashMap<>();
 
 	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final String startUpClassName) {
 		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
@@ -118,6 +117,23 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					final Combo comboBox = new Combo(dataPart, SWT.DROP_DOWN);
 					comboBox.setItems(items.toArray(new String[0]));
 					comboBox.addSelectionListener(new ComboBoxButtonSelectionListener(key));
+					if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key)) {
+						final String[] lastLanguageValueHolder = new String[] { applicationConfiguration.get(key) };
+						comboBox.addSelectionListener(new SelectionAdapter() {
+							@Override
+							public void widgetSelected(final SelectionEvent event) {
+								final String newValue = ((Combo) event.widget).getText().replace(LangResources.get("None"), "None");
+								final boolean valueUnchanged = lastLanguageValueHolder[0] == null ? newValue == null : lastLanguageValueHolder[0].equals(newValue);
+								if (!valueUnchanged) {
+									lastLanguageValueHolder[0] = newValue;
+									final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_INFORMATION | SWT.OK);
+									messageBox.setText(applicationName + " " + LangResources.get("configuration"));
+									messageBox.setMessage(LangResources.get("languageChangeRequiresRestart"));
+									messageBox.open();
+								}
+							}
+						});
+					}
 					if (Utilities.isBlank(applicationConfiguration.get(key))) {
 						comboBox.select(0);
 					} else {
@@ -141,7 +157,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					keyTextfield.addModifyListener(new TextValueChangeListener(key));
 				}
 
-				// add Help Icon
 				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(LangResources.get("conf." + key + ".help"))) {
 					final String helpText = LangResources.get("conf." + key + ".help");
 					final Button button = new Button(dataPart, SWT.PUSH);
@@ -175,6 +190,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		storeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
+				applyPendingChanges();
 				setReturnValue(true);
 				getParent().close();
 			}
@@ -362,8 +378,18 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				setReturnValue(false);
-				getParent().close();
+				if (configurationChanged) {
+					final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_QUESTION | SWT.YES | SWT.NO);
+					messageBox.setText(applicationName + " " + LangResources.get("configuration"));
+					messageBox.setMessage(LangResources.get("discardUnsavedConfigurationChanges"));
+					if (messageBox.open() == SWT.YES) {
+						setReturnValue(false);
+						getParent().close();
+					}
+				} else {
+					setReturnValue(false);
+					getParent().close();
+				}
 			}
 		});
 
@@ -379,7 +405,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		@Override
 		public void modifyText(final ModifyEvent event) {
-			applicationConfiguration.set(key, Integer.toString(((Spinner) event.widget).getSelection()));
+			pendingChanges.put(key, Integer.toString(((Spinner) event.widget).getSelection()));
+			configurationChanged = true;
 		}
 	}
 
@@ -392,7 +419,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		@Override
 		public void widgetSelected(final SelectionEvent event) {
-			applicationConfiguration.set(key, ((Combo) event.widget).getText().replace(LangResources.get("None"), "None"));
+			pendingChanges.put(key, ((Combo) event.widget).getText().replace(LangResources.get("None"), "None"));
+			configurationChanged = true;
 		}
 	}
 
@@ -405,7 +433,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		@Override
 		public void modifyText(final ModifyEvent event) {
-			applicationConfiguration.set(key, ((Text) event.widget).getText());
+			pendingChanges.put(key, ((Text) event.widget).getText());
+			configurationChanged = true;
 		}
 	}
 
@@ -418,12 +447,25 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		@Override
 		public void widgetDefaultSelected(final SelectionEvent event) {
-			applicationConfiguration.set(key, ((Button) event.widget).getSelection());
+			pendingChanges.put(key, ((Button) event.widget).getSelection());
+			configurationChanged = true;
 		}
 
 		@Override
 		public void widgetSelected(final SelectionEvent event) {
-			applicationConfiguration.set(key, ((Button) event.widget).getSelection());
+			pendingChanges.put(key, ((Button) event.widget).getSelection());
+			configurationChanged = true;
+		}
+	}
+
+	private void applyPendingChanges() {
+		for (final Entry<String, Object> entry : pendingChanges.entrySet()) {
+			final Object value = entry.getValue();
+			if (value instanceof Boolean) {
+				applicationConfiguration.set(entry.getKey(), (Boolean) value);
+			} else {
+				applicationConfiguration.set(entry.getKey(), (String) value);
+			}
 		}
 	}
 
