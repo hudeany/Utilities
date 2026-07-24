@@ -183,7 +183,7 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>network</artifactId>
-			<version>26.0.19</version>
+			<version>26.0.23</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
