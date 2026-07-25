@@ -71,9 +71,6 @@ public class ApplicationUpdateUtilities {
 
 	public static final int EOF = -1;
 
-	public static final String CONFIG_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
-	public static final String CONFIG_NEXT_DAILY_UPDATE_CHECK = "NextDailyUpdateCheck";
-
 	public static boolean executeUpdate(
 			final ApplicationUpdateParent updateParent,
 			final String versionIndexFileLocation,
