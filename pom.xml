@@ -173,7 +173,7 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>json</artifactId>
-			<version>26.2.0</version>
+			<version>26.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
@@ -183,7 +183,7 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>network</artifactId>
-			<version>26.0.24</version>
+			<version>26.0.26</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
