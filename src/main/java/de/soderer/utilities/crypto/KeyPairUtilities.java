@@ -35,8 +35,8 @@ public class KeyPairUtilities {
 	 * Create a RSA keypair of given strength
 	 */
 	public static KeyPair createRsaKeyPair(final int keyStrength) throws Exception {
-		if (keyStrength < 512) {
-			throw new Exception("Invalid RSA key strength: " + keyStrength);
+		if (keyStrength < 2048) {
+			throw new Exception("Invalid RSA key strength (minimum 2048 bit required): " + keyStrength);
 		}
 		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
 		keyPairGenerator.initialize(keyStrength);

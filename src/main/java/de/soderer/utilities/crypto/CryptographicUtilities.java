@@ -801,7 +801,7 @@ public class CryptographicUtilities {
 		}
 
 		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
-		params.setRevocationEnabled(false);
+		params.setRevocationEnabled(true);
 		try {
 			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) CertPathBuilder.getInstance("PKIX").build(params);
 			return result != null;
@@ -828,7 +828,7 @@ public class CryptographicUtilities {
 		}
 
 		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
-		params.setRevocationEnabled(false);
+		params.setRevocationEnabled(true);
 		try {
 			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) CertPathBuilder.getInstance("PKIX").build(params);
 			return result != null;

@@ -142,8 +142,8 @@ public class OTPKeyItem extends Composite {
 			throw new Exception("invalid otp header");
 		}
 		final String keyVersion = XmlUtilities.removeFrameTag(readNextHeaderPart());
-		if (!keyVersion.equals(keyVersion)) {
-			throw new Exception("invalid otp header");
+		if (!version.equals(keyVersion)) {
+			throw new Exception("invalid otp header: unsupported version " + keyVersion);
 		}
 		keysetID = XmlUtilities.removeFrameTag(readNextHeaderPart());
 		if (Utilities.isBlank(keysetID)) {

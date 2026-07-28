@@ -145,7 +145,7 @@ public class Asn1Codec {
 			final byte[] buffer = new byte[8192];
 			int bytesRead = 0;
 			int tagLengthLeftToRead = tagLength;
-			while ((bytesRead = input.read(buffer, 0, tagLengthLeftToRead)) > 0) {
+			while (tagLengthLeftToRead > 0 && (bytesRead = input.read(buffer, 0, Math.min(buffer.length, tagLengthLeftToRead))) > 0) {
 				tagData.write(buffer, 0, bytesRead);
 				tagLengthLeftToRead = tagLengthLeftToRead - bytesRead;
 			}
