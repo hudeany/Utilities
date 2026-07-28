@@ -84,7 +84,15 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 			PGPPublicKeyEncryptedData publicKeyEncryptedData = null;
 
 			while (dataIterator.hasNext()) {
-				publicKeyEncryptedData = (PGPPublicKeyEncryptedData) dataIterator.next();
+				final PGPPublicKeyEncryptedData candidateData = (PGPPublicKeyEncryptedData) dataIterator.next();
+				if (secretKey != null && candidateData.getKeyID() == secretKey.getKeyID()) {
+					publicKeyEncryptedData = candidateData;
+					break;
+				} else if (publicKeyEncryptedData == null) {
+					// Fallback for the (unusual) case that the secret key's ID cannot be matched:
+					// keep the first candidate instead of silently ending up with the last one.
+					publicKeyEncryptedData = candidateData;
+				}
 			}
 
 			if (privateKey == null) {

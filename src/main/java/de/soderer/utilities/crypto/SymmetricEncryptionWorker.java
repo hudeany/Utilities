@@ -5,11 +5,14 @@ import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.SecureRandom;
+import java.security.Security;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
@@ -77,17 +80,20 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 
 		itemsToDo = Math.max(dataSizeHint, dataInputStream.available());
 
+		Security.addProvider(new BouncyCastleProvider());
+
 		byte[] salt = null;
 		byte[] initializationVector = null;
+		byte[] keyBytes = null;
 		try (InputStream inputStream = new BufferedInputStream(dataInputStream)) {
 			try (OutputStream outputStream = new BufferedOutputStream(encryptedDataOutputStream)) {
 				salt = new byte[randomSaltSize];
 				new SecureRandom().nextBytes(salt);
 				outputStream.write(salt);
 
-				final byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
+				keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
 				final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, encryptionMethod);
-				final Cipher symetricEncryptCipher = Cipher.getInstance(encryptionMethod);
+				final Cipher symetricEncryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 
 				initializationVector = new byte[symetricEncryptCipher.getBlockSize()];
 				new SecureRandom().nextBytes(initializationVector);
@@ -119,6 +125,7 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		} finally {
 			Utilities.clear(initializationVector);
 			Utilities.clear(salt);
+			Utilities.clear(keyBytes);
 		}
 	}
 }

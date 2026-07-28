@@ -140,7 +140,9 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 			signalProgress();
 
 			return item;
-		} catch (@SuppressWarnings("unused") final Exception e) {
+		} catch (final Exception e) {
+			e.printStackTrace();
+
 			HashItem item;
 			if (!addDates) {
 				item = new HashItem(fileToHash.getName(), false, hashAlgorithm, fileToHash.length());

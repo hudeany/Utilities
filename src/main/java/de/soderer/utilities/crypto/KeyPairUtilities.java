@@ -36,6 +36,8 @@ public class KeyPairUtilities {
 	 */
 	public static KeyPair createRsaKeyPair(final int keyStrength) throws Exception {
 		if (keyStrength < 2048) {
+			// RSA keys below 2048 bit are considered insecure by current standards (NIST/BSI).
+			// 512 bit RSA is trivially factorizable within hours on commodity hardware.
 			throw new Exception("Invalid RSA key strength (minimum 2048 bit required): " + keyStrength);
 		}
 		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
@@ -46,7 +48,13 @@ public class KeyPairUtilities {
 	/**
 	 * Create a DSA keypair of 1024 bit strength<br/>
 	 * Watchout: OpenSSH only supports 1024 bit DSA key strength<br/>
+	 *
+	 * @deprecated DSA-1024 is considered cryptographically weak by current standards
+	 *             (NIST/BSI). Kept only for compatibility with legacy OpenSSH DSA keys;
+	 *             do not use for newly generated keys unless this specific legacy
+	 *             compatibility is required.
 	 */
+	@Deprecated
 	public static KeyPair createDsaKeyPair() throws Exception {
 		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
 		keyPairGenerator.initialize(1024);
@@ -56,7 +64,13 @@ public class KeyPairUtilities {
 	/**
 	 * Create a DSA keypair of given strength<br/>
 	 * Watchout: OpenSSH only supports 1024 bit DSA key strength<br/>
+	 *
+	 * @deprecated DSA is considered legacy and, at the 1024 bit strength required for
+	 *             OpenSSH compatibility, cryptographically weak by current standards
+	 *             (NIST/BSI). Use only for legacy compatibility, never for new keys
+	 *             without a specific compatibility requirement.
 	 */
+	@Deprecated
 	public static KeyPair createDsaKeyPair(final int keyStrength) throws Exception {
 		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
 		keyPairGenerator.initialize(keyStrength);

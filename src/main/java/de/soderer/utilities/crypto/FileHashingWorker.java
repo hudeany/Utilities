@@ -20,6 +20,7 @@ public class FileHashingWorker extends WorkerSimple<byte[]> {
 		this.fileToHash = fileToHash;
 
 		if (hashAlgorithm == null) {
+			// MD5 is broken for security purposes (practical collisions); SHA-256 is the safer default.
 			this.hashAlgorithm = HashAlgorithm.SHA_256;
 		} else {
 			this.hashAlgorithm = hashAlgorithm;

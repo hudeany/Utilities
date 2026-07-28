@@ -228,7 +228,7 @@ public class OTPKeyItem extends Composite {
 			}
 			messageDigest.update(data, 0, restDataLength);
 			final String keyHashRead = BitUtilities.toHexString(messageDigest.digest());
-			if (Utilities.isBlank(keyHash) || !keyHash.equals(keyHashRead)) {
+			if (Utilities.isBlank(keyHash) || !constantTimeEquals(keyHash, keyHashRead)) {
 				throw new Exception("invalid key hash in key " + id);
 			}
 			return restDataLength;
@@ -288,5 +288,24 @@ public class OTPKeyItem extends Composite {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Constant-time comparison to avoid timing side-channels when comparing hash/hex strings.
+	 * Always compares the full length of the longer string rather than short-circuiting on
+	 * the first mismatch, and never leaks length via early exit on unequal lengths alone.
+	 */
+	public static boolean constantTimeEquals(final String a, final String b) {
+		if (a == null || b == null) {
+			return a == b;
+		}
+		final int maxLength = Math.max(a.length(), b.length());
+		int diff = a.length() ^ b.length();
+		for (int i = 0; i < maxLength; i++) {
+			final char charA = i < a.length() ? a.charAt(i) : 0;
+			final char charB = i < b.length() ? b.charAt(i) : 0;
+			diff |= charA ^ charB;
+		}
+		return diff == 0;
 	}
 }

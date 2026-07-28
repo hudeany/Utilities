@@ -120,7 +120,7 @@ public class OTPCryptographyWorker extends WorkerSimple<Boolean> {
 			}
 
 			final String dataHash = BitUtilities.toHexString(messageDigest.digest());
-			if (!dataHash.equals(inputItems[0].getDataHash())) {
+			if (!OTPKeyItem.constantTimeEquals(dataHash, inputItems[0].getDataHash())) {
 				throw new Exception("invalid data hash");
 			}
 		}

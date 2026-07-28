@@ -792,7 +792,11 @@ public class PGPUtilities {
 		PGPSecretKeyRing updatedRing = secretKeyRing;
 
 		final PBESecretKeyDecryptor oldDecryptor = new JcePBESecretKeyDecryptorBuilder().setProvider("BC").build(oldPassword);
-		final PBESecretKeyEncryptor newEncryptor = new JcePBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256).setProvider("BC").setSecureRandom(new SecureRandom()).build(newPassword);
+		// Explicit S2K iteration count (0xc0 ~ 4.2 million iterations), matching the strength
+		// used when keys are generated. Without this, BouncyCastle falls back to its much
+		// weaker default S2K count (0x60 ~ 65536 iterations).
+		final PGPDigestCalculator sha256Calc = new JcaPGPDigestCalculatorProviderBuilder().build().get(HashAlgorithmTags.SHA256);
+		final PBESecretKeyEncryptor newEncryptor = new JcePBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256, sha256Calc, 0xc0).setProvider("BC").setSecureRandom(new SecureRandom()).build(newPassword);
 
 		final Iterator<PGPSecretKey> it = secretKeyRing.getSecretKeys();
 		while (it.hasNext()) {
@@ -820,8 +824,9 @@ public class PGPUtilities {
 	public static PGPSecretKey changeKeyPassword(final PGPSecretKey secretKey,  final char[] oldPassword, final char[] newPassword) throws Exception {
 		final PBESecretKeyDecryptor oldDecryptor = new JcePBESecretKeyDecryptorBuilder().setProvider("BC").build(oldPassword);
 
+		// Explicit S2K iteration count (0xc0), matching the strength used when keys are generated.
 		final PBESecretKeyEncryptor newEncryptor = new JcePBESecretKeyEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256,
-			new JcaPGPDigestCalculatorProviderBuilder().build().get(HashAlgorithmTags.SHA256)).setProvider("BC").build(newPassword);
+			new JcaPGPDigestCalculatorProviderBuilder().build().get(HashAlgorithmTags.SHA256), 0xc0).setProvider("BC").build(newPassword);
 
 		return PGPSecretKey.copyWithNewPassword(secretKey, oldDecryptor, newEncryptor);
 	}

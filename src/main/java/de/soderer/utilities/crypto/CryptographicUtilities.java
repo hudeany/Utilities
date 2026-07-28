@@ -189,6 +189,12 @@ public class CryptographicUtilities {
 
 	public static final String[] ASYMMETRIC_CIPHERS = new String[] { "RSA", "EC", "ElGamal", "Ed25519", "Ed448" };
 
+	/**
+	 * PKCS#1 v1.5 padding is susceptible to Bleichenbacher-style padding oracle attacks
+	 * if decryption error information (message, timing) is ever exposed to an untrusted
+	 * caller. OAEP is the recommended default; PKCS1Padding remains available explicitly
+	 * for callers that need it for compatibility with existing ciphertexts.
+	 */
 	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA = "RSA/NONE/OAEPWithSHA256AndMGF1Padding";
 	public static final String[] KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA = new String[] {
 			"RSA/NONE/PKCS1Padding",

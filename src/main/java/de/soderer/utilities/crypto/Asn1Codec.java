@@ -2,8 +2,6 @@ package de.soderer.utilities.crypto;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -72,19 +70,38 @@ public class Asn1Codec {
 		}
 	}
 
+	/**
+	 * Parses a DER length-prefixed integer value as produced by {@link #getAsnEncodedInteger(long)}.
+	 * "offset" points to the length byte (short or long form DER length encoding), directly
+	 * followed by the integer's value bytes.
+	 */
 	public static BigInteger parseAsnEncodedInteger(final byte[] data, final int offset) throws Exception {
+		if (data == null || offset < 0 || offset >= data.length) {
+			throw new Exception("Invalid data or offset for ASN.1 integer parsing");
+		}
 		try {
-			final DataInput blockDataInput = new DataInputStream(new ByteArrayInputStream(data));
-			blockDataInput.skipBytes(offset - 1);
-
-			final int nextBlockSize = blockDataInput.readInt();
-			if (nextBlockSize <= 0 || nextBlockSize > 513) {
-				throw new Exception("Blocksize error");
+			int pos = offset;
+			final int lengthIndicatingValue = data[pos++] & 0xFF;
+			int length;
+			if (lengthIndicatingValue < 0x80) {
+				length = lengthIndicatingValue;
+			} else {
+				final int lengthBytesCount = lengthIndicatingValue & 0x7F;
+				if (pos + lengthBytesCount > data.length) {
+					throw new Exception("Truncated ASN.1 length encoding");
+				}
+				length = 0;
+				for (int i = 0; i < lengthBytesCount; i++) {
+					length = (length << 8) | (data[pos++] & 0xFF);
+				}
 			}
-			final byte[] nextBlock = new byte[nextBlockSize];
-			blockDataInput.readFully(nextBlock);
-			return new BigInteger(nextBlock);
-		} catch (final IOException e) {
+			if (length < 0 || pos + length > data.length) {
+				throw new Exception("Invalid or truncated ASN.1 integer length: " + length);
+			}
+			final byte[] valueBytes = new byte[length];
+			System.arraycopy(data, pos, valueBytes, 0, length);
+			return new BigInteger(valueBytes);
+		} catch (final Exception e) {
 			throw new Exception("Block read error", e);
 		}
 	}

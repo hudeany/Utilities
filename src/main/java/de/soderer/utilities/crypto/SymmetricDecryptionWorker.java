@@ -83,6 +83,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 
 		byte[] salt = null;
 		byte[] initializationVector = null;
+		byte[] keyBytes = null;
 		try (OutputStream outputStream = new BufferedOutputStream(decryptedDataOutputStream)) {
 			try (InputStream inputStream = new BufferedInputStream(encryptedDataInputStream)) {
 				salt = new byte[randomSaltSize];
@@ -92,7 +93,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 				}
 
 				final Cipher symetricDecryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
-				final byte[] keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
+				keyBytes = CryptographicUtilities.stretchPassword(password, 128, salt);
 				final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, encryptionMethod);
 
 				initializationVector = new byte[symetricDecryptCipher.getBlockSize()];
@@ -127,6 +128,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 		} finally {
 			Utilities.clear(initializationVector);
 			Utilities.clear(salt);
+			Utilities.clear(keyBytes);
 		}
 	}
 }
