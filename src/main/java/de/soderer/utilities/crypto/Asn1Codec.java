@@ -170,14 +170,23 @@ public class Asn1Codec {
 
 				int tagLength;
 				final int lengthIndicatingValue = input.read();
-				if (lengthIndicatingValue < 0x80) {
+				if (lengthIndicatingValue < 0) {
+					throw new Exception("Unexpected end of data while reading tag length");
+				} else if (lengthIndicatingValue < 0x80) {
 					tagLength = lengthIndicatingValue;
 				} else {
 					final int tagLengthBytesCount = lengthIndicatingValue & 0x7F;
 					tagLength = 0;
 					for (int i = 0; i < tagLengthBytesCount; i++) {
-						tagLength = (tagLength << 8) + input.read();
+						final int nextByte = input.read();
+						if (nextByte < 0) {
+							throw new Exception("Unexpected end of data while reading tag length");
+						}
+						tagLength = (tagLength << 8) + nextByte;
 					}
+				}
+				if (tagLength < 0 || tagLength > input.available()) {
+					throw new Exception("Invalid or truncated tag length: " + tagLength);
 				}
 
 				final byte[] dataBlock = new byte[tagLength];

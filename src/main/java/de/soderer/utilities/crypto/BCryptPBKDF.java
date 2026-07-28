@@ -1,6 +1,7 @@
 package de.soderer.utilities.crypto;
 
 import java.security.MessageDigest;
+import java.util.Arrays;
 
 /**
  * OpenSSH "bcrypt" cipher for PBKDF (Password-Based Key Derivation Function)
@@ -143,16 +144,20 @@ public class BCryptPBKDF {
 	 * @throws Exception
 	 */
 	public void derivePassword(final byte[] password, final byte[] salt, final int rounds, final byte[] output) throws Exception {
+		if (rounds < 1) {
+			throw new Exception("Invalid rounds value (must be >= 1): " + rounds);
+		}
+
+		byte[] passwordHashBytes = null;
+		final byte[] hsalt = new byte[64];
+		final byte[] block_b = new byte[4];
+		final byte[] out = new byte[32];
+		final byte[] tmp = new byte[32];
 		try {
 			final MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
 
 			final int nblocks = (output.length + 31) / 32;
-			final byte[] passwordHashBytes = sha512.digest(password);
-
-			final byte[] hsalt = new byte[64];
-			final byte[] block_b = new byte[4];
-			final byte[] out = new byte[32];
-			final byte[] tmp = new byte[32];
+			passwordHashBytes = sha512.digest(password);
 
 			for (int block = 1; block <= nblocks; block++) {
 				block_b[0] = (byte) ((block >> 24) & 0xFF);
@@ -189,6 +194,15 @@ public class BCryptPBKDF {
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot derive byte array from password", e);
+		} finally {
+			Arrays.fill(hsalt, (byte) 0);
+			Arrays.fill(out, (byte) 0);
+			Arrays.fill(tmp, (byte) 0);
+			if (passwordHashBytes != null) {
+				Arrays.fill(passwordHashBytes, (byte) 0);
+			}
+			Arrays.fill(p != null ? p : new int[0], 0);
+			Arrays.fill(s != null ? s : new int[0], 0);
 		}
 	}
 

@@ -20,7 +20,7 @@ public class FileHashingWorker extends WorkerSimple<byte[]> {
 		this.fileToHash = fileToHash;
 
 		if (hashAlgorithm == null) {
-			this.hashAlgorithm = HashAlgorithm.MD5;
+			this.hashAlgorithm = HashAlgorithm.SHA_256;
 		} else {
 			this.hashAlgorithm = hashAlgorithm;
 		}
