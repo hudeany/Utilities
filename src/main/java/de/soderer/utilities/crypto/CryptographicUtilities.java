@@ -34,7 +34,9 @@ import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
@@ -775,10 +777,20 @@ public class CryptographicUtilities {
 						boolean isSignedByTrustedCert = false;
 
 						for (final Certificate chainRootCertificate : certificates) {
-							if (chainRootCertificate instanceof X509Certificate && verifyChainOfTrust((X509Certificate) chainRootCertificate, trustedCertificates)) {
-								// TODO: check certificate validity period: ((X509Certificate) chainRootCertificate).checkValidity();
-								isSignedByTrustedCert = true;
-								break;
+							if (chainRootCertificate instanceof X509Certificate) {
+								final X509Certificate x509ChainRootCertificate = (X509Certificate) chainRootCertificate;
+								try {
+									x509ChainRootCertificate.checkValidity();
+								} catch (@SuppressWarnings("unused") final CertificateExpiredException | CertificateNotYetValidException e) {
+									// This candidate certificate is expired or not yet valid, so it cannot be trusted
+									// even if it otherwise chains to a trusted root. Try the next candidate certificate.
+									continue;
+								}
+
+								if (verifyChainOfTrust(x509ChainRootCertificate, trustedCertificates)) {
+									isSignedByTrustedCert = true;
+									break;
+								}
 							}
 						}
 
