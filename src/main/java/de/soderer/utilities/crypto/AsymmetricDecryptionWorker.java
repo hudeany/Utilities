@@ -11,7 +11,6 @@ import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
-import org.bouncycastle.crypto.encodings.ISO9796d1Encoding;
 import org.bouncycastle.crypto.encodings.OAEPEncoding;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.ElGamalEngine;
@@ -114,8 +113,6 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 					decryptCipher = new PKCS1Encoding(decryptCipher);
 				} else if (encryptionMethod.contains("oaep")) {
 					decryptCipher = new OAEPEncoding(decryptCipher);
-				} else if (encryptionMethod.contains("iso9796")) {
-					decryptCipher = new ISO9796d1Encoding(decryptCipher);
 				} else if (encryptionMethod.contains("nopadding")) {
 					// do no padding
 				} else {

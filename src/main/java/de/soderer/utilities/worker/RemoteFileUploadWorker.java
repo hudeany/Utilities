@@ -24,12 +24,6 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 		this.connection = connection;
 		this.localFile = localFile;
 
-		if (remoteFilePath != null && remoteFilePath.endsWith("/")) {
-			this.remoteFilePath = remoteFilePath + localFile.getName();
-		} else {
-			this.remoteFilePath = remoteFilePath;
-		}
-
 		if (connection == null) {
 			throw new Exception("No RemoteConnection");
 		} else if (localFile == null) {
@@ -38,7 +32,15 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 			throw new Exception("Local file does not exist: \"" + localFile.getAbsolutePath() + "\"");
 		} else if (!localFile.isFile()) {
 			throw new Exception("Local file is not a file: \"" + localFile.getAbsolutePath() + "\"");
-		} else if (Utilities.isBlank(this.remoteFilePath)) {
+		}
+
+		if (remoteFilePath != null && remoteFilePath.endsWith("/")) {
+			this.remoteFilePath = remoteFilePath + localFile.getName();
+		} else {
+			this.remoteFilePath = remoteFilePath;
+		}
+
+		if (Utilities.isBlank(this.remoteFilePath)) {
 			throw new Exception("No remoteFilePath");
 		} else if (!"/".equals(FileUtilities.getParentFromPath(this.remoteFilePath)) && connection.getFolderInfo(FileUtilities.getParentFromPath(this.remoteFilePath)) == null) {
 			throw new Exception("Remote file parent folder does not exist: \"" + this.remoteFilePath + "\"");

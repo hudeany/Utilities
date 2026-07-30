@@ -98,6 +98,7 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 			if (!cancel) {
 				final String nextRemoteFile = remoteFolderPath + "/" + fileInfo.getFileName();
 				final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
+				assertNoPathTraversal(destinationParentDirectory, nextLocalFile);
 				subItemsDone = 0;
 				subItemsToDo = fileInfo.getFileSize();
 				signalItemStart(nextRemoteFile.substring(remoteDirectoryPath.length() + 1), null);
@@ -130,9 +131,24 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 		for (final FolderInfo subFolderInfo : directory.getFirst()) {
 			if (!cancel) {
 				final File nextFolderDestination = new File(destinationParentDirectory, subFolderInfo.getFolderName());
+				assertNoPathTraversal(destinationParentDirectory, nextFolderDestination);
 				nextFolderDestination.mkdir();
 				recursiveDownload(remoteFolderPath + "/" + subFolderInfo.getFolderName(), nextFolderDestination);
 			}
+		}
+	}
+
+	/**
+	 * The remote server supplies file/folder names that we use to build local paths.
+	 * A malicious or corrupted server response (e.g. a name containing "../" or an
+	 * absolute path) could otherwise make the download escape destinationParentDirectory
+	 * and write files anywhere on the local file system (path traversal / "zip-slip"-style attack).
+	 */
+	private static void assertNoPathTraversal(final File destinationParentDirectory, final File candidate) throws Exception {
+		final String parentCanonicalPath = destinationParentDirectory.getCanonicalPath() + File.separator;
+		final String candidateCanonicalPath = candidate.getCanonicalPath();
+		if (!(candidateCanonicalPath + File.separator).startsWith(parentCanonicalPath)) {
+			throw new Exception("Remote item name leads outside of the download destination: \"" + candidate.getName() + "\"");
 		}
 	}
 }

@@ -34,52 +34,50 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	public Boolean work() throws Exception {
 		signalProgress();
 
-		try {
-			if (destinationFile.exists()) {
-				throw new Exception("File already exists: " + destinationFile.getAbsolutePath());
-			}
+		if (destinationFile.exists()) {
+			throw new Exception("File already exists: " + destinationFile.getAbsolutePath());
+		}
 
-			signalUnlimitedProgress();
-			final URLConnection urlConnection = URI.create(downloadUrl).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(downloadUrl));
-			itemsToDo = urlConnection.getContentLengthLong();
-			if (itemsToDo < 0) {
-				itemsToDo = urlConnection.getContentLength();
-			}
-			if (itemsToDo < 0) {
-				itemsToDo = urlConnection.getHeaderFieldLong("Original-Content-Length", 0);
-			}
-			signalProgress(true);
-			try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
-					FileOutputStream fileOutputStream = new FileOutputStream(destinationFile)) {
-				final byte[] buffer = new byte[4096];
-				int readLength;
-				while ((readLength = bufferedInputStream.read(buffer)) != EOF) {
-					if (cancel) {
-						break;
-					} else {
-						fileOutputStream.write(buffer, 0, readLength);
-						itemsDone += readLength;
-						signalProgress();
-					}
-				}
-				Utilities.clear(buffer);
-			} catch (final Exception e) {
-				if (e.getMessage().toLowerCase().contains("server returned http response code: 401")) {
-					throw new UserError("error.userNotAuthenticatedOrNotAuthorized", UserError.Reason.UnauthenticatedOrUnauthorized);
+		signalUnlimitedProgress();
+		final URLConnection urlConnection = URI.create(downloadUrl).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(downloadUrl));
+		urlConnection.setConnectTimeout(30_000);
+		urlConnection.setReadTimeout(30_000);
+		itemsToDo = urlConnection.getContentLengthLong();
+		if (itemsToDo < 0) {
+			itemsToDo = urlConnection.getContentLength();
+		}
+		if (itemsToDo < 0) {
+			itemsToDo = urlConnection.getHeaderFieldLong("Original-Content-Length", 0);
+		}
+		signalProgress(true);
+		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
+				FileOutputStream fileOutputStream = new FileOutputStream(destinationFile)) {
+			final byte[] buffer = new byte[4096];
+			int readLength;
+			while ((readLength = bufferedInputStream.read(buffer)) != EOF) {
+				if (cancel) {
+					break;
 				} else {
-					throw new Exception("Cannot download file: " + e.getMessage(), e);
+					fileOutputStream.write(buffer, 0, readLength);
+					itemsDone += readLength;
+					signalProgress();
 				}
 			}
-
-			if (cancel) {
-				destinationFile.delete();
-				return false;
-			} else {
-				signalProgress(true);
-				return true;
-			}
+			Utilities.clear(buffer);
 		} catch (final Exception e) {
-			throw e;
+			if (e.getMessage() != null && e.getMessage().toLowerCase().contains("server returned http response code: 401")) {
+				throw new UserError("error.userNotAuthenticatedOrNotAuthorized", UserError.Reason.UnauthenticatedOrUnauthorized);
+			} else {
+				throw new Exception("Cannot download file: " + e.getMessage(), e);
+			}
+		}
+
+		if (cancel) {
+			destinationFile.delete();
+			return false;
+		} else {
+			signalProgress(true);
+			return true;
 		}
 	}
 }
