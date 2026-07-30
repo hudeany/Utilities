@@ -29,6 +29,8 @@ import de.soderer.utilities.crypto.AsymmetricEncryptionWorker;
 import de.soderer.utilities.crypto.AsymmetricSignatureWorker;
 import de.soderer.utilities.crypto.AsymmetricVerificationWorker;
 import de.soderer.utilities.crypto.CryptographicUtilities;
+import de.soderer.utilities.crypto.HybridDecryptionWorker;
+import de.soderer.utilities.crypto.HybridEncryptionWorker;
 import de.soderer.utilities.crypto.SymmetricDecryptionWorker;
 import de.soderer.utilities.crypto.SymmetricEncryptionWorker;
 
@@ -209,9 +211,12 @@ public class CryptographicUtilitiesTest {
 			final Signature signature = Signature.getInstance("SHA256WithECDSAInP1363Format");
 			signature.initVerify(keys.getPublic());
 			signature.update("Hello, World".getBytes());
-			signature.verify(blankSignature);
-			System.out.println("Warning: " + "Java JRE accepts invalid empty signature");
-			//			Assert.assertFalse("Java JRE accepts invalid empty signature", result);
+			final boolean result = signature.verify(blankSignature);
+			// CVE-2022-21449 ("Psychic Signatures"): before the April 2022 JDK patches, SunEC's
+			// ECDSA verification accepted an all-zero r/s signature as valid for any key/message.
+			// Fixed since JDK 15.0.7/17.0.3/18.0.1; this assertion would fail again if that
+			// regression ever reappeared.
+			Assert.assertFalse("Java JRE accepts invalid empty signature (CVE-2022-21449 regression)", result);
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
@@ -433,7 +438,7 @@ public class CryptographicUtilitiesTest {
 			final PrivateKey ecDsaPrivateKey = CryptographicUtilities.getPrivateKeyFromString(ecDsaKeyPairString, null);
 			Assert.assertEquals(CryptographicUtilities.getOpenSshFingerPrintMd5(getEcKeyPair().getPrivate(), null), CryptographicUtilities.getOpenSshFingerPrintMd5(ecDsaPrivateKey, null));
 
-			PublicKey publicKeyFromPrivateKey = CryptographicUtilities.getPublicKeyFromPrivateKey(getEcKeyPair().getPrivate());
+			final PublicKey publicKeyFromPrivateKey = CryptographicUtilities.getPublicKeyFromPrivateKey(getEcKeyPair().getPrivate());
 			final String pubFromPrivKeyFingerPrint = CryptographicUtilities.getOpenSshFingerPrintMd5(publicKeyFromPrivateKey, null);
 			final String pubKeyFingerPrint = CryptographicUtilities.getOpenSshFingerPrintMd5(getEcKeyPair().getPublic(), null);
 			Assert.assertEquals(pubKeyFingerPrint, pubFromPrivKeyFingerPrint);
@@ -622,6 +627,241 @@ public class CryptographicUtilitiesTest {
 			}
 
 			Assert.assertTrue(CryptographicUtilities.checkPrivateKeyFitsPublicKey(getEd448KeyPair().getPrivate(), getEd448KeyPair().getPublic()));
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testEncryptionAESGCM() {
+		final String encryptionMethod = "AES/GCM/NoPadding";
+		try {
+			final char[] password = Utilities.getRandomString(12).toCharArray();
+			byte[] encryptedData = null;
+			try {
+				final ByteArrayInputStream dataInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				final ByteArrayOutputStream encryptedDataOutputStream = new ByteArrayOutputStream();
+				new SymmetricEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, password, encryptionMethod).work();
+				encryptedData = encryptedDataOutputStream.toByteArray();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Encryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream encryptedDataInputStream = new ByteArrayInputStream(encryptedData);
+				final ByteArrayOutputStream dataOutputStream = new ByteArrayOutputStream();
+				new SymmetricDecryptionWorker(null, encryptedDataInputStream, dataOutputStream, password, encryptionMethod).work();
+				final byte[] decryptedData = dataOutputStream.toByteArray();
+				Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Decryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	/**
+	 * Regression test for the GCMParameterSpec fix: unlike plain CBC, AES/GCM must detect
+	 * any tampering of the ciphertext (including the authentication tag at the end) and
+	 * refuse to decrypt instead of silently returning corrupted data.
+	 */
+	@Test
+	public void testEncryptionAESGCM_tamperingIsDetected() {
+		final String encryptionMethod = "AES/GCM/NoPadding";
+		try {
+			final char[] password = Utilities.getRandomString(12).toCharArray();
+			final ByteArrayInputStream dataInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+			final ByteArrayOutputStream encryptedDataOutputStream = new ByteArrayOutputStream();
+			new SymmetricEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, password, encryptionMethod).work();
+			final byte[] encryptedData = encryptedDataOutputStream.toByteArray();
+
+			// Flip the last byte, which is part of the GCM authentication tag
+			encryptedData[encryptedData.length - 1] ^= 0x01;
+
+			try {
+				final ByteArrayInputStream encryptedDataInputStream = new ByteArrayInputStream(encryptedData);
+				final ByteArrayOutputStream dataOutputStream = new ByteArrayOutputStream();
+				new SymmetricDecryptionWorker(null, encryptedDataInputStream, dataOutputStream, password, encryptionMethod).work();
+				Assert.fail("Expected decryption of tampered GCM ciphertext to fail, but it succeeded");
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				// Expected: tampering must be detected
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	/**
+	 * Regression test for the key-length fix: DESede/3DES needs a 192 bit key.
+	 * The previously hardcoded 128 bit key length would have broken this.
+	 */
+	@Test
+	public void testEncryptionDESede() {
+		final String encryptionMethod = "DESede/CBC/PKCS5Padding";
+		try {
+			final char[] password = Utilities.getRandomString(12).toCharArray();
+			byte[] encryptedData = null;
+			try {
+				final ByteArrayInputStream dataInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+				final ByteArrayOutputStream encryptedDataOutputStream = new ByteArrayOutputStream();
+				new SymmetricEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, password, encryptionMethod).work();
+				encryptedData = encryptedDataOutputStream.toByteArray();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Encryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream encryptedDataInputStream = new ByteArrayInputStream(encryptedData);
+				final ByteArrayOutputStream dataOutputStream = new ByteArrayOutputStream();
+				new SymmetricDecryptionWorker(null, encryptedDataInputStream, dataOutputStream, password, encryptionMethod).work();
+				final byte[] decryptedData = dataOutputStream.toByteArray();
+				Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Decryption failed. Method: " + encryptionMethod + ":\n" + e.getMessage());
+			}
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testDetermineSymmetricKeyLengthBits() {
+		Assert.assertEquals(256, CryptographicUtilities.determineSymmetricKeyLengthBits("aes"));
+		Assert.assertEquals(256, CryptographicUtilities.determineSymmetricKeyLengthBits("AES/GCM/NoPadding"));
+		Assert.assertEquals(192, CryptographicUtilities.determineSymmetricKeyLengthBits("desede"));
+		Assert.assertEquals(192, CryptographicUtilities.determineSymmetricKeyLengthBits("DESede/CBC/PKCS5Padding"));
+		Assert.assertEquals(64, CryptographicUtilities.determineSymmetricKeyLengthBits("des"));
+		Assert.assertEquals(128, CryptographicUtilities.determineSymmetricKeyLengthBits("blowfish"));
+
+		try {
+			CryptographicUtilities.determineSymmetricKeyLengthBits("SomeUnknownCipher");
+			Assert.fail("Expected IllegalArgumentException for an unknown cipher");
+		} catch (@SuppressWarnings("unused") final IllegalArgumentException e) {
+			// Expected
+		}
+
+		try {
+			CryptographicUtilities.determineSymmetricKeyLengthBits(null);
+			Assert.fail("Expected IllegalArgumentException for a null encryption method");
+		} catch (@SuppressWarnings("unused") final IllegalArgumentException e) {
+			// Expected
+		}
+	}
+
+	/**
+	 * Regression test: ISO9796-1Padding is a signature encoding with message recovery, not an
+	 * encryption padding, and must not be listed as a supported RSA encryption method anymore.
+	 */
+	@Test
+	public void testKnownAsymmetricEncryptionMethodsRSA_doesNotContainIso9796() {
+		for (final String method : CryptographicUtilities.KNOWN_ASYMMETRIC_ENCRYPTION_METHODS_RSA) {
+			Assert.assertFalse("ISO9796-1 must not be listed as a supported encryption method: " + method, method.toLowerCase().contains("iso9796"));
+		}
+	}
+
+	/**
+	 * Regression test for the "Blowfish\t" typo fix: the entry must match exactly, with no
+	 * embedded whitespace that would make comparisons against a clean "Blowfish" fail.
+	 */
+	@Test
+	public void testSymmetricCiphersBlowfishEntryHasNoTypo() {
+		boolean found = false;
+		for (final String cipher : CryptographicUtilities.SYMMETRIC_CIPHERS) {
+			if ("Blowfish".equals(cipher)) {
+				found = true;
+			}
+			Assert.assertEquals("Cipher entry must not contain leading/trailing whitespace: \"" + cipher + "\"", cipher.trim(), cipher);
+		}
+		Assert.assertTrue("Expected to find a clean \"Blowfish\" entry in SYMMETRIC_CIPHERS", found);
+	}
+
+	@Test
+	public void testHybridEncryptionRoundTripRSA() {
+		try {
+			final String testData = TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING + TextUtilities.GERMAN_TEST_STRING;
+			byte[] encryptedData = null;
+			try {
+				final ByteArrayInputStream dataInputStream = new ByteArrayInputStream(testData.getBytes(StandardCharsets.UTF_8));
+				final ByteArrayOutputStream encryptedDataOutputStream = new ByteArrayOutputStream();
+				new HybridEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, getRsaKeyPair().getPublic()).work();
+				encryptedData = encryptedDataOutputStream.toByteArray();
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Hybrid encryption failed:\n" + e.getMessage());
+			}
+
+			try {
+				final ByteArrayInputStream encryptedDataInputStream = new ByteArrayInputStream(encryptedData);
+				final ByteArrayOutputStream decryptedDataOutputStream = new ByteArrayOutputStream();
+				new HybridDecryptionWorker(null, encryptedDataInputStream, decryptedDataOutputStream, getRsaKeyPair().getPrivate()).work();
+				Assert.assertArrayEquals(testData.getBytes(StandardCharsets.UTF_8), decryptedDataOutputStream.toByteArray());
+			} catch (final Exception e) {
+				e.printStackTrace();
+				Assert.fail("Hybrid decryption failed:\n" + e.getMessage());
+			}
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	/**
+	 * The bulk data is protected by AES/GCM, so tampering with the ciphertext must be detected
+	 * on decryption, exactly like the plain symmetric GCM tamper test above.
+	 */
+	@Test
+	public void testHybridEncryption_tamperingIsDetected() {
+		try {
+			final ByteArrayInputStream dataInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+			final ByteArrayOutputStream encryptedDataOutputStream = new ByteArrayOutputStream();
+			new HybridEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, getRsaKeyPair().getPublic()).work();
+			final byte[] encryptedData = encryptedDataOutputStream.toByteArray();
+
+			// Flip the last byte, which is part of the GCM authentication tag of the bulk data
+			encryptedData[encryptedData.length - 1] ^= 0x01;
+
+			try {
+				final ByteArrayInputStream encryptedDataInputStream = new ByteArrayInputStream(encryptedData);
+				final ByteArrayOutputStream decryptedDataOutputStream = new ByteArrayOutputStream();
+				new HybridDecryptionWorker(null, encryptedDataInputStream, decryptedDataOutputStream, getRsaKeyPair().getPrivate()).work();
+				Assert.fail("Expected decryption of tampered hybrid ciphertext to fail, but it succeeded");
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				// Expected: tampering must be detected
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	/**
+	 * Decrypting with a private key that does not match the public key the session key was
+	 * wrapped with must fail during key unwrapping, not silently produce garbage output.
+	 */
+	@Test
+	public void testHybridEncryption_wrongPrivateKeyFails() {
+		try {
+			final ByteArrayInputStream dataInputStream = new ByteArrayInputStream(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8));
+			final ByteArrayOutputStream encryptedDataOutputStream = new ByteArrayOutputStream();
+			new HybridEncryptionWorker(null, dataInputStream, encryptedDataOutputStream, getRsaKeyPair().getPublic()).work();
+			final byte[] encryptedData = encryptedDataOutputStream.toByteArray();
+
+			final KeyPair otherRsaKeyPair = CryptographicUtilities.generateRsaKeyPair(2048);
+
+			try {
+				final ByteArrayInputStream encryptedDataInputStream = new ByteArrayInputStream(encryptedData);
+				final ByteArrayOutputStream decryptedDataOutputStream = new ByteArrayOutputStream();
+				new HybridDecryptionWorker(null, encryptedDataInputStream, decryptedDataOutputStream, otherRsaKeyPair.getPrivate()).work();
+				Assert.fail("Expected decryption with the wrong private key to fail, but it succeeded");
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				// Expected: key unwrap with a non-matching private key must fail
+			}
 		} catch (final Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.getMessage());

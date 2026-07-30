@@ -207,6 +207,9 @@ public class CryptographicUtilities {
 			"RSA/NONE/OAEPWithSHA256AndMGF1Padding",
 			"RSA/NONE/OAEPWithSHA384AndMGF1Padding",
 			"RSA/NONE/OAEPWithSHA512AndMGF1Padding"
+			// Note: ISO9796-1Padding was removed - it is a signature encoding with message
+			// recovery, not an encryption padding scheme, and is no longer supported by
+			// AsymmetricEncryptionWorker/AsymmetricDecryptionWorker.
 	};
 
 	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_EC = "ECIES";
@@ -836,7 +839,14 @@ public class CryptographicUtilities {
 		}
 
 		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
-		params.setRevocationEnabled(true);
+		// Revocation checking requires a CRL/OCSP data source (a CertStore added to params, or a
+		// reachable CRLDistributionPoint/OCSP responder referenced by the certificate itself).
+		// Since none is configured here, enabling it makes path building fail with
+		// "Could not determine revocation status" for ANY certificate chain that doesn't carry
+		// its own CRL/AIA extensions - including self-issued test/internal CA chains - even though
+		// the chain of trust itself is perfectly valid. Disabled until proper revocation data
+		// sources are wired in.
+		params.setRevocationEnabled(false);
 		try {
 			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) CertPathBuilder.getInstance("PKIX").build(params);
 			return result != null;
@@ -863,7 +873,10 @@ public class CryptographicUtilities {
 		}
 
 		final PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
-		params.setRevocationEnabled(true);
+		// See the comment in the Collection<Certificate> overload above: revocation checking is
+		// disabled because no CRL/OCSP data source is configured, and would otherwise fail path
+		// building for any chain lacking its own CRL/AIA extensions.
+		params.setRevocationEnabled(false);
 		try {
 			final PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) CertPathBuilder.getInstance("PKIX").build(params);
 			return result != null;
