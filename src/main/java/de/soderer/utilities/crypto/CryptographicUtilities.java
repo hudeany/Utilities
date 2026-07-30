@@ -159,7 +159,7 @@ public class CryptographicUtilities {
 
 	public static final String[] SYMMETRIC_CIPHERS = {
 			// Block chiffre
-			"AES", "AESWrap", "Blowfish	", "Camellia", "CamelliaWrap", "CAST5", "CAST6", "DES", "DESede", "TripleDES", "3DES", "DESedeWrap", "GOST28147", "IDEA", "Noekeon", "RC2", "RC5", "RC5-64", "RC6", "Rijndael",
+			"AES", "AESWrap", "Blowfish", "Camellia", "CamelliaWrap", "CAST5", "CAST6", "DES", "DESede", "TripleDES", "3DES", "DESedeWrap", "GOST28147", "IDEA", "Noekeon", "RC2", "RC5", "RC5-64", "RC6", "Rijndael",
 			"SEED", "SEEDWrap", "Serpent", "Skipjack", "TEA", "Twofish", "XTEA",
 
 			// Stream chiffre
@@ -206,8 +206,7 @@ public class CryptographicUtilities {
 			"RSA/NONE/OAEPWithSHA224AndMGF1Padding",
 			"RSA/NONE/OAEPWithSHA256AndMGF1Padding",
 			"RSA/NONE/OAEPWithSHA384AndMGF1Padding",
-			"RSA/NONE/OAEPWithSHA512AndMGF1Padding",
-			"RSA/NONE/ISO9796-1Padding"
+			"RSA/NONE/OAEPWithSHA512AndMGF1Padding"
 	};
 
 	public static final String DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_EC = "ECIES";
@@ -591,6 +590,36 @@ public class CryptographicUtilities {
 		generator.init(PBEParametersGenerator.PKCS5PasswordToUTF8Bytes(password), salt, iterations);
 		final KeyParameter params = (KeyParameter) generator.generateDerivedParameters(keyLength);
 		return params.getKey();
+	}
+
+	/**
+	 * Determine the correct key length in bits for a given symmetric cipher transformation
+	 * (e.g. "aes/cbc/pkcs7padding" or "desede"). Using a single hardcoded key length (e.g.
+	 * always 128 bit) for all ciphers is wrong: DESede/3DES needs 192 bit, DES needs 64 bit,
+	 * and AES can safely use 256 bit. Callers deriving a key via stretchPassword() should use
+	 * this instead of assuming a fixed length.
+	 */
+	public static int determineSymmetricKeyLengthBits(final String encryptionMethod) {
+		if (Utilities.isBlank(encryptionMethod)) {
+			throw new IllegalArgumentException("Empty encryption method");
+		}
+
+		final String lowerCaseMethod = encryptionMethod.toLowerCase();
+		final String baseAlgorithm = lowerCaseMethod.contains("/") ? lowerCaseMethod.substring(0, lowerCaseMethod.indexOf('/')) : lowerCaseMethod;
+		switch (baseAlgorithm) {
+			case "aes":
+				return 256;
+			case "desede":
+			case "tripledes":
+			case "3des":
+				return 192;
+			case "des":
+				return 64;
+			case "blowfish":
+				return 128;
+			default:
+				throw new IllegalArgumentException("Cannot determine key length for encryption method: " + encryptionMethod);
+		}
 	}
 
 	public static void otpWork(final byte[][] immutableData, final byte[][] mutableData) {

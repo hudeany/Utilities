@@ -67,32 +67,6 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		this.dataSizeHint = dataSizeHint;
 	}
 
-	/**
-	 * Determine the correct key length in bits for the given cipher algorithm.
-	 * A hardcoded key length (e.g. always 128 bit) is wrong for ciphers that require
-	 * a different key size, such as DESede/3DES (192 bit) or DES (64 bit), and
-	 * unnecessarily weakens AES to 128 bit even when a stronger key is possible.
-	 *
-	 * TODO: This mapping duplicates logic that should ideally live in CryptographicUtilities
-	 * next to DEFAULT_SYMMETRIC_ENCRYPTION_METHOD, so both workers and any future callers
-	 * share a single source of truth.
-	 */
-	private static int determineKeyLengthBits(final String encryptionMethod) {
-		final String baseAlgorithm = encryptionMethod.contains("/") ? encryptionMethod.substring(0, encryptionMethod.indexOf('/')) : encryptionMethod;
-		switch (baseAlgorithm) {
-			case "aes":
-				return 256;
-			case "desede":
-				return 192;
-			case "des":
-				return 64;
-			case "blowfish":
-				return 128;
-			default:
-				throw new IllegalArgumentException("Cannot determine key length for encryption method: " + encryptionMethod);
-		}
-	}
-
 	@Override
 	public Boolean work() throws Exception {
 		if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
@@ -118,7 +92,7 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 				new SecureRandom().nextBytes(salt);
 				outputStream.write(salt);
 
-				keyBytes = CryptographicUtilities.stretchPassword(password, determineKeyLengthBits(encryptionMethod), salt);
+				keyBytes = CryptographicUtilities.stretchPassword(password, CryptographicUtilities.determineSymmetricKeyLengthBits(encryptionMethod), salt);
 				final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, encryptionMethod);
 				final Cipher symetricEncryptCipher = Cipher.getInstance(encryptionMethod, BouncyCastleProvider.PROVIDER_NAME);
 
