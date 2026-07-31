@@ -537,7 +537,7 @@ public class ConsoleUtilities {
 							consoleInputBuffer = null;
 							// Escape sequence is entered
 							if (inputReadBytes == 3) {
-								if (inputReadBuffer[1] == 1 && inputReadBuffer[2] == 65) {
+								if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 65) {
 									return KeyCode_ArrowUp;
 								} else if (inputReadBuffer[1] == 91 && inputReadBuffer[2] == 66) {
 									return KeyCode_ArrowDown;
