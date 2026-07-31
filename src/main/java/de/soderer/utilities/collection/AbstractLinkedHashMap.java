@@ -58,6 +58,11 @@ public abstract class AbstractLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	}
 
 	@Override
+	public boolean remove(final Object key, final Object value) {
+		return super.remove(convertKey(key), value);
+	}
+
+	@Override
 	public V computeIfAbsent(final K key, final Function<? super K, ? extends V> mappingFunction) {
 		return super.computeIfAbsent(convertKey(key), mappingFunction);
 	}
