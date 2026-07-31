@@ -35,7 +35,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 			return false;
 		} else {
 			System.out.println(getI18NString("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
-			final String input = new SimpleConsoleInput().setPrompt(getI18NString("installUpdate") + ": ").readInput();
+			final String input = new SimpleConsoleInput().withPrompt(getI18NString("installUpdate") + ": ").readInput();
 			System.out.println();
 			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j"));
 		}
@@ -52,12 +52,12 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		char[] password = null;
 
 		if (aquireUsername && aquirePassword) {
-			userName = new SimpleConsoleInput().setPrompt(getI18NString("enterUsername") + ": ").readInput();
-			password = new PasswordConsoleInput().setPrompt(getI18NString("enterPassword") + ": ").readInput();
+			userName = new SimpleConsoleInput().withPrompt(getI18NString("enterUsername") + ": ").readInput();
+			password = new PasswordConsoleInput().withPrompt(getI18NString("enterPassword") + ": ").readInput();
 		} else if (aquireUsername) {
-			userName = new SimpleConsoleInput().setPrompt(getI18NString("enterUsername") + ": ").readInput();
+			userName = new SimpleConsoleInput().withPrompt(getI18NString("enterUsername") + ": ").readInput();
 		} else if (aquirePassword) {
-			password = new PasswordConsoleInput().setPrompt(getI18NString("enterPassword") + ": ").readInput();
+			password = new PasswordConsoleInput().withPrompt(getI18NString("enterPassword") + ": ").readInput();
 		}
 
 		if (Utilities.isBlank(userName) && Utilities.isBlank(password)) {
