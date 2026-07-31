@@ -39,17 +39,27 @@ public abstract class AbstractHashSet<V> extends HashSet<V> {
 		return super.remove(convertItem(item));
 	}
 
-	@SuppressWarnings("unlikely-arg-type")
 	@Override
 	public boolean removeAll(final Collection<?> collection) {
 		// Not overriding this would fall back to AbstractCollection's implementation, which checks
 		// collection.contains(ownElement) for each of our (already converted, e.g. lowercased) elements -
 		// against the *unconverted* values in "collection". That silently behaves case-sensitively instead
-		// of routing through convertItem() like every other mutating method here. Going through our own
-		// overridden remove(Object) fixes that, the same way addAll() already goes through add().
-		boolean result = false;
+		// of routing through convertItem() like every other mutating method here.
+		//
+		// Building a converted lookup set first and then mutating only via our own iterator (instead of
+		// iterating "collection" directly and calling remove(item) on ourselves inside that loop) also
+		// avoids a ConcurrentModificationException when collection is this very set itself (e.g.
+		// set.removeAll(set)), since iterating and mutating the same underlying set at the same time is
+		// what triggers that exception.
+		final java.util.Set<V> convertedItemsToRemove = new HashSet<>();
 		for (final Object item : collection) {
-			if (remove(item)) {
+			convertedItemsToRemove.add(convertItem(item));
+		}
+		boolean result = false;
+		final Iterator<V> iterator = iterator();
+		while (iterator.hasNext()) {
+			if (convertedItemsToRemove.contains(iterator.next())) {
+				iterator.remove();
 				result = true;
 			}
 		}
