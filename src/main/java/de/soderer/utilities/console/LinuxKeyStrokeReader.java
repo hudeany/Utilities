@@ -105,17 +105,19 @@ public class LinuxKeyStrokeReader {
 	}
 
 	private static int readSingleCharFromByteStream(final InputStream inputStream) throws Exception {
+		// Poll with a short sleep instead of a hard busy-spin, to avoid pinning a CPU core while waiting for input
 		while (inputStream.available() == 0) {
-			// wait for data
+			Thread.sleep(1);
 		}
 		final byte[] buffer = new byte[4];
 		int index = 3;
 		while (inputStream.available() > 0) {
-			if (index < 0) {
-				break;
-			} else {
-				buffer[index--] = (byte) inputStream.read();
+			final byte nextByte = (byte) inputStream.read();
+			if (index >= 0) {
+				buffer[index--] = nextByte;
 			}
+			// else: more than 4 bytes arrived in this burst; still drain them from the stream so they don't leak
+			// into and corrupt the next readKey() call, even though they don't fit into the returned int
 		}
 		return Utilities.convertByteArrayToInt(buffer);
 	}

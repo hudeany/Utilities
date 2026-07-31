@@ -131,8 +131,12 @@ public class PasswordConsoleInput {
 						ConsoleUtilities.showCursor();
 						System.exit(1);
 					} else if (keyCode == ConsoleUtilities.KeyCode_CtrlV) {
-						final String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
-						if (insertMode || cursorIndex == content.length) {
+						final String data = readClipboardTextOrNull();
+						if (data == null) {
+							if (!silent) {
+								beep();
+							}
+						} else if (insertMode || cursorIndex == content.length) {
 							final char[] newContent = new char[content.length + data.length()];
 							for (int i = 0; i < cursorIndex; i++) {
 								newContent[i] = content[i];
@@ -146,9 +150,10 @@ public class PasswordConsoleInput {
 							}
 							Utilities.clear(content);
 							content = newContent;
+							cursorIndex += data.length();
 						} else {
 							final int restLength = Math.max(content.length - cursorIndex - data.length(), 0);
-							final char[] newContent = new char[content.length + data.length() + restLength];
+							final char[] newContent = new char[Math.max(content.length, cursorIndex + data.length())];
 							for (int i = 0; i < cursorIndex; i++) {
 								newContent[i] = content[i];
 							}
@@ -163,8 +168,8 @@ public class PasswordConsoleInput {
 							}
 							Utilities.clear(content);
 							content = newContent;
+							cursorIndex += data.length();
 						}
-						cursorIndex += data.length();
 					} else if (keyCode == ConsoleUtilities.KeyCode_Escape) {
 						// do nothing
 					} else if (keyCode == ConsoleUtilities.KeyCode_Enter) {
@@ -187,7 +192,7 @@ public class PasswordConsoleInput {
 							content = newContent;
 							cursorIndex--;
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_Delete) {
 						if (cursorIndex < content.length) {
@@ -201,19 +206,19 @@ public class PasswordConsoleInput {
 							Utilities.clear(content);
 							content = newContent;
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowLeft) {
 						if (cursorIndex > 0) {
 							cursorIndex--;
 						} else {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowRight) {
 						if (cursorIndex < content.length) {
 							cursorIndex++;
 						} else {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowDown) {
 						// do nothing
@@ -221,11 +226,11 @@ public class PasswordConsoleInput {
 						// do nothing
 					} else if (keyCode == ConsoleUtilities.KeyCode_PageDown) {
 						if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_PageUp) {
 						if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_Home) {
 						cursorIndex = 0;
@@ -235,7 +240,7 @@ public class PasswordConsoleInput {
 						insertMode = !insertMode;
 					} else if (keyCode == ConsoleUtilities.KeyCode_Tab) {
 						if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else {
 						// "keyCode < 1000" to prevent Chinese symbols on some systems, that occur without intention.
@@ -280,5 +285,33 @@ public class PasswordConsoleInput {
 			throw new IllegalStateException("No console available to read input from (e.g. running without a real terminal, or with redirected standard input)");
 		}
 		return console.readPassword(prompt);
+	}
+
+	/**
+	 * Beeps via AWT, ignoring failures. On a headless system (e.g. a server without a graphical environment)
+	 * {@link Toolkit#getDefaultToolkit()} can throw a HeadlessException/AWTError - a missed beep is not worth
+	 * aborting the whole input loop over.
+	 */
+	private static void beep() {
+		try {
+			Toolkit.getDefaultToolkit().beep();
+		} catch (@SuppressWarnings("unused") final Throwable t) {
+			// do nothing
+		}
+	}
+
+	/**
+	 * Reads plain text from the system clipboard, or returns null if that is not possible: no AWT/graphical
+	 * environment available (headless), no clipboard access, or the clipboard content is not text (e.g. an
+	 * image). A failed paste should not abort the input loop or lose an already-entered password.
+	 */
+	private static String readClipboardTextOrNull() {
+		try {
+			return (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return null;
+		} catch (@SuppressWarnings("unused") final Throwable t) {
+			return null;
+		}
 	}
 }

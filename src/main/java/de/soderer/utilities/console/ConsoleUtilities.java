@@ -147,8 +147,7 @@ public class ConsoleUtilities {
 				consoleType = ConsoleType.ANSI;
 				try {
 					getTerminalSize();
-				} catch (final Exception e) {
-					e.printStackTrace();
+				} catch (@SuppressWarnings("unused") final Throwable t) {
 					consoleType = ConsoleType.TEST;
 				}
 			} else {
@@ -204,17 +203,17 @@ public class ConsoleUtilities {
 	 * @param itemsDone
 	 * @return
 	 */
-	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone, String itemUnitSign) {
+	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone, final String itemUnitSign) {
 		final LocalDateTime now = LocalDateTime.now();
 		String itemsToDoString = "??";
 		String percentageString = " 0%";
 		String speedString = "???/s";
 		String etaString = "eta ???";
 		int percentageDone = 0;
-		
+
 		if (itemsToDo > 0) {
 			itemsToDoString = Utilities.getHumanReadableNumber(itemsToDo, itemUnitSign, true, 5, true, Locale.ENGLISH);
-		
+
 			if (itemsDone > 0) {
 				percentageDone = (int) (itemsDone * 100 / itemsToDo);
 				percentageString = Utilities.leftPad(percentageDone + "%", 3);
@@ -388,8 +387,11 @@ public class ConsoleUtilities {
 
 			final int[] positionValues = parseAnsiPositionResponse(response, "Cannot detect cursor position");
 			return new Position(positionValues[0], positionValues[1]);
-		} catch (final Exception e) {
-			throw new Exception("Cannot detect cursor position", e);
+		} catch (final Throwable t) {
+			// Catching Throwable (not just Exception) here as well, since WindowsKeyStrokeReader.readKey() can
+			// propagate an unchecked Error (e.g. UnsatisfiedLinkError from the native JNA call) that would
+			// otherwise bypass this method's declared "throws Exception" contract entirely.
+			throw new Exception("Cannot detect cursor position", t);
 		}
 	}
 
@@ -449,8 +451,8 @@ public class ConsoleUtilities {
 
 			final int[] sizeValues = parseAnsiPositionResponse(response, "Cannot detect terminal size");
 			return new Size(sizeValues[0], sizeValues[1]);
-		} catch (final Exception e) {
-			throw new Exception("Cannot detect terminal size", e);
+		} catch (final Throwable t) {
+			throw new Exception("Cannot detect terminal size", t);
 		}
 	}
 
@@ -596,9 +598,12 @@ public class ConsoleUtilities {
 					}
 				}
 			}
-		} catch (final Exception e) {
-			e.printStackTrace();
-			throw new Exception("Cannot readKey", e);
+		} catch (final Throwable t) {
+			// Catching Throwable (not just Exception) so an unchecked Error from the underlying native JNA call
+			// (e.g. UnsatisfiedLinkError) is also wrapped here instead of silently breaking this method's
+			// declared "throws Exception" contract. No separate printStackTrace() here - the cause is preserved
+			// on the wrapped exception, so logging it is left to the caller instead of logging it twice.
+			throw new Exception("Cannot readKey", t);
 		}
 	}
 
@@ -616,8 +621,8 @@ public class ConsoleUtilities {
 					}
 				}
 			}
-		} catch (final Exception e) {
-			throw new Exception("Cannot readNextRawKey", e);
+		} catch (final Throwable t) {
+			throw new Exception("Cannot readNextRawKey", t);
 		}
 	}
 }

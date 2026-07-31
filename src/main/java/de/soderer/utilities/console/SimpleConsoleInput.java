@@ -170,14 +170,19 @@ public class SimpleConsoleInput {
 						ConsoleUtilities.showCursor();
 						System.exit(1);
 					} else if (keyCode == ConsoleUtilities.KeyCode_CtrlV) {
-						final String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
-						if (insertMode || cursorIndex == content.length()) {
+						final String data = readClipboardTextOrNull();
+						if (data == null) {
+							if (!silent) {
+								beep();
+							}
+						} else if (insertMode || cursorIndex == content.length()) {
 							content = content.substring(0, cursorIndex) + data + content.substring(cursorIndex);
+							cursorIndex += data.length();
 						} else {
 							final String rest = content.substring(cursorIndex);
 							content = content.substring(0, cursorIndex) + data + (rest.length() > data.length() ? rest.substring(data.length()) : "");
+							cursorIndex += data.length();
 						}
-						cursorIndex += data.length();
 					} else if (keyCode == ConsoleUtilities.KeyCode_Escape) {
 						// do nothing
 					} else if (keyCode == ConsoleUtilities.KeyCode_Enter) {
@@ -192,25 +197,25 @@ public class SimpleConsoleInput {
 							content = content.substring(0, cursorIndex - 1) + content.substring(cursorIndex);
 							cursorIndex--;
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_Delete) {
 						if (cursorIndex < content.length()) {
 							content = content.substring(0, cursorIndex) + content.substring(cursorIndex + 1);
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowLeft) {
 						if (cursorIndex > 0) {
 							cursorIndex--;
 						} else {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowRight) {
 						if (cursorIndex < content.length()) {
 							cursorIndex++;
 						} else {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowDown) {
 						final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
@@ -237,7 +242,7 @@ public class SimpleConsoleInput {
 							content = autoCompletionStringsToCheck.get(nextIndexOfAutocompletion);
 							cursorIndex = content.length();
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_ArrowUp) {
 						final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
@@ -264,7 +269,7 @@ public class SimpleConsoleInput {
 							content = autoCompletionStringsToCheck.get(nextIndexOfAutocompletion);
 							cursorIndex = content.length();
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_PageDown) {
 						final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
@@ -283,10 +288,10 @@ public class SimpleConsoleInput {
 								content = autoCompletionStringsToCheck.get(autoCompletionIndex + 1);
 								cursorIndex = content.length();
 							} else if (!silent) {
-								Toolkit.getDefaultToolkit().beep();
+								beep();
 							}
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_PageUp) {
 						final List<String> autoCompletionStringsToCheck = getAutoCompletionStrings(content, keyCode);
@@ -305,10 +310,10 @@ public class SimpleConsoleInput {
 								content = autoCompletionStringsToCheck.get(autoCompletionIndex - 1);
 								cursorIndex = content.length();
 							} else if (!silent) {
-								Toolkit.getDefaultToolkit().beep();
+								beep();
 							}
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else if (keyCode == ConsoleUtilities.KeyCode_Home) {
 						cursorIndex = 0;
@@ -328,7 +333,7 @@ public class SimpleConsoleInput {
 									} else {
 										autoCompletionStringCandidate = null;
 										if (!silent) {
-											Toolkit.getDefaultToolkit().beep();
+											beep();
 										}
 										break;
 									}
@@ -338,10 +343,10 @@ public class SimpleConsoleInput {
 								content = autoCompletionStringCandidate + content.substring(cursorIndex);
 								cursorIndex = autoCompletionStringCandidate.length();
 							} else if (!silent) {
-								Toolkit.getDefaultToolkit().beep();
+								beep();
 							}
 						} else if (!silent) {
-							Toolkit.getDefaultToolkit().beep();
+							beep();
 						}
 					} else {
 						// "keyCode < 1000" to prevent Chinese symbols on some systems, that occur without intention
@@ -389,5 +394,33 @@ public class SimpleConsoleInput {
 	 */
 	protected List<String> getAutoCompletionStrings(final String checkContent, final int keyCode) {
 		return autoCompletionStrings;
+	}
+
+	/**
+	 * Beeps via AWT, ignoring failures. On a headless system (e.g. a server without a graphical environment)
+	 * {@link Toolkit#getDefaultToolkit()} can throw a HeadlessException/AWTError - a missed beep is not worth
+	 * aborting the whole input loop over.
+	 */
+	private static void beep() {
+		try {
+			Toolkit.getDefaultToolkit().beep();
+		} catch (@SuppressWarnings("unused") final Throwable t) {
+			// do nothing
+		}
+	}
+
+	/**
+	 * Reads plain text from the system clipboard, or returns null if that is not possible: no AWT/graphical
+	 * environment available (headless), no clipboard access, or the clipboard content is not text (e.g. an
+	 * image). A failed paste should not abort the input loop or lose already-typed content.
+	 */
+	private static String readClipboardTextOrNull() {
+		try {
+			return (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return null;
+		} catch (@SuppressWarnings("unused") final Throwable t) {
+			return null;
+		}
 	}
 }

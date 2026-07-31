@@ -23,8 +23,10 @@ public class WindowsConsoleWidthDetection implements Runnable {
 				response.append((char) keyBuffer);
 			}
 			consoleType = ConsoleType.ANSI;
-		} catch (@SuppressWarnings("unused") final Exception e) {
-			// Most probably an eclipse console
+		} catch (@SuppressWarnings("unused") final Throwable t) {
+			// Most probably an eclipse console (or, e.g., a native JNA library failure) - catching Throwable
+			// (not just Exception) avoids an unhandled Error surfacing via this thread's default
+			// UncaughtExceptionHandler, and still falls back to TEST cleanly.
 			consoleType = ConsoleType.TEST;
 		}
 	}
