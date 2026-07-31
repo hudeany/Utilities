@@ -8,14 +8,14 @@ import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 
 public class WindowsKeyStrokeReader {
-	private static boolean initDone;
-	private static boolean stdinIsConsole;
-	private static boolean consoleModeAltered;
+	private static volatile boolean initDone;
+	private static volatile boolean stdinIsConsole;
+	private static volatile boolean consoleModeAltered;
 
-	private static Msvcrt msvcrt;
-	private static Kernel32 kernel32;
-	private static Pointer consoleHandle;
-	private static int originalConsoleMode;
+	private static volatile Msvcrt msvcrt;
+	private static volatile Kernel32 kernel32;
+	private static volatile Pointer consoleHandle;
+	private static volatile int originalConsoleMode;
 
 	/**
 	 * Read a character from the console without echo

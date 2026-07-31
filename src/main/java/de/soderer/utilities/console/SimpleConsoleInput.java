@@ -349,8 +349,10 @@ public class SimpleConsoleInput {
 							beep();
 						}
 					} else {
-						// "keyCode < 1000" to prevent Chinese symbols on some systems, that occur without intention
-						if ((allowedCharacters != null && allowedCharacters.contains("" + (char) keyCode)) || keyCode < 1000) {
+						// "keyCode < 1000" to prevent Chinese symbols on some systems, that occur without intention.
+						// "keyCode >= 0x20" excludes remaining control characters (0-31) that are not handled by an
+						// explicit branch above, so they cannot silently end up as literal characters in the input.
+						if ((allowedCharacters != null && allowedCharacters.contains("" + (char) keyCode)) || (keyCode >= 0x20 && keyCode < 1000)) {
 							if (insertMode || cursorIndex == content.length()) {
 								content = content.substring(0, cursorIndex) + ((char) keyCode) + content.substring(cursorIndex);
 								cursorIndex++;
