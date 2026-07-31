@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
+import de.soderer.utilities.collection.CaseInsensitiveLinkedMap;
 
 public class PropertiesReader implements Closeable {
 	private BufferedReader inputReader;
@@ -50,7 +50,7 @@ public class PropertiesReader implements Closeable {
 	public Map<String, String> read() throws Exception {
 		Map<String, String> properties;
 		if (readKeysCaseInsensitive) {
-			properties = new CaseInsensitiveOrderedMap<>();
+			properties = new CaseInsensitiveLinkedMap<>();
 		} else {
 			properties = new LinkedHashMap<>();
 		}

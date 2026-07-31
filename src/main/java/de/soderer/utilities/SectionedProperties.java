@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
+import de.soderer.utilities.collection.CaseInsensitiveLinkedMap;
 
 public class SectionedProperties {
 	private static final String COMMENT_PREFIX = "#";
@@ -33,7 +33,7 @@ public class SectionedProperties {
 
 	public void load(final InputStream inputStream) throws Exception {
 		if (useCaseInsensitiveKeys) {
-			entries = new CaseInsensitiveOrderedMap<>();
+			entries = new CaseInsensitiveLinkedMap<>();
 		} else {
 			entries = new LinkedHashMap<>();
 		}
@@ -70,7 +70,7 @@ public class SectionedProperties {
 
 					if (!entries.containsKey(currentSectionName)) {
 						if (useCaseInsensitiveKeys) {
-							entries.put(currentSectionName, new CaseInsensitiveOrderedMap<>());
+							entries.put(currentSectionName, new CaseInsensitiveLinkedMap<>());
 						} else {
 							entries.put(currentSectionName, new LinkedHashMap<>());
 						}
@@ -129,7 +129,7 @@ public class SectionedProperties {
 	public void setValue(final String sectionName, final String key, final String value) {
 		if (entries == null) {
 			if (useCaseInsensitiveKeys) {
-				entries = new CaseInsensitiveOrderedMap<>();
+				entries = new CaseInsensitiveLinkedMap<>();
 			} else {
 				entries = new LinkedHashMap<>();
 			}
@@ -137,7 +137,7 @@ public class SectionedProperties {
 
 		if (!entries.containsKey(sectionName)) {
 			if (useCaseInsensitiveKeys) {
-				entries.put(sectionName, new CaseInsensitiveOrderedMap<>());
+				entries.put(sectionName, new CaseInsensitiveLinkedMap<>());
 			} else {
 				entries.put(sectionName, new LinkedHashMap<>());
 			}

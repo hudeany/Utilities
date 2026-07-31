@@ -10,7 +10,7 @@ import java.util.Set;
  * Generic String keyed Map that ignores the String case but keeps the order of key entries and allows multiple entries for the same key
  */
 public class MultiValueCaseInsensitiveOrderedMap<V> {
-	private final CaseInsensitiveOrderedMap<ArrayList<V>> map = new CaseInsensitiveOrderedMap<>();
+	private final CaseInsensitiveLinkedMap<ArrayList<V>> map = new CaseInsensitiveLinkedMap<>();
 
 	public static <V> MultiValueCaseInsensitiveOrderedMap<V> create() {
 		return new MultiValueCaseInsensitiveOrderedMap<>();

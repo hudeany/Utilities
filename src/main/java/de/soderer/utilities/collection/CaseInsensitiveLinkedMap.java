@@ -17,6 +17,10 @@ public class CaseInsensitiveLinkedMap<V> extends AbstractLinkedHashMap<String, V
 		super();
 	}
 
+	public CaseInsensitiveLinkedMap(final int initialCapacity, final float loadFactor, final boolean accessOrder) {
+		super(initialCapacity, loadFactor, accessOrder);
+	}
+
 	public CaseInsensitiveLinkedMap(final int initialCapacity, final float loadFactor) {
 		super(initialCapacity, loadFactor);
 	}

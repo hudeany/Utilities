@@ -11,7 +11,8 @@ import java.util.Set;
 
 import org.apache.commons.text.StringEscapeUtils;
 
-import de.soderer.utilities.collection.CaseInsensitiveOrderedMap;
+import de.soderer.utilities.collection.CaseInsensitiveLinkedMap;
+
 
 public class PropertiesLanguageFileReader {
 	public static final String LANGUAGE_SIGN_DEFAULT = "default";
@@ -22,7 +23,7 @@ public class PropertiesLanguageFileReader {
 
 	public void load(final InputStream inputStream, final boolean readKeysCaseInsensitive) throws Exception {
 		if (readKeysCaseInsensitive) {
-			entries = new CaseInsensitiveOrderedMap<>();
+			entries = new CaseInsensitiveLinkedMap<>();
 		} else {
 			entries = new LinkedHashMap<>();
 		}
