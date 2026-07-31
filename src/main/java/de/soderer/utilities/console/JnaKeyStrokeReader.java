@@ -85,21 +85,21 @@ public class JnaKeyStrokeReader {
 	@Deprecated
 	public static final int KeyCode_UUml_Upper;
 
-	private static boolean initDone;
-	private static boolean stdinIsConsole;
-	private static boolean consoleModeAltered;
+	private static volatile boolean initDone;
+	private static volatile boolean stdinIsConsole;
+	private static volatile boolean consoleModeAltered;
 
 	// Windows
-	private static Msvcrt msvcrt;
-	private static Kernel32 kernel32;
-	private static Pointer consoleHandle;
-	private static int originalConsoleMode;
+	private static volatile Msvcrt msvcrt;
+	private static volatile Kernel32 kernel32;
+	private static volatile Pointer consoleHandle;
+	private static volatile int originalConsoleMode;
 
 	// Linux
-	private static Libc libc;
-	private static TerminalFlags originalTerminalFlags;
-	private static TerminalFlags rawTerminalFlags;
-	private static TerminalFlags intermediateTerminalFlags;
+	private static volatile Libc libc;
+	private static volatile TerminalFlags originalTerminalFlags;
+	private static volatile TerminalFlags rawTerminalFlags;
+	private static volatile TerminalFlags intermediateTerminalFlags;
 
 	static {
 		if (SystemUtilities.isWindowsSystem()) {
@@ -400,21 +400,30 @@ public class JnaKeyStrokeReader {
 
 	@Deprecated
 	protected static class TerminalFlags extends Structure {
+		@Deprecated
 		public int c_iflag;
+		@Deprecated
 		public int c_oflag;
+		@Deprecated
 		public int c_cflag;
+		@Deprecated
 		public int c_lflag;
+		@Deprecated
 		public byte c_line;
+		@Deprecated
 		public byte[] filler = new byte[64];
 
+		@Deprecated
 		@Override
 		protected List<String> getFieldOrder() {
 			return Arrays.asList("c_iflag", "c_oflag", "c_cflag", "c_lflag", "c_line", "filler");
 		}
 
+		@Deprecated
 		TerminalFlags() {
 		}
 
+		@Deprecated
 		TerminalFlags(final TerminalFlags t) {
 			c_iflag = t.c_iflag;
 			c_oflag = t.c_oflag;

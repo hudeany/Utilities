@@ -20,14 +20,14 @@ import de.soderer.utilities.Utilities;
  */
 @Deprecated
 public class LinuxKeyStrokeReader {
-	private static boolean initDone;
-	private static boolean stdinIsConsole;
-	private static boolean consoleModeAltered;
+	private static volatile boolean initDone;
+	private static volatile boolean stdinIsConsole;
+	private static volatile boolean consoleModeAltered;
 
-	private static Libc libc;
-	private static TerminalFlags originalTerminalFlags;
-	private static TerminalFlags rawTerminalFlags;
-	private static TerminalFlags intermediateTerminalFlags;
+	private static volatile Libc libc;
+	private static volatile TerminalFlags originalTerminalFlags;
+	private static volatile TerminalFlags rawTerminalFlags;
+	private static volatile TerminalFlags intermediateTerminalFlags;
 
 	/**
 	 * Read a character from the console without echo.
@@ -124,21 +124,30 @@ public class LinuxKeyStrokeReader {
 
 	@Deprecated
 	protected static class TerminalFlags extends Structure {
+		@Deprecated
 		public int c_iflag;
+		@Deprecated
 		public int c_oflag;
+		@Deprecated
 		public int c_cflag;
+		@Deprecated
 		public int c_lflag;
+		@Deprecated
 		public byte c_line;
+		@Deprecated
 		public byte[] filler = new byte[64];
 
+		@Deprecated
 		@Override
 		protected List<String> getFieldOrder() {
 			return Arrays.asList("c_iflag", "c_oflag", "c_cflag", "c_lflag", "c_line", "filler");
 		}
 
+		@Deprecated
 		TerminalFlags() {
 		}
 
+		@Deprecated
 		TerminalFlags(final TerminalFlags t) {
 			c_iflag = t.c_iflag;
 			c_oflag = t.c_oflag;
