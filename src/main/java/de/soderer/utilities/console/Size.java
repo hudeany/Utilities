@@ -1,8 +1,8 @@
 package de.soderer.utilities.console;
 
 public class Size {
-	int height;
-	int width;
+	private final int height;
+	private final int width;
 
 	public Size(final int height, final int width) {
 		super();

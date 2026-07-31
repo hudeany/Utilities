@@ -175,6 +175,7 @@ public class ConsoleUtilities {
 	public static void deactivateLinuxConsoleRawMode() throws Exception {
 		if (linuxConsoleActivatedRawMode) {
 			final int exitCode = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty -raw echo </dev/tty" }).waitFor();
+			// Mark as deactivated even on failure, so we don't get stuck retrying a broken 'stty' on every subsequent call
 			linuxConsoleActivatedRawMode = false;
 			if (exitCode != 0) {
 				throw new Exception("Cannot deactivate linux console raw mode: 'stty' returned exit code " + exitCode);
@@ -203,17 +204,17 @@ public class ConsoleUtilities {
 	 * @param itemsDone
 	 * @return
 	 */
-	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone, final String itemUnitSign) {
+	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone, String itemUnitSign) {
 		final LocalDateTime now = LocalDateTime.now();
 		String itemsToDoString = "??";
 		String percentageString = " 0%";
 		String speedString = "???/s";
 		String etaString = "eta ???";
 		int percentageDone = 0;
-
+		
 		if (itemsToDo > 0) {
 			itemsToDoString = Utilities.getHumanReadableNumber(itemsToDo, itemUnitSign, true, 5, true, Locale.ENGLISH);
-
+		
 			if (itemsDone > 0) {
 				percentageDone = (int) (itemsDone * 100 / itemsToDo);
 				percentageString = Utilities.leftPad(percentageDone + "%", 3);
@@ -402,10 +403,15 @@ public class ConsoleUtilities {
 				if (SystemUtilities.isWindowsSystem()) {
 					final WindowsConsoleWidthDetection consoleWidthDetection = new WindowsConsoleWidthDetection(response);
 					final Thread consoleWithDetectionThread = new Thread(consoleWidthDetection, "ConsoleWidthDetection");
+					// Daemon: if the underlying native read blocks forever (e.g. no real console attached),
+					// interrupt() below cannot unblock it, so this thread may never terminate.
+					// Marking it a daemon at least prevents it from keeping the JVM alive.
 					consoleWithDetectionThread.setDaemon(true);
 					consoleWithDetectionThread.start();
 					Thread.sleep(1000);
 					if (consoleWithDetectionThread.getState() != State.TERMINATED) {
+						// Note: interrupt() cannot cancel a thread blocked in a native call (_getwch/getwchar).
+						// The thread is abandoned here (daemon) rather than actually stopped; this is a known limitation.
 						consoleWithDetectionThread.interrupt();
 						consoleType = ConsoleType.TEST;
 						return new Size(24, 80);

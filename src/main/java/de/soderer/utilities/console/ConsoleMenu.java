@@ -134,7 +134,7 @@ public class ConsoleMenu {
 				System.out.println(ConsoleUtilities.getAnsiColoredText("Warning: " + warning, TextColor.Yellow));
 			}
 			System.out.println();
-			messages.clear();
+			warnings.clear();
 		}
 
 		if (messages.size() > 0) {

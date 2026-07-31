@@ -1,8 +1,8 @@
 package de.soderer.utilities.console;
 
 public class Position {
-	int line;
-	int column;
+	private final int line;
+	private final int column;
 
 	public Position(final int line, final int column) {
 		super();
