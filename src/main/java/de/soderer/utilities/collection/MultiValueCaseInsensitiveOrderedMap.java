@@ -69,6 +69,15 @@ public class MultiValueCaseInsensitiveOrderedMap<V> {
 		return removedValues == null ? Collections.emptyList() : removedValues;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Note: the returned view's own {@code remove}/{@code removeAll}/{@code retainAll}/{@code contains} do
+	 * NOT apply case-insensitive key matching - they compare directly against the internally stored
+	 * (already lowercased) keys, since this simply exposes the underlying {@link CaseInsensitiveLinkedMap}'s
+	 * entrySet(). Use this class's own {@link #remove(String, Object)} or {@link #removeAll(String)} instead
+	 * for case-insensitive removal by key.
+	 */
 	public Set<Entry<String, ArrayList<V>>> entrySet() {
 		return map.entrySet();
 	}
@@ -77,6 +86,15 @@ public class MultiValueCaseInsensitiveOrderedMap<V> {
 		return map.values();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Note: the returned view's own {@code remove}/{@code removeAll}/{@code retainAll}/{@code contains} do
+	 * NOT apply case-insensitive key matching - they compare directly against the internally stored
+	 * (already lowercased) keys, since this simply exposes the underlying {@link CaseInsensitiveLinkedMap}'s
+	 * keySet(). Use this class's own {@link #remove(String, Object)} or {@link #removeAll(String)} instead
+	 * for case-insensitive removal by key.
+	 */
 	public Set<String> keySet() {
 		return map.keySet();
 	}

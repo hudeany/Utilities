@@ -3,9 +3,24 @@ package de.soderer.utilities.collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+/**
+ * Base class for LinkedHashMap variants that transform keys on the way in and out via
+ * {@link #convertKey(Object)} (e.g. case-insensitive lookup by lowercasing String keys).
+ *
+ * Note: {@link #keySet()} and {@link #entrySet()} return the standard {@link LinkedHashMap} views. Their own
+ * mutation/lookup methods that take an externally supplied key (e.g. {@code keySet().remove(Object)},
+ * {@code keySet().removeAll(Collection)}, {@code keySet().retainAll(Collection)},
+ * {@code keySet().contains(Object)}, and the {@link Entry}-based equivalents on {@code entrySet()}) do NOT go
+ * through {@link #convertKey(Object)} - they compare directly against the internally stored (already
+ * converted) keys. So e.g. {@code caseInsensitiveLinkedMap.keySet().remove("FOO")} can silently fail to
+ * remove an entry that is actually stored under the converted key "foo", even though
+ * {@code caseInsensitiveLinkedMap.remove("FOO")} works correctly. Iterating via {@link java.util.Iterator}
+ * and calling {@code Iterator.remove()} is unaffected, since that always operates on the key as already stored.
+ */
 public abstract class AbstractLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	private static final long serialVersionUID = -7227298515931195921L;
 
@@ -28,6 +43,28 @@ public abstract class AbstractLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	public AbstractLinkedHashMap(final Map<? extends K, ? extends V> map) {
 		super(map.size());
 		putAll(map);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * See the class-level note: the returned view's own {@code remove}/{@code removeAll}/{@code retainAll}/
+	 * {@code contains} do not route external keys through {@link #convertKey(Object)}.
+	 */
+	@Override
+	public Set<K> keySet() {
+		return super.keySet();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * See the class-level note: the returned view's own {@code remove}/{@code removeAll}/{@code retainAll}/
+	 * {@code contains} do not route external keys through {@link #convertKey(Object)}.
+	 */
+	@Override
+	public Set<Entry<K, V>> entrySet() {
+		return super.entrySet();
 	}
 
 	@Override
