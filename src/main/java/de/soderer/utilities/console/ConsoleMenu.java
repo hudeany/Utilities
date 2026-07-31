@@ -91,7 +91,7 @@ public class ConsoleMenu {
 
 			System.out.println("  0) " + defaultMenuTitle);
 
-			String choice = new SimpleConsoleInput().setPrompt(" > ").readInput();
+			String choice = new SimpleConsoleInput().withPrompt(" > ").readInput();
 			choice = choice == null ? "" : choice.trim();
 
 			if (Utilities.isBlank(choice)) {
@@ -154,7 +154,7 @@ public class ConsoleMenu {
 			selectionIndex++;
 			System.out.println(" " + Utilities.leftPad(Integer.toString(selectionIndex), 2) + ") " + selectionValue);
 		}
-		String choice = new SimpleConsoleInput().setAutoCompletionStrings(selectionValues).setPrompt(" > ").readInput();
+		String choice = new SimpleConsoleInput().withAutoCompletionStrings(selectionValues).withPrompt(" > ").readInput();
 		choice = choice == null ? "" : choice.trim();
 		if (Utilities.isBlank(choice)) {
 			return null;

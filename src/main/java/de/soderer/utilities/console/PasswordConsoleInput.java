@@ -66,8 +66,12 @@ public class PasswordConsoleInput {
 		return prompt;
 	}
 
-	public PasswordConsoleInput setPrompt(final String prompt) {
+	public void setPrompt(final String prompt) {
 		this.prompt = (prompt == null ? "" : prompt);
+	}
+
+	public PasswordConsoleInput withPrompt(final String newPrompt) {
+		setPrompt(newPrompt);
 		return this;
 	}
 
@@ -75,8 +79,12 @@ public class PasswordConsoleInput {
 		return presetContent;
 	}
 
-	public PasswordConsoleInput setPresetContent(final String presetContent) {
+	public void setPresetContent(final String presetContent) {
 		this.presetContent = (presetContent == null ? "" : presetContent);
+	}
+
+	public PasswordConsoleInput withPresetContent(final String newPresetContent) {
+		setPresetContent(newPresetContent);
 		return this;
 	}
 
@@ -230,8 +238,10 @@ public class PasswordConsoleInput {
 							Toolkit.getDefaultToolkit().beep();
 						}
 					} else {
-						// "keyCode < 1000" to prevent Chinese symbols on some systems, that occur without intention
-						if ((allowedCharacters != null && allowedCharacters.contains("" + (char) keyCode)) || keyCode < 1000) {
+						// "keyCode < 1000" to prevent Chinese symbols on some systems, that occur without intention.
+						// "keyCode >= 0x20" excludes remaining control characters (0-31) that are not handled by an
+						// explicit branch above, so they cannot silently end up as literal characters in the password.
+						if ((allowedCharacters != null && allowedCharacters.contains("" + (char) keyCode)) || (keyCode >= 0x20 && keyCode < 1000)) {
 							if (insertMode || cursorIndex == content.length) {
 								final char[] newContent = new char[content.length + 1];
 								for (int i = 0; i < cursorIndex; i++) {
@@ -254,10 +264,21 @@ public class PasswordConsoleInput {
 			} finally {
 				ConsoleUtilities.showCursor();
 			}
-		} else if (ConsoleUtilities.getConsoleType() == ConsoleType.TEST) {
-			return System.console().readPassword(prompt);
 		} else {
-			return System.console().readPassword(prompt);
+			return readPasswordViaSystemConsole();
 		}
+	}
+
+	/**
+	 * Fallback input path used for {@link ConsoleType#TEST} and {@link ConsoleType#NO_ANSI}.
+	 * Throws a clear exception instead of a NullPointerException when no real console is attached
+	 * (e.g. running inside an IDE or with redirected/piped standard input).
+	 */
+	private char[] readPasswordViaSystemConsole() throws IllegalStateException {
+		final java.io.Console console = System.console();
+		if (console == null) {
+			throw new IllegalStateException("No console available to read input from (e.g. running without a real terminal, or with redirected standard input)");
+		}
+		return console.readPassword(prompt);
 	}
 }

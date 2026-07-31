@@ -12,6 +12,13 @@ import com.sun.jna.Structure;
 
 import de.soderer.utilities.Utilities;
 
+/**
+ * @deprecated Duplicates the Linux part of {@link JnaKeyStrokeReader} (libc/termios based raw mode + read).
+ * Nothing in this package calls it - the actually used runtime path is {@link ConsoleUtilities#readKey()}, which
+ * handles Linux raw mode via an external 'stty' process call instead. Kept only for reference; consolidate onto
+ * one approach and remove this class once confirmed unused elsewhere in the project.
+ */
+@Deprecated
 public class LinuxKeyStrokeReader {
 	private static boolean initDone;
 	private static boolean stdinIsConsole;
@@ -25,6 +32,7 @@ public class LinuxKeyStrokeReader {
 	/**
 	 * Read a character from the console without echo.
 	 */
+	@Deprecated
 	public static int readKey(final boolean wait) throws Exception {
 		init();
 		if (!stdinIsConsole) {
@@ -112,6 +120,7 @@ public class LinuxKeyStrokeReader {
 		return Utilities.convertByteArrayToInt(buffer);
 	}
 
+	@Deprecated
 	protected static class TerminalFlags extends Structure {
 		public int c_iflag;
 		public int c_oflag;

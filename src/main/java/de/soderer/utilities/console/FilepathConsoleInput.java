@@ -9,9 +9,8 @@ import de.soderer.utilities.Utilities;
 
 public class FilepathConsoleInput extends SimpleConsoleInput {
 	@Override
-	public SimpleConsoleInput setPresetContent(final String presetContent) {
+	public void setPresetContent(final String presetContent) {
 		this.presetContent = (presetContent == null ? "" : presetContent.replace("/", File.separator).replace("\\", File.separator));
-		return this;
 	}
 
 	@Override

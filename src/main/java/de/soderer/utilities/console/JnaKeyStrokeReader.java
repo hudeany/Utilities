@@ -15,41 +15,74 @@ import com.sun.jna.ptr.IntByReference;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
+/**
+ * @deprecated This class duplicates the logic already split between {@link WindowsKeyStrokeReader} and
+ * {@link LinuxKeyStrokeReader} (Windows part via msvcrt/kernel32, Linux part via libc/termios), combined into one place.
+ * Nothing in this package calls it - the actually used runtime path is {@link ConsoleUtilities#readKey()}, which uses
+ * {@link WindowsKeyStrokeReader} on Windows and its own 'stty'-based raw mode handling on Linux.
+ * Kept only for reference; consolidate onto one of the two approaches and remove this class once confirmed unused
+ * elsewhere in the project.
+ */
+@Deprecated
 public class JnaKeyStrokeReader {
 	/**
 	 * Detection of Ctrl-C only works on Windows systems, because it ends Linux Java VM immediatelly
 	 */
+	@Deprecated
 	public static final int KeyCode_CtrlC = 3;
+	@Deprecated
 	public static final int KeyCode_CtrlV = 22;
+	@Deprecated
 	public static final int KeyCode_CtrlX = 24;
 
 	/**
 	 * Detection of contextmenu insert. Only works on Linux systems
 	 */
+	@Deprecated
 	public static final int KeyCode_ContextMenu_Insert = 6513249;
 
+	@Deprecated
 	public static final int KeyCode_Enter;
+	@Deprecated
 	public static final int KeyCode_Backspace;
+	@Deprecated
 	public static final int KeyCode_Tab = 9;
+	@Deprecated
 	public static final int KeyCode_Escape = 27;
 
+	@Deprecated
 	public static final int KeyCode_Home;
+	@Deprecated
 	public static final int KeyCode_PageUp;
+	@Deprecated
 	public static final int KeyCode_End;
+	@Deprecated
 	public static final int KeyCode_Insert;
+	@Deprecated
 	public static final int KeyCode_Delete;
+	@Deprecated
 	public static final int KeyCode_PageDown;
 
+	@Deprecated
 	public static final int KeyCode_Up;
+	@Deprecated
 	public static final int KeyCode_Left;
+	@Deprecated
 	public static final int KeyCode_Right;
+	@Deprecated
 	public static final int KeyCode_Down;
 
+	@Deprecated
 	public static final int KeyCode_AUml_Lower;
+	@Deprecated
 	public static final int KeyCode_AUml_Upper;
+	@Deprecated
 	public static final int KeyCode_OUml_Lower;
+	@Deprecated
 	public static final int KeyCode_OUml_Upper;
+	@Deprecated
 	public static final int KeyCode_UUml_Lower;
+	@Deprecated
 	public static final int KeyCode_UUml_Upper;
 
 	private static boolean initDone;
@@ -119,6 +152,7 @@ public class JnaKeyStrokeReader {
 	/**
 	 * Read a character from the console without echo.
 	 */
+	@Deprecated
 	public static int readKey(final boolean wait) throws Exception {
 		if (SystemUtilities.isWindowsSystem()) {
 			return readKeyWindows(wait);
@@ -130,6 +164,7 @@ public class JnaKeyStrokeReader {
 	/**
 	 * Resets console mode to normal line mode
 	 */
+	@Deprecated
 	public static void resetConsoleMode() throws IOException {
 		if (initDone && stdinIsConsole && consoleModeAltered) {
 			if (SystemUtilities.isWindowsSystem()) {
@@ -361,6 +396,7 @@ public class JnaKeyStrokeReader {
 		}
 	}
 
+	@Deprecated
 	protected static class TerminalFlags extends Structure {
 		public int c_iflag;
 		public int c_oflag;

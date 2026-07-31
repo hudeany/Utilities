@@ -13,8 +13,22 @@ import com.sun.jna.platform.win32.WinUser.KBDLLHOOKSTRUCT;
 import com.sun.jna.platform.win32.WinUser.LowLevelKeyboardProc;
 import com.sun.jna.platform.win32.WinUser.MSG;
 
-/** Sample implementation of a low-level keyboard hook on W32 */
+/**
+ * Sample implementation of a system-wide low-level keyboard hook on Windows, showing how to use JNA's
+ * {@code SetWindowsHookEx(WH_KEYBOARD_LL, ...)}.
+ *
+ * NOT intended for production use / not part of the console input API of this package: this installs a
+ * system-wide keyboard hook that receives every keystroke typed anywhere on the system, not just input
+ * directed at this application. Keep this out of shipped production artifacts (it may also trigger
+ * antivirus/EDR false positives due to its keylogging-style behavior), and use it only as a reference
+ * for implementing a real, properly scoped input hook.
+ */
 public class LowLevelJnaKeyLogger {
+	/**
+	 * Virtual-key code for 'Q', used here only to let this sample terminate itself.
+	 */
+	private static final int VK_Q = 81;
+
 	private static boolean quit;
 	private static HHOOK hhk;
 
@@ -31,28 +45,28 @@ public class LowLevelJnaKeyLogger {
 						case WinUser.WM_KEYUP:
 							System.err.println("key down, key=" + info.vkCode);
 
-							if (info.vkCode == 81) {
+							if (info.vkCode == VK_Q) {
 								quit = true;
 							}
 							break;
 						case WinUser.WM_KEYDOWN:
 							System.err.println("key up, key=" + info.vkCode);
 
-							if (info.vkCode == 81) {
+							if (info.vkCode == VK_Q) {
 								quit = true;
 							}
 							break;
 						case WinUser.WM_SYSKEYUP:
 							System.err.println("syskey down, key=" + info.vkCode);
 
-							if (info.vkCode == 81) {
+							if (info.vkCode == VK_Q) {
 								quit = true;
 							}
 							break;
 						case WinUser.WM_SYSKEYDOWN:
 							System.err.println("syskey up, key=" + info.vkCode);
 
-							if (info.vkCode == 81) {
+							if (info.vkCode == VK_Q) {
 								quit = true;
 							}
 							break;

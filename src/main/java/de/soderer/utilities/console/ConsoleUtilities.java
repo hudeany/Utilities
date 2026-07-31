@@ -15,10 +15,10 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ConsoleUtilities {
-	private static Queue<Character> consoleInputBuffer = null;
+	private static volatile Queue<Character> consoleInputBuffer = null;
 
-	private static ConsoleType consoleType = null;
-	private static boolean linuxConsoleActivatedRawMode = false;
+	private static volatile ConsoleType consoleType = null;
+	private static volatile boolean linuxConsoleActivatedRawMode = false;
 
 	public static final int KeyCode_CtrlC = 3;
 	public static final int KeyCode_CtrlV = 22;
@@ -160,7 +160,10 @@ public class ConsoleUtilities {
 
 	public static boolean activateLinuxConsoleRawMode() throws Exception {
 		if (!linuxConsoleActivatedRawMode) {
-			Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty raw -echo < /dev/tty" }).waitFor();
+			final int exitCode = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty raw -echo < /dev/tty" }).waitFor();
+			if (exitCode != 0) {
+				throw new Exception("Cannot activate linux console raw mode: 'stty' returned exit code " + exitCode);
+			}
 			linuxConsoleActivatedRawMode = true;
 			registerShutdownHook();
 			return true;
@@ -171,8 +174,11 @@ public class ConsoleUtilities {
 
 	public static void deactivateLinuxConsoleRawMode() throws Exception {
 		if (linuxConsoleActivatedRawMode) {
-			Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty -raw echo </dev/tty" }).waitFor();
+			final int exitCode = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty -raw echo </dev/tty" }).waitFor();
 			linuxConsoleActivatedRawMode = false;
+			if (exitCode != 0) {
+				throw new Exception("Cannot deactivate linux console raw mode: 'stty' returned exit code " + exitCode);
+			}
 		}
 	}
 
@@ -197,17 +203,17 @@ public class ConsoleUtilities {
 	 * @param itemsDone
 	 * @return
 	 */
-	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone, String itemUnitSign) {
+	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone, final String itemUnitSign) {
 		final LocalDateTime now = LocalDateTime.now();
 		String itemsToDoString = "??";
 		String percentageString = " 0%";
 		String speedString = "???/s";
 		String etaString = "eta ???";
 		int percentageDone = 0;
-		
+
 		if (itemsToDo > 0) {
 			itemsToDoString = Utilities.getHumanReadableNumber(itemsToDo, itemUnitSign, true, 5, true, Locale.ENGLISH);
-		
+
 			if (itemsDone > 0) {
 				percentageDone = (int) (itemsDone * 100 / itemsToDo);
 				percentageString = Utilities.leftPad(percentageDone + "%", 3);
@@ -225,7 +231,11 @@ public class ConsoleUtilities {
 
 		final String leftPart = percentageString + " [";
 		final String rightPart = "] " + itemsToDoString + " " + speedString + " " + etaString;
-		final int barWith = lineLength - (leftPart.length() + rightPart.length());
+		final int barWith = Math.max(0, lineLength - (leftPart.length() + rightPart.length()));
+		if (barWith == 0) {
+			// Not enough space left for a bar, only render percentage and info parts
+			return leftPart.substring(0, leftPart.length() - 1) + rightPart.substring(1);
+		}
 		int barDone = barWith * percentageDone / 100;
 		if (barDone < 1) {
 			barDone = 1;
@@ -310,6 +320,27 @@ public class ConsoleUtilities {
 		System.out.print("\033[?25h");
 	}
 
+	/**
+	 * Parses an ANSI cursor position report of the form "...[<first>;<second>R" out of the given response buffer.
+	 * Validates that all expected markers are present before extracting substrings, so a malformed or unexpected
+	 * terminal response results in a clear exception instead of a StringIndexOutOfBoundsException / NumberFormatException.
+	 */
+	private static int[] parseAnsiPositionResponse(final StringBuilder response, final String errorContext) throws Exception {
+		final int bracketIndex = response.lastIndexOf("[");
+		final int semicolonIndex = bracketIndex > -1 ? response.indexOf(";", bracketIndex) : -1;
+		final int terminatorIndex = semicolonIndex > -1 ? response.indexOf("R", semicolonIndex) : -1;
+		if (bracketIndex == -1 || semicolonIndex == -1 || terminatorIndex == -1) {
+			throw new Exception(errorContext + ": unexpected terminal response '" + response + "'");
+		}
+		try {
+			final int first = Integer.parseInt(response.substring(bracketIndex + 1, semicolonIndex));
+			final int second = Integer.parseInt(response.substring(semicolonIndex + 1, terminatorIndex));
+			return new int[] { first, second };
+		} catch (final NumberFormatException e) {
+			throw new Exception(errorContext + ": unexpected terminal response '" + response + "'", e);
+		}
+	}
+
 	public static Position getCursorPosition() throws Exception {
 		try {
 			final StringBuilder response = new StringBuilder();
@@ -354,17 +385,10 @@ public class ConsoleUtilities {
 				moveCursorToSavedPosition();
 			}
 
-			if (response.lastIndexOf("[") > -1) {
-				final String lineString = response.substring(response.lastIndexOf("[") + 1, response.indexOf(";"));
-				final int line = Integer.parseInt(lineString);
-				final String columnString = response.substring(response.indexOf(";") + 1, response.indexOf("R"));
-				final int column = Integer.parseInt(columnString);
-				return new Position(line, column);
-			} else {
-				throw new Exception("Cannot detect terminal size");
-			}
+			final int[] positionValues = parseAnsiPositionResponse(response, "Cannot detect cursor position");
+			return new Position(positionValues[0], positionValues[1]);
 		} catch (final Exception e) {
-			throw new Exception("Cannot detect terminal size", e);
+			throw new Exception("Cannot detect cursor position", e);
 		}
 	}
 
@@ -378,6 +402,7 @@ public class ConsoleUtilities {
 				if (SystemUtilities.isWindowsSystem()) {
 					final WindowsConsoleWidthDetection consoleWidthDetection = new WindowsConsoleWidthDetection(response);
 					final Thread consoleWithDetectionThread = new Thread(consoleWidthDetection, "ConsoleWidthDetection");
+					consoleWithDetectionThread.setDaemon(true);
 					consoleWithDetectionThread.start();
 					Thread.sleep(1000);
 					if (consoleWithDetectionThread.getState() != State.TERMINATED) {
@@ -416,15 +441,8 @@ public class ConsoleUtilities {
 				moveCursorToSavedPosition();
 			}
 
-			if (response.lastIndexOf("[") > -1) {
-				final String heightString = response.substring(response.lastIndexOf("[") + 1, response.indexOf(";"));
-				final int height = Integer.parseInt(heightString);
-				final String widthString = response.substring(response.indexOf(";") + 1, response.indexOf("R"));
-				final int width = Integer.parseInt(widthString);
-				return new Size(height, width);
-			} else {
-				throw new Exception("Cannot detect terminal size");
-			}
+			final int[] sizeValues = parseAnsiPositionResponse(response, "Cannot detect terminal size");
+			return new Size(sizeValues[0], sizeValues[1]);
 		} catch (final Exception e) {
 			throw new Exception("Cannot detect terminal size", e);
 		}
@@ -450,6 +468,15 @@ public class ConsoleUtilities {
 		}
 	}
 
+	/**
+	 * Reads a single key from the console (Linux: raw termios mode via 'stty', Windows: {@link WindowsKeyStrokeReader}).
+	 *
+	 * Known limitation: escape sequences are identified purely by the number of bytes read in one {@link Reader#read(char[])}
+	 * call (3, 4 or 6 bytes). If an escape sequence and a following regular key end up in the same OS-level read
+	 * (e.g. very fast typing right after an arrow key), this can misidentify the key. This has not been changed here,
+	 * since a correct fix requires stateful byte-by-byte parsing of the escape sequence grammar instead of length-based
+	 * dispatch, which is a larger change than a targeted bug fix.
+	 */
 	public static int readKey() throws Exception {
 		try {
 			if (SystemUtilities.isWindowsSystem()) {

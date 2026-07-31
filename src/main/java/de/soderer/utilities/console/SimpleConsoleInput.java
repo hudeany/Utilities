@@ -61,10 +61,13 @@ public class SimpleConsoleInput {
 	 * For password inputs
 	 *
 	 * @param hideCharacter
-	 * @return
 	 */
-	public SimpleConsoleInput setHideCharacter(final Character hideCharacter) {
+	public void setHideCharacter(final Character hideCharacter) {
 		this.hideCharacter = hideCharacter;
+	}
+
+	public SimpleConsoleInput withHideCharacter(final Character newHideCharacter) {
+		setHideCharacter(newHideCharacter);
 		return this;
 	}
 
@@ -72,8 +75,12 @@ public class SimpleConsoleInput {
 		return prompt;
 	}
 
-	public SimpleConsoleInput setPrompt(final String prompt) {
+	public void setPrompt(final String prompt) {
 		this.prompt = (prompt == null ? "" : prompt);
+	}
+
+	public SimpleConsoleInput withPrompt(final String newPrompt) {
+		setPrompt(newPrompt);
 		return this;
 	}
 
@@ -81,8 +88,12 @@ public class SimpleConsoleInput {
 		return presetContent;
 	}
 
-	public SimpleConsoleInput setPresetContent(final String presetContent) {
+	public void setPresetContent(final String presetContent) {
 		this.presetContent = (presetContent == null ? "" : presetContent);
+	}
+
+	public SimpleConsoleInput withPresetContent(final String newPresetContent) {
+		setPresetContent(newPresetContent);
 		return this;
 	}
 
@@ -90,8 +101,12 @@ public class SimpleConsoleInput {
 		return autoCompletionStrings;
 	}
 
-	public SimpleConsoleInput setAutoCompletionStrings(final List<String> autoCompletionStrings) {
+	public void setAutoCompletionStrings(final List<String> autoCompletionStrings) {
 		this.autoCompletionStrings = autoCompletionStrings;
+	}
+
+	public SimpleConsoleInput withAutoCompletionStrings(final List<String> newAutoCompletionStrings) {
+		setAutoCompletionStrings(newAutoCompletionStrings);
 		return this;
 	}
 
@@ -344,18 +359,25 @@ public class SimpleConsoleInput {
 			} finally {
 				ConsoleUtilities.showCursor();
 			}
-		} else if (ConsoleUtilities.getConsoleType() == ConsoleType.TEST) {
-			if (hideCharacter != null) {
-				return new String(System.console().readPassword(prompt));
-			} else {
-				return System.console().readLine(prompt);
-			}
 		} else {
-			if (hideCharacter != null) {
-				return new String(System.console().readPassword(prompt));
-			} else {
-				return System.console().readLine(prompt);
-			}
+			return readViaSystemConsole();
+		}
+	}
+
+	/**
+	 * Fallback input path used for {@link ConsoleType#TEST} and {@link ConsoleType#NO_ANSI}.
+	 * Throws a clear exception instead of a NullPointerException when no real console is attached
+	 * (e.g. running inside an IDE or with redirected/piped standard input).
+	 */
+	private String readViaSystemConsole() throws IllegalStateException {
+		final java.io.Console console = System.console();
+		if (console == null) {
+			throw new IllegalStateException("No console available to read input from (e.g. running without a real terminal, or with redirected standard input)");
+		}
+		if (hideCharacter != null) {
+			return new String(console.readPassword(prompt));
+		} else {
+			return console.readLine(prompt);
 		}
 	}
 
