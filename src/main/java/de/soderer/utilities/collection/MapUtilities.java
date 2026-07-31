@@ -40,6 +40,15 @@ public class MapUtilities {
 		return returnMap;
 	}
 
+	/**
+	 * Sorts the given map's entries by key and returns a new map of the same concrete type, built via
+	 * {@code map.clone()}.
+	 *
+	 * Note: if {@code map} is a {@link LinkedHashMap} constructed in access-order mode (accessOrder=true,
+	 * e.g. for an LRU cache), the clone preserves that flag. The returned map will then silently reorder
+	 * itself on the very next {@code get()}, discarding the sort order just established. This is fine for
+	 * the common case of insertion-order maps, but is worth knowing when passing in an access-order map.
+	 */
 	public static <K extends Comparable<K>, V, L extends LinkedHashMap<K, V>> L sort(final L map) {
 		@SuppressWarnings("unchecked")
 		final
@@ -53,6 +62,15 @@ public class MapUtilities {
 		return returnMap;
 	}
 
+	/**
+	 * Sorts the given map's entries using the given key comparator and returns a new map of the same concrete
+	 * type, built via {@code map.clone()}.
+	 *
+	 * Note: if {@code map} is a {@link LinkedHashMap} constructed in access-order mode (accessOrder=true,
+	 * e.g. for an LRU cache), the clone preserves that flag. The returned map will then silently reorder
+	 * itself on the very next {@code get()}, discarding the sort order just established. This is fine for
+	 * the common case of insertion-order maps, but is worth knowing when passing in an access-order map.
+	 */
 	public static <K, V, L extends LinkedHashMap<K, V>> L sort(final L map, final Comparator<K> comparator) {
 		@SuppressWarnings("unchecked")
 		final
@@ -66,6 +84,15 @@ public class MapUtilities {
 		return returnMap;
 	}
 
+	/**
+	 * Sorts the given map's entries using the given entry comparator and returns a new map of the same concrete
+	 * type, built via {@code map.clone()}.
+	 *
+	 * Note: if {@code map} is a {@link LinkedHashMap} constructed in access-order mode (accessOrder=true,
+	 * e.g. for an LRU cache), the clone preserves that flag. The returned map will then silently reorder
+	 * itself on the very next {@code get()}, discarding the sort order just established. This is fine for
+	 * the common case of insertion-order maps, but is worth knowing when passing in an access-order map.
+	 */
 	public static <K, V, L extends LinkedHashMap<K, V>> L sortEntries(final L map, final Comparator<Entry<K, V>> comparator) {
 		@SuppressWarnings("unchecked")
 		final

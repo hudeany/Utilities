@@ -34,8 +34,22 @@ public class CaseInsensitiveLinkedMap<V> extends AbstractLinkedHashMap<String, V
 		putAll(map);
 	}
 
+	/**
+	 * Sentinel value used for lookups with a non-String key. It is never stored as an actual key (this map
+	 * only ever stores lowercased Strings), so passing it to the underlying LinkedHashMap always reports
+	 * "not found" instead of the previous behavior of converting any Object via toString(), which could cause
+	 * false-positive matches (e.g. an Integer key 5 matching a stored String key "5").
+	 */
+	private static final String NON_STRING_KEY_SENTINEL = "\u0000non-string-key-sentinel-" + java.util.UUID.randomUUID();
+
 	@Override
 	protected String convertKey(final Object key) {
-		return key == null ? null : key.toString().toLowerCase(Locale.ROOT);
+		if (key == null) {
+			return null;
+		} else if (key instanceof String) {
+			return ((String) key).toLowerCase(Locale.ROOT);
+		} else {
+			return NON_STRING_KEY_SENTINEL;
+		}
 	}
 }
