@@ -17,6 +17,15 @@ public class DeepLHelper {
 	public final static String DEEPL_BASEURL_FREE_DEFAULT = "https://api-free.deepl.com";
 	public final static String DEEPL_BASEURL_DEFAULT = "https://api.deepl.com";
 
+	// Maximum number of retries on HTTP 429 (Too Many Requests)
+	private final static int MAX_RETRY_COUNT = 5;
+
+	// Initial backoff delay in milliseconds, doubled after each retry
+	private final static long INITIAL_BACKOFF_MILLISECONDS = 500;
+
+	// Upper bound for the backoff delay, to avoid excessively long waits
+	private final static long MAX_BACKOFF_MILLISECONDS = 16_000;
+
 	private final String baseUrl;
 	private final String apiKey;
 
@@ -51,10 +60,10 @@ public class DeepLHelper {
 						supportedLanguages = languages;
 						break;
 					} else if (response.getHttpCode() == 429) {
-						if (retryCount < 5) {
-							// too many requests => retry
+						if (retryCount < MAX_RETRY_COUNT) {
+							// too many requests => retry with exponential backoff
+							Thread.sleep(getBackoffMilliseconds(retryCount));
 							retryCount++;
-							Thread.sleep(500);
 						} else {
 							throw new Exception("Error read available DeepL languages. HTTP code: " + response.getHttpCode() + "\nToo many requests\nContent: " + response.getContent());
 						}
@@ -105,10 +114,10 @@ public class DeepLHelper {
 					final JsonObject jsonData = (JsonObject) JsonReader.readJsonItemString(response.getContent());
 					return (String) ((JsonObject) ((JsonArray) jsonData.get("translations")).get(0)).getSimpleValue("text");
 				} else if (response.getHttpCode() == 429) {
-					if (retryCount < 5) {
-						// too many requests => retry
+					if (retryCount < MAX_RETRY_COUNT) {
+						// too many requests => retry with exponential backoff
+						Thread.sleep(getBackoffMilliseconds(retryCount));
 						retryCount++;
-						Thread.sleep(500);
 					} else {
 						throw new Exception("Error http code: " + response.getHttpCode() + "\nToo many requests\nContent: " + response.getContent());
 					}
@@ -119,5 +128,17 @@ public class DeepLHelper {
 		} catch (final Exception e) {
 			throw new Exception("Cannot translate text by DeepL: " + e.getMessage());
 		}
+	}
+
+	/**
+	 * Calculates the exponential backoff delay for a given retry attempt (0-based),
+	 * capped at MAX_BACKOFF_MILLISECONDS and with a small random jitter added
+	 * to avoid synchronized retries when multiple requests are throttled at once.
+	 */
+	private static long getBackoffMilliseconds(final int retryCount) {
+		final long exponentialDelay = INITIAL_BACKOFF_MILLISECONDS * (1L << retryCount);
+		final long cappedDelay = Math.min(exponentialDelay, MAX_BACKOFF_MILLISECONDS);
+		final long jitter = (long) (Math.random() * cappedDelay * 0.2);
+		return cappedDelay + jitter;
 	}
 }
