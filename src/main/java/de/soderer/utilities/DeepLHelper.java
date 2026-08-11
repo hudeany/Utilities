@@ -26,6 +26,12 @@ public class DeepLHelper {
 	// Upper bound for the backoff delay, to avoid excessively long waits
 	private final static long MAX_BACKOFF_MILLISECONDS = 16_000;
 
+	// DeepL-specific: translation quota exceeded, retrying will not help
+	private final static int HTTP_QUOTA_EXCEEDED = 456;
+
+	// HTTP code for rate limiting, retry with backoff makes sense
+	private final static int HTTP_TOO_MANY_REQUESTS = 429;
+
 	private final String baseUrl;
 	private final String apiKey;
 
@@ -59,14 +65,18 @@ public class DeepLHelper {
 						}
 						supportedLanguages = languages;
 						break;
-					} else if (response.getHttpCode() == 429) {
+					} else if (response.getHttpCode() == HTTP_TOO_MANY_REQUESTS || response.getHttpCode() >= 500) {
 						if (retryCount < MAX_RETRY_COUNT) {
-							// too many requests => retry with exponential backoff
+							// too many requests or temporary server error => retry with exponential backoff
 							Thread.sleep(getBackoffMilliseconds(retryCount));
 							retryCount++;
 						} else {
-							throw new Exception("Error read available DeepL languages. HTTP code: " + response.getHttpCode() + "\nToo many requests\nContent: " + response.getContent());
+							throw new Exception("Error read available DeepL languages. HTTP code: " + response.getHttpCode() + "\nToo many requests or server error, retries exhausted\nContent: " + response.getContent());
 						}
+					} else if (response.getHttpCode() == HTTP_QUOTA_EXCEEDED) {
+						throw new Exception("Error read available DeepL languages. Translation quota exceeded (HTTP code 456)\nContent: " + response.getContent());
+					} else if (response.getHttpCode() == HttpURLConnection.HTTP_FORBIDDEN) {
+						throw new Exception("Error read available DeepL languages. Invalid or unauthorized API key (HTTP code 403)\nContent: " + response.getContent());
 					} else {
 						throw new Exception("Error read available DeepL languages. HTTP code: " + response.getHttpCode() + "\nContent: " + response.getContent());
 					}
@@ -113,14 +123,18 @@ public class DeepLHelper {
 				if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
 					final JsonObject jsonData = (JsonObject) JsonReader.readJsonItemString(response.getContent());
 					return (String) ((JsonObject) ((JsonArray) jsonData.get("translations")).get(0)).getSimpleValue("text");
-				} else if (response.getHttpCode() == 429) {
+				} else if (response.getHttpCode() == HTTP_TOO_MANY_REQUESTS || response.getHttpCode() >= 500) {
 					if (retryCount < MAX_RETRY_COUNT) {
-						// too many requests => retry with exponential backoff
+						// too many requests or temporary server error => retry with exponential backoff
 						Thread.sleep(getBackoffMilliseconds(retryCount));
 						retryCount++;
 					} else {
-						throw new Exception("Error http code: " + response.getHttpCode() + "\nToo many requests\nContent: " + response.getContent());
+						throw new Exception("Error http code: " + response.getHttpCode() + "\nToo many requests or server error, retries exhausted\nContent: " + response.getContent());
 					}
+				} else if (response.getHttpCode() == HTTP_QUOTA_EXCEEDED) {
+					throw new Exception("Translation quota exceeded (HTTP code 456)\nContent: " + response.getContent());
+				} else if (response.getHttpCode() == HttpURLConnection.HTTP_FORBIDDEN) {
+					throw new Exception("Invalid or unauthorized API key (HTTP code 403)\nContent: " + response.getContent());
 				} else {
 					throw new Exception("Error http code: " + response.getHttpCode() + "\nContent: " + response.getContent());
 				}
