@@ -39,23 +39,33 @@ public class DeepLHelper {
 
 				request.addHeader("Authorization", "DeepL-Auth-Key " + apiKey);
 
-				final HttpResponse response = HttpUtilities.executeHttpRequest(request);
-
-				if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
-					final JsonArray jsonData = (JsonArray) JsonReader.readJsonItemString(response.getContent());
-					final List<String> languages = new ArrayList<>();
-					for (final Object item : jsonData) {
-						languages.add((String) ((JsonObject) item).getSimpleValue("language"));
+				int retryCount = 0;
+				while (true) {
+					final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+					if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
+						final JsonArray jsonData = (JsonArray) JsonReader.readJsonItemString(response.getContent());
+						final List<String> languages = new ArrayList<>();
+						for (final Object item : jsonData) {
+							languages.add((String) ((JsonObject) item).getSimpleValue("language"));
+						}
+						supportedLanguages = languages;
+						break;
+					} else if (response.getHttpCode() == 429) {
+						if (retryCount < 5) {
+							// too many requests => retry
+							retryCount++;
+							Thread.sleep(500);
+						} else {
+							throw new Exception("Error read available DeepL languages. HTTP code: " + response.getHttpCode() + "\nToo many requests\nContent: " + response.getContent());
+						}
+					} else {
+						throw new Exception("Error read available DeepL languages. HTTP code: " + response.getHttpCode() + "\nContent: " + response.getContent());
 					}
-					supportedLanguages = languages;
-				} else {
-					throw new Exception("Error http code: " + response.getHttpCode() + "\nContent: " + response.getContent());
 				}
 			} catch (final Exception e) {
 				throw new Exception("Cannot read available DeepL languages: " + e.getMessage());
 			}
 		}
-
 		return supportedLanguages;
 	}
 
@@ -88,13 +98,23 @@ public class DeepLHelper {
 
 			request.setRequestBody(JsonWriter.getJsonItemString(bodyJsonObject));
 
-			final HttpResponse response = HttpUtilities.executeHttpRequest(request);
-
-			if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
-				final JsonObject jsonData = (JsonObject) JsonReader.readJsonItemString(response.getContent());
-				return (String) ((JsonObject) ((JsonArray) jsonData.get("translations")).get(0)).getSimpleValue("text");
-			} else {
-				throw new Exception("Error http code: " + response.getHttpCode() + "\nContent: " + response.getContent());
+			int retryCount = 0;
+			while (true) {
+				final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+				if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
+					final JsonObject jsonData = (JsonObject) JsonReader.readJsonItemString(response.getContent());
+					return (String) ((JsonObject) ((JsonArray) jsonData.get("translations")).get(0)).getSimpleValue("text");
+				} else if (response.getHttpCode() == 429) {
+					if (retryCount < 5) {
+						// too many requests => retry
+						retryCount++;
+						Thread.sleep(500);
+					} else {
+						throw new Exception("Error http code: " + response.getHttpCode() + "\nToo many requests\nContent: " + response.getContent());
+					}
+				} else {
+					throw new Exception("Error http code: " + response.getHttpCode() + "\nContent: " + response.getContent());
+				}
 			}
 		} catch (final Exception e) {
 			throw new Exception("Cannot translate text by DeepL: " + e.getMessage());
