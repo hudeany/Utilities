@@ -125,9 +125,10 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			checkboxCheckBox.getDisplay().asyncExec(() -> {
 				if (!checkboxCheckBox.isDisposed()) {
 					checkboxCheckBox.setSelection(checkboxStatus);
+					checkboxCheckBox.redraw();
+					checkboxCheckBox.update();
 				}
 			});
-			checkboxCheckBox.redraw();
 		}
 
 		if (buttonToSelect != null) {
@@ -165,16 +166,28 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			return LangResources.get(resourceKey, arguments);
 		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
 			String pattern;
-			switch(resourceKey) {
-				case "close": pattern = "Schließen"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
+			switch (resourceKey) {
+				case "close":
+					pattern = "Schließen";
+					break;
+				default:
+					pattern = "MessageKey unbekannt: " + resourceKey
+							+ (arguments != null && arguments.length > 0
+									? " Argumente: " + Utilities.join(arguments, ", ")
+									: "");
 			}
 			return MessageFormat.format(pattern, arguments);
 		} else {
 			String pattern;
-			switch(resourceKey) {
-				case "close": pattern = "Close"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
+			switch (resourceKey) {
+				case "close":
+					pattern = "Close";
+					break;
+				default:
+					pattern = "MessageKey unknown: " + resourceKey
+							+ (arguments != null && arguments.length > 0
+									? " arguments: " + Utilities.join(arguments, ", ")
+									: "");
 			}
 			return MessageFormat.format(pattern, arguments);
 		}
