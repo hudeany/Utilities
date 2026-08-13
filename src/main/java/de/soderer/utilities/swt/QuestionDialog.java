@@ -62,7 +62,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		final Button checkboxCheckBox;
 		if (Utilities.isNotBlank(checkboxText)) {
 			checkboxCheckBox = new Button(shell, SWT.CHECK);
-			checkboxCheckBox.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+			checkboxCheckBox.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 			checkboxCheckBox.setText(checkboxText);
 			checkboxCheckBox.addSelectionListener(new SelectionAdapter() {
 				@Override
@@ -78,14 +78,14 @@ public class QuestionDialog extends ModalDialog<Integer> {
 
 		if (buttonTexts != null && buttonTexts.length > 0) {
 			final Composite buttonComposite = new Composite(shell, SWT.NONE);
-			buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+			buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 			buttonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(buttonTexts.length, true));
 
 			for (int i = 0; i < buttonTexts.length; i++) {
 				final String buttonText = buttonTexts[i];
 				final int buttonIndex = i;
 				final Button nextButton = new Button(buttonComposite, SWT.PUSH);
-				nextButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+				nextButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 				nextButton.setText(buttonText);
 				nextButton.addSelectionListener(new SelectionAdapter() {
 					@Override
@@ -101,11 +101,11 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			}
 		} else {
 			final Composite buttonComposite = new Composite(shell, SWT.NONE);
-			buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+			buttonComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 			buttonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, true));
 
 			final Button cancelButton = new Button(buttonComposite, SWT.PUSH);
-			cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
+			cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 			cancelButton.setText(getI18NString("close"));
 			cancelButton.addSelectionListener(new SelectionAdapter() {
 				@Override
@@ -127,6 +127,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 					checkboxCheckBox.setSelection(checkboxStatus);
 				}
 			});
+			checkboxCheckBox.redraw();
 		}
 
 		if (buttonToSelect != null) {
