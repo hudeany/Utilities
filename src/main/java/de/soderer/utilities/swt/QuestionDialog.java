@@ -59,10 +59,10 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			textField.setBackground(backgroundcolor);
 		}
 
+		final Button checkboxCheckBox;
 		if (Utilities.isNotBlank(checkboxText)) {
-			final Button checkboxCheckBox = new Button(shell, SWT.CHECK);
+			checkboxCheckBox = new Button(shell, SWT.CHECK);
 			checkboxCheckBox.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-			checkboxCheckBox.setSelection(checkboxStatus);
 			checkboxCheckBox.setText(checkboxText);
 			checkboxCheckBox.addSelectionListener(new SelectionAdapter() {
 				@Override
@@ -70,6 +70,8 @@ public class QuestionDialog extends ModalDialog<Integer> {
 					checkboxStatus = ((Button) event.widget).getSelection();
 				}
 			});
+		} else {
+			checkboxCheckBox = null;
 		}
 
 		Button buttonToSelect = null;
@@ -117,6 +119,15 @@ public class QuestionDialog extends ModalDialog<Integer> {
 
 		shell.setMinimumSize(250, 50);
 		shell.pack();
+
+		if (checkboxCheckBox != null) {
+			// Set status after pack(), because some GTK/Linux systems otherwise do not display the checkbox correctly
+			checkboxCheckBox.getDisplay().asyncExec(() -> {
+				if (!checkboxCheckBox.isDisposed()) {
+					checkboxCheckBox.setSelection(checkboxStatus);
+				}
+			});
+		}
 
 		if (buttonToSelect != null) {
 			getParent().setDefaultButton(buttonToSelect);
