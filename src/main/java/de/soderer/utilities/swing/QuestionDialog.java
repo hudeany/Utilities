@@ -78,12 +78,12 @@ public class QuestionDialog extends ModalDialog<Integer> {
 
 		panel.add(textPanel);
 
-		final JCheckBox checkboxCheckBox;
 		if (Utilities.isNotBlank(checkboxText)) {
 			// Checkbox Panel
 			final JPanel checkboxPanel = new JPanel();
 			checkboxPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-			checkboxCheckBox = new JCheckBox(checkboxText);
+			final JCheckBox checkboxCheckBox = new JCheckBox(checkboxText);
+			checkboxCheckBox.setSelected(checkboxStatus);
 			checkboxCheckBox.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(final ActionEvent event) {
@@ -93,8 +93,6 @@ public class QuestionDialog extends ModalDialog<Integer> {
 			checkboxPanel.add(checkboxCheckBox);
 
 			panel.add(checkboxPanel);
-		} else {
-			checkboxCheckBox = null;
 		}
 
 		// Button Panel
@@ -143,13 +141,6 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		add(panel);
 
 		pack();
-
-		if (checkboxCheckBox != null) {
-			// Set status after pack(), because some GTK/Linux systems otherwise do not display the checkbox correctly
-			checkboxCheckBox.setSelected(checkboxStatus);
-			checkboxCheckBox.revalidate();
-			checkboxCheckBox.repaint();
-		}
 
 		if (textScrollpane.getHorizontalScrollBar().isVisible()) {
 			textScrollpane.setPreferredSize(new Dimension(textScrollpane.getPreferredSize().width, textScrollpane.getPreferredSize().height + 20));
