@@ -53,6 +53,7 @@ import de.soderer.utilities.Utilities;
  * <li>With no match and free input disabled: input is kept and displayed in
  * red</li>
  * <li>Selection event only fires when a value was actually accepted</li>
+ * <li>ValidationListener fires whenever the valid/invalid state changes</li>
  * <li>Modify events are fired via the Composite</li>
  * </ul>
  */
@@ -156,6 +157,19 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 	 * drag&amp;drop in the popup.
 	 */
 	private Consumer<java.util.List<String>> itemsReorderedListener;
+
+	/**
+	 * Notified whenever the validity state (see {@link #isValidValue()}) actually
+	 * changes, in either direction (valid -&gt; invalid or invalid -&gt; valid).
+	 *
+	 * <p>
+	 * Unlike the {@link SelectionListener}, which only fires when a value was
+	 * actually accepted, this fires for every change of the red/invalid display
+	 * state, so callers can react immediately when the effective value (see
+	 * {@link #getText()}) becomes {@code null}.
+	 * </p>
+	 */
+	private Consumer<Boolean> validationListener;
 
 	private Composite insertionMarker;
 	private int dragSourceIndex = -1;
@@ -571,7 +585,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 		try {
 			userText = value;
 			acceptedText = value;
-			valid = true;
+			setValid(true);
 
 			text.setText(value);
 			text.setStyleRange(null);
@@ -769,6 +783,22 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 	}
 
 	/**
+	 * Registers a listener that is notified whenever the validity state (see
+	 * {@link #isValidValue()}) actually changes, in either direction.
+	 *
+	 * <p>
+	 * Unlike {@link #addSelectionListener(SelectionListener)}, which only fires
+	 * when a value was actually accepted, this fires immediately whenever the
+	 * text switches to/from the invalid (red) display state - in particular when
+	 * {@link #getText()} switches to/from returning {@code null} (only relevant
+	 * while {@link #isAllowCustomValues()} is {@code false}).
+	 * </p>
+	 */
+	public void addValidationListener(final Consumer<Boolean> listener) {
+		validationListener = listener;
+	}
+
+	/**
 	 * Adds a listener notified when a value is accepted by the user -
 	 * same {@code widgetSelected}/{@code widgetDefaultSelected} contract
 	 * as a standard SWT {@link Combo}. Internally just a typed wrapper
@@ -885,7 +915,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 			matches = Collections.emptyList();
 			selectedMatch = -1;
 
-			valid = allowCustomValues || acceptedText.isEmpty();
+			setValid(allowCustomValues || acceptedText.isEmpty());
 
 			renderText(userText, null);
 
@@ -919,10 +949,10 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 			selectedMatch = -1;
 
 			if (allowCustomValues) {
-				valid = true;
+				setValid(true);
 				renderText(userText, null);
 			} else {
-				valid = false;
+				setValid(false);
 				renderInvalidText();
 			}
 
@@ -947,7 +977,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 
 		final String suggestion = matches.get(selectedMatch);
 
-		valid = true;
+		setValid(true);
 
 		renderText(userText, suggestion);
 
@@ -1130,7 +1160,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 
 		selectedMatch = Math.max(0, Math.min(startIndex, matches.size() - 1));
 
-		valid = true;
+		setValid(true);
 
 		renderText(userText, matches.get(selectedMatch));
 
@@ -1233,7 +1263,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 		try {
 			userText = value;
 			acceptedText = value;
-			valid = true;
+			setValid(true);
 
 			text.setText(value);
 
@@ -1631,6 +1661,22 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 
 		notifyListeners(SWT.Selection, event);
 		notifyListeners(SWT.DefaultSelection, event);
+	}
+
+	/**
+	 * Updates the "valid" field and notifies the {@link #validationListener}, but
+	 * only if the validity state actually changed.
+	 */
+	private void setValid(final boolean newValid) {
+		if (valid == newValid) {
+			return;
+		}
+
+		valid = newValid;
+
+		if (validationListener != null) {
+			validationListener.accept(valid);
+		}
 	}
 
 	private void disposeResources() {
