@@ -57,12 +57,13 @@ import de.soderer.utilities.Utilities;
  * <li>Modify events are fired via the Composite</li>
  * </ul>
  */
-public class ArrangeableAutoCompleteCombo extends Composite {
+public class DropDown extends Composite {
 	/**
 	 * Search mode.
 	 */
 	public enum MatchMode {
-		STARTS_WITH, CONTAINS
+		STARTS_WITH,
+		CONTAINS
 	}
 
 	private final StyledText text;
@@ -111,6 +112,19 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 	 * without ever actually showing a text selection for it.
 	 */
 	private int suggestionTailStart = -1;
+
+	/**
+	 * Explicit caret offset to apply on the next renderText() call, or -1 to fall
+	 * back to the widget's current (real) caret offset.
+	 *
+	 * Needed because the VerifyListener sometimes cancels the native edit
+	 * (e.doit = false) and applies the change to "userText" itself instead, e.g.
+	 * when typing into or backspacing over the gray suggestion tail. In that case
+	 * the widget's own caret offset is never updated by SWT and no longer
+	 * reflects where the caret should end up, so renderText() cannot simply read
+	 * text.getCaretOffset().
+	 */
+	private int pendingCaretOffset = -1;
 
 	/**
 	 * Current validity state.
@@ -209,7 +223,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 	 * @param parent parent composite
 	 * @param style  SWT style
 	 */
-	public ArrangeableAutoCompleteCombo(final Composite parent, final int style) {
+	public DropDown(final Composite parent, final int style) {
 		super(parent, style);
 
 		final GridLayout gridLayout = new GridLayout(2, false);
@@ -273,6 +287,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 					e.doit = false;
 
 					final String typed = e.text;
+					final int insertionPoint = suggestionTailStart;
 
 					suggestionTailStart = -1;
 
@@ -282,6 +297,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 						}
 
 						userText = userText + typed;
+						pendingCaretOffset = insertionPoint + typed.length();
 
 						processUserInput();
 					});
@@ -309,6 +325,8 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 
 					e.doit = false;
 
+					final int deletionPoint = suggestionTailStart - 1;
+
 					suggestionTailStart = -1;
 
 					getDisplay().asyncExec(() -> {
@@ -319,6 +337,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 						userText = userText.isEmpty()
 							? ""
 							: userText.substring(0, userText.length() - 1);
+						pendingCaretOffset = deletionPoint;
 
 						processUserInput();
 					});
@@ -944,7 +963,6 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 
 		matches = result;
 
-		// NO MATCH
 		if (matches.isEmpty()) {
 			selectedMatch = -1;
 
@@ -959,32 +977,26 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 			hidePopup();
 
 			return;
-		}
-
-		// EXACTLY ONE MATCH
-		if (!allowCustomValues && matches.size() == 1 && userInitiated) {
-
+		} else if (!allowCustomValues && matches.size() == 1 && userInitiated) {
 			acceptValue(matches.get(0));
 
 			return;
-		}
-
-		// MULTIPLE MATCHES
-		if (selectedMatch < 0 || selectedMatch >= matches.size()) {
-
-			selectedMatch = 0;
-		}
-
-		final String suggestion = matches.get(selectedMatch);
-
-		setValid(true);
-
-		renderText(userText, suggestion);
-
-		if (matches.size() > 1) {
-			showPopup();
 		} else {
-			hidePopup();
+			if (selectedMatch < 0 || selectedMatch >= matches.size()) {
+				selectedMatch = 0;
+			}
+
+			final String suggestion = matches.get(selectedMatch);
+
+			setValid(true);
+
+			renderText(userText, suggestion);
+
+			if (matches.size() > 1) {
+				showPopup();
+			} else {
+				hidePopup();
+			}
 		}
 	}
 
@@ -1002,6 +1014,16 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 			if (Utilities.isEmpty(input)) {
 				text.setText("");
 			} else {
+				// Prefer an explicitly recorded target caret offset (set when the
+				// VerifyListener canceled the native edit and applied the change
+				// to "userText" itself instead - see pendingCaretOffset). Otherwise
+				// the edit was applied natively and the widget's own caret offset
+				// already reflects the correct position.
+				final int caretBeforeUpdate = pendingCaretOffset >= 0
+					? pendingCaretOffset
+					: text.getCaretOffset();
+				pendingCaretOffset = -1;
+
 				String displayText = input;
 
 				int matchStart = -1;
@@ -1043,6 +1065,10 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 
 					text.setSelection(afterStart);
 					suggestionTailStart = afterStart;
+				} else if (suggestion == null) {
+					final int caretPosition = Math.min(caretBeforeUpdate, displayText.length());
+					text.setSelection(caretPosition);
+					suggestionTailStart = -1;
 				} else {
 					text.setSelection(displayText.length());
 					suggestionTailStart = displayText.length();
