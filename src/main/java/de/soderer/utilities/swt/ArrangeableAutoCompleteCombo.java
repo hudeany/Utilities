@@ -533,9 +533,19 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 
 	/**
 	 * Returns the current text.
+	 *
+	 * <p>
+	 * Returns {@code null} if custom values are not allowed and the current text
+	 * does not match any item (i.e. it is shown in red / {@link #isValidValue()}
+	 * would return {@code false}).
+	 * </p>
 	 */
 	public String getText() {
 		checkWidget();
+
+		if (!allowCustomValues && !valid) {
+			return null;
+		}
 
 		return userText;
 	}
