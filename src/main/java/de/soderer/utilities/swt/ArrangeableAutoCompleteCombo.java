@@ -119,7 +119,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 	/**
 	 * Are values allowed that are not in the list?
 	 */
-	private boolean allowCustomValues = true;
+	private boolean allowCustomValues = false;
 
 	/**
 	 * Consider case sensitivity?
