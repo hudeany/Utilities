@@ -665,6 +665,54 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 	}
 
 	/**
+	 * Disabling this Composite alone would not, on every platform,
+	 * visually gray out its children the way a native SWT
+	 * {@link org.eclipse.swt.widgets.Combo} does when disabled - so
+	 * this explicitly propagates to the text field and the dropdown
+	 * button, and also grays the field's background/foreground to
+	 * match the native disabled look, since a StyledText has no
+	 * built-in disabled appearance of its own.
+	 */
+	@Override
+	public void setEnabled(final boolean enabled) {
+		checkWidget();
+
+		super.setEnabled(enabled);
+
+		text.setEnabled(enabled);
+		dropdownButton.setEnabled(enabled);
+
+		if (enabled) {
+			text.setBackground(null);
+
+			/*
+			 * Re-render from the real current state, rather than just
+			 * restoring the style range colors in place, so the
+			 * field's content and coloring are correct even if
+			 * something changed (e.g. via setText()/setItems()) while
+			 * it was disabled.
+			 */
+			updateMatches(false);
+		} else {
+			hidePopup();
+
+			text.setBackground(getDisplay().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+
+			/*
+			 * Uniformly gray, deliberately not preserving the
+			 * distinction between typed and suggested text here -
+			 * that distinction only matters while the field is
+			 * interactive.
+			 */
+			final StyleRange disabledStyle = new StyleRange();
+			disabledStyle.start = 0;
+			disabledStyle.length = text.getCharCount();
+			disabledStyle.foreground = suggestionColor;
+			text.setStyleRange(disabledStyle);
+		}
+	}
+
+	/**
 	 * Sets a hint/placeholder text shown in light gray while the field is
 	 * empty, mirroring {@link org.eclipse.swt.widgets.Text#setMessage(String)}
 	 * - StyledText (which this control is built on) has no built-in
