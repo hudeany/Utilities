@@ -16,6 +16,7 @@ import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Color;
@@ -24,6 +25,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
@@ -706,6 +708,39 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 	 */
 	public void addItemsReorderedListener(final Consumer<java.util.List<String>> listener) {
 		itemsReorderedListener = listener;
+	}
+
+	/**
+	 * Adds a listener notified when a value is accepted by the user -
+	 * same {@code widgetSelected}/{@code widgetDefaultSelected} contract
+	 * as a standard SWT {@link Combo}. Internally just a typed wrapper
+	 * around the existing {@code SWT.Selection} event (see
+	 * {@link #fireSelectionEvent()}), for callers who'd rather not go
+	 * through {@code addListener(SWT.Selection, ...)} directly.
+	 */
+	public void addSelectionListener(final SelectionListener listener) {
+		checkWidget();
+
+		if (listener == null) {
+			SWT.error(SWT.ERROR_NULL_ARGUMENT);
+		}
+
+		addTypedListener(listener, SWT.Selection, SWT.DefaultSelection);
+	}
+
+	/**
+	 * Removes a listener previously added via
+	 * {@link #addSelectionListener(SelectionListener)}.
+	 */
+	public void removeSelectionListener(final SelectionListener listener) {
+		checkWidget();
+
+		if (listener == null) {
+			SWT.error(SWT.ERROR_NULL_ARGUMENT);
+		}
+
+		removeTypedListener(SWT.Selection, listener);
+		removeTypedListener(SWT.DefaultSelection, listener);
 	}
 
 	/**
@@ -1537,6 +1572,7 @@ public class ArrangeableAutoCompleteCombo extends Composite {
 		event.display = getDisplay();
 
 		notifyListeners(SWT.Selection, event);
+		notifyListeners(SWT.DefaultSelection, event);
 	}
 
 	private void disposeResources() {
