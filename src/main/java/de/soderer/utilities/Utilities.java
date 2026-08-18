@@ -23,6 +23,7 @@ import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -1666,6 +1667,33 @@ public class Utilities {
 		}
 		final String homePath = System.getProperty("user.home");
 		return filePath.replace(homePath, "~");
+	}
+
+	public static String getUsersDefaultDownloadDirectory() {
+		final String userHome = System.getProperty("user.home");
+
+		final File userDirsFile = new File(userHome, ".config/user-dirs.dirs");
+		if (userDirsFile.isFile()) {
+			try {
+				for (final String line : Files.readAllLines(userDirsFile.toPath())) {
+					final String trimmedLine = line.trim();
+					if (trimmedLine.startsWith("XDG_DOWNLOAD_DIR=")) {
+						String value = trimmedLine.substring("XDG_DOWNLOAD_DIR=".length()).trim();
+						if (value.startsWith("\"") && value.endsWith("\"")) {
+							value = value.substring(1, value.length() - 1);
+						}
+						value = value.replace("$HOME", userHome);
+						if (Utilities.isNotBlank(value)) {
+							return value;
+						}
+					}
+				}
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				// Use fall back
+			}
+		}
+
+		return new File(userHome, "Downloads").getAbsolutePath();
 	}
 
 	public static String substring(final String text, final int startIndex) {
