@@ -480,6 +480,16 @@ public class DropDown extends Composite {
 	}
 
 	/**
+	 * Sets the values of the suggestion list and returns this instance for
+	 * chaining.
+	 */
+	public DropDown withItems(final String... values) {
+		setItems(values);
+
+		return this;
+	}
+
+	/**
 	 * Sets the values of the suggestion list.
 	 */
 	public void setItems(final java.util.List<String> values) {
@@ -494,6 +504,16 @@ public class DropDown extends Composite {
 		selectedMatch = -1;
 
 		updateMatches(false);
+	}
+
+	/**
+	 * Sets the values of the suggestion list and returns this instance for
+	 * chaining.
+	 */
+	public DropDown withItems(final java.util.List<String> values) {
+		setItems(values);
+
+		return this;
 	}
 
 	/**
@@ -620,6 +640,20 @@ public class DropDown extends Composite {
 	}
 
 	/**
+	 * Sets the text programmatically and returns this instance for chaining.
+	 *
+	 * <p>
+	 * Important: no autocomplete suggestion is automatically accepted while doing
+	 * this.
+	 * </p>
+	 */
+	public DropDown withText(final String value) {
+		setText(value);
+
+		return this;
+	}
+
+	/**
 	 * Checks whether the current text is valid.
 	 */
 	public boolean isValidValue() {
@@ -647,6 +681,16 @@ public class DropDown extends Composite {
 	}
 
 	/**
+	 * Configures whether values outside the suggestion list are allowed and
+	 * returns this instance for chaining.
+	 */
+	public DropDown withAllowCustomValues(final boolean allowCustomValuesParam) {
+		setAllowCustomValues(allowCustomValuesParam);
+
+		return this;
+	}
+
+	/**
 	 * Is the search case-sensitive?
 	 */
 	public boolean isCaseSensitive() {
@@ -662,6 +706,15 @@ public class DropDown extends Composite {
 		this.caseSensitive = caseSensitive;
 
 		updateMatches(false);
+	}
+
+	/**
+	 * Sets case sensitivity and returns this instance for chaining.
+	 */
+	public DropDown withCaseSensitive(final boolean caseSensitiveValue) {
+		setCaseSensitive(caseSensitiveValue);
+
+		return this;
 	}
 
 	/**
@@ -687,6 +740,15 @@ public class DropDown extends Composite {
 	}
 
 	/**
+	 * Sets the search mode and returns this instance for chaining.
+	 */
+	public DropDown withMatchMode(final MatchMode matchModeValue) {
+		setMatchMode(matchModeValue);
+
+		return this;
+	}
+
+	/**
 	 * Whether entries can be reordered via drag&amp;drop in the popup.
 	 *
 	 * <p>
@@ -705,6 +767,16 @@ public class DropDown extends Composite {
 		checkWidget();
 
 		this.reorderable = reorderable;
+	}
+
+	/**
+	 * Enables or disables drag&amp;drop reordering of entries in the popup and
+	 * returns this instance for chaining.
+	 */
+	public DropDown withReorderable(final boolean reorderableValue) {
+		setReorderable(reorderableValue);
+
+		return this;
 	}
 
 	/**
@@ -756,6 +828,15 @@ public class DropDown extends Composite {
 	}
 
 	/**
+	 * Enables or disables this control and returns this instance for chaining.
+	 */
+	public DropDown withEnabled(final boolean enabled) {
+		setEnabled(enabled);
+
+		return this;
+	}
+
+	/**
 	 * Sets a hint/placeholder text shown in light gray while the field is
 	 * empty, mirroring {@link org.eclipse.swt.widgets.Text#setMessage(String)}
 	 * - StyledText (which this control is built on) has no built-in
@@ -767,6 +848,15 @@ public class DropDown extends Composite {
 		hintText = message;
 
 		text.redraw();
+	}
+
+	/**
+	 * Sets a hint/placeholder text and returns this instance for chaining.
+	 */
+	public DropDown withMessage(final String message) {
+		setMessage(message);
+
+		return this;
 	}
 
 	/**
@@ -791,6 +881,16 @@ public class DropDown extends Composite {
 		((GridData) dropdownButtonBorder.getLayoutData()).exclude = !show;
 
 		layout();
+	}
+
+	/**
+	 * Shows or hides the built-in dropdown "browse all" button and returns this
+	 * instance for chaining.
+	 */
+	public DropDown withShowDropdownButton(final boolean show) {
+		setShowDropdownButton(show);
+
+		return this;
 	}
 
 	/**
