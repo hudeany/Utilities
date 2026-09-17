@@ -127,7 +127,7 @@ public class PropertiesReader implements Closeable {
 		String key;
 
 		try {
-			key = Utilities.unescapeJavaString(rawKey.trim());
+			key = Utilities.unescapePropertiesString(rawKey.trim());
 		} catch (final Exception e) {
 			throw new Exception("Invalid JAVA endoded text: " + rawKey, e);
 		}
@@ -139,7 +139,7 @@ public class PropertiesReader implements Closeable {
 		String value;
 
 		try {
-			value = Utilities.unescapeJavaString(Utilities.trimLeft(rawValue));
+			value = Utilities.unescapePropertiesString(Utilities.trimLeft(rawValue));
 		} catch (final Exception e) {
 			throw new Exception("Invalid JAVA endoded text: " + rawValue, e);
 		}

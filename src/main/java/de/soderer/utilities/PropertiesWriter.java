@@ -65,7 +65,7 @@ public class PropertiesWriter implements Closeable {
 		if (valueString == null) {
 			return "";
 		} else {
-			valueString = Utilities.escapeJavaString(valueString);
+			valueString = Utilities.escapePropertiesString(valueString);
 			if (valueString.length() > 0 && Character.isWhitespace(valueString.charAt(0))) {
 				valueString = "\\" + valueString;
 			}

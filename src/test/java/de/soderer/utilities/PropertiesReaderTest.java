@@ -13,7 +13,7 @@ public class PropertiesReaderTest {
 	public void test() {
 		try {
 			final String dataString = "key1 value 1" + "\n"
-					+ " key2=Val\u00FC 2" + "\r\n"
+					+ " key2=V\\al\u00FC 2" + "\r\n"
 					+ "   ! Comment for key3" + "\n"
 					+ "key3 = value 3 " + "\r"
 					+ "key4=value 41 \\" + "\n"
