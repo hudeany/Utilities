@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.net.HttpURLConnection;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,17 +35,22 @@ public class DeepLHelper {
 
 	private final String baseUrl;
 	private final String apiKey;
+	private final Proxy proxy;
 
 	private List<String> supportedLanguages = null;
 
 	public DeepLHelper(final String apiKey) {
-		baseUrl = DEEPL_BASEURL_FREE_DEFAULT;
-		this.apiKey = apiKey;
+		this(DEEPL_BASEURL_FREE_DEFAULT, apiKey, null);
 	}
 
 	public DeepLHelper(final String baseUrl, final String apiKey) {
+		this(baseUrl, apiKey, null);
+	}
+
+	public DeepLHelper(final String baseUrl, final String apiKey, final Proxy proxy) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
+		this.proxy = proxy;
 	}
 
 	public List<String> getSupportedLanguages() throws Exception {
@@ -56,7 +62,7 @@ public class DeepLHelper {
 
 				int retryCount = 0;
 				while (true) {
-					final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+					final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxy);
 					if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
 						final JsonArray jsonData = (JsonArray) JsonReader.readJsonItemString(response.getContent());
 						final List<String> languages = new ArrayList<>();
@@ -119,7 +125,7 @@ public class DeepLHelper {
 
 			int retryCount = 0;
 			while (true) {
-				final HttpResponse response = HttpUtilities.executeHttpRequest(request);
+				final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxy);
 				if (response.getHttpCode() == HttpURLConnection.HTTP_OK) {
 					final JsonObject jsonData = (JsonObject) JsonReader.readJsonItemString(response.getContent());
 					return (String) ((JsonObject) ((JsonArray) jsonData.get("translations")).get(0)).getSimpleValue("text");
