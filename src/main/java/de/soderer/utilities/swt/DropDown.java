@@ -1083,7 +1083,16 @@ public class DropDown extends Composite {
 			return;
 		} else {
 			if (selectedMatch < 0 || selectedMatch >= matches.size()) {
-				selectedMatch = 0;
+				/*
+				 * Prefer an exact match over the first (arbitrary, item-order-dependent)
+				 * substring/prefix match - otherwise, under MatchMode.CONTAINS, typing or
+				 * re-applying (e.g. via setText()) a value that is itself a complete item
+				 * but also happens to be a substring of an earlier item in the list (e.g.
+				 * "SIT-1" is contained in "PRESIT-1") would display that unrelated, longer
+				 * item instead of the one actually typed/selected.
+				 */
+				final int exactMatchIndex = findExactMatchIndex(matches, search);
+				selectedMatch = exactMatchIndex >= 0 ? exactMatchIndex : 0;
 			}
 
 			final String suggestion = matches.get(selectedMatch);
@@ -1092,7 +1101,16 @@ public class DropDown extends Composite {
 
 			renderText(userText, suggestion);
 
-			if (matches.size() > 1) {
+			/*
+			 * Only pop the list open for genuine user interaction (typing). A
+			 * non-interactive update - setText(), setItems(), setMatchMode(),
+			 * setEnabled(true), etc. - must stay purely visual, per their documented
+			 * contract ("no autocomplete suggestion is automatically accepted");
+			 * otherwise re-applying an already-accepted value from outside code (e.g.
+			 * on focus-lost of some other control) would spontaneously reopen the
+			 * popup on a field the user never even clicked.
+			 */
+			if (matches.size() > 1 && userInitiated) {
 				showPopup();
 			} else {
 				hidePopup();
@@ -1822,5 +1840,18 @@ public class DropDown extends Composite {
 		if (outsideClickFilter != null && !getDisplay().isDisposed()) {
 			getDisplay().removeFilter(SWT.MouseDown, outsideClickFilter);
 		}
+	}
+
+	/**
+	 * Returns the index of the match that equals normalizedSearch exactly (after
+	 * normalize()), or -1 if none of the matches is an exact match.
+	 */
+	private int findExactMatchIndex(final java.util.List<String> candidateMatches, final String normalizedSearch) {
+		for (int i = 0; i < candidateMatches.size(); i++) {
+			if (normalize(candidateMatches.get(i)).equals(normalizedSearch)) {
+				return i;
+			}
+		}
+		return -1;
 	}
 }
