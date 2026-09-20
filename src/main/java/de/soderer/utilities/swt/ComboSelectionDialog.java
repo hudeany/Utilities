@@ -102,7 +102,9 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		comboBox.setAllowCustomValues(false);
 		comboBox.setReorderable(true);
+		comboBox.setDeletable(true);
 		comboBox.addItemsReorderedListener(new ItemsReorderedListener());
+		comboBox.addItemDeletedListener(new ItemDeletedListener());
 		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
 		if (items.size() > 0) {
 			comboBox.setItems(items);
@@ -160,6 +162,22 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		public void accept(final List<String> newOrder) {
 			items.clear();
 			items.addAll(newOrder);
+		}
+	}
+
+	/**
+	 * Keeps "items" in sync whenever the user removes an entry via the
+	 * Delete key in the DropDown's popup, so the removal remains available
+	 * through {@link #getItems()} after the dialog closes - and re-checks the
+	 * OK button, since deleting the last remaining entry leaves the field
+	 * empty/invalid without a separate Selection event.
+	 */
+	private class ItemDeletedListener implements Consumer<String> {
+		@Override
+		public void accept(final String deletedItem) {
+			items.remove(deletedItem);
+
+			okButton.setEnabled(comboBox.isValidValue());
 		}
 	}
 

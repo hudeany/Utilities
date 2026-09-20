@@ -1379,9 +1379,13 @@ public class DropDown extends Composite {
 		popupList.remove(deletedIndex);
 
 		if (matches.isEmpty()) {
-			hidePopup();
-
-			selectedMatch = -1;
+			/*
+			 * No items left to show a selection for - fully reset via the public
+			 * setText() path (clears userText/acceptedText, recomputes validity and
+			 * hides the popup) rather than leaving the field showing the just-deleted
+			 * entry's now-stale text.
+			 */
+			setText("");
 		} else {
 			selectedMatch = Math.min(deletedIndex, matches.size() - 1);
 
