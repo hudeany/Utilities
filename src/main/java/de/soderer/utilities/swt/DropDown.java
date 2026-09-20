@@ -54,6 +54,7 @@ import de.soderer.utilities.Utilities;
  * red</li>
  * <li>Selection event only fires when a value was actually accepted</li>
  * <li>ValidationListener fires whenever the valid/invalid state changes</li>
+ * <li>Delete key removes the selected entry from the popup (optional)</li>
  * <li>Modify events are fired via the Composite</li>
  * </ul>
  */
@@ -171,6 +172,18 @@ public class DropDown extends Composite {
 	 * drag&amp;drop in the popup.
 	 */
 	private Consumer<java.util.List<String>> itemsReorderedListener;
+
+	/**
+	 * Whether the currently selected entry in the popup can be removed from the
+	 * item list via the Delete key.
+	 */
+	private boolean deletable = false;
+
+	/**
+	 * Notified with the value of the entry the user just removed via the Delete
+	 * key in the popup (see {@link #isDeletable()}).
+	 */
+	private Consumer<String> itemDeletedListener;
 
 	/**
 	 * Notified whenever the validity state (see {@link #isValidValue()}) actually
@@ -780,6 +793,34 @@ public class DropDown extends Composite {
 	}
 
 	/**
+	 * Whether the currently selected entry in the popup can be removed from the
+	 * item list via the Delete key.
+	 */
+	public boolean isDeletable() {
+		return deletable;
+	}
+
+	/**
+	 * Enables or disables removing the currently selected popup entry via the
+	 * Delete key.
+	 */
+	public void setDeletable(final boolean deletable) {
+		checkWidget();
+
+		this.deletable = deletable;
+	}
+
+	/**
+	 * Enables or disables removing the currently selected popup entry via the
+	 * Delete key and returns this instance for chaining.
+	 */
+	public DropDown withDeletable(final boolean deletableValue) {
+		setDeletable(deletableValue);
+
+		return this;
+	}
+
+	/**
 	 * Disabling this Composite alone would not, on every platform,
 	 * visually gray out its children the way a native SWT
 	 * {@link org.eclipse.swt.widgets.Combo} does when disabled - so
@@ -899,6 +940,14 @@ public class DropDown extends Composite {
 	 */
 	public void addItemsReorderedListener(final Consumer<java.util.List<String>> listener) {
 		itemsReorderedListener = listener;
+	}
+
+	/**
+	 * Registers a listener that is notified with the value of the entry the user
+	 * just removed via the Delete key in the popup (see {@link #isDeletable()}).
+	 */
+	public void addItemDeletedListener(final Consumer<String> listener) {
+		itemDeletedListener = listener;
 	}
 
 	/**
@@ -1288,8 +1337,63 @@ public class DropDown extends Composite {
 				e.doit = true;
 
 				break;
+			case SWT.DEL:
+				if (deletable && isPopupVisibleWithSelection()) {
+					deleteSelectedPopupEntry();
+
+					e.doit = false;
+				}
+				break;
 			default:
 				break;
+		}
+	}
+
+	/**
+	 * Whether the popup is currently open and showing a valid selection, i.e.
+	 * whether a Delete key press should be interpreted as "remove the selected
+	 * popup entry" rather than as normal text editing.
+	 */
+	private boolean isPopupVisibleWithSelection() {
+		return popup != null && !popup.isDisposed() && popup.getVisible() && selectedMatch >= 0 && selectedMatch < matches.size();
+	}
+
+	/**
+	 * Removes the currently selected popup entry from "items" and "matches",
+	 * updates the popup list and selection accordingly, and notifies
+	 * {@link #itemDeletedListener}. Called from {@link #handleKey(KeyEvent)} when
+	 * the Delete key is pressed while {@link #deletable} is enabled and the popup
+	 * shows a valid selection (see {@link #isPopupVisibleWithSelection()}).
+	 */
+	private void deleteSelectedPopupEntry() {
+		if (!isPopupVisibleWithSelection()) {
+			return;
+		}
+
+		final int deletedIndex = selectedMatch;
+
+		final String deletedItem = matches.get(deletedIndex);
+
+		items.remove(deletedItem);
+		matches.remove(deletedIndex);
+		popupList.remove(deletedIndex);
+
+		if (matches.isEmpty()) {
+			hidePopup();
+
+			selectedMatch = -1;
+		} else {
+			selectedMatch = Math.min(deletedIndex, matches.size() - 1);
+
+			renderText(userText, matches.get(selectedMatch));
+
+			selectPopupItem();
+
+			positionPopup();
+		}
+
+		if (itemDeletedListener != null) {
+			itemDeletedListener.accept(deletedItem);
 		}
 	}
 
