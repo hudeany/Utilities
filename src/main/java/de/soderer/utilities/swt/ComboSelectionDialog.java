@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -33,6 +34,15 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 	private Button okButton;
 	private final int preSelectedItemIndex;
 
+	/**
+	 * Explicit shell size set via {@link #setSize(int, int)} /
+	 * {@link #withSize(int, int)}, overriding the dialog's naturally packed
+	 * size (see {@link #createComponents(Shell)}). {@code null} (default)
+	 * keeps the packed size as-is. Either dimension may be {@code -1} to keep
+	 * that dimension's packed value while overriding the other.
+	 */
+	private Point size;
+
 	public ComboSelectionDialog(final Shell shell, final String title, final String text, final List<String> items) {
 		this(shell, title, text, items, -1);
 	}
@@ -54,6 +64,26 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 	 */
 	public List<String> getItems() {
 		return new ArrayList<>(items);
+	}
+
+	/**
+	 * Sets an explicit shell {@link #size}, overriding the naturally packed
+	 * size (see {@link #createComponents(Shell)}). Pass {@code -1} for either
+	 * dimension to keep that dimension's packed value.
+	 */
+	public void setSize(final int width, final int height) {
+		size = new Point(width, height);
+	}
+
+	/**
+	 * Calls {@link #setSize(int, int)} and returns this instance for chaining,
+	 * e.g. {@code new ComboSelectionDialog(...).withSize(600, -1)} for a
+	 * dialog with a fixed width of 600px and the naturally packed height.
+	 */
+	public ComboSelectionDialog withSize(final int width, final int height) {
+		setSize(width, height);
+
+		return this;
 	}
 
 	@Override
@@ -96,6 +126,11 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 		shell.setMinimumSize(250, 50);
 		shell.pack();
+
+		if (size != null) {
+			final Point packedSize = shell.getSize();
+			shell.setSize(size.x >= 0 ? size.x : packedSize.x, size.y >= 0 ? size.y : packedSize.y);
+		}
 	}
 
 	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
