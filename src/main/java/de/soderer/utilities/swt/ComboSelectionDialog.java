@@ -1,8 +1,10 @@
 package de.soderer.utilities.swt;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -10,7 +12,6 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -20,8 +21,15 @@ import de.soderer.utilities.Utilities;
 
 public class ComboSelectionDialog extends ModalDialog<String> {
 	private final String text;
+
+	/**
+	 * Current item order, kept in sync with the DropDown's popup whenever the
+	 * user reorders entries via drag&amp;drop, so callers can retrieve and
+	 * reuse the (possibly reordered) list after the dialog was closed -
+	 * regardless of whether it was closed via OK or Cancel.
+	 */
 	private final List<String> items;
-	private Combo comboBox;
+	private DropDown comboBox;
 	private Button okButton;
 	private final int preSelectedItemIndex;
 
@@ -33,8 +41,19 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		super(shell, SWT.RESIZE, title);
 
 		this.text = text;
-		this.items = items;
+		this.items = items == null ? new ArrayList<>() : new ArrayList<>(items);
 		this.preSelectedItemIndex = preSelectedItemIndex;
+	}
+
+	/**
+	 * Returns the current item order, i.e. the items passed into the
+	 * constructor, possibly reordered by the user via drag&amp;drop in the
+	 * DropDown's popup. Reflects the latest order regardless of whether the
+	 * dialog was closed via OK or Cancel, so callers can persist and reuse a
+	 * reordering even if the user did not confirm a new selection.
+	 */
+	public List<String> getItems() {
+		return new ArrayList<>(items);
 	}
 
 	@Override
@@ -49,23 +68,25 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 2, 1));
 		label.setText(text);
 
-		comboBox = new Combo(composite, SWT.FILL | SWT.READ_ONLY);
+		comboBox = new DropDown(composite, SWT.NONE);
 		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		comboBox.setAllowCustomValues(false);
+		comboBox.setReorderable(true);
+		comboBox.addItemsReorderedListener(new ItemsReorderedListener());
 		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
-		if (items != null && items.size() > 0) {
-			final String[] comboBoxItems = items.toArray(new String[items.size()]);
-			comboBox.setItems(comboBoxItems);
+		if (items.size() > 0) {
+			comboBox.setItems(items);
 			if (preSelectedItemIndex < 0) {
-				comboBox.select(comboBox.getItemCount() - 1);
+				comboBox.setText(items.get(items.size() - 1));
 			} else {
-				comboBox.select(preSelectedItemIndex);
+				comboBox.setText(items.get(preSelectedItemIndex));
 			}
 		}
 
 		okButton = new Button(composite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(getI18NString("ok"));
-		okButton.setEnabled(comboBox.getItemCount() > 0);
+		okButton.setEnabled(comboBox.isValidValue());
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 
 		final Button cancelButton = new Button(composite, SWT.PUSH);
@@ -87,10 +108,23 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 	private class OkButtonSelectionListener extends SelectionAdapter {
 		@Override
 		public void widgetSelected(final SelectionEvent event) {
-			if (comboBox.getSelectionIndex() > -1) {
-				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
+			if (comboBox.getText() != null) {
+				setReturnValue(comboBox.getText());
 			}
 			getParent().close();
+		}
+	}
+
+	/**
+	 * Keeps "items" in sync whenever the user reorders entries via
+	 * drag&amp;drop in the DropDown's popup, so the reordered list remains
+	 * available through {@link #getItems()} after the dialog closes.
+	 */
+	private class ItemsReorderedListener implements Consumer<List<String>> {
+		@Override
+		public void accept(final List<String> newOrder) {
+			items.clear();
+			items.addAll(newOrder);
 		}
 	}
 
