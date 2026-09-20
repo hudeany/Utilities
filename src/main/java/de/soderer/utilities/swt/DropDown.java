@@ -285,7 +285,28 @@ public class DropDown extends Composite {
 		dropdownButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
+				/*
+				 * Clicking this button takes keyboard focus away from "text" on
+				 * mouseDown, before this Selection event even fires - which triggers
+				 * "text"'s FocusLost handler below and schedules a deferred hidePopup()
+				 * roughly 50ms from now (see deferredDeactivateHide). Left unchecked,
+				 * that would auto-close the popup we are about to open here shortly
+				 * after it appears, regardless of text.setFocus() below - restoring
+				 * focus does not itself cancel an already-scheduled timerExec(). Cancel
+				 * it first, the same way popupList's own mouseDown handler already does
+				 * for the equivalent case.
+				 */
+				getDisplay().timerExec(-1, deferredDeactivateHide);
+
 				showAllItems();
+
+				/*
+				 * A Button takes keyboard focus on click, so without this the arrow keys,
+				 * Delete and Escape would go to "dropdownButton" instead of "text" -
+				 * silently doing nothing, since only "text" has the KeyListener that
+				 * drives popup navigation/deletion (see handleKey()).
+				 */
+				text.setFocus();
 			}
 		});
 
