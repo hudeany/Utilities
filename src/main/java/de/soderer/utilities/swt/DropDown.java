@@ -1699,6 +1699,18 @@ public class DropDown extends Composite {
 
 				if (popupList.getSelectionIndex() != hoveredIndex) {
 					popupList.select(hoveredIndex);
+
+					/*
+					 * Keep "selectedMatch" in sync with the mouse-hovered row too, not just
+					 * with keyboard navigation - deleteSelectedPopupEntry() (Delete key) acts
+					 * on "selectedMatch", and should remove whichever entry is currently
+					 * highlighted, exactly like Firefox's own dropdown lists: hover, then
+					 * press Delete, deletes the entry under the cursor. Deliberately not
+					 * calling renderText()/showing a live preview here though - passive hover
+					 * has never accepted or previewed a value in the text field (see the
+					 * comment above), and this fix should not change that.
+					 */
+					selectedMatch = hoveredIndex;
 				}
 
 				return;
