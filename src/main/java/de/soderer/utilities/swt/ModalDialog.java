@@ -1,6 +1,9 @@
 package de.soderer.utilities.swt;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
@@ -9,6 +12,8 @@ import org.eclipse.swt.widgets.Shell;
 import de.soderer.utilities.LangResources;
 
 public abstract class ModalDialog<T> extends Dialog {
+	private static final int GTK_TITLEBAR_EXTRA_WIDTH = 100;
+
 	private Point location = null;
 	private T returnValue;
 
@@ -25,17 +30,31 @@ public abstract class ModalDialog<T> extends Dialog {
 	}
 
 	public T open() {
+		final Shell shell = getParent();
 		try {
-			createComponents(getParent());
+			createComponents(shell);
 		} catch (final Exception e) {
 			throw new RuntimeException("Cannot create dialog components", e);
 		}
 
-		setPosition(getParent());
+		// Must happen before positioning, because centering depends on the final shell size
+		ensureMinimumWidthForTitle(shell);
 
-		getParent().open();
-		final Display display = getParent().getDisplay();
-		while (!getParent().isDisposed() && !display.isDisposed()) {
+		setPosition(shell);
+
+		shell.open();
+
+		if (isGtk()) {
+			// GTK may still adjust the window allocation after mapping the window, so re-layout once afterwards
+			shell.getDisplay().asyncExec(() -> {
+				if (!shell.isDisposed()) {
+					shell.layout(true, true);
+				}
+			});
+		}
+
+		final Display display = shell.getDisplay();
+		while (!shell.isDisposed() && !display.isDisposed()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();
 			}
@@ -89,6 +108,57 @@ public abstract class ModalDialog<T> extends Dialog {
 			yPosition = Math.max(0, yPosition);
 			shell.setLocation(xPosition, yPosition);
 		}
+	}
+
+	/**
+	 * On GTK the header bar (client side decoration) enforces a minimum window width derived from the title text.
+	 * If the packed content is narrower, GTK silently enlarges the window, but SWT keeps laying out the content
+	 * for the smaller size, so controls do not fill the dialog. This makes the shell width explicit and re-layouts.
+	 */
+	protected static void ensureMinimumWidthForTitle(final Shell shell) {
+		if (shell.isDisposed() || !isGtk()) {
+			return;
+		}
+
+		final String title = shell.getText();
+		if (title == null || title.isEmpty()) {
+			return;
+		}
+
+		final int titleWidth = measureTitleWidth(shell, title);
+		final int maximumWidth = shell.getDisplay().getClientArea().width;
+		final int requiredWidth = Math.min(titleWidth + GTK_TITLEBAR_EXTRA_WIDTH, maximumWidth);
+
+		final Point size = shell.getSize();
+		if (size.x < requiredWidth) {
+			shell.setSize(requiredWidth, size.y);
+			shell.layout(true, true);
+		}
+	}
+
+	private static int measureTitleWidth(final Shell shell, final String title) {
+		final Display display = shell.getDisplay();
+		final GC gc = new GC(shell);
+		Font boldFont = null;
+		try {
+			// GTK header bars render the title in bold system font
+			final FontData[] fontDataArray = display.getSystemFont().getFontData();
+			for (final FontData fontData : fontDataArray) {
+				fontData.setStyle(fontData.getStyle() | SWT.BOLD);
+			}
+			boldFont = new Font(display, fontDataArray);
+			gc.setFont(boldFont);
+			return gc.textExtent(title).x;
+		} finally {
+			gc.dispose();
+			if (boldFont != null) {
+				boldFont.dispose();
+			}
+		}
+	}
+
+	private static boolean isGtk() {
+		return "gtk".equals(SWT.getPlatform());
 	}
 
 	protected T getDefaultReturnValue() {
