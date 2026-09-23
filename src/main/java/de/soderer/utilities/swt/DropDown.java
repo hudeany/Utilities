@@ -210,6 +210,11 @@ public class DropDown extends Composite {
 	 */
 	private static final int CLICK_MOVEMENT_THRESHOLD_PX = 4;
 
+	/**
+	 * Page size for PageUp/PageDown while no popup is shown.
+	 */
+	private static final int DEFAULT_PAGE_SIZE = 10;
+
 	private int mouseDownX = -1;
 	private int mouseDownY = -1;
 
@@ -652,6 +657,9 @@ public class DropDown extends Composite {
 			SWT.error(SWT.ERROR_NULL_ARGUMENT);
 			return;
 		}
+
+		// A programmatic value always places the caret at its end
+		pendingCaretOffset = -1;
 
 		updating = true;
 
@@ -1197,21 +1205,30 @@ public class DropDown extends Composite {
 	}
 
 	private void renderText(final String input, final String suggestion) {
+		/*
+		 * Prefer an explicitly recorded target caret offset (set when the
+		 * VerifyListener canceled the native edit and applied the change to
+		 * "userText" itself instead - see pendingCaretOffset). Otherwise the edit
+		 * was applied natively and the widget's own caret offset already reflects
+		 * the correct position.
+		 *
+		 * Consumed unconditionally, BEFORE the empty-input check: previously the
+		 * empty-input branch left it untouched, so e.g. a Backspace over the
+		 * suggestion-tail boundary that emptied the field left a stale offset
+		 * behind, which the next render then applied to an unrelated native edit
+		 * (caret jumped back to 0, following keystrokes were inserted in reverse).
+		 */
+		final int caretBeforeUpdate = pendingCaretOffset >= 0
+			? pendingCaretOffset
+			: text.getCaretOffset();
+		pendingCaretOffset = -1;
+
 		updating = true;
 		try {
 			if (Utilities.isEmpty(input)) {
 				text.setText("");
+				suggestionTailStart = -1;
 			} else {
-				// Prefer an explicitly recorded target caret offset (set when the
-				// VerifyListener canceled the native edit and applied the change
-				// to "userText" itself instead - see pendingCaretOffset). Otherwise
-				// the edit was applied natively and the widget's own caret offset
-				// already reflects the correct position.
-				final int caretBeforeUpdate = pendingCaretOffset >= 0
-					? pendingCaretOffset
-					: text.getCaretOffset();
-				pendingCaretOffset = -1;
-
 				String displayText = input;
 
 				int matchStart = -1;
@@ -1269,8 +1286,20 @@ public class DropDown extends Composite {
 
 	/**
 	 * Renders an invalid text.
+	 *
+	 * <p>
+	 * Keeps the caret where the user's edit put it (same rules as in
+	 * renderText()), so editing in the middle of an invalid (red) text does not
+	 * make the caret jump to the end on every keystroke.
+	 * </p>
 	 */
 	private void renderInvalidText() {
+		// Must be read before text.setText(), which resets the widget's caret
+		final int caretBeforeUpdate = pendingCaretOffset >= 0
+			? pendingCaretOffset
+			: text.getCaretOffset();
+		pendingCaretOffset = -1;
+
 		updating = true;
 		try {
 			text.setText(userText);
@@ -1281,7 +1310,7 @@ public class DropDown extends Composite {
 			invalid.foreground = invalidColor;
 			text.setStyleRange(invalid);
 
-			text.setSelection(userText.length());
+			text.setSelection(Math.max(0, Math.min(caretBeforeUpdate, userText.length())));
 
 			suggestionTailStart = -1;
 		} finally {
@@ -1488,9 +1517,10 @@ public class DropDown extends Composite {
 			return;
 		}
 
-		final int pageSize = Math.max(1, 100);
+		final int pageSize = getPageSize();
 
-		selectedMatch += direction * pageSize;
+		// Start from the first entry if nothing is selected yet
+		selectedMatch = Math.max(selectedMatch, 0) + direction * pageSize;
 
 		if (selectedMatch < 0) {
 			selectedMatch = 0;
@@ -1503,6 +1533,21 @@ public class DropDown extends Composite {
 		renderText(userText, matches.get(selectedMatch));
 
 		selectPopupItem();
+	}
+
+	/**
+	 * Number of entries one PageUp/PageDown moves: the number of rows currently
+	 * visible in the popup, or DEFAULT_PAGE_SIZE while no popup is shown.
+	 */
+	private int getPageSize() {
+		if (popup != null && !popup.isDisposed() && popup.getVisible() && popupList != null && !popupList.isDisposed()) {
+			final int itemHeight = popupList.getItemHeight();
+			if (itemHeight > 0) {
+				return Math.max(1, popupList.getClientArea().height / itemHeight);
+			}
+		}
+
+		return DEFAULT_PAGE_SIZE;
 	}
 
 	/**
@@ -1530,6 +1575,9 @@ public class DropDown extends Composite {
 		if (value == null) {
 			return;
 		}
+
+		// An accepted value always places the caret at its end
+		pendingCaretOffset = -1;
 
 		updating = true;
 
