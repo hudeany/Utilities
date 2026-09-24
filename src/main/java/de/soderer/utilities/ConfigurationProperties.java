@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 
 import de.soderer.pac.PacScriptParser;
 import de.soderer.pac.utilities.ProxyConfiguration;
@@ -31,7 +32,17 @@ public class ConfigurationProperties {
 	public static final String CONFIG_KEY_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
 	public static final String CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK = "Application.NextDailyUpdateCheck";
 
+	/**
+	 * Internal key: names of all list keys, which are stored in the current list format
+	 * (plain RFC 4180 csv without backslash escaping). List keys not contained here are
+	 * still stored in the legacy format with backslash escaping and are migrated on first read.
+	 */
+	public static final String CONFIG_KEY_PLAIN_LIST_KEYS = "Application.PlainListKeys";
+
 	public static final String MAXSIZE_EXTENSION = ".maxSize";
+
+	/** Maximum size of a recent list, if no valid "<name>.maxSize" is configured */
+	public static final int DEFAULT_RECENT_LIST_MAX_SIZE = 10;
 	public static final String ENUM_EXTENSION = ".enum";
 
 	private final Properties properties = new Properties();
@@ -40,17 +51,40 @@ public class ConfigurationProperties {
 
 	private ProxyConfiguration proxyConfiguration = null;
 
+	/** List keys already stored in the current (plain) list format */
+	private final Set<String> plainListKeys = new TreeSet<>();
+
 	/**
 	 * CSV format of list values (e.g. recent lists) in the configuration.
-	 * Uses backslash escaping to stay compatible with existing configuration files.
-	 * Reading and writing must always use this same format, otherwise backslashes
-	 * (e.g. in Windows paths) multiply with every save.
+	 * Plain RFC 4180 csv: backslashes (e.g. in Windows paths) are stored as they are.
+	 * No backslash escaping is needed, because java.util.Properties already takes care of
+	 * backslashes and linebreaks when the configuration file is stored and loaded.
 	 */
 	private static CsvFormat createListCsvFormat() {
 		return new CsvFormat()
 				.withSeparator(';')
 				.withStringQuote('"')
+				.withEscapeLineBreaks(false);
+	}
+
+	/**
+	 * Legacy CSV format of list values with backslash escaping.
+	 * Only used to read lists of existing configuration files, which were stored before
+	 * the switch to the plain list format.
+	 */
+	private static CsvFormat createLegacyListCsvFormat() {
+		return new CsvFormat()
+				.withSeparator(';')
+				.withStringQuote('"')
 				.withEscapeLineBreaks(true);
+	}
+
+	/**
+	 * Internal keys are managed by this class and are not meant to be edited by the user
+	 * (e.g. hidden in configuration dialogs)
+	 */
+	public static boolean isInternalKey(final String name) {
+		return CONFIG_KEY_PLAIN_LIST_KEYS.equals(name);
 	}
 
 	public ConfigurationProperties(final String applicationName) throws Exception {
@@ -71,6 +105,15 @@ public class ConfigurationProperties {
 			} catch (final IOException e) {
 				e.printStackTrace();
 				throw new Exception("Cannot load configuration", e);
+			}
+		}
+
+		final String plainListKeysValue = properties.getProperty(CONFIG_KEY_PLAIN_LIST_KEYS);
+		if (Utilities.isNotEmpty(plainListKeysValue)) {
+			try {
+				plainListKeys.addAll(CsvReader.parseCsvLine(createListCsvFormat(), plainListKeysValue));
+			} catch (final Exception e) {
+				System.err.println("Cannot read configuration key '" + CONFIG_KEY_PLAIN_LIST_KEYS + "': " + e.getMessage());
 			}
 		}
 	}
@@ -174,30 +217,44 @@ public class ConfigurationProperties {
 	}
 
 	public List<String> getList(final String name) {
-		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
+		final String value = properties.getProperty(name);
+		if (value == null || value.isEmpty()) {
+			return new ArrayList<>();
+		} else if (plainListKeys.contains(name)) {
 			try {
-				return CsvReader.parseCsvLine(createListCsvFormat(), properties.getProperty(name));
-			} catch (@SuppressWarnings("unused") final Exception e) {
+				return new ArrayList<>(CsvReader.parseCsvLine(createListCsvFormat(), value));
+			} catch (final Exception e) {
+				// Do not silently lose the list, report why it could not be read
+				System.err.println("Cannot read list value of configuration key '" + name + "': " + e.getMessage());
 				return new ArrayList<>();
 			}
 		} else {
-			return new ArrayList<>();
+			// Value was stored in the legacy format with backslash escaping, so migrate it to the plain list format
+			List<String> list;
+			try {
+				list = CsvReader.parseCsvLine(createLegacyListCsvFormat(), value);
+			} catch (@SuppressWarnings("unused") final Exception legacyException) {
+				// Not readable as legacy value (e.g. edited manually with single backslashes), so read it as plain list
+				try {
+					list = CsvReader.parseCsvLine(createListCsvFormat(), value);
+				} catch (final Exception e) {
+					System.err.println("Cannot read list value of configuration key '" + name + "': " + e.getMessage());
+					return new ArrayList<>();
+				}
+			}
+			// Stores the list in the plain list format and marks the key as migrated (persisted on next save)
+			set(name, list);
+			return new ArrayList<>(list);
 		}
 	}
 
 	public boolean removeFromList(final String name, final String value) {
-		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
-			try {
-				final List<String> currentList = CsvReader.parseCsvLine(createListCsvFormat(), properties.getProperty(name));
-				final boolean removedValue = currentList.remove(value);
-				set(name, currentList);
-				return removedValue;
-			} catch (@SuppressWarnings("unused") final Exception e) {
-				return false;
-			}
-		} else {
-			return false;
+		final List<String> currentList = getList(name);
+		final boolean removedValue = currentList.remove(value);
+		if (removedValue) {
+			set(name, currentList);
 		}
+		return removedValue;
 	}
 
 	public void set(final String name, final List<String> list) {
@@ -207,10 +264,35 @@ public class ConfigurationProperties {
 			// Can not happen, because the list format always allows quotation
 			throw new IllegalStateException("Cannot store list value for '" + name + "': " + e.getMessage(), e);
 		}
+		if (plainListKeys.add(name)) {
+			storePlainListKeys();
+		}
+	}
+
+	private void storePlainListKeys() {
+		try {
+			properties.setProperty(CONFIG_KEY_PLAIN_LIST_KEYS, CsvWriter.getCsvLine(createListCsvFormat(), new ArrayList<>(plainListKeys)));
+		} catch (final CsvDataException e) {
+			// Can not happen, because the list format always allows quotation
+			throw new IllegalStateException("Cannot store configuration key '" + CONFIG_KEY_PLAIN_LIST_KEYS + "': " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Maximum size of a recent list. Falls back to DEFAULT_RECENT_LIST_MAX_SIZE, if "<name>.maxSize"
+	 * is missing or invalid, because a maximum size of 0 would silently discard the whole list.
+	 */
+	private int getRecentListMaxSize(final String name) {
+		try {
+			final int maxSize = getInteger(name + MAXSIZE_EXTENSION);
+			return maxSize > 0 ? maxSize : DEFAULT_RECENT_LIST_MAX_SIZE;
+		} catch (@SuppressWarnings("unused") final NumberFormatException e) {
+			return DEFAULT_RECENT_LIST_MAX_SIZE;
+		}
 	}
 
 	public void addRecentListEntry(final String name, final String value) {
-		final List<String> valueList = new UniqueFifoQueuedList<>(getInteger(name + MAXSIZE_EXTENSION), getList(name));
+		final List<String> valueList = new UniqueFifoQueuedList<>(getRecentListMaxSize(name), getList(name));
 		valueList.add(value);
 		set(name, valueList);
 	}
@@ -228,7 +310,7 @@ public class ConfigurationProperties {
 	}
 
 	public String getLatestRecentValue(final String name) {
-		return new UniqueFifoQueuedList<>(getInteger(name + MAXSIZE_EXTENSION), getList(name)).getLatestAdded();
+		return new UniqueFifoQueuedList<>(getRecentListMaxSize(name), getList(name)).getLatestAdded();
 	}
 
 	public void save() {
@@ -260,6 +342,9 @@ public class ConfigurationProperties {
 
 	public void removeKey(final String name) {
 		properties.remove(name);
+		if (plainListKeys.remove(name)) {
+			storePlainListKeys();
+		}
 	}
 
 	public void setupDefaultConfig() {

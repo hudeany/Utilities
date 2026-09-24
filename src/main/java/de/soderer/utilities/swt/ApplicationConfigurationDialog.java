@@ -87,7 +87,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		scrolledPart.setExpandVertical(true);
 
 		for (final String key : Utilities.asSortedList(applicationConfiguration.getKeyList())) {
-			if (!key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION) && !key.endsWith(ConfigurationProperties.ENUM_EXTENSION)) {
+			if (!key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION) && !key.endsWith(ConfigurationProperties.ENUM_EXTENSION) || ConfigurationProperties.isInternalKey(key)) {
 				String description = key;
 				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(LangResources.get("conf." + key))) {
 					description = LangResources.get("conf." + key);

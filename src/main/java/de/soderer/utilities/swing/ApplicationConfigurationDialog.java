@@ -189,7 +189,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		technicalChange = true;
 		try {
 			for (final String key : Utilities.asSortedList(applicationConfiguration.getKeyList())) {
-				if (key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION) || key.endsWith(ConfigurationProperties.ENUM_EXTENSION)) {
+				if (key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION) || key.endsWith(ConfigurationProperties.ENUM_EXTENSION) || ConfigurationProperties.isInternalKey(key)) {
 					continue;
 				}
 
