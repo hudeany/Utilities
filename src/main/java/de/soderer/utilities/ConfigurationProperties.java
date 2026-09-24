@@ -18,6 +18,7 @@ import de.soderer.pac.PacScriptParser;
 import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.pac.utilities.ProxyConfiguration.ProxyConfigurationType;
 import de.soderer.utilities.collection.UniqueFifoQueuedList;
+import de.soderer.utilities.csv.CsvDataException;
 import de.soderer.utilities.csv.CsvFormat;
 import de.soderer.utilities.csv.CsvReader;
 import de.soderer.utilities.csv.CsvWriter;
@@ -30,14 +31,27 @@ public class ConfigurationProperties {
 	public static final String CONFIG_KEY_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
 	public static final String CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK = "Application.NextDailyUpdateCheck";
 
-	public static String MAXSIZE_EXTENSION = ".maxSize";
-	public static String ENUM_EXTENSION = ".enum";
+	public static final String MAXSIZE_EXTENSION = ".maxSize";
+	public static final String ENUM_EXTENSION = ".enum";
 
 	private final Properties properties = new Properties();
 	private final String applicationName;
 	private boolean useSubDirectory = false;
 
 	private ProxyConfiguration proxyConfiguration = null;
+
+	/**
+	 * CSV format of list values (e.g. recent lists) in the configuration.
+	 * Uses backslash escaping to stay compatible with existing configuration files.
+	 * Reading and writing must always use this same format, otherwise backslashes
+	 * (e.g. in Windows paths) multiply with every save.
+	 */
+	private static CsvFormat createListCsvFormat() {
+		return new CsvFormat()
+				.withSeparator(';')
+				.withStringQuote('"')
+				.withEscapeLineBreaks(true);
+	}
 
 	public ConfigurationProperties(final String applicationName) throws Exception {
 		this(applicationName, false);
@@ -162,7 +176,7 @@ public class ConfigurationProperties {
 	public List<String> getList(final String name) {
 		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			try {
-				return CsvReader.parseCsvLine(new CsvFormat().withSeparator(';').withStringQuote('"'), properties.getProperty(name));
+				return CsvReader.parseCsvLine(createListCsvFormat(), properties.getProperty(name));
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				return new ArrayList<>();
 			}
@@ -174,7 +188,7 @@ public class ConfigurationProperties {
 	public boolean removeFromList(final String name, final String value) {
 		if (properties.containsKey(name) && Utilities.isNotEmpty(properties.getProperty(name))) {
 			try {
-				final List<String> currentList = CsvReader.parseCsvLine(new CsvFormat().withSeparator(';').withStringQuote('"'), properties.getProperty(name));
+				final List<String> currentList = CsvReader.parseCsvLine(createListCsvFormat(), properties.getProperty(name));
 				final boolean removedValue = currentList.remove(value);
 				set(name, currentList);
 				return removedValue;
@@ -187,7 +201,12 @@ public class ConfigurationProperties {
 	}
 
 	public void set(final String name, final List<String> list) {
-		properties.setProperty(name, CsvWriter.getCsvLine(';', '"', true, list));
+		try {
+			properties.setProperty(name, CsvWriter.getCsvLine(createListCsvFormat(), list == null ? new ArrayList<>() : list));
+		} catch (final CsvDataException e) {
+			// Can not happen, because the list format always allows quotation
+			throw new IllegalStateException("Cannot store list value for '" + name + "': " + e.getMessage(), e);
+		}
 	}
 
 	public void addRecentListEntry(final String name, final String value) {
@@ -273,8 +292,8 @@ public class ConfigurationProperties {
 		}
 
 		if (containsKey("NextDailyUpdateCheck")) {
-			if (!containsKey(CONFIG_KEY_DAILY_UPDATE_CHECK)) {
-				set(CONFIG_KEY_DAILY_UPDATE_CHECK, get("NextDailyUpdateCheck"));
+			if (!containsKey(CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK)) {
+				set(CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK, get("NextDailyUpdateCheck"));
 			}
 			removeKey("NextDailyUpdateCheck");
 		}
@@ -289,7 +308,7 @@ public class ConfigurationProperties {
 	}
 
 	public String getLanguage() {
-		return get(CONFIG_KEY_PROXY_CONFIGURATION_TYPE);
+		return get(CONFIG_KEY_LANGUAGE);
 	}
 
 	public ProxyConfiguration getProxyConfiguration() {
