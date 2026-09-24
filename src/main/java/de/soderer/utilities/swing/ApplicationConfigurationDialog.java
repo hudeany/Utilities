@@ -2,31 +2,52 @@ package de.soderer.utilities.swing;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Image;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.UIManager;
+import javax.swing.WindowConstants;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.pac.utilities.ProxyConfiguration.ProxyConfigurationType;
@@ -40,8 +61,29 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 import de.soderer.utilities.appupdate.ApplicationUpdateUtilities;
 
+/**
+ * Configuration dialog of an application.
+ *
+ * <p>
+ * Shows every configuration value of the application (like the SWT variant):
+ * values with a "maxsize" companion key get a spinner plus text field, values
+ * with an "enum" companion key get a combo box, "true"/"false" values get a
+ * checkbox and everything else a text field. Values with a "conf.KEY.help"
+ * language resource get a help button.
+ * </p>
+ *
+ * <p>
+ * Changes are collected and only written to the configuration when the user
+ * saves. {@link #open()} returns {@link Result#OK} after saving, otherwise
+ * {@link Result#CANCELED}.
+ * </p>
+ */
 public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private static final long serialVersionUID = 422519084107817691L;
+
+	private static final List<String> DEFAULT_PROXY_CONFIGURATION_TYPES = Utilities.getList("None", "System", "Proxy-URL", "WPAD", "PAC-URL");
+
+	private static final int MAX_INITIAL_HEIGHT = 600;
 
 	private final UpdateableGuiApplication updateParent;
 	private final String applicationName;
@@ -56,67 +98,25 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final List<String> jvmParameters;
 	private final List<String> appParameters;
 	private List<String> availableLanguages = Utilities.getList("de", "en");
-	private String language;
-	private String proxyConfigurationType = "";
-	private String proxyUrl = "";
 
-	private JPanel configurationValuesPanel;
+	/** Changed values not yet written to the configuration (String or Boolean) */
+	private final Map<String, Object> pendingChanges = new LinkedHashMap<>();
 
-	private JComboBox<String> languageCombo;
-
-	private JComboBox<String> proxyCombo;
-	private JTextField proxyUrlText;
-
-	/** Tracks whether any configuration field was modified since the dialog was opened or last saved. */
+	/** Tracks whether any configuration field was modified by the user since the dialog was opened */
 	private boolean configurationChanged = false;
 
-	public String getLanguage() {
-		return language;
-	}
+	/** Suppresses change tracking and info messages while values are set programmatically */
+	private boolean technicalChange = false;
 
-	public void setLanguage(final String language) {
-		this.language = language;
-		if (language != null) {
-			languageCombo.setSelectedItem(language);
-		}
-	}
+	private final Map<String, JComponent> valueComponents = new HashMap<>();
 
-	public String getProxyConfigurationType() {
-		return proxyConfigurationType;
-	}
+	/** Language combo filled from "availableLanguages" (null if the language has an enum definition in the configuration) */
+	private JComboBox<String> availableLanguagesCombo;
 
-	public void setProxyConfigurationType(final String proxyConfigurationType) {
-		this.proxyConfigurationType = proxyConfigurationType;
-	}
-
-	public String getProxyUrl() {
-		return proxyUrl;
-	}
-
-	public void setProxyUrl(final String proxyUrl) {
-		this.proxyUrl = proxyUrl;
-	}
-
-	public List<String> getAvailableLanguages() {
-		return availableLanguages;
-	}
-
-	public ApplicationConfigurationDialog setAvailableLanguages(final List<String> availableLanguages) {
-		this.availableLanguages = availableLanguages;
-
-		languageCombo.removeAll();
-		for (final String availableLanguage : availableLanguages) {
-			languageCombo.addItem(availableLanguage);
-		}
-		if (language != null) {
-			languageCombo.setSelectedItem(language);
-		}
-
-		return this;
-	}
+	private String lastLanguageValue;
 
 	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates, final List<String> jvmParameters, final List<String> appParameters) {
-		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ")");
+		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ") " + LangResources.get("configuration"));
 
 		this.updateParent = updateParent;
 		this.applicationName = applicationName;
@@ -124,18 +124,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		this.applicationVersion = applicationVersion;
 		this.applicationBuildTime = applicationBuildTime;
 		this.applicationConfiguration = applicationConfiguration;
-		language = applicationConfiguration.get(ConfigurationProperties.CONFIG_KEY_LANGUAGE);
-		if (language == null) {
-			language = "";
-		}
-		proxyConfigurationType = applicationConfiguration.get(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE);
-		if (proxyConfigurationType == null) {
-			proxyConfigurationType = "en";
-		}
-		proxyUrl = applicationConfiguration.get(ConfigurationProperties.CONFIG_KEY_PROXY_URL);
-		if (proxyUrl == null) {
-			proxyUrl = "";
-		}
 		this.iconImageDataWindows = iconImageDataWindows;
 		this.iconImageLinux = iconImageLinux;
 		this.versioninfoDownloadURL = versioninfoDownloadURL;
@@ -143,367 +131,662 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		this.jvmParameters = jvmParameters;
 		this.appParameters = appParameters;
 
+		lastLanguageValue = applicationConfiguration.get(ConfigurationProperties.CONFIG_KEY_LANGUAGE);
+
+		returnValue = Result.CANCELED;
+
 		if (iconImageLinux != null) {
 			setIconImage(iconImageLinux);
 		}
 
-		setLocationRelativeTo(null);
+		final int margin = 5;
 
-		setResizable(false);
+		final JPanel mainPanel = new JPanel(new BorderLayout(margin, margin));
+		mainPanel.setBorder(BorderFactory.createEmptyBorder(margin, margin, margin, margin));
 
-		final JPanel panel = new JPanel();
-		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+		final JScrollPane valuesScrollPane = new JScrollPane(createConfigurationValuesPanel());
+		valuesScrollPane.setBorder(BorderFactory.createEmptyBorder());
+		valuesScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+		mainPanel.add(valuesScrollPane, BorderLayout.CENTER);
 
-		add(panel);
+		mainPanel.add(createButtonPanel(), BorderLayout.SOUTH);
 
-		setLayout(new BoxLayout(getContentPane(), BoxLayout.PAGE_AXIS));
+		setContentPane(mainPanel);
 
-		// Parameter Panel
-		final JPanel parameterPanel = new JPanel();
-		parameterPanel.setLayout(new BoxLayout(parameterPanel, BoxLayout.LINE_AXIS));
+		// Closing via the window decoration behaves like the cancel button (asks for unsaved changes)
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(final WindowEvent event) {
+				cancel();
+			}
+		});
 
-		// CheckBox parameter Panel
-		final JPanel mandatoryParameterPanel = new JPanel();
-		mandatoryParameterPanel.setLayout(new BoxLayout(mandatoryParameterPanel, BoxLayout.PAGE_AXIS));
-
-		panel.add(createConfigurationValuesPanel());
-
-		panel.add(createAdministrativePanel());
-
-		panel.add(createMainButtonPanel());
-
+		setResizable(true);
 		pack();
-
+		setMinimumSize(new Dimension(500, 300));
+		setSize(Math.max(500, getWidth()), Math.max(300, Math.min(getHeight(), MAX_INITIAL_HEIGHT)));
 		setLocationRelativeTo(updateParent);
-
-		returnValue = Result.ERROR;
 	}
 
+	/**
+	 * The list of all configuration values: one row per key, labels left
+	 * aligned in the first column (like the SWT variant).
+	 */
 	private JPanel createConfigurationValuesPanel() {
-		configurationValuesPanel = new JPanel();
-		configurationValuesPanel.setLayout(new BoxLayout(configurationValuesPanel, BoxLayout.Y_AXIS));
+		final JPanel valuesPanel = new JPanel(new GridBagLayout());
 
-		configurationValuesPanel.add(createBuildTimePanel());
-		configurationValuesPanel.add(createLanguagePanel());
-		configurationValuesPanel.add(createProxyPanel());
-		configurationValuesPanel.add(createProxyUrlPanel());
+		int row = 0;
 
-		return configurationValuesPanel;
-	}
-
-	private JPanel createBuildTimePanel() {
-		final JPanel buildTimePanel = new JPanel();
-		buildTimePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-
-		final JLabel buildTimeLabel = new JLabel(LangResources.get("buildTime"));
-		buildTimePanel.add(buildTimeLabel);
-		final JTextField buildTimeText = new JTextField();
-		buildTimeText.setEditable(false);
-		buildTimeText.setText(DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, applicationBuildTime));
-		buildTimePanel.add(buildTimeText, BorderLayout.EAST);
-
-		return buildTimePanel;
-	}
-
-	private JPanel createLanguagePanel() {
-		final JPanel languagePanel = new JPanel();
-		languagePanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-
-		final JLabel languageLabel = new JLabel(LangResources.get("language"));
-		languagePanel.add(languageLabel);
-		languageCombo = new JComboBox<>();
-		languageCombo.setToolTipText(LangResources.get("language_help"));
-		for (final String availableLanguage : availableLanguages) {
-			languageCombo.addItem(availableLanguage);
+		if (applicationBuildTime != null) {
+			addLabel(valuesPanel, row, LangResources.get("buildTime"));
+			final JTextField buildTimeText = new JTextField(DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, applicationBuildTime));
+			buildTimeText.setEditable(false);
+			valuesPanel.add(buildTimeText, createValueConstraints(row, 1, 2));
+			row++;
 		}
-		if (language != null) {
-			languageCombo.setSelectedItem(language);
-		}
-		languageCombo.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(final ItemEvent event) {
-				if (event.getStateChange() == ItemEvent.SELECTED) {
-					final String newLanguage = (String) event.getItem();
-					final boolean valueChanged = language == null ? newLanguage != null : !language.equals(newLanguage);
-					language = newLanguage;
-					if (valueChanged) {
-						configurationChanged = true;
-						JOptionPane.showMessageDialog(getParent(), LangResources.get("languageChangeRequiresRestart"), applicationName + " " + LangResources.get("configuration"), JOptionPane.INFORMATION_MESSAGE);
-					}
+
+		technicalChange = true;
+		try {
+			for (final String key : Utilities.asSortedList(applicationConfiguration.getKeyList())) {
+				if (key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION) || key.endsWith(ConfigurationProperties.ENUM_EXTENSION)) {
+					continue;
 				}
-			}
-		});
-		languagePanel.add(languageCombo, BorderLayout.EAST);
 
-		return languagePanel;
-	}
-
-	private JPanel createProxyPanel() {
-		final JPanel proxyPanel = new JPanel();
-		proxyPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-
-		final JLabel proxyLabel = new JLabel(LangResources.get("proxy"));
-		proxyPanel.add(proxyLabel);
-		proxyCombo = new JComboBox<>();
-
-		proxyCombo.addItem("None");
-		proxyCombo.addItem("System");
-		proxyCombo.addItem("Proxy-URL");
-		proxyCombo.addItem("WPAD");
-		proxyCombo.addItem("PAC-URL");
-
-		if (proxyConfigurationType != null && proxyConfigurationType.trim().length() > 0) {
-			proxyCombo.setSelectedItem(proxyConfigurationType);
-		}
-		proxyCombo.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(final ItemEvent event) {
-				if (event.getStateChange() == ItemEvent.SELECTED) {
-					proxyConfigurationType = (String) event.getItem();
-					configurationChanged = true;
-					if ("Proxy-URL".equals(proxyConfigurationType)
-							|| "PAC-URL".equals(proxyConfigurationType)) {
-						proxyUrlText.setEnabled(true);
-					} else {
-						proxyUrlText.setEnabled(false);
-					}
+				String description = key;
+				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(LangResources.get("conf." + key))) {
+					description = LangResources.get("conf." + key);
 				}
-			}
-		});
-		proxyPanel.add(proxyCombo, BorderLayout.EAST);
+				addLabel(valuesPanel, row, description);
 
-		return proxyPanel;
+				final String value = applicationConfiguration.get(key);
+				if (applicationConfiguration.containsKey(key + ConfigurationProperties.MAXSIZE_EXTENSION)) {
+					final String maxSizeKey = key + ConfigurationProperties.MAXSIZE_EXTENSION;
+					final int maxSize = Math.max(1, Math.min(50, applicationConfiguration.getInteger(maxSizeKey)));
+					final JSpinner maxSizeSpinner = new JSpinner(new SpinnerNumberModel(maxSize, 1, 50, 1));
+					((JSpinner.DefaultEditor) maxSizeSpinner.getEditor()).getTextField().setColumns(3);
+					maxSizeSpinner.addChangeListener(event -> registerChange(maxSizeKey, maxSizeSpinner.getValue().toString()));
+					valuesPanel.add(maxSizeSpinner, createValueConstraints(row, 1, 1));
+
+					final JTextField valueTextField = createTextField(key, value);
+					valuesPanel.add(valueTextField, createValueConstraints(row, 2, 1));
+				} else if (applicationConfiguration.containsKey(key + ConfigurationProperties.ENUM_EXTENSION)) {
+					valuesPanel.add(createComboBox(key, Utilities.splitAndTrimList(applicationConfiguration.get(key + ConfigurationProperties.ENUM_EXTENSION)), value), createValueConstraints(row, 1, 2));
+				} else if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key)) {
+					// No enum definition in the configuration: offer the languages known to the application
+					availableLanguagesCombo = createComboBox(key, availableLanguages, value);
+					valuesPanel.add(availableLanguagesCombo, createValueConstraints(row, 1, 2));
+				} else if (ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE.equalsIgnoreCase(key)) {
+					valuesPanel.add(createComboBox(key, DEFAULT_PROXY_CONFIGURATION_TYPES, value), createValueConstraints(row, 1, 2));
+				} else if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+					final JCheckBox checkBox = new JCheckBox();
+					checkBox.setSelected(Utilities.interpretAsBool(value));
+					checkBox.addItemListener(event -> registerChange(key, checkBox.isSelected()));
+					valueComponents.put(key, checkBox);
+					valuesPanel.add(checkBox, createValueConstraints(row, 1, 2));
+				} else {
+					valuesPanel.add(createTextField(key, value), createValueConstraints(row, 1, 2));
+				}
+
+				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(LangResources.get("conf." + key + ".help"))) {
+					valuesPanel.add(createHelpButton(LangResources.get("conf." + key + ".help")), createHelpButtonConstraints(row));
+				}
+
+				row++;
+			}
+		} finally {
+			technicalChange = false;
+		}
+
+		updateProxyUrlEnabledStatus();
+
+		// Filler below the last row, keeps all rows at the top
+		final GridBagConstraints fillerConstraints = new GridBagConstraints();
+		fillerConstraints.gridx = 0;
+		fillerConstraints.gridy = row;
+		fillerConstraints.gridwidth = 4;
+		fillerConstraints.weighty = 1;
+		fillerConstraints.fill = GridBagConstraints.BOTH;
+		valuesPanel.add(new JPanel(), fillerConstraints);
+
+		return valuesPanel;
 	}
 
-	private JPanel createProxyUrlPanel() {
-		final JPanel proxyUrlPanel = new JPanel();
-		proxyUrlPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+	private static void addLabel(final JPanel valuesPanel, final int row, final String text) {
+		final GridBagConstraints labelConstraints = new GridBagConstraints();
+		labelConstraints.gridx = 0;
+		labelConstraints.gridy = row;
+		labelConstraints.anchor = GridBagConstraints.WEST;
+		labelConstraints.insets = new Insets(2, 2, 2, 8);
+		valuesPanel.add(new JLabel(text), labelConstraints);
+	}
 
-		final JLabel proxyUrlLabel = new JLabel(LangResources.get("proxyUrl"));
-		proxyUrlPanel.add(proxyUrlLabel);
-		proxyUrlText = new JTextField();
-		proxyUrlText.setEditable(true);
-		if (proxyUrl != null) {
-			proxyUrlText.setText(proxyUrl);
+	private static GridBagConstraints createValueConstraints(final int row, final int column, final int columnSpan) {
+		final GridBagConstraints constraints = new GridBagConstraints();
+		constraints.gridx = column;
+		constraints.gridy = row;
+		constraints.gridwidth = columnSpan;
+		constraints.anchor = GridBagConstraints.WEST;
+		constraints.insets = new Insets(2, 0, 2, 4);
+		// Only the value column (column 2) takes the extra width, so labels and spinners stay compact on the left
+		if (column + columnSpan > 2) {
+			constraints.weightx = 1;
+			constraints.fill = GridBagConstraints.HORIZONTAL;
 		}
-		proxyUrlText.addKeyListener(new KeyAdapter() {
+		return constraints;
+	}
+
+	private static GridBagConstraints createHelpButtonConstraints(final int row) {
+		final GridBagConstraints constraints = new GridBagConstraints();
+		constraints.gridx = 3;
+		constraints.gridy = row;
+		constraints.anchor = GridBagConstraints.WEST;
+		constraints.insets = new Insets(2, 0, 2, 2);
+		return constraints;
+	}
+
+	private JTextField createTextField(final String key, final String value) {
+		final JTextField textField = new JTextField(value == null ? "" : value, 20);
+		textField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
-			public void keyTyped(final KeyEvent event) {
-				proxyUrl = proxyUrlText.getText();
-				configurationChanged = true;
+			public void insertUpdate(final DocumentEvent event) {
+				registerChange(key, textField.getText());
+			}
+
+			@Override
+			public void removeUpdate(final DocumentEvent event) {
+				registerChange(key, textField.getText());
+			}
+
+			@Override
+			public void changedUpdate(final DocumentEvent event) {
+				// Attribute changes only, no text change
 			}
 		});
-		proxyUrlText.setPreferredSize(new Dimension(150, 20));
-		if ("Proxy-URL".equals(proxyConfigurationType)
-				|| "PAC-URL".equals(proxyConfigurationType)) {
-			proxyUrlText.setEnabled(true);
+		valueComponents.put(key, textField);
+		return textField;
+	}
+
+	/**
+	 * Combo box for a value with a fixed set of options. "None" is shown in the
+	 * user's language but stored as "None".
+	 */
+	private JComboBox<String> createComboBox(final String key, final List<String> options, final String value) {
+		final JComboBox<String> comboBox = new JComboBox<>();
+		fillComboBox(comboBox, options, value);
+		comboBox.addItemListener(event -> {
+			if (event.getStateChange() == ItemEvent.SELECTED) {
+				comboValueSelected(key, fromDisplayValue((String) event.getItem()));
+			}
+		});
+		valueComponents.put(key, comboBox);
+		return comboBox;
+	}
+
+	private static void fillComboBox(final JComboBox<String> comboBox, final List<String> options, final String value) {
+		comboBox.removeAllItems();
+		for (final String option : options) {
+			comboBox.addItem(toDisplayValue(option));
+		}
+		if (Utilities.isBlank(value)) {
+			if (comboBox.getItemCount() > 0) {
+				comboBox.setSelectedIndex(0);
+			}
 		} else {
-			proxyUrlText.setEnabled(false);
+			final String displayValue = toDisplayValue(value);
+			boolean found = false;
+			for (int i = 0; i < comboBox.getItemCount(); i++) {
+				if (comboBox.getItemAt(i).equalsIgnoreCase(displayValue)) {
+					comboBox.setSelectedIndex(i);
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				// Keep a configured value that is not part of the options visible (and unchanged)
+				comboBox.addItem(displayValue);
+				comboBox.setSelectedItem(displayValue);
+			}
 		}
-		proxyUrlPanel.add(proxyUrlText, BorderLayout.EAST);
-
-		return proxyUrlPanel;
 	}
 
-	private JPanel createAdministrativePanel() {
-		final JPanel administrativeButtonPanel = new JPanel();
-		administrativeButtonPanel.setLayout(new BoxLayout(administrativeButtonPanel, BoxLayout.LINE_AXIS));
+	private void comboValueSelected(final String key, final String newValue) {
+		registerChange(key, newValue);
 
-		administrativeButtonPanel.add(Box.createRigidArea(new Dimension(5, 36)));
+		if (technicalChange) {
+			return;
+		}
+
+		if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key)) {
+			final boolean valueUnchanged = lastLanguageValue == null ? newValue == null : lastLanguageValue.equals(newValue);
+			if (!valueUnchanged) {
+				lastLanguageValue = newValue;
+				JOptionPane.showMessageDialog(this, LangResources.get("languageChangeRequiresRestart"), applicationName + " " + LangResources.get("configuration"), JOptionPane.INFORMATION_MESSAGE);
+			}
+		} else if (ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE.equalsIgnoreCase(key)) {
+			updateProxyUrlEnabledStatus();
+		}
+	}
+
+	/**
+	 * The proxy URL is only relevant for the proxy types that use it.
+	 */
+	private void updateProxyUrlEnabledStatus() {
+		final JComponent proxyUrlComponent = valueComponents.get(ConfigurationProperties.CONFIG_KEY_PROXY_URL);
+		if (proxyUrlComponent != null && valueComponents.containsKey(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE)) {
+			final String proxyType = getProxyConfigurationType() == null ? "" : getProxyConfigurationType().replaceAll("[^A-Za-z]", "").toLowerCase();
+			proxyUrlComponent.setEnabled(!"none".equals(proxyType) && !"system".equals(proxyType) && !"wpad".equals(proxyType));
+		}
+	}
+
+	private static String toDisplayValue(final String value) {
+		return "None".equalsIgnoreCase(value) ? LangResources.get("None") : value;
+	}
+
+	private static String fromDisplayValue(final String displayValue) {
+		return displayValue != null && displayValue.equals(LangResources.get("None")) ? "None" : displayValue;
+	}
+
+	private JButton createHelpButton(final String helpText) {
+		final JButton helpButton = new JButton();
+		try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("images/icons/question.png")) {
+			if (inputStream != null) {
+				helpButton.setIcon(new ImageIcon(inputStream.readAllBytes()));
+			} else {
+				helpButton.setText("?");
+			}
+		} catch (@SuppressWarnings("unused") final IOException e) {
+			helpButton.setText("?");
+		}
+		helpButton.setMargin(new Insets(1, 1, 1, 1));
+		helpButton.setToolTipText(helpText);
+		helpButton.addActionListener(e -> new QuestionDialog(this, applicationName, helpText, LangResources.get("ok")).open());
+		return helpButton;
+	}
+
+	private void registerChange(final String key, final Object value) {
+		pendingChanges.put(key, value);
+		if (!technicalChange) {
+			configurationChanged = true;
+		}
+	}
+
+	private JPanel createButtonPanel() {
+		final JPanel buttonPanel = new JPanel(new GridBagLayout());
+
+		final List<JButton> buttons = new ArrayList<>();
+
+		final JButton saveButton = new JButton(LangResources.get("save"));
+		saveButton.addActionListener(e -> {
+			applyPendingChanges();
+			returnValue = Result.OK;
+			dispose();
+		});
+		buttons.add(saveButton);
 
 		final JButton createDesktopLinkButton = new JButton(LangResources.get("createDesktopLink"));
-		createDesktopLinkButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(final ActionEvent event) {
-				try {
-					String applicationJarFileName = SystemUtilities.getCurrentlyRunningJarFilePath();
-					if (Utilities.isBlank(applicationJarFileName)) {
-						applicationJarFileName = openJarFilePathDialog();
-					}
+		createDesktopLinkButton.addActionListener(e -> createDesktopLink());
+		buttons.add(createDesktopLinkButton);
 
-					if (Utilities.isBlank(applicationJarFileName)) {
-						return;
-					}
+		final JButton showSystemPropertiesButton = new JButton(LangResources.get("showSystemProperties"));
+		showSystemPropertiesButton.addActionListener(e -> showProperties(LangResources.get("systemProperties"), Utilities.getSystemPropertiesMap()));
+		buttons.add(showSystemPropertiesButton);
 
-					final String javaHome = System.getProperty("java.home");
+		final JButton showRuntimePropertiesButton = new JButton(LangResources.get("showRuntimeProperties"));
+		showRuntimePropertiesButton.addActionListener(e -> showProperties(LangResources.get("runtimeProperties"), SystemUtilities.getRuntimeProperties(true)));
+		buttons.add(showRuntimePropertiesButton);
 
-					if (SystemUtilities.isWindowsSystem()) {
-						final String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".lnk";
-						if (new File(desktopLinkFilePath).exists()) {
-							new File(desktopLinkFilePath).delete();
-						}
+		// Swing counterpart of the SWT variant's "SWT properties"
+		final JButton showSwingPropertiesButton = new JButton(getI18NString("showSwingProperties"));
+		showSwingPropertiesButton.addActionListener(e -> showProperties(getI18NString("swingProperties"), getSwingProperties()));
+		buttons.add(showSwingPropertiesButton);
 
-						final String userHomeApplicationDirectory = System.getProperty("user.home") + File.separator + "." + applicationName;
-						final String iconPath = userHomeApplicationDirectory + File.separator + applicationName + ".ico";
-						if (!new File(userHomeApplicationDirectory).exists()) {
-							new File(userHomeApplicationDirectory).mkdir();
-						}
-						if (new File(iconPath).exists()) {
-							new File(iconPath).delete();
-						}
+		if (Utilities.isNotBlank(versioninfoDownloadURL)) {
+			final JButton updateButton = new JButton(LangResources.get("checkUpdate"));
+			updateButton.addActionListener(e -> checkUpdate());
+			buttons.add(updateButton);
+		}
 
-						final String tempScriptFile = System.getProperty("java.io.tmpdir") + File.separator + applicationName + "_createlink.vbs";
-						if (new File(tempScriptFile).exists()) {
-							new File(tempScriptFile).delete();
-						}
+		final JButton cancelButton = new JButton(LangResources.get("cancel"));
+		cancelButton.addActionListener(e -> cancel());
+		buttons.add(cancelButton);
 
-						if (iconImageDataWindows != null) {
-							FileUtilities.write(new File(iconPath), iconImageDataWindows);
-						}
-
-						final StringBuilder data = new StringBuilder();
-						data.append("set shortcut = CreateObject(\"WScript.Shell\").CreateShortcut(\"" + desktopLinkFilePath + "\")\n");
-						data.append("shortcut.Description = \"" + applicationName + "\"\n");
-						if (Utilities.isNotBlank(javaHome)) {
-							data.append("shortcut.TargetPath = \"" + javaHome + "\\bin\\javaw.exe\"\n");
-							data.append("shortcut.Arguments = \"-jar \"\"" + applicationJarFileName + "\"\"\"\n");
-						} else {
-							data.append("shortcut.TargetPath = \"" + applicationJarFileName + "\"\n");
-						}
-						data.append("shortcut.IconLocation = \"" + iconPath + "\"\n");
-						data.append("shortcut.Save\n");
-
-						try {
-							FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), StandardCharsets.UTF_8);
-
-							Runtime.getRuntime().exec(new String[]{ "wscript", "\"" + tempScriptFile + "\"" }, null, null);
-
-							JOptionPane.showMessageDialog(getParent(), LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
-
-							new File(tempScriptFile).delete();
-						} catch (final IOException e) {
-							JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
-						}
-					} else if (SystemUtilities.isLinuxSystem()) {
-						String desktopLinkFilePath;
-						String iconPath;
-						final File localShareApplicationsDirectory = new File(System.getProperty("user.home") + "/.local/share/applications");
-						if (localShareApplicationsDirectory.exists()) {
-							desktopLinkFilePath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".desktop";
-							iconPath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".png";
-						} else {
-							desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
-							iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
-						}
-						if (new File(desktopLinkFilePath).exists()) {
-							new File(desktopLinkFilePath).delete();
-						}
-						if (new File(iconPath).exists()) {
-							new File(iconPath).delete();
-						}
-
-						final StringBuilder data = new StringBuilder();
-						data.append("[Desktop Entry]\n");
-						data.append("Encoding=UTF-8\n");
-						data.append("Name=" + applicationName + "\n");
-
-						if (iconImageLinux != null) {
-							ImageIO.write((BufferedImage) iconImageLinux, "png", new File(iconPath));
-							data.append("Icon=" + iconPath + "\n");
-						}
-
-						// %U-parameter allows drag and drop of files on starter bar in unity
-						// Set environment parameter --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED to allow application to be pinned in linux gnome applications dock
-						data.append("Exec=java -jar --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED " + applicationJarFileName + " %U\n");
-						data.append("Terminal=false\n");
-						data.append("Type=Application\n");
-
-						// StartupWMClass must be used for Display-Class init by the main application, so the Launcher can group all windows of the same application
-						data.append("StartupWMClass=" + applicationClassName + "\n");
-
-						try {
-							FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), StandardCharsets.UTF_8);
-
-							new File(desktopLinkFilePath).setExecutable(true);
-
-							JOptionPane.showMessageDialog(getParent(), LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
-						} catch (final IOException e) {
-							JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
-						}
-					}
-				} catch (final Exception e) {
-					JOptionPane.showMessageDialog(getParent(), LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
-				}
+		// Two equally wide columns; with an odd number of buttons the last one spans both columns
+		for (int i = 0; i < buttons.size(); i++) {
+			final GridBagConstraints constraints = new GridBagConstraints();
+			constraints.gridx = i % 2;
+			constraints.gridy = i / 2;
+			constraints.weightx = 1;
+			constraints.fill = GridBagConstraints.HORIZONTAL;
+			constraints.insets = new Insets(2, 2, 2, 2);
+			if (i == buttons.size() - 1 && i % 2 == 0) {
+				constraints.gridwidth = 2;
 			}
-		});
-		administrativeButtonPanel.add(createDesktopLinkButton);
+			buttonPanel.add(buttons.get(i), constraints);
+		}
 
-		administrativeButtonPanel.add(Box.createRigidArea(new Dimension(5, 36)));
+		getRootPane().setDefaultButton(saveButton);
 
-		final JButton updateButton = new JButton(LangResources.get("checkupdate"));
-		updateButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(final ActionEvent event) {
-				try {
-					ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), proxyUrl), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, jvmParameters, appParameters, true, false);
-				} catch (final Exception e) {
-					new QuestionDialog(getOwner(), applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
-				}
-			}
-		});
-		administrativeButtonPanel.add(updateButton);
-
-		administrativeButtonPanel.add(Box.createRigidArea(new Dimension(5, 36)));
-
-		return administrativeButtonPanel;
+		return buttonPanel;
 	}
 
-	private JPanel createMainButtonPanel() {
-		final JPanel mainButtonPanel = new JPanel();
-		mainButtonPanel.setLayout(new BoxLayout(mainButtonPanel, BoxLayout.LINE_AXIS));
-
-		mainButtonPanel.add(Box.createRigidArea(new Dimension(5, 36)));
-
-		// Ok Button
-		final JButton okButton = new JButton(LangResources.get("ok"));
-		okButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(final ActionEvent event) {
-				applicationConfiguration.set(ConfigurationProperties.CONFIG_KEY_LANGUAGE, language == null ? "" : language);
-				applicationConfiguration.set(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE, proxyConfigurationType == null ? "" : proxyConfigurationType);
-				applicationConfiguration.set(ConfigurationProperties.CONFIG_KEY_PROXY_URL, proxyUrl == null ? "" : proxyUrl);
-				returnValue = Result.OK;
-				dispose();
+	private void cancel() {
+		if (configurationChanged) {
+			final int result = JOptionPane.showConfirmDialog(this, LangResources.get("discardUnsavedConfigurationChanges"), applicationName + " " + LangResources.get("configuration"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (result != JOptionPane.YES_OPTION) {
+				// Keep the dialog open, discard nothing
+				return;
 			}
-		});
-		mainButtonPanel.add(okButton);
+		}
+		returnValue = Result.CANCELED;
+		dispose();
+	}
 
-		mainButtonPanel.add(Box.createRigidArea(new Dimension(5, 36)));
+	private void applyPendingChanges() {
+		for (final Entry<String, Object> entry : pendingChanges.entrySet()) {
+			final Object value = entry.getValue();
+			if (value instanceof Boolean) {
+				applicationConfiguration.set(entry.getKey(), (Boolean) value);
+			} else {
+				applicationConfiguration.set(entry.getKey(), (String) value);
+			}
+		}
+	}
 
-		// Close Button
-		final JButton closeButton = new JButton(LangResources.get("cancel"));
-		closeButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(final ActionEvent event) {
-				if (configurationChanged) {
-					final int result = JOptionPane.showConfirmDialog(getParent(), LangResources.get("discardUnsavedConfigurationChanges"), applicationName + " " + LangResources.get("configuration"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-					if (result == JOptionPane.YES_OPTION) {
-						returnValue = Result.CANCELED;
-						dispose();
-					}
-					// else: keep the dialog open, discard nothing
+	private void showProperties(final String title, final Map<String, String> properties) {
+		final Map<String, String> displayProperties = new LinkedHashMap<>();
+		for (final Entry<String, String> entry : properties.entrySet()) {
+			final String value = entry.getValue() == null ? "" : entry.getValue();
+			displayProperties.put(entry.getKey(), value.replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
+		}
+		new ShowDataDialog(this, applicationName + " " + title, Utilities.getStringFromMap(displayProperties, "\n", " = ", true)).withResizable(true).open();
+	}
+
+	/**
+	 * Look and feel, toolkit and screen information, useful for analyzing
+	 * display problems (e.g. HiDPI scaling on Linux).
+	 */
+	private static Map<String, String> getSwingProperties() {
+		final Map<String, String> properties = new LinkedHashMap<>();
+		properties.put("LookAndFeel", UIManager.getLookAndFeel() == null ? "" : UIManager.getLookAndFeel().getName() + " (" + UIManager.getLookAndFeel().getClass().getName() + ")");
+		properties.put("SystemLookAndFeel", UIManager.getSystemLookAndFeelClassName());
+		properties.put("Toolkit", Toolkit.getDefaultToolkit().getClass().getName());
+		try {
+			properties.put("ScreenResolution (dpi)", Integer.toString(Toolkit.getDefaultToolkit().getScreenResolution()));
+		} catch (final Exception e) {
+			properties.put("ScreenResolution (dpi)", e.getClass().getSimpleName());
+		}
+		properties.put("Headless", Boolean.toString(GraphicsEnvironment.isHeadless()));
+		if (!GraphicsEnvironment.isHeadless()) {
+			final GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+			properties.put("Screens", Integer.toString(screens.length));
+			for (int i = 0; i < screens.length; i++) {
+				final GraphicsConfiguration configuration = screens[i].getDefaultConfiguration();
+				properties.put("Screen " + (i + 1), configuration.getBounds().width + "x" + configuration.getBounds().height
+						+ " at " + configuration.getBounds().x + "," + configuration.getBounds().y
+						+ ", scale " + configuration.getDefaultTransform().getScaleX() + "x" + configuration.getDefaultTransform().getScaleY());
+			}
+		}
+		return properties;
+	}
+
+	private void checkUpdate() {
+		try {
+			final String proxyConfigurationType = getProxyConfigurationType();
+			ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), getProxyUrl()), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, jvmParameters, appParameters, true, false);
+		} catch (final Exception e) {
+			new QuestionDialog(this, applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
+		}
+	}
+
+	private void createDesktopLink() {
+		try {
+			String applicationJarFileName = SystemUtilities.getCurrentlyRunningJarFilePath();
+			if (Utilities.isBlank(applicationJarFileName)) {
+				applicationJarFileName = openJarFilePathDialog();
+			}
+
+			if (Utilities.isBlank(applicationJarFileName)) {
+				return;
+			}
+
+			final String javaHome = System.getProperty("java.home");
+
+			if (SystemUtilities.isWindowsSystem()) {
+				final String desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".lnk";
+				if (new File(desktopLinkFilePath).exists()) {
+					new File(desktopLinkFilePath).delete();
+				}
+
+				final String userHomeApplicationDirectory = System.getProperty("user.home") + File.separator + "." + applicationName;
+				final String iconPath = userHomeApplicationDirectory + File.separator + applicationName + ".ico";
+				if (!new File(userHomeApplicationDirectory).exists()) {
+					new File(userHomeApplicationDirectory).mkdir();
+				}
+				if (new File(iconPath).exists()) {
+					new File(iconPath).delete();
+				}
+
+				final String tempScriptFile = System.getProperty("java.io.tmpdir") + File.separator + applicationName + "_createlink.vbs";
+				if (new File(tempScriptFile).exists()) {
+					new File(tempScriptFile).delete();
+				}
+
+				if (iconImageDataWindows != null) {
+					FileUtilities.write(new File(iconPath), iconImageDataWindows);
+				}
+
+				final StringBuilder data = new StringBuilder();
+				data.append("set shortcut = CreateObject(\"WScript.Shell\").CreateShortcut(\"" + desktopLinkFilePath + "\")\n");
+				data.append("shortcut.Description = \"" + applicationName + "\"\n");
+				if (Utilities.isNotBlank(javaHome)) {
+					data.append("shortcut.TargetPath = \"" + javaHome + "\\bin\\javaw.exe\"\n");
+					data.append("shortcut.Arguments = \"-jar \"\"" + applicationJarFileName + "\"\"\"\n");
 				} else {
-					returnValue = Result.CANCELED;
-					dispose();
+					data.append("shortcut.TargetPath = \"" + applicationJarFileName + "\"\n");
+				}
+				data.append("shortcut.IconLocation = \"" + iconPath + "\"\n");
+				data.append("shortcut.Save\n");
+
+				try {
+					FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), StandardCharsets.UTF_8);
+
+					Runtime.getRuntime().exec(new String[] { "wscript", "\"" + tempScriptFile + "\"" }, null, null);
+
+					JOptionPane.showMessageDialog(this, LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
+
+					new File(tempScriptFile).delete();
+				} catch (final IOException e) {
+					JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+				}
+			} else if (SystemUtilities.isLinuxSystem()) {
+				String desktopLinkFilePath;
+				String iconPath;
+				final File localShareApplicationsDirectory = new File(System.getProperty("user.home") + "/.local/share/applications");
+				if (localShareApplicationsDirectory.exists()) {
+					desktopLinkFilePath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".desktop";
+					iconPath = localShareApplicationsDirectory.getAbsolutePath() + File.separator + applicationName + ".png";
+				} else {
+					desktopLinkFilePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + applicationName + ".desktop";
+					iconPath = System.getProperty("user.home") + File.separator + applicationName + ".png";
+				}
+				if (new File(desktopLinkFilePath).exists()) {
+					new File(desktopLinkFilePath).delete();
+				}
+				if (new File(iconPath).exists()) {
+					new File(iconPath).delete();
+				}
+
+				final StringBuilder data = new StringBuilder();
+				data.append("[Desktop Entry]\n");
+				data.append("Encoding=UTF-8\n");
+				data.append("Name=" + applicationName + "\n");
+
+				if (iconImageLinux != null) {
+					ImageIO.write(toBufferedImage(iconImageLinux), "png", new File(iconPath));
+					data.append("Icon=" + iconPath + "\n");
+				}
+
+				// %U-parameter allows drag and drop of files on starter bar in unity
+				// JVM option "--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED" allows the application to be pinned in the Linux Gnome applications dock.
+				// JVM options must be placed before "-jar", everything after the jar file path is passed to the application.
+				data.append("Exec=java --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED -jar \"" + applicationJarFileName + "\" %U\n");
+				data.append("Terminal=false\n");
+				data.append("Type=Application\n");
+
+				if (applicationClassName != null) {
+					// StartupWMClass must match the WM_CLASS set by the main application, so the launcher can group all windows of the same application
+					data.append("StartupWMClass=" + applicationClassName + "\n");
+				}
+
+				try {
+					FileUtilities.writeStringToFile(new File(desktopLinkFilePath), data.toString(), StandardCharsets.UTF_8);
+
+					new File(desktopLinkFilePath).setExecutable(true);
+
+					JOptionPane.showMessageDialog(this, LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
+				} catch (final IOException e) {
+					JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 				}
 			}
-		});
-		mainButtonPanel.add(closeButton);
+		} catch (final Exception e) {
+			JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+		}
+	}
 
-		mainButtonPanel.add(Box.createRigidArea(new Dimension(5, 36)));
+	/**
+	 * ImageIO can only write RenderedImages, but e.g. ImageIcon.getImage() returns
+	 * a toolkit image, so any other image type is drawn into a BufferedImage.
+	 */
+	private static BufferedImage toBufferedImage(final Image image) {
+		if (image instanceof BufferedImage) {
+			return (BufferedImage) image;
+		}
 
-		return mainButtonPanel;
+		final ImageIcon loadedImage = new ImageIcon(image); // Waits until the image data is completely loaded
+		final BufferedImage bufferedImage = new BufferedImage(Math.max(1, loadedImage.getIconWidth()), Math.max(1, loadedImage.getIconHeight()), BufferedImage.TYPE_INT_ARGB);
+		final Graphics2D graphics = bufferedImage.createGraphics();
+		try {
+			graphics.drawImage(loadedImage.getImage(), 0, 0, null);
+		} finally {
+			graphics.dispose();
+		}
+		return bufferedImage;
 	}
 
 	private String openJarFilePathDialog() {
-		String applicationJarFileName;
 		final JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setDialogTitle(LangResources.get("createDesktopLink"));
 		if (JFileChooser.APPROVE_OPTION == fileChooser.showOpenDialog(this)) {
-			applicationJarFileName = fileChooser.getSelectedFile().getAbsolutePath();
+			return fileChooser.getSelectedFile().getAbsolutePath();
 		} else {
-			applicationJarFileName = null;
+			return null;
 		}
-		return applicationJarFileName;
+	}
+
+	/**
+	 * Current (possibly not yet saved) value of a configuration key.
+	 */
+	private String getCurrentValue(final String key) {
+		if (pendingChanges.containsKey(key)) {
+			final Object value = pendingChanges.get(key);
+			return value == null ? null : value.toString();
+		} else {
+			return applicationConfiguration.get(key);
+		}
+	}
+
+	/**
+	 * Sets the value shown for a key, which is saved together with the user's
+	 * changes.
+	 */
+	private void setCurrentValue(final String key, final String value) {
+		technicalChange = true;
+		try {
+			final JComponent component = valueComponents.get(key);
+			if (component instanceof JComboBox) {
+				@SuppressWarnings("unchecked")
+				final JComboBox<String> comboBox = (JComboBox<String>) component;
+				comboBox.setSelectedItem(toDisplayValue(value));
+			} else if (component instanceof JTextField) {
+				((JTextField) component).setText(value == null ? "" : value);
+			} else if (component instanceof JCheckBox) {
+				((JCheckBox) component).setSelected(Utilities.interpretAsBool(value));
+			}
+			registerChange(key, value == null ? "" : value);
+		} finally {
+			technicalChange = false;
+		}
+		updateProxyUrlEnabledStatus();
+	}
+
+	public String getLanguage() {
+		return getCurrentValue(ConfigurationProperties.CONFIG_KEY_LANGUAGE);
+	}
+
+	public void setLanguage(final String language) {
+		lastLanguageValue = language;
+		setCurrentValue(ConfigurationProperties.CONFIG_KEY_LANGUAGE, language);
+	}
+
+	public String getProxyConfigurationType() {
+		return getCurrentValue(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE);
+	}
+
+	public void setProxyConfigurationType(final String proxyConfigurationType) {
+		setCurrentValue(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE, proxyConfigurationType);
+	}
+
+	public String getProxyUrl() {
+		return getCurrentValue(ConfigurationProperties.CONFIG_KEY_PROXY_URL);
+	}
+
+	public void setProxyUrl(final String proxyUrl) {
+		setCurrentValue(ConfigurationProperties.CONFIG_KEY_PROXY_URL, proxyUrl);
+	}
+
+	public List<String> getAvailableLanguages() {
+		return availableLanguages;
+	}
+
+	/**
+	 * Languages offered for selection, if the configuration itself contains no
+	 * enum definition for the language key.
+	 */
+	public ApplicationConfigurationDialog setAvailableLanguages(final List<String> availableLanguages) {
+		this.availableLanguages = availableLanguages;
+
+		if (availableLanguagesCombo != null) {
+			technicalChange = true;
+			try {
+				fillComboBox(availableLanguagesCombo, availableLanguages, getLanguage());
+			} finally {
+				technicalChange = false;
+			}
+		}
+
+		return this;
+	}
+
+	private static String getI18NString(final String resourceKey, final Object... arguments) {
+		if (LangResources.existsKey(resourceKey)) {
+			return LangResources.get(resourceKey, arguments);
+		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
+			String pattern;
+			switch (resourceKey) {
+				case "showSwingProperties": pattern = "Swing-Eigenschaften anzeigen"; break;
+				case "swingProperties": pattern = "Swing-Eigenschaften"; break;
+				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		} else {
+			String pattern;
+			switch (resourceKey) {
+				case "showSwingProperties": pattern = "Show Swing properties"; break;
+				case "swingProperties": pattern = "Swing properties"; break;
+				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
+			}
+			return MessageFormat.format(pattern, arguments);
+		}
 	}
 }
