@@ -1769,7 +1769,15 @@ public class DropDown extends JPanel {
 	 * Fills and shows the matches popup.
 	 */
 	private void showPopup() {
-		if (matches.size() <= 1 || !isShowing()) {
+		/*
+		 * A single match must be showable as well: the dropdown button and the arrow
+		 * keys open the full item list, which may consist of only one entry. Without
+		 * the popup that entry would not be selectable at all. Callers reacting to
+		 * typing (updateMatches(), mouse click into the field) check for more than
+		 * one match themselves, because there a single match is already shown as
+		 * suggestion.
+		 */
+		if (matches.isEmpty() || !isShowing()) {
 			return;
 		}
 
@@ -2332,4 +2340,3 @@ public class DropDown extends JPanel {
 		}
 	}
 }
-

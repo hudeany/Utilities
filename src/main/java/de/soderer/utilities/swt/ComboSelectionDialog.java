@@ -108,17 +108,18 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
 		if (items.size() > 0) {
 			comboBox.setItems(items);
-			if (preSelectedItemIndex < 0) {
-				comboBox.setText(items.get(items.size() - 1));
-			} else {
+			// Invalid or missing index: preselect the last item (also covers a single item)
+			if (preSelectedItemIndex >= 0 && preSelectedItemIndex < items.size()) {
 				comboBox.setText(items.get(preSelectedItemIndex));
+			} else {
+				comboBox.setText(items.get(items.size() - 1));
 			}
 		}
 
 		okButton = new Button(composite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(getI18NString("ok"));
-		okButton.setEnabled(comboBox.isValidValue());
+		okButton.setEnabled(comboBox.isValidValue() && Utilities.isNotEmpty(comboBox.getText()));
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 
 		final Button cancelButton = new Button(composite, SWT.PUSH);
@@ -138,7 +139,7 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
 		@Override
 		public void widgetSelected(final SelectionEvent event) {
-			okButton.setEnabled(true);
+			okButton.setEnabled(comboBox.isValidValue() && Utilities.isNotEmpty(comboBox.getText()));
 		}
 	}
 
@@ -177,7 +178,7 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		public void accept(final String deletedItem) {
 			items.remove(deletedItem);
 
-			okButton.setEnabled(comboBox.isValidValue());
+			okButton.setEnabled(comboBox.isValidValue() && Utilities.isNotEmpty(comboBox.getText()));
 		}
 	}
 

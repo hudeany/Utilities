@@ -49,7 +49,8 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 	/**
 	 * @param preselectedIndex index of the item shown initially, or -1 for an
-	 *                         empty selection
+	 *                         empty selection (a single item is always
+	 *                         preselected)
 	 */
 	public ComboSelectionDialog(final Window parent, final String title, final String text, final Collection<String> items, final int preselectedIndex) {
 		super(parent, title);
@@ -84,6 +85,9 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		dropDown.setAlignmentX(LEFT_ALIGNMENT);
 		if (preselectedIndex >= 0 && preselectedIndex < itemList.size()) {
 			dropDown.setText(itemList.get(preselectedIndex));
+		} else if (itemList.size() == 1) {
+			// Only one possible choice: preselect it, so it can be confirmed directly
+			dropDown.setText(itemList.get(0));
 		}
 		dropDown.addChangeListener(e -> checkButtonStatus());
 		dropDown.addValidationListener(valid -> checkButtonStatus());
