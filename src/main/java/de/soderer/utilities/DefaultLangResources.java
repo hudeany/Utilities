@@ -17,7 +17,6 @@ public class DefaultLangResources {
 	private static final Map<String, String> ENGLISH = new LinkedHashMap<>();
 
 	static {
-		// Translations taken from the built-in fallbacks (getI18NString) of the library
 		add("cancel",                      "Abbrechen", "Cancel");
 		add("canceledByUser",              "Abbruch durch Benutzer", "Canceled by user");
 		add("cannotOpenMail",              "Email client konnte nicht gefunden werden.", "Email client was not found.");
@@ -27,15 +26,14 @@ public class DefaultLangResources {
 		add("detailsLess",                 "Details <<<", "Details <<<");
 		add("detailsMore",                 "Details >>>", "Details >>>");
 		add("enterDownloadCredentials",    "Bitte Userdaten für den Download eingeben", "Enter credentials for download");
-		// Texts of enterDownloadPassword and enterDownloadUsername are swapped in ApplicationUpdateUtilities, corrected here
 		add("enterDownloadPassword",       "Bitte Passwort für Download eingeben", "Enter password for download");
 		add("enterDownloadUsername",       "Bitte Usernamen für Download eingeben", "Enter username for download");
 		add("enterPassword",               "Bitte Passwort eingeben", "Please enter password");
 		add("enterUsername",               "Bitte Usernamen eingeben", "Please enter username");
 		add("error",                       "Fehler", "Error");
 		add("errorOccurred",               "Es ist ein Fehler aufgetreten", "An error occurred");
-		// GUI variant, UpdateableConsoleApplication uses "Update installieren? (jN)" / "Install update? (yN)"
 		add("installUpdate",               "Update installieren?", "Install update?");
+		add("yN",                          "jN", "yN");
 		add("newApplicationVersion",       "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}.", "New version {0} is available for {1}.\nThe current local version is {2}.");
 		add("no",                          "Nein", "No");
 		add("noNewerVersion",              "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}.", "There is no newer version available for {0}.\nThe current local version is {1}.");
@@ -48,7 +46,6 @@ public class DefaultLangResources {
 		add("showSwingProperties",         "Swing-Eigenschaften anzeigen", "Show Swing properties");
 		add("sureQuestion",                "Sind sie sich sicher?", "Are you sure?");
 		add("swingProperties",             "Swing-Eigenschaften", "Swing properties");
-		// GUI variant, UpdateableConsoleApplication uses "Update beendet" / "Update done"
 		add("updateDone",                  "Upgedatete Anwendung kann neugestartet werden", "Updated application may be restarted");
 		add("updateErrorVersionCheck",     "Fehler beim Ermitteln der aktuellsten Version für ein Update der Applikation:\n{0}", "Update error while checking for new version:\n{0}");
 		add("username",                    "Username", "Username");
