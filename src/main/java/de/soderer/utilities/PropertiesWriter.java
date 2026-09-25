@@ -25,11 +25,13 @@ public class PropertiesWriter implements Closeable {
 	}
 
 	public void writeProperty(final String key, final String value) throws Exception {
-		if (outputStream == null) {
-			throw new IllegalStateException("PropertiesWriter is already closed");
+		checkNotClosed();
+
+		if (key == null || key.isEmpty()) {
+			throw new IllegalArgumentException("Property key must not be empty");
 		}
 
-		outputWriter.write(key);
+		outputWriter.write(escapeKey(key));
 		outputWriter.write(keyValueSeparator);
 		outputWriter.write(escapeValue(value));
 		outputWriter.write(linebreakType.toString());
@@ -42,9 +44,7 @@ public class PropertiesWriter implements Closeable {
 	}
 
 	public void writeProperties(final Map<String, String> properties, final Map<String, String> comments) throws Exception {
-		if (outputStream == null) {
-			throw new IllegalStateException("PropertiesWriter is already closed");
-		}
+		checkNotClosed();
 
 		for (final Entry<String, String> propertyEntry : properties.entrySet()) {
 			if (comments != null && comments.get(propertyEntry.getKey()) != null) {
@@ -55,37 +55,123 @@ public class PropertiesWriter implements Closeable {
 	}
 
 	/**
-	 * Escape a single data value
-	 *
-	 * @param value
-	 *            the value
-	 * @return the string
+	 * Escape a property key.
+	 * Keys need escaping of separators ('=', ':'), comment chars ('#', '!') and all whitespace,
+	 * because the first unescaped whitespace or separator ends the key.
 	 */
-	private static String escapeValue(String valueString) throws Exception {
-		if (valueString == null) {
-			return "";
-		} else {
-			valueString = Utilities.escapePropertiesString(valueString);
-			if (valueString.length() > 0 && Character.isWhitespace(valueString.charAt(0))) {
-				valueString = "\\" + valueString;
+	private static String escapeKey(final String key) {
+		final StringBuilder result = new StringBuilder(key.length() + 16);
+		for (int i = 0; i < key.length(); i++) {
+			final char c = key.charAt(i);
+			switch (c) {
+				case ' ':
+				case '=':
+				case ':':
+				case '#':
+				case '!':
+					result.append('\\').append(c);
+					break;
+				default:
+					appendEscapedCommonChar(result, c);
 			}
-			valueString = valueString.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
-			return valueString;
+		}
+		return result.toString();
+	}
+
+	/**
+	 * Escape a property value.
+	 * Only characters that would change the meaning when loading are escaped.
+	 * Double quotes, '=', ':', '#' and '!' have no special meaning inside a value and are written as they are.
+	 * Line breaks are kept lossless ("\r\n" is written as "\r\n").
+	 */
+	private static String escapeValue(final String value) {
+		if (value == null) {
+			return "";
+		}
+
+		final StringBuilder result = new StringBuilder(value.length() + 16);
+		for (int i = 0; i < value.length(); i++) {
+			final char c = value.charAt(i);
+			if (c == ' ' && i == 0) {
+				// Leading whitespace would be stripped when loading
+				result.append("\\ ");
+			} else {
+				appendEscapedCommonChar(result, c);
+			}
+		}
+		return result.toString();
+	}
+
+	/**
+	 * Escape characters that need escaping in keys and values alike:
+	 * backslash, control characters and everything outside printable ASCII.
+	 */
+	private static void appendEscapedCommonChar(final StringBuilder result, final char c) {
+		switch (c) {
+			case '\\':
+				result.append("\\\\");
+				break;
+			case '\n':
+				result.append("\\n");
+				break;
+			case '\r':
+				result.append("\\r");
+				break;
+			case '\t':
+				result.append("\\t");
+				break;
+			case '\f':
+				result.append("\\f");
+				break;
+			default:
+				if (c < 0x20 || c > 0x7E) {
+					appendUnicodeEscape(result, c);
+				} else {
+					result.append(c);
+				}
 		}
 	}
 
-	public void writeComment(final String comment) throws Exception {
-		if (outputStream == null) {
-			throw new IllegalStateException("PropertiesWriter is already closed");
+	private static void appendUnicodeEscape(final StringBuilder result, final char c) {
+		result.append("\\u").append(String.format("%04X", (int) c));
+	}
+
+	/**
+	 * Escape a comment line.
+	 * Only characters not representable in ISO-8859-1 are written as unicode escapes,
+	 * so umlauts etc. stay readable. PropertiesReader decodes these escapes in comments.
+	 */
+	private static String escapeCommentLine(final String commentLine) {
+		final StringBuilder result = new StringBuilder(commentLine.length() + 16);
+		for (int i = 0; i < commentLine.length(); i++) {
+			final char c = commentLine.charAt(i);
+			if (c > 0xFF) {
+				appendUnicodeEscape(result, c);
+			} else {
+				result.append(c);
+			}
 		}
+		return result.toString();
+	}
+
+	public void writeComment(final String comment) throws Exception {
+		checkNotClosed();
 
 		for (final String commentLine : comment.replace("\r\n", "\n").replace("\r", "\n").split("\n")) {
-			outputWriter.write("# " + commentLine + "\n");
+			outputWriter.write("# " + escapeCommentLine(commentLine) + linebreakType.toString());
 		}
 	}
 
 	public void writeEmptyLine() throws Exception {
-		outputWriter.write("\n");
+		checkNotClosed();
+
+		outputWriter.write(linebreakType.toString());
+	}
+
+	private void checkNotClosed() {
+		if (outputStream == null) {
+			throw new IllegalStateException("PropertiesWriter is already closed");
+		}
 	}
 
 	/**

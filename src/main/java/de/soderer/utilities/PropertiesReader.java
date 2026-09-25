@@ -11,10 +11,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import de.soderer.utilities.collection.CaseInsensitiveLinkedMap;
 
 public class PropertiesReader implements Closeable {
+	private static final Pattern UNICODE_ESCAPE_PATTERN = Pattern.compile("\\\\u([0-9A-Fa-f]{4})");
+
 	private BufferedReader inputReader;
 
 	private boolean readKeysCaseInsensitive = true;
@@ -48,6 +52,10 @@ public class PropertiesReader implements Closeable {
 	}
 
 	public Map<String, String> read() throws Exception {
+		if (inputReader == null) {
+			throw new IllegalStateException("PropertiesReader is already closed");
+		}
+
 		Map<String, String> properties;
 		if (readKeysCaseInsensitive) {
 			properties = new CaseInsensitiveLinkedMap<>();
@@ -63,7 +71,7 @@ public class PropertiesReader implements Closeable {
 				if (pendingCommentLines.length() > 0) {
 					pendingCommentLines += "\n";
 				}
-				pendingCommentLines += trimmedNextLine.substring(1).trim();
+				pendingCommentLines += unescapeComment(trimmedNextLine.substring(1).trim());
 			} else if (trimmedNextLine.length() > 0) {
 				final int separatorIndex = findKeyValueSeparator(nextLine);
 				String key;
@@ -76,8 +84,9 @@ public class PropertiesReader implements Closeable {
 					value = nextLine.substring(separatorIndex + 1);
 				}
 
+				// Continuation lines only lose their leading whitespace, trailing whitespace is part of the value
 				while (endsWithUnescapedBackslash(value) && (nextLine = inputReader.readLine()) != null) {
-					value = value.substring(0, value.length() - 1) + (nextLine.trim());
+					value = value.substring(0, value.length() - 1) + Utilities.trimLeft(nextLine);
 				}
 
 				final String unescapedKey = unescapeKey(key);
@@ -124,26 +133,55 @@ public class PropertiesReader implements Closeable {
 	}
 
 	private static String unescapeKey(final String rawKey) throws Exception {
-		String key;
-
 		try {
-			key = Utilities.unescapePropertiesString(rawKey.trim());
+			return Utilities.unescapePropertiesString(trimKey(rawKey));
 		} catch (final Exception e) {
-			throw new Exception("Invalid JAVA endoded text: " + rawKey, e);
+			throw new Exception("Invalid properties encoded key: " + rawKey, e);
 		}
+	}
 
-		return key;
+	/**
+	 * Trim leading whitespace and trailing whitespace, but keep trailing whitespace that is escaped by a backslash.
+	 */
+	private static String trimKey(final String rawKey) {
+		final String key = Utilities.trimLeft(rawKey);
+		int end = key.length();
+		while (end > 0 && Character.isWhitespace(key.charAt(end - 1)) && !isEscapedAt(key, end - 1)) {
+			end--;
+		}
+		return key.substring(0, end);
+	}
+
+	/**
+	 * Check whether the char at the given index is escaped by an odd number of preceding backslashes.
+	 */
+	private static boolean isEscapedAt(final String text, final int index) {
+		int backslashCount = 0;
+		for (int i = index - 1; i >= 0 && text.charAt(i) == '\\'; i--) {
+			backslashCount++;
+		}
+		return backslashCount % 2 == 1;
 	}
 
 	private static String unescapeValue(final String rawValue) throws Exception {
-		String value;
-
 		try {
-			value = Utilities.unescapePropertiesString(Utilities.trimLeft(rawValue));
+			return Utilities.unescapePropertiesString(Utilities.trimLeft(rawValue));
 		} catch (final Exception e) {
-			throw new Exception("Invalid JAVA endoded text: " + rawValue, e);
+			throw new Exception("Invalid properties encoded value: " + rawValue, e);
 		}
-		return value;
+	}
+
+	/**
+	 * Decode unicode escapes in comment lines, which are written for chars not representable in ISO-8859-1.
+	 */
+	private static String unescapeComment(final String commentLine) {
+		final Matcher matcher = UNICODE_ESCAPE_PATTERN.matcher(commentLine);
+		final StringBuilder result = new StringBuilder();
+		while (matcher.find()) {
+			matcher.appendReplacement(result, Matcher.quoteReplacement(String.valueOf((char) Integer.parseInt(matcher.group(1), 16))));
+		}
+		matcher.appendTail(result);
+		return result.toString();
 	}
 
 	private static boolean endsWithUnescapedBackslash(final String value) {
@@ -175,7 +213,7 @@ public class PropertiesReader implements Closeable {
 	}
 
 	/**
-	 * Close this writer and its underlying stream.
+	 * Close this reader and its underlying stream.
 	 */
 	@Override
 	public void close() {
@@ -188,7 +226,8 @@ public class PropertiesReader implements Closeable {
 	}
 
 	public static Map<String, String> readPropertiesString(final String propertiesString) throws Exception {
-		try (PropertiesReader reader = new PropertiesReader(new ByteArrayInputStream(propertiesString.getBytes(StandardCharsets.UTF_8)))) {
+		// Bytes and reader must use the same charset, otherwise non-ASCII chars become mojibake
+		try (PropertiesReader reader = new PropertiesReader(new ByteArrayInputStream(propertiesString.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8)) {
 			return reader.read();
 		}
 	}

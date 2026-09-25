@@ -2167,6 +2167,11 @@ public class Utilities {
 		return unescapedTextBuilder.toString();
 	}
 
+	/**
+	 * Escape a text for use as a value in a .properties file.
+	 * Only escapes that are valid for java.util.Properties are used.
+	 * Double quotes have no special meaning in properties files and are not escaped.
+	 */
 	public static String escapePropertiesString(final String text) {
 		final StringBuilder escapedTextBuilder = new StringBuilder();
 
@@ -2174,9 +2179,6 @@ public class Utilities {
 			switch (nextChar) {
 				case '\\':
 					escapedTextBuilder.append("\\\\");
-					break;
-				case '\"':
-					escapedTextBuilder.append("\\\"");
 					break;
 				case '\n':
 					escapedTextBuilder.append("\\n");
@@ -2187,13 +2189,11 @@ public class Utilities {
 				case '\t':
 					escapedTextBuilder.append("\\t");
 					break;
-				case '\b':
-					escapedTextBuilder.append("\\b");
-					break;
 				case '\f':
 					escapedTextBuilder.append("\\f");
 					break;
 				default:
+					// "\b" is not a valid properties escape, so backspace and other control chars become unicode escapes
 					if (nextChar < 32 || nextChar > 126) {
 						escapedTextBuilder.append(String.format("\\u%04X", (int) nextChar));
 					} else {
@@ -2285,8 +2285,11 @@ public class Utilities {
 						if (i + 9 < length) {
 							final String hex = propertiesEscapedText.substring(i + 2, i + 10);
 							try {
-								final int code = Integer.parseInt(hex, 32);
-								unescapedTextBuilder.append((char) code);
+								final int codePoint = Integer.parseInt(hex, 16);
+								if (!Character.isValidCodePoint(codePoint)) {
+									throw new Exception("Invalid unicode code point at character index " + i + " ('" + "\\U" + hex + "')");
+								}
+								unescapedTextBuilder.appendCodePoint(codePoint);
 								i += 9;
 							} catch (final NumberFormatException e) {
 								throw new Exception("Invalid unicode sequence at character index " + i + " ('" + "\\U" + hex + "')", e);
