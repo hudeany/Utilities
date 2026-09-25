@@ -6,12 +6,10 @@ import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -19,7 +17,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.Utilities;
 
 /**
@@ -103,14 +101,14 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 		final JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, margin, 0));
 
-		okButton = new JButton(getI18NString("ok"));
+		okButton = new JButton(DefaultLangResources.getI18NStringOrDefault("ok"));
 		okButton.addActionListener(e -> {
 			returnValue = dropDown.getText();
 			dispose();
 		});
 		buttonPanel.add(okButton);
 
-		final JButton cancelButton = new JButton(getI18NString("cancel"));
+		final JButton cancelButton = new JButton(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		cancelButton.addActionListener(e -> {
 			returnValue = null;
 			dispose();
@@ -168,27 +166,5 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 	private void checkButtonStatus() {
 		okButton.setEnabled(dropDown.isValidValue() && Utilities.isNotEmpty(dropDown.getText()));
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch (resourceKey) {
-				case "ok": pattern = "OK"; break;
-				case "cancel": pattern = "Abbrechen"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch (resourceKey) {
-				case "ok": pattern = "OK"; break;
-				case "cancel": pattern = "Cancel"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 }

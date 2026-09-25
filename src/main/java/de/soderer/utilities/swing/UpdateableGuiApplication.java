@@ -1,11 +1,10 @@
 package de.soderer.utilities.swing;
 
 import java.io.File;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
-import java.util.Locale;
 
 import de.soderer.utilities.Credentials;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
@@ -78,24 +77,24 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			updateProgressDialog = null;
 		}
 
-		new QuestionDialog(this, "Update " + applicationName, getI18NString("updateDone"), getI18NString("restartNow")).open();
+		new QuestionDialog(this, "Update " + applicationName, DefaultLangResources.getI18NStringOrDefault("updateDone"), DefaultLangResources.getI18NStringOrDefault("restartNow")).open();
 	}
 
 	@Override
 	public boolean askForUpdate(final Version availableNewVersion) throws Exception {
 		if (availableNewVersion == null) {
-			final QuestionDialog questionDialog = new QuestionDialog(this, "Update " + applicationName, getI18NString("noNewerVersion", applicationName, applicationVersion.toString()));
+			final QuestionDialog questionDialog = new QuestionDialog(this, "Update " + applicationName, DefaultLangResources.getI18NStringOrDefault("noNewerVersion", applicationName, applicationVersion.toString()));
 			if (isDailyUpdateCheckActivated() != null) {
-				questionDialog.setCheckboxText(getI18NString("dailyUpdateCheck"));
+				questionDialog.setCheckboxText(DefaultLangResources.getI18NStringOrDefault("dailyUpdateCheck"));
 				questionDialog.setCheckboxStatus(isDailyUpdateCheckActivated());
 			}
 			questionDialog.open();
 			setDailyUpdateCheckStatus(questionDialog.getCheckboxStatus());
 			return false;
 		} else {
-			final QuestionDialog questionDialog = new QuestionDialog(this, "Update " + applicationName, getI18NString("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()) + "\n\n" + getI18NString("installUpdate"), getI18NString("yes"), getI18NString("no"));
+			final QuestionDialog questionDialog = new QuestionDialog(this, "Update " + applicationName, DefaultLangResources.getI18NStringOrDefault("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()) + "\n\n" + DefaultLangResources.getI18NStringOrDefault("installUpdate"), DefaultLangResources.getI18NStringOrDefault("yes"), DefaultLangResources.getI18NStringOrDefault("no"));
 			if (isDailyUpdateCheckActivated() != null) {
-				questionDialog.setCheckboxText(getI18NString("dailyUpdateCheck"));
+				questionDialog.setCheckboxText(DefaultLangResources.getI18NStringOrDefault("dailyUpdateCheck"));
 				questionDialog.setCheckboxStatus(isDailyUpdateCheckActivated());
 			}
 			final Integer buttonIndex = questionDialog.open();
@@ -115,42 +114,6 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 		if (updateProgressDialog != null) {
 			updateProgressDialog.receiveDoneSignal(startTime, endTime, itemsDone, itemsUnitSign, null);
 			updateProgressDialog = null;
-		}
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch(resourceKey) {
-				case "noNewerVersion": pattern = "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}."; break;
-				case "newApplicationVersion": pattern = "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
-				case "dailyUpdateCheck": pattern = "Tägliche Update Prüfung"; break;
-				case "installUpdate": pattern = "Update installieren?"; break;
-				case "yes": pattern = "Ja"; break;
-				case "no": pattern = "Nein"; break;
-				case "close": pattern = "Schließen"; break;
-				case "updateDone": pattern = "Upgedatete Anwendung kann neugestartet werden"; break;
-				case "restartNow": pattern = "Jetzt Anwendung neustarten"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch(resourceKey) {
-				case "noNewerVersion": pattern = "There is no newer version available for {0}.\nThe current local version is {1}."; break;
-				case "newApplicationVersion": pattern = "New version {0} is available for {1}.\nThe current local version is {2}."; break;
-				case "dailyUpdateCheck": pattern = "Daily update check"; break;
-				case "installUpdate": pattern = "Install update?"; break;
-				case "yes": pattern = "Yes"; break;
-				case "no": pattern = "No"; break;
-				case "close": pattern = "Close"; break;
-				case "updateDone": pattern = "Updated application may be restarted"; break;
-				case "restartNow": pattern = "Restart application now"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
 		}
 	}
 

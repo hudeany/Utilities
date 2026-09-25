@@ -8,8 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.text.MessageFormat;
-import java.util.Locale;
 import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
@@ -21,7 +19,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.Utilities;
 
 public class SimpleInputDialog extends ModalDialog<String> {
@@ -146,7 +144,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
 
 		// ok Button
-		okButton = new JButton(getI18NString("ok"));
+		okButton = new JButton(DefaultLangResources.getI18NStringOrDefault("ok"));
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
@@ -159,7 +157,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		buttonPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 
 		// Close Button
-		final JButton closeButton = new JButton(getI18NString("cancel"));
+		final JButton closeButton = new JButton(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
@@ -194,27 +192,5 @@ public class SimpleInputDialog extends ModalDialog<String> {
 
 	private void checkButtonStatus() {
 		okButton.setEnabled(Utilities.isNotEmpty(inputField.getText()));
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch(resourceKey) {
-				case "ok": pattern = "OK"; break;
-				case "cancel": pattern = "Abbrechen"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch(resourceKey) {
-				case "ok": pattern = "OK"; break;
-				case "cancel": pattern = "Cancel"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 }

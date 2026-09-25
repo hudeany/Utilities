@@ -77,7 +77,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			buttonSave.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
-					saveDataInteractive(getParent(), LangResources.get("savedata"), dataString.getBytes(StandardCharsets.UTF_8));
+					saveDataInteractive(getParent(), LangResources.get("saveData"), dataString.getBytes(StandardCharsets.UTF_8));
 				}
 			});
 		}

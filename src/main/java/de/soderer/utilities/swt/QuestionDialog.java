@@ -1,8 +1,5 @@
 package de.soderer.utilities.swt;
 
-import java.text.MessageFormat;
-import java.util.Locale;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.KeyAdapter;
@@ -16,7 +13,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.Utilities;
 
 public class QuestionDialog extends ModalDialog<Integer> {
@@ -104,7 +101,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 
 			final Button cancelButton = new Button(buttonComposite, SWT.PUSH);
 			cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-			cancelButton.setText(getI18NString("close"));
+			cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("close"));
 			cancelButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
@@ -146,37 +143,5 @@ public class QuestionDialog extends ModalDialog<Integer> {
 	@Override
 	protected Integer getDefaultReturnValue() {
 		return -1;
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch (resourceKey) {
-				case "close":
-					pattern = "Schließen";
-					break;
-				default:
-					pattern = "MessageKey unbekannt: " + resourceKey
-							+ (arguments != null && arguments.length > 0
-									? " Argumente: " + Utilities.join(arguments, ", ")
-									: "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch (resourceKey) {
-				case "close":
-					pattern = "Close";
-					break;
-				default:
-					pattern = "MessageKey unknown: " + resourceKey
-							+ (arguments != null && arguments.length > 0
-									? " arguments: " + Utilities.join(arguments, ", ")
-									: "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 }

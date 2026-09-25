@@ -1,8 +1,6 @@
 package de.soderer.utilities.swt;
 
 import java.io.InputStream;
-import java.text.MessageFormat;
-import java.util.Locale;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
@@ -21,8 +19,8 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.ExceptionUtilities;
-import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 import de.soderer.utilities.mail.MailUtilities;
@@ -36,7 +34,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	private Composite detailPart;
 
 	public ErrorDialog(final Shell shell, final String applicationName, final String applicationVersion, final String emailRecipient, final Throwable throwable) {
-		super(shell, SWT.CLOSE, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + getI18NString("error"));
+		super(shell, SWT.CLOSE, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + DefaultLangResources.getI18NStringOrDefault("error"));
 		this.throwable = throwable;
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
@@ -55,7 +53,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		}
 		shell.setLayout(new GridLayout(1, false));
 
-		String text1 = getI18NString("errorOccurred");
+		String text1 = DefaultLangResources.getI18NStringOrDefault("errorOccurred");
 		if (throwable instanceof VisibleException) {
 			text1 = ((VisibleException) throwable).getVisibleMessage();
 		} else {
@@ -74,26 +72,26 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		buttonComposite.setLayout(new FillLayout());
 
 		final Button sendMailButton = new Button(buttonComposite, SWT.PUSH);
-		sendMailButton.setText(getI18NString("openMail"));
+		sendMailButton.setText(DefaultLangResources.getI18NStringOrDefault("openMail"));
 		sendMailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				final boolean success = MailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : ""), ExceptionUtilities.throwableToString(throwable));
 				if (!success) {
-					new QuestionDialog(getParent(), getText(), getI18NString("cannotOpenMail"), "OK").setBackgroundColor(SwtColor.LightRed).open();
+					new QuestionDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("cannotOpenMail"), "OK").setBackgroundColor(SwtColor.LightRed).open();
 				}
 			}
 		});
 
 		detailButton = new Button(buttonComposite, SWT.PUSH);
-		detailButton.setText(getI18NString("detailsMore"));
+		detailButton.setText(DefaultLangResources.getI18NStringOrDefault("detailsMore"));
 		detailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				if (detailButton.getText().equals(getI18NString("detailsMore"))) {
-					detailButton.setText(getI18NString("detailsLess"));
+				if (detailButton.getText().equals(DefaultLangResources.getI18NStringOrDefault("detailsMore"))) {
+					detailButton.setText(DefaultLangResources.getI18NStringOrDefault("detailsLess"));
 				} else {
-					detailButton.setText(getI18NString("detailsMore"));
+					detailButton.setText(DefaultLangResources.getI18NStringOrDefault("detailsMore"));
 				}
 				final Point currentLocation = getParent().getLocation();
 				setupDetailPart();
@@ -109,7 +107,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 
 		final Button closeButton = new Button(shell, SWT.PUSH);
 		closeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		closeButton.setText(getI18NString("close"));
+		closeButton.setText(DefaultLangResources.getI18NStringOrDefault("close"));
 		closeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -126,7 +124,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			item.dispose();
 		}
 
-		if (detailButton.getText().equals(getI18NString("detailsLess"))) {
+		if (detailButton.getText().equals(DefaultLangResources.getI18NStringOrDefault("detailsLess"))) {
 			final String text2 = throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
 
 			final String text3 = ExceptionUtilities.throwableToString(throwable);
@@ -153,38 +151,6 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		detailPart.layout();
 		getParent().pack();
 		setPosition(getParent());
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch(resourceKey) {
-				case "detailsMore": pattern = "Details >>>"; break;
-				case "detailsLess": pattern = "Details <<<"; break;
-				case "openMail": pattern = "Mail mit Fehlerdaten an den Entwickler öffnen"; break;
-				case "cannotOpenMail": pattern = "Email client konnte nicht gefunden werden."; break;
-				case "close": pattern = "Schließen"; break;
-				case "error": pattern = "Fehler"; break;
-				case "errorOccurred": pattern = "Es ist ein Fehler aufgetreten"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch(resourceKey) {
-				case "detailsMore": pattern = "Details >>>"; break;
-				case "detailsLess": pattern = "Details <<<"; break;
-				case "openMail": pattern = "Open mail with errordata to developer"; break;
-				case "cannotOpenMail": pattern = "Email client was not found."; break;
-				case "close": pattern = "Close"; break;
-				case "error": pattern = "Error"; break;
-				case "errorOccurred": pattern = "An error occurred"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 
 	@Override

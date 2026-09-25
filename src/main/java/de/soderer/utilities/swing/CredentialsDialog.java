@@ -8,8 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.text.MessageFormat;
-import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -24,7 +22,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import de.soderer.utilities.Credentials;
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.Utilities;
 
 public class CredentialsDialog extends ModalDialog<Credentials> {
@@ -57,7 +55,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 	private boolean rememberCredentials = false;
 
 	public CredentialsDialog(final Window parent, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword) {
-		this(parent, title, text, aquireUsername, aquirePassword, getI18NString("username"), getI18NString("password"), getI18NString("ok"), getI18NString("cancel"));
+		this(parent, title, text, aquireUsername, aquirePassword, DefaultLangResources.getI18NStringOrDefault("username"), DefaultLangResources.getI18NStringOrDefault("password"), DefaultLangResources.getI18NStringOrDefault("ok"), DefaultLangResources.getI18NStringOrDefault("cancel"));
 	}
 
 	public CredentialsDialog(final Window parent, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword,
@@ -268,36 +266,8 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		}
 	}
 
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch(resourceKey) {
-				case "username": pattern = "Username"; break;
-				case "password": pattern = "Passwort"; break;
-				case "noPassword": pattern = "Kein Passwort"; break;
-				case "ok": pattern = "OK"; break;
-				case "cancel": pattern = "Abbrechen"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch(resourceKey) {
-				case "username": pattern = "Username"; break;
-				case "password": pattern = "Password"; break;
-				case "noPassword": pattern = "No password"; break;
-				case "ok": pattern = "OK"; break;
-				case "cancel": pattern = "Cancel"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
-	}
-
 	public CredentialsDialog enableNoPassword(final boolean enable) {
-		enableNoPassword(enable, getI18NString("noPassword"));
+		enableNoPassword(enable, DefaultLangResources.getI18NStringOrDefault("noPassword"));
 		return this;
 	}
 

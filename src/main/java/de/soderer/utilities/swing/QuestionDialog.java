@@ -7,8 +7,6 @@ import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.MessageFormat;
-import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -19,7 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.Utilities;
 
 public class QuestionDialog extends ModalDialog<Integer> {
@@ -124,7 +122,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 				}
 			}
 		} else {
-			final JButton cancelButton = new JButton(getI18NString("close"));
+			final JButton cancelButton = new JButton(DefaultLangResources.getI18NStringOrDefault("close"));
 			cancelButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(final ActionEvent event) {
@@ -178,25 +176,5 @@ public class QuestionDialog extends ModalDialog<Integer> {
 
 	public boolean getCheckboxStatus() {
 		return checkboxStatus;
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch(resourceKey) {
-				case "close": pattern = "Schließen"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch(resourceKey) {
-				case "close": pattern = "Close"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 }

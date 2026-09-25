@@ -2,9 +2,7 @@ package de.soderer.utilities;
 
 import java.awt.HeadlessException;
 import java.io.Console;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
-import java.util.Locale;
 
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
 import de.soderer.utilities.console.ConsoleType;
@@ -30,12 +28,12 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		}
 		ConsoleUtilities.clearScreen();
 		if (availableNewVersion == null) {
-			System.out.println(getI18NString("noNewerVersion", applicationName, applicationVersion.toString()));
+			System.out.println(DefaultLangResources.getI18NStringOrDefault("noNewerVersion", applicationName, applicationVersion.toString()));
 			System.out.println();
 			return false;
 		} else {
-			System.out.println(getI18NString("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
-			final String input = new SimpleConsoleInput().withPrompt(getI18NString("installUpdate") + ": ").readInput();
+			System.out.println(DefaultLangResources.getI18NStringOrDefault("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
+			final String input = new SimpleConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("installUpdate") + ": ").readInput();
 			System.out.println();
 			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j"));
 		}
@@ -52,12 +50,12 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		char[] password = null;
 
 		if (aquireUsername && aquirePassword) {
-			userName = new SimpleConsoleInput().withPrompt(getI18NString("enterUsername") + ": ").readInput();
-			password = new PasswordConsoleInput().withPrompt(getI18NString("enterPassword") + ": ").readInput();
+			userName = new SimpleConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("enterUsername") + ": ").readInput();
+			password = new PasswordConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("enterPassword") + ": ").readInput();
 		} else if (aquireUsername) {
-			userName = new SimpleConsoleInput().withPrompt(getI18NString("enterUsername") + ": ").readInput();
+			userName = new SimpleConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("enterUsername") + ": ").readInput();
 		} else if (aquirePassword) {
-			password = new PasswordConsoleInput().withPrompt(getI18NString("enterPassword") + ": ").readInput();
+			password = new PasswordConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("enterPassword") + ": ").readInput();
 		}
 
 		if (Utilities.isBlank(userName) && Utilities.isBlank(password)) {
@@ -96,7 +94,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	@Override
 	public void showUpdateDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 		System.out.println();
-		System.out.println(getI18NString("updateDone"));
+		System.out.println(DefaultLangResources.getI18NStringOrDefault("updateDone"));
 		System.out.println();
 	}
 
@@ -108,35 +106,5 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	@Override
 	public void showUpdateDownloadEnd(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 		// Do nothing
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch(resourceKey) {
-				case "noNewerVersion": pattern = "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}."; break;
-				case "newApplicationVersion": pattern = "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
-				case "installUpdate": pattern = "Update installieren? (jN)"; break;
-				case "enterUsername": pattern = "Bitte Usernamen eingeben"; break;
-				case "enterPassword": pattern = "Bitte Passwort eingeben"; break;
-				case "updateDone": pattern = "Update beendet"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch(resourceKey) {
-				case "noNewerVersion": pattern = "There is no newer version available for {0}.\nThe current local version is {1}."; break;
-				case "newApplicationVersion": pattern = "New version {0} is available for {1}.\nThe current local version is {2}."; break;
-				case "installUpdate": pattern = "Install update? (yN)"; break;
-				case "enterUsername": pattern = "Please enter username"; break;
-				case "enterPassword": pattern = "Please enter password"; break;
-				case "updateDone": pattern = "Update done"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 }

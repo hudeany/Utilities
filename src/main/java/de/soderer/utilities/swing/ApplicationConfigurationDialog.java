@@ -19,13 +19,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -53,6 +51,7 @@ import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.pac.utilities.ProxyConfiguration.ProxyConfigurationType;
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
@@ -437,8 +436,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		buttons.add(showRuntimePropertiesButton);
 
 		// Swing counterpart of the SWT variant's "SWT properties"
-		final JButton showSwingPropertiesButton = new JButton(getI18NString("showSwingProperties"));
-		showSwingPropertiesButton.addActionListener(e -> showProperties(getI18NString("swingProperties"), getSwingProperties()));
+		final JButton showSwingPropertiesButton = new JButton(DefaultLangResources.getI18NStringOrDefault("showSwingProperties"));
+		showSwingPropertiesButton.addActionListener(e -> showProperties(DefaultLangResources.getI18NStringOrDefault("swingProperties"), getSwingProperties()));
 		buttons.add(showSwingPropertiesButton);
 
 		if (Utilities.isNotBlank(versioninfoDownloadURL)) {
@@ -766,27 +765,5 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		}
 
 		return this;
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch (resourceKey) {
-				case "showSwingProperties": pattern = "Swing-Eigenschaften anzeigen"; break;
-				case "swingProperties": pattern = "Swing-Eigenschaften"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch (resourceKey) {
-				case "showSwingProperties": pattern = "Show Swing properties"; break;
-				case "swingProperties": pattern = "Swing properties"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 }

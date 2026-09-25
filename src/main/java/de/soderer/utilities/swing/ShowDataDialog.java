@@ -7,8 +7,6 @@ import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.StringSelection;
-import java.text.MessageFormat;
-import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -16,8 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-import de.soderer.utilities.LangResources;
-import de.soderer.utilities.Utilities;
+import de.soderer.utilities.DefaultLangResources;
 
 /**
  * Modal dialog showing a (possibly long) read-only text, e.g. a report, with
@@ -52,11 +49,11 @@ public class ShowDataDialog extends ModalDialog<Boolean> {
 
 		final JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, margin, 0));
 
-		final JButton copyButton = new JButton(getI18NString("copyToClipboard"));
+		final JButton copyButton = new JButton(DefaultLangResources.getI18NStringOrDefault("copyToClipboard"));
 		copyButton.addActionListener(e -> Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(textArea.getText()), null));
 		buttonPanel.add(copyButton);
 
-		final JButton closeButton = new JButton(getI18NString("close"));
+		final JButton closeButton = new JButton(DefaultLangResources.getI18NStringOrDefault("close"));
 		closeButton.addActionListener(e -> {
 			returnValue = true;
 			dispose();
@@ -108,27 +105,5 @@ public class ShowDataDialog extends ModalDialog<Boolean> {
 		setLocationRelativeTo(getOwner());
 
 		return this;
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch (resourceKey) {
-				case "close": pattern = "Schließen"; break;
-				case "copyToClipboard": pattern = "In Zwischenablage kopieren"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch (resourceKey) {
-				case "close": pattern = "Close"; break;
-				case "copyToClipboard": pattern = "Copy to clipboard"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 }

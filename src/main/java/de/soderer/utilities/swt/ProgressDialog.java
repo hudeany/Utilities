@@ -1,6 +1,5 @@
 package de.soderer.utilities.swt;
 
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.Locale;
 
@@ -16,6 +15,7 @@ import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
 import de.soderer.utilities.Utilities;
@@ -82,7 +82,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				if (new QuestionDialog(getParent(), getI18NString("cancel"), getI18NString("sureQuestion"), getI18NString("no"), getI18NString("yes")).open() == 1) {
+				if (new QuestionDialog(getParent(), DefaultLangResources.getI18NStringOrDefault("cancel"), DefaultLangResources.getI18NStringOrDefault("sureQuestion"), DefaultLangResources.getI18NStringOrDefault("no"), DefaultLangResources.getI18NStringOrDefault("yes")).open() == 1) {
 					cancel();
 				}
 			}
@@ -260,31 +260,5 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 	public T getWorker() {
 		return worker;
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch(resourceKey) {
-				case "cancel": pattern = "Abbrechen"; break;
-				case "yes": pattern = "Ja"; break;
-				case "no": pattern = "Nein"; break;
-				case "sureQuestion": pattern = "Sind sie sich sicher?"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch(resourceKey) {
-				case "cancel": pattern = "Cancel"; break;
-				case "yes": pattern = "Yes"; break;
-				case "no": pattern = "No"; break;
-				case "sureQuestion": pattern = "Are you sure?"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		}
 	}
 }

@@ -51,7 +51,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			label.setText(text);
 		}
 
-		separatorRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("csvSeparator"), SWT.NONE, ArrangementStyle.Horizontal, LangResources.get("csvSeparatorComa"),
+		separatorRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("csvSeparator"), SWT.NONE, ArrangementStyle.Horizontal, LangResources.get("csvSeparatorComma"),
 				LangResources.get("csvSeparatorSemicolon"));
 		separatorRadioButtonGroup.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
 		separatorRadioButtonGroup.setSelectedButtonIndex(separator == ',' ? 0 : 1);

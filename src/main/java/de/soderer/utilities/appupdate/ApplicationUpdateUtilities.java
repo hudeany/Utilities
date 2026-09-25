@@ -17,7 +17,6 @@ import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -25,7 +24,6 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
@@ -43,8 +41,8 @@ import de.soderer.network.HttpUtilities;
 import de.soderer.network.NetworkUtilities;
 import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.Credentials;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.IoUtilities;
-import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.UserError;
@@ -97,7 +95,7 @@ public class ApplicationUpdateUtilities {
 			return true;
 		} catch (final Exception e) {
 			if (updateParent != null) {
-				showUpdateError(updateParent, getI18NString("updateErrorVersionCheck", e.getMessage()));
+				showUpdateError(updateParent, DefaultLangResources.getI18NStringOrDefault("updateErrorVersionCheck", e.getMessage()));
 				return false;
 			} else {
 				throw e;
@@ -640,51 +638,51 @@ public class ApplicationUpdateUtilities {
 
 				if (downloadUrlWithCredentials.contains("<username>") && downloadUrlWithCredentials.contains("<password>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials(getI18NString("enterDownloadCredentials"), true, true, firstRequest);
+						final Credentials credentials = updateParent.aquireCredentials(DefaultLangResources.getI18NStringOrDefault("enterDownloadCredentials"), true, true, firstRequest);
 						if (credentials == null) {
-							updateParent.showUpdateError(getI18NString("canceledByUser"));
+							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 							return false;
 						} else if (Utilities.isEmpty(credentials.getUsername()) || Utilities.isEmpty(credentials.getPassword())) {
-							updateParent.showUpdateError(getI18NString("usernameAndPasswordRequired"));
+							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("usernameAndPasswordRequired"));
 							return false;
 						} else {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(credentials.getUsername(), StandardCharsets.UTF_8));
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(credentials.getPassword()), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError(updateParent, getI18NString("usernameAndPasswordRequired"));
+						showUpdateError(updateParent, DefaultLangResources.getI18NStringOrDefault("usernameAndPasswordRequired"));
 						return false;
 					}
 				} else if (downloadUrlWithCredentials.contains("<username>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials(getI18NString("enterDownloadUsername"), true, false, firstRequest);
+						final Credentials credentials = updateParent.aquireCredentials(DefaultLangResources.getI18NStringOrDefault("enterDownloadUsername"), true, false, firstRequest);
 						if (credentials == null) {
-							updateParent.showUpdateError(getI18NString("canceledByUser"));
+							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 							return false;
 						} else if (Utilities.isEmpty(credentials.getUsername())) {
-							updateParent.showUpdateError(getI18NString("usernameRequired"));
+							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("usernameRequired"));
 							return false;
 						} else {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(credentials.getUsername(), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError(updateParent, getI18NString("usernameRequired"));
+						showUpdateError(updateParent, DefaultLangResources.getI18NStringOrDefault("usernameRequired"));
 						return false;
 					}
 				} else if (downloadUrlWithCredentials.contains("<password>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials(getI18NString("enterDownloadPassword"), false, true, firstRequest);
+						final Credentials credentials = updateParent.aquireCredentials(DefaultLangResources.getI18NStringOrDefault("enterDownloadPassword"), false, true, firstRequest);
 						if (credentials == null) {
-							updateParent.showUpdateError(getI18NString("canceledByUser"));
+							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 							return false;
 						} else if (Utilities.isEmpty(credentials.getPassword())) {
-							updateParent.showUpdateError(getI18NString("passwordRequired"));
+							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("passwordRequired"));
 							return false;
 						} else {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(credentials.getPassword()), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError(updateParent, getI18NString("passwordRequired"));
+						showUpdateError(updateParent, DefaultLangResources.getI18NStringOrDefault("passwordRequired"));
 						return false;
 					}
 				}
@@ -697,7 +695,7 @@ public class ApplicationUpdateUtilities {
 					final boolean success = downloadUpdateFile(updateParent, downloadTempFile, downloadUrlWithCredentials, proxyConfiguration);
 					if (!success) {
 						// download stopped by user
-						updateParent.showUpdateError(getI18NString("canceledByUser"));
+						updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 						return false;
 					}
 				} catch (final UserError e) {
@@ -752,7 +750,7 @@ public class ApplicationUpdateUtilities {
 			final boolean success = copyUpdateFile(updateParent, downloadTempFile, updateFileLocation);
 			if (!success) {
 				// download stopped by user
-				updateParent.showUpdateError(getI18NString("canceledByUser"));
+				updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 				return false;
 			}
 		} else {
@@ -763,7 +761,7 @@ public class ApplicationUpdateUtilities {
 			final boolean success = copyUpdateFile(updateParent, downloadTempFile, updateFileLocation);
 			if (!success) {
 				// download stopped by user
-				updateParent.showUpdateError(getI18NString("canceledByUser"));
+				updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 				return false;
 			}
 		}
@@ -1208,40 +1206,6 @@ public class ApplicationUpdateUtilities {
 			if (restarterFile.exists() && !restarterFile.delete()) {
 				System.err.println("Cannot remove leftover restarter file '" + restarterFile.getAbsolutePath() + "'");
 			}
-		}
-	}
-
-	private static String getI18NString(final String resourceKey, final Object... arguments) {
-		if (LangResources.existsKey(resourceKey)) {
-			return LangResources.get(resourceKey, arguments);
-		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern;
-			switch(resourceKey) {
-				case "canceledByUser": pattern = "Abbruch durch Benutzer"; break;
-				case "usernameAndPasswordRequired": pattern = "Fehler:\nUsername und Passwort sind notwendig"; break;
-				case "usernameRequired": pattern = "Fehler:\nUsername ist notwendig"; break;
-				case "passwordRequired": pattern = "Fehler:\nPasswort ist notwendig"; break;
-				case "enterDownloadCredentials": pattern = "Bitte Userdaten für den Download eingeben"; break;
-				case "enterDownloadUsername": pattern = "Bitte Passwort für Download eingeben"; break;
-				case "enterDownloadPassword": pattern = "Bitte Usernamen für Download eingeben"; break;
-				case "updateErrorVersionCheck": pattern = "Fehler beim Ermitteln der aktuellsten Version für ein Update der Applikation:\n{0}"; break;
-				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
-		} else {
-			String pattern;
-			switch(resourceKey) {
-				case "canceledByUser": pattern = "Canceled by user"; break;
-				case "usernameAndPasswordRequired": pattern = "Error:\nUsername and password are required"; break;
-				case "usernameRequired": pattern = "Error:\nUsername is required"; break;
-				case "passwordRequired": pattern = "Error:\nPassword is required"; break;
-				case "enterDownloadCredentials": pattern = "Enter credentials for download"; break;
-				case "enterDownloadUsername": pattern = "Enter password for download"; break;
-				case "enterDownloadPassword": pattern = "Enter username for download"; break;
-				case "updateErrorVersionCheck": pattern = "Update error while checking for new version:\n{0}"; break;
-				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
 		}
 	}
 }
