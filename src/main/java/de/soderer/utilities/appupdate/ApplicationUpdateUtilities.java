@@ -657,7 +657,7 @@ public class ApplicationUpdateUtilities {
 					}
 				} else if (downloadUrlWithCredentials.contains("<username>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials(getI18NString("enterDownloadUserName"), true, false, firstRequest);
+						final Credentials credentials = updateParent.aquireCredentials(getI18NString("enterDownloadUsername"), true, false, firstRequest);
 						if (credentials == null) {
 							updateParent.showUpdateError(getI18NString("canceledByUser"));
 							return false;
@@ -1222,7 +1222,7 @@ public class ApplicationUpdateUtilities {
 				case "usernameRequired": pattern = "Fehler:\nUsername ist notwendig"; break;
 				case "passwordRequired": pattern = "Fehler:\nPasswort ist notwendig"; break;
 				case "enterDownloadCredentials": pattern = "Bitte Userdaten für den Download eingeben"; break;
-				case "enterDownloadUserName": pattern = "Bitte Passwort für Download eingeben"; break;
+				case "enterDownloadUsername": pattern = "Bitte Passwort für Download eingeben"; break;
 				case "enterDownloadPassword": pattern = "Bitte Usernamen für Download eingeben"; break;
 				case "updateErrorVersionCheck": pattern = "Fehler beim Ermitteln der aktuellsten Version für ein Update der Applikation:\n{0}"; break;
 				default: pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
@@ -1236,7 +1236,7 @@ public class ApplicationUpdateUtilities {
 				case "usernameRequired": pattern = "Error:\nUsername is required"; break;
 				case "passwordRequired": pattern = "Error:\nPassword is required"; break;
 				case "enterDownloadCredentials": pattern = "Enter credentials for download"; break;
-				case "enterDownloadUserName": pattern = "Enter password for download"; break;
+				case "enterDownloadUsername": pattern = "Enter password for download"; break;
 				case "enterDownloadPassword": pattern = "Enter username for download"; break;
 				case "updateErrorVersionCheck": pattern = "Update error while checking for new version:\n{0}"; break;
 				default: pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
