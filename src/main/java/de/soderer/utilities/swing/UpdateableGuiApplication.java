@@ -126,6 +126,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			switch(resourceKey) {
 				case "noNewerVersion": pattern = "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}."; break;
 				case "newApplicationVersion": pattern = "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}."; break;
+				case "dailyUpdateCheck": pattern = "Tägliche Update Prüfung"; break;
 				case "installUpdate": pattern = "Update installieren?"; break;
 				case "yes": pattern = "Ja"; break;
 				case "no": pattern = "Nein"; break;
@@ -140,6 +141,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			switch(resourceKey) {
 				case "noNewerVersion": pattern = "There is no newer version available for {0}.\nThe current local version is {1}."; break;
 				case "newApplicationVersion": pattern = "New version {0} is available for {1}.\nThe current local version is {2}."; break;
+				case "dailyUpdateCheck": pattern = "Daily update check"; break;
 				case "installUpdate": pattern = "Install update?"; break;
 				case "yes": pattern = "Yes"; break;
 				case "no": pattern = "No"; break;

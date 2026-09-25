@@ -101,7 +101,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		});
 
 		final Label userLabel = new Label(credentialsComposite, SWT.NONE);
-		userLabel.setText(LangResources.get("userName") + ": ");
+		userLabel.setText(LangResources.get("username") + ": ");
 
 		userNameText = new Text(credentialsComposite, SWT.BORDER);
 		userNameText.addModifyListener(new ModifyListener() {
