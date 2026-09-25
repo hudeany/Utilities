@@ -34,6 +34,7 @@ public class DefaultLangResources {
 		add("errorOccurred",               "Es ist ein Fehler aufgetreten", "An error occurred");
 		add("installUpdate",               "Update installieren?", "Install update?");
 		add("yN",                          "jN", "yN");
+		add("Yn",                          "Jn", "Yn");
 		add("newApplicationVersion",       "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}.", "New version {0} is available for {1}.\nThe current local version is {2}.");
 		add("no",                          "Nein", "No");
 		add("noNewerVersion",              "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}.", "There is no newer version available for {0}.\nThe current local version is {1}.");
