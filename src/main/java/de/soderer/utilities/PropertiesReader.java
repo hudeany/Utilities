@@ -132,7 +132,11 @@ public class PropertiesReader implements Closeable {
 		return -1;
 	}
 
-	private static String unescapeKey(final String rawKey) throws Exception {
+	/**
+	 * Unescape a key in its stored form (counterpart of PropertiesWriter.escapeKey()),
+	 * including the whitespace trimming that is applied when reading a .properties file.
+	 */
+	public static String unescapeKey(final String rawKey) throws Exception {
 		try {
 			return Utilities.unescapePropertiesString(trimKey(rawKey));
 		} catch (final Exception e) {
@@ -163,7 +167,11 @@ public class PropertiesReader implements Closeable {
 		return backslashCount % 2 == 1;
 	}
 
-	private static String unescapeValue(final String rawValue) throws Exception {
+	/**
+	 * Unescape a value in its stored form (counterpart of PropertiesWriter.escapeValue()),
+	 * including the leading whitespace trimming that is applied when reading a .properties file.
+	 */
+	public static String unescapeValue(final String rawValue) throws Exception {
 		try {
 			return Utilities.unescapePropertiesString(Utilities.trimLeft(rawValue));
 		} catch (final Exception e) {
