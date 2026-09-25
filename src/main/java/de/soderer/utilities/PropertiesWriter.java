@@ -59,7 +59,7 @@ public class PropertiesWriter implements Closeable {
 	 * Keys need escaping of separators ('=', ':'), comment chars ('#', '!') and all whitespace,
 	 * because the first unescaped whitespace or separator ends the key.
 	 */
-	private static String escapeKey(final String key) {
+	public static String escapeKey(final String key) {
 		final StringBuilder result = new StringBuilder(key.length() + 16);
 		for (int i = 0; i < key.length(); i++) {
 			final char c = key.charAt(i);
@@ -84,7 +84,7 @@ public class PropertiesWriter implements Closeable {
 	 * Double quotes, '=', ':', '#' and '!' have no special meaning inside a value and are written as they are.
 	 * Line breaks are kept lossless ("\r\n" is written as "\r\n").
 	 */
-	private static String escapeValue(final String value) {
+	public static String escapeValue(final String value) {
 		if (value == null) {
 			return "";
 		}
