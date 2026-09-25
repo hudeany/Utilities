@@ -1,6 +1,5 @@
 package de.soderer.utilities;
 
-import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -220,21 +219,23 @@ public class DefaultLangResources {
 		}
 	}
 
+	/**
+	 * Text for a message key from the application's LanguageProperties.
+	 * If the key is not defined there, the default text of this class is used.
+	 * Both are formatted the same way by {@link LangResources#format(String, Object[])}.
+	 */
 	public static String getI18NStringOrDefault(final String resourceKey, final Object... arguments) {
 		if (LangResources.existsKey(resourceKey)) {
 			return LangResources.get(resourceKey, arguments);
+		}
+
+		final String pattern = get(resourceKey);
+		if (pattern != null) {
+			return LangResources.format(pattern, arguments);
 		} else if ("de".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
-			String pattern = DefaultLangResources.get(resourceKey, Locale.getDefault());
-			if (Utilities.isBlank(pattern)) {
-				pattern = "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
+			return "MessageKey unbekannt: " + resourceKey + (arguments != null && arguments.length > 0 ? " Argumente: " + Utilities.join(arguments, ", ") : "");
 		} else {
-			String pattern = DefaultLangResources.get(resourceKey, Locale.getDefault());
-			if (Utilities.isBlank(pattern)) {
-				pattern = "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
-			}
-			return MessageFormat.format(pattern, arguments);
+			return "MessageKey unknown: " + resourceKey + (arguments != null && arguments.length > 0 ? " arguments: " + Utilities.join(arguments, ", ") : "");
 		}
 	}
 }

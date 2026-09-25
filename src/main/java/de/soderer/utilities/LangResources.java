@@ -6,7 +6,7 @@ import java.util.ResourceBundle;
 
 public class LangResources {
 	private static PropertyResourceBundle propertyResourceBundle;
-	
+
 	public static void enforceDefaultLocale() {
 		try {
 			propertyResourceBundle = (PropertyResourceBundle) ResourceBundle.getBundle("LanguageProperties", Locale.ROOT);
@@ -37,7 +37,10 @@ public class LangResources {
 		}
 	}
 
-	private static String format(String pattern, final Object[] arguments) {
+	/**
+	 * Replaces the placeholders "{0}", "{1}", ... literally by the arguments (no MessageFormat quoting)
+	 */
+	static String format(String pattern, final Object[] arguments) {
 		if (arguments != null) {
 			for (int i = 0; i < arguments.length; i++) {
 				final Object item = arguments [i];
