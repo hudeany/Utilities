@@ -94,7 +94,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final Image iconImageLinux;
 	private final String versioninfoDownloadURL;
 	private final String trustedUpdateCaCertificates;
-	private final List<String> jvmParameters;
 	private final List<String> appParameters;
 	private List<String> availableLanguages = Utilities.getList("de", "en");
 
@@ -114,7 +113,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 	private String lastLanguageValue;
 
-	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates, final List<String> jvmParameters, final List<String> appParameters) {
+	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates, final List<String> appParameters) {
 		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ") " + LangResources.get("configuration"));
 
 		this.updateParent = updateParent;
@@ -127,7 +126,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		this.iconImageLinux = iconImageLinux;
 		this.versioninfoDownloadURL = versioninfoDownloadURL;
 		this.trustedUpdateCaCertificates = trustedUpdateCaCertificates;
-		this.jvmParameters = jvmParameters;
 		this.appParameters = appParameters;
 
 		lastLanguageValue = applicationConfiguration.get(ConfigurationProperties.CONFIG_KEY_LANGUAGE);
@@ -532,7 +530,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private void checkUpdate() {
 		try {
 			final String proxyConfigurationType = getProxyConfigurationType();
-			ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), getProxyUrl()), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, jvmParameters, appParameters, true, false);
+			ApplicationUpdateUtilities.executeUpdate(updateParent, versioninfoDownloadURL, new ProxyConfiguration(ProxyConfigurationType.getFromString(proxyConfigurationType), getProxyUrl()), applicationName, applicationVersion, trustedUpdateCaCertificates, null, null, appParameters, true, false);
 		} catch (final Exception e) {
 			new QuestionDialog(this, applicationName + " ERROR", "ERROR:\n" + e.getMessage()).setBackgroundColor(SwingColor.LightRed).open();
 		}

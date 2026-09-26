@@ -20,7 +20,6 @@ public class ApplicationUpdateTest {
 					null,
 					null,
 					null,
-					null,
 					false,
 					false);
 			Assert.assertEquals(true, result);
@@ -38,7 +37,6 @@ public class ApplicationUpdateTest {
 					null,
 					"LanguagePropertiesManager",
 					new Version("1.0.0"),
-					null,
 					null,
 					null,
 					null,
