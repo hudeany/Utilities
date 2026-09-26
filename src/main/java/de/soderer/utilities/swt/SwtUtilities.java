@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.KeyAdapter;
-import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.DeviceData;
@@ -15,13 +13,11 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Path;
 import org.eclipse.swt.graphics.Pattern;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.graphics.TextLayout;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
@@ -146,49 +142,6 @@ public class SwtUtilities {
 		return newShell;
 	}
 
-	public static void addAutoCompleteFeature(final Combo combo) {
-		combo.addKeyListener(new KeyAdapter() {
-			@Override
-			public void keyReleased(final KeyEvent keyEvent) {
-				final Combo cmb = ((Combo) keyEvent.getSource());
-				setClosestMatch(cmb);
-			}
-
-			@Override
-			public void keyPressed(final KeyEvent keyEvent) {
-				if (keyEvent.keyCode == SWT.BS) {
-					final Combo comboBox = ((Combo) keyEvent.getSource());
-					final Point pt = comboBox.getSelection();
-					comboBox.setSelection(new Point(Math.max(0, pt.x - 1), pt.y));
-				} else if (keyEvent.keyCode == SWT.CR || keyEvent.keyCode == SWT.KEYPAD_CR) {
-					final Combo comboBox = ((Combo) keyEvent.getSource());
-					comboBox.notifyListeners(SWT.Selection, new Event());
-				}
-			}
-
-			private void setClosestMatch(final Combo comboBox) {
-				final String str = comboBox.getText();
-				final String[] cItems = comboBox.getItems();
-				int index = -1;
-				for (int i = 0; i < cItems.length; i++) {
-					if (cItems[i].toLowerCase().startsWith(str.toLowerCase())) {
-						index = i;
-						break;
-					}
-				}
-
-				if (index != -1) {
-					final Point pt = comboBox.getSelection();
-					comboBox.select(index);
-					comboBox.setText(cItems[index]);
-					comboBox.setSelection(new Point(pt.x, cItems[index].length()));
-				} else {
-					comboBox.setText("");
-				}
-			}
-		});
-	}
-
 	public static <T> void makeSortable(final Table table, final List<T> data, final List<Function<T, ? extends Comparable<?>>> valueExtractors) {
 		final TableColumn[] columns = table.getColumns();
 		for (int i = 0; i < columns.length; i++) {
@@ -238,4 +191,3 @@ public class SwtUtilities {
 		};
 	}
 }
-

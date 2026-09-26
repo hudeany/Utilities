@@ -1,10 +1,12 @@
 package de.soderer.utilities.swt;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -35,11 +37,16 @@ public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 
 		final Label lblReps = new Label(parentShell, SWT.NONE);
 		lblReps.setText(DefaultLangResources.getI18NStringOrDefault("numberOfRepetitionsPerWorker") + ":");
-		final Combo cmbReps = new Combo(parentShell, SWT.DROP_DOWN);
-		cmbReps.add("∞");
+		// Editable like the former SWT.DROP_DOWN Combo: presets 1..50, but any other value may be typed in
+		final List<String> repetitionItems = new ArrayList<>();
+		repetitionItems.add("∞");
 		for (int i = 1; i <= 50; i++) {
-			cmbReps.add(String.valueOf(i));
+			repetitionItems.add(String.valueOf(i));
 		}
+		final DropDown cmbReps = new DropDown(parentShell, SWT.NONE);
+		cmbReps.setMatchMode(DropDown.MatchMode.STARTS_WITH);
+		cmbReps.setAllowCustomValues(true);
+		cmbReps.setItems(repetitionItems);
 		cmbReps.setText("∞");
 		cmbReps.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
@@ -60,7 +67,8 @@ public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 		btnStart.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		btnStart.addListener(SWT.Selection, e -> {
 			workerCount = spnWorkers.getSelection();
-			repetitions = cmbReps.getText().trim();
+			final String repetitionsText = cmbReps.getText();
+			repetitions = repetitionsText == null ? "" : repetitionsText.trim();
 			pauseSeconds = spnPause.getSelection();
 
 			setReturnValue(true);

@@ -21,7 +21,6 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.FileDialog;
@@ -85,7 +84,9 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 	private Text hostKeyField;
 	private Tree folderTree;
 	private Tree filesTree;
-	private Combo serverEntriesCombo;
+	private DropDown serverEntriesCombo;
+	/** Names currently offered in serverEntriesCombo (DropDown has no getItemCount()) */
+	private final List<String> serverEntryNames = new ArrayList<>();
 	private Button loadServerEntriesButton;
 	private Button removeServerEntryButton;
 	private Button saveServerEntryButton;
@@ -131,21 +132,21 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			final Label serverEntriesLabel = new Label(serverEntriesComposite, SWT.NONE);
 			serverEntriesLabel.setText(DefaultLangResources.getI18NStringOrDefault("serverEntries"));
 
-			serverEntriesCombo = new Combo(serverEntriesComposite, SWT.NONE);
+			// Editable like the former SWT Combo: existing entries can be selected,
+			// a new name can be typed in to save the current settings as a new entry.
+			// Case-sensitive, because the keystore entry names are looked up exactly.
+			serverEntriesCombo = new DropDown(serverEntriesComposite, SWT.NONE);
 			serverEntriesCombo.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
-			serverEntriesCombo.setItems(new String[] {});
-			serverEntriesCombo.addModifyListener(new ModifyListener() {
-				@Override
-				public void modifyText(final ModifyEvent event) {
-					checkButtonStatus();
-				}
-			});
-			serverEntriesCombo.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(final SelectionEvent event) {
-					if (Utilities.isNotBlank(serverEntriesCombo.getText())) {
-						setServerAccessData(keyStore.getEntry(ServerAccessData.class, serverEntriesCombo.getText()));
-					}
+			serverEntriesCombo.setCaseSensitive(true);
+			serverEntriesCombo.setMatchMode(DropDown.MatchMode.CONTAINS);
+			serverEntriesCombo.setAllowCustomValues(true);
+			setServerEntryNames(new String[0]);
+			serverEntriesCombo.addListener(SWT.Modify, event -> checkButtonStatus());
+			serverEntriesCombo.addListener(SWT.Selection, event -> {
+				final String entryName = serverEntriesCombo.getText();
+				// Only load known entries, a newly typed name has no stored data yet
+				if (keyStore != null && Utilities.isNotBlank(entryName) && serverEntryNames.contains(entryName)) {
+					setServerAccessData(keyStore.getEntry(ServerAccessData.class, entryName));
 				}
 			});
 
@@ -167,22 +168,21 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				public void widgetSelected(final SelectionEvent event) {
 					if (keyStore != null) {
 						keyStore.removeEntry(ServerAccessData.class, serverEntriesCombo.getText());
-						final String[] data = keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]);
-						serverEntriesCombo.setItems(data);
-						serverEntriesCombo.clearSelection();
+						setServerEntryNames(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 						serverEntriesCombo.setText("");
-					}
 
-					serverEntriesCombo.setText("");
-
-					final Credentials credentials = new CredentialsDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("enterKeystorePassword"), false, true).open();
-					if (credentials != null) {
-						final char[] keystorePassword = credentials.getPassword();
-						try {
-							keyStore.save(keystoreFile, keystorePassword);
-						} catch (final Exception e) {
-							e.printStackTrace();
+						// Saving is only possible (and needed) if a keystore was loaded before
+						final Credentials credentials = new CredentialsDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("enterKeystorePassword"), false, true).open();
+						if (credentials != null) {
+							final char[] keystorePassword = credentials.getPassword();
+							try {
+								keyStore.save(keystoreFile, keystorePassword);
+							} catch (final Exception e) {
+								e.printStackTrace();
+							}
 						}
+					} else {
+						serverEntriesCombo.setText("");
 					}
 
 					checkButtonStatus();
@@ -208,7 +208,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 							e.printStackTrace();
 						}
 					}
-					serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
+					setServerEntryNames(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
 					serverEntriesCombo.setText(newEntryName);
 				}
 			});
@@ -815,7 +815,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			hostKeyField.setEnabled(false);
 		} else {
 			if (keystoreFile != null) {
-				serverEntriesCombo.setEnabled(serverEntriesCombo.getItemCount() > 0 || (Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol))));
+				serverEntriesCombo.setEnabled(!serverEntryNames.isEmpty() || (Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol))));
 				loadServerEntriesButton.setEnabled(keystoreFile.exists());
 				removeServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()));
 				saveServerEntryButton.setEnabled(Utilities.isNotBlank(serverEntriesCombo.getText()) && Utilities.isNotBlank(hostnameOrIp) && (Utilities.isNotBlank(username) || "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)));
@@ -928,18 +928,28 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		}
 
 		if (keyStore != null) {
-			serverEntriesCombo.setItems(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
-			if (serverEntriesCombo.getItemCount() > 0) {
-				serverEntriesCombo.select(0);
-				final String selectionName = serverEntriesCombo.getText();
+			setServerEntryNames(keyStore.getEntryNames(ServerAccessData.class).toArray(new String[0]));
+			if (!serverEntryNames.isEmpty()) {
+				final String selectionName = serverEntryNames.get(0);
+				serverEntriesCombo.setText(selectionName);
 				if (Utilities.isNotBlank(selectionName)) {
 					final ServerAccessData entry = keyStore.getEntry(ServerAccessData.class, selectionName);
 					setServerAccessData(entry);
 				}
 			}
 		} else {
-			serverEntriesCombo.setItems(new String[] {});
+			setServerEntryNames(new String[0]);
 		}
+	}
+
+	/** Keeps serverEntryNames and the DropDown items in sync */
+	private void setServerEntryNames(final String[] names) {
+		serverEntryNames.clear();
+		if (names != null) {
+			serverEntryNames.addAll(Arrays.asList(names));
+		}
+		// Pass a copy, in case DropDown keeps the list reference internally
+		serverEntriesCombo.setItems(new ArrayList<>(serverEntryNames));
 	}
 
 	private void setServerAccessData(final ServerAccessData entry) {

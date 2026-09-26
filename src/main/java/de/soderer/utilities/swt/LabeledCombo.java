@@ -1,18 +1,19 @@
 package de.soderer.utilities.swt;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 
 public class LabeledCombo extends Composite {
-	protected Combo comboBox;
+	protected DropDown comboBox;
+	/** Offered items, needed for the index based API (DropDown itself works on texts only) */
+	protected final List<String> items = new ArrayList<>();
 
 	protected LabeledCombo(final Composite parent, final int style) {
 		super(parent, style);
@@ -37,26 +38,32 @@ public class LabeledCombo extends Composite {
 		final Label label = new Label(this, SWT.NONE);
 		label.setText(labelText);
 
-		comboBox = new Combo(this, SWT.BORDER | SWT.READ_ONLY | style);
+		// Fixed list: no custom values (replaces the former read-only SWT Combo)
+		comboBox = new DropDown(this, style);
 		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		comboBox.setText("");
-		comboBox.addModifyListener(new ModifyListener() {
-			@Override
-			public void modifyText(final ModifyEvent arg0) {
-				final Event event = new Event();
-				event.widget = labeledCombo;
-				labeledCombo.notifyListeners(SWT.Modify, event);
-			}
-		});
-		if (items != null && items.size() > 0) {
-			final String[] comboBoxItems = items.toArray(new String[items.size()]);
-			comboBox.setItems(comboBoxItems);
-			if (preSelectedItemIndex < 0) {
-				comboBox.select(comboBox.getItemCount() - 1);
+		comboBox.setCaseSensitive(false);
+		comboBox.setMatchMode(DropDown.MatchMode.CONTAINS);
+		comboBox.setAllowCustomValues(false);
+		if (items != null) {
+			this.items.addAll(items);
+		}
+		comboBox.setItems(new ArrayList<>(this.items));
+		if (!this.items.isEmpty()) {
+			if (preSelectedItemIndex < 0 || preSelectedItemIndex >= this.items.size()) {
+				comboBox.setText(this.items.get(this.items.size() - 1));
 			} else {
-				comboBox.select(preSelectedItemIndex);
+				comboBox.setText(this.items.get(preSelectedItemIndex));
 			}
 		}
+
+		// Forward only accepted values as SWT.Modify of this composite.
+		// Invalid intermediate texts (red) are not forwarded, because listeners typically
+		// evaluate getSelectedItemIndex(), which would be -1 then.
+		comboBox.addListener(SWT.Selection, e -> {
+			final Event event = new Event();
+			event.widget = labeledCombo;
+			labeledCombo.notifyListeners(SWT.Modify, event);
+		});
 	}
 
 	public void addModifyListener(final ModifyListener listener) throws Exception {
@@ -73,11 +80,35 @@ public class LabeledCombo extends Composite {
 		comboBox.setEnabled(enabled);
 	}
 
+	/**
+	 * Selects the item at the given index.
+	 * Out of range indices are ignored, like Combo.select() did before.
+	 */
 	public void setSelectedItemIndex(final int index) {
-		comboBox.select(index);
+		if (index >= 0 && index < items.size()) {
+			comboBox.setText(items.get(index));
+		}
 	}
 
+	/**
+	 * Index of the currently shown item, or -1 if the text is currently invalid
+	 */
 	public int getSelectedItemIndex() {
-		return comboBox.getSelectionIndex();
+		final String text = comboBox.getText();
+		if (text == null) {
+			return -1;
+		}
+
+		// Exact match first, then case-insensitive (matching is case-insensitive)
+		final int exactIndex = items.indexOf(text);
+		if (exactIndex >= 0) {
+			return exactIndex;
+		}
+		for (int i = 0; i < items.size(); i++) {
+			if (items.get(i).equalsIgnoreCase(text)) {
+				return i;
+			}
+		}
+		return -1;
 	}
 }

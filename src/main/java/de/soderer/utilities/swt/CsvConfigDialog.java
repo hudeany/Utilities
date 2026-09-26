@@ -2,16 +2,14 @@ package de.soderer.utilities.swt;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -35,6 +33,8 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 	protected RadioButtonGroup underfilledLinesRadioButtonGroup;
 	protected RadioButtonGroup separatorRadioButtonGroup;
 	protected Button useQuoteButton;
+	protected DropDown encodingDropDown;
+	protected Button okButton;
 
 	public CsvConfigDialog(final Shell shell, final String title, final String text) {
 		super(shell, title);
@@ -99,23 +99,25 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			final Label encodingLabel = new Label(encodingComposite, SWT.NONE);
 			encodingLabel.setText(DefaultLangResources.getI18NStringOrDefault("encoding") + ": ");
 
-			final Combo encodingText = new Combo(encodingComposite, SWT.BORDER);
-			encodingText.setItems(new String[] { StandardCharsets.UTF_8.name(), StandardCharsets.ISO_8859_1.name(), "ISO-8859-15" });
-			encodingText.setText(encoding.name());
-			encodingText.addModifyListener(new ModifyListener() {
-				@Override
-				public void modifyText(final ModifyEvent event) {
-					encoding = Charset.forName(((Combo) event.widget).getText());
-					checkStatus();
-				}
-			});
+			// Editable like the former SWT Combo: common encodings as presets, any supported charset name may be typed in.
+			// Case-insensitive, because charset names are case-insensitive as well.
+			encodingDropDown = new DropDown(encodingComposite, SWT.NONE);
+			encodingDropDown.setCaseSensitive(false);
+			encodingDropDown.setMatchMode(DropDown.MatchMode.CONTAINS);
+			encodingDropDown.setAllowCustomValues(true);
+			encodingDropDown.setItems(List.of(StandardCharsets.UTF_8.name(), StandardCharsets.ISO_8859_1.name(), "ISO-8859-15"));
+			encodingDropDown.setText(encoding.name());
+			// The typed charset name is only evaluated for the OK button status here,
+			// "encoding" itself is only taken over when OK is pressed
+			encodingDropDown.addListener(SWT.Modify, event -> checkStatus());
+			encodingDropDown.addListener(SWT.Selection, event -> checkStatus());
 		}
 
 		final Composite mainButtonComposite = new Composite(shell, SWT.NONE);
 		mainButtonComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		mainButtonComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, true));
 
-		final Button okButton = new Button(mainButtonComposite, SWT.PUSH);
+		okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
@@ -125,6 +127,14 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 				useStringQuote = useQuoteButton.getSelection();
 				stringQuote = quoteTypeRadioButtonGroup.getSelectedButtonIndex() == 0 ? '\'' : '"';
 				allowUnderfilledLines = underfilledLinesRadioButtonGroup.getSelectedButtonIndex() == 0;
+				if (encodingDropDown != null) {
+					final Charset selectedEncoding = getSupportedCharset(encodingDropDown.getText());
+					if (selectedEncoding == null) {
+						// Should not happen, because OK is disabled for unsupported encodings
+						return;
+					}
+					encoding = selectedEncoding;
+				}
 				setReturnValue(true);
 				getParent().close();
 			}
@@ -151,6 +161,26 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 
 	private void checkStatus() {
 		quoteTypeRadioButtonGroup.setEnabled(useQuoteButton.getSelection());
+
+		if (okButton != null) {
+			okButton.setEnabled(encodingDropDown == null || getSupportedCharset(encodingDropDown.getText()) != null);
+		}
+	}
+
+	/**
+	 * Returns the charset for the given name, or null if the name is blank, illegal or not supported by this JVM.
+	 * Replaces the former direct Charset.forName() call, which threw on every incomplete name while typing (e.g. "UTF-").
+	 */
+	private static Charset getSupportedCharset(final String charsetName) {
+		if (Utilities.isBlank(charsetName)) {
+			return null;
+		}
+		try {
+			return Charset.forName(charsetName.trim());
+		} catch (@SuppressWarnings("unused") final IllegalArgumentException e) {
+			// Covers IllegalCharsetNameException and UnsupportedCharsetException
+			return null;
+		}
 	}
 
 	public void setSeparator(final char value) {

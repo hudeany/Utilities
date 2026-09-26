@@ -1,5 +1,6 @@
 package de.soderer.utilities.swt;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -8,7 +9,6 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -18,8 +18,9 @@ import de.soderer.utilities.DefaultLangResources;
 public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 	private final String text;
 	private final String browseButtonText;
-	private final List<String> items;
-	private Combo comboBox;
+	/** Mutable working copy of the offered folders, so every browsed folder stays selectable */
+	private final List<String> items = new ArrayList<>();
+	private DropDown comboBox;
 	private Button okButton;
 
 	public SelectOrBrowseFolderDialog(final Shell shell, final String title, final String text, final String browseButtonText, final List<String> items) {
@@ -27,7 +28,9 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 
 		this.text = text;
 		this.browseButtonText = browseButtonText;
-		this.items = items;
+		if (items != null) {
+			this.items.addAll(items);
+		}
 	}
 
 	@Override
@@ -40,12 +43,17 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 4, 1));
 		label.setText(text);
 
-		comboBox = new Combo(shell, SWT.FILL | SWT.READ_ONLY);
+		// Fixed list of folders: no custom values (replaces the former read-only SWT Combo).
+		// New folders are only added via the browse button.
+		comboBox = new DropDown(shell, SWT.NONE);
 		comboBox.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1));
-		comboBox.addSelectionListener(new ComboBoxButtonSelectionListener());
-		if (items != null && items.size() > 0) {
-			comboBox.setItems(items.toArray(new String[items.size()]));
-			comboBox.select(comboBox.getItemCount() - 1);
+		// Case-sensitive, since folder paths on Linux/macOS may differ only in case
+		comboBox.setCaseSensitive(true);
+		comboBox.setMatchMode(DropDown.MatchMode.CONTAINS);
+		comboBox.setAllowCustomValues(false);
+		comboBox.setItems(items);
+		if (!items.isEmpty()) {
+			comboBox.setText(items.get(items.size() - 1));
 		}
 
 		final Button browseButton = new Button(shell, SWT.PUSH);
@@ -56,21 +64,14 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 			public void widgetSelected(final SelectionEvent event) {
 				final DirectoryDialog dialog = new DirectoryDialog(getParent(), SWT.OPEN);
 				dialog.setText(getText());
-				final String filePath = dialog.open();
-				if (filePath != null) {
-					String[] newItems;
-					if (items != null && items.size() > 0) {
-						newItems = new String[items.size() + 1];
-						for (int i = 0; i < items.size(); i++) {
-							newItems[i] = items.get(i).toString();
-						}
-						newItems[items.size()] = filePath;
-					} else {
-						newItems = new String[] { filePath };
-					}
-					comboBox.setItems(newItems);
-					comboBox.select(comboBox.getItemCount() - 1);
-					okButton.setEnabled(true);
+				final String folderPath = dialog.open();
+				if (folderPath != null) {
+					// Move an already offered folder to the end instead of listing it twice
+					items.remove(folderPath);
+					items.add(folderPath);
+					comboBox.setItems(items);
+					comboBox.setText(folderPath);
+					updateOkButtonStatus();
 				}
 			}
 		});
@@ -78,27 +79,31 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 		okButton = new Button(shell, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
 		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
-		okButton.setEnabled(comboBox.getItemCount() > 0);
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 
 		final Button cancelButton = new Button(shell, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
 		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		cancelButton.addSelectionListener(new CancelButtonSelectionListener());
+
+		// Registered only after okButton exists, because setText() above may already fire these
+		comboBox.addListener(SWT.Selection, e -> updateOkButtonStatus());
+		comboBox.addValidationListener(valid -> updateOkButtonStatus());
+		updateOkButtonStatus();
 	}
 
-	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
-		@Override
-		public void widgetSelected(final SelectionEvent event) {
-			okButton.setEnabled(true);
-		}
+	/** OK is only possible while the DropDown shows one of the offered folders */
+	private void updateOkButtonStatus() {
+		final String selectedFolder = comboBox.getText();
+		okButton.setEnabled(selectedFolder != null && !selectedFolder.isBlank() && items.contains(selectedFolder));
 	}
 
 	private class OkButtonSelectionListener extends SelectionAdapter {
 		@Override
 		public void widgetSelected(final SelectionEvent event) {
-			if (comboBox.getSelectionIndex() > -1) {
-				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
+			final String selectedFolder = comboBox.getText();
+			if (selectedFolder != null && items.contains(selectedFolder)) {
+				setReturnValue(selectedFolder);
 			}
 			getParent().close();
 		}
