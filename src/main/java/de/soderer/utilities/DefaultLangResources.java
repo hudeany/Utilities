@@ -38,8 +38,8 @@ public class DefaultLangResources {
 		add("error",                       "Fehler", "Error", "Erreur", "Error", "Errore");
 		add("errorOccurred",               "Es ist ein Fehler aufgetreten", "An error occurred", "Une erreur s'est produite", "Se ha producido un error", "Si è verificato un errore");
 		add("installUpdate",               "Update installieren?", "Install update?", "Installer la mise à jour ?", "¿Instalar la actualización?", "Installare l'aggiornamento?");
-		add("yN",                          "jN", "yN", "oN", "sN", "sN");
-		add("Yn",                          "Jn", "Yn", "On", "Sn", "Sn");
+		add("yN",                          "j/N", "y/N", "o/N", "s/N", "s/N");
+		add("Yn",                          "J/n", "Y/n", "O/n", "S/n", "S/n");
 		add("newApplicationVersion",       "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}.", "New version {0} is available for {1}.\nThe current local version is {2}.", "Une nouvelle version {0} est disponible pour {1}.\nLa version locale actuelle est {2}.", "Hay una nueva versión {0} disponible para {1}.\nLa versión local actual es {2}.", "È disponibile una nuova versione {0} per {1}.\nLa versione locale attuale è {2}.");
 		add("no",                          "Nein", "No", "Non", "No", "No");
 		add("noNewerVersion",              "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}.", "There is no newer version available for {0}.\nThe current local version is {1}.", "Aucune version plus récente n'est disponible pour {0}.\nLa version locale actuelle est {1}.", "No hay ninguna versión más reciente disponible para {0}.\nLa versión local actual es {1}.", "Non è disponibile una versione più recente per {0}.\nLa versione locale attuale è {1}.");
