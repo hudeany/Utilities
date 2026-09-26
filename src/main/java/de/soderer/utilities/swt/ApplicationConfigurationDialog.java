@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,7 +24,6 @@ import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
@@ -38,6 +40,9 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
+	/** Language of the root language file without language suffix ("LanguageProperties.properties") */
+	private static final String DEFAULT_LANGUAGE_CODE = "en";
+
 	private final String applicationName;
 	private final String startUpClassName;
 	private final ConfigurationProperties applicationConfiguration;
@@ -45,7 +50,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private final Image iconImageLinux;
 
 	private boolean configurationChanged = false;
-	private final Map<String, Object> pendingChanges = new java.util.LinkedHashMap<>();
+	private final Map<String, Object> pendingChanges = new LinkedHashMap<>();
+
+	/** Languages offered for selection, if the configuration contains no enum definition for the language key */
+	private List<String> availableLanguages = LangResources.getAvailableLanguages(DEFAULT_LANGUAGE_CODE);
+
+	/** Per drop down key: stored value -> text shown in the drop down */
+	private final Map<String, Map<String, String>> dropDownDisplayValues = new HashMap<>();
 
 	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final String startUpClassName) {
 		super(shell, SWT.RESIZE, applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"));
@@ -113,35 +124,12 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					final GridData gridData2 = new GridData(SWT.FILL, SWT.UP, true, false, 1, 1);
 					valueTextfield.setLayoutData(gridData2);
 				} else if (applicationConfiguration.containsKey(key + ConfigurationProperties.ENUM_EXTENSION)) {
-					final List<String> items = Utilities.splitAndTrimList(applicationConfiguration.get(key + ConfigurationProperties.ENUM_EXTENSION));
-					items.replaceAll(x -> "None".equalsIgnoreCase(x) ? DefaultLangResources.getI18NStringOrDefault("None") : x);
-					final Combo comboBox = new Combo(dataPart, SWT.DROP_DOWN);
-					comboBox.setItems(items.toArray(new String[0]));
-					comboBox.addSelectionListener(new ComboBoxButtonSelectionListener(key));
-					if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key)) {
-						final String[] lastLanguageValueHolder = new String[] { applicationConfiguration.get(key) };
-						comboBox.addSelectionListener(new SelectionAdapter() {
-							@Override
-							public void widgetSelected(final SelectionEvent event) {
-								final String newValue = ((Combo) event.widget).getText().replace(DefaultLangResources.getI18NStringOrDefault("None"), "None");
-								final boolean valueUnchanged = lastLanguageValueHolder[0] == null ? newValue == null : lastLanguageValueHolder[0].equals(newValue);
-								if (!valueUnchanged) {
-									lastLanguageValueHolder[0] = newValue;
-									final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_INFORMATION | SWT.OK);
-									messageBox.setText(applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"));
-									messageBox.setMessage(DefaultLangResources.getI18NStringOrDefault("languageChangeRequiresRestart"));
-									messageBox.open();
-								}
-							}
-						});
-					}
-					if (Utilities.isBlank(applicationConfiguration.get(key))) {
-						comboBox.select(0);
-					} else {
-						comboBox.setText(applicationConfiguration.get(key).replace("None", DefaultLangResources.getI18NStringOrDefault("None")));
-					}
-					final GridData gridData1 = new GridData(SWT.FILL, SWT.UP, true, false, 2, 1);
-					comboBox.setLayoutData(gridData1);
+					final DropDown dropDown = createDropDown(dataPart, key, Utilities.splitAndTrimList(applicationConfiguration.get(key + ConfigurationProperties.ENUM_EXTENSION)), value);
+					dropDown.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
+				} else if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key)) {
+					// No enum definition in the configuration: offer the languages of the existing language files
+					final DropDown dropDown = createDropDown(dataPart, key, availableLanguages == null ? new ArrayList<>() : availableLanguages, value);
+					dropDown.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
 				} else if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
 					final Button keyCheckBox = new Button(dataPart, SWT.CHECK);
 					final GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1);
@@ -411,20 +399,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		}
 	}
 
-	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
-		private final String key;
-
-		private ComboBoxButtonSelectionListener(final String key) {
-			this.key = key;
-		}
-
-		@Override
-		public void widgetSelected(final SelectionEvent event) {
-			pendingChanges.put(key, ((Combo) event.widget).getText().replace(DefaultLangResources.getI18NStringOrDefault("None"), "None"));
-			configurationChanged = true;
-		}
-	}
-
 	private class TextValueChangeListener implements ModifyListener {
 		private final String key;
 
@@ -457,6 +431,125 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 			pendingChanges.put(key, ((Button) event.widget).getSelection());
 			configurationChanged = true;
 		}
+	}
+
+	/**
+	 * Drop down for a value with a fixed set of options. The options are shown
+	 * with a display text (see {@link #toDisplayValue(String, String)}), but
+	 * stored with their original value.
+	 */
+	private DropDown createDropDown(final Composite parent, final String key, final List<String> options, final String value) {
+		final DropDown dropDown = new DropDown(parent, SWT.NONE);
+		dropDown.setAllowCustomValues(false);
+		fillDropDown(key, dropDown, options, value);
+
+		final String[] lastValueHolder = new String[] { value };
+		dropDown.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(final SelectionEvent event) {
+				// getText() returns null while the entered text matches no option
+				final String displayValue = dropDown.getText();
+				if (displayValue != null) {
+					final String newValue = fromDisplayValue(key, displayValue);
+					pendingChanges.put(key, newValue);
+					configurationChanged = true;
+
+					final boolean valueUnchanged = lastValueHolder[0] == null ? newValue == null : lastValueHolder[0].equals(newValue);
+					if (!valueUnchanged) {
+						lastValueHolder[0] = newValue;
+						if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key)) {
+							final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_INFORMATION | SWT.OK);
+							messageBox.setText(applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"));
+							messageBox.setMessage(DefaultLangResources.getI18NStringOrDefault("languageChangeRequiresRestart"));
+							messageBox.open();
+						}
+					}
+				}
+			}
+		});
+
+		return dropDown;
+	}
+
+	private void fillDropDown(final String key, final DropDown dropDown, final List<String> options, final String value) {
+		final Map<String, String> displayValues = new LinkedHashMap<>();
+		for (final String option : options) {
+			displayValues.put(option, toDisplayValue(key, option));
+		}
+
+		String selectedValue = null;
+		if (Utilities.isBlank(value)) {
+			if (!options.isEmpty()) {
+				selectedValue = options.get(0);
+			}
+		} else {
+			for (final String option : options) {
+				if (option.equalsIgnoreCase(value)) {
+					selectedValue = option;
+					break;
+				}
+			}
+			if (selectedValue == null) {
+				// Keep a configured value that is not part of the options visible (and unchanged)
+				selectedValue = value;
+				displayValues.put(value, toDisplayValue(key, value));
+			}
+		}
+
+		dropDownDisplayValues.put(key, displayValues);
+		dropDown.setItems(new ArrayList<>(displayValues.values()));
+		if (selectedValue != null) {
+			dropDown.setText(displayValues.get(selectedValue));
+		}
+	}
+
+	/**
+	 * Text shown in a drop down for a stored value: "None" in the user's
+	 * language, language codes with their name (e.g. "Deutsch (de)") if a
+	 * language resource exists for the code, otherwise the value itself.
+	 */
+	private static String toDisplayValue(final String key, final String value) {
+		if ("None".equalsIgnoreCase(value)) {
+			return DefaultLangResources.getI18NStringOrDefault("None");
+		} else if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key) && Utilities.isNotBlank(value) && LangResources.existsKey(value) && Utilities.isNotBlank(LangResources.get(value))) {
+			return LangResources.get(value) + " (" + value + ")";
+		} else {
+			return value;
+		}
+	}
+
+	/**
+	 * Stored value for a text shown in a drop down (reverse of
+	 * {@link #toDisplayValue(String, String)}).
+	 */
+	private String fromDisplayValue(final String key, final String displayValue) {
+		final Map<String, String> displayValues = dropDownDisplayValues.get(key);
+		if (displayValues != null) {
+			for (final Entry<String, String> entry : displayValues.entrySet()) {
+				if (entry.getValue().equals(displayValue)) {
+					return entry.getKey();
+				}
+			}
+		}
+		return displayValue != null && displayValue.equals(DefaultLangResources.getI18NStringOrDefault("None")) ? "None" : displayValue;
+	}
+
+	public List<String> getAvailableLanguages() {
+		return availableLanguages;
+	}
+
+	/**
+	 * Languages offered for selection, if the configuration itself contains no
+	 * enum definition for the language key. Must be set before the dialog is
+	 * opened.
+	 */
+	public void setAvailableLanguages(final List<String> availableLanguages) {
+		this.availableLanguages = availableLanguages;
+	}
+
+	public ApplicationConfigurationDialog withAvailableLanguages(final List<String> availableLanguagesParam) {
+		setAvailableLanguages(availableLanguagesParam);
+		return this;
 	}
 
 	private void applyPendingChanges() {

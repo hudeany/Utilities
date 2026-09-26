@@ -78,6 +78,9 @@ import de.soderer.utilities.appupdate.ApplicationUpdateUtilities;
 public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private static final long serialVersionUID = 422519084107817691L;
 
+	/** Language of the root language file without language suffix ("LanguageProperties.properties") */
+	private static final String DEFAULT_LANGUAGE_CODE = "en";
+
 	private static final List<String> DEFAULT_PROXY_CONFIGURATION_TYPES = Utilities.getList("None", "System", "Proxy-URL", "WPAD", "PAC-URL");
 
 	private static final int MAX_INITIAL_HEIGHT = 600;
@@ -106,7 +109,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final Map<String, JComponent> valueComponents = new HashMap<>();
 
 	/** Languages offered for selection, if the configuration contains no enum definition for the language key */
-	private List<String> availableLanguages = LangResources.getAvailableLanguages("en");
+	private List<String> availableLanguages = LangResources.getAvailableLanguages(DEFAULT_LANGUAGE_CODE);
 
 	/** Language drop down filled from "availableLanguages" (null if the language has an enum definition in the configuration) */
 	private DropDown availableLanguagesDropDown;
