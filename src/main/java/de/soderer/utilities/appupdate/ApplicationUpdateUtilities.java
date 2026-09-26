@@ -78,7 +78,6 @@ public class ApplicationUpdateUtilities {
 			final String trustedCaCertificateFileNames,
 			final String username,
 			final char[] password,
-			final List<String> jvmParameters,
 			final List<String> appParameters,
 			final boolean restartAfterUpdate,
 			final boolean allowUnsafeUpdates) throws Exception {
@@ -90,6 +89,7 @@ public class ApplicationUpdateUtilities {
 			final Tuple<Version, String> newVersionAvailable = checkForNewVersionAvailable(versionIndexFileLocation, proxyConfiguration, applicationName, applicationVersion);
 			if ((newVersionAvailable != null && username != null)
 					|| askForUpdate(updateParent, newVersionAvailable != null ? newVersionAvailable.getFirst() : null)) {
+				final List<String> jvmParameters = SystemUtilities.getCurrentJvmParameters();
 				updateApplication(updateParent, newVersionAvailable != null ? newVersionAvailable.getSecond() : null, proxyConfiguration, trustedCaCertificateFileNames, username, password, jvmParameters, appParameters, restartAfterUpdate, allowUnsafeUpdates);
 			}
 			return true;
