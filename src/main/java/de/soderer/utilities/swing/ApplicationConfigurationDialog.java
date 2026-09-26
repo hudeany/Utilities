@@ -11,7 +11,6 @@ import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Toolkit;
-import java.awt.event.ItemEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -32,7 +31,6 @@ import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -95,7 +93,6 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private final String versioninfoDownloadURL;
 	private final String trustedUpdateCaCertificates;
 	private final List<String> appParameters;
-	private List<String> availableLanguages = Utilities.getList("de", "en");
 
 	/** Changed values not yet written to the configuration (String or Boolean) */
 	private final Map<String, Object> pendingChanges = new LinkedHashMap<>();
@@ -108,13 +105,19 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 	private final Map<String, JComponent> valueComponents = new HashMap<>();
 
-	/** Language combo filled from "availableLanguages" (null if the language has an enum definition in the configuration) */
-	private JComboBox<String> availableLanguagesCombo;
+	/** Languages offered for selection, if the configuration contains no enum definition for the language key */
+	private List<String> availableLanguages = LangResources.getAvailableLanguages("en");
+
+	/** Language drop down filled from "availableLanguages" (null if the language has an enum definition in the configuration) */
+	private DropDown availableLanguagesDropDown;
+
+	/** Per drop down key: stored value -> text shown in the drop down */
+	private final Map<String, Map<String, String>> dropDownDisplayValues = new HashMap<>();
 
 	private String lastLanguageValue;
 
 	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates, final List<String> appParameters) {
-		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ") " + LangResources.get("configuration"));
+		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ") " + DefaultLangResources.getI18NStringOrDefault("configuration"));
 
 		this.updateParent = updateParent;
 		this.applicationName = applicationName;
@@ -176,7 +179,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		int row = 0;
 
 		if (applicationBuildTime != null) {
-			addLabel(valuesPanel, row, LangResources.get("buildTime"));
+			addLabel(valuesPanel, row, DefaultLangResources.getI18NStringOrDefault("buildTime"));
 			final JTextField buildTimeText = new JTextField(DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, applicationBuildTime));
 			buildTimeText.setEditable(false);
 			valuesPanel.add(buildTimeText, createValueConstraints(row, 1, 2));
@@ -191,8 +194,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 				}
 
 				String description = key;
-				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(LangResources.get("conf." + key))) {
-					description = LangResources.get("conf." + key);
+				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(DefaultLangResources.getI18NStringOrDefault("conf." + key))) {
+					description = DefaultLangResources.getI18NStringOrDefault("conf." + key);
 				}
 				addLabel(valuesPanel, row, description);
 
@@ -208,13 +211,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 					final JTextField valueTextField = createTextField(key, value);
 					valuesPanel.add(valueTextField, createValueConstraints(row, 2, 1));
 				} else if (applicationConfiguration.containsKey(key + ConfigurationProperties.ENUM_EXTENSION)) {
-					valuesPanel.add(createComboBox(key, Utilities.splitAndTrimList(applicationConfiguration.get(key + ConfigurationProperties.ENUM_EXTENSION)), value), createValueConstraints(row, 1, 2));
+					valuesPanel.add(createDropDown(key, Utilities.splitAndTrimList(applicationConfiguration.get(key + ConfigurationProperties.ENUM_EXTENSION)), value), createValueConstraints(row, 1, 2));
 				} else if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key)) {
 					// No enum definition in the configuration: offer the languages known to the application
-					availableLanguagesCombo = createComboBox(key, availableLanguages, value);
-					valuesPanel.add(availableLanguagesCombo, createValueConstraints(row, 1, 2));
+					availableLanguagesDropDown = createDropDown(key, availableLanguages, value);
+					valuesPanel.add(availableLanguagesDropDown, createValueConstraints(row, 1, 2));
 				} else if (ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE.equalsIgnoreCase(key)) {
-					valuesPanel.add(createComboBox(key, DEFAULT_PROXY_CONFIGURATION_TYPES, value), createValueConstraints(row, 1, 2));
+					valuesPanel.add(createDropDown(key, DEFAULT_PROXY_CONFIGURATION_TYPES, value), createValueConstraints(row, 1, 2));
 				} else if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
 					final JCheckBox checkBox = new JCheckBox();
 					checkBox.setSelected(Utilities.interpretAsBool(value));
@@ -225,8 +228,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 					valuesPanel.add(createTextField(key, value), createValueConstraints(row, 1, 2));
 				}
 
-				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(LangResources.get("conf." + key + ".help"))) {
-					valuesPanel.add(createHelpButton(LangResources.get("conf." + key + ".help")), createHelpButtonConstraints(row));
+				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(DefaultLangResources.getI18NStringOrDefault("conf." + key + ".help"))) {
+					valuesPanel.add(createHelpButton(DefaultLangResources.getI18NStringOrDefault("conf." + key + ".help")), createHelpButtonConstraints(row));
 				}
 
 				row++;
@@ -305,46 +308,53 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	}
 
 	/**
-	 * Combo box for a value with a fixed set of options. "None" is shown in the
-	 * user's language but stored as "None".
+	 * Drop down for a value with a fixed set of options. The options are shown
+	 * with a display text (see {@link #toDisplayValue(String, String)}), but
+	 * stored with their original value.
 	 */
-	private JComboBox<String> createComboBox(final String key, final List<String> options, final String value) {
-		final JComboBox<String> comboBox = new JComboBox<>();
-		fillComboBox(comboBox, options, value);
-		comboBox.addItemListener(event -> {
-			if (event.getStateChange() == ItemEvent.SELECTED) {
-				comboValueSelected(key, fromDisplayValue((String) event.getItem()));
+	private DropDown createDropDown(final String key, final List<String> options, final String value) {
+		final DropDown dropDown = new DropDown();
+		dropDown.setAllowCustomValues(false);
+		fillDropDown(key, dropDown, options, value);
+		dropDown.addActionListener(event -> {
+			// getText() returns null while the entered text matches no option
+			final String displayValue = dropDown.getText();
+			if (displayValue != null) {
+				comboValueSelected(key, fromDisplayValue(key, displayValue));
 			}
 		});
-		valueComponents.put(key, comboBox);
-		return comboBox;
+		valueComponents.put(key, dropDown);
+		return dropDown;
 	}
 
-	private static void fillComboBox(final JComboBox<String> comboBox, final List<String> options, final String value) {
-		comboBox.removeAllItems();
+	private void fillDropDown(final String key, final DropDown dropDown, final List<String> options, final String value) {
+		final Map<String, String> displayValues = new LinkedHashMap<>();
 		for (final String option : options) {
-			comboBox.addItem(toDisplayValue(option));
+			displayValues.put(option, toDisplayValue(key, option));
 		}
+
+		String selectedValue = null;
 		if (Utilities.isBlank(value)) {
-			if (comboBox.getItemCount() > 0) {
-				comboBox.setSelectedIndex(0);
+			if (!options.isEmpty()) {
+				selectedValue = options.get(0);
 			}
 		} else {
-			final String displayValue = toDisplayValue(value);
-			boolean found = false;
-			for (int i = 0; i < comboBox.getItemCount(); i++) {
-				if (comboBox.getItemAt(i).equalsIgnoreCase(displayValue)) {
-					comboBox.setSelectedIndex(i);
-					found = true;
+			for (final String option : options) {
+				if (option.equalsIgnoreCase(value)) {
+					selectedValue = option;
 					break;
 				}
 			}
-			if (!found) {
+			if (selectedValue == null) {
 				// Keep a configured value that is not part of the options visible (and unchanged)
-				comboBox.addItem(displayValue);
-				comboBox.setSelectedItem(displayValue);
+				selectedValue = value;
+				displayValues.put(value, toDisplayValue(key, value));
 			}
 		}
+
+		dropDownDisplayValues.put(key, displayValues);
+		dropDown.setItems(new ArrayList<>(displayValues.values()));
+		dropDown.setText(selectedValue == null ? "" : displayValues.get(selectedValue));
 	}
 
 	private void comboValueSelected(final String key, final String newValue) {
@@ -358,7 +368,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			final boolean valueUnchanged = lastLanguageValue == null ? newValue == null : lastLanguageValue.equals(newValue);
 			if (!valueUnchanged) {
 				lastLanguageValue = newValue;
-				JOptionPane.showMessageDialog(this, LangResources.get("languageChangeRequiresRestart"), applicationName + " " + LangResources.get("configuration"), JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("languageChangeRequiresRestart"), applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"), JOptionPane.INFORMATION_MESSAGE);
 			}
 		} else if (ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE.equalsIgnoreCase(key)) {
 			updateProxyUrlEnabledStatus();
@@ -376,12 +386,35 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		}
 	}
 
-	private static String toDisplayValue(final String value) {
-		return "None".equalsIgnoreCase(value) ? LangResources.get("None") : value;
+	/**
+	 * Text shown in a drop down for a stored value: "None" in the user's
+	 * language, language codes with their name (e.g. "Deutsch (de)") if a
+	 * language resource exists for the code, otherwise the value itself.
+	 */
+	private static String toDisplayValue(final String key, final String value) {
+		if ("None".equalsIgnoreCase(value)) {
+			return DefaultLangResources.getI18NStringOrDefault("None");
+		} else if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key) && Utilities.isNotBlank(value) && LangResources.existsKey(value) && Utilities.isNotBlank(DefaultLangResources.getI18NStringOrDefault(value))) {
+			return DefaultLangResources.getI18NStringOrDefault(value) + " (" + value + ")";
+		} else {
+			return value;
+		}
 	}
 
-	private static String fromDisplayValue(final String displayValue) {
-		return displayValue != null && displayValue.equals(LangResources.get("None")) ? "None" : displayValue;
+	/**
+	 * Stored value for a text shown in a drop down (reverse of
+	 * {@link #toDisplayValue(String, String)}).
+	 */
+	private String fromDisplayValue(final String key, final String displayValue) {
+		final Map<String, String> displayValues = dropDownDisplayValues.get(key);
+		if (displayValues != null) {
+			for (final Entry<String, String> entry : displayValues.entrySet()) {
+				if (entry.getValue().equals(displayValue)) {
+					return entry.getKey();
+				}
+			}
+		}
+		return displayValue != null && displayValue.equals(DefaultLangResources.getI18NStringOrDefault("None")) ? "None" : displayValue;
 	}
 
 	private JButton createHelpButton(final String helpText) {
@@ -397,7 +430,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		}
 		helpButton.setMargin(new Insets(1, 1, 1, 1));
 		helpButton.setToolTipText(helpText);
-		helpButton.addActionListener(e -> new QuestionDialog(this, applicationName, helpText, LangResources.get("ok")).open());
+		helpButton.addActionListener(e -> new QuestionDialog(this, applicationName, helpText, DefaultLangResources.getI18NStringOrDefault("ok")).open());
 		return helpButton;
 	}
 
@@ -413,7 +446,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 		final List<JButton> buttons = new ArrayList<>();
 
-		final JButton saveButton = new JButton(LangResources.get("save"));
+		final JButton saveButton = new JButton(DefaultLangResources.getI18NStringOrDefault("save"));
 		saveButton.addActionListener(e -> {
 			applyPendingChanges();
 			returnValue = Result.OK;
@@ -421,16 +454,16 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		});
 		buttons.add(saveButton);
 
-		final JButton createDesktopLinkButton = new JButton(LangResources.get("createDesktopLink"));
+		final JButton createDesktopLinkButton = new JButton(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
 		createDesktopLinkButton.addActionListener(e -> createDesktopLink());
 		buttons.add(createDesktopLinkButton);
 
-		final JButton showSystemPropertiesButton = new JButton(LangResources.get("showSystemProperties"));
-		showSystemPropertiesButton.addActionListener(e -> showProperties(LangResources.get("systemProperties"), Utilities.getSystemPropertiesMap()));
+		final JButton showSystemPropertiesButton = new JButton(DefaultLangResources.getI18NStringOrDefault("showSystemProperties"));
+		showSystemPropertiesButton.addActionListener(e -> showProperties(DefaultLangResources.getI18NStringOrDefault("systemProperties"), Utilities.getSystemPropertiesMap()));
 		buttons.add(showSystemPropertiesButton);
 
-		final JButton showRuntimePropertiesButton = new JButton(LangResources.get("showRuntimeProperties"));
-		showRuntimePropertiesButton.addActionListener(e -> showProperties(LangResources.get("runtimeProperties"), SystemUtilities.getRuntimeProperties(true)));
+		final JButton showRuntimePropertiesButton = new JButton(DefaultLangResources.getI18NStringOrDefault("showRuntimeProperties"));
+		showRuntimePropertiesButton.addActionListener(e -> showProperties(DefaultLangResources.getI18NStringOrDefault("runtimeProperties"), SystemUtilities.getRuntimeProperties(true)));
 		buttons.add(showRuntimePropertiesButton);
 
 		// Swing counterpart of the SWT variant's "SWT properties"
@@ -439,12 +472,12 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		buttons.add(showSwingPropertiesButton);
 
 		if (Utilities.isNotBlank(versioninfoDownloadURL)) {
-			final JButton updateButton = new JButton(LangResources.get("checkUpdate"));
+			final JButton updateButton = new JButton(DefaultLangResources.getI18NStringOrDefault("checkUpdate"));
 			updateButton.addActionListener(e -> checkUpdate());
 			buttons.add(updateButton);
 		}
 
-		final JButton cancelButton = new JButton(LangResources.get("cancel"));
+		final JButton cancelButton = new JButton(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		cancelButton.addActionListener(e -> cancel());
 		buttons.add(cancelButton);
 
@@ -469,7 +502,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 	private void cancel() {
 		if (configurationChanged) {
-			final int result = JOptionPane.showConfirmDialog(this, LangResources.get("discardUnsavedConfigurationChanges"), applicationName + " " + LangResources.get("configuration"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			final int result = JOptionPane.showConfirmDialog(this, DefaultLangResources.getI18NStringOrDefault("discardUnsavedConfigurationChanges"), applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (result != JOptionPane.YES_OPTION) {
 				// Keep the dialog open, discard nothing
 				return;
@@ -590,11 +623,11 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 					Runtime.getRuntime().exec(new String[] { "wscript", "\"" + tempScriptFile + "\"" }, null, null);
 
-					JOptionPane.showMessageDialog(this, LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
+					JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("desktopLinkWasCreatedAt", desktopLinkFilePath), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
 
 					new File(tempScriptFile).delete();
 				} catch (final IOException e) {
-					JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("errorMessage", e.getMessage()), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 				}
 			} else if (SystemUtilities.isLinuxSystem()) {
 				String desktopLinkFilePath;
@@ -641,13 +674,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 					new File(desktopLinkFilePath).setExecutable(true);
 
-					JOptionPane.showMessageDialog(this, LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
+					JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("desktopLinkWasCreatedAt", desktopLinkFilePath), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
 				} catch (final IOException e) {
-					JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("errorMessage", e.getMessage()), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		} catch (final Exception e) {
-			JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("errorMessage", e.getMessage()), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
@@ -673,7 +706,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 	private String openJarFilePathDialog() {
 		final JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setDialogTitle(LangResources.get("createDesktopLink"));
+		fileChooser.setDialogTitle(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
 		if (JFileChooser.APPROVE_OPTION == fileChooser.showOpenDialog(this)) {
 			return fileChooser.getSelectedFile().getAbsolutePath();
 		} else {
@@ -701,10 +734,11 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		technicalChange = true;
 		try {
 			final JComponent component = valueComponents.get(key);
-			if (component instanceof JComboBox) {
-				@SuppressWarnings("unchecked")
-				final JComboBox<String> comboBox = (JComboBox<String>) component;
-				comboBox.setSelectedItem(toDisplayValue(value));
+			if (component instanceof DropDown) {
+				// Refill, so a value that is not part of the options is added and shown
+				final Map<String, String> displayValues = dropDownDisplayValues.get(key);
+				final List<String> options = displayValues == null ? new ArrayList<>() : new ArrayList<>(displayValues.keySet());
+				fillDropDown(key, (DropDown) component, options, value);
 			} else if (component instanceof JTextField) {
 				((JTextField) component).setText(value == null ? "" : value);
 			} else if (component instanceof JCheckBox) {
@@ -753,10 +787,10 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	public ApplicationConfigurationDialog setAvailableLanguages(final List<String> availableLanguages) {
 		this.availableLanguages = availableLanguages;
 
-		if (availableLanguagesCombo != null) {
+		if (availableLanguagesDropDown != null) {
 			technicalChange = true;
 			try {
-				fillComboBox(availableLanguagesCombo, availableLanguages, getLanguage());
+				fillDropDown(ConfigurationProperties.CONFIG_KEY_LANGUAGE, availableLanguagesDropDown, availableLanguages, getLanguage());
 			} finally {
 				technicalChange = false;
 			}

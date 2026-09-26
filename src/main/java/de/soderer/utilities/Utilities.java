@@ -427,6 +427,10 @@ public class Utilities {
 					|| "y".equalsIgnoreCase(value)
 					|| "ja".equalsIgnoreCase(value)
 					|| "j".equalsIgnoreCase(value)
+					|| "oui".equalsIgnoreCase(value)
+					|| "o".equalsIgnoreCase(value)
+					|| "si".equalsIgnoreCase(value)
+					|| "s".equalsIgnoreCase(value)
 					|| "ok".equalsIgnoreCase(value)
 					|| "on".equalsIgnoreCase(value)
 					|| "an".equalsIgnoreCase(value);

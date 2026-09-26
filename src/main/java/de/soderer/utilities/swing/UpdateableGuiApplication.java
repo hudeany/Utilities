@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 
 import de.soderer.utilities.Credentials;
 import de.soderer.utilities.DefaultLangResources;
-import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
@@ -42,7 +41,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 
 		if (downloadCredentials == null) {
 			final CredentialsDialog downloadCredentialsDialog = new CredentialsDialog(this, "Update " + applicationName, text, aquireUsername, aquirePassword);
-			downloadCredentialsDialog.setRememberCredentialsText(LangResources.get("rememberUpdateCredentials"));
+			downloadCredentialsDialog.setRememberCredentialsText(DefaultLangResources.getI18NStringOrDefault("rememberUpdateCredentials"));
 			downloadCredentials = downloadCredentialsDialog.open();
 
 			if (downloadCredentials != null && downloadCredentialsDialog.isRememberCredentials()) {

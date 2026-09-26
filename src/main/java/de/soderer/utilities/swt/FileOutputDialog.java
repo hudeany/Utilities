@@ -12,7 +12,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.Utilities;
 
 public class FileOutputDialog extends ModalDialog<String> {
@@ -40,7 +40,7 @@ public class FileOutputDialog extends ModalDialog<String> {
 			label.setText(text);
 		}
 
-		labeledFileText = new LabeledFileText(shell, composite, SWT.NONE, null, LangResources.get("createDataFile"), false, false, ArrangementStyle.Horizontal);
+		labeledFileText = new LabeledFileText(shell, composite, SWT.NONE, null, DefaultLangResources.getI18NStringOrDefault("createDataFile"), false, false, ArrangementStyle.Horizontal);
 		labeledFileText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		labeledFileText.addModifyListener(new ModifyListener() {
 			@Override
@@ -52,7 +52,7 @@ public class FileOutputDialog extends ModalDialog<String> {
 
 		okButton = new Button(composite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		okButton.setText(LangResources.get("ok"));
+		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -62,7 +62,7 @@ public class FileOutputDialog extends ModalDialog<String> {
 
 		final Button cancelButton = new Button(composite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {

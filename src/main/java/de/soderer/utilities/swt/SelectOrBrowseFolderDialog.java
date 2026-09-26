@@ -13,16 +13,16 @@ import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 
 public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
-	private String text;
-	private String browseButtonText;
-	private List<String> items;
+	private final String text;
+	private final String browseButtonText;
+	private final List<String> items;
 	private Combo comboBox;
 	private Button okButton;
 
-	public SelectOrBrowseFolderDialog(Shell shell, String title, String text, String browseButtonText, List<String> items) {
+	public SelectOrBrowseFolderDialog(final Shell shell, final String title, final String text, final String browseButtonText, final List<String> items) {
 		super(shell, SWT.RESIZE, title);
 
 		this.text = text;
@@ -31,12 +31,12 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 	}
 
 	@Override
-	protected void createComponents(Shell shell) throws Exception {
+	protected void createComponents(final Shell shell) throws Exception {
 		shell.setLayout(new GridLayout(4, true));
 		shell.setSize(475, 120);
 		shell.setMinimumSize(475, 120);
 
-		Label label = new Label(shell, SWT.FILL);
+		final Label label = new Label(shell, SWT.FILL);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true, 4, 1));
 		label.setText(text);
 
@@ -48,15 +48,15 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 			comboBox.select(comboBox.getItemCount() - 1);
 		}
 
-		Button browseButton = new Button(shell, SWT.PUSH);
+		final Button browseButton = new Button(shell, SWT.PUSH);
 		browseButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, false, false, 1, 1));
 		browseButton.setText(browseButtonText);
 		browseButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent event) {
-				DirectoryDialog dialog = new DirectoryDialog(getParent(), SWT.OPEN);
+			public void widgetSelected(final SelectionEvent event) {
+				final DirectoryDialog dialog = new DirectoryDialog(getParent(), SWT.OPEN);
 				dialog.setText(getText());
-				String filePath = dialog.open();
+				final String filePath = dialog.open();
 				if (filePath != null) {
 					String[] newItems;
 					if (items != null && items.size() > 0) {
@@ -77,26 +77,26 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 
 		okButton = new Button(shell, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
-		okButton.setText(LangResources.get("ok"));
+		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
 		okButton.setEnabled(comboBox.getItemCount() > 0);
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 
-		Button cancelButton = new Button(shell, SWT.PUSH);
+		final Button cancelButton = new Button(shell, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
-		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		cancelButton.addSelectionListener(new CancelButtonSelectionListener());
 	}
 
 	private class ComboBoxButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent event) {
+		public void widgetSelected(final SelectionEvent event) {
 			okButton.setEnabled(true);
 		}
 	}
 
 	private class OkButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent event) {
+		public void widgetSelected(final SelectionEvent event) {
 			if (comboBox.getSelectionIndex() > -1) {
 				setReturnValue(comboBox.getItems()[comboBox.getSelectionIndex()]);
 			}
@@ -106,7 +106,7 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 
 	private class CancelButtonSelectionListener extends SelectionAdapter {
 		@Override
-		public void widgetSelected(SelectionEvent event) {
+		public void widgetSelected(final SelectionEvent event) {
 			getParent().close();
 		}
 	}

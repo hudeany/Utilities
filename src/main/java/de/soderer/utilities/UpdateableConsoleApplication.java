@@ -35,7 +35,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 			System.out.println(DefaultLangResources.getI18NStringOrDefault("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
 			final String input = new SimpleConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("installUpdate") + " (" + DefaultLangResources.getI18NStringOrDefault("yN") + "): ").readInput();
 			System.out.println();
-			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j"));
+			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j") || input.toLowerCase().startsWith("o") || input.toLowerCase().startsWith("s"));
 		}
 	}
 

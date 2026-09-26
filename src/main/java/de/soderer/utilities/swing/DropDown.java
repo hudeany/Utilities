@@ -54,6 +54,7 @@ import javax.swing.PopupFactory;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
@@ -156,6 +157,9 @@ public class DropDown extends JPanel {
 	 * Maximum height of the popup list's content area in pixels.
 	 */
 	private static final int MAX_POPUP_HEIGHT_PX = 300;
+
+	/** Delay of the additional repaint of a newly shown popup, see {@link #repaintShownPopup()} */
+	private static final int POPUP_REPAINT_DELAY_MS = 100;
 
 	/**
 	 * Page size for PageUp/PageDown while no popup is shown.
@@ -366,7 +370,13 @@ public class DropDown extends JPanel {
 		 */
 		dropdownButton.setFocusable(false);
 		dropdownButton.addActionListener(e -> {
-			showAllItems();
+			if (isPopupVisible() && matches.equals(items)) {
+				// Second click on the button while the full list is shown: collapse it again without any change
+				hidePopup();
+			} else {
+				// Also expands a popup that currently only shows the matches of the entered text
+				showAllItems();
+			}
 
 			textPane.requestFocusInWindow();
 		});
@@ -1859,11 +1869,56 @@ public class DropDown extends JPanel {
 			popup = PopupFactory.getSharedInstance().getPopup(this, popupScrollPane, location.x, location.y);
 			popupBounds = newBounds;
 			popup.show();
+
+			repaintShownPopup();
 		}
 
 		if (selectedMatch >= 0 && selectedMatch < count) {
 			popupList.ensureIndexIsVisible(selectedMatch);
 		}
+	}
+
+	/**
+	 * Repaints a newly shown popup once it is actually visible on screen.
+	 *
+	 * <p>
+	 * If the popup does not fit into the owning window, PopupFactory shows it in a
+	 * separate heavyweight window (and reuses such windows from a cache). On some
+	 * platforms (notably X11) that window is mapped asynchronously, so the paint
+	 * requested by show() may happen before the window is actually on screen and
+	 * get lost: the popup area is shown empty (only its background) until the
+	 * mouse moving over the list triggers the next repaint.
+	 * </p>
+	 *
+	 * <p>
+	 * Repainting once on the next event cycle and once more after a short delay
+	 * covers the window becoming visible later.
+	 * </p>
+	 */
+	private void repaintShownPopup() {
+		final Popup shownPopup = popup;
+		final Runnable repaint = () -> {
+			// Skip, if the popup was hidden or replaced in the meantime
+			if (popup != shownPopup || popupScrollPane == null) {
+				return;
+			}
+
+			final Window popupWindow = SwingUtilities.getWindowAncestor(popupScrollPane);
+			if (popupWindow != null && popupWindow != SwingUtilities.getWindowAncestor(this)) {
+				// Heavyweight popup: repaint its whole window
+				popupWindow.validate();
+				popupWindow.repaint();
+			} else {
+				popupScrollPane.revalidate();
+				popupScrollPane.repaint();
+			}
+		};
+
+		SwingUtilities.invokeLater(repaint);
+
+		final Timer repaintTimer = new Timer(POPUP_REPAINT_DELAY_MS, event -> repaint.run());
+		repaintTimer.setRepeats(false);
+		repaintTimer.start();
 	}
 
 	/**

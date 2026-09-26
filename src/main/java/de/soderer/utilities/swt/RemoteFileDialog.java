@@ -32,9 +32,9 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
 import de.soderer.utilities.Credentials;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
-import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.ServerAccessData;
@@ -129,7 +129,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			serverEntriesComposite.setLayout(SwtUtilities.createNoMarginGridLayout(5, false));
 
 			final Label serverEntriesLabel = new Label(serverEntriesComposite, SWT.NONE);
-			serverEntriesLabel.setText(LangResources.get("serverEntries"));
+			serverEntriesLabel.setText(DefaultLangResources.getI18NStringOrDefault("serverEntries"));
 
 			serverEntriesCombo = new Combo(serverEntriesComposite, SWT.NONE);
 			serverEntriesCombo.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, true));
@@ -150,7 +150,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			});
 
 			loadServerEntriesButton = new Button(serverEntriesComposite, SWT.PUSH);
-			loadServerEntriesButton.setText(LangResources.get("loadServerEntries"));
+			loadServerEntriesButton.setText(DefaultLangResources.getI18NStringOrDefault("loadServerEntries"));
 			loadServerEntriesButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
@@ -161,7 +161,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			});
 
 			removeServerEntryButton = new Button(serverEntriesComposite, SWT.PUSH);
-			removeServerEntryButton.setText(LangResources.get("removeServerEntry"));
+			removeServerEntryButton.setText(DefaultLangResources.getI18NStringOrDefault("removeServerEntry"));
 			removeServerEntryButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
@@ -175,7 +175,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 					serverEntriesCombo.setText("");
 
-					final Credentials credentials = new CredentialsDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"), false, true).open();
+					final Credentials credentials = new CredentialsDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("enterKeystorePassword"), false, true).open();
 					if (credentials != null) {
 						final char[] keystorePassword = credentials.getPassword();
 						try {
@@ -190,7 +190,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			});
 
 			saveServerEntryButton = new Button(serverEntriesComposite, SWT.PUSH);
-			saveServerEntryButton.setText(LangResources.get("saveServerEntry"));
+			saveServerEntryButton.setText(DefaultLangResources.getI18NStringOrDefault("saveServerEntry"));
 			saveServerEntryButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
@@ -199,7 +199,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					}
 					final String newEntryName = serverEntriesCombo.getText();
 					keyStore.addEntry(serverEntriesCombo.getText(), getServerEntry());
-					final Credentials credentials = new CredentialsDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"), false, true).open();
+					final Credentials credentials = new CredentialsDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("enterKeystorePassword"), false, true).open();
 					if (credentials != null) {
 						final char[] keystorePassword = credentials.getPassword();
 						try {
@@ -218,7 +218,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		serverCredentialsComposite.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
 		serverCredentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(9, false));
 
-		protocolField = new LabeledCombo(serverCredentialsComposite, SWT.NONE, LangResources.get("protocol"), PROTOCOL_LIST, 0, ArrangementStyle.Vertical);
+		protocolField = new LabeledCombo(serverCredentialsComposite, SWT.NONE, DefaultLangResources.getI18NStringOrDefault("protocol"), PROTOCOL_LIST, 0, ArrangementStyle.Vertical);
 		final GridData protocolFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		protocolFieldGridData.widthHint = 65;
 		protocolField.setLayoutData(protocolFieldGridData);
@@ -245,7 +245,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		hostnameField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("hostnameOrIp"), ArrangementStyle.Vertical);
+		hostnameField = new LabeledText(serverCredentialsComposite, SWT.NONE, DefaultLangResources.getI18NStringOrDefault("hostnameOrIp"), ArrangementStyle.Vertical);
 		final GridData hostnameFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		hostnameFieldGridData.widthHint = 195;
 		hostnameField.setLayoutData(hostnameFieldGridData);
@@ -257,7 +257,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		portField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("port"), ArrangementStyle.Vertical, "[0-9]{0,5}");
+		portField = new LabeledText(serverCredentialsComposite, SWT.NONE, DefaultLangResources.getI18NStringOrDefault("port"), ArrangementStyle.Vertical, "[0-9]{0,5}");
 		portField.setText("");
 		final GridData portFieldGridData = new GridData(SWT.FILL, SWT.UP, true, true);
 		portFieldGridData.widthHint = 60;
@@ -274,7 +274,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		usernameField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("username"), ArrangementStyle.Vertical);
+		usernameField = new LabeledText(serverCredentialsComposite, SWT.NONE, DefaultLangResources.getI18NStringOrDefault("username"), ArrangementStyle.Vertical);
 		final GridData usernameFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
 		usernameFieldGridData.widthHint = 95;
 		usernameField.setLayoutData(usernameFieldGridData);
@@ -287,13 +287,13 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		});
 
 		useKeyFileButton = new Button(serverCredentialsComposite, SWT.CHECK);
-		useKeyFileButton.setText(LangResources.get("useKeyFile"));
+		useKeyFileButton.setText(DefaultLangResources.getI18NStringOrDefault("useKeyFile"));
 		useKeyFileButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				if (((Button) event.widget).getSelection()) {
 					final FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
-					dialog.setText(LangResources.get("openKeyFile"));
+					dialog.setText(DefaultLangResources.getI18NStringOrDefault("openKeyFile"));
 					if (keyFilePath == null || "".equals(keyFilePath.trim())) {
 						dialog.setFilterPath(Utilities.replaceUsersHome("~/.ssh/"));
 					} else {
@@ -313,7 +313,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		passwordField = new LabeledText(serverCredentialsComposite, SWT.PASSWORD, LangResources.get("password"), ArrangementStyle.Vertical);
+		passwordField = new LabeledText(serverCredentialsComposite, SWT.PASSWORD, DefaultLangResources.getI18NStringOrDefault("password"), ArrangementStyle.Vertical);
 		passwordField.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(final ModifyEvent event) {
@@ -330,7 +330,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		checkHostKeyComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 
 		checkHostKeyButton = new Button(checkHostKeyComposite, SWT.CHECK);
-		checkHostKeyButton.setText(LangResources.get("checkHostKey"));
+		checkHostKeyButton.setText(DefaultLangResources.getI18NStringOrDefault("checkHostKey"));
 		checkHostKeyButton.setSelection(checkHostKey);
 		checkHostKeyButton.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -354,7 +354,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		sharenameField = new LabeledText(serverCredentialsComposite, SWT.NONE, LangResources.get("sharename"), ArrangementStyle.Vertical);
+		sharenameField = new LabeledText(serverCredentialsComposite, SWT.NONE, DefaultLangResources.getI18NStringOrDefault("sharename"), ArrangementStyle.Vertical);
 		final GridData sharenameFieldGridData = new GridData(SWT.FILL, SWT.UP, false, false);
 		sharenameFieldGridData.widthHint = 95;
 		sharenameField.setLayoutData(sharenameFieldGridData);
@@ -367,7 +367,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		});
 
 		connectButton = new Button(serverCredentialsComposite, SWT.PUSH);
-		connectButton.setText(LangResources.get("connect"));
+		connectButton.setText(DefaultLangResources.getI18NStringOrDefault("connect"));
 		connectButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -439,35 +439,35 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			additionalButtonsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(3, false));
 
 			createFolderButton = new Button(additionalButtonsComposite, SWT.PUSH);
-			createFolderButton.setText(LangResources.get("createFolder"));
+			createFolderButton.setText(DefaultLangResources.getI18NStringOrDefault("createFolder"));
 			createFolderButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
-					final String folderName = new SimpleInputDialog(getParent(), getText(), LangResources.get("enterFolderName")).open();
+					final String folderName = new SimpleInputDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("enterFolderName")).open();
 					if (Utilities.isNotBlank(folderName)) {
 						try {
 							connection.createFolder(selectedFilePath, folderName);
 							showPathDirectory();
 						} catch (final Exception e) {
-							new QuestionDialog(getParent(), getText(), "Error while creating folder on server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+							new QuestionDialog(getParent(), getText(), "Error while creating folder on server: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 						}
 					}
 				}
 			});
 
 			deleteFolderButton = new Button(additionalButtonsComposite, SWT.PUSH);
-			deleteFolderButton.setText(LangResources.get("deleteFolder"));
+			deleteFolderButton.setText(DefaultLangResources.getI18NStringOrDefault("deleteFolder"));
 			deleteFolderButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
 					if (Utilities.isNotBlank(selectedFilePath)) {
-						if (new QuestionDialog(getParent(), LangResources.get("deleteFolder"), LangResources.get("reallyDeleteFolder", selectedFilePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
+						if (new QuestionDialog(getParent(), DefaultLangResources.getI18NStringOrDefault("deleteFolder"), DefaultLangResources.getI18NStringOrDefault("reallyDeleteFolder", selectedFilePath), DefaultLangResources.getI18NStringOrDefault("ok"), DefaultLangResources.getI18NStringOrDefault("cancel")).open() == 0) {
 							try {
 								connection.deleteFolder(selectedFilePath);
 								folderTree.select(folderTree.getSelection()[0].getParentItem());
 								showPathDirectory();
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 						}
 					}
@@ -475,7 +475,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			});
 
 			deleteFileButton = new Button(additionalButtonsComposite, SWT.PUSH);
-			deleteFileButton.setText(LangResources.get("deleteFile"));
+			deleteFileButton.setText(DefaultLangResources.getI18NStringOrDefault("deleteFile"));
 			deleteFileButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
@@ -486,12 +486,12 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 						} else {
 							filePath = selectedFilePath + "/" + selectedFileName;
 						}
-						if (new QuestionDialog(getParent(), LangResources.get("deleteFile"), LangResources.get("reallyDeleteFile", filePath), LangResources.get("ok"), LangResources.get("cancel")).open() == 0) {
+						if (new QuestionDialog(getParent(), DefaultLangResources.getI18NStringOrDefault("deleteFile"), DefaultLangResources.getI18NStringOrDefault("reallyDeleteFile", filePath), DefaultLangResources.getI18NStringOrDefault("ok"), DefaultLangResources.getI18NStringOrDefault("cancel")).open() == 0) {
 							try {
 								connection.deleteFile(filePath);
 								showPathDirectory();
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+								new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 						}
 					}
@@ -503,7 +503,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		currentPathComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
 		currentPathComposite.setLayout(SwtUtilities.createNoMarginGridLayout(1, false));
 
-		currentPathField = new LabeledText(currentPathComposite, SWT.NONE, LangResources.get("currentPath"), ArrangementStyle.Vertical);
+		currentPathField = new LabeledText(currentPathComposite, SWT.NONE, DefaultLangResources.getI18NStringOrDefault("currentPath"), ArrangementStyle.Vertical);
 		currentPathField.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 		currentPathField.addModifyListener(new ModifyListener() {
 			@Override
@@ -517,7 +517,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		mainButtonComposite.setLayout(new FillLayout());
 
 		action1Button = new Button(mainButtonComposite, SWT.PUSH);
-		action1Button.setText(LangResources.get(dialogMode == Mode.Open ? "open" : "save"));
+		action1Button.setText(DefaultLangResources.getI18NStringOrDefault(dialogMode == Mode.Open ? "open" : "save"));
 		action1Button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -532,7 +532,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 		});
 
 		action2Button = new Button(mainButtonComposite, SWT.PUSH);
-		action2Button.setText(LangResources.get(dialogMode == Mode.Open ? "download" : "uploadFile"));
+		action2Button.setText(DefaultLangResources.getI18NStringOrDefault(dialogMode == Mode.Open ? "download" : "uploadFile"));
 		action2Button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -541,46 +541,46 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					if (currentPath.endsWith("/")) {
 						final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
 						final FileDialog dialog = new FileDialog(parentShell, SWT.OPEN);
-						dialog.setText(LangResources.get("upload"));
+						dialog.setText(DefaultLangResources.getI18NStringOrDefault("upload"));
 						dialog.setFileName(currentFileName);
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
 								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(null, connection, new File(sourcePath), currentPath);
-								final ProgressDialog<RemoteFileUploadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
+								final ProgressDialog<RemoteFileUploadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("upload"), fileUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									showErrorMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
+									showErrorMessage(DefaultLangResources.getI18NStringOrDefault("upload"), DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 								} else {
 									// check for errors
 									fileUploadWorker.get();
-									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
+									showMessage(DefaultLangResources.getI18NStringOrDefault("upload"), DefaultLangResources.getI18NStringOrDefault("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 							showPathDirectory();
 						}
 					} else {
 						final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
 						final FileDialog dialog = new FileDialog(parentShell, SWT.OPEN);
-						dialog.setText(LangResources.get("upload"));
+						dialog.setText(DefaultLangResources.getI18NStringOrDefault("upload"));
 						dialog.setFileName(currentFileName);
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
 								final RemoteFileUploadWorker fileUploadWorker = new RemoteFileUploadWorker(null, connection, new File(sourcePath), currentPath);
-								final ProgressDialog<RemoteFileUploadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("upload"), fileUploadWorker);
+								final ProgressDialog<RemoteFileUploadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("upload"), fileUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									showErrorMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
+									showErrorMessage(DefaultLangResources.getI18NStringOrDefault("upload"), DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 								} else {
 									// check for errors
 									fileUploadWorker.get();
-									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
+									showMessage(DefaultLangResources.getI18NStringOrDefault("upload"), DefaultLangResources.getI18NStringOrDefault("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+								new QuestionDialog(getParent(), getText(), "Error while uploading file: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 							showPathDirectory();
 						}
@@ -589,44 +589,44 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					final String currentPath = currentPathField.getText();
 					if (currentPath.endsWith("/")) {
 						final DirectoryDialog dialog = new DirectoryDialog(parentShell, SWT.SAVE);
-						dialog.setText(LangResources.get("download"));
+						dialog.setText(DefaultLangResources.getI18NStringOrDefault("download"));
 						final String destinationPath = dialog.open();
 						if (destinationPath != null) {
 							try {
 								final DirectoryDownloadWorker directoryDownloadWorker = new DirectoryDownloadWorker(null, connection, currentPath, new File(destinationPath));
-								final DualProgressDialog<DirectoryDownloadWorker> progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("download") + " \"" + currentPath + "\"", directoryDownloadWorker);
+								final DualProgressDialog<DirectoryDownloadWorker> progressDialog = new DualProgressDialog<>(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("download") + " \"" + currentPath + "\"", directoryDownloadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									showErrorMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
+									showErrorMessage(DefaultLangResources.getI18NStringOrDefault("download"), DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 								} else {
 									// check for errors
 									directoryDownloadWorker.get();
-									showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
+									showMessage(DefaultLangResources.getI18NStringOrDefault("download"), DefaultLangResources.getI18NStringOrDefault("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+								new QuestionDialog(getParent(), getText(), "Error while downloading directory: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 						}
 					} else {
 						final String currentFileName = currentPath.substring(currentPath.lastIndexOf("/") + 1);
 						final FileDialog dialog = new FileDialog(parentShell, SWT.SAVE);
-						dialog.setText(LangResources.get("download"));
+						dialog.setText(DefaultLangResources.getI18NStringOrDefault("download"));
 						dialog.setFileName(currentFileName);
 						final String destinationPath = dialog.open();
 						if (destinationPath != null) {
 							try {
 								final RemoteFileDownloadWorker fileDownloadWorker = new RemoteFileDownloadWorker(null, connection, currentPath, new File(destinationPath));
-								final ProgressDialog<RemoteFileDownloadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), LangResources.get("download"), fileDownloadWorker);
+								final ProgressDialog<RemoteFileDownloadWorker> progressDialog = new ProgressDialog<>(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("download"), fileDownloadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									showErrorMessage(LangResources.get("download"), LangResources.get("canceledByUser"));
+									showErrorMessage(DefaultLangResources.getI18NStringOrDefault("download"), DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 								} else {
 									// check for errors
 									fileDownloadWorker.get();
-									showMessage(LangResources.get("download"), LangResources.get("actionSuccessfullyCompleted"));
+									showMessage(DefaultLangResources.getI18NStringOrDefault("download"), DefaultLangResources.getI18NStringOrDefault("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+								new QuestionDialog(getParent(), getText(), "Error while downloading file: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 						}
 					}
@@ -636,41 +636,41 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 
 		if (dialogMode == Mode.Save) {
 			action3Button = new Button(mainButtonComposite, SWT.PUSH);
-			action3Button.setText(LangResources.get("uploadFolder"));
+			action3Button.setText(DefaultLangResources.getI18NStringOrDefault("uploadFolder"));
 			action3Button.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
 					final String currentPath = currentPathField.getText();
 					if (currentPath.endsWith("/")) {
 						final DirectoryDialog dialog = new DirectoryDialog(parentShell, SWT.OPEN);
-						dialog.setText(LangResources.get("upload"));
+						dialog.setText(DefaultLangResources.getI18NStringOrDefault("upload"));
 						final String sourcePath = dialog.open();
 						if (sourcePath != null) {
 							try {
 								final DirectoryUploadWorker directoryUploadWorker = new DirectoryUploadWorker(null, connection, new File(sourcePath), currentPath);
-								final DualProgressDialog<DirectoryUploadWorker> progressDialog = new DualProgressDialog<>(getParent(), getText(), LangResources.get("upload") + " \"" + currentPath + "\"", directoryUploadWorker);
+								final DualProgressDialog<DirectoryUploadWorker> progressDialog = new DualProgressDialog<>(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("upload") + " \"" + currentPath + "\"", directoryUploadWorker);
 								final Result dialogResult = progressDialog.open();
 								if (dialogResult == Result.CANCELED) {
-									showErrorMessage(LangResources.get("upload"), LangResources.get("canceledByUser"));
+									showErrorMessage(DefaultLangResources.getI18NStringOrDefault("upload"), DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
 								} else {
 									// check for errors
 									directoryUploadWorker.get();
-									showMessage(LangResources.get("upload"), LangResources.get("actionSuccessfullyCompleted"));
+									showMessage(DefaultLangResources.getI18NStringOrDefault("upload"), DefaultLangResources.getI18NStringOrDefault("actionSuccessfullyCompleted"));
 								}
 							} catch (final Exception e) {
-								new QuestionDialog(getParent(), getText(), "Error while uploading directory: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+								new QuestionDialog(getParent(), getText(), "Error while uploading directory: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 							}
 							showPathDirectory();
 						}
 					} else {
-						new QuestionDialog(getParent(), getText(), "Must select some directory to upload to", LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+						new QuestionDialog(getParent(), getText(), "Must select some directory to upload to", DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 					}
 				}
 			});
 		}
 
 		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
-		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -716,7 +716,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				try {
 					connection = new SftpConnection(getServerEntry());
 				} catch (final UnknownHostKeyException e) {
-					if (new QuestionDialog(getParent(), getText(), LangResources.get("confirmNewHostKey", e.getHostnameOrIp(), e.getHostKeyFingerPrint()), LangResources.get("yes"), LangResources.get("no")).setBackgroundColor(SwtColor.LightRed).open() == 0) {
+					if (new QuestionDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("confirmNewHostKey", e.getHostnameOrIp(), e.getHostKeyFingerPrint()), DefaultLangResources.getI18NStringOrDefault("yes"), DefaultLangResources.getI18NStringOrDefault("no")).setBackgroundColor(SwtColor.LightRed).open() == 0) {
 						final ByteArrayOutputStream newKnownHosts = new ByteArrayOutputStream();
 						final ServerAccessData serverEntry = getServerEntry();
 						connection = new SftpConnection(serverEntry.getHostname(), serverEntry.getUsername(), FileUtilities.readFileToByteArray(new File(serverEntry.getKeyFile())), serverEntry.getPassword(), serverEntry.getPort(), e.getHostKeyFingerPrint(), newKnownHosts);
@@ -764,7 +764,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			currentPathField.setText(selectedFilePath);
 		} catch (final Exception e) {
 			disconnect();
-			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 		}
 
 		checkButtonStatus();
@@ -790,7 +790,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 				saveServerEntryButton.setEnabled(false);
 			}
 			connectButton.setEnabled(true);
-			connectButton.setText(LangResources.get("disconnect"));
+			connectButton.setText(DefaultLangResources.getI18NStringOrDefault("disconnect"));
 			if (dialogMode == Mode.Open) {
 				action1Button.setEnabled(Utilities.isNotBlank(selectedFileName) && Utilities.isNotBlank(selectedFilePath));
 				action2Button.setEnabled(Utilities.isNotBlank(selectedFileName) || Utilities.isNotBlank(selectedFilePath));
@@ -829,7 +829,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 					connectButton.setEnabled(Utilities.isNotBlank(hostnameOrIp) && Utilities.isNotBlank(username));
 				}
 			}
-			connectButton.setText(LangResources.get("connect"));
+			connectButton.setText(DefaultLangResources.getI18NStringOrDefault("connect"));
 			action1Button.setEnabled(false);
 			action2Button.setEnabled(false);
 			if (action3Button != null) {
@@ -895,8 +895,8 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 
 			while (passwordWasWrong) {
-				final CredentialsDialog dialog = new CredentialsDialog(getParent(), getText(), LangResources.get("enterKeystorePassword"), false, true);
-				dialog.setRememberCredentialsText(LangResources.get("keepPasswordInMemory"));
+				final CredentialsDialog dialog = new CredentialsDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("enterKeystorePassword"), false, true);
+				dialog.setRememberCredentialsText(DefaultLangResources.getI18NStringOrDefault("keepPasswordInMemory"));
 				final Credentials credentials = dialog.open();
 				if (credentials != null) {
 					passwordToUse = credentials.getPassword();
@@ -910,7 +910,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 						passwordWasWrong = false;
 					} catch (final Exception e) {
 						e.printStackTrace();
-						new QuestionDialog(getParent(), getText(), LangResources.get("cannotLoadKeystore"), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+						new QuestionDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("cannotLoadKeystore"), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 						keyStore = null;
 						passwordWasWrong = true;
 						if (inMemoryPassword != null) {
@@ -1003,7 +1003,7 @@ public class RemoteFileDialog extends ModalDialog<Boolean> {
 			}
 			selectedFilePath = path;
 		} catch (final Exception e) {
-			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+			new QuestionDialog(getParent(), getText(), "Error while connecting to server: " + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 		}
 	}
 }

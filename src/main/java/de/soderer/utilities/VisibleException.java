@@ -3,7 +3,7 @@ package de.soderer.utilities;
 public class VisibleException extends Exception {
 	private static final long serialVersionUID = -5425442516236660858L;
 
-	private String visibleMessage = LangResources.get("errorOccurred");
+	private String visibleMessage = DefaultLangResources.getI18NStringOrDefault("errorOccurred");
 
 	public VisibleException() {
 		super();

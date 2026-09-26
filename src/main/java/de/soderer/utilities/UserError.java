@@ -10,19 +10,19 @@ public class UserError extends Exception {
 	private Reason reason;
 
 	public UserError(String message) {
-		super(LangResources.existsKey(message) ? LangResources.get(message) : message);
+		super(LangResources.existsKey(message) ? DefaultLangResources.getI18NStringOrDefault(message) : message);
 
 		reason = Reason.Unknown;
 	}
 
 	public UserError(String message, Reason reason) {
-		super(LangResources.existsKey(message) ? LangResources.get(message) : message);
+		super(LangResources.existsKey(message) ? DefaultLangResources.getI18NStringOrDefault(message) : message);
 
 		this.reason = reason;
 	}
 
 	public UserError(String message, Throwable cause) {
-		super(LangResources.existsKey(message) ? LangResources.get(message) : message, cause);
+		super(LangResources.existsKey(message) ? DefaultLangResources.getI18NStringOrDefault(message) : message, cause);
 
 		reason = Reason.Unknown;
 	}

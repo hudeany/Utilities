@@ -285,7 +285,7 @@ public class DateUtilities {
 		final long years = duration.toDays() / 7 / 52;
 
 		if (millis != 0 && showMillis) {
-			returnValue.insert(0, " " + LangResources.get("millis"));
+			returnValue.insert(0, " " + DefaultLangResources.getI18NStringOrDefault("millis"));
 			returnValue.insert(0, millis);
 		}
 
@@ -293,7 +293,7 @@ public class DateUtilities {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " " + LangResources.get("seconds"));
+			returnValue.insert(0, " " + DefaultLangResources.getI18NStringOrDefault("seconds"));
 			returnValue.insert(0, seconds);
 		}
 
@@ -301,7 +301,7 @@ public class DateUtilities {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " " + LangResources.get("minutes"));
+			returnValue.insert(0, " " + DefaultLangResources.getI18NStringOrDefault("minutes"));
 			returnValue.insert(0, minutes);
 		}
 
@@ -309,7 +309,7 @@ public class DateUtilities {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " " + LangResources.get("hours"));
+			returnValue.insert(0, " " + DefaultLangResources.getI18NStringOrDefault("hours"));
 			returnValue.insert(0, hours);
 		}
 
@@ -317,7 +317,7 @@ public class DateUtilities {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " " + LangResources.get("days"));
+			returnValue.insert(0, " " + DefaultLangResources.getI18NStringOrDefault("days"));
 			returnValue.insert(0, days);
 		}
 
@@ -325,7 +325,7 @@ public class DateUtilities {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " " + LangResources.get("weeks"));
+			returnValue.insert(0, " " + DefaultLangResources.getI18NStringOrDefault("weeks"));
 			returnValue.insert(0, weeks);
 		}
 
@@ -333,16 +333,16 @@ public class DateUtilities {
 			if (returnValue.length() > 0) {
 				returnValue.insert(0, " ");
 			}
-			returnValue.insert(0, " " + LangResources.get("years"));
+			returnValue.insert(0, " " + DefaultLangResources.getI18NStringOrDefault("years"));
 			returnValue.insert(0, years);
 		}
 
 		if (returnValue.length() > 0) {
 			return returnValue.toString();
 		} else if (!showMillis) {
-			return "0 " + LangResources.get("seconds");
+			return "0 " + DefaultLangResources.getI18NStringOrDefault("seconds");
 		} else {
-			return "0 " + LangResources.get("millis");
+			return "0 " + DefaultLangResources.getI18NStringOrDefault("millis");
 		}
 	}
 

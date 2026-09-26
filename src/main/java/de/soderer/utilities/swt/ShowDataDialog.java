@@ -16,8 +16,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.FileUtilities;
-import de.soderer.utilities.LangResources;
 
 public class ShowDataDialog extends ModalDialog<Integer> {
 	private final String dataString;
@@ -73,18 +73,18 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 		if (showSaveButton) {
 			final Button buttonSave = new Button(composite, SWT.PUSH);
 			buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-			buttonSave.setText(LangResources.get("save"));
+			buttonSave.setText(DefaultLangResources.getI18NStringOrDefault("save"));
 			buttonSave.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {
-					saveDataInteractive(getParent(), LangResources.get("saveData"), dataString.getBytes(StandardCharsets.UTF_8));
+					saveDataInteractive(getParent(), DefaultLangResources.getI18NStringOrDefault("saveData"), dataString.getBytes(StandardCharsets.UTF_8));
 				}
 			});
 		}
 
 		final Button buttonClose = new Button(composite, SWT.PUSH);
 		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, (showSaveButton ? 1 : 2), 1));
-		buttonClose.setText(LangResources.get("close"));
+		buttonClose.setText(DefaultLangResources.getI18NStringOrDefault("close"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -108,11 +108,11 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			boolean retry = true;
 			while (retry) {
 				final FileDialog dialog = new FileDialog(shell, SWT.SAVE);
-				dialog.setText(title + " " + LangResources.get("saveFile"));
+				dialog.setText(title + " " + DefaultLangResources.getI18NStringOrDefault("saveFile"));
 				final String fileName = dialog.open();
 				if (fileName != null) {
 					if (new File(fileName).exists() && new File(fileName).isDirectory()) {
-						final QuestionDialog questionDialog = new QuestionDialog(shell, title, LangResources.get("pathIsDirectory"), LangResources.get("ok"), LangResources.get("cancel"));
+						final QuestionDialog questionDialog = new QuestionDialog(shell, title, DefaultLangResources.getI18NStringOrDefault("pathIsDirectory"), DefaultLangResources.getI18NStringOrDefault("ok"), DefaultLangResources.getI18NStringOrDefault("cancel"));
 						if (questionDialog.open() != 0) {
 							retry = false;
 						}
@@ -134,7 +134,7 @@ public class ShowDataDialog extends ModalDialog<Integer> {
 			}
 			return null;
 		} catch (final Exception e) {
-			new QuestionDialog(shell, title, LangResources.get("fileWasNotSaved"), LangResources.get("error") + ":\n" + e.getMessage(), LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+			new QuestionDialog(shell, title, DefaultLangResources.getI18NStringOrDefault("fileWasNotSaved"), DefaultLangResources.getI18NStringOrDefault("error") + ":\n" + e.getMessage(), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 			return null;
 		}
 	}

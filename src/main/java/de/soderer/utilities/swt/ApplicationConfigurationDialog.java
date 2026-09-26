@@ -31,6 +31,7 @@ import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 
 import de.soderer.utilities.ConfigurationProperties;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
@@ -47,7 +48,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	private final Map<String, Object> pendingChanges = new java.util.LinkedHashMap<>();
 
 	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final String startUpClassName) {
-		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
+		super(shell, SWT.RESIZE, applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
 		this.startUpClassName = startUpClassName;
@@ -56,7 +57,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 	}
 
 	public ApplicationConfigurationDialog(final Shell shell, final ConfigurationProperties applicationConfiguration, final String applicationName, final String startUpClassName, final byte[] iconImageWindows, final Image iconImageLinux) {
-		super(shell, SWT.RESIZE, applicationName + " " + LangResources.get("configuration"));
+		super(shell, SWT.RESIZE, applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"));
 		this.applicationConfiguration = applicationConfiguration;
 		this.applicationName = applicationName;
 		this.startUpClassName = startUpClassName;
@@ -89,8 +90,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 		for (final String key : Utilities.asSortedList(applicationConfiguration.getKeyList())) {
 			if (!key.endsWith(ConfigurationProperties.MAXSIZE_EXTENSION) && !key.endsWith(ConfigurationProperties.ENUM_EXTENSION) || ConfigurationProperties.isInternalKey(key)) {
 				String description = key;
-				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(LangResources.get("conf." + key))) {
-					description = LangResources.get("conf." + key);
+				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(DefaultLangResources.getI18NStringOrDefault("conf." + key))) {
+					description = DefaultLangResources.getI18NStringOrDefault("conf." + key);
 				}
 
 				final Label label = new Label(dataPart, SWT.FILL);
@@ -113,7 +114,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					valueTextfield.setLayoutData(gridData2);
 				} else if (applicationConfiguration.containsKey(key + ConfigurationProperties.ENUM_EXTENSION)) {
 					final List<String> items = Utilities.splitAndTrimList(applicationConfiguration.get(key + ConfigurationProperties.ENUM_EXTENSION));
-					items.replaceAll(x -> "None".equalsIgnoreCase(x) ? LangResources.get("None") : x);
+					items.replaceAll(x -> "None".equalsIgnoreCase(x) ? DefaultLangResources.getI18NStringOrDefault("None") : x);
 					final Combo comboBox = new Combo(dataPart, SWT.DROP_DOWN);
 					comboBox.setItems(items.toArray(new String[0]));
 					comboBox.addSelectionListener(new ComboBoxButtonSelectionListener(key));
@@ -122,13 +123,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 						comboBox.addSelectionListener(new SelectionAdapter() {
 							@Override
 							public void widgetSelected(final SelectionEvent event) {
-								final String newValue = ((Combo) event.widget).getText().replace(LangResources.get("None"), "None");
+								final String newValue = ((Combo) event.widget).getText().replace(DefaultLangResources.getI18NStringOrDefault("None"), "None");
 								final boolean valueUnchanged = lastLanguageValueHolder[0] == null ? newValue == null : lastLanguageValueHolder[0].equals(newValue);
 								if (!valueUnchanged) {
 									lastLanguageValueHolder[0] = newValue;
 									final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_INFORMATION | SWT.OK);
-									messageBox.setText(applicationName + " " + LangResources.get("configuration"));
-									messageBox.setMessage(LangResources.get("languageChangeRequiresRestart"));
+									messageBox.setText(applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"));
+									messageBox.setMessage(DefaultLangResources.getI18NStringOrDefault("languageChangeRequiresRestart"));
 									messageBox.open();
 								}
 							}
@@ -137,7 +138,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					if (Utilities.isBlank(applicationConfiguration.get(key))) {
 						comboBox.select(0);
 					} else {
-						comboBox.setText(applicationConfiguration.get(key).replace("None", LangResources.get("None")));
+						comboBox.setText(applicationConfiguration.get(key).replace("None", DefaultLangResources.getI18NStringOrDefault("None")));
 					}
 					final GridData gridData1 = new GridData(SWT.FILL, SWT.UP, true, false, 2, 1);
 					comboBox.setLayoutData(gridData1);
@@ -157,8 +158,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					keyTextfield.addModifyListener(new TextValueChangeListener(key));
 				}
 
-				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(LangResources.get("conf." + key + ".help"))) {
-					final String helpText = LangResources.get("conf." + key + ".help");
+				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(DefaultLangResources.getI18NStringOrDefault("conf." + key + ".help"))) {
+					final String helpText = DefaultLangResources.getI18NStringOrDefault("conf." + key + ".help");
 					final Button button = new Button(dataPart, SWT.PUSH);
 					try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("images/icons/question.png")) {
 						button.setImage(new Image(shell.getDisplay(), inputStream));
@@ -167,7 +168,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					button.addSelectionListener(new SelectionAdapter() {
 						@Override
 						public void widgetSelected(final SelectionEvent arg0) {
-							new QuestionDialog(getParent(), applicationName, helpText, LangResources.get("ok")).open();
+							new QuestionDialog(getParent(), applicationName, helpText, DefaultLangResources.getI18NStringOrDefault("ok")).open();
 						}
 					});
 				} else {
@@ -186,7 +187,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		final Button storeButton = new Button(buttonArea, SWT.PUSH);
 		storeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		storeButton.setText(LangResources.get("save"));
+		storeButton.setText(DefaultLangResources.getI18NStringOrDefault("save"));
 		storeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -198,7 +199,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		final Button createLinkButton = new Button(buttonArea, SWT.PUSH);
 		createLinkButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		createLinkButton.setText(LangResources.get("createDesktopLink"));
+		createLinkButton.setText(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
 		createLinkButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -206,7 +207,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 					String applicationJarFileName = SystemUtilities.getCurrentlyRunningJarFilePath();
 					if (Utilities.isBlank(applicationJarFileName)) {
 						final FileDialog dialog = new FileDialog(getParent(), SWT.OPEN);
-						dialog.setText(LangResources.get("createDesktopLink"));
+						dialog.setText(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
 						applicationJarFileName = dialog.open();
 					}
 
@@ -258,15 +259,15 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							Runtime.getRuntime().exec(new String[]{ "wscript", "\"" + tempScriptFile + "\"" }, null, null);
 
 							final MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
-							messageBox.setText(LangResources.get("createDesktopLink"));
-							messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+							messageBox.setText(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
+							messageBox.setMessage(DefaultLangResources.getI18NStringOrDefault("desktopLinkWasCreatedAt", desktopLinkFilePath));
 							messageBox.open();
 
 							new File(tempScriptFile).delete();
 						} catch (final IOException e1) {
 							final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_ERROR | SWT.OK);
-							messageBox.setText(LangResources.get("createDesktopLink"));
-							messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+							messageBox.setText(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
+							messageBox.setMessage(DefaultLangResources.getI18NStringOrDefault("errorMessage", e1.getMessage()));
 							messageBox.open();
 						}
 					} else if (SystemUtilities.isLinuxSystem()) {
@@ -317,25 +318,25 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 							new File(desktopLinkFilePath).setExecutable(true);
 
 							final MessageBox messageBox = new MessageBox(getParent(), SWT.OK);
-							messageBox.setText(LangResources.get("createDesktopLink"));
-							messageBox.setMessage(LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath));
+							messageBox.setText(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
+							messageBox.setMessage(DefaultLangResources.getI18NStringOrDefault("desktopLinkWasCreatedAt", desktopLinkFilePath));
 							messageBox.open();
 						} catch (final IOException e1) {
 							final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_ERROR | SWT.OK);
-							messageBox.setText(LangResources.get("createDesktopLink"));
-							messageBox.setMessage(LangResources.get("errorMessage", e1.getMessage()));
+							messageBox.setText(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
+							messageBox.setMessage(DefaultLangResources.getI18NStringOrDefault("errorMessage", e1.getMessage()));
 							messageBox.open();
 						}
 					}
 				} catch (final Exception e1) {
-					showErrorMessage(LangResources.get("createDesktopLink"), LangResources.get("errorMessage", e1.getMessage()));
+					showErrorMessage(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), DefaultLangResources.getI18NStringOrDefault("errorMessage", e1.getMessage()));
 				}
 			}
 		});
 
 		final Button showSystemPropertiesButton = new Button(buttonArea, SWT.PUSH);
 		showSystemPropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		showSystemPropertiesButton.setText(LangResources.get("showSystemProperties"));
+		showSystemPropertiesButton.setText(DefaultLangResources.getI18NStringOrDefault("showSystemProperties"));
 		showSystemPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -343,13 +344,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				for (final Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
 				}
-				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("systemProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), true).open();
+				new ShowDataDialog(getParent(), applicationName + " " + DefaultLangResources.getI18NStringOrDefault("systemProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), true).open();
 			}
 		});
 
 		final Button showRuntimePropertiesButton = new Button(buttonArea, SWT.PUSH);
 		showRuntimePropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		showRuntimePropertiesButton.setText(LangResources.get("showRuntimeProperties"));
+		showRuntimePropertiesButton.setText(DefaultLangResources.getI18NStringOrDefault("showRuntimeProperties"));
 		showRuntimePropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -357,31 +358,31 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 				for (final Entry<String, String> entry : properties.entrySet()) {
 					properties.put(entry.getKey(), entry.getValue().replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
 				}
-				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("runtimeProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), true).open();
+				new ShowDataDialog(getParent(), applicationName + " " + DefaultLangResources.getI18NStringOrDefault("runtimeProperties"), Utilities.getStringFromMap(properties, "\n", " = ", true), true).open();
 			}
 		});
 
 		final Button showSwtPropertiesButton = new Button(buttonArea, SWT.PUSH);
 		showSwtPropertiesButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		showSwtPropertiesButton.setText(LangResources.get("showSwtProperties"));
+		showSwtPropertiesButton.setText(DefaultLangResources.getI18NStringOrDefault("showSwtProperties"));
 		showSwtPropertiesButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				new ShowDataDialog(getParent(), applicationName + " " + LangResources.get("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(getParent().getDisplay()), "\n", " = ", true))
+				new ShowDataDialog(getParent(), applicationName + " " + DefaultLangResources.getI18NStringOrDefault("swtProperties"), Utilities.getStringFromMap(SwtUtilities.getSwtHandlesStatus(getParent().getDisplay()), "\n", " = ", true))
 				.open();
 			}
 		});
 
 		final Button cancelButton = new Button(buttonArea, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		cancelButton.setText(LangResources.get("cancel"));
+		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				if (configurationChanged) {
 					final MessageBox messageBox = new MessageBox(getParent(), SWT.ICON_QUESTION | SWT.YES | SWT.NO);
-					messageBox.setText(applicationName + " " + LangResources.get("configuration"));
-					messageBox.setMessage(LangResources.get("discardUnsavedConfigurationChanges"));
+					messageBox.setText(applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"));
+					messageBox.setMessage(DefaultLangResources.getI18NStringOrDefault("discardUnsavedConfigurationChanges"));
 					if (messageBox.open() == SWT.YES) {
 						setReturnValue(false);
 						getParent().close();
@@ -419,7 +420,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Boolean> {
 
 		@Override
 		public void widgetSelected(final SelectionEvent event) {
-			pendingChanges.put(key, ((Combo) event.widget).getText().replace(LangResources.get("None"), "None"));
+			pendingChanges.put(key, ((Combo) event.widget).getText().replace(DefaultLangResources.getI18NStringOrDefault("None"), "None"));
 			configurationChanged = true;
 		}
 	}

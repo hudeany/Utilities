@@ -25,7 +25,7 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
 import de.soderer.utilities.DateUtilities;
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.worker.WorkerSimple;
 
 public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
@@ -96,13 +96,13 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 		table.setLayoutData(gdTable);
 
 		final String[] columnTitles = { "WorkerID",
-				LangResources.get("successCount"),
-				LangResources.get("errorCount"),
-				LangResources.get("latestDuration"),
-				LangResources.get("latestStatus"),
-				LangResources.get("minDuration"),
-				"Ø " + LangResources.get("duration"),
-				LangResources.get("maxDuration") };
+				DefaultLangResources.getI18NStringOrDefault("successCount"),
+				DefaultLangResources.getI18NStringOrDefault("errorCount"),
+				DefaultLangResources.getI18NStringOrDefault("latestDuration"),
+				DefaultLangResources.getI18NStringOrDefault("latestStatus"),
+				DefaultLangResources.getI18NStringOrDefault("minDuration"),
+				"Ø " + DefaultLangResources.getI18NStringOrDefault("duration"),
+				DefaultLangResources.getI18NStringOrDefault("maxDuration") };
 		for (int i = 0; i < columnTitles.length; i++) {
 			final int colIndex = i;
 			final TableColumn col = new TableColumn(table, SWT.NONE);
@@ -139,7 +139,7 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 		spacer.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		downloadButton = new Button(buttonBar, SWT.PUSH);
-		downloadButton.setText(LangResources.get("saveResults"));
+		downloadButton.setText(DefaultLangResources.getI18NStringOrDefault("saveResults"));
 		downloadButton.setEnabled(false);
 		final GridData gdDownload = new GridData(SWT.RIGHT, SWT.CENTER, false, false);
 		gdDownload.widthHint = 160;
@@ -147,7 +147,7 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 		downloadButton.addListener(SWT.Selection, e -> exportResults());
 
 		actionButton = new Button(buttonBar, SWT.PUSH);
-		actionButton.setText(LangResources.get("cancel"));
+		actionButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		final GridData gdAction = new GridData(SWT.RIGHT, SWT.CENTER, false, false);
 		gdAction.widthHint = 120;
 		actionButton.setLayoutData(gdAction);
@@ -170,7 +170,7 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 				String.valueOf(ws.getSuccessCount()),
 				String.valueOf(ws.getErrorCount()),
 				(ws.getLatestDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getLatestDuration(), true, false)),
-				(ws.getLatestStatusWasSuccess() == null ? "" : (ws.getLatestStatusWasSuccess() ? LangResources.get("success") : LangResources.get("error"))),
+				(ws.getLatestStatusWasSuccess() == null ? "" : (ws.getLatestStatusWasSuccess() ? DefaultLangResources.getI18NStringOrDefault("success") : DefaultLangResources.getI18NStringOrDefault("error"))),
 				(ws.getMinimumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMinimumDuration(), true, false)),
 				(ws.getAverageDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getAverageDuration(), true, false)),
 				(ws.getMaximumDuration() == null ? "" : DateUtilities.getShortHumanReadableTimespan(ws.getMaximumDuration(), true, false))
@@ -291,7 +291,7 @@ public abstract class WorkerPoolDialog extends ModalDialog<Boolean> {
 			final boolean allDone = cancelled || (tasksPerWorker >= 0 && progress.get() >= progressBar.getMaximum());
 			if (allDone) {
 				finished = true;
-				actionButton.setText(LangResources.get("close"));
+				actionButton.setText(DefaultLangResources.getI18NStringOrDefault("close"));
 				downloadButton.setEnabled(true);
 				getParent().layout();
 			}

@@ -16,7 +16,6 @@ import org.eclipse.swt.widgets.Shell;
 
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.DefaultLangResources;
-import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
@@ -78,7 +77,7 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 
 		buttonClose = new Button(composite, SWT.PUSH);
 		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		buttonClose.setText(LangResources.get("cancel"));
+		buttonClose.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {

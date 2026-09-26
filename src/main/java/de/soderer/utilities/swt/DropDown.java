@@ -236,6 +236,19 @@ public class DropDown extends Composite {
 	private final Runnable deferredDeactivateHide = this::hidePopup;
 
 	/**
+	 * Whether the popup showed the full item list when the mouse button was pressed
+	 * on "dropdownButton", i.e. whether the following click should collapse it.
+	 *
+	 * <p>
+	 * Recorded on MouseDown, because the Selection event only fires on MouseUp,
+	 * and by then the deferred hide scheduled by the focus loss of "text" may
+	 * already have closed the popup (if the button was held longer than its grace
+	 * period).
+	 * </p>
+	 */
+	private boolean popupShowingAllItemsOnButtonMouseDown = false;
+
+	/**
 	 * Creates an AutoCompleteCombo.
 	 *
 	 * @param parent parent composite
@@ -287,6 +300,12 @@ public class DropDown extends Composite {
 
 		dropdownButton = new Button(dropdownButtonBorder, SWT.ARROW | SWT.DOWN);
 		dropdownButton.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		dropdownButton.addListener(SWT.MouseDown, e -> {
+			popupShowingAllItemsOnButtonMouseDown = isPopupShowingAllItems();
+
+			// Keep the popup open until the Selection event decides whether to collapse it
+			getDisplay().timerExec(-1, deferredDeactivateHide);
+		});
 		dropdownButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
@@ -303,7 +322,17 @@ public class DropDown extends Composite {
 				 */
 				getDisplay().timerExec(-1, deferredDeactivateHide);
 
-				showAllItems();
+				// The current state covers activation by keyboard, which has no MouseDown
+				final boolean collapse = popupShowingAllItemsOnButtonMouseDown || isPopupShowingAllItems();
+				popupShowingAllItemsOnButtonMouseDown = false;
+
+				if (collapse) {
+					// Second click on the button while the full list is shown: collapse it again without any change
+					hidePopup();
+				} else {
+					// Also expands a popup that currently only shows the matches of the entered text
+					showAllItems();
+				}
 
 				/*
 				 * A Button takes keyboard focus on click, so without this the arrow keys,
@@ -1397,6 +1426,14 @@ public class DropDown extends Composite {
 			default:
 				break;
 		}
+	}
+
+	/**
+	 * Whether the popup is currently open and showing the full, unfiltered item
+	 * list (as opened by the dropdown button / {@link #showAllItems()}).
+	 */
+	private boolean isPopupShowingAllItems() {
+		return popup != null && !popup.isDisposed() && popup.getVisible() && !items.isEmpty() && matches.equals(items);
 	}
 
 	/**

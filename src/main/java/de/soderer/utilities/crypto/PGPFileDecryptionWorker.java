@@ -21,7 +21,7 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcePublicKeyDataDecryptorFactoryBuilder;
 
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.UserError;
@@ -151,7 +151,7 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		} catch (final PGPException pgpe) {
 			if (pgpe.getUnderlyingException() != null && pgpe.getUnderlyingException() instanceof InvalidKeyException
 					&& TextUtilities.containsIgnoreCase(pgpe.getUnderlyingException().getMessage(), "Illegal key size") && !SystemUtilities.isUnlimitedKeyStrengthAllowed()) {
-				throw new UserError(LangResources.get("keystrengthExceedsAllowedJCE"), pgpe);
+				throw new UserError(DefaultLangResources.getI18NStringOrDefault("keystrengthExceedsAllowedJCE"), pgpe);
 			} else {
 				throw pgpe;
 			}

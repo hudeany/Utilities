@@ -9,7 +9,7 @@ import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.LangResources;
+import de.soderer.utilities.DefaultLangResources;
 
 public abstract class ModalDialog<T> extends Dialog {
 	private static final int GTK_TITLEBAR_EXTRA_WIDTH = 100;
@@ -166,20 +166,20 @@ public abstract class ModalDialog<T> extends Dialog {
 	}
 
 	protected void showMessage(final String title, final String text) {
-		new QuestionDialog(getParent(), title, text, LangResources.get("ok")).open();
+		new QuestionDialog(getParent(), title, text, DefaultLangResources.getI18NStringOrDefault("ok")).open();
 	}
 
 	protected void showErrorMessage(final String title, final String text) {
-		new QuestionDialog(getParent(), title, text, LangResources.get("ok")).setBackgroundColor(SwtColor.LightRed).open();
+		new QuestionDialog(getParent(), title, text, DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwtColor.LightRed).open();
 	}
 
 	protected boolean showQuestion(final String text, final String... buttonTextProperties) {
 		if (buttonTextProperties == null) {
-			return new QuestionDialog(getParent(), getText(), text, LangResources.get("ok"), LangResources.get("cancel")).open() == 0;
+			return new QuestionDialog(getParent(), getText(), text, DefaultLangResources.getI18NStringOrDefault("ok"), DefaultLangResources.getI18NStringOrDefault("cancel")).open() == 0;
 		} else {
 			final String[] buttonTexts = new String[buttonTextProperties.length];
 			for (int i = 0; i < buttonTextProperties.length; i++) {
-				buttonTexts[i] = LangResources.get(buttonTextProperties[i]);
+				buttonTexts[i] = DefaultLangResources.getI18NStringOrDefault(buttonTextProperties[i]);
 			}
 			return new QuestionDialog(getParent(), getText(), text, buttonTexts).open() == 0;
 		}
