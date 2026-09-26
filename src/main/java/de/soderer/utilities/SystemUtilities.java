@@ -161,4 +161,63 @@ public class SystemUtilities {
 			return false;
 		}
 	}
+
+	/**
+	 * Determines the JVM parameters (e.g. -Xmx, -D..., --add-opens, -XstartOnFirstThread)
+	 * the currently running application was started with, so they can be passed on
+	 * to the restarted application after an update.
+	 *
+	 * Excluded are:
+	 * - debugger and agent options: a restarted process must not suspend waiting for
+	 *   a debugger or load an agent it was not explicitly meant to load
+	 * - options originating from the environment variables JAVA_TOOL_OPTIONS and
+	 *   JDK_JAVA_OPTIONS: the restarted process inherits the environment and would
+	 *   otherwise receive them twice
+	 *
+	 * @return modifiable list of JVM parameters, never null (empty if they cannot be determined)
+	 */
+	public static List<String> getCurrentJvmParameters() {
+		final List<String> inputArguments;
+		try {
+			inputArguments = new ArrayList<>(ManagementFactory.getRuntimeMXBean().getInputArguments());
+		} catch (@SuppressWarnings("unused") final Exception | LinkageError e) {
+			// Module java.management may be missing (e.g. minimal jlink image) or access may be denied
+			return new ArrayList<>();
+		}
+
+		removeEnvironmentProvidedOptions(inputArguments, System.getenv("JAVA_TOOL_OPTIONS"));
+		removeEnvironmentProvidedOptions(inputArguments, System.getenv("JDK_JAVA_OPTIONS"));
+
+		final List<String> jvmParameters = new ArrayList<>();
+		for (final String argument : inputArguments) {
+			if (!Utilities.isBlank(argument) && !isExcludedJvmParameter(argument)) {
+				jvmParameters.add(argument);
+			}
+		}
+		return jvmParameters;
+	}
+
+	private static boolean isExcludedJvmParameter(final String argument) {
+		return argument.startsWith("-agentlib:")
+				|| argument.startsWith("-agentpath:")
+				|| argument.startsWith("-javaagent:")
+				|| argument.startsWith("-Xrun") // legacy form, e.g. -Xrunjdwp:...
+				|| "-Xdebug".equals(argument)
+				|| "-Xnoagent".equals(argument);
+	}
+
+	/**
+	 * Removes one occurrence of each option contained in the given environment variable value.
+	 * Simple whitespace tokenizing is sufficient here, as options containing quoted spaces
+	 * are extremely rare in these variables.
+	 */
+	private static void removeEnvironmentProvidedOptions(final List<String> arguments, final String environmentValue) {
+		if (Utilities.isBlank(environmentValue)) {
+			return;
+		} else {
+			for (final String option : environmentValue.trim().split("\\s+")) {
+				arguments.remove(option);
+			}
+		}
+	}
 }
