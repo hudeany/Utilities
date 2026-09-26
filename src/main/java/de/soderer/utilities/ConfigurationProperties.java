@@ -356,10 +356,6 @@ public class ConfigurationProperties {
 			set(CONFIG_KEY_LANGUAGE, Locale.getDefault().getLanguage());
 		}
 
-		if (!containsKey(CONFIG_KEY_LANGUAGE)) {
-			set(CONFIG_KEY_LANGUAGE, Locale.getDefault().getLanguage());
-		}
-
 		set(CONFIG_KEY_PROXY_CONFIGURATION_TYPE + ConfigurationProperties.ENUM_EXTENSION, "None,System,Proxy-URL,WPAD,PAC-URL");
 		if (!containsKey(CONFIG_KEY_PROXY_CONFIGURATION_TYPE)) {
 			if (PacScriptParser.findPacFileUrlByWpad() != null) {
