@@ -348,7 +348,14 @@ public class ConfigurationProperties {
 	}
 
 	public void setupDefaultConfig() {
-		set(CONFIG_KEY_LANGUAGE + ConfigurationProperties.ENUM_EXTENSION, LangResources.getAvailableLanguages("en"));
+		if (containsKey(CONFIG_KEY_LANGUAGE + ENUM_EXTENSION)) {
+			removeKey(CONFIG_KEY_LANGUAGE + ENUM_EXTENSION);
+			save();
+		}
+		if (!containsKey(CONFIG_KEY_LANGUAGE)) {
+			set(CONFIG_KEY_LANGUAGE, Locale.getDefault().getLanguage());
+		}
+
 		if (!containsKey(CONFIG_KEY_LANGUAGE)) {
 			set(CONFIG_KEY_LANGUAGE, Locale.getDefault().getLanguage());
 		}
