@@ -102,6 +102,10 @@ public class LangResources {
 	 * classpath (directories as well as jar files), so any code like "de_BY" is
 	 * found, even if the JRE does not know it as a locale.
 	 *
+	 * Also works with Eclipse's jar-in-jar loader ("rsrc:" URLs), whose
+	 * locations cannot be listed directly. In that case the entries of
+	 * "java.class.path" (the outer jar file) are listed instead.
+	 *
 	 * @param defaultLanguageCode
 	 *            language of the root file without language suffix
 	 *            ("LanguageProperties.properties"), added to the result if that
@@ -114,14 +118,23 @@ public class LangResources {
 		if (availableLanguages == null) {
 			// TreeSet keeps the result sorted and free of duplicates
 			final Set<String> languages = new TreeSet<>();
+			boolean unlistableLocationFound = false;
 			for (final String location : getLanguageFileLocations(classLoader, defaultLanguageCode)) {
-				try {
-					languages.addAll(listLanguageCodes(URI.create(location).toURL()));
-				} catch (final Exception e) {
-					// Location cannot be listed, the other locations may still contain language files
-					e.printStackTrace();
+				if (isListableLocation(location)) {
+					addLanguageCodesOfLocation(languages, location);
+				} else {
+					// e.g. "rsrc:" URLs of Eclipse's jar-in-jar loader, which cannot be listed directly
+					unlistableLocationFound = true;
 				}
 			}
+
+			if (unlistableLocationFound) {
+				// The classpath entries (e.g. the outer jar file of a jar-in-jar application) contain those files
+				for (final String location : getClassPathLocations()) {
+					addLanguageCodesOfLocation(languages, location);
+				}
+			}
+
 			availableLanguages = new ArrayList<>(languages);
 		}
 
@@ -130,6 +143,28 @@ public class LangResources {
 			result.add(defaultLanguageCode);
 		}
 		return new ArrayList<>(result);
+	}
+
+	/**
+	 * Only "file" and "jar" locations can be listed. Checked by the URI scheme,
+	 * so no URL stream handler is needed for this check.
+	 */
+	private static boolean isListableLocation(final String location) {
+		try {
+			final String scheme = URI.create(location).getScheme();
+			return "file".equalsIgnoreCase(scheme) || "jar".equalsIgnoreCase(scheme);
+		} catch (@SuppressWarnings("unused") final IllegalArgumentException e) {
+			return false;
+		}
+	}
+
+	private static void addLanguageCodesOfLocation(final Set<String> languages, final String location) {
+		try {
+			languages.addAll(listLanguageCodes(URI.create(location).toURL()));
+		} catch (final Exception e) {
+			// Location cannot be listed, the other locations may still contain language files
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -158,24 +193,33 @@ public class LangResources {
 
 		if (locations.isEmpty()) {
 			// No known file: check every classpath entry
-			for (final String classPathEntry : System.getProperty("java.class.path", "").split(File.pathSeparator)) {
-				if (!classPathEntry.isBlank()) {
-					try {
-						final File file = new File(classPathEntry);
-						if (file.isDirectory()) {
-							// Dummy file name, only its directory is listed
-							locations.add(new File(file, BUNDLE_NAME + ".properties").toURI().toURL().toExternalForm());
-						} else if (file.isFile()) {
-							// Root of the jar file, which (unlike a missing entry) can always be opened
-							locations.add("jar:" + file.toURI().toURL().toExternalForm() + "!/");
-						}
-					} catch (final IOException e) {
-						e.printStackTrace();
+			locations.addAll(getClassPathLocations());
+		}
+
+		return locations;
+	}
+
+	/**
+	 * Locations of all entries of the system property "java.class.path"
+	 */
+	private static Set<String> getClassPathLocations() {
+		final Set<String> locations = new LinkedHashSet<>();
+		for (final String classPathEntry : System.getProperty("java.class.path", "").split(File.pathSeparator)) {
+			if (!classPathEntry.isBlank()) {
+				try {
+					final File file = new File(classPathEntry);
+					if (file.isDirectory()) {
+						// Dummy file name, only its directory is listed
+						locations.add(new File(file, BUNDLE_NAME + ".properties").toURI().toURL().toExternalForm());
+					} else if (file.isFile()) {
+						// Root of the jar file, which (unlike a missing entry) can always be opened
+						locations.add("jar:" + file.toURI().toURL().toExternalForm() + "!/");
 					}
+				} catch (final IOException e) {
+					e.printStackTrace();
 				}
 			}
 		}
-
 		return locations;
 	}
 
