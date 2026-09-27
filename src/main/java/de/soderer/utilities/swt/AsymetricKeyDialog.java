@@ -19,7 +19,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.crypto.CryptographicUtilities;
 
 public class AsymetricKeyDialog extends ModalDialog<Boolean> {
@@ -56,12 +56,12 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		// Public key
 		Label label = new Label(composite, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 2, 1));
-		label.setText(DefaultLangResources.getI18NStringOrDefault("publicKey"));
+		label.setText(LangResources.get("publicKey"));
 
 		if (publicKey != null) {
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-			label.setText(DefaultLangResources.getI18NStringOrDefault("keyType"));
+			label.setText(LangResources.get("keyType"));
 
 			StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
@@ -69,7 +69,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-			label.setText(DefaultLangResources.getI18NStringOrDefault("keyFormat"));
+			label.setText(LangResources.get("keyFormat"));
 
 			textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
@@ -78,7 +78,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 			if (publicKey instanceof RSAPublicKey) {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("keyStrength"));
+				label.setText(LangResources.get("keyStrength"));
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
@@ -86,37 +86,37 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintMd5"));
+				label.setText(LangResources.get("fingerprintMd5"));
 
 				publicKeyMd5Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintMd5(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha1"));
+				label.setText(LangResources.get("fingerprintSha1"));
 
 				publicKeySha1Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha1(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha256"));
+				label.setText(LangResources.get("fingerprintSha256"));
 
 				publicKeySha256Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha256Base64(publicKey));
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha384"));
+				label.setText(LangResources.get("fingerprintSha384"));
 
 				publicKeySha384Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha384Base64(publicKey));
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha512"));
+				label.setText(LangResources.get("fingerprintSha512"));
 
 				publicKeySha512Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha512Base64(publicKey));
 			} else if (publicKey instanceof BCECPublicKey) {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("ellipticCurveName"));
+				label.setText(LangResources.get("ellipticCurveName"));
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
@@ -124,31 +124,31 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintMd5"));
+				label.setText(LangResources.get("fingerprintMd5"));
 
 				publicKeyMd5Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintMd5(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha1"));
+				label.setText(LangResources.get("fingerprintSha1"));
 
 				publicKeySha1Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha1(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha256"));
+				label.setText(LangResources.get("fingerprintSha256"));
 
 				publicKeySha256Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha256(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha384"));
+				label.setText(LangResources.get("fingerprintSha384"));
 
 				publicKeySha384Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha384(publicKey, ":").toUpperCase());
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha512"));
+				label.setText(LangResources.get("fingerprintSha512"));
 
 				publicKeySha512Text = addSizeLimitedTextField(composite, CryptographicUtilities.getOpenSshFingerPrintSha512(publicKey, ":").toUpperCase());
 			} else {
@@ -163,7 +163,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		} else {
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 2, 1));
-			label.setText(DefaultLangResources.getI18NStringOrDefault("notFound"));
+			label.setText(LangResources.get("notFound"));
 		}
 
 		final Label separator = new Label(composite, SWT.SEPARATOR | SWT.HORIZONTAL);
@@ -172,12 +172,12 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		// Private key
 		label = new Label(composite, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 2, 1));
-		label.setText(DefaultLangResources.getI18NStringOrDefault("privateKey"));
+		label.setText(LangResources.get("privateKey"));
 
 		if (privateKey != null) {
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-			label.setText(DefaultLangResources.getI18NStringOrDefault("keyType"));
+			label.setText(LangResources.get("keyType"));
 
 			StyledText textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
@@ -185,7 +185,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-			label.setText(DefaultLangResources.getI18NStringOrDefault("keyFormat"));
+			label.setText(LangResources.get("keyFormat"));
 
 			textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 			textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
@@ -194,7 +194,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 			if (privateKey instanceof RSAPrivateKey) {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("keyStrength"));
+				label.setText(LangResources.get("keyStrength"));
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
@@ -202,37 +202,37 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintMd5"));
+				label.setText(LangResources.get("fingerprintMd5"));
 
 				privateKeyMd5Text = addSizeLimitedTextField(composite, "");
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha1"));
+				label.setText(LangResources.get("fingerprintSha1"));
 
 				privateKeySha1Text = addSizeLimitedTextField(composite, "");
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha256"));
+				label.setText(LangResources.get("fingerprintSha256"));
 
 				privateKeySha256Text = addSizeLimitedTextField(composite, "");
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha384"));
+				label.setText(LangResources.get("fingerprintSha384"));
 
 				privateKeySha384Text = addSizeLimitedTextField(composite, "");
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha512"));
+				label.setText(LangResources.get("fingerprintSha512"));
 
 				privateKeySha512Text = addSizeLimitedTextField(composite, "");
 			} else if (privateKey instanceof BCECPrivateKey) {
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("ellipticCurveName"));
+				label.setText(LangResources.get("ellipticCurveName"));
 
 				textField = new StyledText(composite, SWT.READ_ONLY | SWT.BORDER);
 				textField.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1));
@@ -240,31 +240,31 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintMd5"));
+				label.setText(LangResources.get("fingerprintMd5"));
 
 				privateKeyMd5Text = addSizeLimitedTextField(composite, "");
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha1"));
+				label.setText(LangResources.get("fingerprintSha1"));
 
 				privateKeySha1Text = addSizeLimitedTextField(composite, "");
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha256"));
+				label.setText(LangResources.get("fingerprintSha256"));
 
 				privateKeySha256Text = addSizeLimitedTextField(composite, "");
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha384"));
+				label.setText(LangResources.get("fingerprintSha384"));
 
 				privateKeySha384Text = addSizeLimitedTextField(composite, "");
 
 				label = new Label(composite, SWT.NONE);
 				label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, true, 1, 1));
-				label.setText(DefaultLangResources.getI18NStringOrDefault("fingerprintSha512"));
+				label.setText(LangResources.get("fingerprintSha512"));
 
 				privateKeySha512Text = addSizeLimitedTextField(composite, "");
 			} else {
@@ -279,7 +279,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 		} else {
 			label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, true, 2, 1));
-			label.setText(DefaultLangResources.getI18NStringOrDefault("notFound"));
+			label.setText(LangResources.get("notFound"));
 		}
 
 		composite = new Composite(shell, SWT.NONE);
@@ -289,7 +289,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 		//		final Button buttonSave = new Button(composite, SWT.PUSH);
 		//		buttonSave.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		//		buttonSave.setText(DefaultLangResources.getI18NStringOrDefault("save"));
+		//		buttonSave.setText(LangResources.get("save"));
 		//		buttonSave.addSelectionListener(new SelectionAdapter() {
 		//			@Override
 		//			public void widgetSelected(final SelectionEvent event) {
@@ -300,7 +300,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 		final Button buttonHex = new Button(composite, SWT.PUSH);
 		buttonHex.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		buttonHex.setText(DefaultLangResources.getI18NStringOrDefault("hexFormat"));
+		buttonHex.setText(LangResources.get("hexFormat"));
 		buttonHex.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -315,7 +315,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 		final Button buttonHexColon = new Button(composite, SWT.PUSH);
 		buttonHexColon.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		buttonHexColon.setText(DefaultLangResources.getI18NStringOrDefault("hexColonFormat"));
+		buttonHexColon.setText(LangResources.get("hexColonFormat"));
 		buttonHexColon.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -330,7 +330,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 		final Button buttonBase64 = new Button(composite, SWT.PUSH);
 		buttonBase64.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		buttonBase64.setText(DefaultLangResources.getI18NStringOrDefault("base64Format"));
+		buttonBase64.setText(LangResources.get("base64Format"));
 		buttonBase64.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -345,7 +345,7 @@ public class AsymetricKeyDialog extends ModalDialog<Boolean> {
 
 		final Button buttonClose = new Button(composite, SWT.PUSH);
 		buttonClose.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 1, 1));
-		buttonClose.setText(DefaultLangResources.getI18NStringOrDefault("close"));
+		buttonClose.setText(LangResources.get("close"));
 		buttonClose.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {

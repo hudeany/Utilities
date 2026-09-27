@@ -49,7 +49,6 @@ import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.pac.utilities.ProxyConfiguration.ProxyConfigurationType;
 import de.soderer.utilities.ConfigurationProperties;
 import de.soderer.utilities.DateUtilities;
-import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
@@ -120,7 +119,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private String lastLanguageValue;
 
 	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates, final List<String> appParameters) {
-		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ") " + DefaultLangResources.getI18NStringOrDefault("configuration"));
+		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ") " + LangResources.get("configuration"));
 
 		this.updateParent = updateParent;
 		this.applicationName = applicationName;
@@ -182,7 +181,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		int row = 0;
 
 		if (applicationBuildTime != null) {
-			addLabel(valuesPanel, row, DefaultLangResources.getI18NStringOrDefault("buildTime"));
+			addLabel(valuesPanel, row, LangResources.get("buildTime"));
 			final JTextField buildTimeText = new JTextField(DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, applicationBuildTime));
 			buildTimeText.setEditable(false);
 			valuesPanel.add(buildTimeText, createValueConstraints(row, 1, 2));
@@ -197,8 +196,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 				}
 
 				String description = key;
-				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(DefaultLangResources.getI18NStringOrDefault("conf." + key))) {
-					description = DefaultLangResources.getI18NStringOrDefault("conf." + key);
+				if (LangResources.existsKey("conf." + key) && Utilities.isNotBlank(LangResources.get("conf." + key))) {
+					description = LangResources.get("conf." + key);
 				}
 				addLabel(valuesPanel, row, description);
 
@@ -231,8 +230,8 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 					valuesPanel.add(createTextField(key, value), createValueConstraints(row, 1, 2));
 				}
 
-				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(DefaultLangResources.getI18NStringOrDefault("conf." + key + ".help"))) {
-					valuesPanel.add(createHelpButton(DefaultLangResources.getI18NStringOrDefault("conf." + key + ".help")), createHelpButtonConstraints(row));
+				if (LangResources.existsKey("conf." + key + ".help") && Utilities.isNotBlank(LangResources.get("conf." + key + ".help"))) {
+					valuesPanel.add(createHelpButton(LangResources.get("conf." + key + ".help")), createHelpButtonConstraints(row));
 				}
 
 				row++;
@@ -371,7 +370,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 			final boolean valueUnchanged = lastLanguageValue == null ? newValue == null : lastLanguageValue.equals(newValue);
 			if (!valueUnchanged) {
 				lastLanguageValue = newValue;
-				JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("languageChangeRequiresRestart"), applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"), JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(this, LangResources.get("languageChangeRequiresRestart"), applicationName + " " + LangResources.get("configuration"), JOptionPane.INFORMATION_MESSAGE);
 			}
 		} else if (ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE.equalsIgnoreCase(key)) {
 			updateProxyUrlEnabledStatus();
@@ -396,9 +395,9 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	 */
 	private static String toDisplayValue(final String key, final String value) {
 		if ("None".equalsIgnoreCase(value)) {
-			return DefaultLangResources.getI18NStringOrDefault("None");
-		} else if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key) && Utilities.isNotBlank(value) && LangResources.existsKey(value) && Utilities.isNotBlank(DefaultLangResources.getI18NStringOrDefault(value))) {
-			return DefaultLangResources.getI18NStringOrDefault(value) + " (" + value + ")";
+			return LangResources.get("None");
+		} else if (ConfigurationProperties.CONFIG_KEY_LANGUAGE.equalsIgnoreCase(key) && Utilities.isNotBlank(value) && LangResources.existsKey(value) && Utilities.isNotBlank(LangResources.get(value))) {
+			return LangResources.get(value) + " (" + value + ")";
 		} else {
 			return value;
 		}
@@ -417,7 +416,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 				}
 			}
 		}
-		return displayValue != null && displayValue.equals(DefaultLangResources.getI18NStringOrDefault("None")) ? "None" : displayValue;
+		return displayValue != null && displayValue.equals(LangResources.get("None")) ? "None" : displayValue;
 	}
 
 	private JButton createHelpButton(final String helpText) {
@@ -433,7 +432,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		}
 		helpButton.setMargin(new Insets(1, 1, 1, 1));
 		helpButton.setToolTipText(helpText);
-		helpButton.addActionListener(e -> new QuestionDialog(this, applicationName, helpText, DefaultLangResources.getI18NStringOrDefault("ok")).open());
+		helpButton.addActionListener(e -> new QuestionDialog(this, applicationName, helpText, LangResources.get("ok")).open());
 		return helpButton;
 	}
 
@@ -449,7 +448,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 		final List<JButton> buttons = new ArrayList<>();
 
-		final JButton saveButton = new JButton(DefaultLangResources.getI18NStringOrDefault("save"));
+		final JButton saveButton = new JButton(LangResources.get("save"));
 		saveButton.addActionListener(e -> {
 			applyPendingChanges();
 			returnValue = Result.OK;
@@ -457,30 +456,30 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		});
 		buttons.add(saveButton);
 
-		final JButton createDesktopLinkButton = new JButton(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
+		final JButton createDesktopLinkButton = new JButton(LangResources.get("createDesktopLink"));
 		createDesktopLinkButton.addActionListener(e -> createDesktopLink());
 		buttons.add(createDesktopLinkButton);
 
-		final JButton showSystemPropertiesButton = new JButton(DefaultLangResources.getI18NStringOrDefault("showSystemProperties"));
-		showSystemPropertiesButton.addActionListener(e -> showProperties(DefaultLangResources.getI18NStringOrDefault("systemProperties"), Utilities.getSystemPropertiesMap()));
+		final JButton showSystemPropertiesButton = new JButton(LangResources.get("showSystemProperties"));
+		showSystemPropertiesButton.addActionListener(e -> showProperties(LangResources.get("systemProperties"), Utilities.getSystemPropertiesMap()));
 		buttons.add(showSystemPropertiesButton);
 
-		final JButton showRuntimePropertiesButton = new JButton(DefaultLangResources.getI18NStringOrDefault("showRuntimeProperties"));
-		showRuntimePropertiesButton.addActionListener(e -> showProperties(DefaultLangResources.getI18NStringOrDefault("runtimeProperties"), SystemUtilities.getRuntimeProperties(true)));
+		final JButton showRuntimePropertiesButton = new JButton(LangResources.get("showRuntimeProperties"));
+		showRuntimePropertiesButton.addActionListener(e -> showProperties(LangResources.get("runtimeProperties"), SystemUtilities.getRuntimeProperties(true)));
 		buttons.add(showRuntimePropertiesButton);
 
 		// Swing counterpart of the SWT variant's "SWT properties"
-		final JButton showSwingPropertiesButton = new JButton(DefaultLangResources.getI18NStringOrDefault("showSwingProperties"));
-		showSwingPropertiesButton.addActionListener(e -> showProperties(DefaultLangResources.getI18NStringOrDefault("swingProperties"), getSwingProperties()));
+		final JButton showSwingPropertiesButton = new JButton(LangResources.get("showSwingProperties"));
+		showSwingPropertiesButton.addActionListener(e -> showProperties(LangResources.get("swingProperties"), getSwingProperties()));
 		buttons.add(showSwingPropertiesButton);
 
 		if (Utilities.isNotBlank(versioninfoDownloadURL)) {
-			final JButton updateButton = new JButton(DefaultLangResources.getI18NStringOrDefault("checkUpdate"));
+			final JButton updateButton = new JButton(LangResources.get("checkUpdate"));
 			updateButton.addActionListener(e -> checkUpdate());
 			buttons.add(updateButton);
 		}
 
-		final JButton cancelButton = new JButton(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		final JButton cancelButton = new JButton(LangResources.get("cancel"));
 		cancelButton.addActionListener(e -> cancel());
 		buttons.add(cancelButton);
 
@@ -505,7 +504,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 	private void cancel() {
 		if (configurationChanged) {
-			final int result = JOptionPane.showConfirmDialog(this, DefaultLangResources.getI18NStringOrDefault("discardUnsavedConfigurationChanges"), applicationName + " " + DefaultLangResources.getI18NStringOrDefault("configuration"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			final int result = JOptionPane.showConfirmDialog(this, LangResources.get("discardUnsavedConfigurationChanges"), applicationName + " " + LangResources.get("configuration"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (result != JOptionPane.YES_OPTION) {
 				// Keep the dialog open, discard nothing
 				return;
@@ -626,11 +625,11 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 					Runtime.getRuntime().exec(new String[] { "wscript", "\"" + tempScriptFile + "\"" }, null, null);
 
-					JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("desktopLinkWasCreatedAt", desktopLinkFilePath), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
+					JOptionPane.showMessageDialog(this, LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
 
 					new File(tempScriptFile).delete();
 				} catch (final IOException e) {
-					JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("errorMessage", e.getMessage()), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 				}
 			} else if (SystemUtilities.isLinuxSystem()) {
 				String desktopLinkFilePath;
@@ -677,13 +676,13 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 					new File(desktopLinkFilePath).setExecutable(true);
 
-					JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("desktopLinkWasCreatedAt", desktopLinkFilePath), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
+					JOptionPane.showMessageDialog(this, LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
 				} catch (final IOException e) {
-					JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("errorMessage", e.getMessage()), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		} catch (final Exception e) {
-			JOptionPane.showMessageDialog(this, DefaultLangResources.getI18NStringOrDefault("errorMessage", e.getMessage()), DefaultLangResources.getI18NStringOrDefault("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
@@ -709,7 +708,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 	private String openJarFilePathDialog() {
 		final JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setDialogTitle(DefaultLangResources.getI18NStringOrDefault("createDesktopLink"));
+		fileChooser.setDialogTitle(LangResources.get("createDesktopLink"));
 		if (JFileChooser.APPROVE_OPTION == fileChooser.showOpenDialog(this)) {
 			return fileChooser.getSelectedFile().getAbsolutePath();
 		} else {

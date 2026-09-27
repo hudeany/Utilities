@@ -12,7 +12,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 
 public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 	private int workerCount;
@@ -28,7 +28,7 @@ public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 		parentShell.setLayout(new GridLayout(2, false));
 
 		final Label lblWorkers = new Label(parentShell, SWT.NONE);
-		lblWorkers.setText(DefaultLangResources.getI18NStringOrDefault("numberOfParallelWorkers") + " (1 ≤ x ≤ 100):");
+		lblWorkers.setText(LangResources.get("numberOfParallelWorkers") + " (1 ≤ x ≤ 100):");
 		final Spinner spnWorkers = new Spinner(parentShell, SWT.BORDER);
 		spnWorkers.setMinimum(1);
 		spnWorkers.setMaximum(100);
@@ -36,7 +36,7 @@ public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 		spnWorkers.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		final Label lblReps = new Label(parentShell, SWT.NONE);
-		lblReps.setText(DefaultLangResources.getI18NStringOrDefault("numberOfRepetitionsPerWorker") + ":");
+		lblReps.setText(LangResources.get("numberOfRepetitionsPerWorker") + ":");
 		// Editable like the former SWT.DROP_DOWN Combo: presets 1..50, but any other value may be typed in
 		final List<String> repetitionItems = new ArrayList<>();
 		repetitionItems.add("∞");
@@ -51,7 +51,7 @@ public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 		cmbReps.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		final Label lblPause = new Label(parentShell, SWT.NONE);
-		lblPause.setText(DefaultLangResources.getI18NStringOrDefault("workerSleepTime") + " (" + DefaultLangResources.getI18NStringOrDefault("seconds") + ", 0 ≤ x):");
+		lblPause.setText(LangResources.get("workerSleepTime") + " (" + LangResources.get("seconds") + ", 0 ≤ x):");
 		final Spinner spnPause = new Spinner(parentShell, SWT.BORDER);
 		spnPause.setMinimum(0);
 		spnPause.setMaximum(Integer.MAX_VALUE);
@@ -63,7 +63,7 @@ public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 		buttonBar.setLayout(SwtUtilities.createSmallMarginGridLayout(2, true));
 
 		final Button btnStart = new Button(buttonBar, SWT.PUSH);
-		btnStart.setText(DefaultLangResources.getI18NStringOrDefault("start"));
+		btnStart.setText(LangResources.get("start"));
 		btnStart.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		btnStart.addListener(SWT.Selection, e -> {
 			workerCount = spnWorkers.getSelection();
@@ -77,7 +77,7 @@ public class MultipleWorkerConfigurationDialog extends ModalDialog<Boolean> {
 		});
 
 		final Button btnCancel = new Button(buttonBar, SWT.PUSH);
-		btnCancel.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		btnCancel.setText(LangResources.get("cancel"));
 		btnCancel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		btnCancel.addListener(SWT.Selection, e -> parentShell.dispose());
 

@@ -24,7 +24,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
 import de.soderer.utilities.Credentials;
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.WrongPasswordException;
@@ -185,7 +185,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 							secureDataStore.save(securePreferencesFile, getPassword());
 						} catch (final Exception e) {
 							e.printStackTrace();
-							new QuestionDialog((Window) getParent(), getTitle(), DefaultLangResources.getI18NStringOrDefault("cannotSaveKeystore"), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwingColor.LightRed).open();
+							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 						}
 						currentDataEntry = null;
 						dispose();
@@ -221,7 +221,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 								secureDataStore.save(securePreferencesFile, getPassword());
 							} catch (final Exception e) {
 								e.printStackTrace();
-								new QuestionDialog((Window) getParent(), getTitle(), DefaultLangResources.getI18NStringOrDefault("cannotSaveKeystore"), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwingColor.LightRed).open();
+								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 							}
 							currentDataEntry = null;
 							dispose();
@@ -261,7 +261,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 							secureDataStore.save(securePreferencesFile, getPassword());
 						} catch (final Exception e) {
 							e.printStackTrace();
-							new QuestionDialog((Window) getParent(), getTitle(), DefaultLangResources.getI18NStringOrDefault("cannotSaveKeystore"), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwingColor.LightRed).open();
+							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 						}
 						currentDataEntry = null;
 						dispose();
@@ -307,7 +307,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 								secureDataStore.save(securePreferencesFile, getPassword());
 							} catch (final Exception e) {
 								e.printStackTrace();
-								new QuestionDialog((Window) getParent(), getTitle(), DefaultLangResources.getI18NStringOrDefault("cannotSaveKeystore"), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwingColor.LightRed).open();
+								new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 							}
 							currentDataEntry = null;
 							dispose();
@@ -323,7 +323,7 @@ public class SecurePreferencesDialog extends ModalDialog<Boolean> {
 						secureDataStore.save(securePreferencesFile, getPassword());
 					} catch (final Exception e) {
 						e.printStackTrace();
-						new QuestionDialog((Window) getParent(), getTitle(), DefaultLangResources.getI18NStringOrDefault("cannotSaveKeystore"), DefaultLangResources.getI18NStringOrDefault("ok")).setBackgroundColor(SwingColor.LightRed).open();
+						new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
 					}
 					currentDataEntry = null;
 					dispose();

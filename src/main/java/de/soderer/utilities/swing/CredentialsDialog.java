@@ -22,7 +22,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import de.soderer.utilities.Credentials;
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 public class CredentialsDialog extends ModalDialog<Credentials> {
@@ -55,7 +55,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 	private boolean rememberCredentials = false;
 
 	public CredentialsDialog(final Window parent, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword) {
-		this(parent, title, text, aquireUsername, aquirePassword, DefaultLangResources.getI18NStringOrDefault("username"), DefaultLangResources.getI18NStringOrDefault("password"), DefaultLangResources.getI18NStringOrDefault("ok"), DefaultLangResources.getI18NStringOrDefault("cancel"));
+		this(parent, title, text, aquireUsername, aquirePassword, LangResources.get("username"), LangResources.get("password"), LangResources.get("ok"), LangResources.get("cancel"));
 	}
 
 	public CredentialsDialog(final Window parent, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword,
@@ -267,7 +267,7 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 	}
 
 	public CredentialsDialog enableNoPassword(final boolean enable) {
-		enableNoPassword(enable, DefaultLangResources.getI18NStringOrDefault("noPassword"));
+		enableNoPassword(enable, LangResources.get("noPassword"));
 		return this;
 	}
 

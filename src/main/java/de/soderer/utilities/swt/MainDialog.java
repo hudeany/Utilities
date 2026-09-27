@@ -8,7 +8,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 
 public abstract class MainDialog extends Shell {
 	private static final int GTK_TITLEBAR_EXTRA_WIDTH = 100;
@@ -55,11 +55,11 @@ public abstract class MainDialog extends Shell {
 
 	public boolean showQuestion(final String text, final String... buttonTextProperties) {
 		if (buttonTextProperties == null || buttonTextProperties.length == 0) {
-			return new QuestionDialog(getShell(), getText(), text, DefaultLangResources.getI18NStringOrDefault("ok"), DefaultLangResources.getI18NStringOrDefault("cancel")).open() == 0;
+			return new QuestionDialog(getShell(), getText(), text, LangResources.get("ok"), LangResources.get("cancel")).open() == 0;
 		} else {
 			final String[] buttonTexts = new String[buttonTextProperties.length];
 			for (int i = 0; i < buttonTextProperties.length; i++) {
-				buttonTexts[i] = DefaultLangResources.getI18NStringOrDefault(buttonTextProperties[i]);
+				buttonTexts[i] = LangResources.get(buttonTextProperties[i]);
 			}
 			return new QuestionDialog(getShell(), getText(), text, buttonTexts).open() == 0;
 		}

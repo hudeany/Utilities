@@ -17,7 +17,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 /**
@@ -101,14 +101,14 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 
 		final JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, margin, 0));
 
-		okButton = new JButton(DefaultLangResources.getI18NStringOrDefault("ok"));
+		okButton = new JButton(LangResources.get("ok"));
 		okButton.addActionListener(e -> {
 			returnValue = dropDown.getText();
 			dispose();
 		});
 		buttonPanel.add(okButton);
 
-		final JButton cancelButton = new JButton(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		final JButton cancelButton = new JButton(LangResources.get("cancel"));
 		cancelButton.addActionListener(e -> {
 			returnValue = null;
 			dispose();

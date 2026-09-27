@@ -5,7 +5,7 @@ import java.io.File;
 import javax.swing.JFrame;
 
 import de.soderer.utilities.Credentials;
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 
 public class SecureDataGuiApplication extends JFrame {
@@ -46,8 +46,8 @@ public class SecureDataGuiApplication extends JFrame {
 
 			if (secureDataStore != null) {
 				secureDataStore.addEntry(entryName, value);
-				final CredentialsDialog keystoreCredentialsDialog = new CredentialsDialog(this, "Secure data", DefaultLangResources.getI18NStringOrDefault("enterKeystorePassword"), false, true);
-				keystoreCredentialsDialog.setRememberCredentialsText(DefaultLangResources.getI18NStringOrDefault("keepPasswordInMemory"));
+				final CredentialsDialog keystoreCredentialsDialog = new CredentialsDialog(this, "Secure data", LangResources.get("enterKeystorePassword"), false, true);
+				keystoreCredentialsDialog.setRememberCredentialsText(LangResources.get("keepPasswordInMemory"));
 				final Credentials credentials = keystoreCredentialsDialog.open();
 				if (credentials != null) {
 					final char[] keystorePassword = credentials.getPassword();
@@ -59,8 +59,8 @@ public class SecureDataGuiApplication extends JFrame {
 			} else {
 				secureDataStore = new SecureDataStore();
 				secureDataStore.addEntry(entryName, value);
-				final CredentialsDialog keystoreCredentialsDialog = new CredentialsDialog(this, "Secure data", DefaultLangResources.getI18NStringOrDefault("enterKeystorePassword"), false, true);
-				keystoreCredentialsDialog.setRememberCredentialsText(DefaultLangResources.getI18NStringOrDefault("keepPasswordInMemory"));
+				final CredentialsDialog keystoreCredentialsDialog = new CredentialsDialog(this, "Secure data", LangResources.get("enterKeystorePassword"), false, true);
+				keystoreCredentialsDialog.setRememberCredentialsText(LangResources.get("keepPasswordInMemory"));
 				final Credentials credentials = keystoreCredentialsDialog.open();
 				if (credentials != null) {
 					final char[] keystorePassword = credentials.getPassword();
@@ -104,8 +104,8 @@ public class SecureDataGuiApplication extends JFrame {
 			if (keystorePassword == null && keystore == null) {
 				boolean retry = true;
 				while (retry) {
-					final CredentialsDialog keystoreCredentialsDialog = new CredentialsDialog(this, DefaultLangResources.getI18NStringOrDefault("window_title"), DefaultLangResources.getI18NStringOrDefault("enterKeystorePassword"), false, true);
-					keystoreCredentialsDialog.setRememberCredentialsText(DefaultLangResources.getI18NStringOrDefault("keepPasswordInMemory"));
+					final CredentialsDialog keystoreCredentialsDialog = new CredentialsDialog(this, LangResources.get("window_title"), LangResources.get("enterKeystorePassword"), false, true);
+					keystoreCredentialsDialog.setRememberCredentialsText(LangResources.get("keepPasswordInMemory"));
 					final Credentials credentials = keystoreCredentialsDialog.open();
 					if (credentials == null) {
 						retry = false;

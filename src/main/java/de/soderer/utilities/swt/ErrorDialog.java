@@ -19,8 +19,8 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.ExceptionUtilities;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 import de.soderer.utilities.mail.MailUtilities;
@@ -34,7 +34,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	private Composite detailPart;
 
 	public ErrorDialog(final Shell shell, final String applicationName, final String applicationVersion, final String emailRecipient, final Throwable throwable) {
-		super(shell, SWT.CLOSE, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + DefaultLangResources.getI18NStringOrDefault("error"));
+		super(shell, SWT.CLOSE, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + LangResources.get("error"));
 		this.throwable = throwable;
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
@@ -53,7 +53,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		}
 		shell.setLayout(new GridLayout(1, false));
 
-		String text1 = DefaultLangResources.getI18NStringOrDefault("errorOccurred");
+		String text1 = LangResources.get("errorOccurred");
 		if (throwable instanceof VisibleException) {
 			text1 = ((VisibleException) throwable).getVisibleMessage();
 		} else {
@@ -72,26 +72,26 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		buttonComposite.setLayout(new FillLayout());
 
 		final Button sendMailButton = new Button(buttonComposite, SWT.PUSH);
-		sendMailButton.setText(DefaultLangResources.getI18NStringOrDefault("openMail"));
+		sendMailButton.setText(LangResources.get("openMail"));
 		sendMailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
 				final boolean success = MailUtilities.openMailInStandardClient(emailRecipient, "Error in " + applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : ""), ExceptionUtilities.throwableToString(throwable));
 				if (!success) {
-					new QuestionDialog(getParent(), getText(), DefaultLangResources.getI18NStringOrDefault("cannotOpenMail"), "OK").setBackgroundColor(SwtColor.LightRed).open();
+					new QuestionDialog(getParent(), getText(), LangResources.get("cannotOpenMail"), "OK").setBackgroundColor(SwtColor.LightRed).open();
 				}
 			}
 		});
 
 		detailButton = new Button(buttonComposite, SWT.PUSH);
-		detailButton.setText(DefaultLangResources.getI18NStringOrDefault("detailsMore"));
+		detailButton.setText(LangResources.get("detailsMore"));
 		detailButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
-				if (detailButton.getText().equals(DefaultLangResources.getI18NStringOrDefault("detailsMore"))) {
-					detailButton.setText(DefaultLangResources.getI18NStringOrDefault("detailsLess"));
+				if (detailButton.getText().equals(LangResources.get("detailsMore"))) {
+					detailButton.setText(LangResources.get("detailsLess"));
 				} else {
-					detailButton.setText(DefaultLangResources.getI18NStringOrDefault("detailsMore"));
+					detailButton.setText(LangResources.get("detailsMore"));
 				}
 				final Point currentLocation = getParent().getLocation();
 				setupDetailPart();
@@ -107,7 +107,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 
 		final Button closeButton = new Button(shell, SWT.PUSH);
 		closeButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		closeButton.setText(DefaultLangResources.getI18NStringOrDefault("close"));
+		closeButton.setText(LangResources.get("close"));
 		closeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -124,7 +124,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 			item.dispose();
 		}
 
-		if (detailButton.getText().equals(DefaultLangResources.getI18NStringOrDefault("detailsLess"))) {
+		if (detailButton.getText().equals(LangResources.get("detailsLess"))) {
 			final String text2 = throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
 
 			final String text3 = ExceptionUtilities.throwableToString(throwable);

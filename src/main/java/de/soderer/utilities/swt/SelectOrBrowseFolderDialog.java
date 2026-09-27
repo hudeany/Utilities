@@ -13,7 +13,7 @@ import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 
 public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 	private final String text;
@@ -78,12 +78,12 @@ public class SelectOrBrowseFolderDialog extends ModalDialog<String> {
 
 		okButton = new Button(shell, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
-		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
+		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 
 		final Button cancelButton = new Button(shell, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false, 2, 1));
-		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new CancelButtonSelectionListener());
 
 		// Registered only after okButton exists, because setText() above may already fire these

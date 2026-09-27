@@ -15,7 +15,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 
 public class RadioSelectionDialog extends ModalDialog<Integer> {
 	private final String text;
@@ -67,13 +67,13 @@ public class RadioSelectionDialog extends ModalDialog<Integer> {
 
 		okButton = new Button(composite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
+		okButton.setText(LangResources.get("ok"));
 		okButton.setEnabled(true);
 		okButton.addSelectionListener(new OkButtonSelectionListener());
 
 		final Button cancelButton = new Button(composite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new CancelButtonSelectionListener());
 
 		shell.setMinimumSize(250, 50);

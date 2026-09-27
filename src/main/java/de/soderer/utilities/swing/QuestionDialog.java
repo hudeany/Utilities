@@ -17,7 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 public class QuestionDialog extends ModalDialog<Integer> {
@@ -122,7 +122,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 				}
 			}
 		} else {
-			final JButton cancelButton = new JButton(DefaultLangResources.getI18NStringOrDefault("close"));
+			final JButton cancelButton = new JButton(LangResources.get("close"));
 			cancelButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(final ActionEvent event) {

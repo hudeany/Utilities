@@ -10,7 +10,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 
 public class SelectionDialog extends ModalDialog<String> {
 
@@ -51,12 +51,12 @@ public class SelectionDialog extends ModalDialog<String> {
 		buttonBar.setLayout(new GridLayout(2, true));
 
 		okButton = new Button(buttonBar, SWT.PUSH);
-		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
+		okButton.setText(LangResources.get("ok"));
 		okButton.setLayoutData(new GridData(90, SWT.DEFAULT));
 		okButton.addListener(SWT.Selection, e -> okPressed(shell));
 
 		final Button cancelButton = new Button(buttonBar, SWT.PUSH);
-		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.setLayoutData(new GridData(90, SWT.DEFAULT));
 		cancelButton.addListener(SWT.Selection, e -> shell.close());
 

@@ -14,10 +14,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.PropertyResourceBundle;
+import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TreeSet;
@@ -26,6 +28,32 @@ import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Language dependent texts (I18N).
+ *
+ * <p>
+ * Texts are looked up in this order:
+ * </p>
+ * <ol>
+ * <li>The application's own language files "LanguageProperties*.properties"
+ * in the classpath root, if the application brings any. These always take
+ * precedence, so an application may also override any built-in text.</li>
+ * <li>The built-in texts of this library (German, English, French, Spanish
+ * and Italian) for all message keys used within soderer-utilities, e.g. by
+ * the Swing and SWT dialogs. Other languages fall back to English.</li>
+ * </ol>
+ *
+ * <p>
+ * So the library's dialogs always work, even for applications without any
+ * language files of their own.
+ * </p>
+ *
+ * <p>
+ * Placeholders use the "{0}", "{1}", ... syntax, which is replaced literally
+ * (see {@link #format(String, Object[])}). There is no MessageFormat quoting,
+ * so an apostrophe is written as a plain "'".
+ * </p>
+ */
 public class LangResources {
 	/** Base name of the language property files in the classpath root (e.g. "LanguageProperties_de.properties") */
 	private static final String BUNDLE_NAME = "LanguageProperties";
@@ -33,39 +61,232 @@ public class LangResources {
 	/** Matches the file name of a language file and extracts its language code like "de", "de_CH" or "de_BY" */
 	private static final Pattern LANGUAGE_FILE_NAME_PATTERN = Pattern.compile("^" + Pattern.quote(BUNDLE_NAME) + "_([a-z]{2,3}(?:_[A-Za-z0-9]{2,8})*)\\.properties$");
 
+	/** Built-in texts of this library per language, see {@link #getBuiltInTexts(Locale)} */
+	private static final Map<String, String> BUILT_IN_GERMAN = new LinkedHashMap<>();
+	private static final Map<String, String> BUILT_IN_ENGLISH = new LinkedHashMap<>();
+	private static final Map<String, String> BUILT_IN_FRENCH = new LinkedHashMap<>();
+	private static final Map<String, String> BUILT_IN_SPANISH = new LinkedHashMap<>();
+	private static final Map<String, String> BUILT_IN_ITALIAN = new LinkedHashMap<>();
+
 	/** Language codes of all language files found in the classpath (without the root file) */
 	private static List<String> availableLanguages;
 
-	private static PropertyResourceBundle propertyResourceBundle;
+	/**
+	 * Texts of the current language, loaded on first use. Always replaced as a
+	 * whole, so concurrent readers never see a partially initialized state.
+	 */
+	private static volatile LanguageTexts languageTexts;
 
-	public static void enforceDefaultLocale() {
-		try {
-			propertyResourceBundle = (PropertyResourceBundle) ResourceBundle.getBundle(BUNDLE_NAME, Locale.ROOT);
-		} catch (final Exception e) {
-			e.printStackTrace();
+	/**
+	 * The application's resource bundle (null, if the application has no
+	 * language files) and the matching built-in texts of this library
+	 */
+	private static final class LanguageTexts {
+		private final ResourceBundle applicationBundle;
+		private final Map<String, String> builtInTexts;
+
+		private LanguageTexts(final ResourceBundle applicationBundle, final Map<String, String> builtInTexts) {
+			this.applicationBundle = applicationBundle;
+			this.builtInTexts = builtInTexts;
 		}
 	}
 
-	public static String get(final String resourceKey, final Object... arguments) {
-		if (propertyResourceBundle == null) {
-			try {
-				propertyResourceBundle = (PropertyResourceBundle) ResourceBundle.getBundle(BUNDLE_NAME);
-			} catch (final Exception e) {
-				e.printStackTrace();
-				return "Missing resourceBundle: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
-			}
-		}
+	static {
+		// Parameter order of add(): key, English, German, French, Spanish, Italian
+		// "yN"/"Yn" contain the localized answer letters (upper case marks the default). Console input has to accept these letters (and should also accept "y")
+		addBuiltInText("cancel",                      "Cancel", "Abbrechen", "Annuler", "Cancelar", "Annulla");
+		addBuiltInText("canceledByUser",              "Canceled by user", "Abbruch durch Benutzer", "Annulé par l'utilisateur", "Cancelado por el usuario", "Annullato dall'utente");
+		addBuiltInText("cannotOpenMail",              "Email client was not found.", "Email client konnte nicht gefunden werden.", "Le client de messagerie est introuvable.", "No se encontró el cliente de correo.", "Il client di posta non è stato trovato.");
+		addBuiltInText("close",                       "Close", "Schließen", "Fermer", "Cerrar", "Chiudi");
+		addBuiltInText("copyToClipboard",             "Copy to clipboard", "In Zwischenablage kopieren", "Copier dans le presse-papiers", "Copiar al portapapeles", "Copia negli appunti");
+		addBuiltInText("dailyUpdateCheck",            "Daily update check", "Tägliche Update Prüfung", "Vérification quotidienne des mises à jour", "Comprobación diaria de actualizaciones", "Controllo giornaliero degli aggiornamenti");
+		addBuiltInText("detailsLess",                 "Details <<<", "Details <<<", "Détails <<<", "Detalles <<<", "Dettagli <<<");
+		addBuiltInText("detailsMore",                 "Details >>>", "Details >>>", "Détails >>>", "Detalles >>>", "Dettagli >>>");
+		addBuiltInText("enterDownloadCredentials",    "Enter credentials for download", "Bitte Userdaten für den Download eingeben", "Saisissez les identifiants pour le téléchargement", "Introduzca las credenciales para la descarga", "Inserire le credenziali per il download");
+		addBuiltInText("enterDownloadPassword",       "Enter password for download", "Bitte Passwort für Download eingeben", "Saisissez le mot de passe pour le téléchargement", "Introduzca la contraseña para la descarga", "Inserire la password per il download");
+		addBuiltInText("enterDownloadUsername",       "Enter username for download", "Bitte Usernamen für Download eingeben", "Saisissez le nom d'utilisateur pour le téléchargement", "Introduzca el nombre de usuario para la descarga", "Inserire il nome utente per il download");
+		addBuiltInText("enterPassword",               "Please enter password", "Bitte Passwort eingeben", "Veuillez saisir le mot de passe", "Introduzca la contraseña", "Inserire la password");
+		addBuiltInText("enterUsername",               "Please enter username", "Bitte Usernamen eingeben", "Veuillez saisir le nom d'utilisateur", "Introduzca el nombre de usuario", "Inserire il nome utente");
+		addBuiltInText("error",                       "Error", "Fehler", "Erreur", "Error", "Errore");
+		addBuiltInText("errorOccurred",               "An error occurred", "Es ist ein Fehler aufgetreten", "Une erreur s'est produite", "Se ha producido un error", "Si è verificato un errore");
+		addBuiltInText("installUpdate",               "Install update?", "Update installieren?", "Installer la mise à jour ?", "¿Instalar la actualización?", "Installare l'aggiornamento?");
+		addBuiltInText("yN",                          "y/N", "j/N", "o/N", "s/N", "s/N");
+		addBuiltInText("Yn",                          "Y/n", "J/n", "O/n", "S/n", "S/n");
+		addBuiltInText("newApplicationVersion",       "New version {0} is available for {1}.\nThe current local version is {2}.", "Es ist eine neue Version {0} verfügbar für {1}.\nDie aktuelle lokale Version ist {2}.", "Une nouvelle version {0} est disponible pour {1}.\nLa version locale actuelle est {2}.", "Hay una nueva versión {0} disponible para {1}.\nLa versión local actual es {2}.", "È disponibile una nuova versione {0} per {1}.\nLa versione locale attuale è {2}.");
+		addBuiltInText("no",                          "No", "Nein", "Non", "No", "No");
+		addBuiltInText("noNewerVersion",              "There is no newer version available for {0}.\nThe current local version is {1}.", "Es ist keine neuere Version verfügbar für {0}.\nDie aktuelle lokale Version ist {1}.", "Aucune version plus récente n'est disponible pour {0}.\nLa version locale actuelle est {1}.", "No hay ninguna versión más reciente disponible para {0}.\nLa versión local actual es {1}.", "Non è disponibile una versione più recente per {0}.\nLa versione locale attuale è {1}.");
+		addBuiltInText("noPassword",                  "No password", "Kein Passwort", "Pas de mot de passe", "Sin contraseña", "Nessuna password");
+		addBuiltInText("ok",                          "OK", "OK", "OK", "Aceptar", "OK");
+		addBuiltInText("openMail",                    "Open mail with errordata to developer", "Mail mit Fehlerdaten an den Entwickler öffnen", "Ouvrir un e-mail au développeur avec les données d'erreur", "Abrir un correo al desarrollador con los datos del error", "Apri un'e-mail allo sviluppatore con i dati dell'errore");
+		addBuiltInText("password",                    "Password", "Passwort", "Mot de passe", "Contraseña", "Password");
+		addBuiltInText("passwordRequired",            "Error:\nPassword is required", "Fehler:\nPasswort ist notwendig", "Erreur :\nLe mot de passe est obligatoire", "Error:\nLa contraseña es obligatoria", "Errore:\nLa password è obbligatoria");
+		addBuiltInText("restartNow",                  "Restart application now", "Jetzt Anwendung neustarten", "Redémarrer l'application maintenant", "Reiniciar la aplicación ahora", "Riavvia l'applicazione ora");
+		addBuiltInText("showSwingProperties",         "Show Swing properties", "Swing-Eigenschaften anzeigen", "Afficher les propriétés Swing", "Mostrar propiedades de Swing", "Mostra proprietà Swing");
+		addBuiltInText("sureQuestion",                "Are you sure?", "Sind sie sich sicher?", "Êtes-vous sûr ?", "¿Está seguro?", "Sei sicuro?");
+		addBuiltInText("swingProperties",             "Swing properties", "Swing-Eigenschaften", "Propriétés Swing", "Propiedades de Swing", "Proprietà Swing");
+		addBuiltInText("updateDone",                  "Updated application may be restarted", "Upgedatete Anwendung kann neugestartet werden", "L'application mise à jour peut être redémarrée", "La aplicación actualizada puede reiniciarse", "L'applicazione aggiornata può essere riavviata");
+		addBuiltInText("updateErrorVersionCheck",     "Update error while checking for new version:\n{0}", "Fehler beim Ermitteln der aktuellsten Version für ein Update der Applikation:\n{0}", "Erreur lors de la recherche d'une nouvelle version pour la mise à jour :\n{0}", "Error al buscar una nueva versión para la actualización:\n{0}", "Errore durante la ricerca di una nuova versione per l'aggiornamento:\n{0}");
+		addBuiltInText("username",                    "Username", "Username", "Nom d'utilisateur", "Nombre de usuario", "Nome utente");
+		addBuiltInText("usernameAndPasswordRequired", "Error:\nUsername and password are required", "Fehler:\nUsername und Passwort sind notwendig", "Erreur :\nLe nom d'utilisateur et le mot de passe sont obligatoires", "Error:\nEl nombre de usuario y la contraseña son obligatorios", "Errore:\nNome utente e password sono obbligatori");
+		addBuiltInText("usernameRequired",            "Error:\nUsername is required", "Fehler:\nUsername ist notwendig", "Erreur :\nLe nom d'utilisateur est obligatoire", "Error:\nEl nombre de usuario es obligatorio", "Errore:\nIl nome utente è obbligatorio");
+		addBuiltInText("yes",                         "Yes", "Ja", "Oui", "Sí", "Sì");
 
-		if (propertyResourceBundle != null) {
-			if (propertyResourceBundle.containsKey(resourceKey)) {
-				final String pattern = propertyResourceBundle.getString(resourceKey);
-				return format(pattern, arguments);
-			} else {
-				return "Missing resourceKey: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
-			}
+		// Translations for keys without a built-in fallback in the library
+		addBuiltInText("actionSuccessfullyCompleted",               "Action successfully completed", "Aktion erfolgreich abgeschlossen", "Action terminée avec succès", "Acción completada correctamente", "Azione completata con successo");
+		addBuiltInText("base64Format",                              "Base64 format", "Base64-Format", "Format Base64", "Formato Base64", "Formato Base64");
+		addBuiltInText("browse",                                    "Browse", "Durchsuchen", "Parcourir", "Examinar", "Sfoglia");
+		addBuiltInText("buildTime",                                 "Build time", "Build-Zeit", "Date de build", "Fecha de compilación", "Data di build");
+		addBuiltInText("cannotLoadKeystore",                        "Cannot load keystore", "Keystore kann nicht geladen werden", "Impossible de charger le keystore", "No se puede cargar el almacén de claves", "Impossibile caricare il keystore");
+		addBuiltInText("cannotReadPrivateKey",                      "Cannot read private key", "Privater Schlüssel kann nicht gelesen werden", "Impossible de lire la clé privée", "No se puede leer la clave privada", "Impossibile leggere la chiave privata");
+		addBuiltInText("cannotSaveKeystore",                        "Cannot save keystore", "Keystore kann nicht gespeichert werden", "Impossible d'enregistrer le keystore", "No se puede guardar el almacén de claves", "Impossibile salvare il keystore");
+		addBuiltInText("checkHostKey",                              "Check host key", "Host-Key prüfen", "Vérifier la clé d'hôte", "Comprobar la clave del host", "Verifica la chiave host");
+		addBuiltInText("checkUpdate",                               "Check for update", "Nach Update suchen", "Rechercher une mise à jour", "Buscar actualizaciones", "Cerca aggiornamenti");
+		addBuiltInText("configuration",                             "Configuration", "Konfiguration", "Configuration", "Configuración", "Configurazione");
+		addBuiltInText("confirmNewHostKey",                         "Unknown host key for {0}:\n{1}\n\nAccept this host key?", "Unbekannter Host-Key für {0}:\n{1}\n\nSoll dieser Host-Key akzeptiert werden?", "Clé d'hôte inconnue pour {0} :\n{1}\n\nAccepter cette clé d'hôte ?", "Clave de host desconocida para {0}:\n{1}\n\n¿Aceptar esta clave de host?", "Chiave host sconosciuta per {0}:\n{1}\n\nAccettare questa chiave host?");
+		addBuiltInText("connect",                                   "Connect", "Verbinden", "Connecter", "Conectar", "Connetti");
+		addBuiltInText("containsHeadersInFirstRow",                 "First row contains column headers", "Erste Zeile enthält Spaltennamen", "La première ligne contient les noms de colonnes", "La primera fila contiene los nombres de columna", "La prima riga contiene i nomi delle colonne");
+		addBuiltInText("createDataFile",                            "Create data file", "Datendatei erstellen", "Créer un fichier de données", "Crear archivo de datos", "Crea file di dati");
+		addBuiltInText("createDesktopLink",                         "Create desktop link", "Desktop-Verknüpfung erstellen", "Créer un raccourci sur le bureau", "Crear acceso directo en el escritorio", "Crea collegamento sul desktop");
+		addBuiltInText("createFolder",                              "Create folder", "Ordner erstellen", "Créer un dossier", "Crear carpeta", "Crea cartella");
+		addBuiltInText("csvDoubleQuote",                            "Double quote (\")", "Doppeltes Anführungszeichen (\")", "Guillemet double (\")", "Comillas dobles (\")", "Virgolette doppie (\")");
+		addBuiltInText("csvSeparator",                              "Separator", "Trennzeichen", "Séparateur", "Separador", "Separatore");
+		addBuiltInText("csvSeparatorComma",                         "Comma (,)", "Komma (,)", "Virgule (,)", "Coma (,)", "Virgola (,)");
+		addBuiltInText("csvSeparatorSemicolon",                     "Semicolon (;)", "Semikolon (;)", "Point-virgule (;)", "Punto y coma (;)", "Punto e virgola (;)");
+		addBuiltInText("csvSingleQuote",                            "Single quote (')", "Einfaches Anführungszeichen (')", "Guillemet simple (')", "Comilla simple (')", "Virgoletta singola (')");
+		addBuiltInText("csvUnderfilledLines",                       "Allow underfilled lines", "Unvollständige Zeilen erlauben", "Autoriser les lignes incomplètes", "Permitir líneas incompletas", "Consenti righe incomplete");
+		addBuiltInText("csvUseQuote",                               "Use quote character", "Textbegrenzer verwenden", "Utiliser un délimiteur de texte", "Usar delimitador de texto", "Usa delimitatore di testo");
+		addBuiltInText("currentPath",                               "Current path", "Aktueller Pfad", "Chemin actuel", "Ruta actual", "Percorso attuale");
+		addBuiltInText("days",                                      "days", "Tage", "jours", "días", "giorni");
+		addBuiltInText("dbName",                                    "Database name", "Datenbankname", "Nom de la base de données", "Nombre de la base de datos", "Nome del database");
+		addBuiltInText("dbType",                                    "Database type", "Datenbanktyp", "Type de base de données", "Tipo de base de datos", "Tipo di database");
+		addBuiltInText("deleteFile",                                "Delete file", "Datei löschen", "Supprimer le fichier", "Eliminar archivo", "Elimina file");
+		addBuiltInText("deleteFolder",                              "Delete folder", "Ordner löschen", "Supprimer le dossier", "Eliminar carpeta", "Elimina cartella");
+		addBuiltInText("desktopLinkWasCreatedAt",                   "Desktop link was created at:\n{0}", "Desktop-Verknüpfung wurde erstellt:\n{0}", "Le raccourci sur le bureau a été créé :\n{0}", "Se ha creado el acceso directo en el escritorio:\n{0}", "Il collegamento sul desktop è stato creato:\n{0}");
+		addBuiltInText("discardUnsavedConfigurationChanges",        "Discard unsaved configuration changes?", "Ungespeicherte Konfigurationsänderungen verwerfen?", "Abandonner les modifications de configuration non enregistrées ?", "¿Descartar los cambios de configuración no guardados?", "Scartare le modifiche alla configurazione non salvate?");
+		addBuiltInText("disconnect",                                "Disconnect", "Trennen", "Déconnecter", "Desconectar", "Disconnetti");
+		addBuiltInText("download",                                  "Download", "Herunterladen", "Télécharger", "Descargar", "Scarica");
+		addBuiltInText("duration",                                  "Duration", "Dauer", "Durée", "Duración", "Durata");
+		addBuiltInText("ellipticCurveName",                         "Elliptic curve name", "Name der elliptischen Kurve", "Nom de la courbe elliptique", "Nombre de la curva elíptica", "Nome della curva ellittica");
+		addBuiltInText("encoding",                                  "Encoding", "Zeichenkodierung", "Encodage", "Codificación", "Codifica");
+		addBuiltInText("enterFolderName",                           "Please enter folder name", "Bitte Ordnernamen eingeben", "Veuillez saisir le nom du dossier", "Introduzca el nombre de la carpeta", "Inserire il nome della cartella");
+		addBuiltInText("enterKeystorePassword",                     "Please enter keystore password", "Bitte Keystore-Passwort eingeben", "Veuillez saisir le mot de passe du keystore", "Introduzca la contraseña del almacén de claves", "Inserire la password del keystore");
+		addBuiltInText("error.userNotAuthenticatedOrNotAuthorized", "User is not authenticated or not authorized", "Benutzer ist nicht angemeldet oder nicht berechtigt", "L'utilisateur n'est pas authentifié ou pas autorisé", "El usuario no está autenticado o no está autorizado", "L'utente non è autenticato o non è autorizzato");
+		addBuiltInText("errorCount",                                "Error count", "Fehleranzahl", "Nombre d'erreurs", "Número de errores", "Numero di errori");
+		addBuiltInText("errorMessage",                              "Error:\n{0}", "Fehler:\n{0}", "Erreur :\n{0}", "Error:\n{0}", "Errore:\n{0}");
+		addBuiltInText("fileWasNotSaved",                           "File was not saved", "Datei wurde nicht gespeichert", "Le fichier n'a pas été enregistré", "El archivo no se ha guardado", "Il file non è stato salvato");
+		addBuiltInText("fingerprintMd5",                            "Fingerprint MD5", "Fingerprint MD5", "Empreinte MD5", "Huella digital MD5", "Impronta MD5");
+		addBuiltInText("fingerprintSha1",                           "Fingerprint SHA-1", "Fingerprint SHA-1", "Empreinte SHA-1", "Huella digital SHA-1", "Impronta SHA-1");
+		addBuiltInText("fingerprintSha256",                         "Fingerprint SHA-256", "Fingerprint SHA-256", "Empreinte SHA-256", "Huella digital SHA-256", "Impronta SHA-256");
+		addBuiltInText("fingerprintSha384",                         "Fingerprint SHA-384", "Fingerprint SHA-384", "Empreinte SHA-384", "Huella digital SHA-384", "Impronta SHA-384");
+		addBuiltInText("fingerprintSha512",                         "Fingerprint SHA-512", "Fingerprint SHA-512", "Empreinte SHA-512", "Huella digital SHA-512", "Impronta SHA-512");
+		addBuiltInText("hexColonFormat",                            "Hex format with colons", "Hex-Format mit Doppelpunkten", "Format hexadécimal avec deux-points", "Formato hexadecimal con dos puntos", "Formato esadecimale con due punti");
+		addBuiltInText("hexFormat",                                 "Hex format", "Hex-Format", "Format hexadécimal", "Formato hexadecimal", "Formato esadecimale");
+		addBuiltInText("hostname",                                  "Hostname", "Hostname", "Nom d'hôte", "Nombre de host", "Nome host");
+		addBuiltInText("hostnameOrIp",                              "Hostname or IP", "Hostname oder IP", "Nom d'hôte ou IP", "Nombre de host o IP", "Nome host o IP");
+		addBuiltInText("hours",                                     "hours", "Stunden", "heures", "horas", "ore");
+		addBuiltInText("keepPasswordInMemory",                      "Keep password in memory", "Passwort im Speicher behalten", "Conserver le mot de passe en mémoire", "Mantener la contraseña en memoria", "Mantieni la password in memoria");
+		addBuiltInText("keyFormat",                                 "Key format", "Schlüsselformat", "Format de clé", "Formato de clave", "Formato della chiave");
+		addBuiltInText("keyStrength",                               "Key strength", "Schlüsselstärke", "Force de la clé", "Longitud de clave", "Lunghezza della chiave");
+		addBuiltInText("keystrengthExceedsAllowedJCE",              "Key strength exceeds the maximum allowed by JCE", "Die Schlüsselstärke übersteigt das von der JCE erlaubte Maximum", "La force de la clé dépasse le maximum autorisé par la JCE", "La longitud de clave supera el máximo permitido por la JCE", "La lunghezza della chiave supera il massimo consentito dalla JCE");
+		addBuiltInText("keyType",                                   "Key type", "Schlüsseltyp", "Type de clé", "Tipo de clave", "Tipo di chiave");
+		addBuiltInText("languageChangeRequiresRestart",             "Changing the language requires a restart of the application", "Die Änderung der Sprache wird erst nach einem Neustart der Anwendung wirksam", "Le changement de langue ne prend effet qu'après un redémarrage de l'application", "El cambio de idioma solo se aplicará tras reiniciar la aplicación", "Il cambio di lingua avrà effetto solo dopo il riavvio dell'applicazione");
+		addBuiltInText("latestDuration",                            "Latest duration", "Letzte Dauer", "Dernière durée", "Última duración", "Ultima durata");
+		addBuiltInText("latestStatus",                              "Latest status", "Letzter Status", "Dernier statut", "Último estado", "Ultimo stato");
+		addBuiltInText("loadServerEntries",                         "Load server entries", "Servereinträge laden", "Charger les entrées de serveur", "Cargar entradas de servidor", "Carica voci server");
+		addBuiltInText("maxDuration",                               "Max. duration", "Max. Dauer", "Durée max.", "Duración máx.", "Durata max.");
+		addBuiltInText("millis",                                    "milliseconds", "Millisekunden", "millisecondes", "milisegundos", "millisecondi");
+		addBuiltInText("minDuration",                               "Min. duration", "Min. Dauer", "Durée min.", "Duración mín.", "Durata min.");
+		addBuiltInText("minutes",                                   "minutes", "Minuten", "minutes", "minutos", "minuti");
+		addBuiltInText("None",                                      "None", "Keine", "Aucun", "Ninguno", "Nessuno");
+		addBuiltInText("notFound",                                  "Not found", "Nicht gefunden", "Introuvable", "No encontrado", "Non trovato");
+		addBuiltInText("numberOfParallelWorkers",                   "Number of parallel workers", "Anzahl paralleler Worker", "Nombre de workers parallèles", "Número de workers paralelos", "Numero di worker paralleli");
+		addBuiltInText("numberOfRepetitionsPerWorker",              "Repetitions per worker", "Wiederholungen pro Worker", "Répétitions par worker", "Repeticiones por worker", "Ripetizioni per worker");
+		addBuiltInText("open",                                      "Open", "Öffnen", "Ouvrir", "Abrir", "Apri");
+		addBuiltInText("openDataFile",                              "Open data file", "Datendatei öffnen", "Ouvrir un fichier de données", "Abrir archivo de datos", "Apri file di dati");
+		addBuiltInText("openKeyFile",                               "Open key file", "Schlüsseldatei öffnen", "Ouvrir un fichier de clé", "Abrir archivo de clave", "Apri file della chiave");
+		addBuiltInText("pathIsDirectory",                           "The path is a directory", "Der Pfad ist ein Verzeichnis", "Le chemin est un répertoire", "La ruta es un directorio", "Il percorso è una directory");
+		addBuiltInText("port",                                      "Port", "Port", "Port", "Puerto", "Porta");
+		addBuiltInText("privateKey",                                "Private key", "Privater Schlüssel", "Clé privée", "Clave privada", "Chiave privata");
+		addBuiltInText("protocol",                                  "Protocol", "Protokoll", "Protocole", "Protocolo", "Protocollo");
+		addBuiltInText("publicKey",                                 "Public key", "Öffentlicher Schlüssel", "Clé publique", "Clave pública", "Chiave pubblica");
+		addBuiltInText("reallyDeleteFile",                          "Really delete file?\n{0}", "Datei wirklich löschen?\n{0}", "Voulez-vous vraiment supprimer le fichier ?\n{0}", "¿Eliminar realmente el archivo?\n{0}", "Eliminare davvero il file?\n{0}");
+		addBuiltInText("reallyDeleteFolder",                        "Really delete folder?\n{0}", "Ordner wirklich löschen?\n{0}", "Voulez-vous vraiment supprimer le dossier ?\n{0}", "¿Eliminar realmente la carpeta?\n{0}", "Eliminare davvero la cartella?\n{0}");
+		addBuiltInText("rememberUpdateCredentials",                 "Remember update credentials", "Zugangsdaten für Updates merken", "Mémoriser les identifiants de mise à jour", "Recordar las credenciales de actualización", "Memorizza le credenziali di aggiornamento");
+		addBuiltInText("removeServerEntry",                         "Remove server entry", "Servereintrag entfernen", "Supprimer l'entrée de serveur", "Eliminar entrada de servidor", "Rimuovi voce server");
+		addBuiltInText("runtimeProperties",                         "Runtime properties", "Laufzeit-Eigenschaften", "Propriétés d'exécution", "Propiedades de tiempo de ejecución", "Proprietà di runtime");
+		addBuiltInText("save",                                      "Save", "Speichern", "Enregistrer", "Guardar", "Salva");
+		addBuiltInText("saveData",                                  "Save data", "Daten speichern", "Enregistrer les données", "Guardar datos", "Salva dati");
+		addBuiltInText("saveFile",                                  "Save file", "Datei speichern", "Enregistrer le fichier", "Guardar archivo", "Salva file");
+		addBuiltInText("saveResults",                               "Save results", "Ergebnisse speichern", "Enregistrer les résultats", "Guardar resultados", "Salva risultati");
+		addBuiltInText("saveServerEntry",                           "Save server entry", "Servereintrag speichern", "Enregistrer l'entrée de serveur", "Guardar entrada de servidor", "Salva voce server");
+		addBuiltInText("seconds",                                   "seconds", "Sekunden", "secondes", "segundos", "secondi");
+		addBuiltInText("serverEntries",                             "Server entries", "Servereinträge", "Entrées de serveur", "Entradas de servidor", "Voci server");
+		addBuiltInText("sharename",                                 "Share name", "Freigabename", "Nom du partage", "Nombre del recurso compartido", "Nome condivisione");
+		addBuiltInText("showRuntimeProperties",                     "Show runtime properties", "Laufzeit-Eigenschaften anzeigen", "Afficher les propriétés d'exécution", "Mostrar propiedades de tiempo de ejecución", "Mostra proprietà di runtime");
+		addBuiltInText("showSwtProperties",                         "Show SWT properties", "SWT-Eigenschaften anzeigen", "Afficher les propriétés SWT", "Mostrar propiedades de SWT", "Mostra proprietà SWT");
+		addBuiltInText("showSystemProperties",                      "Show system properties", "System-Eigenschaften anzeigen", "Afficher les propriétés système", "Mostrar propiedades del sistema", "Mostra proprietà di sistema");
+		addBuiltInText("start",                                     "Start", "Start", "Démarrer", "Iniciar", "Avvia");
+		addBuiltInText("success",                                   "Success", "Erfolg", "Succès", "Éxito", "Successo");
+		addBuiltInText("successCount",                              "Success count", "Erfolgsanzahl", "Nombre de succès", "Número de éxitos", "Numero di successi");
+		addBuiltInText("swtProperties",                             "SWT properties", "SWT-Eigenschaften", "Propriétés SWT", "Propiedades de SWT", "Proprietà SWT");
+		addBuiltInText("systemProperties",                          "System properties", "System-Eigenschaften", "Propriétés système", "Propiedades del sistema", "Proprietà di sistema");
+		addBuiltInText("Unknown",                                   "Unknown", "Unbekannt", "Inconnu", "Desconocido", "Sconosciuto");
+		addBuiltInText("upload",                                    "Upload", "Hochladen", "Téléverser", "Subir", "Carica");
+		addBuiltInText("uploadFile",                                "Upload file", "Datei hochladen", "Téléverser un fichier", "Subir archivo", "Carica file");
+		addBuiltInText("uploadFolder",                              "Upload folder", "Ordner hochladen", "Téléverser un dossier", "Subir carpeta", "Carica cartella");
+		addBuiltInText("useKeyFile",                                "Use key file", "Schlüsseldatei verwenden", "Utiliser un fichier de clé", "Usar archivo de clave", "Usa file della chiave");
+		addBuiltInText("weeks",                                     "weeks", "Wochen", "semaines", "semanas", "settimane");
+		addBuiltInText("window_title",                              "Secure data", "Sichere Daten", "Données sécurisées", "Datos seguros", "Dati protetti");
+		addBuiltInText("workerSleepTime",                           "Worker sleep time", "Pause zwischen Durchläufen", "Pause entre les exécutions", "Pausa entre ejecuciones", "Pausa tra le esecuzioni");
+		addBuiltInText("years",                                     "years", "Jahre", "ans", "años", "anni");
+
+		// Labels of the library's own configuration keys (used as "conf." + key in ApplicationConfigurationDialog)
+		addBuiltInText("conf.Application.Language",               "Language", "Sprache", "Langue", "Idioma", "Lingua");
+		addBuiltInText("conf.Application.ProxyConfigurationType", "Proxy configuration", "Proxy-Konfiguration", "Configuration du proxy", "Configuración del proxy", "Configurazione proxy");
+		addBuiltInText("conf.Application.ProxyUrl",               "Proxy URL", "Proxy-URL", "URL du proxy", "URL del proxy", "URL del proxy");
+		addBuiltInText("conf.Application.DailyUpdateCheck",       "Daily update check", "Tägliche Update Prüfung", "Vérification quotidienne des mises à jour", "Comprobación diaria de actualizaciones", "Controllo giornaliero degli aggiornamenti");
+	}
+
+	private static void addBuiltInText(final String key, final String englishText, final String germanText, final String frenchText, final String spanishText, final String italianText) {
+		BUILT_IN_ENGLISH.put(key, englishText);
+		BUILT_IN_GERMAN.put(key, germanText);
+		BUILT_IN_FRENCH.put(key, frenchText);
+		BUILT_IN_SPANISH.put(key, spanishText);
+		BUILT_IN_ITALIAN.put(key, italianText);
+	}
+
+	/**
+	 * Uses the application's root language file "LanguageProperties.properties"
+	 * (without language suffix) regardless of the JVM's default locale. The
+	 * built-in texts are English in this case.
+	 */
+	public static synchronized void enforceDefaultLocale() {
+		languageTexts = loadLanguageTexts(Locale.ROOT);
+	}
+
+	/**
+	 * Text for a message key in the current language, with the placeholders
+	 * "{0}", "{1}", ... replaced by the arguments. The application's own
+	 * language files take precedence over the built-in texts of this library.
+	 *
+	 * @return the text, or a "Missing resourceKey" message if the key is
+	 *         neither defined by the application nor built in
+	 */
+	public static String get(final String resourceKey, final Object... arguments) {
+		final String pattern = getPattern(resourceKey);
+		if (pattern != null) {
+			return format(pattern, arguments);
 		} else {
-			return "Missing resourceBundle: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
+			return "Missing resourceKey: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
 		}
+	}
+
+	/**
+	 * Whether a text exists for the message key, either in the application's
+	 * language files or built into this library
+	 */
+	public static boolean existsKey(final String resourceKey) {
+		return getPattern(resourceKey) != null;
 	}
 
 	/**
@@ -81,20 +302,77 @@ public class LangResources {
 		return pattern;
 	}
 
-	public static boolean existsKey(final String resourceKey) {
-		if (propertyResourceBundle == null) {
-			try {
-				propertyResourceBundle = (PropertyResourceBundle) ResourceBundle.getBundle(BUNDLE_NAME);
-			} catch (@SuppressWarnings("unused") final Exception e) {
-				// Do nothing
+	/**
+	 * All message keys built into this library, in definition order
+	 */
+	public static Set<String> getBuiltInKeys() {
+		return Collections.unmodifiableSet(BUILT_IN_ENGLISH.keySet());
+	}
+
+	/**
+	 * All built-in texts of a language, without the application's own texts.
+	 * German, French, Spanish or Italian for locales of those languages
+	 * (including regional variants like "de_CH"), English for all other
+	 * locales.
+	 */
+	public static Map<String, String> getBuiltInTexts(final Locale locale) {
+		final String language = locale == null ? "" : locale.getLanguage().toLowerCase(Locale.ROOT);
+		switch (language) {
+			case "de":
+				return Collections.unmodifiableMap(BUILT_IN_GERMAN);
+			case "fr":
+				return Collections.unmodifiableMap(BUILT_IN_FRENCH);
+			case "es":
+				return Collections.unmodifiableMap(BUILT_IN_SPANISH);
+			case "it":
+				return Collections.unmodifiableMap(BUILT_IN_ITALIAN);
+			default:
+				return Collections.unmodifiableMap(BUILT_IN_ENGLISH);
+		}
+	}
+
+	/**
+	 * Pattern for a message key: the application's text if defined, otherwise
+	 * the built-in text, otherwise null
+	 */
+	private static String getPattern(final String resourceKey) {
+		final LanguageTexts texts = getLanguageTexts();
+		if (texts.applicationBundle != null && texts.applicationBundle.containsKey(resourceKey)) {
+			return texts.applicationBundle.getString(resourceKey);
+		} else {
+			return texts.builtInTexts.get(resourceKey);
+		}
+	}
+
+	private static LanguageTexts getLanguageTexts() {
+		LanguageTexts texts = languageTexts;
+		if (texts == null) {
+			synchronized (LangResources.class) {
+				texts = languageTexts;
+				if (texts == null) {
+					texts = loadLanguageTexts(Locale.getDefault());
+					languageTexts = texts;
+				}
 			}
 		}
+		return texts;
+	}
 
-		if (propertyResourceBundle != null) {
-			return propertyResourceBundle.containsKey(resourceKey);
-		} else {
-			return false;
+	/**
+	 * Loads the application's language files for the locale, if there are any,
+	 * and picks the built-in texts of the same language.
+	 */
+	private static LanguageTexts loadLanguageTexts(final Locale locale) {
+		ResourceBundle applicationBundle = null;
+		try {
+			applicationBundle = ResourceBundle.getBundle(BUNDLE_NAME, locale);
+		} catch (@SuppressWarnings("unused") final MissingResourceException e) {
+			// Application without language files of its own: only the built-in texts are used
+		} catch (final RuntimeException e) {
+			// e.g. a malformed language file: report it, but keep the built-in texts working
+			e.printStackTrace();
 		}
+		return new LanguageTexts(applicationBundle, getBuiltInTexts(locale));
 	}
 
 	/**

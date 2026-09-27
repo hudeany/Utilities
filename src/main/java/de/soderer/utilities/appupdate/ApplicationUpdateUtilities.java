@@ -41,8 +41,8 @@ import de.soderer.network.HttpUtilities;
 import de.soderer.network.NetworkUtilities;
 import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.Credentials;
-import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.IoUtilities;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.UserError;
@@ -95,7 +95,7 @@ public class ApplicationUpdateUtilities {
 			return true;
 		} catch (final Exception e) {
 			if (updateParent != null) {
-				showUpdateError(updateParent, DefaultLangResources.getI18NStringOrDefault("updateErrorVersionCheck", e.getMessage()));
+				showUpdateError(updateParent, LangResources.get("updateErrorVersionCheck", e.getMessage()));
 				return false;
 			} else {
 				throw e;
@@ -638,51 +638,51 @@ public class ApplicationUpdateUtilities {
 
 				if (downloadUrlWithCredentials.contains("<username>") && downloadUrlWithCredentials.contains("<password>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials(DefaultLangResources.getI18NStringOrDefault("enterDownloadCredentials"), true, true, firstRequest);
+						final Credentials credentials = updateParent.aquireCredentials(LangResources.get("enterDownloadCredentials"), true, true, firstRequest);
 						if (credentials == null) {
-							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
+							updateParent.showUpdateError(LangResources.get("canceledByUser"));
 							return false;
 						} else if (Utilities.isEmpty(credentials.getUsername()) || Utilities.isEmpty(credentials.getPassword())) {
-							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("usernameAndPasswordRequired"));
+							updateParent.showUpdateError(LangResources.get("usernameAndPasswordRequired"));
 							return false;
 						} else {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(credentials.getUsername(), StandardCharsets.UTF_8));
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(credentials.getPassword()), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError(updateParent, DefaultLangResources.getI18NStringOrDefault("usernameAndPasswordRequired"));
+						showUpdateError(updateParent, LangResources.get("usernameAndPasswordRequired"));
 						return false;
 					}
 				} else if (downloadUrlWithCredentials.contains("<username>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials(DefaultLangResources.getI18NStringOrDefault("enterDownloadUsername"), true, false, firstRequest);
+						final Credentials credentials = updateParent.aquireCredentials(LangResources.get("enterDownloadUsername"), true, false, firstRequest);
 						if (credentials == null) {
-							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
+							updateParent.showUpdateError(LangResources.get("canceledByUser"));
 							return false;
 						} else if (Utilities.isEmpty(credentials.getUsername())) {
-							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("usernameRequired"));
+							updateParent.showUpdateError(LangResources.get("usernameRequired"));
 							return false;
 						} else {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<username>", HttpUtilities.urlEncode(credentials.getUsername(), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError(updateParent, DefaultLangResources.getI18NStringOrDefault("usernameRequired"));
+						showUpdateError(updateParent, LangResources.get("usernameRequired"));
 						return false;
 					}
 				} else if (downloadUrlWithCredentials.contains("<password>")) {
 					if (updateParent != null) {
-						final Credentials credentials = updateParent.aquireCredentials(DefaultLangResources.getI18NStringOrDefault("enterDownloadPassword"), false, true, firstRequest);
+						final Credentials credentials = updateParent.aquireCredentials(LangResources.get("enterDownloadPassword"), false, true, firstRequest);
 						if (credentials == null) {
-							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
+							updateParent.showUpdateError(LangResources.get("canceledByUser"));
 							return false;
 						} else if (Utilities.isEmpty(credentials.getPassword())) {
-							updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("passwordRequired"));
+							updateParent.showUpdateError(LangResources.get("passwordRequired"));
 							return false;
 						} else {
 							downloadUrlWithCredentials = downloadUrlWithCredentials.replace("<password>", HttpUtilities.urlEncode(new String(credentials.getPassword()), StandardCharsets.UTF_8));
 						}
 					} else {
-						showUpdateError(updateParent, DefaultLangResources.getI18NStringOrDefault("passwordRequired"));
+						showUpdateError(updateParent, LangResources.get("passwordRequired"));
 						return false;
 					}
 				}
@@ -695,7 +695,7 @@ public class ApplicationUpdateUtilities {
 					final boolean success = downloadUpdateFile(updateParent, downloadTempFile, downloadUrlWithCredentials, proxyConfiguration);
 					if (!success) {
 						// download stopped by user
-						updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
+						updateParent.showUpdateError(LangResources.get("canceledByUser"));
 						return false;
 					}
 				} catch (final UserError e) {
@@ -750,7 +750,7 @@ public class ApplicationUpdateUtilities {
 			final boolean success = copyUpdateFile(updateParent, downloadTempFile, updateFileLocation);
 			if (!success) {
 				// download stopped by user
-				updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
+				updateParent.showUpdateError(LangResources.get("canceledByUser"));
 				return false;
 			}
 		} else {
@@ -761,7 +761,7 @@ public class ApplicationUpdateUtilities {
 			final boolean success = copyUpdateFile(updateParent, downloadTempFile, updateFileLocation);
 			if (!success) {
 				// download stopped by user
-				updateParent.showUpdateError(DefaultLangResources.getI18NStringOrDefault("canceledByUser"));
+				updateParent.showUpdateError(LangResources.get("canceledByUser"));
 				return false;
 			}
 		}

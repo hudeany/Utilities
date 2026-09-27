@@ -16,7 +16,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 public class LabeledFileText extends LabeledText {
@@ -60,7 +60,7 @@ public class LabeledFileText extends LabeledText {
 		});
 
 		dataBrowseButton = new Button(this, SWT.PUSH);
-		dataBrowseButton.setText(DefaultLangResources.getI18NStringOrDefault("browse"));
+		dataBrowseButton.setText(LangResources.get("browse"));
 		if (selectDirectory) {
 			dataBrowseButton.addSelectionListener(new SelectionAdapter() {
 				@Override

@@ -28,12 +28,12 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		}
 		ConsoleUtilities.clearScreen();
 		if (availableNewVersion == null) {
-			System.out.println(DefaultLangResources.getI18NStringOrDefault("noNewerVersion", applicationName, applicationVersion.toString()));
+			System.out.println(LangResources.get("noNewerVersion", applicationName, applicationVersion.toString()));
 			System.out.println();
 			return false;
 		} else {
-			System.out.println(DefaultLangResources.getI18NStringOrDefault("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
-			final String input = new SimpleConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("installUpdate") + " (" + DefaultLangResources.getI18NStringOrDefault("yN") + "): ").readInput();
+			System.out.println(LangResources.get("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
+			final String input = new SimpleConsoleInput().withPrompt(LangResources.get("installUpdate") + " (" + LangResources.get("yN") + "): ").readInput();
 			System.out.println();
 			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j") || input.toLowerCase().startsWith("o") || input.toLowerCase().startsWith("s"));
 		}
@@ -50,12 +50,12 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		char[] password = null;
 
 		if (aquireUsername && aquirePassword) {
-			userName = new SimpleConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("enterUsername") + ": ").readInput();
-			password = new PasswordConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("enterPassword") + ": ").readInput();
+			userName = new SimpleConsoleInput().withPrompt(LangResources.get("enterUsername") + ": ").readInput();
+			password = new PasswordConsoleInput().withPrompt(LangResources.get("enterPassword") + ": ").readInput();
 		} else if (aquireUsername) {
-			userName = new SimpleConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("enterUsername") + ": ").readInput();
+			userName = new SimpleConsoleInput().withPrompt(LangResources.get("enterUsername") + ": ").readInput();
 		} else if (aquirePassword) {
-			password = new PasswordConsoleInput().withPrompt(DefaultLangResources.getI18NStringOrDefault("enterPassword") + ": ").readInput();
+			password = new PasswordConsoleInput().withPrompt(LangResources.get("enterPassword") + ": ").readInput();
 		}
 
 		if (Utilities.isBlank(userName) && Utilities.isBlank(password)) {
@@ -94,7 +94,7 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	@Override
 	public void showUpdateDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 		System.out.println();
-		System.out.println(DefaultLangResources.getI18NStringOrDefault("updateDone"));
+		System.out.println(LangResources.get("updateDone"));
 		System.out.println();
 	}
 

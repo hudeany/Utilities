@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import org.eclipse.swt.widgets.Display;
 
 import de.soderer.utilities.Credentials;
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.Version;
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
@@ -41,7 +41,7 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 
 		if (downloadCredentials == null) {
 			final CredentialsDialog downloadCredentialsDialog = new CredentialsDialog(getShell(), "Update " + applicationName, text, aquireUsername, aquirePassword);
-			downloadCredentialsDialog.setRememberCredentialsText(DefaultLangResources.getI18NStringOrDefault("rememberUpdateCredentials"));
+			downloadCredentialsDialog.setRememberCredentialsText(LangResources.get("rememberUpdateCredentials"));
 			downloadCredentials = downloadCredentialsDialog.open();
 
 			if (downloadCredentials != null && downloadCredentialsDialog.isRememberCredentials()) {
@@ -91,24 +91,24 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 			updateProgressDialog = null;
 		}
 
-		new QuestionDialog(this, "Update " + applicationName, DefaultLangResources.getI18NStringOrDefault("updateDone"), DefaultLangResources.getI18NStringOrDefault("restartNow")).open();
+		new QuestionDialog(this, "Update " + applicationName, LangResources.get("updateDone"), LangResources.get("restartNow")).open();
 	}
 
 	@Override
 	public boolean askForUpdate(final Version availableNewVersion) throws Exception {
 		if (availableNewVersion == null) {
-			final QuestionDialog questionDialog = new QuestionDialog(getShell(), "Update " + applicationName, DefaultLangResources.getI18NStringOrDefault("noNewerVersion", applicationName, applicationVersion.toString()));
+			final QuestionDialog questionDialog = new QuestionDialog(getShell(), "Update " + applicationName, LangResources.get("noNewerVersion", applicationName, applicationVersion.toString()));
 			if (isDailyUpdateCheckActivated() != null) {
-				questionDialog.setCheckboxText(DefaultLangResources.getI18NStringOrDefault("dailyUpdateCheck"));
+				questionDialog.setCheckboxText(LangResources.get("dailyUpdateCheck"));
 				questionDialog.setCheckboxStatus(isDailyUpdateCheckActivated());
 			}
 			questionDialog.open();
 			setDailyUpdateCheckStatus(questionDialog.getCheckboxStatus());
 			return false;
 		} else {
-			final QuestionDialog questionDialog = new QuestionDialog(getShell(), "Update " + applicationName, DefaultLangResources.getI18NStringOrDefault("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()) + "\n\n" + DefaultLangResources.getI18NStringOrDefault("installUpdate"), DefaultLangResources.getI18NStringOrDefault("yes"), DefaultLangResources.getI18NStringOrDefault("no"));
+			final QuestionDialog questionDialog = new QuestionDialog(getShell(), "Update " + applicationName, LangResources.get("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()) + "\n\n" + LangResources.get("installUpdate"), LangResources.get("yes"), LangResources.get("no"));
 			if (isDailyUpdateCheckActivated() != null) {
-				questionDialog.setCheckboxText(DefaultLangResources.getI18NStringOrDefault("dailyUpdateCheck"));
+				questionDialog.setCheckboxText(LangResources.get("dailyUpdateCheck"));
 				questionDialog.setCheckboxStatus(isDailyUpdateCheckActivated());
 			}
 			final Integer buttonIndex = questionDialog.open();

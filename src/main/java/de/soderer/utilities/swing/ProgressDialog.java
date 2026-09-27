@@ -16,7 +16,7 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 
 import de.soderer.utilities.DateUtilities;
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Result;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
@@ -77,11 +77,11 @@ public class ProgressDialog<T extends WorkerSimple<?>> extends ModalDialog<Resul
 		// Cancel Button
 		final JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		buttonClose = new JButton(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		buttonClose = new JButton(LangResources.get("cancel"));
 		buttonClose.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
-				if (new QuestionDialog(parent, DefaultLangResources.getI18NStringOrDefault("cancel"), DefaultLangResources.getI18NStringOrDefault("sureQuestion"), DefaultLangResources.getI18NStringOrDefault("no"), DefaultLangResources.getI18NStringOrDefault("yes")).open() == 1) {
+				if (new QuestionDialog(parent, LangResources.get("cancel"), LangResources.get("sureQuestion"), LangResources.get("no"), LangResources.get("yes")).open() == 1) {
 					cancel();
 				}
 			}

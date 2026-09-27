@@ -19,7 +19,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 public class SimpleInputDialog extends ModalDialog<String> {
@@ -144,7 +144,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
 
 		// ok Button
-		okButton = new JButton(DefaultLangResources.getI18NStringOrDefault("ok"));
+		okButton = new JButton(LangResources.get("ok"));
 		okButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
@@ -157,7 +157,7 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		buttonPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 
 		// Close Button
-		final JButton closeButton = new JButton(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		final JButton closeButton = new JButton(LangResources.get("cancel"));
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {

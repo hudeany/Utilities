@@ -17,7 +17,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 public class MultiInputDialog extends ModalDialog<List<String>> {
@@ -102,7 +102,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 		final Button okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.CENTER, SWT.UP, true, false));
-		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
+		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -121,7 +121,7 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.CENTER, SWT.UP, true, false));
-		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {

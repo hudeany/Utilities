@@ -18,8 +18,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
 
-import de.soderer.utilities.DefaultLangResources;
 import de.soderer.utilities.ExceptionUtilities;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 import de.soderer.utilities.mail.MailUtilities;
@@ -36,7 +36,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	private JPanel detailPanel;
 
 	public ErrorDialog(final Frame parent, final String applicationName, final String applicationVersion, final String emailRecipient, final Throwable throwable) {
-		super(parent, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + DefaultLangResources.getI18NStringOrDefault("error"));
+		super(parent, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + LangResources.get("error"));
 
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
@@ -87,17 +87,17 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, margin, 0));
 
 		final JPanel leftButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, margin, 0));
-		final JButton mailButton = new JButton(DefaultLangResources.getI18NStringOrDefault("openMail"));
+		final JButton mailButton = new JButton(LangResources.get("openMail"));
 		mailButton.addActionListener(this::openMail);
 		leftButtons.add(mailButton);
 
-		detailButton = new JButton(DefaultLangResources.getI18NStringOrDefault("detailsMore"));
+		detailButton = new JButton(LangResources.get("detailsMore"));
 		detailButton.addActionListener(e -> toggleDetails());
 		leftButtons.add(detailButton);
 
 		buttonPanel.add(leftButtons, BorderLayout.WEST);
 
-		final JButton closeButton = new JButton(DefaultLangResources.getI18NStringOrDefault("close"));
+		final JButton closeButton = new JButton(LangResources.get("close"));
 		closeButton.addActionListener(e -> dispose());
 		buttonPanel.add(closeButton, BorderLayout.CENTER);
 
@@ -118,7 +118,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		} else if (throwable != null && throwable.getMessage() != null) {
 			return throwable.getMessage();
 		} else {
-			return DefaultLangResources.getI18NStringOrDefault("errorOccurred");
+			return LangResources.get("errorOccurred");
 		}
 	}
 
@@ -132,15 +132,15 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 
 		if (!success) {
 			JOptionPane.showMessageDialog(this,
-					DefaultLangResources.getI18NStringOrDefault("cannotOpenMail"),
+					LangResources.get("cannotOpenMail"),
 					getTitle(),
 					JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
 	private void toggleDetails() {
-		final boolean show = detailButton.getText().equals(DefaultLangResources.getI18NStringOrDefault("detailsMore"));
-		detailButton.setText(show ? DefaultLangResources.getI18NStringOrDefault("detailsLess") : DefaultLangResources.getI18NStringOrDefault("detailsMore"));
+		final boolean show = detailButton.getText().equals(LangResources.get("detailsMore"));
+		detailButton.setText(show ? LangResources.get("detailsLess") : LangResources.get("detailsMore"));
 		setupDetailPanel(show);
 	}
 

@@ -14,7 +14,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 public class CsvConfigDialog extends ModalDialog<Boolean> {
@@ -51,8 +51,8 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			label.setText(text);
 		}
 
-		separatorRadioButtonGroup = new RadioButtonGroup(shell, DefaultLangResources.getI18NStringOrDefault("csvSeparator"), SWT.NONE, ArrangementStyle.Horizontal, DefaultLangResources.getI18NStringOrDefault("csvSeparatorComma"),
-				DefaultLangResources.getI18NStringOrDefault("csvSeparatorSemicolon"));
+		separatorRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("csvSeparator"), SWT.NONE, ArrangementStyle.Horizontal, LangResources.get("csvSeparatorComma"),
+				LangResources.get("csvSeparatorSemicolon"));
 		separatorRadioButtonGroup.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 1, 1));
 		separatorRadioButtonGroup.setSelectedButtonIndex(separator == ',' ? 0 : 1);
 
@@ -61,7 +61,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 		quoteComposite.setLayout(SwtUtilities.createNoMarginGridLayout(3, false));
 
 		useQuoteButton = new Button(quoteComposite, SWT.CHECK);
-		useQuoteButton.setText(DefaultLangResources.getI18NStringOrDefault("csvUseQuote") + ": ");
+		useQuoteButton.setText(LangResources.get("csvUseQuote") + ": ");
 		useQuoteButton.setSelection(useStringQuote);
 		useQuoteButton.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -70,12 +70,12 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			}
 		});
 
-		quoteTypeRadioButtonGroup = new RadioButtonGroup(quoteComposite, SWT.NONE, ArrangementStyle.Horizontal, DefaultLangResources.getI18NStringOrDefault("csvSingleQuote"), DefaultLangResources.getI18NStringOrDefault("csvDoubleQuote"));
+		quoteTypeRadioButtonGroup = new RadioButtonGroup(quoteComposite, SWT.NONE, ArrangementStyle.Horizontal, LangResources.get("csvSingleQuote"), LangResources.get("csvDoubleQuote"));
 		quoteTypeRadioButtonGroup.setSelectedButtonIndex(stringQuote == '\'' ? 0 : 1);
 
 		if (showContainsHeadersInFirstRowButton) {
 			final Button containsHeadersInFirstRowButton = new Button(quoteComposite, SWT.CHECK);
-			containsHeadersInFirstRowButton.setText(DefaultLangResources.getI18NStringOrDefault("containsHeadersInFirstRow"));
+			containsHeadersInFirstRowButton.setText(LangResources.get("containsHeadersInFirstRow"));
 			containsHeadersInFirstRowButton.setSelection(containsHeadersInFirstRow);
 			containsHeadersInFirstRowButton.setLayoutData(new GridData(SWT.LEFT, SWT.UP, false, false, 3, 1));
 			containsHeadersInFirstRowButton.addSelectionListener(new SelectionAdapter() {
@@ -87,8 +87,8 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			});
 		}
 
-		underfilledLinesRadioButtonGroup = new RadioButtonGroup(shell, DefaultLangResources.getI18NStringOrDefault("csvUnderfilledLines"), SWT.NONE, ArrangementStyle.Horizontal, DefaultLangResources.getI18NStringOrDefault("yes"),
-				DefaultLangResources.getI18NStringOrDefault("no"));
+		underfilledLinesRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("csvUnderfilledLines"), SWT.NONE, ArrangementStyle.Horizontal, LangResources.get("yes"),
+				LangResources.get("no"));
 		underfilledLinesRadioButtonGroup.setSelectedButtonIndex(allowUnderfilledLines ? 0 : 1);
 
 		if (showEncodingField) {
@@ -97,7 +97,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 			encodingComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
 
 			final Label encodingLabel = new Label(encodingComposite, SWT.NONE);
-			encodingLabel.setText(DefaultLangResources.getI18NStringOrDefault("encoding") + ": ");
+			encodingLabel.setText(LangResources.get("encoding") + ": ");
 
 			// Editable like the former SWT Combo: common encodings as presets, any supported charset name may be typed in.
 			// Case-insensitive, because charset names are case-insensitive as well.
@@ -119,7 +119,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 
 		okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
+		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -142,7 +142,7 @@ public class CsvConfigDialog extends ModalDialog<Boolean> {
 
 		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {

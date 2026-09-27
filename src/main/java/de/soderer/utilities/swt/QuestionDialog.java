@@ -13,7 +13,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 public class QuestionDialog extends ModalDialog<Integer> {
@@ -101,7 +101,7 @@ public class QuestionDialog extends ModalDialog<Integer> {
 
 			final Button cancelButton = new Button(buttonComposite, SWT.PUSH);
 			cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-			cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("close"));
+			cancelButton.setText(LangResources.get("close"));
 			cancelButton.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(final SelectionEvent event) {

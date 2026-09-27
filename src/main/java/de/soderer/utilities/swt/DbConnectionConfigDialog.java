@@ -13,7 +13,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
 public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
@@ -50,7 +50,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 			label.setText(text);
 		}
 
-		dbTypeRadioButtonGroup = new RadioButtonGroup(shell, DefaultLangResources.getI18NStringOrDefault("dbType"), SWT.NONE, ArrangementStyle.Horizontal, "Oracle", "MySQL");
+		dbTypeRadioButtonGroup = new RadioButtonGroup(shell, LangResources.get("dbType"), SWT.NONE, ArrangementStyle.Horizontal, "Oracle", "MySQL");
 		dbTypeRadioButtonGroup.setSelectedButtonIndex(1);
 		dbTypeRadioButtonGroup.addModifyListener(new ModifyListener() {
 			@Override
@@ -64,7 +64,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		credentialsComposite.setLayout(SwtUtilities.createNoMarginGridLayout(2, false));
 
 		final Label hostnameLabel = new Label(credentialsComposite, SWT.NONE);
-		hostnameLabel.setText(DefaultLangResources.getI18NStringOrDefault("hostname") + ": ");
+		hostnameLabel.setText(LangResources.get("hostname") + ": ");
 
 		dbServerHostnameText = new Text(credentialsComposite, SWT.BORDER);
 		dbServerHostnameText.addModifyListener(new ModifyListener() {
@@ -76,7 +76,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		});
 
 		final Label portLabel = new Label(credentialsComposite, SWT.NONE);
-		portLabel.setText(DefaultLangResources.getI18NStringOrDefault("port") + ": ");
+		portLabel.setText(LangResources.get("port") + ": ");
 
 		dbServerPortText = new NumberText(credentialsComposite, SWT.BORDER, 5);
 		dbServerPortText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
@@ -89,7 +89,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		});
 
 		final Label dbNameLabel = new Label(credentialsComposite, SWT.NONE);
-		dbNameLabel.setText(DefaultLangResources.getI18NStringOrDefault("dbName") + ": ");
+		dbNameLabel.setText(LangResources.get("dbName") + ": ");
 
 		dbNameText = new Text(credentialsComposite, SWT.BORDER);
 		dbNameText.addModifyListener(new ModifyListener() {
@@ -101,7 +101,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		});
 
 		final Label userLabel = new Label(credentialsComposite, SWT.NONE);
-		userLabel.setText(DefaultLangResources.getI18NStringOrDefault("username") + ": ");
+		userLabel.setText(LangResources.get("username") + ": ");
 
 		userNameText = new Text(credentialsComposite, SWT.BORDER);
 		userNameText.addModifyListener(new ModifyListener() {
@@ -113,7 +113,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 		});
 
 		final Label passwordLabel = new Label(credentialsComposite, SWT.NONE);
-		passwordLabel.setText(DefaultLangResources.getI18NStringOrDefault("password") + ": ");
+		passwordLabel.setText(LangResources.get("password") + ": ");
 
 		passwordText = new Text(credentialsComposite, SWT.PASSWORD | SWT.BORDER);
 		passwordText.addModifyListener(new ModifyListener() {
@@ -132,7 +132,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 
 		okButton = new Button(mainButtonComposite, SWT.PUSH);
 		okButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		okButton.setText(DefaultLangResources.getI18NStringOrDefault("ok"));
+		okButton.setText(LangResources.get("ok"));
 		okButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {
@@ -143,7 +143,7 @@ public class DbConnectionConfigDialog extends ModalDialog<Boolean> {
 
 		final Button cancelButton = new Button(mainButtonComposite, SWT.PUSH);
 		cancelButton.setLayoutData(new GridData(SWT.FILL, SWT.UP, true, false));
-		cancelButton.setText(DefaultLangResources.getI18NStringOrDefault("cancel"));
+		cancelButton.setText(LangResources.get("cancel"));
 		cancelButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent event) {

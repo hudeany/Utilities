@@ -56,7 +56,7 @@ import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 
 import de.soderer.utilities.DateUtilities;
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
@@ -637,7 +637,7 @@ public class PGPUtilities {
 			try {
 				encryptionAlgorithm = PgpPublicEncryptionMethod.getById(signature.getKeyAlgorithm()).name();
 			} catch (@SuppressWarnings("unused") final Exception e) {
-				encryptionAlgorithm = DefaultLangResources.getI18NStringOrDefault("Unknown");
+				encryptionAlgorithm = LangResources.get("Unknown");
 			}
 			signatureData.put("encryptionalgorithm", encryptionAlgorithm);
 
@@ -645,7 +645,7 @@ public class PGPUtilities {
 			try {
 				hashingAlgorithm = PgpHashMethod.getById(signature.getHashAlgorithm()).name();
 			} catch (@SuppressWarnings("unused") final Exception e) {
-				hashingAlgorithm = DefaultLangResources.getI18NStringOrDefault("Unknown");
+				hashingAlgorithm = LangResources.get("Unknown");
 			}
 			signatureData.put("hashingalgorithm", hashingAlgorithm);
 
@@ -667,7 +667,7 @@ public class PGPUtilities {
 				identity += "(Selfsigned)";
 			}
 			if (Utilities.isBlank(identity)) {
-				identity = DefaultLangResources.getI18NStringOrDefault("Unknown");
+				identity = LangResources.get("Unknown");
 			}
 
 			signatureData.put("identity", identity);

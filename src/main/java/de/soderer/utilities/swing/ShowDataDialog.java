@@ -14,7 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-import de.soderer.utilities.DefaultLangResources;
+import de.soderer.utilities.LangResources;
 
 /**
  * Modal dialog showing a (possibly long) read-only text, e.g. a report, with
@@ -49,11 +49,11 @@ public class ShowDataDialog extends ModalDialog<Boolean> {
 
 		final JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, margin, 0));
 
-		final JButton copyButton = new JButton(DefaultLangResources.getI18NStringOrDefault("copyToClipboard"));
+		final JButton copyButton = new JButton(LangResources.get("copyToClipboard"));
 		copyButton.addActionListener(e -> Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(textArea.getText()), null));
 		buttonPanel.add(copyButton);
 
-		final JButton closeButton = new JButton(DefaultLangResources.getI18NStringOrDefault("close"));
+		final JButton closeButton = new JButton(LangResources.get("close"));
 		closeButton.addActionListener(e -> {
 			returnValue = true;
 			dispose();
