@@ -5,10 +5,10 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.eclipse.swt.program.Program;
 
 import de.soderer.network.HttpUtilities;
 import de.soderer.utilities.SystemUtilities;
@@ -42,6 +42,9 @@ public class MailUtilities {
 	private static final Pattern USER_PATTERN = Pattern.compile(USER_REGEX);
 
 	private static final Pattern DOMAIN_NAME_PATTERN = Pattern.compile(DOMAIN_NAME_REGEX);
+
+	/** Time to wait for a launcher process to detect an immediate failure (e.g. no mail handler configured) */
+	private static final long LAUNCHER_EXIT_CHECK_SECONDS = 3;
 
 	public static boolean isEmailValid(final String emailAddress) {
 		if (emailAddress == null) {
@@ -103,7 +106,7 @@ public class MailUtilities {
 		}
 
 		// Do not allow ".local" top level domain
-		if (asciiDomainName.toLowerCase().endsWith(".local")) {
+		if (asciiDomainName.toLowerCase(Locale.ROOT).endsWith(".local")) {
 			return false;
 		}
 
@@ -193,7 +196,7 @@ public class MailUtilities {
 		if (Utilities.isBlank(email)) {
 			return null;
 		} else {
-			return email.toLowerCase().trim();
+			return email.toLowerCase(Locale.ROOT).trim();
 		}
 	}
 
@@ -210,59 +213,106 @@ public class MailUtilities {
 	}
 
 	/**
-	 * Try to open an email in the standard email client
+	 * Try to open an email in the standard email client.
+	 * Uses only JDK means (java.awt.Desktop) and OS specific launchers, no SWT.
 	 *
 	 * @param toAdress
 	 * @param ccAdress
+	 * @param bccAdress
 	 * @param subject
 	 * @param body
-	 * @return
+	 * @return true if some launcher accepted the mailto link
 	 */
 	public static boolean openMailInStandardClient(final String toAdress, final String ccAdress, final String bccAdress, final String subject, final String body) {
+		final String mailtoString;
 		try {
-			final String mailtoString = createMailtoLink(toAdress, ccAdress, bccAdress, subject, body);
-
-			if (SystemUtilities.isWindowsSystem()) {
-				if (Desktop.isDesktopSupported()) {
-					final Desktop desktop = Desktop.getDesktop();
-					if (desktop.isSupported(Desktop.Action.MAIL)) {
-						desktop.mail(new URI(mailtoString));
-						return true;
-					}
-				}
-
-				try {
-					if (Program.launch(mailtoString)) {
-						return true;
-					}
-				} catch (@SuppressWarnings("unused") final Exception e) {
-					// Try some other method of mail creation
-				}
-			} else {
-				try {
-					Runtime.getRuntime().exec(new String[]{ "xdg-open", mailtoString }, null, null);
-					return true;
-				} catch (@SuppressWarnings("unused") final Exception e) {
-					// Try some other method of mail creation
-				}
-
-				try {
-					// For using the parameters check the following description
-					// http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
-					Runtime.getRuntime().exec(new String[]{ "thunderbird", "-compose"}, null, null);
-					if (Program.launch(mailtoString)) {
-						return true;
-					}
-				} catch (@SuppressWarnings("unused") final Exception e) {
-					// Try some other method of mail creation
-				}
-			}
-
-			throw new Exception("Cannot create mail in standard mailclient");
+			mailtoString = createMailtoLink(toAdress, ccAdress, bccAdress, subject, body);
 		} catch (final Exception e) {
 			e.printStackTrace();
 			return false;
 		}
+
+		if (SystemUtilities.isWindowsSystem()) {
+			if (openViaDesktopApi(mailtoString)) {
+				return true;
+			}
+			// Replacement for SWT Program.launch(): let the Windows shell resolve the mailto handler
+			if (launchProcess("rundll32", "url.dll,FileProtocolHandler", mailtoString)) {
+				return true;
+			}
+		} else if (isMacOsSystem()) {
+			if (openViaDesktopApi(mailtoString)) {
+				return true;
+			}
+			if (launchProcess("open", mailtoString)) {
+				return true;
+			}
+		} else {
+			// Linux / Unix: xdg-open respects the desktop environment's configured mail client
+			if (launchProcess("xdg-open", mailtoString)) {
+				return true;
+			}
+			// Desktop API only works on some Linux desktops (GNOME/GTK based)
+			if (openViaDesktopApi(mailtoString)) {
+				return true;
+			}
+			// Last resort: Thunderbird accepts a mailto URL as command line argument
+			// See http://kb.mozillazine.org/Command_line_arguments_%28Thunderbird%29
+			if (launchProcess("thunderbird", mailtoString)) {
+				return true;
+			}
+		}
+
+		new Exception("Cannot create mail in standard mailclient").printStackTrace();
+		return false;
+	}
+
+	/**
+	 * Open the mailto link via java.awt.Desktop, if supported on this system
+	 */
+	private static boolean openViaDesktopApi(final String mailtoString) {
+		try {
+			if (Desktop.isDesktopSupported()) {
+				final Desktop desktop = Desktop.getDesktop();
+				if (desktop.isSupported(Desktop.Action.MAIL)) {
+					desktop.mail(new URI(mailtoString));
+					return true;
+				}
+			}
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			// Headless environment, unsupported desktop or no mail handler configured
+		}
+		return false;
+	}
+
+	/**
+	 * Start an external launcher process.
+	 * Waits briefly to detect an immediate failure (non-zero exit code).
+	 * A process still running after the wait time is considered successful (e.g. the mail client itself).
+	 */
+	private static boolean launchProcess(final String... command) {
+		try {
+			final Process process = new ProcessBuilder(command)
+					.redirectOutput(ProcessBuilder.Redirect.DISCARD)
+					.redirectError(ProcessBuilder.Redirect.DISCARD)
+					.start();
+			if (process.waitFor(LAUNCHER_EXIT_CHECK_SECONDS, TimeUnit.SECONDS)) {
+				return process.exitValue() == 0;
+			} else {
+				return true;
+			}
+		} catch (@SuppressWarnings("unused") final InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return false;
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			// Executable not found or not startable
+			return false;
+		}
+	}
+
+	private static boolean isMacOsSystem() {
+		final String osName = System.getProperty("os.name", "");
+		return osName.toLowerCase(Locale.ROOT).startsWith("mac");
 	}
 
 	public static String createMailtoLink(final String toAdress, final String ccAdress, final String bccAdress, final String subject, final String body) throws Exception {
@@ -270,51 +320,35 @@ public class MailUtilities {
 			throw new Exception("TO address is missing or empty");
 		}
 
-		String mailtoString = "mailto:" + HttpUtilities.urlEncode(toAdress, StandardCharsets.UTF_8);
+		final StringBuilder mailtoString = new StringBuilder("mailto:").append(HttpUtilities.urlEncode(toAdress, StandardCharsets.UTF_8));
 
 		boolean isFirstParameter = true;
 
 		if (Utilities.isNotBlank(bccAdress)) {
-			if (isFirstParameter) {
-				mailtoString += "?";
-			} else {
-				mailtoString += "&";
-			}
-			mailtoString += "bcc=" + HttpUtilities.urlEncode(bccAdress, StandardCharsets.UTF_8);
+			mailtoString.append(isFirstParameter ? "?" : "&");
+			mailtoString.append("bcc=").append(HttpUtilities.urlEncode(bccAdress, StandardCharsets.UTF_8));
 			isFirstParameter = false;
 		}
 
 		if (Utilities.isNotBlank(ccAdress)) {
-			if (isFirstParameter) {
-				mailtoString += "?";
-			} else {
-				mailtoString += "&";
-			}
-			mailtoString += "cc=" + HttpUtilities.urlEncode(ccAdress, StandardCharsets.UTF_8);
+			mailtoString.append(isFirstParameter ? "?" : "&");
+			mailtoString.append("cc=").append(HttpUtilities.urlEncode(ccAdress, StandardCharsets.UTF_8));
 			isFirstParameter = false;
 		}
 
 		if (Utilities.isNotBlank(subject)) {
-			if (isFirstParameter) {
-				mailtoString += "?";
-			} else {
-				mailtoString += "&";
-			}
-			mailtoString += "subject=" + HttpUtilities.urlEncode(subject, StandardCharsets.UTF_8).replace("+", "%20");
+			mailtoString.append(isFirstParameter ? "?" : "&");
+			mailtoString.append("subject=").append(HttpUtilities.urlEncode(subject, StandardCharsets.UTF_8).replace("+", "%20"));
 			isFirstParameter = false;
 		}
 
 		if (Utilities.isNotBlank(body)) {
-			if (isFirstParameter) {
-				mailtoString += "?";
-			} else {
-				mailtoString += "&";
-			}
-			mailtoString += "body=" + HttpUtilities.urlEncode(body, StandardCharsets.UTF_8).replace("+", "%20");
+			mailtoString.append(isFirstParameter ? "?" : "&");
+			mailtoString.append("body=").append(HttpUtilities.urlEncode(body, StandardCharsets.UTF_8).replace("+", "%20"));
 			isFirstParameter = false;
 		}
-		// + (attachmentFile != null ? "&attachment=" + urlEncode(attachmentFile.getAbsolutePath(), StandardCharsets.UTF_8) : ""); // maybe it is "&attach="
+		// Attachments are not part of the mailto standard (RFC 6068) and are ignored by most clients
 
-		return mailtoString;
+		return mailtoString.toString();
 	}
 }
