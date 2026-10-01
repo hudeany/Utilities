@@ -8,8 +8,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,6 +37,12 @@ public class PropertiesReader implements Closeable {
 	 * Created in read(), so it uses the same key case sensitivity as the read properties
 	 */
 	private Map<String, String> comments = new LinkedHashMap<>();
+
+	/**
+	 * Keys that occurred more than once in the read data, in order of their first duplicate occurrence.
+	 * Created in read(), so it uses the same key case sensitivity as the read properties
+	 */
+	private Set<String> duplicateKeys = new LinkedHashSet<>();
 
 	public PropertiesReader(final InputStream inputStream) throws Exception {
 		if (inputStream == null) {
@@ -78,9 +87,11 @@ public class PropertiesReader implements Closeable {
 		if (readKeysCaseInsensitive) {
 			properties = new CaseInsensitiveLinkedMap<>();
 			comments = new CaseInsensitiveLinkedMap<>();
+			duplicateKeys = Collections.newSetFromMap(new CaseInsensitiveLinkedMap<>());
 		} else {
 			properties = new LinkedHashMap<>();
 			comments = new LinkedHashMap<>();
+			duplicateKeys = new LinkedHashSet<>();
 		}
 		pendingCommentLines = "";
 
@@ -117,7 +128,12 @@ public class PropertiesReader implements Closeable {
 				final String commentOfLine = pendingCommentLines;
 				pendingCommentLines = "";
 
-				if (firstDuplicateValueWins && properties.containsKey(unescapedKey)) {
+				final boolean isDuplicateKey = properties.containsKey(unescapedKey);
+				if (isDuplicateKey) {
+					duplicateKeys.add(unescapedKey);
+				}
+
+				if (firstDuplicateValueWins && isDuplicateKey) {
 					// Later occurrence of a known key: keep the first value, only adopt a comment the first occurrence is missing
 					if (commentOfLine.length() > 0 && !comments.containsKey(unescapedKey)) {
 						comments.put(unescapedKey, commentOfLine);
@@ -262,6 +278,14 @@ public class PropertiesReader implements Closeable {
 
 	public Map<String, String> getComments() {
 		return comments;
+	}
+
+	/**
+	 * Keys that occurred more than once in the data read by read().
+	 * Which value was kept depends on isFirstDuplicateValueWins().
+	 */
+	public Set<String> getDuplicateKeys() {
+		return duplicateKeys;
 	}
 
 	public static Map<String, String> readPropertiesString(final String propertiesString) throws Exception {
