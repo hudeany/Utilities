@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -23,8 +22,18 @@ public class PropertiesReader implements Closeable {
 
 	private boolean readKeysCaseInsensitive = true;
 
+	/**
+	 * If a key occurs more than once, keep the value of its first occurrence.
+	 * Default is false, which keeps the value of the last occurrence like java.util.Properties does.
+	 */
+	private boolean firstDuplicateValueWins = false;
+
 	private String pendingCommentLines = "";
-	private final Map<String, String> comments = new HashMap<>();
+
+	/**
+	 * Created in read(), so it uses the same key case sensitivity as the read properties
+	 */
+	private Map<String, String> comments = new LinkedHashMap<>();
 
 	public PropertiesReader(final InputStream inputStream) throws Exception {
 		if (inputStream == null) {
@@ -51,6 +60,15 @@ public class PropertiesReader implements Closeable {
 		return this;
 	}
 
+	public boolean isFirstDuplicateValueWins() {
+		return firstDuplicateValueWins;
+	}
+
+	public PropertiesReader setFirstDuplicateValueWins(final boolean firstDuplicateValueWins) {
+		this.firstDuplicateValueWins = firstDuplicateValueWins;
+		return this;
+	}
+
 	public Map<String, String> read() throws Exception {
 		if (inputReader == null) {
 			throw new IllegalStateException("PropertiesReader is already closed");
@@ -59,9 +77,12 @@ public class PropertiesReader implements Closeable {
 		Map<String, String> properties;
 		if (readKeysCaseInsensitive) {
 			properties = new CaseInsensitiveLinkedMap<>();
+			comments = new CaseInsensitiveLinkedMap<>();
 		} else {
 			properties = new LinkedHashMap<>();
+			comments = new LinkedHashMap<>();
 		}
+		pendingCommentLines = "";
 
 		String nextLine;
 		while ((nextLine = inputReader.readLine()) != null) {
@@ -91,11 +112,21 @@ public class PropertiesReader implements Closeable {
 
 				final String unescapedKey = unescapeKey(key);
 				final String unescapedValue = unescapeValue(value);
-				properties.put(unescapedKey, unescapedValue);
 
-				if (pendingCommentLines.length() > 0) {
-					comments.put(unescapedKey, pendingCommentLines);
-					pendingCommentLines = "";
+				// The pending comment belongs to this line, also if the line itself is skipped as duplicate
+				final String commentOfLine = pendingCommentLines;
+				pendingCommentLines = "";
+
+				if (firstDuplicateValueWins && properties.containsKey(unescapedKey)) {
+					// Later occurrence of a known key: keep the first value, only adopt a comment the first occurrence is missing
+					if (commentOfLine.length() > 0 && !comments.containsKey(unescapedKey)) {
+						comments.put(unescapedKey, commentOfLine);
+					}
+				} else {
+					properties.put(unescapedKey, unescapedValue);
+					if (commentOfLine.length() > 0) {
+						comments.put(unescapedKey, commentOfLine);
+					}
 				}
 			}
 		}
