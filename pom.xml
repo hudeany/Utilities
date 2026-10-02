@@ -7,7 +7,7 @@
 
 	<groupId>de.soderer</groupId>
 	<artifactId>soderer-utilities</artifactId>
-	<version>${build.version}</version>
+	<version>${revision}</version>
 	<packaging>jar</packaging>
 
 	<name>soderer-utilities</name>
@@ -15,6 +15,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<!-- Default for local/IDE builds, overridden by the build tool via -Drevision=... -->
+		<revision>0.0.0-SNAPSHOT</revision>
 	</properties>
 
 	<repositories>
@@ -215,6 +217,33 @@
 				<configuration>
 					<release>17</release>
 				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
+				<version>1.7.0</version>
+				<configuration>
+					<updatePomFile>true</updatePomFile>
+					<!-- Only replace ${revision}/${sha1}/${changelist}, keep the rest of the POM as is -->
+					<flattenMode>resolveCiFriendliesOnly</flattenMode>
+				</configuration>
+				<executions>
+					<execution>
+						<id>flatten</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>flatten</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>flatten-clean</id>
+						<phase>clean</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 
 			<plugin>
