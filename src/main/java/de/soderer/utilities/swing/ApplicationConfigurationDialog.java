@@ -604,8 +604,11 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 					new File(tempScriptFile).delete();
 				}
 
-				if (iconImageDataWindows != null) {
+				// Only reference the icon in the link, if it really exists, otherwise Windows reports the missing icon file
+				boolean iconAvailable = false;
+				if (iconImageDataWindows != null && iconImageDataWindows.length > 0) {
 					FileUtilities.write(new File(iconPath), iconImageDataWindows);
+					iconAvailable = new File(iconPath).isFile();
 				}
 
 				final StringBuilder data = new StringBuilder();
@@ -617,17 +620,31 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 				} else {
 					data.append("shortcut.TargetPath = \"" + applicationJarFileName + "\"\n");
 				}
-				data.append("shortcut.IconLocation = \"" + iconPath + "\"\n");
+				if (iconAvailable) {
+					data.append("shortcut.IconLocation = \"" + iconPath + ",0\"\n");
+				} else if (Utilities.isNotBlank(javaHome)) {
+					// Fallback: icon of javaw.exe instead of a reference to a missing file
+					data.append("shortcut.IconLocation = \"" + javaHome + "\\bin\\javaw.exe,0\"\n");
+				}
 				data.append("shortcut.Save\n");
 
 				try {
-					FileUtilities.writeStringToFile(new File(tempScriptFile), data.toString(), StandardCharsets.UTF_8);
+					// WScript reads scripts as ANSI or as UTF-16LE with BOM, but not as UTF-8 (paths with umlauts would break)
+					FileUtilities.writeStringToFile(new File(tempScriptFile), "\uFEFF" + data.toString(), StandardCharsets.UTF_16LE);
 
-					Runtime.getRuntime().exec(new String[] { "wscript", "\"" + tempScriptFile + "\"" }, null, null);
-
-					JOptionPane.showMessageDialog(this, LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
-
+					// Wait for the script, so the link exists before the success message and the script is not deleted while still in use
+					final Process process = Runtime.getRuntime().exec(new String[] { "wscript", "//B", tempScriptFile }, null, null);
+					final int exitCode = process.waitFor();
 					new File(tempScriptFile).delete();
+
+					if (exitCode == 0 && new File(desktopLinkFilePath).exists()) {
+						JOptionPane.showMessageDialog(this, LangResources.get("desktopLinkWasCreatedAt", desktopLinkFilePath), LangResources.get("createDesktopLink"), JOptionPane.PLAIN_MESSAGE);
+					} else {
+						JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", "wscript exit code " + exitCode), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
+					}
+				} catch (final InterruptedException e) {
+					Thread.currentThread().interrupt();
+					JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 				} catch (final IOException e) {
 					JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 				}
