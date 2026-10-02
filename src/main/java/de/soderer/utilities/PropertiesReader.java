@@ -44,6 +44,14 @@ public class PropertiesReader implements Closeable {
 	 */
 	private Set<String> duplicateKeys = new LinkedHashSet<>();
 
+	/**
+	 * Number of empty lines before each key (counted since the previous property line, including those before its comment).
+	 * Only the first occurrence of a key is counted, because its position is also taken from there.
+	 * Keys without preceding empty lines are not contained.
+	 * Created in read(), so it uses the same key case sensitivity as the read properties
+	 */
+	private Map<String, Integer> emptyLinesBefore = new LinkedHashMap<>();
+
 	public PropertiesReader(final InputStream inputStream) throws Exception {
 		if (inputStream == null) {
 			throw new Exception("Invalid empty inputStream");
@@ -88,12 +96,15 @@ public class PropertiesReader implements Closeable {
 			properties = new CaseInsensitiveLinkedMap<>();
 			comments = new CaseInsensitiveLinkedMap<>();
 			duplicateKeys = Collections.newSetFromMap(new CaseInsensitiveLinkedMap<>());
+			emptyLinesBefore = new CaseInsensitiveLinkedMap<>();
 		} else {
 			properties = new LinkedHashMap<>();
 			comments = new LinkedHashMap<>();
 			duplicateKeys = new LinkedHashSet<>();
+			emptyLinesBefore = new LinkedHashMap<>();
 		}
 		pendingCommentLines = "";
+		int pendingEmptyLines = 0;
 
 		String nextLine;
 		while ((nextLine = inputReader.readLine()) != null) {
@@ -128,9 +139,15 @@ public class PropertiesReader implements Closeable {
 				final String commentOfLine = pendingCommentLines;
 				pendingCommentLines = "";
 
+				// The pending empty lines belong to this line, also if they were followed by a comment
+				final int emptyLinesOfLine = pendingEmptyLines;
+				pendingEmptyLines = 0;
+
 				final boolean isDuplicateKey = properties.containsKey(unescapedKey);
 				if (isDuplicateKey) {
 					duplicateKeys.add(unescapedKey);
+				} else if (emptyLinesOfLine > 0) {
+					emptyLinesBefore.put(unescapedKey, emptyLinesOfLine);
 				}
 
 				if (firstDuplicateValueWins && isDuplicateKey) {
@@ -144,6 +161,10 @@ public class PropertiesReader implements Closeable {
 						comments.put(unescapedKey, commentOfLine);
 					}
 				}
+			} else {
+				// Empty or whitespace-only line, used to structure blocks of properties.
+				// Empty lines inside multi-line values never get here, because they are consumed by the continuation loop.
+				pendingEmptyLines++;
 			}
 		}
 
@@ -286,6 +307,14 @@ public class PropertiesReader implements Closeable {
 	 */
 	public Set<String> getDuplicateKeys() {
 		return duplicateKeys;
+	}
+
+	/**
+	 * Number of empty lines before the keys read by read() (including those before a key's comment).
+	 * Keys without preceding empty lines are not contained.
+	 */
+	public Map<String, Integer> getEmptyLinesBefore() {
+		return emptyLinesBefore;
 	}
 
 	public static Map<String, String> readPropertiesString(final String propertiesString) throws Exception {
