@@ -8,12 +8,18 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import de.soderer.utilities.TextUtilities.LineBreak;
 
 public class PropertiesWriter implements Closeable {
-	private final LineBreak linebreakType = LineBreak.Unix;
-	private final String keyValueSeparator = "=";
+	/**
+	 * Allowed separators: '=' or ':' optionally surrounded by blanks, or blanks only (no line breaks)
+	 */
+	private static final Pattern VALID_KEY_VALUE_SEPARATOR_PATTERN = Pattern.compile("[ \\t\\f]*[=:][ \\t\\f]*|[ \\t\\f]+");
+
+	private LineBreak linebreakType = LineBreak.Unix;
+	private String keyValueSeparator = "=";
 
 	private OutputStream outputStream;
 	private int writtenProperties = 0;
@@ -24,6 +30,42 @@ public class PropertiesWriter implements Closeable {
 		outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.ISO_8859_1));
 	}
 
+	public LineBreak getLinebreakType() {
+		return linebreakType;
+	}
+
+	public void setLinebreakType(final LineBreak linebreakType) {
+		if (linebreakType == null) {
+			throw new IllegalArgumentException("Linebreak type must not be null");
+		}
+		this.linebreakType = linebreakType;
+	}
+
+	public PropertiesWriter withLinebreakType(final LineBreak linebreakTypeParam) {
+		setLinebreakType(linebreakTypeParam);
+		return this;
+	}
+
+	public String getKeyValueSeparator() {
+		return keyValueSeparator;
+	}
+
+	/**
+	 * Set the separator between key and value.
+	 * Allowed are '=' or ':' optionally surrounded by blanks (e.g. " = "), or blanks only.
+	 */
+	public void setKeyValueSeparator(final String keyValueSeparator) {
+		if (keyValueSeparator == null || !VALID_KEY_VALUE_SEPARATOR_PATTERN.matcher(keyValueSeparator).matches()) {
+			throw new IllegalArgumentException("Invalid key value separator: '" + keyValueSeparator + "'");
+		}
+		this.keyValueSeparator = keyValueSeparator;
+	}
+
+	public PropertiesWriter withKeyValueSeparator(final String keyValueSeparatorParam) {
+		setKeyValueSeparator(keyValueSeparatorParam);
+		return this;
+	}
+
 	public void writeProperty(final String key, final String value) throws Exception {
 		checkNotClosed();
 
@@ -31,9 +73,15 @@ public class PropertiesWriter implements Closeable {
 			throw new IllegalArgumentException("Property key must not be empty");
 		}
 
+		String escapedValue = escapeValue(value);
+		if (keyValueSeparator.trim().isEmpty() && (escapedValue.startsWith("=") || escapedValue.startsWith(":"))) {
+			// With a blanks-only separator, a leading '=' or ':' of the value would be read as the actual separator
+			escapedValue = "\\" + escapedValue;
+		}
+
 		outputWriter.write(escapeKey(key));
 		outputWriter.write(keyValueSeparator);
-		outputWriter.write(escapeValue(value));
+		outputWriter.write(escapedValue);
 		outputWriter.write(linebreakType.toString());
 
 		writtenProperties++;

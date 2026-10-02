@@ -72,8 +72,12 @@ public class PropertiesReader implements Closeable {
 		return readKeysCaseInsensitive;
 	}
 
-	public PropertiesReader setReadKeysCaseInsensitive(final boolean readKeysCaseInsensitive) {
+	public void setReadKeysCaseInsensitive(final boolean readKeysCaseInsensitive) {
 		this.readKeysCaseInsensitive = readKeysCaseInsensitive;
+	}
+
+	public PropertiesReader withReadKeysCaseInsensitive(final boolean readKeysCaseInsensitiveParam) {
+		setReadKeysCaseInsensitive(readKeysCaseInsensitiveParam);
 		return this;
 	}
 
@@ -81,8 +85,12 @@ public class PropertiesReader implements Closeable {
 		return firstDuplicateValueWins;
 	}
 
-	public PropertiesReader setFirstDuplicateValueWins(final boolean firstDuplicateValueWins) {
+	public void setFirstDuplicateValueWins(final boolean firstDuplicateValueWins) {
 		this.firstDuplicateValueWins = firstDuplicateValueWins;
+	}
+
+	public PropertiesReader withFirstDuplicateValueWins(final boolean firstDuplicateValueWinsParam) {
+		setFirstDuplicateValueWins(firstDuplicateValueWinsParam);
 		return this;
 	}
 
