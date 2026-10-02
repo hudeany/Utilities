@@ -739,7 +739,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 					jvmArguments.add(argument);
 				}
 			}
-		} catch (final RuntimeException | LinkageError e) {
+		} catch (@SuppressWarnings("unused") final RuntimeException | LinkageError e) {
 			// Module java.management may be missing in a reduced runtime image (jlink), so the link is created without JVM arguments
 		}
 		return jvmArguments;
