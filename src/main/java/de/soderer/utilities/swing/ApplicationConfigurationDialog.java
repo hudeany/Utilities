@@ -17,6 +17,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -616,7 +617,14 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 				data.append("shortcut.Description = \"" + applicationName + "\"\n");
 				if (Utilities.isNotBlank(javaHome)) {
 					data.append("shortcut.TargetPath = \"" + javaHome + "\\bin\\javaw.exe\"\n");
-					data.append("shortcut.Arguments = \"-jar \"\"" + applicationJarFileName + "\"\"\"\n");
+					// JVM options of the currently running process must be placed before "-jar", everything after the jar file path is passed to the application
+					final StringBuilder commandLineArguments = new StringBuilder();
+					for (final String jvmArgument : getJvmArgumentsForDesktopLink()) {
+						commandLineArguments.append(quoteWindowsCommandLineArgument(jvmArgument)).append(" ");
+					}
+					commandLineArguments.append("-jar ").append(quoteWindowsCommandLineArgument(applicationJarFileName));
+					// Quotes within a VBScript string literal are escaped by doubling them
+					data.append("shortcut.Arguments = \"" + commandLineArguments.toString().replace("\"", "\"\"") + "\"\n");
 				} else {
 					data.append("shortcut.TargetPath = \"" + applicationJarFileName + "\"\n");
 				}
@@ -701,6 +709,77 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		} catch (final Exception e) {
 			JOptionPane.showMessageDialog(this, LangResources.get("errorMessage", e.getMessage()), LangResources.get("createDesktopLink"), JOptionPane.ERROR_MESSAGE);
 		}
+	}
+
+	/**
+	 * Excluded JVM arguments are added by IDEs or debuggers or are set by the java launcher itself
+	 * and must not be copied into a desktop link.
+	 */
+	private static final String[] EXCLUDED_JVM_ARGUMENT_PREFIXES = new String[] {
+			"-agentlib:",
+			"-agentpath:",
+			"-javaagent:",
+			"-Xdebug",
+			"-Xrunjdwp",
+			"-Djava.class.path=",
+			"-Dsun.java.command=",
+			"-Dsun.java.launcher",
+			"-Djdk.module.main"
+	};
+
+	/**
+	 * JVM arguments of the currently running process (e.g. -Xmx, -D..., --add-opens),
+	 * so that an application started via desktop link runs with the same settings.
+	 */
+	private static List<String> getJvmArgumentsForDesktopLink() {
+		final List<String> jvmArguments = new ArrayList<>();
+		try {
+			for (final String argument : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+				if (Utilities.isNotBlank(argument) && !isExcludedJvmArgument(argument)) {
+					jvmArguments.add(argument);
+				}
+			}
+		} catch (final RuntimeException | LinkageError e) {
+			// Module java.management may be missing in a reduced runtime image (jlink), so the link is created without JVM arguments
+		}
+		return jvmArguments;
+	}
+
+	private static boolean isExcludedJvmArgument(final String argument) {
+		for (final String excludedPrefix : EXCLUDED_JVM_ARGUMENT_PREFIXES) {
+			if (argument.startsWith(excludedPrefix)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Quotes a single argument according to the Windows command line parsing rules (CommandLineToArgvW / MSVC runtime),
+	 * which are also used by java.exe and javaw.exe.
+	 */
+	private static String quoteWindowsCommandLineArgument(final String argument) {
+		if (!argument.isEmpty() && argument.indexOf(' ') < 0 && argument.indexOf('\t') < 0 && argument.indexOf('"') < 0) {
+			return argument;
+		}
+
+		final StringBuilder quotedArgument = new StringBuilder("\"");
+		int pendingBackslashes = 0;
+		for (final char character : argument.toCharArray()) {
+			if (character == '\\') {
+				pendingBackslashes++;
+			} else if (character == '"') {
+				// Backslashes before a quote must be doubled and the quote itself escaped
+				quotedArgument.append("\\".repeat(pendingBackslashes * 2 + 1)).append('"');
+				pendingBackslashes = 0;
+			} else {
+				quotedArgument.append("\\".repeat(pendingBackslashes)).append(character);
+				pendingBackslashes = 0;
+			}
+		}
+		// Trailing backslashes must be doubled, so that they do not escape the closing quote
+		quotedArgument.append("\\".repeat(pendingBackslashes * 2)).append('"');
+		return quotedArgument.toString();
 	}
 
 	/**
