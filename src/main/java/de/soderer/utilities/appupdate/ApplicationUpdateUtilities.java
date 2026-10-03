@@ -202,7 +202,7 @@ public class ApplicationUpdateUtilities {
 									break;
 								}
 								final String assetName = (String) assetObject.getSimpleValue("name");
-								if (assetName != null && assetName.toLowerCase().endsWith(".jar")) {
+								if (isApplicationJarAssetName(assetName)) {
 									jarAssetDownloadUrl = (String) assetObject.getSimpleValue("browser_download_url");
 								}
 							}
@@ -1207,5 +1207,26 @@ public class ApplicationUpdateUtilities {
 				System.err.println("Cannot remove leftover restarter file '" + restarterFile.getAbsolutePath() + "'");
 			}
 		}
+	}
+
+	/**
+	 * Checks whether a GitHub release asset is the executable application jar itself.
+	 * Classifier jars like "-sources.jar" or "-javadoc.jar" (also with "_" separator) are excluded,
+	 * because the order of assets in GitHub's release API response is not guaranteed.
+	 */
+	private static boolean isApplicationJarAssetName(final String assetName) {
+		if (assetName == null) {
+			return false;
+		}
+		final String assetNameLowerCase = assetName.toLowerCase();
+		if (!assetNameLowerCase.endsWith(".jar")) {
+			return false;
+		}
+		for (final String classifier : new String[] { "sources", "javadoc" }) {
+			if (assetNameLowerCase.endsWith("-" + classifier + ".jar") || assetNameLowerCase.endsWith("_" + classifier + ".jar")) {
+				return false;
+			}
+		}
+		return true;
 	}
 }
