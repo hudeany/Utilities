@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Duration;
@@ -45,6 +46,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -57,8 +59,11 @@ import java.util.zip.GZIPOutputStream;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
 
+
 /**
  * Global Utilities
+ *
+ * This class does no Logging via Log4J, because it is often used before its initialisation
  */
 public class Utilities {
 	public static final int EOF = -1;
@@ -72,7 +77,7 @@ public class Utilities {
 	/**
 	 * Generate a unique ID
 	 *
-	 * @return
+	 * @return random UUID in upper case without hyphens (32 hex characters)
 	 */
 	public static String generateUUID() {
 		return UUID.randomUUID().toString().toUpperCase().replaceAll("-", "");
@@ -82,7 +87,8 @@ public class Utilities {
 	 * Get a UUID from a string
 	 *
 	 * @param value
-	 * @return
+	 *            UUID string without hyphens (32 hex characters)
+	 * @return UUID
 	 */
 	public static UUID getUUIDFromString(final String value) {
 		final StringBuilder uuidString = new StringBuilder(value);
@@ -97,7 +103,8 @@ public class Utilities {
 	 * Get the data of a file included in a jar file
 	 *
 	 * @param resourceName
-	 * @return
+	 *            path of the resource within the classpath, without leading slash
+	 * @return stream of the resource data, or null if the resource does not exist
 	 */
 	public static InputStream getResourceAsStream(final String resourceName) {
 		return Utilities.class.getResourceAsStream("/" + resourceName);
@@ -107,13 +114,14 @@ public class Utilities {
 	 * Zip a byteArray by GZIP-Algorithm
 	 *
 	 * @param clearData
-	 * @return
+	 *            data to compress
+	 * @return compressed data, or null on error
 	 */
 	public static byte[] gzipByteArray(final byte[] clearData) {
-		try (ByteArrayOutputStream encoded = new ByteArrayOutputStream()) {
-			try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(encoded)) {
-				gzipOutputStream.write(clearData);
-			}
+		try (ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+				GZIPOutputStream gzipCompresser = new GZIPOutputStream(encoded)) {
+			gzipCompresser.write(clearData);
+			gzipCompresser.close();
 			return encoded.toByteArray();
 		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
@@ -124,14 +132,16 @@ public class Utilities {
 	 * Unzip a byteArray by GZIP-Algorithm
 	 *
 	 * @param zippedData
-	 * @return
+	 *            GZIP compressed data
+	 * @return uncompressed data, or null if the data cannot be read
 	 * @throws Exception
+	 *             if decompressing fails with an error other than an IOException
 	 */
-	public static byte[] gunzipByteArray(final byte[] zippedData) {
-		try (ByteArrayOutputStream decoded = new ByteArrayOutputStream()) {
-			try (GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(zippedData))) {
-				IoUtilities.copy(gzipInputStream, decoded);
-			}
+	public static byte[] gunzipByteArray(final byte[] zippedData) throws Exception {
+		try {
+			final ByteArrayOutputStream decoded = new ByteArrayOutputStream();
+			final ByteArrayInputStream encoded = new ByteArrayInputStream(zippedData);
+			IoUtilities.copy(new GZIPInputStream(encoded), decoded);
 			return decoded.toByteArray();
 		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
@@ -139,20 +149,26 @@ public class Utilities {
 	}
 
 	/**
-	 * Encode a Base64 String
+	 * Encode data as Base64 String
 	 *
 	 * @param clearData
-	 * @return
+	 *            data to encode
+	 * @return Base64 string
 	 */
 	public static String encodeBase64(final byte[] clearData) {
 		return Base64.getEncoder().encodeToString(clearData);
 	}
 
 	/**
-	 * Encode a Base64 String
+	 * Encode data as Base64 String split into lines
 	 *
 	 * @param clearData
-	 * @return
+	 *            data to encode
+	 * @param maxCharactersPerLine
+	 *            maximum number of characters per line
+	 * @param splitCharacters
+	 *            characters appended after every full line, e.g. a linebreak
+	 * @return Base64 string split into lines
 	 */
 	public static String encodeBase64(final byte[] clearData, final int maxCharactersPerLine, final String splitCharacters) {
 		final String dataBase64 = Base64.getEncoder().encodeToString(clearData);
@@ -170,38 +186,44 @@ public class Utilities {
 	 * Decode a Base64 String
 	 *
 	 * @param base64String
-	 * @return
+	 *            Base64 string, whitespace and linebreaks are ignored
+	 * @return decoded data
 	 */
 	public static byte[] decodeBase64(final String base64String) {
 		return Base64.getDecoder().decode(base64String.replace("\r", "").replace("\n", "").replace("\t", "").replace(" ", "").getBytes(StandardCharsets.UTF_8));
 	}
 
 	/**
-	 * Check a simple name string
+	 * Check a simple name string (only letters A-Z and a-z, digits, '_' and '-')
 	 *
 	 * @param value
-	 * @return
+	 *            name to check
+	 * @return true if the name is valid, false for null
 	 */
 	public static boolean checkForValidUserName(final String value) {
-		return value != null && value.matches("[A-Za-z0-9_-]+");
+		return value != null && value.matches("[A-Za-z0-9_-]*");
 	}
 
 	/**
 	 * Convert an ArrayList of Strings to a StringArray
 	 *
 	 * @param pArrayListOfStrings
-	 * @return
+	 *            list to convert
+	 * @return array with the strings of the list
 	 */
 	public static String[] convertArrayListOfStringsToStringArray(final ArrayList<String> pArrayListOfStrings) {
-		return pArrayListOfStrings.toArray(new String[0]);
+		final String[] arrayofStrings = new String[0];
+		return pArrayListOfStrings.toArray(arrayofStrings);
 	}
 
 	/**
 	 * Get index of an Integer within an Array of Integers
 	 *
 	 * @param searchInt
+	 *            value to search for
 	 * @param intArray
-	 * @return
+	 *            array to search in
+	 * @return index of the first occurrence, or -1 if not found
 	 */
 	public static int getIndex(final int searchInt, final int[] intArray) {
 		for (int i = 0; i < intArray.length; i++) {
@@ -216,8 +238,10 @@ public class Utilities {
 	 * Read stream data in byteArray until next linefeed or stream end
 	 *
 	 * @param inStream
-	 * @return
+	 *            stream to read from
+	 * @return read data, including the linefeed if one was found
 	 * @throws IOException
+	 *             if reading fails
 	 */
 	public static byte[] readStreamUntilEndOrLinefeed(final InputStream inStream) throws IOException {
 		final ByteArrayOutputStream returnData = new ByteArrayOutputStream();
@@ -236,12 +260,50 @@ public class Utilities {
 		return returnData.toByteArray();
 	}
 
-	/***
+	/**
+	 * Get email from X509Certificate
+	 *
+	 * @param cert
+	 *            certificate
+	 * @return email address of the certificate subject, or null if not available
+	 */
+	public static String getEmailFromCertificate(final X509Certificate cert) {
+		final String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
+		for (final String namePart : nameParts) {
+			if (namePart.matches("^[ \\t]*EMAILADDRESS=.*")) {
+				return namePart.substring(namePart.indexOf("=") + 1).trim();
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get cn from X509Certificate
+	 *
+	 * @param cert
+	 *            certificate
+	 * @return common name (CN) of the certificate subject, or null if not available
+	 */
+	public static String getCnFromCertificate(final X509Certificate cert) {
+		final String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
+		for (final String namePart : nameParts) {
+			if (namePart.matches("^[ \\t]*CN=.*")) {
+				return namePart.substring(namePart.indexOf("=") + 1).trim();
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Split a list into smaller lists to a maximum chunkSize
 	 *
 	 * @param originalList
+	 *            list to split
 	 * @param chunkSize
-	 * @return
+	 *            maximum size of each chunk
+	 * @return list of sublists (views on the original list), or null for an empty list or a chunk size less than 1
 	 */
 	public static <E> List<List<E>> chopListToChunks(final List<E> originalList, final int chunkSize) {
 		if (originalList == null || originalList.size() <= 0 || chunkSize <= 0) {
@@ -284,7 +346,8 @@ public class Utilities {
 	 * Generate a random number up to maximum value
 	 *
 	 * @param excludedMaximum
-	 * @return
+	 *            upper bound (exclusive)
+	 * @return random number from 0 to excludedMaximum - 1
 	 */
 	public static int getRandomNumber(final int excludedMaximum) {
 		return random.nextInt(excludedMaximum);
@@ -294,7 +357,8 @@ public class Utilities {
 	 * Generate a random string of given size
 	 *
 	 * @param length
-	 * @return
+	 *            length of the string
+	 * @return random string of letters (including german umlauts)
 	 */
 	public static String getRandomString(final int length) {
 		final StringBuilder sb = new StringBuilder(length);
@@ -308,7 +372,8 @@ public class Utilities {
 	 * Generate a random string of numbers and characters of given size
 	 *
 	 * @param length
-	 * @return
+	 *            length of the string
+	 * @return random string of letters (including german umlauts) and digits
 	 */
 	public static String getRandomAlphanumericString(final int length) {
 		final StringBuilder sb = new StringBuilder(length);
@@ -319,10 +384,11 @@ public class Utilities {
 	}
 
 	/**
-	 * Generate a random number of given size
+	 * Generate a random string of digits of given size
 	 *
 	 * @param length
-	 * @return
+	 *            number of digits
+	 * @return random string of digits
 	 */
 	public static String getRandomNumberString(final int length) {
 		final StringBuilder sb = new StringBuilder(length);
@@ -335,7 +401,7 @@ public class Utilities {
 	/**
 	 * Generate a random byte
 	 *
-	 * @return
+	 * @return random byte
 	 */
 	public static byte getRandomByte() {
 		final byte[] result = new byte[1];
@@ -347,7 +413,8 @@ public class Utilities {
 	 * Generate a random byteArray
 	 *
 	 * @param arrayToFill
-	 * @return
+	 *            array to fill with random bytes
+	 * @return the given array, filled with random bytes
 	 */
 	public static byte[] getRandomByteArray(final byte[] arrayToFill) {
 		random.nextBytes(arrayToFill);
@@ -355,11 +422,13 @@ public class Utilities {
 	}
 
 	/**
-	 * Check if a Integer is contained by an interval definition Interval definitions like -1;2-5;8+
+	 * Check if an Integer is contained by an interval definition like {@code -1;2-5;8+}
 	 *
 	 * @param intervals
+	 *            interval definitions separated by ';': a single value, a range "a-b", "-b" for up to b or "a+" for a and above
 	 * @param item
-	 * @return
+	 *            value to check
+	 * @return true if the value is contained in at least one interval
 	 */
 	public static boolean checkForIntervalContainment(final String intervals, final int item) {
 		if (intervals != null && intervals.length() > 0) {
@@ -396,8 +465,10 @@ public class Utilities {
 	 * Get the minimum of a value list down to a valid minimum
 	 *
 	 * @param allowedValueMinimum
+	 *            values below this minimum are ignored
 	 * @param values
-	 * @return
+	 *            values to check
+	 * @return smallest allowed value, or Integer.MAX_VALUE if there is none
 	 */
 	public static int getMinimumOfAllowedValues(final int allowedValueMinimum, final int... values) {
 		int returnValue = Integer.MAX_VALUE;
@@ -415,22 +486,18 @@ public class Utilities {
 	 * Convert a string to boolean
 	 *
 	 * @param value
-	 * @return
+	 *            string to interpret
+	 * @return true for "true", "+", "yes", "y", "ja", "j", "ok", "on" or "an" (case insensitive), otherwise false
 	 */
 	public static boolean interpretAsBool(String value) {
 		if (isNotEmpty(value)) {
 			value = value.trim();
 			return "true".equalsIgnoreCase(value)
 					|| "+".equalsIgnoreCase(value)
-					|| "1".equalsIgnoreCase(value)
 					|| "yes".equalsIgnoreCase(value)
 					|| "y".equalsIgnoreCase(value)
 					|| "ja".equalsIgnoreCase(value)
 					|| "j".equalsIgnoreCase(value)
-					|| "oui".equalsIgnoreCase(value)
-					|| "o".equalsIgnoreCase(value)
-					|| "si".equalsIgnoreCase(value)
-					|| "s".equalsIgnoreCase(value)
 					|| "ok".equalsIgnoreCase(value)
 					|| "on".equalsIgnoreCase(value)
 					|| "an".equalsIgnoreCase(value);
@@ -443,7 +510,8 @@ public class Utilities {
 	 * Check if any characters in a list are equal
 	 *
 	 * @param values
-	 * @return
+	 *            characters to check
+	 * @return true if at least two characters are equal
 	 */
 	public static boolean anyCharsAreEqual(final char... values) {
 		for (int i = 0; i < values.length; i++) {
@@ -474,7 +542,8 @@ public class Utilities {
 	 * Math.square
 	 *
 	 * @param value
-	 * @return
+	 *            value to square
+	 * @return value * value
 	 */
 	public static int square(final int value) {
 		return value * value;
@@ -484,8 +553,12 @@ public class Utilities {
 	 * Math power
 	 *
 	 * @param base
+	 *            base
 	 * @param exp
-	 * @return
+	 *            exponent, must not be negative
+	 * @return base to the power of exp
+	 * @throws IllegalArgumentException
+	 *             if the exponent is negative
 	 */
 	public static int pow(final int base, final int exp) {
 		if (exp < 0) {
@@ -501,19 +574,23 @@ public class Utilities {
 	 * Get a collection like a set as a ordered list
 	 *
 	 * @param c
-	 * @return
+	 *            collection to sort
+	 * @return new list with the sorted items
 	 */
-	public static <T extends Comparable<? super T>> List<T> asSortedList(final Collection<T> collection) {
-		final List<T> list = new ArrayList<>(collection);
+	public static <T extends Comparable<? super T>> List<T> asSortedList(final Collection<T> c) {
+		final List<T> list = new ArrayList<>(c);
 		Collections.sort(list);
 		return list;
 	}
 
 	/**
-	 * Get a collection like a set as a ordered list
+	 * Sort a collection in natural order, but put the given items first in their given order
 	 *
-	 * @param c
-	 * @return
+	 * @param collection
+	 *            items to sort
+	 * @param firstItems
+	 *            items to put first, in this order
+	 * @return new sorted list
 	 */
 	@SafeVarargs
 	public static <T extends Comparable<? super T>> List<T> sortButPutItemsFirst(final Collection<T> collection, final T... firstItems) {
@@ -544,8 +621,10 @@ public class Utilities {
 	 * Sort a map by a Comparator for the keytype
 	 *
 	 * @param mapToSort
+	 *            map to sort
 	 * @param comparator
-	 * @return
+	 *            comparator for the keys
+	 * @return new map with the entries in sorted key order
 	 */
 	public static <Key, Value> Map<Key, Value> sortMap(final Map<Key, Value> mapToSort, final Comparator<Key> comparator) {
 		final List<Key> keys = new ArrayList<>(mapToSort.keySet());
@@ -561,8 +640,8 @@ public class Utilities {
 	 * Sort a map by the String keytype
 	 *
 	 * @param mapToSort
-	 * @param comparator
-	 * @return
+	 *            map to sort
+	 * @return new map with the entries in sorted key order
 	 */
 	public static <Value> Map<String, Value> sortMap(final Map<String, Value> mapToSort) {
 		final List<String> keys = new ArrayList<>(mapToSort.keySet());
@@ -577,45 +656,29 @@ public class Utilities {
 	/**
 	 * Get files of classpath
 	 *
-	 * @return
+	 * @return classpath entries separated by the platform path separator (":" on Linux, ";" on Windows)
 	 */
 	public static String getClassPath() {
-		final ClassLoader sysClassLoader = ClassLoader.getSystemClassLoader();
-		final URL[] urls = ((URLClassLoader) sysClassLoader).getURLs();
-
-		final StringBuilder classpath = new StringBuilder();
-		for (final URL url : urls) {
-			classpath.append(url.getFile() + "\n");
-		}
-		return classpath.toString();
+		return System.getProperty("java.class.path");
 	}
 
 	/**
-	 * Check array equality
+	 * Check array equality. Items are compared by equals(), null items are allowed.
 	 *
 	 * @param array1
+	 *            first array
 	 * @param array2
-	 * @return
+	 *            second array
+	 * @return true if both arrays are null or have equal items in the same order
 	 */
 	public static <T> boolean compare(final T[] array1, final T[] array2) {
-		if (array1 == array2) {
-			return true;
-		} else if (array1 == null || array2 == null || array1.length != array2.length) {
-			return false;
-		} else {
-			for (int i = 0; i < array1.length; i++) {
-				if (array1[i] != array2[i]) {
-					return false;
-				}
-			}
-			return true;
-		}
+		return Arrays.equals(array1, array2);
 	}
 
 	/**
 	 * Get all system properties
 	 *
-	 * @return
+	 * @return map of all system properties, on Linux extended by "os.distribution.name" and "os.distribution.version"
 	 */
 	public static Map<String, String> getSystemPropertiesMap() {
 		final Map<String, String> propertiesMap = new HashMap<>();
@@ -630,13 +693,13 @@ public class Utilities {
 					distributionInfoProperties.load(inputStream);
 					final String distributionName = distributionInfoProperties.getProperty("NAME");
 					if (distributionName != null && !"".equals(distributionName.trim())) {
-						propertiesMap.put("os.distribution.name", Utilities.trimSimultaneously(distributionName, "\""));
+						propertiesMap.put("os.distribution.name",  Utilities.trimSimultaneously(distributionName, "\""));
 					} else {
 						propertiesMap.put("os.distribution.name", "Unknown");
 					}
 					final String distributionVersion = distributionInfoProperties.getProperty("VERSION");
 					if (distributionVersion != null && !"".equals(distributionVersion.trim())) {
-						propertiesMap.put("os.distribution.version", Utilities.trimSimultaneously(distributionVersion, "\""));
+						propertiesMap.put("os.distribution.version",  Utilities.trimSimultaneously(distributionVersion, "\""));
 					} else {
 						propertiesMap.put("os.distribution.version", "Unknown");
 					}
@@ -656,10 +719,14 @@ public class Utilities {
 	 * Convert Map to String
 	 *
 	 * @param map
+	 *            map to convert
 	 * @param entrySeparator
+	 *            separator between the entries
 	 * @param keySeparator
+	 *            separator between key and value
 	 * @param sort
-	 * @return
+	 *            sort the entries by key
+	 * @return string with all entries of the map
 	 */
 	public static String getStringFromMap(final Map<String, ? extends Object> map, final String entrySeparator, final String keySeparator, final boolean sort) {
 		final List<String> keyList = new ArrayList<>(map.keySet());
@@ -689,15 +756,23 @@ public class Utilities {
 	 * Make a number with unitsign human readable
 	 *
 	 * @param value
+	 *            number to format
 	 * @param unitTypeSign
+	 *            unit sign appended to the unit prefix, e.g. "B" for bytes
 	 * @param siUnits
-	 * @return
+	 *            true for SI units (factor 1000), false for binary units (factor 1024)
+	 * @param amountOfSignifiantDigits
+	 *            number of significant digits
+	 * @param keepTrailingZeros
+	 *            keep trailing zeros of the decimals
+	 * @param locale
+	 *            locale for the decimal separator
+	 * @return formatted number with unit, e.g. "1.5 KiB"
 	 */
-	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignificantDigits, final boolean keepTrailingZeros, final Locale locale) {
+	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignifiantDigits, final boolean keepTrailingZeros, final Locale locale) {
 		final int unit = siUnits ? 1000 : 1024;
 		double interimValue = value.doubleValue();
 		String unitExtension = "";
-		int maxTrailingDigits = 0;
 		if (interimValue < unit) {
 			if (isNotBlank(unitTypeSign)) {
 				unitExtension = " " + unitTypeSign;
@@ -707,43 +782,41 @@ public class Utilities {
 				return value + unitExtension;
 			}
 		} else {
-			final int exponent = (int) (Math.log(interimValue) / Math.log(unit));
-			unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1) + (siUnits ? "" : "i");
+			final int exp = (int) (Math.log(interimValue) / Math.log(unit));
+			unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
 			if (isNotBlank(unitTypeSign)) {
 				unitExtension += unitTypeSign;
 			}
-			interimValue = interimValue / Math.pow(unit, exponent);
-			maxTrailingDigits = exponent * 3;
+			interimValue = interimValue / Math.pow(unit, exp);
 		}
 
 		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 		DecimalFormat numberFormat;
-
-		int trailingDigits;
-		if (interimValue >= 1000) {
-			trailingDigits = amountOfSignificantDigits - 4;
-		} else if (interimValue >= 100) {
-			trailingDigits = amountOfSignificantDigits - 3;
-		} else if (interimValue >= 10) {
-			trailingDigits = amountOfSignificantDigits - 2;
-		} else if (interimValue >= 1) {
-			trailingDigits = amountOfSignificantDigits - 1;
-		} else {
-			trailingDigits = amountOfSignificantDigits;
-		}
-
-		String formatPattern;
 		if (keepTrailingZeros) {
-			final int amopuntOfTrailingZeros = Math.min(trailingDigits, maxTrailingDigits);
-			if (amopuntOfTrailingZeros > 0) {
-				formatPattern = "#0." + repeat("0", amopuntOfTrailingZeros);
+			if (interimValue >= 1000) {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 4), decimalFormatSymbols);
+			} else if (interimValue >= 100) {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 3), decimalFormatSymbols);
+			} else if (interimValue >= 10) {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 2), decimalFormatSymbols);
+			} else if (interimValue >= 1) {
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 1), decimalFormatSymbols);
 			} else {
-				formatPattern = "#0";
+				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits), decimalFormatSymbols);
 			}
 		} else {
-			formatPattern = "#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1));
+			if (interimValue >= 1000) {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 5), decimalFormatSymbols);
+			} else if (interimValue >= 100) {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 4), decimalFormatSymbols);
+			} else if (interimValue >= 10) {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 3), decimalFormatSymbols);
+			} else if (interimValue >= 1) {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 2), decimalFormatSymbols);
+			} else {
+				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 1), decimalFormatSymbols);
+			}
 		}
-		numberFormat = new DecimalFormat(formatPattern, decimalFormatSymbols);
 
 		return numberFormat.format(interimValue) + unitExtension;
 	}
@@ -809,9 +882,10 @@ public class Utilities {
 	}
 
 	public static String getHumanReadableSpeed(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String unitTypeSign, final boolean siUnits, final Locale locale) {
-		final long seconds = Duration.between(startTime, endTime).toSeconds();
-		if (seconds > 0) {
-			final double itemsPerSecond = itemsDone / seconds;
+		final long milliseconds = Duration.between(startTime, endTime).toMillis();
+		if (milliseconds > 0) {
+			// Floating point division, so fractions of items per second are kept
+			final double itemsPerSecond = itemsDone * 1000.0 / milliseconds;
 
 			final int unit = siUnits ? 1000 : 1024;
 			double interimValue = itemsPerSecond;
@@ -847,11 +921,12 @@ public class Utilities {
 				trailingDigits = amountOfSignificantDigits;
 			}
 
-			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.min(trailingDigits, maxTrailingDigits - 1)), decimalFormatSymbols);
+			// Without unit prefix maxTrailingDigits is 0, so the repeat count must not get negative
+			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.max(0, Math.min(trailingDigits, maxTrailingDigits - 1))), decimalFormatSymbols);
 
 			return numberFormat.format(interimValue) + unitExtension;
 		} else {
-			return "Done in <0 s";
+			return "Done in <1 ms";
 		}
 	}
 
@@ -859,9 +934,12 @@ public class Utilities {
 	 * Make an integer with unitsign human readable and keep all digits
 	 *
 	 * @param value
+	 *            number to format
 	 * @param unitTypeSign
+	 *            unit sign appended after a blank, may be null
 	 * @param locale
-	 * @return
+	 *            locale for the grouping separator
+	 * @return formatted number with grouping separators and unit, e.g. "1,234,567 B"
 	 */
 	public static String getHumanReadableInteger(final Long value, final String unitTypeSign, final Locale locale) {
 		final double interimValue = value.doubleValue();
@@ -880,8 +958,10 @@ public class Utilities {
 	 * Generate MD5 from string data
 	 *
 	 * @param data
-	 * @return
+	 *            text to hash, encoded as UTF-8
+	 * @return MD5 hash
 	 * @throws Exception
+	 *             if the hash algorithm is not available
 	 */
 	public static byte[] getMD5Hash(final String data) throws Exception {
 		try {
@@ -895,8 +975,10 @@ public class Utilities {
 	 * Generate SHA-1 from string data
 	 *
 	 * @param data
-	 * @return
+	 *            text to hash, encoded as UTF-8
+	 * @return SHA-1 hash
 	 * @throws Exception
+	 *             if the hash algorithm is not available
 	 */
 	public static byte[] getSHA1Hash(final String data) throws Exception {
 		try {
@@ -910,8 +992,10 @@ public class Utilities {
 	 * Generate SHA-256 from string data
 	 *
 	 * @param data
-	 * @return
+	 *            text to hash, encoded as UTF-8
+	 * @return SHA-256 hash
 	 * @throws Exception
+	 *             if the hash algorithm is not available
 	 */
 	public static byte[] getSHA256Hash(final String data) throws Exception {
 		try {
@@ -925,8 +1009,10 @@ public class Utilities {
 	 * Generate SHA-384 from string data
 	 *
 	 * @param data
-	 * @return
+	 *            text to hash, encoded as UTF-8
+	 * @return SHA-384 hash
 	 * @throws Exception
+	 *             if the hash algorithm is not available
 	 */
 	public static byte[] getSHA384Hash(final String data) throws Exception {
 		try {
@@ -940,8 +1026,10 @@ public class Utilities {
 	 * Generate SHA-512 from string data
 	 *
 	 * @param data
-	 * @return
+	 *            text to hash, encoded as UTF-8
+	 * @return SHA-512 hash
 	 * @throws Exception
+	 *             if the hash algorithm is not available
 	 */
 	public static byte[] getSHA512Hash(final String data) throws Exception {
 		try {
@@ -955,7 +1043,8 @@ public class Utilities {
 	 * Get bytearray for list of bytes
 	 *
 	 * @param data
-	 * @return
+	 *            list of bytes
+	 * @return array with the bytes of the list
 	 */
 	public static byte[] getByteArray(final List<Byte> data) {
 		final byte[] returnArray = new byte[data.size()];
@@ -969,7 +1058,8 @@ public class Utilities {
 	 * Get stacktrace as string
 	 *
 	 * @param stackTrace
-	 * @return
+	 *            stacktrace elements, may be null
+	 * @return stacktrace with one element per line, empty for null
 	 */
 	public static String stacktraceToString(final StackTraceElement[] stackTrace) {
 		final StringBuilder returnBuilder = new StringBuilder();
@@ -986,8 +1076,13 @@ public class Utilities {
 	 * Download a file from url
 	 *
 	 * @param url
+	 *            URL of the file
 	 * @param localeDestionationPath
+	 *            local file path to write to
+	 * @param proxy
+	 *            proxy to use, null for a direct connection
 	 * @throws Exception
+	 *             if the download or writing the file fails
 	 */
 	public static void downloadFile(final String url, final String localeDestionationPath, final Proxy proxy) throws Exception {
 		final URLConnection urlConnection = URI.create(url).toURL().openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
@@ -1000,11 +1095,32 @@ public class Utilities {
 	}
 
 	/**
+	 * Download a file from url
+	 *
+	 * @param url
+	 *            URL of the file
+	 * @param localeDestionationPath
+	 *            local file path to write to
+	 * @throws Exception
+	 *             if the download or writing the file fails
+	 */
+	public static void downloadFile(final String url, final String localeDestionationPath) throws Exception {
+		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(URI.create(url).toURL().openStream());
+				FileOutputStream fileOutputStream = new FileOutputStream(localeDestionationPath)) {
+			IoUtilities.copy(bufferedInputStream, fileOutputStream);
+		} catch (final Exception e) {
+			throw new Exception("Cannot download file", e);
+		}
+	}
+
+	/**
 	 * Check array for duplicate strings
 	 *
 	 * @param inputArray
+	 *            array to check
 	 * @param ignoreNullValues
-	 * @return
+	 *            do not count multiple null values as duplicates
+	 * @return true if the array contains a duplicate
 	 */
 	public static boolean checkForDuplicates(final String[] inputArray, final boolean ignoreNullValues) {
 		final Set<String> tempSet = new HashSet<>();
@@ -1022,8 +1138,10 @@ public class Utilities {
 	 * Filter all Objects of given class
 	 *
 	 * @param collection
+	 *            items to filter
 	 * @param classToSelect
-	 * @return
+	 *            class of the items to select
+	 * @return list of all items that are instances of the given class
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> List<T> selectItems(final Collection<?> collection, final Class<T> classToSelect) {
@@ -1040,8 +1158,10 @@ public class Utilities {
 	 * Filter all Objects of given class
 	 *
 	 * @param array
+	 *            items to filter
 	 * @param classToSelect
-	 * @return
+	 *            class of the items to select
+	 * @return list of all items that are instances of the given class
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> List<T> selectItems(final Object[] array, final Class<T> classToSelect) {
@@ -1052,6 +1172,15 @@ public class Utilities {
 			}
 		}
 		return list;
+	}
+
+	public static <T> T[] revertArray(final T[] array) {
+		@SuppressWarnings("unchecked")
+		final T[] returnValue = (T[]) new Object[array.length];
+		for (int i = 0; i < array.length; i++) {
+			returnValue[i] = array[array.length - 1 - i];
+		}
+		return returnValue;
 	}
 
 	public static String getDomainFromUrl(final String url) throws Exception {
@@ -1090,7 +1219,9 @@ public class Utilities {
 
 	public static void clear(final char[] array) {
 		if (array != null) {
-			Arrays.fill(array, (char) 0);
+			for (int i = 0; i < array.length; i++) {
+				array[i] = 0;
+			}
 		}
 	}
 
@@ -1134,6 +1265,11 @@ public class Utilities {
 	/**
 	 * XMLStreamReader.close() doesn't close the underlying stream.
 	 * So it must be closed separately.
+	 *
+	 * @param closeable
+	 *            XMLStreamReader to close, may be null
+	 * @param inputStream
+	 *            underlying stream to close, may be null
 	 */
 	public static void closeQuietly(final XMLStreamReader closeable, final InputStream inputStream) {
 		if (closeable != null) {
@@ -1188,29 +1324,6 @@ public class Utilities {
 		}
 	}
 
-	public static String join(final char[] array, String glue) {
-		if (array == null) {
-			return null;
-		} else if (array.length == 0) {
-			return "";
-		} else {
-			if (glue == null) {
-				glue = "";
-			}
-
-			String returnValue = "";
-			boolean isFirst = true;
-			for (final char nextChar : array) {
-				if (!isFirst) {
-					returnValue += glue;
-				}
-				returnValue += nextChar;
-				isFirst = false;
-			}
-			return returnValue;
-		}
-	}
-
 	public static String join(final Object[] array, String glue) {
 		if (array == null) {
 			return null;
@@ -1231,6 +1344,29 @@ public class Utilities {
 					object = "";
 				}
 				returnValue.append(object.toString());
+				isFirst = false;
+			}
+			return returnValue.toString();
+		}
+	}
+
+	public static String join(final char[] array, String glue) {
+		if (array == null) {
+			return null;
+		} else if (array.length == 0) {
+			return "";
+		} else {
+			if (glue == null) {
+				glue = "";
+			}
+
+			final StringBuilder returnValue = new StringBuilder();
+			boolean isFirst = true;
+			for (final char nextChar : array) {
+				if (!isFirst) {
+					returnValue.append(glue);
+				}
+				returnValue.append(nextChar);
 				isFirst = false;
 			}
 			return returnValue.toString();
@@ -1321,11 +1457,13 @@ public class Utilities {
 	}
 
 	/**
-	 * Append blanks at the left of a string to make if fit the given minimum
+	 * Prepend blanks at the left of a string to make it fit the given minimum length
 	 *
-	 * @param escapedValue
-	 * @param i
-	 * @return
+	 * @param value
+	 *            string to pad
+	 * @param minimumLength
+	 *            minimum length of the result
+	 * @return padded string, unchanged if it is already long enough
 	 */
 	public static String leftPad(final String value, final int minimumLength) {
 		try {
@@ -1349,11 +1487,13 @@ public class Utilities {
 	}
 
 	/**
-	 * Append blanks at the right of a string to make if fit the given minimum
+	 * Append blanks at the right of a string to make it fit the given minimum length
 	 *
-	 * @param escapedValue
-	 * @param i
-	 * @return
+	 * @param value
+	 *            string to pad
+	 * @param minimumLength
+	 *            minimum length of the result
+	 * @return padded string, unchanged if it is already long enough
 	 */
 	public static String rightPad(final String value, final int minimumLength) {
 		try {
@@ -1365,17 +1505,21 @@ public class Utilities {
 
 	/**
 	 * Only trim the value when the surrounding occurs on both ends
+	 *
 	 * @param value
-	 * @param prefix
-	 * @return
+	 *            string to trim
+	 * @param surrounding
+	 *            text to remove at the start and the end
+	 * @return trimmed string, or the unchanged value if it does not start and end with the surrounding
 	 */
-	public static String trimSimultaneously(final String value, final String sourrounding) {
+	public static String trimSimultaneously(final String value, final String surrounding) {
 		if (value == null) {
 			return null;
-		} else if (isEmpty(sourrounding)) {
+		} else if (isEmpty(surrounding)) {
 			return value;
-		} else if (value.length() >= sourrounding.length() * 2 && value.startsWith(sourrounding) && value.endsWith(sourrounding)) {
-			return value.substring(sourrounding.length(), value.length() - sourrounding.length());
+		} else if (value.length() >= surrounding.length() * 2 && value.startsWith(surrounding) && value.endsWith(surrounding)) {
+			// Length check: a single '"' starts and ends with '"', but must not be trimmed (substring would fail)
+			return value.substring(surrounding.length(), value.length() - surrounding.length());
 		} else {
 			return value;
 		}
@@ -1408,7 +1552,7 @@ public class Utilities {
 	public static Object toString(final Reader characterStream) throws IOException {
 		final StringBuilder returnValue = new StringBuilder();
 		int characterInt;
-		while ((characterInt = characterStream.read()) != EOF) {
+		while ((characterInt = characterStream.read()) > -1) {
 			returnValue.append((char) characterInt);
 		}
 		return returnValue.toString();
@@ -1445,9 +1589,7 @@ public class Utilities {
 
 	public static String shortenStringToMaxLengthCutRight(final String value, final int maxLength, final String cutSign) {
 		if (value != null && value.length() > maxLength) {
-			final int cutSignLength = cutSign == null ? 0 : cutSign.length();
-			final int keepLength = Math.max(0, maxLength - cutSignLength);
-			return value.substring(0, keepLength) + (cutSign == null ? "" : cutSign);
+			return value.substring(0, maxLength - 4) + cutSign;
 		} else {
 			return value;
 		}
@@ -1513,7 +1655,7 @@ public class Utilities {
 			return false;
 		} else if (suffix == null) {
 			// suffix is null but data is not
-			return false;
+			return true;
 		} else if (data.toLowerCase().endsWith(suffix.toLowerCase())) {
 			// both are set, so ignore the case for standard endsWith-method
 			return true;
@@ -1595,7 +1737,12 @@ public class Utilities {
 
 	public static boolean delete(final File file) {
 		if (file.isDirectory()) {
-			for (final File subFile : file.listFiles()) {
+			// listFiles() returns null if the directory cannot be read, so its content cannot be deleted either
+			final File[] subFiles = file.listFiles();
+			if (subFiles == null) {
+				return false;
+			}
+			for (final File subFile : subFiles) {
 				if (!delete(subFile)) {
 					return false;
 				}
@@ -1639,11 +1786,13 @@ public class Utilities {
 	}
 
 	/**
-	 * Check whether an iterable collection contains a special object
+	 * Check whether an iterable collection contains a special object. Items are compared by identity (==), not by equals().
 	 *
 	 * @param hayshack
+	 *            items to search in
 	 * @param needle
-	 * @return
+	 *            object to search for
+	 * @return true if the object is contained
 	 */
 	public static boolean containsObject(final Iterable<?> hayshack, final Object needle) {
 		for (final Object item : hayshack) {
@@ -1654,15 +1803,22 @@ public class Utilities {
 		return false;
 	}
 
-	public static String replaceUsersHome(final String filePath) {
+	public static String replaceUsersHome(String filePath) {
 		if (filePath == null) {
 			return filePath;
 		}
 		final String homePath = System.getProperty("user.home");
+
+		// "~" only stands for the home directory at the start of the path, otherwise it is a normal file name character
+		if ("~".equals(filePath)) {
+			filePath = homePath;
+		} else if (filePath.startsWith("~/") || filePath.startsWith("~" + File.separator)) {
+			filePath = homePath + filePath.substring(1);
+		}
+
 		return filePath
-				.replace("~", homePath)
-				.replace("$HOME", homePath)
-				.replace("${HOME}", homePath);
+				.replace("${HOME}", homePath)
+				.replace("$HOME", homePath);
 	}
 
 	public static String replaceUsersHomeByTilde(final String filePath) {
@@ -1670,7 +1826,15 @@ public class Utilities {
 			return filePath;
 		}
 		final String homePath = System.getProperty("user.home");
-		return filePath.replace(homePath, "~");
+
+		// Only a complete leading home path is replaced, so "/home/user2" is not changed to "~2" for home "/home/user"
+		if (filePath.equals(homePath)) {
+			return "~";
+		} else if (filePath.startsWith(homePath + "/") || filePath.startsWith(homePath + File.separator)) {
+			return "~" + filePath.substring(homePath.length());
+		} else {
+			return filePath;
+		}
 	}
 
 	public static String getUsersDefaultDownloadDirectory() {
@@ -1764,7 +1928,7 @@ public class Utilities {
 		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
 		final String[] returnParts = text.split(splitRegex, limit);
 		for (int i = 0; i < returnParts.length; i++) {
-			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, delimiterCharString);
+			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
 		}
 		return returnParts;
 	}
@@ -1775,7 +1939,7 @@ public class Utilities {
 		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
 		final String[] returnParts = text.split(splitRegex);
 		for (int i = 0; i < returnParts.length; i++) {
-			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, delimiterCharString);
+			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
 		}
 		return returnParts;
 	}
@@ -1933,7 +2097,9 @@ public class Utilities {
 	 * Those are fixed by this keystore copy job to also behave in the intended way to show their certificates when openend with null password.
 	 *
 	 * @param keyStoreFileWithNullPassword
+	 *            PKCS12 keystore file with blank password, replaced by a JKS keystore; files with another password stay unchanged
 	 * @throws Exception
+	 *             if the keystore cannot be converted or written
 	 */
 	public static void convertPkcs12TrustStoreToJKS(final File keyStoreFileWithNullPassword) throws Exception {
 		final KeyStore readKeyStore = KeyStore.getInstance("PKCS12");
@@ -1960,11 +2126,17 @@ public class Utilities {
 	/**
 	 * Fix the encoding of a String if it was stored in UTF-8 encoding but decoded with ISO-8859-1 encoding
 	 *
-	 * Examples of byte data of wrongly encoded Umlauts and other special characters:
-	 *	Ä: [-61, -124]
-	 *	ä: [-61, -92]
-	 *	ß: [-61, -97]
-	 *	è: [-61, -88]
+	 * <p>Examples of byte data of wrongly encoded Umlauts and other special characters:</p>
+	 * <pre>
+	 * Ä: [-61, -124]
+	 * ä: [-61, -92]
+	 * ß: [-61, -97]
+	 * è: [-61, -88]
+	 * </pre>
+	 *
+	 * @param comment
+	 *            text to fix
+	 * @return text decoded as UTF-8 if a wrong encoding was detected, otherwise the unchanged text
 	 */
 	public static String fixStringEncodingIfNeeded(final String comment) {
 		boolean wrongEncodingDetected = false;
@@ -1996,16 +2168,17 @@ public class Utilities {
 	public static <T> boolean arrayContains(final T[] dataArray, final T[] searchArray) {
 		if (dataArray == null || searchArray == null || dataArray.length < searchArray.length) {
 			return false;
+		} else if (searchArray.length == 0) {
+			return true;
 		} else {
-			for (int i = 0; i < dataArray.length; i++){
-				for (int j = 0; j < searchArray.length; j++){
-					if (dataArray[i + j] == searchArray[j]) {
-						if (j == searchArray.length - 1) {
-							return true;
-						}
-					} else {
-						break;
-					}
+			// Only start positions where the whole searchArray still fits into dataArray
+			for (int i = 0; i <= dataArray.length - searchArray.length; i++) {
+				int matchingItems = 0;
+				while (matchingItems < searchArray.length && Objects.equals(dataArray[i + matchingItems], searchArray[matchingItems])) {
+					matchingItems++;
+				}
+				if (matchingItems == searchArray.length) {
+					return true;
 				}
 			}
 			return false;
@@ -2015,19 +2188,60 @@ public class Utilities {
 	public static boolean arrayContains(final byte[] dataArray, final byte[] searchArray) {
 		if (dataArray == null || searchArray == null || dataArray.length < searchArray.length) {
 			return false;
+		} else if (searchArray.length == 0) {
+			return true;
 		} else {
-			for (int i = 0; i < dataArray.length; i++){
-				for (int j = 0; j < searchArray.length; j++){
-					if (dataArray[i + j] == searchArray[j]) {
-						if (j == searchArray.length - 1) {
-							return true;
-						}
-					} else {
-						break;
-					}
+			// Only start positions where the whole searchArray still fits into dataArray
+			for (int i = 0; i <= dataArray.length - searchArray.length; i++) {
+				int matchingItems = 0;
+				while (matchingItems < searchArray.length && dataArray[i + matchingItems] == searchArray[matchingItems]) {
+					matchingItems++;
+				}
+				if (matchingItems == searchArray.length) {
+					return true;
 				}
 			}
 			return false;
+		}
+	}
+
+	/**
+	 * Inserts line breaks, so no line of the text is longer than the maximum line length.
+	 * Existing line breaks are kept and start a new line. Words are not respected, lines are broken at any character.
+	 *
+	 * @param text
+	 *            text to break
+	 * @param maximumLinelength
+	 *            maximum number of characters per line, values less than 1 leave the text unchanged
+	 * @param linebreak
+	 *            line break to insert, for example "\n" or "\r\n" (null means "\n")
+	 * @return text with inserted line breaks, or null for null text
+	 */
+	public static String breakTextToMaximumLinelength(final String text, final int maximumLinelength, String linebreak) {
+		if (linebreak == null) {
+			linebreak = "\n";
+		}
+
+		if (text == null || maximumLinelength < 1) {
+			return text;
+		} else {
+			final StringBuilder returnValue = new StringBuilder(text.length() + text.length() / maximumLinelength * linebreak.length());
+			int currentLineLength = 0;
+			for (final char nextChar : text.toCharArray()) {
+				if (nextChar == '\r' || nextChar == '\n') {
+					// Existing line break starts a new line
+					currentLineLength = 0;
+				} else {
+					if (currentLineLength >= maximumLinelength) {
+						returnValue.append(linebreak);
+						currentLineLength = 0;
+					}
+					currentLineLength++;
+				}
+				returnValue.append(nextChar);
+			}
+
+			return returnValue.toString();
 		}
 	}
 
@@ -2097,10 +2311,6 @@ public class Utilities {
 						break;
 					case 'f':
 						unescapedTextBuilder.append('\f');
-						i++;
-						break;
-					case ' ':
-						unescapedTextBuilder.append(' ');
 						i++;
 						break;
 					case '\\':
@@ -2175,6 +2385,10 @@ public class Utilities {
 	 * Escape a text for use as a value in a .properties file.
 	 * Only escapes that are valid for java.util.Properties are used.
 	 * Double quotes have no special meaning in properties files and are not escaped.
+	 *
+	 * @param text
+	 *            text to escape
+	 * @return escaped text, non-ASCII and control characters as unicode escapes
 	 */
 	public static String escapePropertiesString(final String text) {
 		final StringBuilder escapedTextBuilder = new StringBuilder();
@@ -2332,8 +2546,6 @@ public class Utilities {
 	}
 
 	public static <T> List<T> getListForEnumeration(final Enumeration<T> enumeration) {
-		final List<T> list = new ArrayList<>();
-		Collections.list(enumeration);
-		return list;
+		return Collections.list(enumeration);
 	}
 }
