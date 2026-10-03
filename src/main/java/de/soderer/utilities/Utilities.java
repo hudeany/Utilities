@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URL;
@@ -771,54 +772,70 @@ public class Utilities {
 	 */
 	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignifiantDigits, final boolean keepTrailingZeros, final Locale locale) {
 		final int unit = siUnits ? 1000 : 1024;
-		double interimValue = value.doubleValue();
-		String unitExtension = "";
-		if (interimValue < unit) {
-			if (isNotBlank(unitTypeSign)) {
-				unitExtension = " " + unitTypeSign;
-			}
+		final double doubleValue = value.doubleValue();
 
-			if (value instanceof Integer || value instanceof Long) {
-				return value + unitExtension;
-			}
-		} else {
-			final int exp = (int) (Math.log(interimValue) / Math.log(unit));
-			unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (siUnits ? "" : "i");
-			if (isNotBlank(unitTypeSign)) {
-				unitExtension += unitTypeSign;
-			}
-			interimValue = interimValue / Math.pow(unit, exp);
+		if (doubleValue < unit && (value instanceof Integer || value instanceof Long)) {
+			return value + getHumanReadableUnitExtension(0, unitTypeSign, siUnits);
 		}
+
+		int exponent = 0;
+		if (doubleValue >= unit && !Double.isInfinite(doubleValue)) {
+			// "E" is the largest available unit prefix
+			exponent = Math.min((int) (Math.log(doubleValue) / Math.log(unit)), HUMAN_READABLE_MAX_EXPONENT);
+		}
+		double interimValue = doubleValue / Math.pow(unit, exponent);
 
 		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
-		DecimalFormat numberFormat;
-		if (keepTrailingZeros) {
-			if (interimValue >= 1000) {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 4), decimalFormatSymbols);
-			} else if (interimValue >= 100) {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 3), decimalFormatSymbols);
-			} else if (interimValue >= 10) {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 2), decimalFormatSymbols);
-			} else if (interimValue >= 1) {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits - 1), decimalFormatSymbols);
-			} else {
-				numberFormat = new DecimalFormat("#0." + repeat("0", amountOfSignifiantDigits), decimalFormatSymbols);
+		DecimalFormat numberFormat = createHumanReadableNumberFormat(interimValue, amountOfSignifiantDigits, keepTrailingZeros, decimalFormatSymbols);
+
+		if (!Double.isNaN(interimValue) && !Double.isInfinite(interimValue)) {
+			// Rounding may carry over into the next decade or even the next unit prefix (e.g. 999.96 -> "1000.0"),
+			// so the format is chosen by the rounded value instead of the raw value
+			double roundedValue = new BigDecimal(interimValue).setScale(numberFormat.getMaximumFractionDigits(), numberFormat.getRoundingMode()).doubleValue();
+			if (roundedValue >= unit && exponent < HUMAN_READABLE_MAX_EXPONENT) {
+				exponent++;
+				interimValue = doubleValue / Math.pow(unit, exponent);
+				roundedValue = roundedValue / unit;
 			}
-		} else {
-			if (interimValue >= 1000) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 5), decimalFormatSymbols);
-			} else if (interimValue >= 100) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 4), decimalFormatSymbols);
-			} else if (interimValue >= 10) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 3), decimalFormatSymbols);
-			} else if (interimValue >= 1) {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 2), decimalFormatSymbols);
-			} else {
-				numberFormat = new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - 1), decimalFormatSymbols);
-			}
+			numberFormat = createHumanReadableNumberFormat(roundedValue, amountOfSignifiantDigits, keepTrailingZeros, decimalFormatSymbols);
 		}
 
-		return numberFormat.format(interimValue) + unitExtension;
+		return numberFormat.format(interimValue) + getHumanReadableUnitExtension(exponent, unitTypeSign, siUnits);
+	}
+
+	/** Index of the largest unit prefix "E" in "kMGTPE" (1-based exponent) */
+	private static final int HUMAN_READABLE_MAX_EXPONENT = 6;
+
+	private static String getHumanReadableUnitExtension(final int exponent, final String unitTypeSign, final boolean siUnits) {
+		if (exponent == 0) {
+			return isNotBlank(unitTypeSign) ? " " + unitTypeSign : "";
+		} else {
+			return " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1) + (siUnits ? "" : "i") + (isNotBlank(unitTypeSign) ? unitTypeSign : "");
+		}
+	}
+
+	private static DecimalFormat createHumanReadableNumberFormat(final double magnitudeValue, final int amountOfSignifiantDigits, final boolean keepTrailingZeros, final DecimalFormatSymbols decimalFormatSymbols) {
+		final int integerDigits;
+		if (magnitudeValue >= 1000) {
+			integerDigits = 4;
+		} else if (magnitudeValue >= 100) {
+			integerDigits = 3;
+		} else if (magnitudeValue >= 10) {
+			integerDigits = 2;
+		} else if (magnitudeValue >= 1) {
+			integerDigits = 1;
+		} else {
+			integerDigits = 0;
+		}
+
+		if (keepTrailingZeros) {
+			final int fractionDigits = amountOfSignifiantDigits - integerDigits;
+			// Pattern "#0." would always show the decimal separator, e.g. "1000,"
+			return new DecimalFormat(fractionDigits > 0 ? "#0." + repeat("0", fractionDigits) : "#0", decimalFormatSymbols);
+		} else {
+			// At least one decimal is always shown, further ones only up to the amount of significant digits
+			return new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - integerDigits - 1), decimalFormatSymbols);
+		}
 	}
 
 	public static float parseHumanReadableNumber(String value, final String unitTypeSign, final boolean siUnits, final Locale locale) {

@@ -324,7 +324,8 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable11() {
 		try {
-			final String result = Utilities.getHumanReadableNumber(10000, "Unit", false, 5, false, Locale.GERMAN);
+			// 10000 / 1024 = 9.765625, rounded to 4 significant digits
+			final String result = Utilities.getHumanReadableNumber(10000, "Unit", false, 4, false, Locale.GERMAN);
 			Assert.assertEquals("9,766 KiUnit", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
@@ -394,8 +395,64 @@ public class UtilitiesTest {
 	@Test
 	public void testHumanReadable12() {
 		try {
+			// 5 significant digits with keepTrailingZeros = true pads 1.116 to 1.1160
 			final String result = Utilities.getHumanReadableNumber(1116, null, true, 5, true, Locale.GERMAN);
-			Assert.assertEquals("1,116 k", result);
+			Assert.assertEquals("1,1160 k", result);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testHumanReadableRoundingIntoNextSiPrefix() {
+		try {
+			// Rounding of 999.96 to 4 significant digits carries over into the next unit prefix
+			final String result = Utilities.getHumanReadableNumber(999.96, null, true, 4, false, Locale.GERMAN);
+			Assert.assertEquals("1,0 k", result);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testHumanReadableRoundingIntoNextBinaryPrefix() {
+		try {
+			// 1048575 B = 1023.999 KiB, rounding carries over into the next binary unit prefix
+			final String result = Utilities.getHumanReadableNumber(1048575, "B", false, 4, false, Locale.GERMAN);
+			Assert.assertEquals("1,0 MiB", result);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testHumanReadableRoundingIntoNextDecade() {
+		try {
+			// 9.9996 rounds to 10, so only 2 decimals remain for 4 significant digits
+			final String result = Utilities.getHumanReadableNumber(9.9996, null, true, 4, true, Locale.GERMAN);
+			Assert.assertEquals("10,00", result);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testHumanReadableNoTrailingDecimalSeparator() {
+		try {
+			// No decimal digits left for 4 significant digits, so no trailing decimal separator
+			final String result = Utilities.getHumanReadableNumber(1000.0, "B", false, 4, true, Locale.GERMAN);
+			Assert.assertEquals("1000 B", result);
+		} catch (final Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testHumanReadableLargestUnitPrefix() {
+		try {
+			// "E" is the largest unit prefix, larger values must not fail
+			final String result = Utilities.getHumanReadableNumber(1e21, null, true, 5, false, Locale.GERMAN);
+			Assert.assertEquals("1000,0 E", result);
 		} catch (final Exception e) {
 			Assert.fail(e.getMessage());
 		}
