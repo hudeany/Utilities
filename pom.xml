@@ -180,7 +180,7 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>proxyautoconfig</artifactId>
-			<version>26.1.2</version>
+			<version>26.1.3</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
