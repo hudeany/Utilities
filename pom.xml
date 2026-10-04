@@ -185,12 +185,12 @@
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>network</artifactId>
-			<version>26.0.33</version>
+			<version>26.0.34</version>
 		</dependency>
 		<dependency>
 			<groupId>de.soderer</groupId>
 			<artifactId>dkim</artifactId>
-			<version>26.1.2</version>
+			<version>26.1.3</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/log4j/log4j -->
