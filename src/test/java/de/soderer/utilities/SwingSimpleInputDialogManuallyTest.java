@@ -1,7 +1,8 @@
 package de.soderer.utilities;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import org.junit.jupiter.api.Test;
 
 import de.soderer.utilities.swing.CredentialsDialog;
 import de.soderer.utilities.swing.MultiInputDialog;
@@ -27,7 +28,7 @@ public class SwingSimpleInputDialogManuallyTest {
 			}
 			new SimpleInputDialog(null, "Test Title", bigText).open();
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

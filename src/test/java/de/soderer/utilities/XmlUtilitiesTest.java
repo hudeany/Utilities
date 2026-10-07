@@ -1,7 +1,9 @@
 package de.soderer.utilities;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import org.junit.jupiter.api.Test;
 
 import de.soderer.utilities.xml.XmlUtilities;
 
@@ -12,9 +14,9 @@ public class XmlUtilitiesTest {
 		try {
 			final String testString = "<abc def=\"123\">ghi</abc>";
 			final String resultString = XmlUtilities.removeFrameTag(testString);
-			Assert.assertEquals("ghi", resultString);
+			assertEquals("ghi", resultString);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

@@ -1,5 +1,11 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.File;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
@@ -10,12 +16,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import de.soderer.utilities.TestSecureDataStoreEntry.TestEnum;
 import de.soderer.utilities.code.ClassUtilities;
 
+@SuppressWarnings("static-method")
 public class SecureDataStoreTest {
 	public static final String TEST_PASSWORD = "test@PasswordÄÖÜäöüß";
 
@@ -112,19 +118,19 @@ public class SecureDataStoreTest {
 			testKeyStore_ForLoad.load(testStoreFile, TEST_PASSWORD.toCharArray());
 
 			final Set<String> loadedSecureDataEntryNames = testKeyStore_ForLoad.getEntryNames(TestSecureDataStoreEntry.class);
-			Assert.assertEquals(1, loadedSecureDataEntryNames.size());
-			Assert.assertTrue(loadedSecureDataEntryNames.contains(TEST_ENTRYNAME));
+			assertEquals(1, loadedSecureDataEntryNames.size());
+			assertTrue(loadedSecureDataEntryNames.contains(TEST_ENTRYNAME));
 
 			final TestSecureDataStoreEntry loadedSecureDataEntry = testKeyStore_ForLoad.getEntry(TestSecureDataStoreEntry.class, TEST_ENTRYNAME);
-			assertEquals(secureDataEntry, loadedSecureDataEntry);
+			assertTestSecureDataStoreEntryEquals(secureDataEntry, loadedSecureDataEntry);
 
 			try {
 				new SecureDataStore().load(testStoreFile, "abc".toCharArray());
-				Assert.fail("Missing expected exception");
+				fail("Missing expected exception");
 			} catch (final WrongPasswordException e) {
-				Assert.assertNull(e.getMessage());
+				assertNull(e.getMessage());
 			} catch (final Exception e) {
-				Assert.fail("Other than expected exception: " + e.getClass() + ": " + e.getMessage());
+				fail("Other than expected exception: " + e.getClass() + ": " + e.getMessage());
 			}
 		} finally {
 			if (testStoreFile.exists()) {
@@ -133,75 +139,33 @@ public class SecureDataStoreTest {
 		}
 	}
 
-	private void assertEquals(final TestSecureDataStoreEntry expectedObject, final TestSecureDataStoreEntry actualObject) throws Exception {
+	private static void assertTestSecureDataStoreEntryEquals(final TestSecureDataStoreEntry expectedObject, final TestSecureDataStoreEntry actualObject) throws Exception {
 		if (expectedObject != actualObject) {
 			assertArrayEquals(expectedObject.valueBooleanPrimitiveArray, actualObject.valueBooleanPrimitiveArray);
-			Assert.assertArrayEquals(expectedObject.valueBytePrimitiveArray, actualObject.valueBytePrimitiveArray);
-			Assert.assertArrayEquals(expectedObject.valueShortPrimitiveArray, actualObject.valueShortPrimitiveArray);
-			Assert.assertArrayEquals(expectedObject.valueIntegerPrimitiveArray, actualObject.valueIntegerPrimitiveArray);
-			Assert.assertArrayEquals(expectedObject.valueLongPrimitiveArray, actualObject.valueLongPrimitiveArray);
+			assertArrayEquals(expectedObject.valueBytePrimitiveArray, actualObject.valueBytePrimitiveArray);
+			assertArrayEquals(expectedObject.valueShortPrimitiveArray, actualObject.valueShortPrimitiveArray);
+			assertArrayEquals(expectedObject.valueIntegerPrimitiveArray, actualObject.valueIntegerPrimitiveArray);
+			assertArrayEquals(expectedObject.valueLongPrimitiveArray, actualObject.valueLongPrimitiveArray);
 			assertArrayEquals(expectedObject.valueFloatPrimitiveArray, actualObject.valueFloatPrimitiveArray);
 			assertArrayEquals(expectedObject.valueDoublePrimitiveArray, actualObject.valueDoublePrimitiveArray);
-			Assert.assertArrayEquals(expectedObject.valueCharacterPrimitiveArray, actualObject.valueCharacterPrimitiveArray);
-			Assert.assertArrayEquals(expectedObject.valueStringArray, actualObject.valueStringArray);
-			Assert.assertArrayEquals(expectedObject.valueDateArray, actualObject.valueDateArray);
-			Assert.assertArrayEquals(expectedObject.valueTestEnumArray, actualObject.valueTestEnumArray);
+			assertArrayEquals(expectedObject.valueCharacterPrimitiveArray, actualObject.valueCharacterPrimitiveArray);
+			assertArrayEquals(expectedObject.valueStringArray, actualObject.valueStringArray);
+			assertArrayEquals(expectedObject.valueDateArray, actualObject.valueDateArray);
+			assertArrayEquals(expectedObject.valueTestEnumArray, actualObject.valueTestEnumArray);
 			for (final Field field : ClassUtilities.getAllFields(TestSecureDataStoreEntry.class)) {
 				field.setAccessible(true);
 				if (field.getType() == TestSecureDataStoreEntry.class) {
-					assertEquals((TestSecureDataStoreEntry) field.get(expectedObject), (TestSecureDataStoreEntry) field.get(actualObject));
+					assertTestSecureDataStoreEntryEquals((TestSecureDataStoreEntry) field.get(expectedObject), (TestSecureDataStoreEntry) field.get(actualObject));
 				} else if (!field.getType().isArray()) {
 					if (field.getType().getComponentType() == TestSecureDataStoreEntry.class) {
 						final TestSecureDataStoreEntry[] expectedArray = (TestSecureDataStoreEntry[]) field.get(expectedObject);
 						final TestSecureDataStoreEntry[] actualArray = (TestSecureDataStoreEntry[]) field.get(actualObject);
-						Assert.assertEquals(expectedArray.length, actualArray.length);
+						assertEquals(expectedArray.length, actualArray.length);
 						for (int i = 0; i < expectedArray.length; i++) {
-							assertEquals(expectedArray[i], actualArray[i]);
+							assertTestSecureDataStoreEntryEquals(expectedArray[i], actualArray[i]);
 						}
 					} else {
-						Assert.assertEquals(field.getName(), field.get(expectedObject), field.get(actualObject));
-					}
-				}
-			}
-		}
-	}
-
-	private static void assertArrayEquals(final boolean[] expectedArray, final boolean[] actualArray) {
-		if (expectedArray != actualArray) {
-			if (expectedArray == null || expectedArray.length != actualArray.length) {
-				Assert.fail();
-			} else {
-				for (int i = 0; i < expectedArray.length; i++) {
-					if (expectedArray[i] != actualArray[i]) {
-						Assert.fail(expectedArray[i] + " != " + actualArray[i]);
-					}
-				}
-			}
-		}
-	}
-
-	private static void assertArrayEquals(final float[] expectedArray, final float[] actualArray) {
-		if (expectedArray != actualArray) {
-			if (expectedArray == null || expectedArray.length != actualArray.length) {
-				Assert.fail();
-			} else {
-				for (int i = 0; i < expectedArray.length; i++) {
-					if (expectedArray[i] != actualArray[i]) {
-						Assert.fail(expectedArray[i] + " != " + actualArray[i]);
-					}
-				}
-			}
-		}
-	}
-
-	private static void assertArrayEquals(final double[] expectedArray, final double[] actualArray) {
-		if (expectedArray != actualArray) {
-			if (expectedArray == null || expectedArray.length != actualArray.length) {
-				Assert.fail();
-			} else {
-				for (int i = 0; i < expectedArray.length; i++) {
-					if (expectedArray[i] != actualArray[i]) {
-						Assert.fail(expectedArray[i] + " != " + actualArray[i]);
+						assertEquals(field.get(expectedObject), field.get(actualObject), field.getName());
 					}
 				}
 			}

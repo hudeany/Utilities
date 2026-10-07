@@ -1,10 +1,12 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PropertiesWriterTest {
 	@SuppressWarnings("static-method")
@@ -31,9 +33,9 @@ public class PropertiesWriterTest {
 					+ "key4=value 4\n"
 					+ "key5=\\ value 5 \n";
 
-			Assert.assertEquals(dataExpected, data);
+			assertEquals(dataExpected, data);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

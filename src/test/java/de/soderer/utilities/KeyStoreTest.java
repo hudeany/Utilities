@@ -1,5 +1,7 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -9,8 +11,7 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import de.soderer.utilities.crypto.CryptographicUtilities;
 
@@ -35,16 +36,16 @@ public class KeyStoreTest {
 			writeKeyStore.store(outputStream, null);
 		}
 
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
 
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, null));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, null));
 
 		Utilities.convertPkcs12TrustStoreToJKS(new File(tempJksFilePath));
 
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
 
 		// This is the problem case of unfixed trustore with empty password
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, null));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, null));
 
 		new File(tempJksFilePath).delete();
 	}
@@ -67,17 +68,17 @@ public class KeyStoreTest {
 			writeKeyStore.store(outputStream, "".toCharArray());
 		}
 
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
 
 		// This is the problem case of unfixed trustore with empty password
-		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
+		assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
 
 		Utilities.convertPkcs12TrustStoreToJKS(new File(tempJksFilePath));
 
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, ""));
 
 		// This is the problem case of unfixed trustore with empty password
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, null));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, null));
 
 		new File(tempJksFilePath).delete();
 	}
@@ -101,13 +102,13 @@ public class KeyStoreTest {
 			writeKeyStore.store(outputStream, "test".toCharArray());
 		}
 
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, "test"));
-		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, "test"));
+		assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
 
 		Utilities.convertPkcs12TrustStoreToJKS(new File(tempJksFilePath));
 
-		Assert.assertEquals(1, getTrustStoreSize(tempJksFilePath, "test"));
-		Assert.assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
+		assertEquals(1, getTrustStoreSize(tempJksFilePath, "test"));
+		assertEquals(0, getTrustStoreSize(tempJksFilePath, null));
 
 		new File(tempJksFilePath).delete();
 	}

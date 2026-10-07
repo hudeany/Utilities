@@ -1,11 +1,13 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("static-method")
 public class PropertiesReaderTest {
@@ -30,18 +32,18 @@ public class PropertiesReaderTest {
 				comments = propertiesReader.getComments();
 			}
 
-			Assert.assertEquals("value 1", properties.get("key1"));
-			Assert.assertEquals("Valü 2", properties.get("key2"));
-			Assert.assertEquals("value 3 ", properties.get("key3"));
-			Assert.assertEquals("value 41 value 42", properties.get("key4"));
-			Assert.assertEquals("value5\n", properties.get("key5"));
-			Assert.assertEquals("value6", properties.get("key6"));
-			Assert.assertEquals(" value7 ", properties.get("key7"));
+			assertEquals("value 1", properties.get("key1"));
+			assertEquals("Valü 2", properties.get("key2"));
+			assertEquals("value 3 ", properties.get("key3"));
+			assertEquals("value 41 value 42", properties.get("key4"));
+			assertEquals("value5\n", properties.get("key5"));
+			assertEquals("value6", properties.get("key6"));
+			assertEquals(" value7 ", properties.get("key7"));
 
-			Assert.assertEquals("Comment for key3", comments.get("key3"));
-			Assert.assertEquals("Comment for key5\nComment line2 for key5", comments.get("key5"));
+			assertEquals("Comment for key3", comments.get("key3"));
+			assertEquals("Comment for key5\nComment line2 for key5", comments.get("key5"));
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -54,9 +56,9 @@ public class PropertiesReaderTest {
 				properties = propertiesReader.read();
 			}
 
-			Assert.assertEquals("C:\\My Dir", properties.get("key1"));
+			assertEquals("C:\\My Dir", properties.get("key1"));
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

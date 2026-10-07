@@ -1,7 +1,8 @@
 package de.soderer.utilities;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("static-method")
 public class VersionTest {
@@ -10,8 +11,8 @@ public class VersionTest {
 		final Version versionOld = new Version("19.0.9");
 		final Version versionNew = new Version("19.0.10");
 
-		Assert.assertEquals(0, versionOld.compareTo(versionOld));
-		Assert.assertEquals(-1, versionOld.compareTo(versionNew));
-		Assert.assertEquals(1, versionNew.compareTo(versionOld));
+		assertEquals(0, versionOld.compareTo(versionOld));
+		assertEquals(-1, versionOld.compareTo(versionNew));
+		assertEquals(1, versionNew.compareTo(versionOld));
 	}
 }

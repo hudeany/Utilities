@@ -1,11 +1,12 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("static-method")
 public class ConfigurationPropertiesTest {
@@ -23,8 +24,8 @@ public class ConfigurationPropertiesTest {
 			testConfigurationProperties.save();
 
 			final ConfigurationProperties testConfigurationProperties_Reloaded = new ConfigurationProperties("jUnitTestApp");
-			Assert.assertEquals(backslashTestValue, testConfigurationProperties_Reloaded.get("myTestValue1"));
-			Assert.assertEquals("__;/src/test/;\\src\\test\\;/bin/;\\bin\\", testConfigurationProperties_Reloaded.get("myTestValue2"));
+			assertEquals(backslashTestValue, testConfigurationProperties_Reloaded.get("myTestValue1"));
+			assertEquals("__;/src/test/;\\src\\test\\;/bin/;\\bin\\", testConfigurationProperties_Reloaded.get("myTestValue2"));
 		} catch (final Exception e) {
 			e.printStackTrace();
 		} finally {
@@ -51,9 +52,9 @@ public class ConfigurationPropertiesTest {
 
 			final ConfigurationProperties testConfigurationProperties_Reloaded = new ConfigurationProperties("jUnitTestApp");
 			final List<String> reloadedList = testConfigurationProperties_Reloaded.getList("myTestValueList");
-			Assert.assertEquals(2, reloadedList.size());
-			Assert.assertEquals(backslashTestValue, reloadedList.get(0));
-			Assert.assertEquals(backslashTestValue, reloadedList.get(1));
+			assertEquals(2, reloadedList.size());
+			assertEquals(backslashTestValue, reloadedList.get(0));
+			assertEquals(backslashTestValue, reloadedList.get(1));
 		} catch (final Exception e) {
 			e.printStackTrace();
 		} finally {

@@ -1,16 +1,18 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("static-method")
 public class QuotedPrintableCodecTest {
 	@Test
 	public void testEncode() {
 		try {
-			Assert.assertEquals(
+			assertEquals(
 					"=61=62=63=64=65=66=67=68=69=6A=6B=6C=6D=6E=6F=70=71=72=73=74=75=76=77=\n"
 							+ "=78=79=7A=41=42=43=44=45=46=47=48=49=4A=4B=4C=4D=4E=4F=50=51=52=53=54=\n"
 							+ "=55=56=57=58=59=5A=30=31=32=33=34=35=36=37=38=39=20=C3=A4=C3=B6=C3=BC=\n"
@@ -21,19 +23,19 @@ public class QuotedPrintableCodecTest {
 							QuotedPrintableCodec.encode(TextUtilities.GERMAN_TEST_STRING + "Linebreak\r\nTab\tx", StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
 	@Test
 	public void testDecodeEncoded() {
 		try {
-			Assert.assertEquals(
+			assertEquals(
 					TextUtilities.GERMAN_TEST_STRING + "Linebreak\r\nTab\tx",
 					QuotedPrintableCodec.decode(QuotedPrintableCodec.encode(TextUtilities.GERMAN_TEST_STRING + "Linebreak\r\nTab\tx", StandardCharsets.UTF_8), StandardCharsets.UTF_8));
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

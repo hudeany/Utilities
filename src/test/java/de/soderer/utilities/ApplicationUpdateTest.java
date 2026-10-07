@@ -1,7 +1,9 @@
 package de.soderer.utilities;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import org.junit.jupiter.api.Test;
 
 import de.soderer.utilities.appupdate.ApplicationUpdateUtilities;
 
@@ -22,9 +24,9 @@ public class ApplicationUpdateTest {
 					null,
 					false,
 					false);
-			Assert.assertEquals(true, result);
+			assertEquals(true, result);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -43,9 +45,9 @@ public class ApplicationUpdateTest {
 					null,
 					false,
 					false);
-			Assert.assertEquals(true, result);
+			assertEquals(true, result);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

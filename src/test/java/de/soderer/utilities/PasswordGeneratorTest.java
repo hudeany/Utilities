@@ -1,10 +1,12 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("static-method")
 public class PasswordGeneratorTest {
@@ -18,9 +20,9 @@ public class PasswordGeneratorTest {
 			groups.add(new PasswordGeneratorCharacterGroup(1, 99, "!§$%&?*+-/".toCharArray()));
 
 			final String password = new String(PasswordGenerator.generatePassword(groups, 10, 10));
-			Assert.assertTrue(password.length() == 10);
+			assertTrue(password.length() == 10);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -34,13 +36,13 @@ public class PasswordGeneratorTest {
 			groups.add(new PasswordGeneratorCharacterGroup(1, 99, "!".toCharArray()));
 
 			final String password = new String(PasswordGenerator.generatePassword(groups, 4, 4));
-			Assert.assertTrue(password.length() == 4);
-			Assert.assertTrue(password.contains("a"));
-			Assert.assertTrue(password.contains("A"));
-			Assert.assertTrue(password.contains("0"));
-			Assert.assertTrue(password.contains("!"));
+			assertTrue(password.length() == 4);
+			assertTrue(password.contains("a"));
+			assertTrue(password.contains("A"));
+			assertTrue(password.contains("0"));
+			assertTrue(password.contains("!"));
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

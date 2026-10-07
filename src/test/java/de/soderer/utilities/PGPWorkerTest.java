@@ -1,13 +1,17 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
 import org.bouncycastle.openpgp.PGPSecretKey;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import de.soderer.utilities.crypto.PGPFileDecryptionWorker;
 import de.soderer.utilities.crypto.PGPFileEncryptionWorker;
@@ -59,7 +63,7 @@ public class PGPWorkerTest {
 
 			if (encryptionWorker.getError() != null) {
 				encryptionWorker.getError().printStackTrace();
-				Assert.fail(encryptionWorker.getError().getMessage());
+				fail(encryptionWorker.getError().getMessage());
 			}
 
 			final byte[] encryptedData = out.toByteArray();
@@ -72,14 +76,14 @@ public class PGPWorkerTest {
 
 			if (decryptionWorker.getError() != null) {
 				decryptionWorker.getError().printStackTrace();
-				Assert.fail(decryptionWorker.getError().getMessage());
+				fail(decryptionWorker.getError().getMessage());
 			}
 
 			final byte[] decryptedData = out.toByteArray();
-			Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
+			assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -97,7 +101,7 @@ public class PGPWorkerTest {
 
 			if (signatureWorker1.getError() != null) {
 				signatureWorker1.getError().printStackTrace();
-				Assert.fail(signatureWorker1.getError().getMessage());
+				fail(signatureWorker1.getError().getMessage());
 			}
 
 			final byte[] signature1 = signatureWorker1.get();
@@ -109,7 +113,7 @@ public class PGPWorkerTest {
 
 			if (signatureWorker2.getError() != null) {
 				signatureWorker2.getError().printStackTrace();
-				Assert.fail(signatureWorker2.getError().getMessage());
+				fail(signatureWorker2.getError().getMessage());
 			}
 
 			// Check first valid signature
@@ -121,10 +125,10 @@ public class PGPWorkerTest {
 
 			if (verificationWorker1.getError() != null) {
 				verificationWorker1.getError().printStackTrace();
-				Assert.fail(verificationWorker1.getError().getMessage());
+				fail(verificationWorker1.getError().getMessage());
 			}
 
-			Assert.assertTrue(verificationWorker1.get());
+			assertTrue(verificationWorker1.get());
 
 			// Check second invalid signature
 			signatureInputStream.reset();
@@ -135,13 +139,13 @@ public class PGPWorkerTest {
 
 			if (verificationWorker2.getError() != null) {
 				verificationWorker2.getError().printStackTrace();
-				Assert.fail(verificationWorker2.getError().getMessage());
+				fail(verificationWorker2.getError().getMessage());
 			}
 
-			Assert.assertFalse(verificationWorker2.get());
+			assertFalse(verificationWorker2.get());
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -165,7 +169,7 @@ public class PGPWorkerTest {
 
 			if (signatureWorker1.getError() != null) {
 				signatureWorker1.getError().printStackTrace();
-				Assert.fail(signatureWorker1.getError().getMessage());
+				fail(signatureWorker1.getError().getMessage());
 			}
 
 			final byte[] signature1 = signatureWorker1.get();
@@ -177,7 +181,7 @@ public class PGPWorkerTest {
 
 			if (signatureWorker2.getError() != null) {
 				signatureWorker2.getError().printStackTrace();
-				Assert.fail(signatureWorker2.getError().getMessage());
+				fail(signatureWorker2.getError().getMessage());
 			}
 
 			// Check first valid signature
@@ -189,10 +193,10 @@ public class PGPWorkerTest {
 
 			if (verificationWorker1.getError() != null) {
 				verificationWorker1.getError().printStackTrace();
-				Assert.fail(verificationWorker1.getError().getMessage());
+				fail(verificationWorker1.getError().getMessage());
 			}
 
-			Assert.assertTrue(verificationWorker1.get());
+			assertTrue(verificationWorker1.get());
 
 			// Check second invalid signature
 			signatureInputStream.reset();
@@ -203,13 +207,13 @@ public class PGPWorkerTest {
 
 			if (verificationWorker2.getError() != null) {
 				verificationWorker2.getError().printStackTrace();
-				Assert.fail(verificationWorker2.getError().getMessage());
+				fail(verificationWorker2.getError().getMessage());
 			}
 
-			Assert.assertFalse(verificationWorker2.get());
+			assertFalse(verificationWorker2.get());
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -231,7 +235,7 @@ public class PGPWorkerTest {
 
 			if (encryptionWorker.getError() != null) {
 				encryptionWorker.getError().printStackTrace();
-				Assert.fail(encryptionWorker.getError().getMessage());
+				fail(encryptionWorker.getError().getMessage());
 			}
 
 			final byte[] encryptedData = out.toByteArray();
@@ -244,14 +248,14 @@ public class PGPWorkerTest {
 
 			if (decryptionWorker.getError() != null) {
 				decryptionWorker.getError().printStackTrace();
-				Assert.fail(decryptionWorker.getError().getMessage());
+				fail(decryptionWorker.getError().getMessage());
 			}
 
 			final byte[] decryptedData = out.toByteArray();
-			Assert.assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
+			assertArrayEquals(TextUtilities.GERMAN_TEST_STRING.getBytes(StandardCharsets.UTF_8), decryptedData);
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

@@ -1,6 +1,10 @@
 package de.soderer.utilities;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -16,8 +20,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import jakarta.mail.internet.InternetAddress;
 
@@ -39,7 +42,7 @@ public class DateUtilitiesTest {
 					new InternetAddress("test@example.com"),
 					participants);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -49,18 +52,18 @@ public class DateUtilitiesTest {
 			// Format with 'X' may lead to Problem on Dates without TimeZone
 			final GregorianCalendar originalCalendar = new GregorianCalendar();
 			final String resultString = DateUtilities.formatDate("HH X", originalCalendar.getTime());
-			Assert.assertTrue(resultString.startsWith(new DecimalFormat("00").format(originalCalendar.get(Calendar.HOUR_OF_DAY)) + " "));
+			assertTrue(resultString.startsWith(new DecimalFormat("00").format(originalCalendar.get(Calendar.HOUR_OF_DAY)) + " "));
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 
 		try {
 			// Format with 'X' may lead to Problem on Dates without TimeZone
 			final GregorianCalendar originalCalendar = new GregorianCalendar();
 			final String resultString = DateUtilities.formatDate("HH X", originalCalendar.getTime(), ZoneId.of("UTC"));
-			Assert.assertNotNull(resultString);
+			assertNotNull(resultString);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -70,45 +73,45 @@ public class DateUtilitiesTest {
 			final Date originalDate = DateUtilities.parseDateTime("dd.MM.yyyy HH:mm:ss", "01.03.2014 22:11:10");
 			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, ZoneId.of("Europe/Berlin"), ZoneId.of("Z"));
 			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
-			Assert.assertEquals("01.03.2014 21:11:10", resultString);
+			assertEquals("01.03.2014 21:11:10", resultString);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 
 		try {
 			final Date originalDate = DateUtilities.parseDateTime("dd.MM.yyyy HH:mm:ss", "04.12.2022 21:11:10");
 			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, ZoneId.of("Europe/Berlin"), ZoneId.of("Europe/Sofia"));
 			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
-			Assert.assertEquals("04.12.2022 22:11:10", resultString);
+			assertEquals("04.12.2022 22:11:10", resultString);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 
 		try {
 			final Date originalDate = DateUtilities.parseDateTime("dd.MM.yyyy HH:mm:ss", "04.12.2022 21:11:10");
 			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, ZoneId.of("Europe/Berlin"), ZoneId.of("Europe/Dublin"));
 			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
-			Assert.assertEquals("04.12.2022 20:11:10", resultString);
+			assertEquals("04.12.2022 20:11:10", resultString);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 
 		try {
 			final Date originalDate = DateUtilities.parseDateTime("dd.MM.yyyy HH:mm:ss", "04.12.2022 22:11:10");
 			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, TimeZone.getTimeZone("Europe/Sofia"), TimeZone.getTimeZone("Europe/Dublin"));
 			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
-			Assert.assertEquals("04.12.2022 20:11:10", resultString);
+			assertEquals("04.12.2022 20:11:10", resultString);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 
 		try {
 			final Date originalDate = DateUtilities.parseDateTime("dd.MM.yyyy HH:mm:ss", "04.12.2022 22:11:10");
 			final Date rezonedDate = DateUtilities.changeDateTimeZone(originalDate, ZoneId.of("Europe/Sofia"), ZoneId.of("Europe/Dublin"));
 			final String resultString = DateUtilities.formatDate("dd.MM.yyyy HH:mm:ss", rezonedDate);
-			Assert.assertEquals("04.12.2022 20:11:10", resultString);
+			assertEquals("04.12.2022 20:11:10", resultString);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -118,11 +121,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10Z");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
-		Assert.assertEquals(22, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals("Z", resultZonedDateTime.getZone().getId());
+		assertEquals(22, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -131,11 +134,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10+00:00");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
-		Assert.assertEquals(22, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals("Z", resultZonedDateTime.getZone().getId());
+		assertEquals(22, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -144,11 +147,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10+00");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
-		Assert.assertEquals(22, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals("Z", resultZonedDateTime.getZone().getId());
+		assertEquals(22, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -157,11 +160,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
-		Assert.assertEquals(22, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
+		assertEquals(22, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -170,11 +173,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
-		Assert.assertEquals(0, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
+		assertEquals(0, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -183,11 +186,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01+00:00");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
-		Assert.assertEquals(0, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals("Z", resultZonedDateTime.getZone().getId());
+		assertEquals(0, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -196,11 +199,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10.123+00:00");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
-		Assert.assertEquals(22, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals("Z", resultZonedDateTime.getZone().getId());
+		assertEquals(22, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -209,11 +212,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10.123");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
-		Assert.assertEquals(22, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
+		assertEquals(22, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -222,11 +225,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10.123456+00:00");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals("Z", resultZonedDateTime.getZone().getId());
-		Assert.assertEquals(22, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals("Z", resultZonedDateTime.getZone().getId());
+		assertEquals(22, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -235,11 +238,11 @@ public class DateUtilitiesTest {
 		try {
 			resultZonedDateTime = DateUtilities.parseIso8601DateTimeString("2014-03-01T22:11:10.123456");
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
-		Assert.assertNotNull(resultZonedDateTime);
-		Assert.assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
-		Assert.assertEquals(22, resultZonedDateTime.getHour());
+		assertNotNull(resultZonedDateTime);
+		assertEquals(ZoneId.systemDefault().getId(), resultZonedDateTime.getZone().getId()); // "Europe/Berlin"
+		assertEquals(22, resultZonedDateTime.getHour());
 	}
 
 	@Test
@@ -451,7 +454,7 @@ public class DateUtilitiesTest {
 		try {
 			final ZonedDateTime calulationStartDateTime = ZonedDateTime.of(2019, 3, 1, 0, 0, 1, 0, ZoneId.systemDefault());
 			DateUtilities.calculateNextJobStart(calulationStartDateTime, "6Th:0000", null);
-			Assert.fail("Missing expected exception");
+			fail("Missing expected exception");
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			// expected exception
 		}
@@ -459,11 +462,11 @@ public class DateUtilitiesTest {
 
 	@Test
 	public void testIso8601DateTimeFormat() throws Exception {
-		Assert.assertNull(DateUtilities.parseIso8601DateTimeString(null));
-		Assert.assertNull(DateUtilities.parseIso8601DateTimeString(""));
-		Assert.assertNull(DateUtilities.parseIso8601DateTimeString(" "));
-		Assert.assertNull(DateUtilities.parseIso8601DateTimeString("\t"));
-		Assert.assertNull(DateUtilities.parseIso8601DateTimeString("\n"));
+		assertNull(DateUtilities.parseIso8601DateTimeString(null));
+		assertNull(DateUtilities.parseIso8601DateTimeString(""));
+		assertNull(DateUtilities.parseIso8601DateTimeString(" "));
+		assertNull(DateUtilities.parseIso8601DateTimeString("\t"));
+		assertNull(DateUtilities.parseIso8601DateTimeString("\n"));
 
 		assertEquals(ZonedDateTime.of(2008, 10, 31, 0, 0, 0, 0, ZoneId.systemDefault()), DateUtilities.parseIso8601DateTimeString("2008-10-31"));
 		assertEquals(ZonedDateTime.of(2008, 10, 31, 0, 0, 0, 0, ZoneId.of("Z")), DateUtilities.parseIso8601DateTimeString("2008-10-31Z"));

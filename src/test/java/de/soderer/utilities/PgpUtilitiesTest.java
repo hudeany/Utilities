@@ -1,5 +1,8 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,8 +10,7 @@ import java.util.Map;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPSecretKey;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import de.soderer.utilities.crypto.PGPUtilities;
 
@@ -42,9 +44,9 @@ public class PgpUtilitiesTest {
 			for (final Map<String, Object> signerData : PGPUtilities.getKeySigners(pgpSecretKey2.getPublicKey())) {
 				identities.add((String) signerData.get("identity"));
 			}
-			Assert.assertTrue(identities.contains("Test identity1"));
+			assertTrue(identities.contains("Test identity1"));
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }

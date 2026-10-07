@@ -1,10 +1,13 @@
 package de.soderer.utilities;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("static-method")
 public class SqlScriptReaderTest {
@@ -22,18 +25,18 @@ public class SqlScriptReaderTest {
 			input = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
 			sqlScriptReader = new SqlScriptReader(input, StandardCharsets.UTF_8);
 			String nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (1, '')", nextStatement);
+			assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (1, '')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (2, ' abc; -- abc /* Comment */ '' ')", nextStatement);
+			assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (2, ' abc; -- abc /* Comment */ '' ')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (3, 'abc')", nextStatement);
+			assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (3, 'abc')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (4,  'abc')", nextStatement);
+			assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (4,  'abc')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertNull(nextStatement);
+			assertNull(nextStatement);
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		} finally {
 			Utilities.closeQuietly(input);
 			Utilities.closeQuietly(sqlScriptReader);
@@ -49,12 +52,12 @@ public class SqlScriptReaderTest {
 			input = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
 			sqlScriptReader = new SqlScriptReader(input, StandardCharsets.UTF_8);
 			String nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (1, '')", nextStatement);
+			assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (1, '')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertNull(nextStatement);
+			assertNull(nextStatement);
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		} finally {
 			Utilities.closeQuietly(input);
 			Utilities.closeQuietly(sqlScriptReader);
@@ -70,12 +73,12 @@ public class SqlScriptReaderTest {
 			input = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
 			sqlScriptReader = new SqlScriptReader(input, StandardCharsets.UTF_8);
 			String nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (1, '')", nextStatement);
+			assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (1, '')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertNull(nextStatement);
+			assertNull(nextStatement);
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		} finally {
 			Utilities.closeQuietly(input);
 			Utilities.closeQuietly(sqlScriptReader);
@@ -97,14 +100,14 @@ public class SqlScriptReaderTest {
 			input = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
 			sqlScriptReader = new SqlScriptReader(input, StandardCharsets.UTF_8);
 			String nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (1, '')", nextStatement);
+			assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (1, '')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (2, ' abc; -- abc /* Comment */ '' ')", nextStatement);
+			assertEquals("insert into test_tbl (column_integer, column_varchar) VALUES (2, ' abc; -- abc /* Comment */ '' ')", nextStatement);
 			nextStatement = sqlScriptReader.readNextStatement();
-			Assert.assertNull(nextStatement);
+			assertNull(nextStatement);
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		} finally {
 			Utilities.closeQuietly(input);
 			Utilities.closeQuietly(sqlScriptReader);
@@ -120,9 +123,9 @@ public class SqlScriptReaderTest {
 			input = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
 			sqlScriptReader = new SqlScriptReader(input, StandardCharsets.UTF_8);
 			sqlScriptReader.readNextStatement();
-			Assert.fail("Missing expected exception");
+			fail("Missing expected exception");
 		} catch (final Exception e) {
-			Assert.assertEquals("Unclosed sql string", e.getMessage());
+			assertEquals("Unclosed sql string", e.getMessage());
 		} finally {
 			Utilities.closeQuietly(input);
 			Utilities.closeQuietly(sqlScriptReader);
@@ -138,9 +141,9 @@ public class SqlScriptReaderTest {
 			input = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
 			sqlScriptReader = new SqlScriptReader(input, StandardCharsets.UTF_8);
 			sqlScriptReader.readNextStatement();
-			Assert.fail("Missing expected exception");
+			fail("Missing expected exception");
 		} catch (final Exception e) {
-			Assert.assertEquals("Unclosed multiline comment", e.getMessage());
+			assertEquals("Unclosed multiline comment", e.getMessage());
 		} finally {
 			Utilities.closeQuietly(input);
 			Utilities.closeQuietly(sqlScriptReader);

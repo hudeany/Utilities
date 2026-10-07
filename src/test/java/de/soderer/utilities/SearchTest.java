@@ -1,7 +1,10 @@
 package de.soderer.utilities;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("static-method")
 public class SearchTest {
@@ -11,10 +14,10 @@ public class SearchTest {
 			final String text = "AbcaBcabCabcaBC";
 			final String searchText = "bc";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 0, searchText, false, false, false);
-			Assert.assertEquals(1, position.getFirst().intValue());
-			Assert.assertEquals(2, position.getSecond().intValue());
+			assertEquals(1, position.getFirst().intValue());
+			assertEquals(2, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -24,10 +27,10 @@ public class SearchTest {
 			final String text = "AbcaBcabCabcaBC";
 			final String searchText = "bc";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 2, searchText, false, false, false);
-			Assert.assertEquals(4, position.getFirst().intValue());
-			Assert.assertEquals(2, position.getSecond().intValue());
+			assertEquals(4, position.getFirst().intValue());
+			assertEquals(2, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -37,9 +40,9 @@ public class SearchTest {
 			final String text = "ABCABCABC";
 			final String searchText = "bC";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 0, searchText, false, true, false);
-			Assert.assertEquals(null, position);
+			assertEquals(null, position);
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -49,10 +52,10 @@ public class SearchTest {
 			final String text = "AbcaBcabCabcaBC";
 			final String searchText = "bC";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 0, searchText, false, true, false);
-			Assert.assertEquals(7, position.getFirst().intValue());
-			Assert.assertEquals(2, position.getSecond().intValue());
+			assertEquals(7, position.getFirst().intValue());
+			assertEquals(2, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -62,10 +65,10 @@ public class SearchTest {
 			final String text = "AbcaBcabCabcaBC";
 			final String searchText = "abC";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 10, searchText, false, false, true);
-			Assert.assertEquals(9, position.getFirst().intValue());
-			Assert.assertEquals(3, position.getSecond().intValue());
+			assertEquals(9, position.getFirst().intValue());
+			assertEquals(3, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -75,10 +78,10 @@ public class SearchTest {
 			final String text = "AbcaBcabCabcaBC";
 			final String searchText = "abC";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 9, searchText, false, false, true);
-			Assert.assertEquals(6, position.getFirst().intValue());
-			Assert.assertEquals(3, position.getSecond().intValue());
+			assertEquals(6, position.getFirst().intValue());
+			assertEquals(3, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -88,10 +91,10 @@ public class SearchTest {
 			final String text = "aaaaaaaaaaaa";
 			final String searchText = "a";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 5, searchText, false, false, false);
-			Assert.assertEquals(5, position.getFirst().intValue());
-			Assert.assertEquals(1, position.getSecond().intValue());
+			assertEquals(5, position.getFirst().intValue());
+			assertEquals(1, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -101,10 +104,10 @@ public class SearchTest {
 			final String text = "aaaaaaaaaaaa";
 			final String searchText = "a";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 5, searchText, false, false, true);
-			Assert.assertEquals(4, position.getFirst().intValue());
-			Assert.assertEquals(1, position.getSecond().intValue());
+			assertEquals(4, position.getFirst().intValue());
+			assertEquals(1, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -114,10 +117,10 @@ public class SearchTest {
 			final String text = "aaaaaaaaaaaa";
 			final String searchText = "a";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 5, searchText, true, false, false);
-			Assert.assertEquals(5, position.getFirst().intValue());
-			Assert.assertEquals(1, position.getSecond().intValue());
+			assertEquals(5, position.getFirst().intValue());
+			assertEquals(1, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -127,10 +130,10 @@ public class SearchTest {
 			final String text = "aaaaaaaaaaaa";
 			final String searchText = "a";
 			final Tuple<Integer, Integer> position = TextUtilities.searchNextPosition(text, 5, searchText, true, false, true);
-			Assert.assertEquals(4, position.getFirst().intValue());
-			Assert.assertEquals(1, position.getSecond().intValue());
+			assertEquals(4, position.getFirst().intValue());
+			assertEquals(1, position.getSecond().intValue());
 		} catch (final Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }
