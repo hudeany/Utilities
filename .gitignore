@@ -4,3 +4,6 @@
 /.flattened-pom.xml
 /build.version
 /build/
+/lib/
+/lib_build/
+/lib_test/
