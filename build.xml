@@ -52,13 +52,6 @@
 
 	<!-- Runtime libraries of this project go to "lib/" (may stay empty) -->
 	<target name="download_dependencies" depends="register_antbuildhelp">
-		<mkdir dir="lib/" />
-		<delete includeEmptyDirs="true">
-			<fileset dir="lib/">
-				<include name="*" />
-			</fileset>
-		</delete>
-
 		<getMavenDependency groupId="javax.activation" artifactId="activation" version="${activation.version}" />
 		<getMavenDependency groupId="jakarta.activation" artifactId="jakarta.activation-api" version="${jakarta.activation-api.version}" />
 		<getMavenDependency groupId="jakarta.xml.bind" artifactId="jakarta.xml.bind-api" version="${jakarta.xml.bind-api.version}" />
@@ -95,18 +88,6 @@
 		<getDependency name="proxyautoconfig" version="${proxyautoconfig.version}" url="https://github.com/hudeany/ProxyAutoConfig/releases/download/{version}/proxyautoconfig-{version}.jar" />
 		<getMavenDependency repositoryUrl="https://soderer.de/maven2" groupId="de.soderer" artifactId="network" version="${network.version}" />
 		<getMavenDependency repositoryUrl="https://soderer.de/maven2" groupId="de.soderer" artifactId="dkim" version="${dkim.version}" />
-	</target>
-
-	<!-- Special: Code signing of the main jar, only if the signing properties are available (as in the former pom.xml).
-	     Runs after "test", because tests must not run against a signed jar (signed/unsigned classes in the same package). -->
-	<available file="${user.home}/git/codeSigning.properties" property="codeSigningPropertiesAvailable" />
-	<target name="sign_jar" depends="test" if="codeSigningPropertiesAvailable">
-		<property file="${user.home}/git/codeSigning.properties" />
-		<signjar destDir="${buildPath}" alias="${CodeSigningKeyAlias}" keystore="${CodeSigningKeyStore}" storepass="${CodeSigningKeyStorePassword}" keypass="${CodeSigningKeyPassword}" preservelastmodified="true" tsaurl="${TsaUrl}">
-			<path>
-				<fileset dir="${buildPath}" includes="${artifactId}-${version}.jar" />
-			</path>
-		</signjar>
 	</target>
 
 	<!-- ===== Common part: identical in all library build files, do not change per project ===== -->
@@ -155,8 +136,7 @@
 		<get src="https://repo1.maven.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar" dest="lib_test/" />
 	</target>
 
-	<!-- Special: "sign_jar" added between "test" and "create_javadoc" -->
-	<target name="build_jar" depends="cleanup_before, create_jar, test, sign_jar, create_javadoc, cleanup_after" />
+	<target name="build_jar" depends="cleanup_before, create_jar, test, create_javadoc, cleanup_after" />
 
 	<target name="cleanup_before">
 		<mkdir dir="${buildPath}" />

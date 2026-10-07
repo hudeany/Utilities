@@ -782,7 +782,7 @@ public class CryptographicUtilitiesTest {
 			if ("Blowfish".equals(cipher)) {
 				found = true;
 			}
-			assertEquals("Cipher entry must not contain leading/trailing whitespace: \"" + cipher + "\"", cipher.trim(), cipher);
+			assertEquals(cipher.trim(), cipher, "Cipher entry must not contain leading/trailing whitespace: \"" + cipher + "\"");
 		}
 		assertTrue(found, "Expected to find a clean \"Blowfish\" entry in SYMMETRIC_CIPHERS");
 	}

@@ -1,2 +1,0 @@
-Testcase: de.soderer.utilities.SecureDataStoreTest
-Tests run: 1, Failures: 0, Skipped: 0, Aborted: 0, Time elapsed: 602 milli sec(s)

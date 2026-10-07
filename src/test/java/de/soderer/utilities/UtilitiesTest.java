@@ -559,17 +559,17 @@ public class UtilitiesTest {
 			assertEquals("122", map.get("abc122"));
 			assertEquals("123", map.get("abc123"));
 			assertEquals("abc 124", map.get("abc 124"));
-			assertEquals("Actual map was: " + map.toString(), "aBc\"125", map.get("aBc\"125"));
+			assertEquals("aBc\"125", map.get("aBc\"125"), "Actual map was: " + map.toString());
 
 			final String parsedMapString = MapUtilities.mapToString(map);
 			assertEquals(
-					"Actual map was: " + map.toString(),
 					"abc122=122"
 							+ ",abc123=123"
 							+ ",abc 124=abc 124"
 							+ ",\"aBc\\\"125\"=\"aBc\\\"125\""
 							+ ",abc 126=abc 12 6",
-							parsedMapString);
+							parsedMapString,
+							"Actual map was: " + map.toString());
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -585,7 +585,7 @@ public class UtilitiesTest {
 							+ " \"aBc\\\"125\"=\"aBc\\\"125\"";
 			final Map<String, String> map = MapStringReader.readMapWithBlankAsSeparator(mapString);
 
-			assertEquals("Actual map was: " + map.toString(), "122", map.get("abc122"));
+			assertEquals("122", map.get("abc122"), "Actual map was: " + map.toString());
 			assertEquals("123", map.get("abc123"));
 			assertEquals("abc 124", map.get("abc 124"));
 			assertEquals("aBc\"125", map.get("aBc\"125"));
@@ -611,7 +611,7 @@ public class UtilitiesTest {
 							+ " \"aBc\\\"125\"=\"aBc\\\"125\"";
 			final Map<String, String> map = MapStringReader.readMapWithBlankAsSeparator(mapString);
 
-			assertEquals("Actual map was: " + map.toString(), "123", map.get("abc123"));
+			assertEquals("123", map.get("abc123"), "Actual map was: " + map.toString());
 			assertEquals("abc 124", map.get("abc 124"));
 			assertEquals("aBc\"125", map.get("aBc\"125"));
 
@@ -637,7 +637,7 @@ public class UtilitiesTest {
 
 			assertEquals("123", map.get("abc123"));
 			assertEquals("abc 124", map.get("abc 124"));
-			assertEquals("Actual map was: " + map.toString(), "aBc\"125", map.get("aBc\"125"));
+			assertEquals("aBc\"125", map.get("aBc\"125"), "Actual map was: " + map.toString());
 
 			final String parsedMapString = MapUtilities.mapToString(map, '\"', true, ',');
 			assertEquals(

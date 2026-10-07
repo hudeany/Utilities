@@ -1982,9 +1982,11 @@ public class CryptographicUtilities {
 	}
 
 	public static final String getEllipticCurveName(final ECParameterSpec ecParameterSpec) throws Exception{
-		final Enumeration<String> curveNamesEnumeration = org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames();
+		// Bouncy Castle returns a raw Enumeration, its elements are the curve names as Strings
+		final Enumeration<?> curveNamesEnumeration = org.bouncycastle.asn1.x9.ECNamedCurveTable.getNames();
 
-		for (final String name : Collections.list(curveNamesEnumeration)) {
+		while (curveNamesEnumeration.hasMoreElements()) {
+			final String name = (String) curveNamesEnumeration.nextElement();
 			final X9ECParameters params = org.bouncycastle.asn1.x9.ECNamedCurveTable.getByName(name);
 			if (params.getN().equals(ecParameterSpec.getN())
 					&& params.getH().equals(ecParameterSpec.getH())

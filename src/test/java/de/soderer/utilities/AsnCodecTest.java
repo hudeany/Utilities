@@ -16,7 +16,7 @@ public class AsnCodecTest {
 			for (int i = 0; i < 2049; i++) {
 				final String resultInt = BitUtilities.getBitString(Asn1Codec.getAsnEncodedInteger(i));
 				final String resultLong = BitUtilities.getBitString(Asn1Codec.getAsnEncodedInteger(i));
-				assertEquals(i + ": ", resultInt, resultLong);
+				assertEquals(resultInt, resultLong, i + ": ");
 			}
 		} catch (final Exception e) {
 			fail(e.getMessage());
