@@ -16,6 +16,9 @@ import de.soderer.utilities.Utilities;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 
+/**
+ * Utilities for email addresses and opening emails in the standard email client.
+ */
 public class MailUtilities {
 	private static final String SPECIAL_CHARS_REGEXP = "\\p{Cntrl}\\(\\)<>@,;:'\\\\\\\"\\.\\[\\]";
 	private static final String VALID_CHARS_REGEXP = "[^\\s" + SPECIAL_CHARS_REGEXP + "]";
@@ -46,6 +49,16 @@ public class MailUtilities {
 	/** Time to wait for a launcher process to detect an immediate failure (e.g. no mail handler configured) */
 	private static final long LAUNCHER_EXIT_CHECK_SECONDS = 3;
 
+	private MailUtilities() {
+		// Utility class
+	}
+
+	/**
+	 * Check the syntax of an email address (local part and domain). The ".local" top level domain is not allowed.
+	 *
+	 * @param emailAddress email address to check
+	 * @return true if the email address is valid, false for invalid addresses and null
+	 */
 	public static boolean isEmailValid(final String emailAddress) {
 		if (emailAddress == null) {
 			return false;
@@ -71,6 +84,13 @@ public class MailUtilities {
 		return true;
 	}
 
+	/**
+	 * Get the domain part of an email address.
+	 *
+	 * @param emailAddress email address
+	 * @return domain part
+	 * @throws Exception if the email address is invalid
+	 */
 	public static String getDomainFromEmail(final String emailAddress) throws Exception {
 		final Matcher m = EMAIL_PATTERN.matcher(emailAddress);
 
@@ -92,10 +112,23 @@ public class MailUtilities {
 		return m.group(2);
 	}
 
+	/**
+	 * Check the syntax of the local part of an email address.
+	 *
+	 * @param user local part
+	 * @return true if the local part is valid
+	 */
 	public static boolean isValidUser(final String user) {
 		return USER_PATTERN.matcher(user).matches();
 	}
 
+	/**
+	 * Check the syntax of the domain part of an email address (also internationalized domain names).
+	 * The ".local" top level domain is not allowed.
+	 *
+	 * @param domain domain part
+	 * @return true if the domain part is valid
+	 */
 	public static boolean isValidDomain(final String domain) {
 		String asciiDomainName;
 		try {
@@ -124,6 +157,15 @@ public class MailUtilities {
 		return email != null && isEmailValid(email) && email.equals(normalizeEmail(email));
 	}
 
+	/**
+	 * Parse a list of email addresses separated by ";", "," or blanks.
+	 * Entries may contain display names in the form {@code Name <address>}, then the separators are ";" and ",".
+	 * The addresses are normalized (lowercase, trimmed).
+	 *
+	 * @param emailAddressesListString list of email addresses
+	 * @return parsed addresses, empty for a blank list
+	 * @throws Exception if an address is invalid
+	 */
 	public static InternetAddress[] getEmailAddressesFromList(final String emailAddressesListString) throws Exception {
 		if (Utilities.isBlank(emailAddressesListString)) {
 			return new InternetAddress[0];
@@ -186,11 +228,11 @@ public class MailUtilities {
 
 	/**
 	 * Call lowercase and trim on email address. Watch out: apostrophe and other
-	 * special characters !#$%&'*+-/=?^_`{|}~ are allowed in local parts of
+	 * special characters {@code !#$%&'*+-/=?^_`{|}~} are allowed in local parts of
 	 * emailaddresses
 	 *
-	 * @param email
-	 * @return
+	 * @param email email address
+	 * @return normalized email address, null for a blank email address
 	 */
 	public static String normalizeEmail(final String email) {
 		if (Utilities.isBlank(email)) {
@@ -203,10 +245,10 @@ public class MailUtilities {
 	/**
 	 * Try to open an email in the standard email client
 	 *
-	 * @param toAdress
-	 * @param subject
-	 * @param body
-	 * @return
+	 * @param toAdress recipient address(es)
+	 * @param subject subject, may be null
+	 * @param body body text, may be null
+	 * @return true if some launcher accepted the mailto link
 	 */
 	public static boolean openMailInStandardClient(final String toAdress, final String subject, final String body) {
 		return openMailInStandardClient(toAdress, null, null, subject, body);
@@ -216,11 +258,11 @@ public class MailUtilities {
 	 * Try to open an email in the standard email client.
 	 * Uses only JDK means (java.awt.Desktop) and OS specific launchers, no SWT.
 	 *
-	 * @param toAdress
-	 * @param ccAdress
-	 * @param bccAdress
-	 * @param subject
-	 * @param body
+	 * @param toAdress recipient address(es)
+	 * @param ccAdress cc address(es), may be null
+	 * @param bccAdress bcc address(es), may be null
+	 * @param subject subject, may be null
+	 * @param body body text, may be null
 	 * @return true if some launcher accepted the mailto link
 	 */
 	public static boolean openMailInStandardClient(final String toAdress, final String ccAdress, final String bccAdress, final String subject, final String body) {
@@ -315,6 +357,17 @@ public class MailUtilities {
 		return osName.toLowerCase(Locale.ROOT).startsWith("mac");
 	}
 
+	/**
+	 * Create a "mailto:" link (RFC 6068) with URL encoded parameters.
+	 *
+	 * @param toAdress recipient address(es)
+	 * @param ccAdress cc address(es), may be null
+	 * @param bccAdress bcc address(es), may be null
+	 * @param subject subject, may be null
+	 * @param body body text, may be null
+	 * @return mailto link
+	 * @throws Exception if the to-address is missing
+	 */
 	public static String createMailtoLink(final String toAdress, final String ccAdress, final String bccAdress, final String subject, final String body) throws Exception {
 		if (Utilities.isBlank(toAdress)) {
 			throw new Exception("TO address is missing or empty");

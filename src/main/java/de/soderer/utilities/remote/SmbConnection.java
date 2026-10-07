@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
+import com.hierynomus.mserref.NtStatus;
 import com.hierynomus.msdtyp.AccessMask;
 import com.hierynomus.msdtyp.FileTime;
 import com.hierynomus.msfscc.FileAttributes;
@@ -21,6 +22,7 @@ import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation;
 import com.hierynomus.mssmb.SMB1NotSupportedException;
 import com.hierynomus.mssmb2.SMB2CreateDisposition;
 import com.hierynomus.mssmb2.SMB2ShareAccess;
+import com.hierynomus.mssmb2.SMBApiException;
 import com.hierynomus.protocol.commons.EnumWithValue;
 import com.hierynomus.smbj.SMBClient;
 import com.hierynomus.smbj.SmbConfig;
@@ -69,6 +71,16 @@ public class SmbConnection implements RemoteConnection {
 	private Session session = null;
 	private DiskShare diskShare = null;
 
+	/**
+	 * Creates a connection to a share.
+	 *
+	 * @param hostname host name of the server
+	 * @param port port of the server, 445 if out of range
+	 * @param username user name
+	 * @param sharename name of the share
+	 * @param password password, is copied and wiped on close
+	 * @throws Exception if the connection fails
+	 */
 	public SmbConnection(final String hostname, final int port, final String username, final String sharename, final char[] password) throws Exception {
 		this.hostname = hostname;
 		if (0 < port && port <= 65535) {
@@ -81,6 +93,12 @@ public class SmbConnection implements RemoteConnection {
 		connect();
 	}
 
+	/**
+	 * Creates a connection from access data.
+	 *
+	 * @param serverEntry access data with protocol "smb"
+	 * @throws Exception if the protocol is not "smb" or the connection fails
+	 */
 	public SmbConnection(final ServerAccessData serverEntry) throws Exception {
 		if (!"smb".equalsIgnoreCase(serverEntry.getProtocol())) {
 			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for smb connection. Only 'smb' is allowed");
@@ -184,6 +202,9 @@ public class SmbConnection implements RemoteConnection {
 
 	/**
 	 * Creates a folder including all missing parent folders (like mkdir -p).
+	 *
+	 * @param folderPath path of the folder relative to the share root
+	 * @throws Exception if a folder cannot be created
 	 */
 	public void createFolderPath(final String folderPath) throws Exception {
 		checkForConnection();
@@ -214,11 +235,25 @@ public class SmbConnection implements RemoteConnection {
 		diskShare.rm(normalizePath(filePath));
 	}
 
+	/**
+	 * Checks whether a file exists.
+	 *
+	 * @param filePath path of the file relative to the share root
+	 * @return true if the file exists
+	 * @throws Exception if the server cannot be accessed
+	 */
 	public boolean fileExists(final String filePath) throws Exception {
 		checkForConnection();
 		return diskShare.fileExists(normalizePath(filePath));
 	}
 
+	/**
+	 * Checks whether a folder exists.
+	 *
+	 * @param folderPath path of the folder relative to the share root
+	 * @return true if the folder exists
+	 * @throws Exception if the server cannot be accessed
+	 */
 	public boolean folderExists(final String folderPath) throws Exception {
 		checkForConnection();
 		return diskShare.folderExists(normalizePath(folderPath));
@@ -228,7 +263,11 @@ public class SmbConnection implements RemoteConnection {
 	public FileInfo getFileInfo(final String filePath) throws Exception {
 		checkForConnection();
 		final String normalized = normalizePath(filePath);
-		final FileAllInformation fileAllInformation = diskShare.getFileInformation(normalized);
+		final FileAllInformation fileAllInformation = getFileInformationOrNull(normalized);
+		if (fileAllInformation == null || fileAllInformation.getStandardInformation().isDirectory()) {
+			// Like the other RemoteConnection implementations: null for missing paths and for folders
+			return null;
+		}
 		// Use end-of-file (logical size), not allocation size (cluster-rounded)
 		return new FileInfo(getLastPathElement(normalized), fileAllInformation.getStandardInformation().getEndOfFile(), toZonedDateTime(fileAllInformation.getBasicInformation().getLastWriteTime()));
 	}
@@ -264,8 +303,10 @@ public class SmbConnection implements RemoteConnection {
 	/**
 	 * Renames or moves a file within the same share.
 	 *
+	 * @param fromPath current path relative to the share root
 	 * @param toPath target path relative to the share root
 	 * @param replaceExisting if true an existing target file is replaced atomically
+	 * @throws Exception if the file cannot be renamed
 	 */
 	public void renameFile(final String fromPath, final String toPath, final boolean replaceExisting) throws Exception {
 		checkForConnection();
@@ -277,6 +318,10 @@ public class SmbConnection implements RemoteConnection {
 
 	/**
 	 * Sets the last write time of a file, leaving all other timestamps and attributes untouched.
+	 *
+	 * @param filePath path of the file relative to the share root
+	 * @param epochMillis new last write time in milliseconds since 1970
+	 * @throws Exception if the time cannot be set
 	 */
 	public void setLastModified(final String filePath, final long epochMillis) throws Exception {
 		checkForConnection();
@@ -301,8 +346,27 @@ public class SmbConnection implements RemoteConnection {
 		}
 
 		// Query the folder itself directly instead of listing its whole content to find the "." entry
-		final FileAllInformation fileAllInformation = diskShare.getFileInformation(normalized);
+		final FileAllInformation fileAllInformation = getFileInformationOrNull(normalized);
+		if (fileAllInformation == null || !fileAllInformation.getStandardInformation().isDirectory()) {
+			// Like the other RemoteConnection implementations: null for missing paths and for files
+			return null;
+		}
 		return new FolderInfo(folderName, toZonedDateTime(fileAllInformation.getBasicInformation().getLastWriteTime()));
+	}
+
+	/**
+	 * Returns the information about a file or folder, or null if the path does not exist.
+	 */
+	private FileAllInformation getFileInformationOrNull(final String normalizedPath) {
+		try {
+			return diskShare.getFileInformation(normalizedPath);
+		} catch (final SMBApiException e) {
+			if (e.getStatus() == NtStatus.STATUS_OBJECT_NAME_NOT_FOUND || e.getStatus() == NtStatus.STATUS_OBJECT_PATH_NOT_FOUND) {
+				return null;
+			} else {
+				throw e;
+			}
+		}
 	}
 
 	@Override

@@ -1,13 +1,27 @@
 package de.soderer.utilities.console;
 
+/**
+ * Requests the cursor position from a Windows console in its own thread, because the native read blocks forever
+ * if the console does not answer (e.g. in an IDE console).
+ */
 public class WindowsConsoleWidthDetection implements Runnable {
 	private final StringBuilder response;
 	private ConsoleType consoleType = null;
 
+	/**
+	 * Returns the console type detected by the request.
+	 *
+	 * @return ANSI if the console answered, TEST if reading failed, null while the request is running
+	 */
 	public ConsoleType getConsoleType() {
 		return consoleType;
 	}
 
+	/**
+	 * Creates the detection.
+	 *
+	 * @param response buffer receiving the console's answer
+	 */
 	public WindowsConsoleWidthDetection(final StringBuilder response) {
 		this.response = response;
 	}

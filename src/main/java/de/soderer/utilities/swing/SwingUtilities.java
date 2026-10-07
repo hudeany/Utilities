@@ -10,13 +10,28 @@ import javax.swing.UIManager;
 
 import de.soderer.utilities.SystemUtilities;
 
+/**
+ * Helper methods for Swing applications (class preloading, Linux window
+ * manager class, look and feel).
+ */
 public class SwingUtilities {
+	private SwingUtilities() {
+		// Utility class
+	}
+
 	/**
-	 * Prevent Exceptions of type:
-	 *     Exception in thread "AWT-EventQueue-0" java.lang.NoClassDefFoundError
-	 * when calling Classes within AWT Threads when jar-in-jar-loader is used
-	 * @param <T>
-	 * @param clazz
+	 * Loads and initializes a class and its constructors by calling its first
+	 * public constructor with dummy values (false, 0, 'x' or null).
+	 *
+	 * <p>
+	 * Prevents exceptions of type
+	 * {@code Exception in thread "AWT-EventQueue-0" java.lang.NoClassDefFoundError}
+	 * when classes are first used within AWT threads while the jar-in-jar-loader
+	 * is used. Exceptions thrown by the constructor itself because of the dummy
+	 * values are ignored, other problems are printed to the console.
+	 * </p>
+	 *
+	 * @param clazz class to initialize
 	 */
 	public static void forceConstructorInit(final Class<?> clazz) {
 		try {
@@ -29,14 +44,18 @@ public class SwingUtilities {
 				for (final Parameter parameter : constructor.getParameters()) {
 					if (parameter.getType() == boolean.class) {
 						parameters[i] = false;
+					} else if (parameter.getType() == byte.class) {
+						parameters[i] = (byte) 0;
+					} else if (parameter.getType() == short.class) {
+						parameters[i] = (short) 0;
 					} else if (parameter.getType() == int.class) {
 						parameters[i] = 0;
 					} else if (parameter.getType() == long.class) {
-						parameters[i] = 0;
+						parameters[i] = 0L;
 					} else if (parameter.getType() == float.class) {
-						parameters[i] = 0;
+						parameters[i] = 0F;
 					} else if (parameter.getType() == double.class) {
-						parameters[i] = 0;
+						parameters[i] = 0D;
 					} else if (parameter.getType() == char.class) {
 						parameters[i] = 'x';
 					} else {
@@ -57,8 +76,16 @@ public class SwingUtilities {
 	}
 
 	/**
-	 * Set WM_CLASS for Linux Gnome window manager to allow application to be pinned to Linux Gnome applications dock
-	 * Needs java runtime option "--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED"
+	 * Sets the AWT WM_CLASS on Linux, so the Gnome window manager can pin the
+	 * application to its applications dock. Does nothing on other systems.
+	 *
+	 * <p>
+	 * Needs the java runtime option
+	 * {@code --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED}, otherwise an error
+	 * message is printed to System.err.
+	 * </p>
+	 *
+	 * @param applicationName window manager class name of the application
 	 */
 	public static void setAwtWmClass(final String applicationName) {
 		if (SystemUtilities.isLinuxSystem()) {
@@ -88,6 +115,10 @@ public class SwingUtilities {
 		}
 	}
 
+	/**
+	 * Sets the look and feel of the operating system. Errors are printed to the
+	 * console and leave the current look and feel unchanged.
+	 */
 	public static void setSystemLookAndFeel() {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

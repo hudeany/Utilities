@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -137,7 +138,14 @@ public class DropDown extends JPanel {
 	 * Search mode.
 	 */
 	public enum MatchMode {
+		/**
+		 * Items match if they start with the entered text.
+		 */
 		STARTS_WITH,
+
+		/**
+		 * Items match if they contain the entered text anywhere.
+		 */
 		CONTAINS
 	}
 
@@ -168,16 +176,31 @@ public class DropDown extends JPanel {
 
 	private static final int DROPDOWN_BUTTON_WIDTH = 20;
 
+	/** Single-line input field, a JTextPane so individual characters can be colored */
 	private final JTextPane textPane;
+
+	/** Scroll pane around the input field, scrolls long text horizontally and carries the text field border */
 	private final JScrollPane textScrollPane;
+
+	/** Button next to the input field that shows the full item list */
 	private final BasicArrowButton dropdownButton;
 
+	/** Currently shown popup, or null while the popup is hidden */
 	private Popup popup;
+
+	/** Screen bounds of the currently shown popup, to recreate it only when its bounds change */
 	private Rectangle popupBounds;
+
+	/** List of matches shown in the popup, created on first use */
 	private JList<String> popupList;
+
+	/** Model of the popup list */
 	private DefaultListModel<String> popupModel;
+
+	/** Scroll pane around the popup list, the actual popup content */
 	private JScrollPane popupScrollPane;
 
+	/** All values of the suggestion list in their current order */
 	private final List<String> items = new ArrayList<>();
 
 	/**
@@ -252,8 +275,13 @@ public class DropDown extends JPanel {
 	 */
 	private MatchMode matchMode = MatchMode.STARTS_WITH;
 
+	/** Color of the gray suggestion parts, the hint text and the disabled text */
 	private Color suggestionColor = new Color(170, 170, 170);
+
+	/** Color of invalid text (no match while custom values are not allowed) */
 	private Color invalidColor = new Color(220, 70, 70);
+
+	/** Color of the marker showing where a dragged popup entry would be inserted */
 	private final Color insertionMarkerColor = new Color(0, 90, 220);
 
 	/**
@@ -279,13 +307,25 @@ public class DropDown extends JPanel {
 	 */
 	private boolean deletable = false;
 
+	/** Listeners notified with the new item order after a drag&amp;drop reorder */
 	private final List<Consumer<List<String>>> itemsReorderedListeners = new CopyOnWriteArrayList<>();
+
+	/** Listeners notified with the value of an entry removed via the Delete key */
 	private final List<Consumer<String>> itemDeletedListeners = new CopyOnWriteArrayList<>();
+
+	/** Listeners notified whenever the validity state changes */
 	private final List<Consumer<Boolean>> validationListeners = new CopyOnWriteArrayList<>();
 
+	/** Index of the popup entry being dragged, or -1 if none */
 	private int dragSourceIndex = -1;
+
+	/** Whether a drag&amp;drop reorder gesture is in progress (pointer moved beyond the click threshold) */
 	private boolean dragInProgress = false;
+
+	/** Index the dragged entry would be inserted at, or -1 if none */
 	private int insertionIndex = -1;
+
+	/** Position of the last left mouse press in the popup list, start point of a possible drag */
 	private Point mouseDownPoint;
 
 	/**
@@ -294,6 +334,8 @@ public class DropDown extends JPanel {
 	 * displayable, since a click can land on any component, not just ours.
 	 */
 	private final AWTEventListener outsideClickListener;
+
+	/** Whether outsideClickListener is currently registered on the Toolkit */
 	private boolean outsideClickListenerRegistered = false;
 
 	/**
@@ -301,6 +343,8 @@ public class DropDown extends JPanel {
 	 * heavyweight popup would otherwise stay behind at its old screen position.
 	 */
 	private final ComponentListener ownerWindowListener;
+
+	/** Window ownerWindowListener is currently registered on, or null */
 	private Window ownerWindow;
 
 	/**
@@ -516,6 +560,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Sets the values of the suggestion list.
+	 *
+	 * @param values new values, null for none
 	 */
 	public void setItems(final String... values) {
 		setItems(values == null ? null : Arrays.asList(values));
@@ -524,6 +570,9 @@ public class DropDown extends JPanel {
 	/**
 	 * Sets the values of the suggestion list and returns this instance for
 	 * chaining.
+	 *
+	 * @param values new values, null for none
+	 * @return this instance
 	 */
 	public DropDown withItems(final String... values) {
 		setItems(values);
@@ -532,7 +581,9 @@ public class DropDown extends JPanel {
 	}
 
 	/**
-	 * Sets the values of the suggestion list.
+	 * Sets the values of the suggestion list. The list is copied.
+	 *
+	 * @param values new values, null for none
 	 */
 	public void setItems(final List<String> values) {
 		items.clear();
@@ -550,7 +601,10 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Sets the values of the suggestion list and returns this instance for
-	 * chaining.
+	 * chaining. The list is copied.
+	 *
+	 * @param values new values, null for none
+	 * @return this instance
 	 */
 	public DropDown withItems(final List<String> values) {
 		setItems(values);
@@ -559,7 +613,9 @@ public class DropDown extends JPanel {
 	}
 
 	/**
-	 * Adds a value to the suggestion list.
+	 * Adds a value to the end of the suggestion list.
+	 *
+	 * @param value value to add, not null
 	 */
 	public void addItem(final String value) {
 		Objects.requireNonNull(value, "value");
@@ -573,6 +629,9 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Removes a value by its index.
+	 *
+	 * @param index index of the value to remove
+	 * @throws IndexOutOfBoundsException if the index is out of range
 	 */
 	public void removeItemAt(final int index) {
 		items.remove(index);
@@ -583,7 +642,9 @@ public class DropDown extends JPanel {
 	}
 
 	/**
-	 * Removes a value.
+	 * Removes the first occurrence of a value.
+	 *
+	 * @param value value to remove
 	 */
 	public void removeItem(final String value) {
 		items.remove(value);
@@ -608,6 +669,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Returns all suggestion values.
+	 *
+	 * @return new array of the values in their current order
 	 */
 	public String[] getItems() {
 		return items.toArray(new String[0]);
@@ -615,6 +678,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Returns the number of suggestion values.
+	 *
+	 * @return number of values
 	 */
 	public int getItemCount() {
 		return items.size();
@@ -628,6 +693,8 @@ public class DropDown extends JPanel {
 	 * does not match any item (i.e. it is shown in red / {@link #isValidValue()}
 	 * would return {@code false}).
 	 * </p>
+	 *
+	 * @return current text, may be null as described above
 	 */
 	public String getText() {
 		if (!allowCustomValues && !valid) {
@@ -644,6 +711,8 @@ public class DropDown extends JPanel {
 	 * Important: no autocomplete suggestion is automatically accepted while doing
 	 * this.
 	 * </p>
+	 *
+	 * @param value new text, not null
 	 */
 	public void setText(final String value) {
 		Objects.requireNonNull(value, "value");
@@ -678,6 +747,9 @@ public class DropDown extends JPanel {
 	 * Important: no autocomplete suggestion is automatically accepted while doing
 	 * this.
 	 * </p>
+	 *
+	 * @param value new text, not null
+	 * @return this instance
 	 */
 	public DropDown withText(final String value) {
 		setText(value);
@@ -687,6 +759,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Checks whether the current text is valid.
+	 *
+	 * @return false if custom values are not allowed and the text matches no item
 	 */
 	public boolean isValidValue() {
 		return valid;
@@ -694,6 +768,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Are free-form values allowed?
+	 *
+	 * @return true if values outside the suggestion list are allowed
 	 */
 	public boolean isAllowCustomValues() {
 		return allowCustomValues;
@@ -701,6 +777,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Configures whether values outside the suggestion list are allowed.
+	 *
+	 * @param allowCustomValues true to allow values outside the suggestion list
 	 */
 	public void setAllowCustomValues(final boolean allowCustomValues) {
 		this.allowCustomValues = allowCustomValues;
@@ -711,6 +789,9 @@ public class DropDown extends JPanel {
 	/**
 	 * Configures whether values outside the suggestion list are allowed and
 	 * returns this instance for chaining.
+	 *
+	 * @param allowCustomValuesParam true to allow values outside the suggestion list
+	 * @return this instance
 	 */
 	public DropDown withAllowCustomValues(final boolean allowCustomValuesParam) {
 		setAllowCustomValues(allowCustomValuesParam);
@@ -720,13 +801,17 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Is the search case-sensitive?
+	 *
+	 * @return true if the search is case-sensitive
 	 */
 	public boolean isCaseSensitive() {
 		return caseSensitive;
 	}
 
 	/**
-	 * Sets case sensitivity.
+	 * Sets case sensitivity of the search.
+	 *
+	 * @param caseSensitive true for a case-sensitive search
 	 */
 	public void setCaseSensitive(final boolean caseSensitive) {
 		this.caseSensitive = caseSensitive;
@@ -735,7 +820,10 @@ public class DropDown extends JPanel {
 	}
 
 	/**
-	 * Sets case sensitivity and returns this instance for chaining.
+	 * Sets case sensitivity of the search and returns this instance for chaining.
+	 *
+	 * @param caseSensitiveValue true for a case-sensitive search
+	 * @return this instance
 	 */
 	public DropDown withCaseSensitive(final boolean caseSensitiveValue) {
 		setCaseSensitive(caseSensitiveValue);
@@ -745,6 +833,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Returns the search mode.
+	 *
+	 * @return search mode
 	 */
 	public MatchMode getMatchMode() {
 		return matchMode;
@@ -752,6 +842,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Sets the search mode.
+	 *
+	 * @param matchMode search mode, not null
 	 */
 	public void setMatchMode(final MatchMode matchMode) {
 		this.matchMode = Objects.requireNonNull(matchMode, "matchMode");
@@ -761,6 +853,9 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Sets the search mode and returns this instance for chaining.
+	 *
+	 * @param matchModeValue search mode, not null
+	 * @return this instance
 	 */
 	public DropDown withMatchMode(final MatchMode matchModeValue) {
 		setMatchMode(matchModeValue);
@@ -776,6 +871,8 @@ public class DropDown extends JPanel {
 	 * list (i.e. the input text matches every item, or the popup was opened via
 	 * the dropdown button / {@link #showAllItems()}).
 	 * </p>
+	 *
+	 * @return true if entries can be reordered
 	 */
 	public boolean isReorderable() {
 		return reorderable;
@@ -783,6 +880,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Enables or disables drag&amp;drop reordering of entries in the popup.
+	 *
+	 * @param reorderable true to allow reordering
 	 */
 	public void setReorderable(final boolean reorderable) {
 		this.reorderable = reorderable;
@@ -791,6 +890,9 @@ public class DropDown extends JPanel {
 	/**
 	 * Enables or disables drag&amp;drop reordering of entries in the popup and
 	 * returns this instance for chaining.
+	 *
+	 * @param reorderableValue true to allow reordering
+	 * @return this instance
 	 */
 	public DropDown withReorderable(final boolean reorderableValue) {
 		setReorderable(reorderableValue);
@@ -801,6 +903,8 @@ public class DropDown extends JPanel {
 	/**
 	 * Whether the currently selected entry in the popup can be removed from the
 	 * item list via the Delete key.
+	 *
+	 * @return true if entries can be deleted
 	 */
 	public boolean isDeletable() {
 		return deletable;
@@ -809,6 +913,8 @@ public class DropDown extends JPanel {
 	/**
 	 * Enables or disables removing the currently selected popup entry via the
 	 * Delete key.
+	 *
+	 * @param deletable true to allow deleting entries
 	 */
 	public void setDeletable(final boolean deletable) {
 		this.deletable = deletable;
@@ -817,6 +923,9 @@ public class DropDown extends JPanel {
 	/**
 	 * Enables or disables removing the currently selected popup entry via the
 	 * Delete key and returns this instance for chaining.
+	 *
+	 * @param deletableValue true to allow deleting entries
+	 * @return this instance
 	 */
 	public DropDown withDeletable(final boolean deletableValue) {
 		setDeletable(deletableValue);
@@ -862,6 +971,9 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Enables or disables this control and returns this instance for chaining.
+	 *
+	 * @param enabled true to enable the control
+	 * @return this instance
 	 */
 	public DropDown withEnabled(final boolean enabled) {
 		setEnabled(enabled);
@@ -871,8 +983,9 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Sets a hint/placeholder text shown in light gray while the field is empty,
-	 * like SWT's Text.setMessage(). Pass {@code null} or an empty string to remove
-	 * it.
+	 * like SWT's Text.setMessage().
+	 *
+	 * @param message hint text, {@code null} or an empty string to remove it
 	 */
 	public void setMessage(final String message) {
 		hintText = message;
@@ -883,6 +996,9 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Sets a hint/placeholder text and returns this instance for chaining.
+	 *
+	 * @param message hint text, {@code null} or an empty string to remove it
+	 * @return this instance
 	 */
 	public DropDown withMessage(final String message) {
 		setMessage(message);
@@ -892,14 +1008,17 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Returns the hint/placeholder text.
+	 *
+	 * @return hint text, may be null
 	 */
 	public String getMessage() {
 		return hintText;
 	}
 
 	/**
-	 * Returns the preferred width of the input field in columns, or 0 if it is
-	 * sized by the widest item.
+	 * Returns the preferred width of the input field in columns.
+	 *
+	 * @return number of columns, or 0 if the field is sized by the widest item
 	 */
 	public int getColumns() {
 		return columns;
@@ -908,6 +1027,9 @@ public class DropDown extends JPanel {
 	/**
 	 * Sets the preferred width of the input field in columns (like
 	 * JTextField.setColumns()). 0 (default) sizes it by the widest item.
+	 *
+	 * @param columns number of columns, not negative
+	 * @throws IllegalArgumentException if columns is negative
 	 */
 	public void setColumns(final int columns) {
 		if (columns < 0) {
@@ -922,6 +1044,11 @@ public class DropDown extends JPanel {
 	/**
 	 * Sets the preferred width of the input field in columns and returns this
 	 * instance for chaining.
+	 *
+	 * @param columnsValue number of columns, not negative, 0 sizes the field by
+	 *            the widest item
+	 * @return this instance
+	 * @throws IllegalArgumentException if columnsValue is negative
 	 */
 	public DropDown withColumns(final int columnsValue) {
 		setColumns(columnsValue);
@@ -932,6 +1059,8 @@ public class DropDown extends JPanel {
 	/**
 	 * Returns whether the built-in dropdown "browse all" button is shown next to
 	 * the text field.
+	 *
+	 * @return true if the button is shown
 	 */
 	public boolean isShowDropdownButton() {
 		return dropdownButton.isVisible();
@@ -940,6 +1069,8 @@ public class DropDown extends JPanel {
 	/**
 	 * Shows or hides the built-in dropdown "browse all" button next to the text
 	 * field. Shown by default.
+	 *
+	 * @param show true to show the button
 	 */
 	public void setShowDropdownButton(final boolean show) {
 		dropdownButton.setVisible(show);
@@ -951,6 +1082,9 @@ public class DropDown extends JPanel {
 	/**
 	 * Shows or hides the built-in dropdown "browse all" button and returns this
 	 * instance for chaining.
+	 *
+	 * @param show true to show the button
+	 * @return this instance
 	 */
 	public DropDown withShowDropdownButton(final boolean show) {
 		setShowDropdownButton(show);
@@ -959,18 +1093,34 @@ public class DropDown extends JPanel {
 	}
 
 	/**
-	 * Color of the gray suggestion parts, the hint text and the disabled text.
+	 * Returns the color of the gray suggestion parts, the hint text and the
+	 * disabled text.
+	 *
+	 * @return suggestion color
 	 */
 	public Color getSuggestionColor() {
 		return suggestionColor;
 	}
 
+	/**
+	 * Sets the color of the gray suggestion parts, the hint text and the disabled
+	 * text.
+	 *
+	 * @param suggestionColor suggestion color, not null
+	 */
 	public void setSuggestionColor(final Color suggestionColor) {
 		this.suggestionColor = Objects.requireNonNull(suggestionColor, "suggestionColor");
 
 		updateMatches(false);
 	}
 
+	/**
+	 * Sets the color of the suggestion parts and returns this instance for
+	 * chaining.
+	 *
+	 * @param suggestionColorValue suggestion color, not null
+	 * @return this instance
+	 */
 	public DropDown withSuggestionColor(final Color suggestionColorValue) {
 		setSuggestionColor(suggestionColorValue);
 
@@ -978,18 +1128,33 @@ public class DropDown extends JPanel {
 	}
 
 	/**
-	 * Color of invalid text (no match while custom values are not allowed).
+	 * Returns the color of invalid text (no match while custom values are not
+	 * allowed).
+	 *
+	 * @return invalid color
 	 */
 	public Color getInvalidColor() {
 		return invalidColor;
 	}
 
+	/**
+	 * Sets the color of invalid text (no match while custom values are not
+	 * allowed).
+	 *
+	 * @param invalidColor invalid color, not null
+	 */
 	public void setInvalidColor(final Color invalidColor) {
 		this.invalidColor = Objects.requireNonNull(invalidColor, "invalidColor");
 
 		updateMatches(false);
 	}
 
+	/**
+	 * Sets the color of invalid text and returns this instance for chaining.
+	 *
+	 * @param invalidColorValue invalid color, not null
+	 * @return this instance
+	 */
 	public DropDown withInvalidColor(final Color invalidColorValue) {
 		setInvalidColor(invalidColorValue);
 
@@ -1024,11 +1189,19 @@ public class DropDown extends JPanel {
 	/**
 	 * Registers a listener that is notified with the new item order whenever the
 	 * user reorders entries via drag&amp;drop in the popup.
+	 *
+	 * @param listener listener, not null
 	 */
 	public void addItemsReorderedListener(final Consumer<List<String>> listener) {
 		itemsReorderedListeners.add(Objects.requireNonNull(listener, "listener"));
 	}
 
+	/**
+	 * Removes a listener registered via
+	 * {@link #addItemsReorderedListener(Consumer)}.
+	 *
+	 * @param listener listener to remove
+	 */
 	public void removeItemsReorderedListener(final Consumer<List<String>> listener) {
 		itemsReorderedListeners.remove(listener);
 	}
@@ -1036,11 +1209,18 @@ public class DropDown extends JPanel {
 	/**
 	 * Registers a listener that is notified with the value of the entry the user
 	 * just removed via the Delete key in the popup (see {@link #isDeletable()}).
+	 *
+	 * @param listener listener, not null
 	 */
 	public void addItemDeletedListener(final Consumer<String> listener) {
 		itemDeletedListeners.add(Objects.requireNonNull(listener, "listener"));
 	}
 
+	/**
+	 * Removes a listener registered via {@link #addItemDeletedListener(Consumer)}.
+	 *
+	 * @param listener listener to remove
+	 */
 	public void removeItemDeletedListener(final Consumer<String> listener) {
 		itemDeletedListeners.remove(listener);
 	}
@@ -1056,11 +1236,18 @@ public class DropDown extends JPanel {
 	 * {@link #getText()} switches to/from returning {@code null} (only relevant
 	 * while {@link #isAllowCustomValues()} is {@code false}).
 	 * </p>
+	 *
+	 * @param listener listener receiving the new validity state, not null
 	 */
 	public void addValidationListener(final Consumer<Boolean> listener) {
 		validationListeners.add(Objects.requireNonNull(listener, "listener"));
 	}
 
+	/**
+	 * Removes a listener registered via {@link #addValidationListener(Consumer)}.
+	 *
+	 * @param listener listener to remove
+	 */
 	public void removeValidationListener(final Consumer<Boolean> listener) {
 		validationListeners.remove(listener);
 	}
@@ -1069,12 +1256,19 @@ public class DropDown extends JPanel {
 	 * Adds a listener notified when a value is accepted by the user (Enter, Tab,
 	 * click in the popup, or automatic acceptance of a single match). Counterpart
 	 * of the SWT variant's SelectionListener, following JComboBox's ActionEvent
-	 * convention.
+	 * convention. The action command is {@link #ACTION_COMMAND_VALUE_ACCEPTED}.
+	 *
+	 * @param listener listener, not null
 	 */
 	public void addActionListener(final ActionListener listener) {
 		listenerList.add(ActionListener.class, Objects.requireNonNull(listener, "listener"));
 	}
 
+	/**
+	 * Removes a listener registered via {@link #addActionListener(ActionListener)}.
+	 *
+	 * @param listener listener to remove
+	 */
 	public void removeActionListener(final ActionListener listener) {
 		listenerList.remove(ActionListener.class, listener);
 	}
@@ -1082,11 +1276,18 @@ public class DropDown extends JPanel {
 	/**
 	 * Adds a listener notified whenever the entered text (see {@link #getText()})
 	 * changes, whether by typing, by acceptance or programmatically.
+	 *
+	 * @param listener listener, not null
 	 */
 	public void addChangeListener(final ChangeListener listener) {
 		listenerList.add(ChangeListener.class, Objects.requireNonNull(listener, "listener"));
 	}
 
+	/**
+	 * Removes a listener registered via {@link #addChangeListener(ChangeListener)}.
+	 *
+	 * @param listener listener to remove
+	 */
 	public void removeChangeListener(final ChangeListener listener) {
 		listenerList.remove(ChangeListener.class, listener);
 	}
@@ -1114,6 +1315,8 @@ public class DropDown extends JPanel {
 
 	/**
 	 * Whether the popup list is currently shown.
+	 *
+	 * @return true if the popup is shown
 	 */
 	public boolean isPopupVisible() {
 		return popup != null;
@@ -1127,8 +1330,9 @@ public class DropDown extends JPanel {
 	}
 
 	/**
-	 * Returns the current text selection (x = start offset, y = end offset), like
-	 * SWT's getSelection().
+	 * Returns the current text selection, like SWT's getSelection().
+	 *
+	 * @return selection with x = start offset and y = end offset
 	 */
 	public Point getSelection() {
 		return new Point(textPane.getSelectionStart(), textPane.getSelectionEnd());
@@ -1151,6 +1355,8 @@ public class DropDown extends JPanel {
 	 * Can be useful when special Swing functionality is needed. Do not replace its
 	 * document or editor kit, as this would remove the input handling.
 	 * </p>
+	 *
+	 * @return internal text pane
 	 */
 	public JTextPane getTextControl() {
 		return textPane;
@@ -1309,7 +1515,7 @@ public class DropDown extends JPanel {
 		if (caseSensitive) {
 			return value;
 		} else {
-			return value.toLowerCase();
+			return value.toLowerCase(Locale.ROOT);
 		}
 	}
 

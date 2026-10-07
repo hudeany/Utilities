@@ -10,14 +10,37 @@ import de.soderer.utilities.Version;
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * Base class of GUI applications that can update themselves via
+ * {@link de.soderer.utilities.appupdate.ApplicationUpdateUtilities}.
+ *
+ * <p>
+ * Implements the user interaction of the update process with Swing dialogs:
+ * asking for the update, for download credentials (optionally remembered in the
+ * keystore), showing the download progress, errors and the result.
+ * </p>
+ */
 public class UpdateableGuiApplication extends SecureDataGuiApplication implements ApplicationUpdateParent {
 	private static final long serialVersionUID = 1869492889654406822L;
 
+	/** Name of the application, used in the titles of the update dialogs */
 	private final String applicationName;
+
+	/** Current version of the application, compared with the available version */
 	private final Version applicationVersion;
 
+	/** Progress dialog of a running update download, null while no download is running */
 	private ProgressDialog<?> updateProgressDialog;
 
+	/**
+	 * Creates an updateable application frame.
+	 *
+	 * @param applicationName name of the application, not blank
+	 * @param applicationVersion current version of the application, not null
+	 * @param keystoreFile keystore file for remembered update credentials, may be
+	 *            null for no keystore
+	 * @throws Exception if the application name is blank or the version is null
+	 */
 	public UpdateableGuiApplication(final String applicationName, final Version applicationVersion, final File keystoreFile) throws Exception {
 		super(keystoreFile);
 
@@ -116,10 +139,22 @@ public class UpdateableGuiApplication extends SecureDataGuiApplication implement
 		}
 	}
 
-	protected void setDailyUpdateCheckStatus(@SuppressWarnings("unused") final boolean checkboxStatus) {
+	/**
+	 * Called with the status of the "daily update check" checkbox after the user
+	 * was asked for an update. Subclasses may store it; does nothing by default.
+	 *
+	 * @param checkboxStatus true if the daily update check is activated
+	 */
+	protected void setDailyUpdateCheckStatus(final boolean checkboxStatus) {
 		// Do nothing by standard
 	}
 
+	/**
+	 * Returns whether the daily update check is activated. The update dialogs only
+	 * show the "daily update check" checkbox if this is not null.
+	 *
+	 * @return status of the daily update check, null (default) if not supported
+	 */
 	@SuppressWarnings("static-method")
 	protected Boolean isDailyUpdateCheckActivated() {
 		return null;

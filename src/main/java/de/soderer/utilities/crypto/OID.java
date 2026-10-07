@@ -4,6 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * ASN.1 object identifier (OID) with conversion between the dotted string notation (e.g. "1.2.840.10045.2.1")
+ * and the DER content encoding (without tag and length bytes).<br>
+ * The predefined OID byte arrays are DER content encodings of frequently used algorithm and curve identifiers.
+ * They are mutable arrays, so callers must not modify them.
+ */
 public class OID {
 	/**
 	 * OID for RSA algorithm
@@ -61,6 +67,12 @@ public class OID {
 
 	private int[] id;
 
+	/**
+	 * Creates an OID from its dotted string notation.
+	 *
+	 * @param oidString OID in dotted notation, e.g. "1.3.132.0.34"
+	 * @throws Exception if the string is empty or contains a part which is no integer
+	 */
 	public OID(final String oidString) throws Exception {
 		if (oidString == null || "".equals(oidString.trim())) {
 			throw new Exception("Invalid OID empty data");
@@ -77,25 +89,46 @@ public class OID {
 		}
 	}
 
+	/**
+	 * Creates an OID from its DER content encoding (without tag and length bytes).
+	 *
+	 * @param oidArray DER content encoding of the OID
+	 * @throws Exception if the data is empty or the last sub identifier is truncated
+	 */
 	public OID(final byte[] oidArray) throws Exception {
 		if (oidArray == null || oidArray.length == 0) {
 			throw new Exception("Invalid OID empty data");
 		} else {
 			final List<Integer> idList = new ArrayList<>();
-			if (oidArray.length > 0) {
-				idList.add(oidArray[0] / 40);
-				idList.add(oidArray[0] % 40);
-			}
-			for (int i = 1; i < oidArray.length; i++) {
-				idList.add((int) decodeInteger(oidArray, i));
-				while ((oidArray[i] & 0x80) != 0 && i + 1 < oidArray.length) {
+			int i = 0;
+			while (i < oidArray.length) {
+				final long subIdentifier = decodeInteger(oidArray, i);
+				while ((oidArray[i] & 0x80) != 0) {
 					i++;
+				}
+				i++;
+				if (idList.isEmpty()) {
+					// The first sub identifier (which may consist of multiple bytes) combines the first two arcs as "40 * X + Y"
+					if (subIdentifier < 80) {
+						idList.add((int) (subIdentifier / 40));
+						idList.add((int) (subIdentifier % 40));
+					} else {
+						idList.add(2);
+						idList.add((int) (subIdentifier - 80));
+					}
+				} else {
+					idList.add((int) subIdentifier);
 				}
 			}
 			id = idList.stream().mapToInt(Integer::intValue).toArray();
 		}
 	}
 
+	/**
+	 * Returns the dotted string notation of this OID.
+	 *
+	 * @return OID in dotted notation, e.g. "1.3.132.0.34"
+	 */
 	public String getStringEncoding() {
 		final StringBuilder returnValue = new StringBuilder();
 		for (final int idPart : id) {
@@ -107,15 +140,22 @@ public class OID {
 		return returnValue.toString();
 	}
 
+	/**
+	 * Returns the DER content encoding of this OID (without tag and length bytes).
+	 *
+	 * @return DER content encoding
+	 * @throws Exception if a sub identifier is negative
+	 */
 	public byte[] getByteArrayEncoding() throws Exception {
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
 		if (id.length >= 1) {
-			byte firstByte = (byte) (40 * id[0]);
+			// The first two arcs are combined into one sub identifier, which may need more than one byte (e.g. "2.999")
+			long firstSubIdentifier = 40L * id[0];
 			if (id.length >= 2) {
-				firstByte = (byte) (firstByte + id[1]);
+				firstSubIdentifier += id[1];
 			}
-			out.write(firstByte);
+			out.write(encodeInteger(firstSubIdentifier));
 		}
 
 		for (int i = 2; i < id.length; i++) {
@@ -125,6 +165,13 @@ public class OID {
 		return out.toByteArray();
 	}
 
+	/**
+	 * Encodes a single OID sub identifier in base 128 with the continuation bit (0x80) set on all bytes but the last.
+	 *
+	 * @param value non-negative sub identifier
+	 * @return encoded bytes
+	 * @throws Exception if the value is negative
+	 */
 	public static byte[] encodeInteger(final long value) throws Exception {
 		if (value < 0) {
 			throw new Exception("Minimum encoded Integer underrun");
@@ -149,6 +196,14 @@ public class OID {
 		}
 	}
 
+	/**
+	 * Decodes a single base 128 encoded OID sub identifier starting at the given index.
+	 *
+	 * @param array encoded data
+	 * @param startIndex index of the first byte of the sub identifier
+	 * @return decoded sub identifier
+	 * @throws Exception if the index is out of range or the data ends before the last byte of the sub identifier
+	 */
 	public static long decodeInteger(final byte[] array, final int startIndex) throws Exception {
 		if (array.length == 0 || startIndex >= array.length) {
 			throw new Exception("Invalid encoded Integer data");

@@ -19,33 +19,65 @@ import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.worker.WorkerDual;
 import de.soderer.utilities.worker.WorkerParentDual;
 
+/**
+ * Worker that recursively hashes all files of a directory and returns a tree of {@link HashItem}s.<br>
+ * Files that cannot be read are included with a null hash value.
+ */
 public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 	private final File directoryToHash;
 	private final HashAlgorithm hashAlgorithm;
 
 	private boolean addDates = false;
 
+	/**
+	 * Returns whether the creation and modification dates are added to the hash items.
+	 *
+	 * @return true if dates are added
+	 */
 	public boolean isAddDates() {
 		return addDates;
 	}
 
+	/**
+	 * Sets whether the creation and modification dates are added to the hash items.
+	 *
+	 * @param addDates true to add dates
+	 */
 	public void setAddDates(final boolean addDates) {
 		this.addDates = addDates;
 	}
 
 	private String scanningForFilesMessage = "Scanning for files";
 
+	/**
+	 * Sets the message which is shown while scanning for the files to hash.
+	 *
+	 * @param scanningForFilesMessage message text
+	 */
 	public void setScanningForFilesMessage(final String scanningForFilesMessage) {
 		this.scanningForFilesMessage = scanningForFilesMessage;
 	}
 
 	// TODO: Compare with existing data json
+	/**
+	 * Creates a directory hashing worker.
+	 *
+	 * @param parent parent to report progress to, may be null
+	 * @param directoryToHash directory to hash
+	 * @param hashAlgorithm hash algorithm
+	 */
 	public DirectoryHashingWorker(final WorkerParentDual parent, final File directoryToHash, final HashAlgorithm hashAlgorithm) {
 		super(parent);
 		this.directoryToHash = directoryToHash;
 		this.hashAlgorithm = hashAlgorithm;
 	}
 
+	/**
+	 * Hashes the directory.
+	 *
+	 * @return hash item tree of the directory, or null if the worker was cancelled
+	 * @throws Exception if the directory cannot be read
+	 */
 	@Override
 	public HashItem work() throws Exception {
 		signalProgress();
@@ -61,6 +93,13 @@ public class DirectoryHashingWorker extends WorkerDual<HashItem> {
 		}
 	}
 
+	/**
+	 * Recursively hashes a directory.
+	 *
+	 * @param directory directory to hash
+	 * @return hash item of the directory with its sub items, or null if the worker was cancelled
+	 * @throws Exception if the directory cannot be read
+	 */
 	public HashItem hashDirectory(final File directory) throws Exception {
 		try {
 			if (!directory.canRead()) {

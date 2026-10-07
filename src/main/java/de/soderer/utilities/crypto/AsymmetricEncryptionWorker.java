@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PublicKey;
 import java.security.Security;
+import java.util.Locale;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
@@ -22,7 +23,16 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * Worker that encrypts a stream directly with a public key.<br>
+ * Supported methods are "ECIES" and RSA or ElGamal with PKCS1, OAEP or no padding (e.g. "RSA/NONE/OAEPPadding").
+ * RSA/ElGamal data is encrypted block by block, which is slow and unauthenticated; prefer {@link HybridEncryptionWorker}
+ * for larger data. Both streams are closed after the work.
+ */
 public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
+	/**
+	 * Return value of stream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private InputStream dataInputStream = null;
@@ -32,25 +42,25 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 	private long dataSizeHint = -1;
 
 	/**
-	 * Asymmetric encrypt inputStream
+	 * Asymmetric encrypt inputStream with the default method {@link CryptographicUtilities#DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA}.
 	 *
-	 * @param parent
-	 * @param fileToEncrypt
-	 * @param encryptedFile
-	 * @param publicKey
+	 * @param parent parent to report progress to, may be null
+	 * @param dataInputStream stream with the data to encrypt
+	 * @param encryptedDataOutputStream stream to write the encrypted data to
+	 * @param publicKey public key to encrypt with
 	 */
 	public AsymmetricEncryptionWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final OutputStream encryptedDataOutputStream, final PublicKey publicKey) {
 		this(parent, dataInputStream, encryptedDataOutputStream, publicKey, null);
 	}
 
 	/**
-	 * Asymmetric encrypt inputStream
+	 * Asymmetric encrypt inputStream.
 	 *
-	 * @param parent
-	 * @param fileToEncrypt
-	 * @param encryptedFile
-	 * @param publicKey
-	 * @param encryptionMethod
+	 * @param parent parent to report progress to, may be null
+	 * @param dataInputStream stream with the data to encrypt
+	 * @param encryptedDataOutputStream stream to write the encrypted data to
+	 * @param publicKey public key to encrypt with
+	 * @param encryptionMethod encryption method, blank for {@link CryptographicUtilities#DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA}
 	 */
 	public AsymmetricEncryptionWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final OutputStream encryptedDataOutputStream, final PublicKey publicKey, final String encryptionMethod) {
 		super(parent);
@@ -64,6 +74,11 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	/**
+	 * Sets the expected data size in bytes for the progress display, if the stream cannot tell its size.
+	 *
+	 * @param dataSizeHint expected data size in bytes
+	 */
 	public void setDataSizeHint(final long dataSizeHint) {
 		this.dataSizeHint = dataSizeHint;
 	}
@@ -73,7 +88,7 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
 			throw new Exception("Empty asymmetric encryption method");
 		}
-		encryptionMethod = encryptionMethod.toLowerCase();
+		encryptionMethod = encryptionMethod.toLowerCase(Locale.ROOT);
 
 		signalProgress();
 
@@ -132,7 +147,8 @@ public class AsymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 					final int bufferSize = asymmetricEncryptCipher.getInputBlockSize() <= 0 ? 4096 : asymmetricEncryptCipher.getInputBlockSize();
 					final byte[] buffer = new byte[bufferSize];
 					int bytesRead;
-					while ((bytesRead = inputStream.read(buffer)) != EOF) {
+					// Always encrypt complete input blocks, a short read of the stream must not change the block layout
+					while ((bytesRead = inputStream.readNBytes(buffer, 0, buffer.length)) > 0) {
 						if (cancel) {
 							break;
 						} else {

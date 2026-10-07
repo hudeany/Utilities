@@ -6,16 +6,54 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Utilities to compare files and texts and to create a line based diff of them.
+ */
 public class FileComparer {
+	/**
+	 * Value returned by read operations at the end of data.
+	 */
 	public static final int EOF = -1;
 
-	public enum OutputMode {
-		All, DifferencesOnly, CommonalitiesOnly
+	/**
+	 * Utility class
+	 */
+	private FileComparer() {
+		// Utility class
 	}
 
+	/**
+	 * Selects the lines contained in a generated diff.
+	 */
+	public enum OutputMode {
+		/** Output all lines */
+		All,
+		/** Output only lines contained in one of the sources */
+		DifferencesOnly,
+		/** Output only lines contained in both sources */
+		CommonalitiesOnly
+	}
+
+	/**
+	 * Prefix of lines only contained in the first source
+	 */
 	public static final String SOURCE1_SIGN = "-";
+	/**
+	 * Prefix of lines only contained in the second source
+	 */
 	public static final String SOURCE2_SIGN = "+";
 
+	/**
+	 * Compares two files byte by byte.
+	 *
+	 * @param file1
+	 *            the first file
+	 * @param file2
+	 *            the second file
+	 * @return true, if both files have exactly the same content
+	 * @throws IOException
+	 *             if reading fails
+	 */
 	public static boolean compareExactly(final File file1, final File file2) throws IOException {
 		if (file1.length() == file2.length()) {
 			try (BufferedInputStream fileInputStream1 = new BufferedInputStream(new FileInputStream(file1));
@@ -33,10 +71,42 @@ public class FileComparer {
 		}
 	}
 
+	/**
+	 * Creates a line based diff of two text files, containing all lines and comparing blocks of lines.
+	 * The encodings of the files are detected automatically.
+	 *
+	 * @param file1
+	 *            the first file
+	 * @param file2
+	 *            the second file
+	 * @return the diff text
+	 * @throws Exception
+	 *             if a file does not exist or cannot be read
+	 */
 	public static String generateUnifiedDiff(final File file1, final File file2) throws Exception {
 		return generateUnifiedDiff(file1, file2, false, true, OutputMode.All);
 	}
 
+	/**
+	 * Creates a line based diff of two text files. The encodings of the files are detected
+	 * automatically.
+	 *
+	 * @param file1
+	 *            the first file
+	 * @param file2
+	 *            the second file
+	 * @param ignoreLeadingAndTrailingWhitespaces
+	 *            true to remove leading and trailing whitespace of each line before comparing
+	 * @param blockSensitiveCompare
+	 *            true to synchronize the texts at the largest common block of lines, false to
+	 *            synchronize at the next equal line
+	 * @param outputMode
+	 *            the lines to output
+	 * @return the diff text, starting with two header lines naming the files and their modification
+	 *         dates
+	 * @throws Exception
+	 *             if a file does not exist or cannot be read
+	 */
 	public static String generateUnifiedDiff(final File file1, final File file2, final boolean ignoreLeadingAndTrailingWhitespaces, final boolean blockSensitiveCompare, final OutputMode outputMode) throws Exception {
 		if (!file1.exists()) {
 			throw new Exception("File \"" + file1.getAbsolutePath() + "\" does not exist");
@@ -58,6 +128,31 @@ public class FileComparer {
 		return result.toString();
 	}
 
+	/**
+	 * Creates a line based diff of two texts. Lines contained in both texts are prefixed with a blank,
+	 * lines only contained in the first text with {@value #SOURCE1_SIGN} and lines only contained in the
+	 * second text with {@value #SOURCE2_SIGN}. The output is a simplified unified diff format without
+	 * hunk headers.
+	 *
+	 * @param sourceName1
+	 *            the name of the first text for the header line
+	 * @param dataString1
+	 *            the first text
+	 * @param sourceName2
+	 *            the name of the second text for the header line
+	 * @param dataString2
+	 *            the second text
+	 * @param ignoreLeadingAndTrailingWhitespaces
+	 *            true to remove leading and trailing whitespace of each line before comparing
+	 * @param blockSensitiveCompare
+	 *            true to synchronize the texts at the largest common block of lines, false to
+	 *            synchronize at the next equal line
+	 * @param outputMode
+	 *            the lines to output
+	 * @return the diff text, starting with two header lines naming the sources
+	 * @throws Exception
+	 *             if a text is null
+	 */
 	public static String generateUnifiedDiff(final String sourceName1, String dataString1, final String sourceName2, String dataString2, final boolean ignoreLeadingAndTrailingWhitespaces, final boolean blockSensitiveCompare,
 			final OutputMode outputMode) throws Exception {
 		if (dataString1 == null) {
@@ -142,6 +237,22 @@ public class FileComparer {
 		return result.toString();
 	}
 
+	/**
+	 * Finds the nearest pair of equal items in two lists, starting at the given positions.
+	 *
+	 * @param <T>
+	 *            the type of the list items
+	 * @param startPosition1
+	 *            the start index in the first list
+	 * @param list1
+	 *            the first list
+	 * @param startPosition2
+	 *            the start index in the second list
+	 * @param list2
+	 *            the second list
+	 * @return the indexes of the equal items in the first and second list, or null if there are no
+	 *         more equal items
+	 */
 	public static <T> Tuple<Integer, Integer> findNextEquationStraigth(final int startPosition1, final List<T> list1, final int startPosition2, final List<T> list2) {
 		Tuple<Integer, Integer> nextEquationPosition1 = null;
 		Tuple<Integer, Integer> nextEquationPosition2 = null;
@@ -175,6 +286,24 @@ public class FileComparer {
 		}
 	}
 
+	/**
+	 * Finds the next pair of equal items in two lists, which starts the largest common block of
+	 * consecutive items. Blocks before that block are searched recursively, so the result is the first
+	 * item pair of a common block before any larger block.
+	 *
+	 * @param <T>
+	 *            the type of the list items
+	 * @param startPosition1
+	 *            the start index in the first list
+	 * @param list1
+	 *            the first list
+	 * @param startPosition2
+	 *            the start index in the second list
+	 * @param list2
+	 *            the second list
+	 * @return the indexes of the equal items in the first and second list, or null if there are no
+	 *         more equal items
+	 */
 	public static <T> Tuple<Integer, Integer> findNextEquationByBlock(final int startPosition1, final List<T> list1, final int startPosition2, final List<T> list2) {
 		int endPosition1 = list1.size() - 1;
 		int endPosition2 = list2.size() - 1;
@@ -190,6 +319,29 @@ public class FileComparer {
 		}
 	}
 
+	/**
+	 * Finds the start of the largest block of consecutive equal items in two list ranges. Of several
+	 * blocks with the same size the first one found is returned.
+	 *
+	 * @param <T>
+	 *            the type of the list items
+	 * @param startPosition1
+	 *            the start index in the first list
+	 * @param endPosition1
+	 *            the inclusive end index in the first list, a negative or too large value means the
+	 *            last item
+	 * @param list1
+	 *            the first list
+	 * @param startPosition2
+	 *            the start index in the second list
+	 * @param endPosition2
+	 *            the inclusive end index in the second list, a negative or too large value means the
+	 *            last item
+	 * @param list2
+	 *            the second list
+	 * @return the indexes of the first items of the largest block in the first and second list, or
+	 *         null if there are no equal items in the ranges
+	 */
 	public static <T> Tuple<Integer, Integer> findLargestBlockEquation(final int startPosition1, int endPosition1, final List<T> list1, final int startPosition2, int endPosition2, final List<T> list2) {
 		if (endPosition1 < 0 || endPosition1 >= list1.size()) {
 			endPosition1 = list1.size() - 1;

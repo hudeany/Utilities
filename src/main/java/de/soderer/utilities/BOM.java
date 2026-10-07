@@ -1,7 +1,8 @@
 package de.soderer.utilities;
 
 /**
- * Byte Order Mark
+ * Byte Order Mark (BOM) signatures of the Unicode encodings. Instances are only available as the
+ * constants of this class, so they may be compared by identity.
  */
 public final class BOM {
 	/** UTF-8 BOM (Byte Order Mark) character for readers. */
@@ -48,6 +49,11 @@ public final class BOM {
 		this.description = description;
 	}
 
+	/**
+	 * Returns the bytes of this BOM signature.
+	 *
+	 * @return a copy of the BOM bytes, an empty array for {@link #NONE}
+	 */
 	public byte[] getBytes() {
 		final int length = bytes.length;
 		final byte[] result = new byte[length];

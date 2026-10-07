@@ -2,16 +2,12 @@ package de.soderer.utilities;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.BadPaddingException;
@@ -23,13 +19,20 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.soderer.json.JsonNode;
-import de.soderer.json.JsonObject;
-import de.soderer.json.JsonReader;
-import de.soderer.json.JsonReader.JsonToken;
-import de.soderer.json.JsonSerializer;
-import de.soderer.json.JsonWriter;
-
+/**
+ * Store for named objects like {@link UnsecureDataStore}, but saved to a password encrypted file.
+ *
+ * <p>
+ * File format: 16 bytes random salt, 12 bytes random GCM initialization vector, followed by the AES-256-GCM encrypted
+ * JSON data (including the 128 bit authentication tag). The AES key is derived from the password by
+ * PBKDF2WithHmacSHA512 with 210000 iterations.
+ * </p>
+ *
+ * <p>
+ * Note: Without password (null) the empty password is used, which provides no confidentiality and no protection
+ * against manipulation of the file.
+ * </p>
+ */
 public class SecureDataStore extends UnsecureDataStore {
 	private static final String SYMMETRIC_ENCRYPTION_METHOD = "AES/GCM/NoPadding";
 	private static final int RANDOMSALTSIZE = 16;
@@ -38,11 +41,33 @@ public class SecureDataStore extends UnsecureDataStore {
 	private static final int DERIVED_KEY_LENGTH_BITS = 256;
 	private static final int PBKDF2_ITERATIONS = 210000;
 
+	/**
+	 * Creates an empty store.
+	 */
+	public SecureDataStore() {
+		super();
+	}
+
+	/**
+	 * Saves all entries encrypted with the empty password.
+	 *
+	 * @param storeFile file to write
+	 * @throws Exception if the file is undefined or cannot be written
+	 */
 	@Override
 	public void save(final File storeFile) throws Exception {
 		save(storeFile, null);
 	}
 
+	/**
+	 * Saves all entries encrypted with a password. The data is written to a temporary file first, which then
+	 * replaces the store file, so an existing store file stays intact if writing fails.
+	 *
+	 * @param storeFile file to write
+	 * @param password password for encryption, or null for the empty password. The array is cleared (filled with
+	 *            zeros) afterwards, also if saving fails.
+	 * @throws Exception if the file is undefined, an entry cannot be serialized or the file cannot be written
+	 */
 	public void save(final File storeFile, char[] password) throws Exception {
 		try {
 			if (storeFile == null) {
@@ -51,51 +76,63 @@ public class SecureDataStore extends UnsecureDataStore {
 				if (password == null) {
 					password = "".toCharArray();
 				}
-				byte[] salt = null;
-				byte[] iv = null;
-				try (FileOutputStream outputStream = new FileOutputStream(storeFile)) {
-					salt = new byte[RANDOMSALTSIZE];
-					new SecureRandom().nextBytes(salt);
-					outputStream.write(salt);
+				final char[] passwordToUse = password;
+				saveViaTemporaryFile(storeFile, outputStream -> {
+					byte[] salt = null;
+					byte[] iv = null;
+					byte[] keyBytes = null;
+					try {
+						final SecureRandom secureRandom = new SecureRandom();
+						salt = new byte[RANDOMSALTSIZE];
+						secureRandom.nextBytes(salt);
+						outputStream.write(salt);
 
-					iv = new byte[GCM_IV_SIZE];
-					new SecureRandom().nextBytes(iv);
-					outputStream.write(iv);
+						iv = new byte[GCM_IV_SIZE];
+						secureRandom.nextBytes(iv);
+						outputStream.write(iv);
 
-					final byte[] keyBytes = stretchPassword(password, salt);
-					final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-					final Cipher encryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
-					encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
-					try (CipherOutputStream cipherOutputStream = new CipherOutputStream(outputStream, encryptCipher)) {
-						try (JsonWriter jsonWriter = new JsonWriter(cipherOutputStream)) {
-							jsonWriter.openJsonArray();
-							for (final Entry<String, Map<String, Object>> entryMap : dataEntries.entrySet()) {
-								for (final Entry<String, Object> entry : entryMap.getValue().entrySet()) {
-									final JsonObject entryObject = new JsonObject();
-									entryObject.add("class", entryMap.getKey());
-									entryObject.add("name", entry.getKey());
-									entryObject.add("value", JsonSerializer.serialize(entry.getValue(), false, false, false, true));
-									jsonWriter.add(entryObject);
-								}
-							}
-							jsonWriter.closeJsonArray();
+						keyBytes = stretchPassword(passwordToUse, salt);
+						final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+						final Cipher encryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
+						encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
+						try (CipherOutputStream cipherOutputStream = new CipherOutputStream(outputStream, encryptCipher)) {
+							writeEntries(cipherOutputStream);
 						}
+					} finally {
+						Utilities.clear(salt);
+						Utilities.clear(iv);
+						Utilities.clear(keyBytes);
 					}
-				} finally {
-					Utilities.clear(salt);
-					Utilities.clear(iv);
-				}
+				});
 			}
 		} finally {
-			Arrays.fill(password, '\u0000');
+			if (password != null) {
+				Arrays.fill(password, '\u0000');
+			}
 		}
 	}
 
+	/**
+	 * Loads all entries from a file encrypted with the empty password.
+	 *
+	 * @param storeFile file to read
+	 * @throws Exception if the file is undefined, does not exist or contains invalid data
+	 */
 	@Override
 	public void load(final File storeFile) throws Exception {
 		load(storeFile, null);
 	}
 
+	/**
+	 * Loads all entries from an encrypted file, replacing the current entries. If loading fails (e.g. wrong password),
+	 * the current entries stay unchanged.
+	 *
+	 * @param storeFile file to read
+	 * @param password password for decryption, or null for the empty password. The array is cleared (filled with
+	 *            zeros) afterwards, also if loading fails.
+	 * @throws WrongPasswordException if the password is wrong or the file was manipulated
+	 * @throws Exception if the file is undefined, does not exist or contains invalid data
+	 */
 	public void load(final File storeFile, char[] password) throws Exception {
 		try {
 			if (storeFile == null) {
@@ -106,48 +143,27 @@ public class SecureDataStore extends UnsecureDataStore {
 				if (password == null) {
 					password = "".toCharArray();
 				}
-				dataEntries = new HashMap<>();
 				byte[] salt = null;
 				byte[] iv = null;
+				byte[] keyBytes = null;
 				try (FileInputStream inputStream = new FileInputStream(storeFile)) {
-					salt = new byte[RANDOMSALTSIZE];
-					final int readSaltBytes = inputStream.read(salt);
-					if (readSaltBytes != salt.length) {
+					salt = inputStream.readNBytes(RANDOMSALTSIZE);
+					if (salt.length != RANDOMSALTSIZE) {
 						throw new Exception("Cannot read password salt prefix: Data is too short");
 					}
 
-					iv = new byte[GCM_IV_SIZE];
-					final int readIvBytes = inputStream.read(iv);
-					if (readIvBytes != iv.length) {
+					iv = inputStream.readNBytes(GCM_IV_SIZE);
+					if (iv.length != GCM_IV_SIZE) {
 						throw new Exception("Cannot read initialization vector prefix: Data is too short");
 					}
 
-					final byte[] keyBytes = stretchPassword(password, salt);
+					keyBytes = stretchPassword(password, salt);
 					final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 					final Cipher decryptCipher = Cipher.getInstance(SYMMETRIC_ENCRYPTION_METHOD);
 					decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
+					final Map<String, Map<String, Object>> readEntries;
 					try (CipherInputStream cipherInputStream = new CipherInputStream(inputStream, decryptCipher)) {
-						try (JsonReader jsonReader = new JsonReader(cipherInputStream)) {
-							final JsonToken jsonToken = jsonReader.readNextToken();
-							if (jsonToken != JsonToken.JsonArray_Open) {
-								throw new Exception("SecureDataStore is corrupt");
-							} else {
-								JsonNode nextJsonNode;
-								while ((nextJsonNode = jsonReader.readNextJsonNode()) != null) {
-									if (nextJsonNode.isJsonObject()) {
-										final JsonObject entryObject = (JsonObject) nextJsonNode;
-										final String className = (String) entryObject.getSimpleValue("class");
-										if (!dataEntries.containsKey(className)) {
-											dataEntries.put(className, new HashMap<>());
-										}
-										final String entryName = (String) entryObject.getSimpleValue("name");
-										dataEntries.get(className).put(entryName, JsonSerializer.deserialize((JsonObject) entryObject.get("value")));
-									} else {
-										throw new Exception("Unexpected JSON data in SecureDataStore: " + nextJsonNode.getJsonDataType().getName());
-									}
-								}
-							}
-						}
+						readEntries = readEntries(cipherInputStream, "SecureDataStore");
 					} catch (final IOException e) {
 						if (e.getCause() != null && (e.getCause() instanceof AEADBadTagException || e.getCause() instanceof BadPaddingException)) {
 							throw new WrongPasswordException();
@@ -155,20 +171,29 @@ public class SecureDataStore extends UnsecureDataStore {
 							throw e;
 						}
 					}
+					// Only replace the current entries, if all data was decrypted and read successfully
+					dataEntries = readEntries;
 				} finally {
 					Utilities.clear(salt);
 					Utilities.clear(iv);
+					Utilities.clear(keyBytes);
 				}
 			}
 		} finally {
-			Arrays.fill(password, '\u0000');
+			if (password != null) {
+				Arrays.fill(password, '\u0000');
+			}
 		}
 	}
 
 	private static byte[] stretchPassword(final char[] password, final byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
 		final String algorithm = "PBKDF2WithHmacSHA512";
-		final KeySpec spec = new PBEKeySpec(password, salt, PBKDF2_ITERATIONS, DERIVED_KEY_LENGTH_BITS);
-		final SecretKeyFactory f = SecretKeyFactory.getInstance(algorithm);
-		return f.generateSecret(spec).getEncoded();
+		final PBEKeySpec spec = new PBEKeySpec(password, salt, PBKDF2_ITERATIONS, DERIVED_KEY_LENGTH_BITS);
+		try {
+			final SecretKeyFactory f = SecretKeyFactory.getInstance(algorithm);
+			return f.generateSecret(spec).getEncoded();
+		} finally {
+			spec.clearPassword();
+		}
 	}
 }

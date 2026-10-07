@@ -20,7 +20,7 @@ import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
 
 /**
- * FtpConnection
+ * Remote connection via FTP, based on Apache Commons Net. Transfers use binary mode.
  */
 public class FtpConnection implements RemoteConnection {
 	/** The host. */
@@ -52,10 +52,10 @@ public class FtpConnection implements RemoteConnection {
 	 * Default port for FTP is 21.
 	 * Uses FTP passive mode.
 	 *
-	 * @param host the host
-	 * @param user the user
-	 * @param password the password
-	 * @throws Exception
+	 * @param hostname host name of the server
+	 * @param username user name
+	 * @param password password
+	 * @throws Exception if the connection or login fails
 	 */
 	public FtpConnection(final String hostname, final String username, final char[] password) throws Exception {
 		this.hostname = hostname;
@@ -70,11 +70,11 @@ public class FtpConnection implements RemoteConnection {
 	 * Instantiates a new FtpConnection.
 	 * Uses FTP passive mode.
 	 *
-	 * @param hostname
-	 * @param username
-	 * @param password
-	 * @param port
-	 * @throws Exception
+	 * @param hostname host name of the server
+	 * @param username user name
+	 * @param password password
+	 * @param port port of the server
+	 * @throws Exception if the connection or login fails
 	 */
 	public FtpConnection(final String hostname, final String username, final char[] password, final int port) throws Exception {
 		this.hostname = hostname;
@@ -89,12 +89,12 @@ public class FtpConnection implements RemoteConnection {
 	/**
 	 * Instantiates a new FtpConnection.
 	 *
-	 * @param hostname
-	 * @param username
-	 * @param password
-	 * @param port
-	 * @param usePassiveMode
-	 * @throws Exception
+	 * @param hostname host name of the server
+	 * @param username user name
+	 * @param password password
+	 * @param port port of the server
+	 * @param usePassiveMode true for passive mode (usually needed behind firewalls and NAT)
+	 * @throws Exception if the connection or login fails
 	 */
 	public FtpConnection(final String hostname, final String username, final char[] password, final int port, final boolean usePassiveMode) throws Exception {
 		this.hostname = hostname;
@@ -106,6 +106,12 @@ public class FtpConnection implements RemoteConnection {
 		connect();
 	}
 
+	/**
+	 * Instantiates a new FtpConnection in passive mode.
+	 *
+	 * @param serverEntry access data with protocol "ftp"
+	 * @throws Exception if the protocol is not "ftp" or the connection or login fails
+	 */
 	public FtpConnection(final ServerAccessData serverEntry) throws Exception {
 		if (!"ftp".equalsIgnoreCase(serverEntry.getProtocol())) {
 			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for FTP connection. Only 'ftp' is allowed");
@@ -120,8 +126,25 @@ public class FtpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Sets the proxy configuration. As the connection is established by the constructor already, it is established
+	 * again with the proxy.
+	 *
+	 * @param proxyConfiguration proxy configuration, null for a direct connection
+	 * @return this connection for chaining
+	 * @throws IllegalStateException if the new connection fails
+	 */
 	public FtpConnection setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
 		this.proxyConfiguration = proxyConfiguration;
+		// The constructors connect immediately, so the proxy only takes effect with a new connection
+		if (ftpClient != null) {
+			close();
+			try {
+				connect();
+			} catch (final Exception e) {
+				throw new IllegalStateException("Cannot reconnect with proxy configuration: " + e.getMessage(), e);
+			}
+		}
 		return this;
 	}
 
@@ -139,15 +162,18 @@ public class FtpConnection implements RemoteConnection {
 				}
 			}
 
+			ftpClient.setAutodetectUTF8(true);
 			ftpClient.connect(hostname, port);
 			if (usePassiveMode) {
 				ftpClient.enterLocalPassiveMode();
 			}
-			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-			ftpClient.setAutodetectUTF8(true);
-			if (!ftpClient.login(username, new String(password))) {
+			if (!ftpClient.login(username, password == null ? "" : new String(password))) {
 				ftpClient.logout();
 				throw new Exception("Authentication failed");
+			}
+			// Binary mode must be set after login, many servers reject the TYPE command before
+			if (!ftpClient.setFileType(FTP.BINARY_FILE_TYPE)) {
+				throw new Exception("Cannot set binary transfer mode: " + ftpClient.getReplyString());
 			}
 			ftpClient.setListHiddenFiles(true);
 		} catch (final Exception e) {
@@ -157,22 +183,18 @@ public class FtpConnection implements RemoteConnection {
 	}
 
 	/**
-	 * Put a file on the server.
-	 *
-	 * @param in the in
-	 * @param dst the dst
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void uploadFile(final String filePath, final InputStream inputStream) throws Exception {
 		checkForConnection();
-		ftpClient.storeFile(filePath, inputStream);
+		if (!ftpClient.storeFile(filePath, inputStream)) {
+			throw new Exception("Cannot upload file '" + filePath + "': " + ftpClient.getReplyString());
+		}
 	}
 
 	/**
-	 * Gets the file.
-	 *
-	 * @param name the name
-	 * @return the input stream
+	 * {@inheritDoc}
 	 */
 	@Override
 	public InputStream downloadFile(final String filePath) throws Exception {
@@ -228,7 +250,9 @@ public class FtpConnection implements RemoteConnection {
 	@Override
 	public void deleteFile(final String filePath) throws Exception {
 		checkForConnection();
-		ftpClient.deleteFile(filePath);
+		if (!ftpClient.deleteFile(filePath)) {
+			throw new Exception("Cannot delete file '" + filePath + "': " + ftpClient.getReplyString());
+		}
 	}
 
 	@Override
@@ -242,19 +266,23 @@ public class FtpConnection implements RemoteConnection {
 				if (!".".equals(fileName) && !"..".equals(fileName)) {
 					if (ftpFile.isDirectory()) {
 						deleteFolder(folderPath + "/" + fileName);
-					} else {
-						ftpClient.deleteFile(folderPath + "/" + fileName);
+					} else if (!ftpClient.deleteFile(folderPath + "/" + fileName)) {
+						throw new Exception("Cannot delete file '" + folderPath + "/" + fileName + "': " + ftpClient.getReplyString());
 					}
 				}
 			}
 		}
-		ftpClient.removeDirectory(folderPath);
+		if (!ftpClient.removeDirectory(folderPath)) {
+			throw new Exception("Cannot delete folder '" + folderPath + "': " + ftpClient.getReplyString());
+		}
 	}
 
 	@Override
 	public void createFolder(final String parentFolderPath, final String folderName) throws Exception {
 		checkForConnection();
-		ftpClient.makeDirectory(parentFolderPath + "/" + folderName);
+		if (!ftpClient.makeDirectory(parentFolderPath + "/" + folderName)) {
+			throw new Exception("Cannot create folder '" + parentFolderPath + "/" + folderName + "': " + ftpClient.getReplyString());
+		}
 	}
 
 	@Override
@@ -262,12 +290,11 @@ public class FtpConnection implements RemoteConnection {
 		checkForConnection();
 
 		final FTPFile file = ftpClient.mlistFile(filePath);
-		if (file == null) {
+		if (file == null || file.isDirectory()) {
 			return null;
 		} else {
 			final String fileName = FileUtilities.getFilenameFromPath(file.getName());
-			final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(file.getTimestamp().getTime()).atZone(ZoneId.systemDefault());
-			return new FileInfo(fileName, file.getSize(), changeDate);
+			return new FileInfo(fileName, file.getSize(), getChangeDate(file));
 		}
 	}
 
@@ -276,12 +303,20 @@ public class FtpConnection implements RemoteConnection {
 		checkForConnection();
 
 		final FTPFile file = ftpClient.mlistFile(folderPath);
-		if (file == null) {
+		if (file == null || file.isFile()) {
 			return null;
 		} else {
 			final String folderName = FileUtilities.getFilenameFromPath(file.getName());
-			final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(file.getTimestamp().getTime()).atZone(ZoneId.systemDefault());
-			return new FolderInfo(folderName, changeDate);
+			return new FolderInfo(folderName, getChangeDate(file));
+		}
+	}
+
+	private static ZonedDateTime getChangeDate(final FTPFile file) {
+		if (file.getTimestamp() == null) {
+			// Not every server reports a timestamp
+			return null;
+		} else {
+			return DateUtilities.getLocalDateTimeForDate(file.getTimestamp().getTime()).atZone(ZoneId.systemDefault());
 		}
 	}
 
@@ -338,8 +373,7 @@ public class FtpConnection implements RemoteConnection {
 		if (files != null) {
 			for (final FTPFile file : files) {
 				if (file.isFile()) {
-					final ZonedDateTime changeDate = DateUtilities.getLocalDateTimeForDate(file.getTimestamp().getTime()).atZone(ZoneId.systemDefault());
-					fileInfoList.add(new FileInfo(file.getName(), file.getSize(), changeDate));
+					fileInfoList.add(new FileInfo(file.getName(), file.getSize(), getChangeDate(file)));
 				}
 			}
 		}

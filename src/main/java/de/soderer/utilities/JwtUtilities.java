@@ -1,15 +1,35 @@
 package de.soderer.utilities;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Base64;
 
 import de.soderer.json.Json5Reader;
 import de.soderer.json.JsonNode;
 import de.soderer.json.JsonObject;
 
+/**
+ * Helpers for JSON Web Tokens (JWT).
+ * The token signature is not verified.
+ */
 public class JwtUtilities {
+	private JwtUtilities() {
+		// Utility class
+	}
+
+	/**
+	 * Read the expiration time ("exp" claim) from the payload of a JWT token.
+	 * The signature of the token is NOT verified, so the result must not be used for security decisions.
+	 *
+	 * @param jwtToken
+	 *            JWT token in compact serialization ("header.payload.signature", Base64url encoded parts)
+	 * @return expiration time in UTC, or null if the token has no (numeric or numeric string) "exp" claim
+	 * @throws Exception
+	 *             if the token is null, has no payload part or the payload is no valid Base64url encoded JSON object
+	 */
 	public static ZonedDateTime getJwtTokenValidity(final String jwtToken) throws Exception {
 		try {
 			final String[] jwtParts = jwtToken.split("\\.");
@@ -20,7 +40,8 @@ public class JwtUtilities {
 				final String jwtPart = jwtParts[1];
 				String data;
 				try {
-					data = new String(Utilities.decodeBase64(jwtPart), StandardCharsets.UTF_8);
+					// JWT parts are Base64url encoded ('-' and '_' instead of '+' and '/') without padding (RFC 7515)
+					data = new String(Base64.getUrlDecoder().decode(jwtPart.trim()), StandardCharsets.UTF_8);
 				} catch (@SuppressWarnings("unused") final Exception e) {
 					data = null;
 				}
@@ -42,8 +63,12 @@ public class JwtUtilities {
 								return ZonedDateTime.ofInstant(Instant.ofEpochSecond((Long) expireDateObject), ZoneId.of("UTC"));
 							} else if (expireDateObject instanceof Integer) {
 								return ZonedDateTime.ofInstant(Instant.ofEpochSecond((Integer) expireDateObject), ZoneId.of("UTC"));
+							} else if (expireDateObject instanceof Number) {
+								// RFC 7519 NumericDate may contain fractional seconds, which are cut off here
+								final long epochSecondsExpireDate = new BigDecimal(expireDateObject.toString()).longValue();
+								return ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondsExpireDate), ZoneId.of("UTC"));
 							} else if (expireDateObject instanceof String) {
-								final Long epochSecondsExpireDate = Long.parseLong((String) expireDateObject);
+								final long epochSecondsExpireDate = Long.parseLong((String) expireDateObject);
 								return ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondsExpireDate), ZoneId.of("UTC"));
 							}
 						}

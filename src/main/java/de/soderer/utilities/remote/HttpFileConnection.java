@@ -10,11 +10,14 @@ import java.net.Proxy;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import de.soderer.network.HttpUtilities;
 import de.soderer.pac.utilities.ProxyConfiguration;
@@ -25,7 +28,8 @@ import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
 
 /**
- * HttpFileConnection
+ * Read-only remote connection to files offered by a web server with directory listings (Apache style "index of" pages).
+ * Credentials are sent as URL parameters "username" and "password".
  */
 public class HttpFileConnection implements RemoteConnection {
 	/** The useTLS. */
@@ -48,6 +52,13 @@ public class HttpFileConnection implements RemoteConnection {
 	/** The port. */
 	private int port = 80;
 
+	/**
+	 * Creates a connection with the default port (80 or 443).
+	 *
+	 * @param useTLS true for https
+	 * @param hostname host name of the server
+	 * @param startPath base path on the server, may be null
+	 */
 	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath) {
 		this.useTLS = useTLS;
 		if (useTLS) {
@@ -57,11 +68,25 @@ public class HttpFileConnection implements RemoteConnection {
 		this.startPath = startPath;
 	}
 
+	/**
+	 * Creates an http connection with port 80.
+	 *
+	 * @param hostname host name of the server
+	 * @param startPath base path on the server, may be null
+	 */
 	public HttpFileConnection(final String hostname, final String startPath) {
 		this.hostname = hostname;
 		this.startPath = startPath;
 	}
 
+	/**
+	 * Creates a connection.
+	 *
+	 * @param useTLS true for https
+	 * @param hostname host name of the server
+	 * @param startPath base path on the server, may be null
+	 * @param port port of the server
+	 */
 	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final int port) {
 		this.useTLS = useTLS;
 		this.hostname = hostname;
@@ -69,12 +94,27 @@ public class HttpFileConnection implements RemoteConnection {
 		this.port = port;
 	}
 
+	/**
+	 * Creates an http connection.
+	 *
+	 * @param hostname host name of the server
+	 * @param startPath base path on the server, may be null
+	 * @param port port of the server
+	 */
 	public HttpFileConnection(final String hostname, final String startPath, final int port) {
 		this.hostname = hostname;
 		this.startPath = startPath;
 		this.port = port;
 	}
 
+	/**
+	 * Creates an http connection with port 80 and credentials.
+	 *
+	 * @param hostname host name of the server
+	 * @param startPath base path on the server, may be null
+	 * @param username user name, may be null
+	 * @param password password, may be null
+	 */
 	public HttpFileConnection(final String hostname, final String startPath, final String username, final String password) {
 		this.hostname = hostname;
 		this.startPath = startPath;
@@ -82,6 +122,15 @@ public class HttpFileConnection implements RemoteConnection {
 		this.password = password;
 	}
 
+	/**
+	 * Creates a connection with the default port (80 or 443) and credentials.
+	 *
+	 * @param useTLS true for https
+	 * @param hostname host name of the server
+	 * @param startPath base path on the server, may be null
+	 * @param username user name, may be null
+	 * @param password password, may be null
+	 */
 	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final String username, final String password) {
 		this.useTLS = useTLS;
 		if (useTLS) {
@@ -93,6 +142,16 @@ public class HttpFileConnection implements RemoteConnection {
 		this.password = password;
 	}
 
+	/**
+	 * Creates a connection with credentials.
+	 *
+	 * @param useTLS true for https
+	 * @param hostname host name of the server
+	 * @param startPath base path on the server, may be null
+	 * @param username user name, may be null
+	 * @param password password, may be null
+	 * @param port port of the server
+	 */
 	public HttpFileConnection(final boolean useTLS, final String hostname, final String startPath, final String username, final String password, final int port) {
 		this.useTLS = useTLS;
 		this.hostname = hostname;
@@ -102,6 +161,15 @@ public class HttpFileConnection implements RemoteConnection {
 		this.port = port;
 	}
 
+	/**
+	 * Creates an http connection with credentials.
+	 *
+	 * @param hostname host name of the server
+	 * @param startPath base path on the server, may be null
+	 * @param username user name, may be null
+	 * @param password password, may be null
+	 * @param port port of the server
+	 */
 	public HttpFileConnection(final String hostname, final String startPath, final String username, final String password, final int port) {
 		this.hostname = hostname;
 		this.startPath = startPath;
@@ -110,6 +178,12 @@ public class HttpFileConnection implements RemoteConnection {
 		this.port = port;
 	}
 
+	/**
+	 * Creates a connection from access data. The share name is used as base path.
+	 *
+	 * @param serverEntry access data with protocol "http" or "https"
+	 * @throws Exception if the protocol is neither "http" nor "https"
+	 */
 	public HttpFileConnection(final ServerAccessData serverEntry) throws Exception {
 		if (!"http".equalsIgnoreCase(serverEntry.getProtocol()) && !"https".equalsIgnoreCase(serverEntry.getProtocol())) {
 			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for HTTP/HTTPS connection. Only 'http' and 'https' are allowed");
@@ -118,21 +192,24 @@ public class HttpFileConnection implements RemoteConnection {
 			hostname = serverEntry.getHostname();
 			startPath = serverEntry.getSharename();
 			username = serverEntry.getUsername();
-			password = new String(serverEntry.getPassword());
+			password = serverEntry.getPassword() == null ? null : new String(serverEntry.getPassword());
 			port = serverEntry.getPort();
 		}
 	}
 
+	/**
+	 * Sets the proxy configuration for the requests.
+	 *
+	 * @param proxyConfiguration proxy configuration, null for a direct connection
+	 * @return this connection for chaining
+	 */
 	public HttpFileConnection setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
 		this.proxyConfiguration = proxyConfiguration;
 		return this;
 	}
 
 	/**
-	 * Put a file on the server.
-	 *
-	 * @param in the in
-	 * @param dst the dst
+	 * Not supported, always throws an Exception.
 	 */
 	@Override
 	public void uploadFile(final String filePath, final InputStream inputStream) throws Exception {
@@ -140,16 +217,13 @@ public class HttpFileConnection implements RemoteConnection {
 	}
 
 	/**
-	 * Gets the file.
-	 *
-	 * @param name the name
-	 * @return the input stream
+	 * {@inheritDoc}
 	 */
 	@Override
 	public InputStream downloadFile(String filePath) throws Exception {
 		filePath = FileUtilities.trimLeadingFileSeparator(filePath);
 		try {
-			final URLConnection urlConnection = getUrl(filePath).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(filePath));
+			final URLConnection urlConnection = openUrlConnection(filePath);
 			return new BufferedInputStream(urlConnection.getInputStream());
 		} catch (final Exception e) {
 			throw new Exception("Cannot download file '" + filePath + "': " + e.getMessage(), e);
@@ -185,7 +259,7 @@ public class HttpFileConnection implements RemoteConnection {
 		final String folderPath = FileUtilities.getParentFromPath(filePath);
 		final String fileName = FileUtilities.getFilenameFromPath(filePath);
 		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(folderPath));
+			final URLConnection urlConnection = openUrlConnection(folderPath);
 
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				final byte[] data = IoUtilities.toByteArray(inputStream);
@@ -196,7 +270,7 @@ public class HttpFileConnection implements RemoteConnection {
 						final int separatorIndex = fileInfoPart.lastIndexOf(" ");
 						final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
 						final LocalDateTime modificationDate = DateUtilities.parseLocalDateTime(DateUtilities.YYYY_MM_DD_HH_MM, changeDateString);
-						final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
+						final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase(Locale.ROOT);
 						final long fileSize = getFileSize(sizeString);
 						return new FileInfo(fileName, fileSize, modificationDate.atZone(ZoneId.systemDefault()));
 					}
@@ -213,7 +287,7 @@ public class HttpFileConnection implements RemoteConnection {
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
 		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
 		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(folderPath));
+			final URLConnection urlConnection = openUrlConnection(folderPath);
 
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				// Check existence only. Modification date is not available in general.
@@ -229,10 +303,39 @@ public class HttpFileConnection implements RemoteConnection {
 				(useTLS ? "https://" : "http://")
 				+ hostname
 				+ (useTLS ? (port == 443 ? "" : ":" + port) : (port == 80 ? "" : ":" + port))
-				+ (startPath != null ? "/" + startPath : "")
-				+ "/" + path
+				+ (startPath != null ? "/" + encodePath(startPath) : "")
+				+ "/" + encodePath(path)
 				+ (username != null ? "?username=" + HttpUtilities.urlEncode(username, StandardCharsets.UTF_8) + (password != null ? "&password=" + HttpUtilities.urlEncode(password, StandardCharsets.UTF_8) : "") : "")
 				).toURL();
+	}
+
+	private URLConnection openUrlConnection(final String path) throws IOException {
+		final URL url = getUrl(path);
+		// The proxy is determined for the complete URL (e.g. by PAC rules), not only for the path
+		final Proxy proxy;
+		try {
+			proxy = proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(url.toString());
+		} catch (final IOException e) {
+			throw e;
+		} catch (final Exception e) {
+			throw new IOException("Cannot determine proxy for URL: " + e.getMessage(), e);
+		}
+		return url.openConnection(proxy);
+	}
+
+	/**
+	 * Percent-encodes each segment of a path, keeping the "/" separators. Unencoded characters like blanks make
+	 * URI.create fail.
+	 */
+	private static String encodePath(final String path) {
+		final StringBuilder encodedPath = new StringBuilder();
+		for (final String segment : path.split("/", -1)) {
+			if (encodedPath.length() > 0 || path.startsWith("/")) {
+				encodedPath.append('/');
+			}
+			encodedPath.append(URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20"));
+		}
+		return path.startsWith("/") ? encodedPath.substring(1) : encodedPath.toString();
 	}
 
 	private static List<String> getEntryLines(final byte[] data) throws Exception {
@@ -252,10 +355,11 @@ public class HttpFileConnection implements RemoteConnection {
 				}
 				return entryLines;
 			} else {
-				return null;
+				return new ArrayList<>();
 			}
 		} else {
-			return null;
+			// No directory listing
+			return new ArrayList<>();
 		}
 	}
 
@@ -264,7 +368,8 @@ public class HttpFileConnection implements RemoteConnection {
 		if (entryNameStart >= 0) {
 			final int entryNameEnd = line.indexOf("\"", entryNameStart + 9);
 			if (entryNameEnd >= 0) {
-				return line.substring(entryNameStart + 9, entryNameEnd);
+				// href values are URL encoded (e.g. "%20" for blanks)
+				return URLDecoder.decode(line.substring(entryNameStart + 9, entryNameEnd).replace("+", "%2B"), StandardCharsets.UTF_8);
 			} else {
 				return null;
 			}
@@ -321,7 +426,7 @@ public class HttpFileConnection implements RemoteConnection {
 	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String folderPath) throws Exception {
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
 		try {
-			final URLConnection urlConnection = getUrl(folderPath).openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(folderPath));
+			final URLConnection urlConnection = openUrlConnection(folderPath);
 
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				final byte[] data = IoUtilities.toByteArray(inputStream);
@@ -336,7 +441,7 @@ public class HttpFileConnection implements RemoteConnection {
 					final int separatorIndex = fileInfoPart.lastIndexOf(" ");
 					final String changeDateString = fileInfoPart.substring(0, separatorIndex).trim();
 					final LocalDateTime modificationDate = DateUtilities.parseLocalDateTime(DateUtilities.YYYY_MM_DD_HH_MM, changeDateString);
-					final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase();
+					final String sizeString = fileInfoPart.substring(separatorIndex + 1).trim().toLowerCase(Locale.ROOT);
 					final long fileSize = getFileSize(sizeString);
 					fileInfoList.add(new FileInfo(fileName, fileSize, modificationDate.atZone(ZoneId.systemDefault())));
 				}

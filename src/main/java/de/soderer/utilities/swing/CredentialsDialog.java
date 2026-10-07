@@ -6,8 +6,6 @@ import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -20,44 +18,108 @@ import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import de.soderer.utilities.Credentials;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Modal dialog asking for a username and/or a password.
+ *
+ * <p>
+ * {@link #open()} returns the entered credentials, or null if the dialog was
+ * canceled. The OK button is only enabled while a username is entered (if a
+ * username is requested). An optional checkbox lets the user choose to remember
+ * the credentials (see {@link #isRememberCredentials()}), and an optional "no
+ * password" button returns the credentials without password.
+ * </p>
+ */
 public class CredentialsDialog extends ModalDialog<Credentials> {
 	private static final long serialVersionUID = 2020023796052296409L;
 
+	/** Text shown above the input fields, may be blank */
 	private final String text;
+
+	/** Label of the username field */
 	private final String text_Username;
+
+	/** Label of the password field */
 	private final String text_Password;
+
+	/** Text of the OK button */
 	private final String text_OK;
+
+	/** Text of the cancel button */
 	private final String text_Cancel;
 
+	/** Whether a "no password" button is shown */
 	private boolean enableNoPassword = false;
+
+	/** Text of the "no password" button */
 	private String enableNoPasswordButtonText;
+
+	/** Button closing the dialog and returning the credentials without password */
 	private JButton enableNoPasswordButton;
 
+	/** Text of the "remember credentials" checkbox, blank for no checkbox */
 	private String rememberCredentialsText = null;
 
+	/** Content panel, rebuilt whenever an option affecting the layout changes */
 	private JPanel panel;
+
+	/** OK button, only enabled while a username is entered (if a username is requested) */
 	private JButton okButton;
 
+	/** Whether the dialog asks for a username */
 	private final boolean aquireUsername;
+
+	/** Whether the dialog asks for a password */
 	private final boolean aquirePassword;
 
+	/** Currently entered username, null if no username is requested */
 	private String username = null;
-	private char[] password = null;
 
+	/** Currently entered password, null if no password is requested (transient: never serialized) */
+	private transient char[] password = null;
+
+	/** Input field of the username, null if no username is requested */
 	private JTextField userField;
-	private JTextField passwordField;
 
+	/** Input field of the password, null if no password is requested */
+	private JPasswordField passwordField;
+
+	/** Status of the "remember credentials" checkbox */
 	private boolean rememberCredentials = false;
 
+	/**
+	 * Creates a credentials dialog with the default texts of the language
+	 * resources.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the input fields, may be blank
+	 * @param aquireUsername true to ask for a username
+	 * @param aquirePassword true to ask for a password
+	 */
 	public CredentialsDialog(final Window parent, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword) {
 		this(parent, title, text, aquireUsername, aquirePassword, LangResources.get("username"), LangResources.get("password"), LangResources.get("ok"), LangResources.get("cancel"));
 	}
 
+	/**
+	 * Creates a credentials dialog with custom label and button texts.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the input fields, may be blank
+	 * @param aquireUsername true to ask for a username
+	 * @param aquirePassword true to ask for a password
+	 * @param text_Username label of the username field
+	 * @param text_Password label of the password field
+	 * @param text_OK text of the OK button
+	 * @param text_Cancel text of the cancel button
+	 */
 	public CredentialsDialog(final Window parent, final String title, final String text, final boolean aquireUsername, final boolean aquirePassword,
 			final String text_Username, final String text_Password, final String text_OK, final String text_Cancel) {
 		super(parent, title);
@@ -115,9 +177,10 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			userField.setPreferredSize(new Dimension(200, userField.getPreferredSize().height));
 			userField.setText("");
 			username = "";
-			userField.addKeyListener(new KeyAdapter() {
+			// A DocumentListener also covers input that is not typed, like pasting via mouse or drag and drop
+			userField.getDocument().addDocumentListener(new FieldChangeListener() {
 				@Override
-				public void keyReleased(final KeyEvent event) {
+				protected void fieldChanged() {
 					username = userField.getText();
 					checkButtonStatus();
 				}
@@ -136,10 +199,11 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			passwordField.setPreferredSize(new Dimension(200, passwordField.getPreferredSize().height));
 			passwordField.setText("");
 			password = "".toCharArray();
-			passwordField.addKeyListener(new KeyAdapter() {
+			passwordField.getDocument().addDocumentListener(new FieldChangeListener() {
 				@Override
-				public void keyReleased(final KeyEvent event) {
-					password = passwordField.getText().toCharArray();
+				protected void fieldChanged() {
+					// getPassword() avoids an immutable String copy of the password
+					password = passwordField.getPassword();
 					checkButtonStatus();
 				}
 			});
@@ -172,7 +236,8 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 			enableNoPasswordButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(final ActionEvent event) {
-					returnValue = getCredentials().setPassword(null);
+					final Credentials credentials = getCredentials();
+					returnValue = credentials == null ? new Credentials() : credentials.setPassword(null);
 					dispose();
 				}
 			});
@@ -228,6 +293,12 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		okButton.setEnabled(!aquireUsername || Utilities.isNotEmpty(username));
 	}
 
+	/**
+	 * Sets the text of a "remember credentials" checkbox.
+	 *
+	 * @param rememberCredentialsText text of the checkbox, blank for no checkbox
+	 * @return this dialog for chaining
+	 */
 	public CredentialsDialog setRememberCredentialsText(final String rememberCredentialsText) {
 		this.rememberCredentialsText = rememberCredentialsText;
 		remove(panel);
@@ -235,6 +306,12 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		return this;
 	}
 
+	/**
+	 * Sets the initial status of the "remember credentials" checkbox.
+	 *
+	 * @param rememberCredentials true to check the checkbox initially
+	 * @return this dialog for chaining
+	 */
 	public CredentialsDialog setRememberCredentials(final boolean rememberCredentials) {
 		this.rememberCredentials = rememberCredentials;
 		remove(panel);
@@ -242,10 +319,22 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		return this;
 	}
 
+	/**
+	 * Returns the status of the "remember credentials" checkbox, also after the
+	 * dialog was closed.
+	 *
+	 * @return true if the user wants the credentials to be remembered
+	 */
 	public boolean isRememberCredentials() {
 		return rememberCredentials;
 	}
 
+	/**
+	 * Returns the currently entered credentials.
+	 *
+	 * @return credentials with the requested parts (username and/or password),
+	 *         null if neither username nor password is requested
+	 */
 	public Credentials getCredentials() {
 		if (aquireUsername && aquirePassword) {
 			if (username != null) {
@@ -266,14 +355,55 @@ public class CredentialsDialog extends ModalDialog<Credentials> {
 		}
 	}
 
+	/**
+	 * Shows or hides a "no password" button with the default text of the language
+	 * resources. The button closes the dialog and returns the credentials without
+	 * password.
+	 *
+	 * @param enable true to show the button
+	 * @return this dialog for chaining
+	 */
 	public CredentialsDialog enableNoPassword(final boolean enable) {
 		enableNoPassword(enable, LangResources.get("noPassword"));
 		return this;
 	}
 
+	/**
+	 * Shows or hides a "no password" button. The button closes the dialog and
+	 * returns the credentials without password.
+	 *
+	 * @param enable true to show the button
+	 * @param enableNoPasswordButtonTextParam text of the button
+	 * @return this dialog for chaining
+	 */
 	public CredentialsDialog enableNoPassword(final boolean enable, final String enableNoPasswordButtonTextParam) {
 		enableNoPassword = enable;
 		enableNoPasswordButtonText = enableNoPasswordButtonTextParam;
+		// Rebuild the components, otherwise the button would only appear if another setter is called afterwards
+		remove(panel);
+		createComponents(this);
 		return this;
+	}
+
+	/**
+	 * Calls {@link #fieldChanged()} on every change of a text field's document.
+	 */
+	private abstract static class FieldChangeListener implements DocumentListener {
+		protected abstract void fieldChanged();
+
+		@Override
+		public void insertUpdate(final DocumentEvent event) {
+			fieldChanged();
+		}
+
+		@Override
+		public void removeUpdate(final DocumentEvent event) {
+			fieldChanged();
+		}
+
+		@Override
+		public void changedUpdate(final DocumentEvent event) {
+			// Attribute changes only, no text change
+		}
 	}
 }

@@ -18,6 +18,12 @@ import java.util.regex.Pattern;
 
 import de.soderer.utilities.collection.CaseInsensitiveLinkedMap;
 
+/**
+ * Reader for .properties files, which, unlike java.util.Properties, keeps the order of the keys and also provides
+ * the comments of the keys, the duplicate keys and the number of empty lines before each key (e.g. to rewrite a file
+ * with the same structure). Keys are read case insensitive by default.
+ * Escapes, continuation lines and separators ('=', ':' or whitespace) are handled like java.util.Properties does.
+ */
 public class PropertiesReader implements Closeable {
 	private static final Pattern UNICODE_ESCAPE_PATTERN = Pattern.compile("\\\\u([0-9A-Fa-f]{4})");
 
@@ -52,6 +58,12 @@ public class PropertiesReader implements Closeable {
 	 */
 	private Map<String, Integer> emptyLinesBefore = new LinkedHashMap<>();
 
+	/**
+	 * Creates a reader for ISO-8859-1 encoded data (the standard encoding of .properties files).
+	 *
+	 * @param inputStream stream to read, closed by {@link #close()}
+	 * @throws Exception if the stream is null
+	 */
 	public PropertiesReader(final InputStream inputStream) throws Exception {
 		if (inputStream == null) {
 			throw new Exception("Invalid empty inputStream");
@@ -60,6 +72,13 @@ public class PropertiesReader implements Closeable {
 		}
 	}
 
+	/**
+	 * Creates a reader for data in the given encoding.
+	 *
+	 * @param inputStream stream to read, closed by {@link #close()}
+	 * @param encoding encoding of the data
+	 * @throws Exception if the stream is null
+	 */
 	public PropertiesReader(final InputStream inputStream, final Charset encoding) throws Exception {
 		if (inputStream == null) {
 			throw new Exception("Invalid empty inputStream");
@@ -68,32 +87,72 @@ public class PropertiesReader implements Closeable {
 		}
 	}
 
+	/**
+	 * Whether keys are read case insensitive.
+	 *
+	 * @return true for case insensitive keys (default)
+	 */
 	public boolean isReadKeysCaseInsensitive() {
 		return readKeysCaseInsensitive;
 	}
 
+	/**
+	 * Sets whether keys are read case insensitive. Must be set before {@link #read()}.
+	 *
+	 * @param readKeysCaseInsensitive true for case insensitive keys
+	 */
 	public void setReadKeysCaseInsensitive(final boolean readKeysCaseInsensitive) {
 		this.readKeysCaseInsensitive = readKeysCaseInsensitive;
 	}
 
+	/**
+	 * Sets whether keys are read case insensitive. Must be set before {@link #read()}.
+	 *
+	 * @param readKeysCaseInsensitiveParam true for case insensitive keys
+	 * @return this instance for chaining
+	 */
 	public PropertiesReader withReadKeysCaseInsensitive(final boolean readKeysCaseInsensitiveParam) {
 		setReadKeysCaseInsensitive(readKeysCaseInsensitiveParam);
 		return this;
 	}
 
+	/**
+	 * Whether the value of the first occurrence of a duplicate key is kept.
+	 *
+	 * @return true to keep the first value, false to keep the last value (default)
+	 */
 	public boolean isFirstDuplicateValueWins() {
 		return firstDuplicateValueWins;
 	}
 
+	/**
+	 * Sets whether the value of the first occurrence of a duplicate key is kept.
+	 *
+	 * @param firstDuplicateValueWins true to keep the first value, false to keep the last value (default)
+	 */
 	public void setFirstDuplicateValueWins(final boolean firstDuplicateValueWins) {
 		this.firstDuplicateValueWins = firstDuplicateValueWins;
 	}
 
+	/**
+	 * Sets whether the value of the first occurrence of a duplicate key is kept.
+	 *
+	 * @param firstDuplicateValueWinsParam true to keep the first value, false to keep the last value (default)
+	 * @return this instance for chaining
+	 */
 	public PropertiesReader withFirstDuplicateValueWins(final boolean firstDuplicateValueWinsParam) {
 		setFirstDuplicateValueWins(firstDuplicateValueWinsParam);
 		return this;
 	}
 
+	/**
+	 * Reads all properties of the stream. Comments, duplicate keys and empty lines are available afterwards via
+	 * {@link #getComments()}, {@link #getDuplicateKeys()} and {@link #getEmptyLinesBefore()}.
+	 *
+	 * @return keys and unescaped values in the order of their first occurrence
+	 * @throws IllegalStateException if this reader is already closed
+	 * @throws Exception if the data cannot be read or contains invalid escapes
+	 */
 	public Map<String, String> read() throws Exception {
 		if (inputReader == null) {
 			throw new IllegalStateException("PropertiesReader is already closed");
@@ -211,6 +270,10 @@ public class PropertiesReader implements Closeable {
 	/**
 	 * Unescape a key in its stored form (counterpart of PropertiesWriter.escapeKey()),
 	 * including the whitespace trimming that is applied when reading a .properties file.
+	 *
+	 * @param rawKey key as stored in the file
+	 * @return unescaped key
+	 * @throws Exception if the key contains an invalid escape sequence
 	 */
 	public static String unescapeKey(final String rawKey) throws Exception {
 		try {
@@ -246,6 +309,10 @@ public class PropertiesReader implements Closeable {
 	/**
 	 * Unescape a value in its stored form (counterpart of PropertiesWriter.escapeValue()),
 	 * including the leading whitespace trimming that is applied when reading a .properties file.
+	 *
+	 * @param rawValue value as stored in the file
+	 * @return unescaped value
+	 * @throws Exception if the value contains an invalid escape sequence
 	 */
 	public static String unescapeValue(final String rawValue) throws Exception {
 		try {
@@ -305,6 +372,12 @@ public class PropertiesReader implements Closeable {
 		inputReader = null;
 	}
 
+	/**
+	 * Comments of the keys read by {@link #read()} (lines starting with '#' or '!' directly or indirectly before a key,
+	 * without the comment character, multiple lines joined by "\n").
+	 *
+	 * @return comments by key
+	 */
 	public Map<String, String> getComments() {
 		return comments;
 	}
@@ -312,6 +385,8 @@ public class PropertiesReader implements Closeable {
 	/**
 	 * Keys that occurred more than once in the data read by read().
 	 * Which value was kept depends on isFirstDuplicateValueWins().
+	 *
+	 * @return duplicate keys in order of their first duplicate occurrence
 	 */
 	public Set<String> getDuplicateKeys() {
 		return duplicateKeys;
@@ -320,11 +395,20 @@ public class PropertiesReader implements Closeable {
 	/**
 	 * Number of empty lines before the keys read by read() (including those before a key's comment).
 	 * Keys without preceding empty lines are not contained.
+	 *
+	 * @return number of empty lines by key
 	 */
 	public Map<String, Integer> getEmptyLinesBefore() {
 		return emptyLinesBefore;
 	}
 
+	/**
+	 * Reads properties from a string (with case insensitive keys).
+	 *
+	 * @param propertiesString properties data
+	 * @return keys and unescaped values in the order of their first occurrence
+	 * @throws Exception if the data contains invalid escapes
+	 */
 	public static Map<String, String> readPropertiesString(final String propertiesString) throws Exception {
 		// Bytes and reader must use the same charset, otherwise non-ASCII chars become mojibake
 		try (PropertiesReader reader = new PropertiesReader(new ByteArrayInputStream(propertiesString.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8)) {

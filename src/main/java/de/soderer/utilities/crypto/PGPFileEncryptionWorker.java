@@ -24,7 +24,8 @@ import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 /**
- * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
+ * Worker that encrypts data with a PGP public key into an ASCII-armored, ZIP compressed PGP message.<br>
+ * Old JREs may need the installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength.
  */
 public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 	private InputStream dataToEncrypt = null;
@@ -33,15 +34,35 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 	private boolean useIntegrityPacket = true;
 	private PgpSymmetricEncryptionMethod pgpSymmetricEncryptionMethod = PgpSymmetricEncryptionMethod.AES_256;
 
+	/**
+	 * Returns whether an integrity packet (modification detection code) is added.
+	 *
+	 * @return true if an integrity packet is added
+	 */
 	public boolean isUseIntegrityPacket() {
 		return useIntegrityPacket;
 	}
 
+	/**
+	 * Sets whether an integrity packet (modification detection code) is added (default true).
+	 *
+	 * @param useIntegrityPacket true to add an integrity packet
+	 * @return this worker
+	 */
 	public PGPFileEncryptionWorker setUseIntegrityPacket(final boolean useIntegrityPacket) {
 		this.useIntegrityPacket = useIntegrityPacket;
 		return this;
 	}
 
+	/**
+	 * Creates a PGP encryption worker. The data stream is not closed, the output stream is not closed but finished
+	 * with the armor footer.
+	 *
+	 * @param parent parent to report progress to, may be null
+	 * @param dataToEncrypt stream with the data to encrypt
+	 * @param encryptedData stream to write the encrypted message to
+	 * @param publicKey public key of the recipient
+	 */
 	public PGPFileEncryptionWorker(final WorkerParentSimple parent, final InputStream dataToEncrypt, final OutputStream encryptedData, final PGPPublicKey publicKey) {
 		super(parent);
 		this.dataToEncrypt = dataToEncrypt;
@@ -49,16 +70,34 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 		this.publicKey = publicKey;
 	}
 
+	/**
+	 * Sets the symmetric encryption method by name (default AES-256).
+	 *
+	 * @param pgpSymmetricEncryptionMethod method name like "AES-256", see {@link PgpSymmetricEncryptionMethod#getByName(String)}
+	 * @return this worker
+	 * @throws Exception if the name is unknown
+	 */
 	public PGPFileEncryptionWorker setPgpSymmetricEncryptionMethod(final String pgpSymmetricEncryptionMethod) throws Exception {
 		this.pgpSymmetricEncryptionMethod = PgpSymmetricEncryptionMethod.getByName(pgpSymmetricEncryptionMethod);
 		return this;
 	}
 
+	/**
+	 * Sets the symmetric encryption method (default AES-256).
+	 *
+	 * @param pgpSymmetricEncryptionMethod symmetric encryption method
+	 * @return this worker
+	 */
 	public PGPFileEncryptionWorker setPgpSymmetricEncryptionMethod(final PgpSymmetricEncryptionMethod pgpSymmetricEncryptionMethod) {
 		this.pgpSymmetricEncryptionMethod = pgpSymmetricEncryptionMethod;
 		return this;
 	}
 
+	/**
+	 * Returns the symmetric encryption method.
+	 *
+	 * @return symmetric encryption method
+	 */
 	public PgpSymmetricEncryptionMethod getPgpSymmetricEncryptionMethod() {
 		return pgpSymmetricEncryptionMethod;
 	}
@@ -96,7 +135,9 @@ public class PGPFileEncryptionWorker extends WorkerSimple<Boolean> {
 			compressedDataGeneratorStream = compressedDataGenerator.open(encryptedDataGeneratorStream);
 
 			literalDataGenerator = new PGPLiteralDataGenerator();
-			literalDataGeneratorStream = literalDataGenerator.open(compressedDataGeneratorStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE, dataToEncrypt.available(), DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
+			// Use partial body lengths: available() is no reliable total size of a stream, and a literal data packet
+			// with a fixed but wrong length produces a corrupt message
+			literalDataGeneratorStream = literalDataGenerator.open(compressedDataGeneratorStream, PGPLiteralData.BINARY, PGPLiteralData.CONSOLE, DateUtilities.getDateForLocalDateTime(LocalDateTime.now()), new byte[4096]);
 
 			final byte[] buffer = new byte[4096];
 			int bytesRead;

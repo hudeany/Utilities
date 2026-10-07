@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.Locale;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
@@ -19,7 +20,15 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * Worker that encrypts a stream with a password.<br>
+ * The key is derived with PBKDF2 from the password and a 16 byte random salt. The output consists of the salt,
+ * the random initialization vector and the encrypted data. Both streams are closed after the work.
+ */
 public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
+	/**
+	 * Return value of stream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private InputStream dataInputStream = null;
@@ -31,12 +40,12 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 	private final int randomSaltSize = 16;
 
 	/**
-	 * Symmetric encrypt inputStream
+	 * Symmetric encrypt inputStream with the default method {@link CryptographicUtilities#DEFAULT_SYMMETRIC_ENCRYPTION_METHOD}.
 	 *
-	 * @param parent
-	 * @param dataInputStream
-	 * @param encryptedDataOutputStream
-	 * @param password
+	 * @param parent parent to report progress to, may be null
+	 * @param dataInputStream stream with the data to encrypt
+	 * @param encryptedDataOutputStream stream to write the encrypted data to
+	 * @param password password to derive the key from
 	 */
 	public SymmetricEncryptionWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final OutputStream encryptedDataOutputStream, final char[] password) {
 		this(parent, dataInputStream, encryptedDataOutputStream, password, null);
@@ -45,11 +54,12 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 	/**
 	 * Symmetric encrypt inputStream
 	 *
-	 * @param parent
-	 * @param dataInputStream
-	 * @param encryptedDataOutputStream
-	 * @param password
-	 * @param encryptionMethod
+	 * @param parent parent to report progress to, may be null
+	 * @param dataInputStream stream with the data to encrypt
+	 * @param encryptedDataOutputStream stream to write the encrypted data to
+	 * @param password password to derive the key from
+	 * @param encryptionMethod cipher transformation (e.g. "AES/CBC/PKCS7Padding" or "AES/GCM/NoPadding"),
+	 *        blank for {@link CryptographicUtilities#DEFAULT_SYMMETRIC_ENCRYPTION_METHOD}
 	 */
 	public SymmetricEncryptionWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final OutputStream encryptedDataOutputStream, final char[] password, final String encryptionMethod) {
 		super(parent);
@@ -63,6 +73,11 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	/**
+	 * Sets the expected data size in bytes for the progress display, if the stream cannot tell its size.
+	 *
+	 * @param dataSizeHint expected data size in bytes
+	 */
 	public void setDataSizeHint(final long dataSizeHint) {
 		this.dataSizeHint = dataSizeHint;
 	}
@@ -75,7 +90,7 @@ public class SymmetricEncryptionWorker extends WorkerSimple<Boolean> {
 		if ("TripleDES".equalsIgnoreCase(encryptionMethod) || "3DES".equalsIgnoreCase(encryptionMethod)) {
 			encryptionMethod = "DESede";
 		}
-		encryptionMethod = encryptionMethod.toLowerCase();
+		encryptionMethod = encryptionMethod.toLowerCase(Locale.ROOT);
 
 		signalProgress();
 

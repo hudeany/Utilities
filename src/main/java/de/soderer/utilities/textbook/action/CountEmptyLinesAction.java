@@ -5,8 +5,18 @@ import java.util.List;
 import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Counts the empty lines (without any character except the line break). Lines are not changed.
+ */
 public class CountEmptyLinesAction implements TextLineAction {
 	private long numberOfLines = 0;
+
+	/**
+	 * Creates the action.
+	 */
+	public CountEmptyLinesAction() {
+		// Nothing to initialize
+	}
 
 	@Override
 	public boolean execute(final long overallLineIndex, final int pageLineIndex, final List<String> pageLines, final String lineWithLinebreak) throws Exception {
@@ -23,12 +33,16 @@ public class CountEmptyLinesAction implements TextLineAction {
 
 		if (Utilities.isEmpty(lineWithoutLinebreak)) {
 			numberOfLines++;
-			return true;
-		} else {
-			return false;
 		}
+		// Counting never changes the page
+		return false;
 	}
 
+	/**
+	 * Returns the number of empty lines found so far.
+	 *
+	 * @return number of empty lines
+	 */
 	public long getNumberOfLines() {
 		return numberOfLines;
 	}

@@ -41,7 +41,15 @@ import de.soderer.utilities.Tuple;
 import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Remote connection via SSH (scp and shell commands), based on JSch. Authentication by key file and/or password.
+ * The server's host key is checked against a known hosts file or an expected fingerprint (see {@link #DISABLE_HOST_KEY_CHECK}).
+ * Paths are passed to the remote shell in single quotes.
+ */
 public class SftpConnection implements RemoteConnection {
+	/**
+	 * Return value of InputStream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	/** The host. */
@@ -84,17 +92,31 @@ public class SftpConnection implements RemoteConnection {
 
 	private OutputStream newKnownHosts;
 
+	/**
+	 * Creates a connection from access data.
+	 *
+	 * @param serverEntry access data with protocol "ssh" or "sftp"; its host key is a known hosts file path, a fingerprint or {@link #DISABLE_HOST_KEY_CHECK}
+	 * @throws Exception if the protocol is not supported or the connection fails
+	 */
 	public SftpConnection(final ServerAccessData serverEntry) throws Exception {
 		this(serverEntry, null);
 	}
 
+	/**
+	 * Creates a connection from access data and writes the host key, if it was verified by fingerprint, in known hosts format.
+	 *
+	 * @param serverEntry access data with protocol "ssh" or "sftp"; its host key is a known hosts file path, a fingerprint or {@link #DISABLE_HOST_KEY_CHECK}
+	 * @param newKnownHosts stream receiving the verified host key, may be null
+	 * @throws Exception if the protocol is not supported or the connection fails
+	 */
 	public SftpConnection(final ServerAccessData serverEntry, final OutputStream newKnownHosts) throws Exception {
 		if (!"ssh".equalsIgnoreCase(serverEntry.getProtocol()) && !"sftp".equalsIgnoreCase(serverEntry.getProtocol())) {
 			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for SFTP connection. Only 'ssh' and 'sftp' are allowed");
 		} else {
 			hostname = serverEntry.getHostname();
 			username = serverEntry.getUsername();
-			keyFileData = FileUtilities.readFileToByteArray(new File(serverEntry.getKeyFile()));
+			// Password only access data have no key file
+			keyFileData = Utilities.isBlank(serverEntry.getKeyFile()) ? null : FileUtilities.readFileToByteArray(new File(Utilities.replaceUsersHome(serverEntry.getKeyFile())));
 			password = serverEntry.getPassword();
 			port = serverEntry.getPort();
 			hostKey = serverEntry.getHostKey();
@@ -105,10 +127,33 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Creates a connection.
+	 *
+	 * @param hostname host name of the server
+	 * @param username user name
+	 * @param keyFileData content of the private key file, or null for password authentication
+	 * @param password password, or passphrase of the key file
+	 * @param port port of the server
+	 * @param hostKey known hosts file path (null for "~/.ssh/known_hosts"), expected fingerprint ("SHA256:..." or MD5 hex) or {@link #DISABLE_HOST_KEY_CHECK}
+	 * @throws Exception if the connection fails
+	 */
 	public SftpConnection(final String hostname, final String username, final byte[] keyFileData, final char[] password, final int port, final String hostKey) throws Exception {
 		this(hostname, username, keyFileData, password, port, hostKey, null);
 	}
 
+	/**
+	 * Creates a connection and writes the host key, if it was verified by fingerprint, in known hosts format.
+	 *
+	 * @param hostname host name of the server
+	 * @param username user name
+	 * @param keyFileData content of the private key file, or null for password authentication
+	 * @param password password, or passphrase of the key file
+	 * @param port port of the server
+	 * @param hostKey known hosts file path (null for "~/.ssh/known_hosts"), expected fingerprint ("SHA256:..." or MD5 hex) or {@link #DISABLE_HOST_KEY_CHECK}
+	 * @param newKnownHosts stream receiving the verified host key, may be null
+	 * @throws Exception if the connection fails
+	 */
 	public SftpConnection(final String hostname, final String username, final byte[] keyFileData, final char[] password, final int port, final String hostKey, final OutputStream newKnownHosts) throws Exception {
 		this.hostname = hostname;
 		this.username = username;
@@ -122,8 +167,25 @@ public class SftpConnection implements RemoteConnection {
 		connect();
 	}
 
+	/**
+	 * Sets the proxy configuration (HTTP proxy). As the connection is established by the constructor already, it is
+	 * established again with the proxy.
+	 *
+	 * @param proxyConfiguration proxy configuration, null for a direct connection
+	 * @return this connection for chaining
+	 * @throws IllegalStateException if the new connection fails
+	 */
 	public SftpConnection setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
 		this.proxyConfiguration = proxyConfiguration;
+		// The constructors connect immediately, so the proxy only takes effect with a new connection
+		if (session != null) {
+			close();
+			try {
+				connect();
+			} catch (final Exception e) {
+				throw new IllegalStateException("Cannot reconnect with proxy configuration: " + e.getMessage(), e);
+			}
+		}
 		return this;
 	}
 
@@ -154,9 +216,10 @@ public class SftpConnection implements RemoteConnection {
 				System.err.println("WARNING: SSH host key checking is explicitly disabled for host '" + hostname
 						+ "'. This connection is not protected against man-in-the-middle attacks.");
 				session.setConfig("StrictHostKeyChecking", "no");
-			} else if (hostKey != null && hostKey.matches("[A-Fa-f0-9:]+")) {
-				// Special fingerprint check afterwards
-				session.setConfig("StrictHostKeyChecking", "no");
+			} else if (isHostKeyFingerprint(hostKey)) {
+				// The fingerprint is checked during the key exchange, so no credentials are sent to a host with an unexpected key
+				jsch.setHostKeyRepository(new FingerprintHostKeyRepository(hostKey));
+				session.setConfig("StrictHostKeyChecking", "yes");
 				checkHostKeyFingerprint = true;
 			} else {
 				// Secure default: null or empty falls back to the local known_hosts file
@@ -194,33 +257,20 @@ public class SftpConnection implements RemoteConnection {
 
 			session.connect();
 
-			if (checkHostKeyFingerprint) {
+			if (checkHostKeyFingerprint && newKnownHosts != null) {
+				// The host key was verified by its fingerprint, so it can be stored as known host
 				final HostKey actualHostKey = session.getHostKey();
-				final String actualHostKeyFingerprint = actualHostKey.getFingerPrint(jsch);
-
-				if (!hostKey.replace(":", "").trim().equalsIgnoreCase(actualHostKeyFingerprint.replace(":", "").trim())) {
-					throw new UnknownHostException("Unexpected fingerprint of hostkey. \nExpected: " + hostKey + " \nHost: " + actualHostKeyFingerprint);
-				}
-
-				if (newKnownHosts != null) {
-					final HostKeyRepository hostKeyRepository = jsch.getHostKeyRepository();
-					final HostKey[] hostKeys = hostKeyRepository.getHostKey();
-					if (hostKeys != null) {
-						for (final HostKey hostKeyItem : hostKeys) {
-							newKnownHosts.write((hostKeyItem.getHost() + " " + hostKeyItem.getType() + " " + hostKeyItem.getKey() + "\n").getBytes(StandardCharsets.UTF_8));
-						}
-					}
-				}
+				newKnownHosts.write((actualHostKey.getHost() + " " + actualHostKey.getType() + " " + actualHostKey.getKey() + "\n").getBytes(StandardCharsets.UTF_8));
 			}
 		} catch (final JSchException jse) {
 			if (jse.getCause() != null && jse.getCause() instanceof UnknownHostException) {
 				close();
 				throw new Exception("Cannot connect to host: " + hostname);
-			} else if (jse.getMessage().contains("UnknownHostKey")) {
+			} else if (jse.getMessage() != null && (jse.getMessage().contains("UnknownHostKey") || jse.getMessage().contains("reject HostKey"))) {
 				final HostKey actualHostKey = session.getHostKey();
-				final String actualHostKeyFingerprint = actualHostKey.getFingerPrint(jsch);
+				final String actualHostKeyFingerprint = actualHostKey == null ? null : actualHostKey.getFingerPrint(jsch);
 				close();
-				throw new UnknownHostKeyException("Cannot connect to host, because its hostkey is unknown", hostname, actualHostKeyFingerprint);
+				throw new UnknownHostKeyException("Cannot connect to host, because its hostkey is unknown or does not match the expected fingerprint", hostname, actualHostKeyFingerprint);
 			} else {
 				close();
 				throw jse;
@@ -234,6 +284,13 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Returns the names of the symbolic links in a folder, which point to folders.
+	 *
+	 * @param directoryPath path of the folder
+	 * @return sorted names of the links to folders
+	 * @throws Exception if the folder cannot be listed
+	 */
 	public List<String> getFolderLinks(final String directoryPath) throws Exception {
 		final List<String> folderList = new ArrayList<>();
 		final List<String> linkList = new ArrayList<>();
@@ -241,7 +298,7 @@ public class SftpConnection implements RemoteConnection {
 		try {
 			// Read links
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find \"" + directoryPath + (directoryPath.endsWith("/") ? "" : "/") + "\" -mindepth 1 -maxdepth 1 -type l");
+			((ChannelExec) channel).setCommand("find " + quoteForShell(directoryPath + (directoryPath.endsWith("/") ? "" : "/")) + " -mindepth 1 -maxdepth 1 -type l");
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
@@ -272,6 +329,13 @@ public class SftpConnection implements RemoteConnection {
 		return folderList;
 	}
 
+	/**
+	 * Returns the names of the symbolic links in a folder, which point to files.
+	 *
+	 * @param filePath path of the folder
+	 * @return sorted names of the links to files
+	 * @throws Exception if the folder cannot be listed
+	 */
 	public List<String> getFileLinks(final String filePath) throws Exception {
 		final List<String> fileList = new ArrayList<>();
 		final List<String> linkList = new ArrayList<>();
@@ -279,7 +343,7 @@ public class SftpConnection implements RemoteConnection {
 		try {
 			// Read links
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find \"" + filePath + (filePath.endsWith("/") ? "" : "/") + "\" -mindepth 1 -maxdepth 1 -type l");
+			((ChannelExec) channel).setCommand("find " + quoteForShell(filePath + (filePath.endsWith("/") ? "" : "/")) + " -mindepth 1 -maxdepth 1 -type l");
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
@@ -312,7 +376,7 @@ public class SftpConnection implements RemoteConnection {
 
 	@Override
 	public void createFolder(final String selectedFilePath, final String folderName) throws Exception {
-		executeCommand("mkdir \"" + selectedFilePath + "/" + folderName + "\"");
+		executeCommand("mkdir " + quoteForShell(selectedFilePath + "/" + folderName));
 	}
 
 	@Override
@@ -329,11 +393,18 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Uploads data into a remote file via scp, reading the complete data into memory first.
+	 *
+	 * @param filePath path of the remote file
+	 * @param fileInputStream data to upload, is not closed
+	 * @throws Exception if the upload fails
+	 */
 	public void uploadFileAlternative(final String filePath, final InputStream fileInputStream) throws Exception {
 		Channel channel = null;
 		try {
 			final byte[] fileData = IoUtilities.toByteArray(fileInputStream);
-			String command = "scp -p -t \"" + filePath + "\"";
+			String command = "scp -p -t " + quoteForShell(filePath);
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
@@ -345,7 +416,7 @@ public class SftpConnection implements RemoteConnection {
 
 				// send command "C0664 filesize filename"
 				final String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
-				command = "C0664 " + fileData.length + " \"" + fileName + "\"\n";
+				command = "C0664 " + fileData.length + " " + fileName + "\n";
 				outStream.write(command.getBytes(StandardCharsets.UTF_8));
 				outStream.flush();
 
@@ -378,7 +449,7 @@ public class SftpConnection implements RemoteConnection {
 			}
 
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -l \"" + filePath + "\"");
+			((ChannelExec) channel).setCommand("ls -ld " + quoteForShell(filePath));
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
@@ -394,6 +465,10 @@ public class SftpConnection implements RemoteConnection {
 					return null;
 				} else {
 					final JschFileData fileData = new JschFileData(successString);
+					if (fileData.getFileType() == JschFileType.Directory) {
+						// Directories are no files
+						return null;
+					}
 					final ZonedDateTime changeDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
 					return new FileInfo(fileName, fileData.getSize(), changeDate);
 				}
@@ -408,24 +483,25 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("scp -f \"" + filePath + "\"");
+			((ChannelExec) channel).setCommand("scp -f " + quoteForShell(filePath));
 
 			final OutputStream outStream = channel.getOutputStream();
 			final InputStream inStream = channel.getInputStream();
-			// InputStream inErrorStream = channel.getExtInputStream();
 
 			channel.connect();
 
 			// send '\0' to start data transfer
 			sendZeroByte(outStream);
 
-			if (channel.getExitStatus() > 0) {
-				final byte[] errortextData = readStream(inStream);
+			// scp answers with "C<rights> <size> <name>" or with an error marker byte 1 or 2 followed by the message
+			final int firstByte = inStream.read();
+			if (firstByte == 1 || firstByte == 2 || firstByte < 0) {
+				final byte[] errortextData = readStreamUntilEndOrLinefeed(inStream);
 				final String errortext = new String(errortextData, StandardCharsets.UTF_8).trim();
 				throw new Exception("Download of file '" + filePath + "' failed: " + errortext);
 			}
 
-			// read rights key like '0644 ' (5 bytes)
+			// read rights key like '0644 ' (5 bytes), the leading 'C' was read above
 			final byte[] rightsData = readStreamUntilBlankOrEndOrLinefeed(inStream);
 			@SuppressWarnings("unused")
 			String rights = null;
@@ -451,55 +527,40 @@ public class SftpConnection implements RemoteConnection {
 			// send '\0' to start data transfer
 			sendZeroByte(outStream);
 
-			return new SftpInputStream(outStream, inStream, filesize);
+			return new SftpInputStream(channel, outStream, inStream, filesize);
 		} catch (final Exception e) {
+			closeQuietly(channel);
 			throw new Exception("Error in downloadFileData", e);
 		}
 	}
 
 	@Override
 	public void deleteFile(final String remoteHostPathAndFileName) throws Exception {
-		Channel channel = null;
 		try {
-			// exec 'rm /full/path/to/file' remotely
-			final String command = "rm -f \"" + remoteHostPathAndFileName + "\"";
-			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand(command);
-
-			// get I/O stream for remote scp
-			try (InputStream inStream = channel.getInputStream()) {
-				channel.connect();
-
-				checkAcknowledge(inStream);
-			}
+			// exec 'rm /full/path/to/file' remotely, a non zero exit code (e.g. missing permissions) results in an exception
+			executeCommand("rm -f " + quoteForShell(remoteHostPathAndFileName));
 		} catch (final Exception e) {
-			throw new Exception("Error in SSH delete: " + e.getMessage());
-		} finally {
-			closeQuietly(channel);
+			throw new Exception("Error in SSH delete: " + e.getMessage(), e);
 		}
 	}
 
 	@Override
 	public void deleteFolder(final String remoteHostPathAndFolderName) throws Exception {
-		Channel channel = null;
 		try {
-			final String command = "rm -rf \"" + remoteHostPathAndFolderName + "\"";
-			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand(command);
-
-			// get I/O stream for remote scp
-			try (InputStream inStream = channel.getInputStream()) {
-				channel.connect();
-
-				checkAcknowledge(inStream);
-			}
+			// A non zero exit code (e.g. missing permissions) results in an exception
+			executeCommand("rm -rf " + quoteForShell(remoteHostPathAndFolderName));
 		} catch (final Exception e) {
-			throw new Exception("Error in SSH delete: " + e.getMessage());
-		} finally {
-			closeQuietly(channel);
+			throw new Exception("Error in SSH delete: " + e.getMessage(), e);
 		}
 	}
 
+	/**
+	 * Uploads a local file via scp into an existing remote folder.
+	 *
+	 * @param remoteHostPathAndFileName remote file path, or remote folder path ending with "/" to keep the local file name
+	 * @param localPathAndFileName path of the local file, without wildcards
+	 * @throws Exception if the local file or the remote folder does not exist, the remote file exists already or the upload fails
+	 */
 	public void uploadFile(final String remoteHostPathAndFileName, final String localPathAndFileName) throws Exception {
 		if (localPathAndFileName.contains("*") || localPathAndFileName.contains("?")) {
 			throw new Exception("Error in SSH upload: Wildcards in localPathAndFileName are not allowed in SSH upload");
@@ -526,7 +587,7 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			// exec 'scp -t rfile' remotely
-			String command = "scp -p -t \"" + remoteHostPathAndFileName + "\"";
+			String command = "scp -p -t " + quoteForShell(remoteHostPathAndFileName);
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
@@ -572,10 +633,28 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Uploads data into a new remote file with permissions 664 via scp.
+	 *
+	 * @param remoteHostPath path of the existing remote folder
+	 * @param remoteHostFileName name of the new remote file
+	 * @param fileData data to upload
+	 * @throws Exception if the remote folder does not exist, the remote file exists already or the upload fails
+	 */
 	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData) throws Exception {
 		uploadFileData(remoteHostPath, remoteHostFileName, fileData, null, false);
 	}
 
+	/**
+	 * Uploads data into a remote file via scp.
+	 *
+	 * @param remoteHostPath path of the existing remote folder
+	 * @param remoteHostFileName name of the remote file
+	 * @param fileData data to upload
+	 * @param filePermissions permissions of the file, null for 664
+	 * @param overwriteIfExists true to replace an existing file
+	 * @throws Exception if the remote folder does not exist, the remote file exists and must not be replaced, or the upload fails
+	 */
 	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData, final FilePermissions filePermissions, final boolean overwriteIfExists) throws Exception {
 		final List<String> directory = listFiles(remoteHostPath);
 		if (!directory.contains(".")) {
@@ -588,7 +667,7 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			// exec 'scp -t rfile' remotely
-			String command = "scp -p -t \"" + remoteHostPath + "/" + remoteHostFileName + "\"";
+			String command = "scp -p -t " + quoteForShell(remoteHostPath + "/" + remoteHostFileName);
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
@@ -628,13 +707,20 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Lists all entries of a remote folder (including "." and "..") via "ls -1a".
+	 *
+	 * @param remoteHostPath path of the folder
+	 * @return names of all entries
+	 * @throws Exception if the folder cannot be listed
+	 */
 	public List<String> listFiles(final String remoteHostPath) throws Exception {
 		Channel channel = null;
 		try {
 			final List<String> returnList = new ArrayList<>();
 
 			// exec 'ls -1a <path>' remotely
-			final String command = "ls -1a \"" + remoteHostPath + "\"";
+			final String command = "ls -1a " + quoteForShell(remoteHostPath);
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
@@ -670,11 +756,20 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Shows the last lines of a remote file and then all lines appended to it ("tail -f"), until the thread is interrupted
+	 * or the remote process ends.
+	 *
+	 * @param filePath path of the remote file
+	 * @param numberOfLastLinesToShow number of existing lines to show first
+	 * @param lineListener receiver of the data
+	 * @throws Exception if the file cannot be read
+	 */
 	public void tailviewFileData(final String filePath, final int numberOfLastLinesToShow, final LineListener lineListener) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " \"" + filePath + "\"");
+			((ChannelExec) channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " " + quoteForShell(filePath));
 
 			try (OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
@@ -693,6 +788,10 @@ public class SftpConnection implements RemoteConnection {
 
 					// waits if no more data is available right now
 					final byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
+					if (nextLineData.length == 0 && channel.isClosed()) {
+						// The remote tail process has ended
+						break;
+					}
 					lineListener.addLineData(nextLineData);
 				}
 			}
@@ -705,11 +804,19 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Reads the last lines of a remote file ("tail -n").
+	 *
+	 * @param filePath path of the remote file
+	 * @param numberOfLastLinesToShow number of lines to read
+	 * @return data of the last lines
+	 * @throws Exception if the file cannot be read
+	 */
 	public byte[] readTailFileData(final String filePath, final int numberOfLastLinesToShow) throws Exception {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("tail -n " + numberOfLastLinesToShow + " \"" + filePath + "\"");
+			((ChannelExec) channel).setCommand("tail -n " + numberOfLastLinesToShow + " " + quoteForShell(filePath));
 
 			try (OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
@@ -731,7 +838,12 @@ public class SftpConnection implements RemoteConnection {
 	 * Executes a remote command and returns stdout, stderr and the exit code separately.
 	 * Unlike {@link #executeCommand(String)}, this does NOT throw merely because the exit code
 	 * is non-zero or stderr received output - it only throws on actual connection/channel errors,
-	 * leaving the interpretation of the exit code to the caller.
+	 * leaving the interpretation of the exit code to the caller. Arguments taken from user or server data must be quoted
+	 * for the remote shell by the caller.
+	 *
+	 * @param command shell command to execute
+	 * @return stdout, stderr and exit code (output decoded as UTF-8)
+	 * @throws Exception if the command cannot be executed
 	 */
 	public CommandResult executeCommandWithResult(final String command) throws Exception {
 		Channel channel = null;
@@ -744,8 +856,20 @@ public class SftpConnection implements RemoteConnection {
 					InputStream inError = channel.getExtInputStream()) {
 				channel.connect();
 
+				// stderr is read in parallel, otherwise a remote process writing much to stderr blocks before closing stdout
+				final ByteArrayOutputStream errorBuffer = new ByteArrayOutputStream();
+				final Thread errorReader = new Thread(() -> {
+					try {
+						inError.transferTo(errorBuffer);
+					} catch (@SuppressWarnings("unused") final IOException e) {
+						// Channel closed
+					}
+				}, "SftpCommandErrorReader");
+				errorReader.setDaemon(true);
+				errorReader.start();
 				final String returnText = readCommandOutputStream(in);
-				final String returnError = readCommandOutputStream(inError);
+				errorReader.join();
+				final String returnError = errorBuffer.toString(StandardCharsets.UTF_8);
 
 				// Wait until the remote command has actually finished, so getExitStatus() is reliable
 				while (!channel.isClosed()) {
@@ -768,6 +892,10 @@ public class SftpConnection implements RemoteConnection {
 	 * command's exit code is non-zero, otherwise returns stdout if it has content, falling back to
 	 * stderr if stdout is blank (some commands write their normal, non-error output to stderr, e.g.
 	 * "java -version").
+	 *
+	 * @param command shell command to execute
+	 * @return output of the command
+	 * @throws Exception if the command cannot be executed or exits with a non-zero code
 	 */
 	public String executeCommand(final String command) throws Exception {
 		final CommandResult result = executeCommandWithResult(command);
@@ -787,12 +915,7 @@ public class SftpConnection implements RemoteConnection {
 	 * SCP-protocol error markers, since this is ordinary command output, not an SCP ack byte stream.
 	 */
 	private static String readCommandOutputStream(final InputStream inputStream) throws IOException {
-		final StringBuilder returnTextBuilder = new StringBuilder();
-		int nextByte;
-		while ((nextByte = inputStream.read()) != EOF) {
-			returnTextBuilder.append((char) nextByte);
-		}
-		return returnTextBuilder.toString();
+		return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 	}
 
 	@Override
@@ -811,7 +934,7 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -al \"" + (Utilities.isEmpty(folderPath) ? "/" : folderPath) + "\"");
+			((ChannelExec) channel).setCommand("ls -al " + quoteForShell(Utilities.isEmpty(folderPath) ? "/" : folderPath));
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
@@ -872,6 +995,95 @@ public class SftpConnection implements RemoteConnection {
 		}
 	}
 
+	/**
+	 * Checks whether a hostKey setting is a fingerprint ("SHA256:base64" or MD5 as 16 hex bytes, optionally with
+	 * ":" separators and "MD5:" prefix) instead of a known hosts file path.
+	 */
+	static boolean isHostKeyFingerprint(final String hostKeySetting) {
+		if (hostKeySetting == null) {
+			return false;
+		}
+		final String value = hostKeySetting.trim();
+		return value.matches("(?i)SHA256:[A-Za-z0-9+/]+=*") || value.matches("(?i)(MD5:)?[0-9a-f]{2}(:?[0-9a-f]{2}){15}");
+	}
+
+	/**
+	 * Checks whether a host key (public key blob) matches the expected fingerprint in SHA256 (base64) or MD5 (hex) format.
+	 */
+	static boolean matchesHostKeyFingerprint(final String expectedFingerprint, final byte[] hostKeyBlob) throws Exception {
+		final String expected = expectedFingerprint.trim();
+		if (expected.regionMatches(true, 0, "SHA256:", 0, 7)) {
+			final String actualSha256 = java.util.Base64.getEncoder().withoutPadding().encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(hostKeyBlob));
+			return actualSha256.equals(expected.substring(7).replaceAll("=+$", ""));
+		} else {
+			final String expectedHex = expected.replaceFirst("(?i)^MD5:", "").replace(":", "").toLowerCase(java.util.Locale.ROOT);
+			final StringBuilder actualHex = new StringBuilder();
+			for (final byte nextByte : java.security.MessageDigest.getInstance("MD5").digest(hostKeyBlob)) {
+				actualHex.append(String.format("%02x", nextByte));
+			}
+			return actualHex.toString().equals(expectedHex);
+		}
+	}
+
+	/**
+	 * Host key repository accepting exactly the host key with the expected fingerprint.
+	 */
+	private static class FingerprintHostKeyRepository implements HostKeyRepository {
+		private final String expectedFingerprint;
+
+		FingerprintHostKeyRepository(final String expectedFingerprint) {
+			this.expectedFingerprint = expectedFingerprint;
+		}
+
+		@Override
+		public int check(final String host, final byte[] key) {
+			try {
+				return matchesHostKeyFingerprint(expectedFingerprint, key) ? OK : NOT_INCLUDED;
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				return NOT_INCLUDED;
+			}
+		}
+
+		@Override
+		public void add(final HostKey hostkey, final com.jcraft.jsch.UserInfo userInfo) {
+			// Keys are never added, only the expected fingerprint is accepted
+		}
+
+		@Override
+		public void remove(final String host, final String type) {
+			// Nothing stored
+		}
+
+		@Override
+		public void remove(final String host, final String type, final byte[] key) {
+			// Nothing stored
+		}
+
+		@Override
+		public String getKnownHostsRepositoryID() {
+			return "Fingerprint " + expectedFingerprint;
+		}
+
+		@Override
+		public HostKey[] getHostKey() {
+			return new HostKey[0];
+		}
+
+		@Override
+		public HostKey[] getHostKey(final String host, final String type) {
+			return new HostKey[0];
+		}
+	}
+
+	/**
+	 * Quotes a value for use as a single argument in a remote POSIX shell command. Single quotes are used, because
+	 * within double quotes the shell still expands "$(...)", backticks and variables, which would allow command
+	 * injection via file names (e.g. names received from the server itself).
+	 */
+	static String quoteForShell(final String value) {
+		return "'" + value.replace("'", "'\"'\"'") + "'";
+	}
+
 	private static int checkAcknowledge(final InputStream in) throws IOException {
 		final int returnCode = in.read();
 		// returnCode may be 0 for success,
@@ -919,24 +1131,6 @@ public class SftpConnection implements RemoteConnection {
 		outputStream.flush();
 	}
 
-	private static byte[] readStream(final InputStream inStream) throws IOException {
-		final ByteArrayOutputStream returnData = new ByteArrayOutputStream();
-		int nextByte;
-		while (true) {
-			nextByte = inStream.read();
-			if (nextByte == 0) {
-				// end
-				break;
-			} else if (nextByte < 0) {
-				// error
-				break;
-			} else {
-				returnData.write(nextByte);
-			}
-		}
-		return returnData.toByteArray();
-	}
-
 	private static byte[] readStreamUntilBlankOrEndOrLinefeed(final InputStream inStream) throws IOException {
 		final ByteArrayOutputStream returnData = new ByteArrayOutputStream();
 		int nextByte;
@@ -982,12 +1176,14 @@ public class SftpConnection implements RemoteConnection {
 	}
 
 	private class SftpInputStream extends InputStream {
+		private final Channel channel;
 		private final OutputStream controllOutputStream;
 		private final InputStream dataInputStream;
 		private long available;
 		private boolean isClosed = false;
 
-		protected SftpInputStream(final OutputStream controllOutputStream, final InputStream dataInputStream, final long available) {
+		protected SftpInputStream(final Channel channel, final OutputStream controllOutputStream, final InputStream dataInputStream, final long available) {
+			this.channel = channel;
 			this.controllOutputStream = controllOutputStream;
 			this.dataInputStream = dataInputStream;
 			this.available = available;
@@ -995,12 +1191,36 @@ public class SftpConnection implements RemoteConnection {
 
 		@Override
 		public void close() throws IOException {
-			checkAcknowledge(dataInputStream);
-
-			// send '\0' to start data transfer of next file (if this is a multi download)
-			sendZeroByte(controllOutputStream);
-
+			if (isClosed) {
+				return;
+			}
 			isClosed = true;
+			try {
+				checkAcknowledge(dataInputStream);
+
+				// send '\0' to confirm the end of the transfer
+				sendZeroByte(controllOutputStream);
+			} finally {
+				// The channel was only opened for this download
+				closeQuietly(channel);
+			}
+		}
+
+		@Override
+		public int read(final byte[] buffer, final int offset, final int length) throws IOException {
+			if (isClosed) {
+				throw new IOException("Reading from a closed SftpInputStream");
+			} else if (length == 0) {
+				return 0;
+			} else if (available <= 0) {
+				return EOF;
+			} else {
+				final int bytesRead = dataInputStream.read(buffer, offset, (int) Math.min(length, available));
+				if (bytesRead > 0) {
+					available -= bytesRead;
+				}
+				return bytesRead;
+			}
 		}
 
 		@Override
@@ -1008,8 +1228,11 @@ public class SftpConnection implements RemoteConnection {
 			if (isClosed) {
 				throw new IOException("Reading from a closed SftpInputStream");
 			} else if (available > 0) {
-				available--;
-				return dataInputStream.read();
+				final int nextByte = dataInputStream.read();
+				if (nextByte != EOF) {
+					available--;
+				}
+				return nextByte;
 			} else {
 				return EOF;
 			}
@@ -1033,7 +1256,7 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -al \"" + (Utilities.isEmpty(folderPath) ? "/" : folderPath) + "\"");
+			((ChannelExec) channel).setCommand("ls -al " + quoteForShell(Utilities.isEmpty(folderPath) ? "/" : folderPath));
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();

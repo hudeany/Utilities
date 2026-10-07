@@ -5,8 +5,18 @@ import java.util.List;
 import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Removes the empty lines (without any character except the line break).
+ */
 public class DropEmptyLinesAction implements TextLineAction {
 	private long numberOfDroppedLines = 0;
+
+	/**
+	 * Creates the action.
+	 */
+	public DropEmptyLinesAction() {
+		// Nothing to initialize
+	}
 
 	@Override
 	public boolean execute(final long overallLineIndex, final int pageLineIndex, final List<String> pageLines, final String lineWithLinebreak) throws Exception {
@@ -30,6 +40,11 @@ public class DropEmptyLinesAction implements TextLineAction {
 		}
 	}
 
+	/**
+	 * Returns the number of lines removed so far.
+	 *
+	 * @return number of removed lines
+	 */
 	public long getNumberOfDroppedLines() {
 		return numberOfDroppedLines;
 	}

@@ -6,18 +6,34 @@ import java.io.FileOutputStream;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URLConnection;
+import java.util.Locale;
 
 import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Worker that downloads a URL into a new file.
+ * Its result is true on success and false if it was cancelled. An HTTP 401 response results in a
+ * {@link UserError} with reason {@link UserError.Reason#UnauthenticatedOrUnauthorized}.
+ */
 public class FileDownloadWorker extends WorkerSimple<Boolean> {
+	/**
+	 * Return value of InputStream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private final String downloadUrl;
 	private final File destinationFile;
 	private ProxyConfiguration proxyConfiguration = null;
 
+	/**
+	 * Creates a download worker.
+	 *
+	 * @param parent parent receiving the progress signals, may be null
+	 * @param downloadUrl URL to download
+	 * @param destinationFile file to create, must not exist yet
+	 */
 	public FileDownloadWorker(final WorkerParentSimple parent, final String downloadUrl, final File destinationFile) {
 		super(parent);
 
@@ -25,6 +41,12 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 		this.downloadUrl = downloadUrl;
 	}
 
+	/**
+	 * Sets the proxy configuration for the download.
+	 *
+	 * @param proxyConfiguration proxy configuration, or null for a direct connection
+	 * @return this worker for chaining
+	 */
 	public FileDownloadWorker setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
 		this.proxyConfiguration = proxyConfiguration;
 		return this;
@@ -65,7 +87,9 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 			}
 			Utilities.clear(buffer);
 		} catch (final Exception e) {
-			if (e.getMessage() != null && e.getMessage().toLowerCase().contains("server returned http response code: 401")) {
+			// The destination did not exist before, so a partially written file can be removed
+			destinationFile.delete();
+			if (e.getMessage() != null && e.getMessage().toLowerCase(Locale.ROOT).contains("server returned http response code: 401")) {
 				throw new UserError("error.userNotAuthenticatedOrNotAuthorized", UserError.Reason.UnauthenticatedOrUnauthorized);
 			} else {
 				throw new Exception("Cannot download file: " + e.getMessage(), e);

@@ -8,14 +8,39 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+/**
+ * File filter accepting file names which match at least one of a list of wildcard patterns.
+ * <p>
+ * The wildcard "?" matches exactly one character, "*" matches any number of characters (also none).
+ * Only the file name is matched, not the path.
+ * </p>
+ */
 public class WildcardFilenameFilter implements FileFilter, FilenameFilter {
 	private final String[] wildcardFilenamePatterns;
 	private final boolean caseSensitive;
 
+	/**
+	 * Creates a case sensitive filter for a single pattern.
+	 *
+	 * @param wildcardFilenamePattern
+	 *            the wildcard pattern, like "*.txt"
+	 * @throws IllegalArgumentException
+	 *             if the pattern is null
+	 */
 	public WildcardFilenameFilter(final String wildcardFilenamePattern) {
 		this(wildcardFilenamePattern, true);
 	}
 
+	/**
+	 * Creates a filter for a single pattern.
+	 *
+	 * @param wildcardFilenamePattern
+	 *            the wildcard pattern, like "*.txt"
+	 * @param caseSensitive
+	 *            true to match case sensitive
+	 * @throws IllegalArgumentException
+	 *             if the pattern is null
+	 */
 	public WildcardFilenameFilter(final String wildcardFilenamePattern, final boolean caseSensitive) {
 		if (wildcardFilenamePattern == null) {
 			throw new IllegalArgumentException("The wildcardFilenamePattern must not be null");
@@ -24,10 +49,28 @@ public class WildcardFilenameFilter implements FileFilter, FilenameFilter {
 		this.caseSensitive = caseSensitive;
 	}
 
+	/**
+	 * Creates a case sensitive filter for multiple patterns.
+	 *
+	 * @param wildcardFilenamePatterns
+	 *            the wildcard patterns, a file name must match at least one of them
+	 * @throws IllegalArgumentException
+	 *             if the pattern array is null
+	 */
 	public WildcardFilenameFilter(final String... wildcardFilenamePatterns) {
 		this(wildcardFilenamePatterns, true);
 	}
 
+	/**
+	 * Creates a filter for multiple patterns.
+	 *
+	 * @param wildcardFilenamePatterns
+	 *            the wildcard patterns, a file name must match at least one of them
+	 * @param caseSensitive
+	 *            true to match case sensitive
+	 * @throws IllegalArgumentException
+	 *             if the pattern array is null
+	 */
 	public WildcardFilenameFilter(final String[] wildcardFilenamePatterns, final boolean caseSensitive) {
 		if (wildcardFilenamePatterns == null) {
 			throw new IllegalArgumentException("The wildcardFilenamePattern array must not be null");
@@ -37,10 +80,28 @@ public class WildcardFilenameFilter implements FileFilter, FilenameFilter {
 		this.caseSensitive = caseSensitive;
 	}
 
+	/**
+	 * Creates a case sensitive filter for multiple patterns.
+	 *
+	 * @param wildcardFilenamePatterns
+	 *            the wildcard patterns, a file name must match at least one of them
+	 * @throws IllegalArgumentException
+	 *             if the pattern list is null
+	 */
 	public WildcardFilenameFilter(final List<String> wildcardFilenamePatterns) {
 		this(wildcardFilenamePatterns, true);
 	}
 
+	/**
+	 * Creates a filter for multiple patterns.
+	 *
+	 * @param wildcardFilenamePatterns
+	 *            the wildcard patterns, a file name must match at least one of them
+	 * @param caseSensitive
+	 *            true to match case sensitive
+	 * @throws IllegalArgumentException
+	 *             if the pattern list is null
+	 */
 	public WildcardFilenameFilter(final List<String> wildcardFilenamePatterns, final boolean caseSensitive) {
 		if (wildcardFilenamePatterns == null) {
 			throw new IllegalArgumentException("The wildcardFilenamePattern list must not be null");

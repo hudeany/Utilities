@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -57,6 +58,10 @@ import de.soderer.utilities.Utilities;
  * Utilities class to work with XML documents.
  */
 public class XmlUtilities {
+	private XmlUtilities() {
+		// Utility class with static methods only
+	}
+
 	/**
 	 * Creates a DocumentBuilderFactory that is hardened against XXE attacks
 	 * (external entity resolution, external DTD loading, XInclude).
@@ -87,11 +92,17 @@ public class XmlUtilities {
 		return documentBuilderFactory;
 	}
 
+	/**
+	 * Checks whether data starts with an XML declaration ("&lt;?xml ").
+	 *
+	 * @param data data to check
+	 * @return true if the data starts with an XML declaration
+	 */
 	public static boolean isXmlDocument(final byte[] data) {
 		if (data == null || data.length < 6) {
 			return false;
 		} else {
-			return "<?xml ".equals(new String(Arrays.copyOfRange(data, 0, 6), StandardCharsets.UTF_8).toLowerCase());
+			return "<?xml ".equals(new String(Arrays.copyOfRange(data, 0, 6), StandardCharsets.UTF_8).toLowerCase(Locale.ROOT));
 		}
 	}
 
@@ -115,9 +126,11 @@ public class XmlUtilities {
 	 *
 	 * @param url
 	 *            the url
+	 * @param proxy
+	 *            the proxy to use, or null for the default proxy settings
 	 * @return the document
-	 * @throws IOException
-	 *             the IO exception
+	 * @throws Exception
+	 *             if the download fails (with the HTTP code, if it was not 200) or the data is no valid XML
 	 */
 	public static Document downloadAndParseXmlFile(final String url, final Proxy proxy) throws Exception {
 		final URLConnection urlConnection;
@@ -487,6 +500,8 @@ public class XmlUtilities {
 		try {
 			if (pData == null) {
 				return null;
+			} else if (pData.length == 0) {
+				throw new Exception("XML data is empty");
 			}
 
 			if (pData[pData.length - 1] == 0) {
@@ -803,7 +818,7 @@ public class XmlUtilities {
 	 * @return the element
 	 */
 	public static Element appendNode(final Node baseNode, final String tagName) {
-		final Element newNode = baseNode.getOwnerDocument().createElement(tagName);
+		final Element newNode = getDocumentOfNode(baseNode).createElement(tagName);
 		baseNode.appendChild(newNode);
 		return newNode;
 	}
@@ -852,9 +867,9 @@ public class XmlUtilities {
 	public static Element appendTextValueNode(final Node baseNode, final String tagName, final String tagValue) {
 		final Element newNode = appendNode(baseNode, tagName);
 		if (tagValue == null) {
-			newNode.appendChild(baseNode.getOwnerDocument().createTextNode("<null>"));
+			newNode.appendChild(getDocumentOfNode(baseNode).createTextNode("<null>"));
 		} else {
-			newNode.appendChild(baseNode.getOwnerDocument().createTextNode(tagValue));
+			newNode.appendChild(getDocumentOfNode(baseNode).createTextNode(tagValue));
 		}
 		return newNode;
 	}
@@ -929,7 +944,13 @@ public class XmlUtilities {
 	 * @return the document
 	 */
 	public static Document addCommentToDocument(final Document pDocument, final String pComment) {
-		pDocument.getFirstChild().appendChild(pDocument.createComment(pComment));
+		// The first child may be a DOCTYPE or a comment, so the comment is added to the root element
+		final Node rootElement = pDocument.getDocumentElement();
+		if (rootElement != null) {
+			rootElement.appendChild(pDocument.createComment(pComment));
+		} else {
+			pDocument.appendChild(pDocument.createComment(pComment));
+		}
 		return pDocument;
 	}
 
@@ -944,27 +965,18 @@ public class XmlUtilities {
 	 */
 	public static Charset getEncodingOfXmlByteArray(final byte[] xmlData) throws Exception {
 		final String encodingAttributeName = "ENCODING";
-		final String first50CharactersInUtf8UpperCase = new String(xmlData, StandardCharsets.UTF_8).substring(0, 50).toUpperCase();
+		final String xmlDataString = new String(xmlData, StandardCharsets.UTF_8);
+		final String first50CharactersInUtf8UpperCase = xmlDataString.substring(0, Math.min(50, xmlDataString.length())).toUpperCase(Locale.ROOT);
 		if (first50CharactersInUtf8UpperCase.contains(encodingAttributeName)) {
 			final int encodingstart = first50CharactersInUtf8UpperCase.indexOf(encodingAttributeName) + encodingAttributeName.length();
 
-			final int contentStartEinfach = first50CharactersInUtf8UpperCase.indexOf("'", encodingstart);
-			final int contentStartDoppelt = first50CharactersInUtf8UpperCase.indexOf("\"", encodingstart);
-			int contentStart = Math.min(contentStartEinfach, contentStartDoppelt);
-			if (contentStartEinfach < 0) {
-				contentStart = contentStartDoppelt;
-			}
+			int contentStart = firstFoundIndex(first50CharactersInUtf8UpperCase.indexOf("'", encodingstart), first50CharactersInUtf8UpperCase.indexOf("\"", encodingstart));
 			if (contentStart < 0) {
 				throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 			}
 			contentStart = contentStart + 1;
 
-			final int contentEndSingle = first50CharactersInUtf8UpperCase.indexOf("'", contentStart);
-			final int contentEndDouble = first50CharactersInUtf8UpperCase.indexOf("\"", contentStart);
-			int contentEnd = Math.min(contentEndSingle, contentEndDouble);
-			if (contentEndSingle < 0) {
-				contentEnd = contentEndDouble;
-			}
+			final int contentEnd = firstFoundIndex(first50CharactersInUtf8UpperCase.indexOf("'", contentStart), first50CharactersInUtf8UpperCase.indexOf("\"", contentStart));
 			if (contentEnd < 0) {
 				throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 			}
@@ -977,9 +989,33 @@ public class XmlUtilities {
 	}
 
 	/**
+	 * Returns the smaller of two indexOf results, ignoring a -1 (not found) of one of them.
+	 */
+	private static int firstFoundIndex(final int index1, final int index2) {
+		if (index1 < 0) {
+			return index2;
+		} else if (index2 < 0) {
+			return index1;
+		} else {
+			return Math.min(index1, index2);
+		}
+	}
+
+	/**
+	 * Returns the document of a node, which is the node itself for a document node.
+	 */
+	private static Document getDocumentOfNode(final Node node) {
+		if (node instanceof Document) {
+			return (Document) node;
+		} else {
+			return node.getOwnerDocument();
+		}
+	}
+
+	/**
 	 * Returns all direct simple text value subnodes and their values for a dataNode
 	 *
-	 * Example XML: <dataNode> <a>1</a> <b>2</b> <c>3</c> </dataNode> Returns: a=1, b=2, c=3.
+	 * Example XML: {@code <dataNode> <a>1</a> <b>2</b> <c>3</c> </dataNode>} Returns: a=1, b=2, c=3.
 	 *
 	 * @param dataNode
 	 *            the data node
@@ -1018,6 +1054,13 @@ public class XmlUtilities {
 		return returnList;
 	}
 
+	/**
+	 * Returns the direct child nodes of a node by their names, leaving out text nodes.
+	 * If several children have the same name, the last one is returned.
+	 *
+	 * @param dataNode node to get the children of
+	 * @return child nodes by name
+	 */
 	public static Map<String, Node> getChildNodesMap(final Node dataNode) {
 		final Map<String, Node> childNodes = new HashMap<>();
 		final NodeList childNodesList = dataNode.getChildNodes();
@@ -1052,6 +1095,15 @@ public class XmlUtilities {
 		return returnList;
 	}
 
+	/**
+	 * Removes the enclosing root tag of an XML String.
+	 * If the root element has child elements, the first of them is returned as XML String, otherwise the root
+	 * element's text value. Data not looking like XML is returned unchanged.
+	 *
+	 * @param data XML String, may be null or empty
+	 * @return content of the root element
+	 * @throws Exception if the data looks like XML but cannot be parsed
+	 */
 	public static String removeFrameTag(final String data) throws Exception {
 		if (Utilities.isEmpty(data)) {
 			return data;
@@ -1072,10 +1124,22 @@ public class XmlUtilities {
 		}
 	}
 
+	/**
+	 * Returns the root element of a document.
+	 *
+	 * @param document document to read
+	 * @return root element, or null if the document has none
+	 */
 	public static Node getRootNodeFromDocument(final Document document) {
 		return document.getDocumentElement();
 	}
 
+	/**
+	 * Returns the direct child nodes of a node, leaving out text nodes.
+	 *
+	 * @param dataNode node to get the children of
+	 * @return child nodes in document order
+	 */
 	public static List<Node> getChildNodes(final Node dataNode) {
 		final List<Node> returnList = new ArrayList<>();
 
@@ -1090,13 +1154,21 @@ public class XmlUtilities {
 		return returnList;
 	}
 
+	/**
+	 * Formats a document as indented XML String, with an XML declaration naming the given encoding.
+	 *
+	 * @param xmlDocument document to format
+	 * @param encoding encoding named in the XML declaration
+	 * @param throwExceptionOnError true to throw runtime errors, false to return null instead
+	 * @return formatted XML, or null on error if throwExceptionOnError is false
+	 */
 	public static String formatXmlDocument(final Document xmlDocument, final Charset encoding, final boolean throwExceptionOnError) {
 		try {
 			final StringBuilder result = new StringBuilder();
 			result.append("<?xml version=\"");
 			result.append(xmlDocument.getXmlVersion());
 			result.append("\" encoding=\"");
-			result.append(encoding.name().toUpperCase());
+			result.append(encoding.name().toUpperCase(Locale.ROOT));
 			result.append("\" standalone=\"");
 			result.append(xmlDocument.getXmlStandalone() ? "yes" : "no");
 			result.append("\"?>\n");
@@ -1115,6 +1187,13 @@ public class XmlUtilities {
 		}
 	}
 
+	/**
+	 * Formats a document as indented XML String, with an XML declaration naming the document's encoding (UTF-8 if unknown).
+	 *
+	 * @param xmlDocument document to format
+	 * @param throwExceptionOnError true to throw runtime errors, false to return null instead
+	 * @return formatted XML, or null on error if throwExceptionOnError is false
+	 */
 	public static String formatXmlDocument(final Document xmlDocument, final boolean throwExceptionOnError) {
 		try {
 			final StringBuilder result = new StringBuilder();
@@ -1140,6 +1219,14 @@ public class XmlUtilities {
 		}
 	}
 
+	/**
+	 * Formats a node and its children as indented XML String. Elements containing only text are written in one line,
+	 * whitespace-only text is left out.
+	 *
+	 * @param xmlNode node to format
+	 * @param indentationLevel number of tabs to indent the node with
+	 * @return formatted XML of the node
+	 */
 	public static String formatXmlNode(final Node xmlNode, final int indentationLevel) {
 		if (xmlNode.getNodeType() == Node.TEXT_NODE) {
 			if (Utilities.isBlank(xmlNode.getNodeValue())) {
@@ -1154,21 +1241,36 @@ public class XmlUtilities {
 				final StringBuilder result = new StringBuilder();
 				result.append(TextUtilities.repeatString("\t", indentationLevel));
 				result.append("<!--");
-				result.append(xmlNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
+				// Comment content is not escaped in XML
+				result.append(xmlNode.getNodeValue());
 				result.append("-->\n");
 				return result.toString();
 			}
+		} else if (xmlNode.getNodeType() == Node.CDATA_SECTION_NODE) {
+			return "<![CDATA[" + (xmlNode.getNodeValue() == null ? "" : xmlNode.getNodeValue().replace("]]>", "]]]]><![CDATA[>")) + "]]>";
+		} else if (xmlNode.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {
+			return TextUtilities.repeatString("\t", indentationLevel) + "<?" + xmlNode.getNodeName() + (Utilities.isEmpty(xmlNode.getNodeValue()) ? "" : " " + xmlNode.getNodeValue()) + "?>\n";
 		} else if (xmlNode.getNodeType() == Node.DOCUMENT_TYPE_NODE) {
+			final DocumentType documentType = (DocumentType) xmlNode;
 			final StringBuilder result = new StringBuilder();
 			result.append(TextUtilities.repeatString("\t", indentationLevel));
 			result.append("<!DOCTYPE ");
-			result.append(((DocumentType) xmlNode).getName());
-			result.append(" PUBLIC \"");
-			result.append(((DocumentType) xmlNode).getPublicId());
-			result.append("\" \"");
-			result.append(((DocumentType) xmlNode).getSystemId());
-			result.append("\">\n");
+			result.append(documentType.getName());
+			if (documentType.getPublicId() != null) {
+				result.append(" PUBLIC \"").append(documentType.getPublicId()).append("\"");
+				if (documentType.getSystemId() != null) {
+					result.append(" \"").append(documentType.getSystemId()).append("\"");
+				}
+			} else if (documentType.getSystemId() != null) {
+				result.append(" SYSTEM \"").append(documentType.getSystemId()).append("\"");
+			}
+			result.append(">\n");
 			return result.toString();
+		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.CDATA_SECTION_NODE) {
+			// A single CDATA child is written inline, so no whitespace is added to its content
+			return TextUtilities.repeatString("\t", indentationLevel) + "<" + xmlNode.getNodeName() + formatAttributes(xmlNode, indentationLevel) + ">"
+					+ formatXmlNode(xmlNode.getChildNodes().item(0), 0)
+					+ "</" + xmlNode.getNodeName() + ">\n";
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
 			if (Utilities.isBlank(xmlNode.getChildNodes().item(0).getNodeValue())) {
 				final StringBuilder result = new StringBuilder();
@@ -1225,6 +1327,10 @@ public class XmlUtilities {
 		}
 	}
 
+	private static String escapeAttributeValue(final String value) {
+		return value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;");
+	}
+
 	private static String formatAttributes(final Node xmlNode, final int indentationLevel) {
 		final StringBuilder result = new StringBuilder();
 		if (xmlNode.getAttributes() != null && xmlNode.getAttributes().getLength() > 0) {
@@ -1234,7 +1340,7 @@ public class XmlUtilities {
 					result.append(" ");
 					result.append(attributeNode.getNodeName());
 					result.append("=\"");
-					result.append(attributeNode.getNodeValue().replaceAll("\"", "&quot;").replaceAll("<", "&lt;").replaceAll("&", "&amp;"));
+					result.append(escapeAttributeValue(attributeNode.getNodeValue()));
 					result.append("\"");
 				}
 			} else {
@@ -1247,7 +1353,7 @@ public class XmlUtilities {
 					result.append(TextUtilities.repeatString("\t", indentationLevel + 1));
 					result.append(attributeNode.getNodeName());
 					result.append("=\"");
-					result.append(attributeNode.getNodeValue().replaceAll("\"", "&quot;").replaceAll("<", "&lt;").replaceAll("&", "&amp;"));
+					result.append(escapeAttributeValue(attributeNode.getNodeValue()));
 					result.append("\"");
 				}
 			}

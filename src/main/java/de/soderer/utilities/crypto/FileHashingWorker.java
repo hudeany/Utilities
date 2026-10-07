@@ -10,10 +10,20 @@ import de.soderer.utilities.HashAlgorithm;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * Worker that calculates the hash value of a file, reporting the progress in bytes.
+ */
 public class FileHashingWorker extends WorkerSimple<byte[]> {
 	private final File fileToHash;
 	private final HashAlgorithm hashAlgorithm;
 
+	/**
+	 * Creates a file hashing worker.
+	 *
+	 * @param parent parent to report progress to, may be null
+	 * @param fileToHash file to hash
+	 * @param hashAlgorithm hash algorithm, null for SHA-256
+	 */
 	public FileHashingWorker(final WorkerParentSimple parent, final File fileToHash, final HashAlgorithm hashAlgorithm) {
 		super(parent);
 
@@ -29,6 +39,12 @@ public class FileHashingWorker extends WorkerSimple<byte[]> {
 		itemsToDo = fileToHash.length();
 	}
 
+	/**
+	 * Hashes the file.
+	 *
+	 * @return hash value, or null if the worker was cancelled
+	 * @throws Exception if the file cannot be read
+	 */
 	@Override
 	public byte[] work() throws Exception {
 		signalProgress();
@@ -40,7 +56,8 @@ public class FileHashingWorker extends WorkerSimple<byte[]> {
 			int bytesRead;
 			while ((bytesRead = inputStream.read(buffer)) >= 0) {
 				if (cancel) {
-					break;
+					// The digest of partially read data would be a wrong hash value
+					return null;
 				} else {
 					messageDigest.update(buffer, 0, bytesRead);
 					itemsDone += bytesRead;

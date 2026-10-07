@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.Security;
+import java.util.Locale;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -18,7 +19,15 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * Worker that decrypts a stream written by {@link SymmetricEncryptionWorker} with a password.<br>
+ * The stream starts with a 16 byte random salt for the PBKDF2 key derivation and the initialization vector.
+ * GCM modes verify the authentication tag. Both streams are closed after the work.
+ */
 public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
+	/**
+	 * Return value of stream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private InputStream encryptedDataInputStream = null;
@@ -30,12 +39,12 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 	private final int randomSaltSize = 16;
 
 	/**
-	 * Symmetric decrypt inputStream
+	 * Symmetric decrypt inputStream with the default method {@link CryptographicUtilities#DEFAULT_SYMMETRIC_ENCRYPTION_METHOD}.
 	 *
-	 * @param parent
-	 * @param encryptedDataInputStream
-	 * @param decryptedDataOutputStream
-	 * @param password
+	 * @param parent parent to report progress to, may be null
+	 * @param encryptedDataInputStream stream with the encrypted data
+	 * @param decryptedDataOutputStream stream to write the decrypted data to
+	 * @param password password used for encryption
 	 */
 	public SymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final char[] password) {
 		this(parent, encryptedDataInputStream, decryptedDataOutputStream, password, null);
@@ -44,11 +53,12 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 	/**
 	 * Symmetric decrypt inputStream
 	 *
-	 * @param parent
-	 * @param encryptedDataInputStream
-	 * @param decryptedDataOutputStream
-	 * @param password
-	 * @param encryptionMethod
+	 * @param parent parent to report progress to, may be null
+	 * @param encryptedDataInputStream stream with the encrypted data
+	 * @param decryptedDataOutputStream stream to write the decrypted data to
+	 * @param password password used for encryption
+	 * @param encryptionMethod cipher transformation used for encryption (e.g. "AES/CBC/PKCS7Padding"),
+	 *        blank for {@link CryptographicUtilities#DEFAULT_SYMMETRIC_ENCRYPTION_METHOD}
 	 */
 	public SymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final char[] password, final String encryptionMethod) {
 		super(parent);
@@ -62,6 +72,11 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	/**
+	 * Sets the expected data size in bytes for the progress display, if the stream cannot tell its size.
+	 *
+	 * @param dataSizeHint expected data size in bytes
+	 */
 	public void setDataSizeHint(final long dataSizeHint) {
 		this.dataSizeHint = dataSizeHint;
 	}
@@ -74,7 +89,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 		if ("TripleDES".equalsIgnoreCase(encryptionMethod) || "3DES".equalsIgnoreCase(encryptionMethod)) {
 			encryptionMethod = "DESede";
 		}
-		encryptionMethod = encryptionMethod.toLowerCase();
+		encryptionMethod = encryptionMethod.toLowerCase(Locale.ROOT);
 
 		signalProgress();
 
@@ -88,7 +103,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 		try (OutputStream outputStream = new BufferedOutputStream(decryptedDataOutputStream)) {
 			try (InputStream inputStream = new BufferedInputStream(encryptedDataInputStream)) {
 				salt = new byte[randomSaltSize];
-				final int readSaltBytes = inputStream.read(salt);
+				final int readSaltBytes = inputStream.readNBytes(salt, 0, salt.length);
 				if (readSaltBytes != salt.length) {
 					throw new Exception("Cannot read password salt prefix: Data is too short");
 				}
@@ -98,7 +113,7 @@ public class SymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 				final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, encryptionMethod);
 
 				initializationVector = new byte[symetricDecryptCipher.getBlockSize()];
-				final int readIvBytes = inputStream.read(initializationVector);
+				final int readIvBytes = inputStream.readNBytes(initializationVector, 0, initializationVector.length);
 				if (readIvBytes != initializationVector.length) {
 					throw new Exception("Cannot read initialization vector prefix: Data is too short");
 				}

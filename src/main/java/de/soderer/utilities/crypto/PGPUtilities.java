@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -23,6 +24,7 @@ import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
 import org.bouncycastle.bcpg.PublicKeyPacket;
+import org.bouncycastle.bcpg.SignatureSubpacketTags;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
@@ -61,7 +63,18 @@ import de.soderer.utilities.TextUtilities;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Utilities for OpenPGP keys based on BouncyCastle: key generation, import, export, signing of keys,
+ * expiration and password changes.
+ */
 public class PGPUtilities {
+	private PGPUtilities() {
+		// Utility class
+	}
+
+	/**
+	 * Default symmetric encryption method name for PGP encryption.
+	 */
 	public static final String DEFAULT_SYMMETRIC_ENCRYPTION_METHOD = "AES-256";
 
 	/**
@@ -69,16 +82,49 @@ public class PGPUtilities {
 	 */
 	public static final BigInteger FERMAT_PRIME_F4 = BigInteger.valueOf(0x10001);
 
+	/**
+	 * PGP symmetric encryption algorithm with its OpenPGP algorithm id.
+	 */
 	public enum PgpSymmetricEncryptionMethod {
+		/**
+		 * IDEA
+		 */
 		IDEA(SymmetricKeyAlgorithmTags.IDEA),
+		/**
+		 * Triple-DES (DES-EDE, 168 bit key)
+		 */
 		TRIPLE_DES(SymmetricKeyAlgorithmTags.TRIPLE_DES),
+		/**
+		 * CAST5 (128 bit key)
+		 */
 		CAST5(SymmetricKeyAlgorithmTags.CAST5),
+		/**
+		 * Blowfish (128 bit key)
+		 */
 		BLOWFISH(SymmetricKeyAlgorithmTags.BLOWFISH),
+		/**
+		 * SAFER-SK128
+		 */
 		SAFER(SymmetricKeyAlgorithmTags.SAFER),
+		/**
+		 * DES (56 bit key, insecure)
+		 */
 		DES(SymmetricKeyAlgorithmTags.DES),
+		/**
+		 * AES with 128 bit key
+		 */
 		AES_128(SymmetricKeyAlgorithmTags.AES_128),
+		/**
+		 * AES with 192 bit key
+		 */
 		AES_192(SymmetricKeyAlgorithmTags.AES_192),
+		/**
+		 * AES with 256 bit key
+		 */
 		AES_256(SymmetricKeyAlgorithmTags.AES_256),
+		/**
+		 * Twofish with 256 bit key
+		 */
 		TWOFISH(SymmetricKeyAlgorithmTags.TWOFISH);
 
 		private final int id;
@@ -87,10 +133,20 @@ public class PGPUtilities {
 			this.id = id;
 		}
 
+		/**
+		 * Returns the OpenPGP algorithm id.
+		 *
+		 * @return algorithm id
+		 */
 		public int getId() {
 			return id;
 		}
 
+		/**
+		 * Returns the names of all constants.
+		 *
+		 * @return constant names in declaration order
+		 */
 		public static String[] names() {
 			final String[] names = new String[PgpSymmetricEncryptionMethod.values().length];
 			for (int i = 0; i < PgpSymmetricEncryptionMethod.values().length; i++) {
@@ -99,6 +155,13 @@ public class PGPUtilities {
 			return names;
 		}
 
+		/**
+		 * Finds the symmetric algorithm by its name, ignoring case, "-" and "_" (e.g. "AES-256" or "aes_256").
+		 *
+		 * @param methodName name
+		 * @return matching constant
+		 * @throws Exception if no constant matches the name
+		 */
 		public static PgpSymmetricEncryptionMethod getByName(final String methodName) throws Exception {
 			final String searchMethodName = methodName.replace("-", "").replace("_", "");
 			for (final PgpSymmetricEncryptionMethod encryptionMethod : PgpSymmetricEncryptionMethod.values()) {
@@ -109,6 +172,13 @@ public class PGPUtilities {
 			throw new Exception("Invalid PgpEncryptionMethod name: " + methodName);
 		}
 
+		/**
+		 * Finds the symmetric algorithm by its OpenPGP algorithm id.
+		 *
+		 * @param id OpenPGP algorithm id
+		 * @return matching constant
+		 * @throws Exception if no constant has the id
+		 */
 		public static PgpSymmetricEncryptionMethod getById(final int id) throws Exception {
 			for (final PgpSymmetricEncryptionMethod encryptionMethod : PgpSymmetricEncryptionMethod.values()) {
 				if (encryptionMethod.getId() == id) {
@@ -119,21 +189,45 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Default public key algorithm name for PGP key generation.
+	 */
 	public static final String DEFAULT_PUBLIC_ENCRYPTION_METHOD = "RSA-GENERAL";
 
+	/**
+	 * PGP public key algorithm with its OpenPGP algorithm id.
+	 */
 	public enum PgpPublicEncryptionMethod {
+		/**
+		 * RSA (encrypt or sign)
+		 */
 		RSA_GENERAL(PublicKeyAlgorithmTags.RSA_GENERAL),
 
+		/**
+		 * ElGamal (encrypt only)
+		 */
 		ELGAMAL_ENCRYPT(PublicKeyAlgorithmTags.ELGAMAL_ENCRYPT),
 
+		/**
+		 * DSA (sign only)
+		 */
 		DSA(PublicKeyAlgorithmTags.DSA),
 		/**
-		 * @Deprecated use ECDH
+		 * Elliptic curve (deprecated algorithm id, use ECDH)
 		 */
 		@SuppressWarnings("deprecation")
 		EC(PublicKeyAlgorithmTags.EC),
+		/**
+		 * Elliptic curve Diffie-Hellman (encrypt)
+		 */
 		ECDH(PublicKeyAlgorithmTags.ECDH),
+		/**
+		 * Elliptic curve DSA (sign)
+		 */
 		ECDSA(PublicKeyAlgorithmTags.ECDSA),
+		/**
+		 * Diffie-Hellman (X9.42)
+		 */
 		DIFFIE_HELLMAN(PublicKeyAlgorithmTags.DIFFIE_HELLMAN);
 
 		private final int id;
@@ -142,10 +236,20 @@ public class PGPUtilities {
 			this.id = id;
 		}
 
+		/**
+		 * Returns the OpenPGP algorithm id.
+		 *
+		 * @return algorithm id
+		 */
 		public int getId() {
 			return id;
 		}
 
+		/**
+		 * Returns the names of all constants.
+		 *
+		 * @return constant names in declaration order
+		 */
 		public static String[] names() {
 			final String[] names = new String[PgpPublicEncryptionMethod.values().length];
 			for (int i = 0; i < PgpPublicEncryptionMethod.values().length; i++) {
@@ -154,6 +258,13 @@ public class PGPUtilities {
 			return names;
 		}
 
+		/**
+		 * Finds the public key algorithm by its name, ignoring case, "-" and "_" (e.g. "AES-256" or "aes_256"). Additionally "RSA" and "ELGAMAL" are accepted.
+		 *
+		 * @param methodName name
+		 * @return matching constant
+		 * @throws Exception if no constant matches the name
+		 */
 		public static PgpPublicEncryptionMethod getByName(final String methodName) throws Exception {
 			final String searchMethodName = methodName.trim().replace("-", "").replace("_", "");
 			for (final PgpPublicEncryptionMethod encryptionMethod : PgpPublicEncryptionMethod.values()) {
@@ -169,6 +280,13 @@ public class PGPUtilities {
 			throw new Exception("Invalid PgpPublicEncryptionMethod name: " + methodName);
 		}
 
+		/**
+		 * Finds the public key algorithm by its OpenPGP algorithm id.
+		 *
+		 * @param id OpenPGP algorithm id
+		 * @return matching constant
+		 * @throws Exception if no constant has the id
+		 */
 		public static PgpPublicEncryptionMethod getById(final int id) throws Exception {
 			for (final PgpPublicEncryptionMethod encryptionMethod : PgpPublicEncryptionMethod.values()) {
 				if (encryptionMethod.getId() == id) {
@@ -179,19 +297,58 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Default hashing method name for PGP signatures.
+	 */
 	public static final String DEFAULT_HASHING_METHOD = "SHA256";
 
+	/**
+	 * PGP hash algorithm with its OpenPGP algorithm id.
+	 */
 	public enum PgpHashMethod {
+		/**
+		 * MD5 (insecure)
+		 */
 		MD5(HashAlgorithmTags.MD5),
+		/**
+		 * SHA-1 (insecure for signatures)
+		 */
 		SHA1(HashAlgorithmTags.SHA1),
+		/**
+		 * RIPEMD-160
+		 */
 		RIPEMD160(HashAlgorithmTags.RIPEMD160),
+		/**
+		 * Double width SHA (experimental)
+		 */
 		DOUBLE_SHA(HashAlgorithmTags.DOUBLE_SHA),
+		/**
+		 * MD2 (insecure)
+		 */
 		MD2(HashAlgorithmTags.MD2),
+		/**
+		 * Tiger 192
+		 */
 		TIGER_192(HashAlgorithmTags.TIGER_192),
+		/**
+		 * HAVAL (5 pass, 160 bit)
+		 */
 		HAVAL_5_160(HashAlgorithmTags.HAVAL_5_160),
+		/**
+		 * SHA-256
+		 */
 		SHA256(HashAlgorithmTags.SHA256),
+		/**
+		 * SHA-384
+		 */
 		SHA384(HashAlgorithmTags.SHA384),
+		/**
+		 * SHA-512
+		 */
 		SHA512(HashAlgorithmTags.SHA512),
+		/**
+		 * SHA-224
+		 */
 		SHA224(HashAlgorithmTags.SHA224);
 
 		private final int id;
@@ -200,10 +357,20 @@ public class PGPUtilities {
 			this.id = id;
 		}
 
+		/**
+		 * Returns the OpenPGP algorithm id.
+		 *
+		 * @return algorithm id
+		 */
 		public int getId() {
 			return id;
 		}
 
+		/**
+		 * Returns the names of all constants.
+		 *
+		 * @return constant names in declaration order
+		 */
 		public static String[] names() {
 			final String[] names = new String[PgpHashMethod.values().length];
 			for (int i = 0; i < PgpHashMethod.values().length; i++) {
@@ -212,6 +379,13 @@ public class PGPUtilities {
 			return names;
 		}
 
+		/**
+		 * Finds the hash algorithm by its name, ignoring case, "-" and "_" (e.g. "AES-256" or "aes_256").
+		 *
+		 * @param methodName name
+		 * @return matching constant
+		 * @throws Exception if no constant matches the name
+		 */
 		public static PgpHashMethod getByName(final String methodName) throws Exception {
 			final String searchMethodName = methodName.replace("-", "").replace("_", "");
 			for (final PgpHashMethod encryptionMethod : PgpHashMethod.values()) {
@@ -222,6 +396,13 @@ public class PGPUtilities {
 			throw new Exception("Invalid PgpHashMethod name: " + methodName);
 		}
 
+		/**
+		 * Finds the hash algorithm by its OpenPGP algorithm id.
+		 *
+		 * @param id OpenPGP algorithm id
+		 * @return matching constant
+		 * @throws Exception if no constant has the id
+		 */
 		public static PgpHashMethod getById(final int id) throws Exception {
 			for (final PgpHashMethod encryptionMethod : PgpHashMethod.values()) {
 				if (encryptionMethod.getId() == id) {
@@ -232,6 +413,20 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Generates a new PGP key ring and returns its last secret key.<br>
+	 * For RSA and DSA this is the master key. For ElGamal a DSA master key with an ElGamal encryption subkey is created
+	 * and the ElGamal subkey is returned (it cannot be used for signatures).<br>
+	 * The secret key is protected with AES-256 and the given password.
+	 *
+	 * @param keyStrength key size in bits
+	 * @param keyType RSA_GENERAL, DSA or ELGAMAL_ENCRYPT
+	 * @param identity user ID of the key, e.g. "Name &lt;mail@example.com&gt;"
+	 * @param password password to protect the secret key
+	 * @param validity local date and time when the key expires (must not be null)
+	 * @return generated secret key
+	 * @throws Exception if the key type is not supported or the key cannot be generated
+	 */
 	public static PGPSecretKey generatePGPSecretKey(final int keyStrength, final PgpPublicEncryptionMethod keyType, final String identity, final char[] password, final LocalDateTime validity) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -301,6 +496,17 @@ public class PGPUtilities {
 		return secretKey;
 	}
 
+	/**
+	 * Generates a new PGP key ring with a RSA signing master key and a RSA encryption subkey and returns the
+	 * secret key of the encryption subkey.
+	 *
+	 * @param keyStrength RSA key size in bits
+	 * @param identity user ID of the key
+	 * @param password password to protect the secret keys
+	 * @param validity local date and time when the master key expires (must not be null)
+	 * @return secret key of the encryption subkey
+	 * @throws Exception if the keys cannot be generated
+	 */
 	public static PGPSecretKey generateDualKeyPGPSecretKey(final int keyStrength, final String identity, final char[] password, final LocalDateTime validity) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -371,6 +577,13 @@ public class PGPUtilities {
 		return secretKey;
 	}
 
+	/**
+	 * Exports a single secret key ASCII-armored.
+	 *
+	 * @param pgpSecretKey secret key
+	 * @return ASCII-armored key data
+	 * @throws Exception if the key cannot be encoded
+	 */
 	public static byte[] exportPGPSecretKey(final PGPSecretKey pgpSecretKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -384,6 +597,13 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Exports a single public key ASCII-armored.
+	 *
+	 * @param pgpPublicKey public key
+	 * @return ASCII-armored key data
+	 * @throws Exception if the key cannot be encoded
+	 */
 	public static byte[] exportPGPPublicKey(final PGPPublicKey pgpPublicKey) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -397,6 +617,12 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Reads the first master public key from ASCII-armored or binary key data. The stream is closed.
+	 *
+	 * @param inputStream key data
+	 * @return the first master public key, or null if none was found or the data cannot be read
+	 */
 	public static PGPPublicKey readPGPPublicKey(final InputStream inputStream) {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -421,6 +647,12 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Reads the first master secret key from ASCII-armored or binary key data. The stream is closed.
+	 *
+	 * @param inputStream key data
+	 * @return the first master secret key, or null if none was found or the data cannot be read
+	 */
 	public static PGPSecretKey readPGPSecretKey(final InputStream inputStream) {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -449,11 +681,34 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Container for the public and secret key rings read by {@link PGPUtilities#readKeyRings(InputStream)}.
+	 */
 	public static class PGPKeyRings {
+		/**
+		 * Public key rings in the order of the data.
+		 */
 		public final List<PGPPublicKeyRing> publicKeyRings = new ArrayList<>();
+		/**
+		 * Secret key rings in the order of the data.
+		 */
 		public final List<PGPSecretKeyRing> secretKeyRings = new ArrayList<>();
+
+		/**
+		 * Creates an empty container.
+		 */
+		public PGPKeyRings() {
+			// Lists are filled by the reader
+		}
 	}
 
+	/**
+	 * Reads all public and secret key rings from ASCII-armored or binary key data. Other PGP objects are ignored. The stream is closed.
+	 *
+	 * @param inputStream key data
+	 * @return key rings found in the data
+	 * @throws Exception if the data cannot be read
+	 */
 	public static PGPKeyRings readKeyRings(final InputStream inputStream) throws Exception {
 		final PGPKeyRings result = new PGPKeyRings();
 		try (InputStream decoder = PGPUtil.getDecoderStream(inputStream)) {
@@ -470,6 +725,14 @@ public class PGPUtilities {
 		return result;
 	}
 
+	/**
+	 * Decrypts the private key of a secret key.
+	 *
+	 * @param secretKey secret key, may be null
+	 * @param password password of the secret key
+	 * @return private key, or null if the secret key is null
+	 * @throws Exception ({@link UserError}) if the password is wrong or the key strength is not allowed by the JCE
+	 */
 	public static PGPPrivateKey readPGPPrivateKey(final PGPSecretKey secretKey, final char[] password) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -481,7 +744,7 @@ public class PGPUtilities {
 				return secretKey.extractPrivateKey(decryptor);
 			}
 		} catch (final PGPException e) {
-			if (e.getUnderlyingException() != null && e.getUnderlyingException().getMessage().contains("Illegal key size")) {
+			if (e.getUnderlyingException() != null && e.getUnderlyingException().getMessage() != null && e.getUnderlyingException().getMessage().contains("Illegal key size")) {
 				throw new UserError("keystrengthExceedsAllowedJCE", e);
 			} else {
 				throw new UserError("cannotReadPrivateKey", e);
@@ -491,6 +754,12 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Returns the public key of a secret key.
+	 *
+	 * @param pgpSecretKey secret key, may be null
+	 * @return public key, or null if the secret key is null
+	 */
 	public static PGPPublicKey readPGPPublicKey(final PGPSecretKey pgpSecretKey) {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -502,8 +771,11 @@ public class PGPUtilities {
 	}
 
 	/**
-	 * Validity in seconds after the key creation time. (Defined by the latest signature)
-	 * 0 means unlimited validity.
+	 * Returns the validity in seconds after the key creation time, as defined by the latest self certification
+	 * (for master keys) or subkey binding signature (for subkeys).
+	 *
+	 * @param key public key
+	 * @return validity in seconds, 0 means unlimited validity
 	 */
 	public static long getPgpPublicKeyValiditySeconds(final PGPPublicKey key) {
 		PGPSignature latestSignature = null;
@@ -525,10 +797,9 @@ public class PGPUtilities {
 					}
 				}
 			} else {
+				// A subkey binding signature is issued by the master key, so its key ID is the master key's ID, not the subkey's ID
 				if (signature.getSignatureType() == PGPSignature.SUBKEY_BINDING) {
-					if (signature.getKeyID() != key.getKeyID()) {
-						continue;
-					} else if (latestSignature == null || signature.getCreationTime().after(latestSignature.getCreationTime())) {
+					if (latestSignature == null || signature.getCreationTime().after(latestSignature.getCreationTime())) {
 						latestSignature = signature;
 					}
 				}
@@ -547,15 +818,35 @@ public class PGPUtilities {
 		}
 	}
 
+	/**
+	 * Certifies another public key with a secret key (direct key signature), adding the signer's identity as notation "identity".
+	 *
+	 * @param pgpSecretKey secret key of the signer
+	 * @param password password of the signer's secret key
+	 * @param publicKeyToBeSigned public key to certify
+	 * @return copy of the public key including the new certification
+	 * @throws Exception if the private key cannot be read or the signature cannot be created
+	 */
 	public static PGPPublicKey signPublicKey(final PGPSecretKey pgpSecretKey, final char[] password, final PGPPublicKey publicKeyToBeSigned) throws Exception {
 		return signPublicKey(pgpSecretKey, password, publicKeyToBeSigned, null);
 	}
 
+	/**
+	 * Certifies another public key with a secret key (direct key signature).
+	 *
+	 * @param pgpSecretKey secret key of the signer
+	 * @param password password of the signer's secret key
+	 * @param publicKeyToBeSigned public key to certify
+	 * @param notationData notations to add to the signature; null adds the signer's identity as notation "identity", an empty map adds none
+	 * @return copy of the public key including the new certification
+	 * @throws Exception if the private key cannot be read or the signature cannot be created
+	 */
 	public static PGPPublicKey signPublicKey(final PGPSecretKey pgpSecretKey, final char[] password, final PGPPublicKey publicKeyToBeSigned, final Map<String, String> notationData) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
 		final PGPPrivateKey pgpPrivKey = readPGPPrivateKey(pgpSecretKey, password);
-		final PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(PgpPublicEncryptionMethod.RSA_GENERAL.getId(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()), pgpSecretKey.getPublicKey());
+		// The content signer must use the algorithm of the signing key (e.g. DSA), not always RSA
+		final PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(pgpSecretKey.getPublicKey().getAlgorithm(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()), pgpSecretKey.getPublicKey());
 		signatureGenerator.init(PGPSignature.DIRECT_KEY, pgpPrivKey);
 
 		if (notationData == null) {
@@ -576,14 +867,34 @@ public class PGPUtilities {
 		return PGPPublicKey.addCertification(publicKeyToBeSigned, certification);
 	}
 
+	/**
+	 * Certifies another public key with a private key (direct key signature), adding the signer's identity as notation "identity".
+	 *
+	 * @param pgpPrivKey private key of the signer
+	 * @param pgpPublicKey public key of the signer
+	 * @param publicKeyToBeSigned public key to certify
+	 * @return copy of the public key including the new certification
+	 * @throws Exception if the signature cannot be created
+	 */
 	public static PGPPublicKey signPublicKey(final PGPPrivateKey pgpPrivKey, final PGPPublicKey pgpPublicKey, final PGPPublicKey publicKeyToBeSigned) throws Exception {
 		return signPublicKey(pgpPrivKey, pgpPublicKey, publicKeyToBeSigned, null);
 	}
 
+	/**
+	 * Certifies another public key with a private key (direct key signature).
+	 *
+	 * @param pgpPrivKey private key of the signer
+	 * @param pgpPublicKey public key of the signer
+	 * @param publicKeyToBeSigned public key to certify
+	 * @param notationData notations to add to the signature; null adds the signer's identity as notation "identity", an empty map adds none
+	 * @return copy of the public key including the new certification
+	 * @throws Exception if the signature cannot be created
+	 */
 	public static PGPPublicKey signPublicKey(final PGPPrivateKey pgpPrivKey, final PGPPublicKey pgpPublicKey, final PGPPublicKey publicKeyToBeSigned, final Map<String, String> notationData) throws Exception {
 		Security.addProvider(new BouncyCastleProvider());
 
-		final PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(PgpPublicEncryptionMethod.RSA_GENERAL.getId(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()), pgpPublicKey);
+		// The content signer must use the algorithm of the signing key (e.g. DSA), not always RSA
+		final PGPSignatureGenerator signatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(pgpPublicKey.getAlgorithm(), PgpHashMethod.getByName(DEFAULT_HASHING_METHOD).getId()), pgpPublicKey);
 		signatureGenerator.init(PGPSignature.DIRECT_KEY, pgpPrivKey);
 
 		if (notationData == null) {
@@ -604,6 +915,12 @@ public class PGPUtilities {
 		return PGPPublicKey.addCertification(publicKeyToBeSigned, certification);
 	}
 
+	/**
+	 * Returns all user IDs of a public key.
+	 *
+	 * @param publicKey public key
+	 * @return user IDs separated by ", ", empty if there are none
+	 */
 	public static String getIdentityFromPgpPublicKey(final PGPPublicKey publicKey) {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -618,6 +935,14 @@ public class PGPUtilities {
 		return identities.toString();
 	}
 
+	/**
+	 * Returns information about all signatures of a public key. Each map contains the keys "id" (Long key ID of the signer),
+	 * "creationtime" (LocalDateTime), "encryptionalgorithm", "hashingalgorithm" and "identity" (from the notation data,
+	 * with "(Selfsigned)" for self signatures).
+	 *
+	 * @param publicKey public key
+	 * @return one map per signature
+	 */
 	public static List<Map<String, Object>> getKeySigners(final PGPPublicKey publicKey) {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -650,7 +975,7 @@ public class PGPUtilities {
 			signatureData.put("hashingalgorithm", hashingAlgorithm);
 
 			String identity = "";
-			final NotationData[] notationData = signature.getHashedSubPackets().getNotationDataOccurrences();
+			final NotationData[] notationData = signature.getHashedSubPackets() == null ? new NotationData[0] : signature.getHashedSubPackets().getNotationDataOccurrences();
 			for (int i = 0; i < notationData.length; i++) {
 				if (identity.length() > 0) {
 					identity += ", ";
@@ -678,6 +1003,12 @@ public class PGPUtilities {
 		return signersData;
 	}
 
+	/**
+	 * Returns the key IDs of all signers of a public key.
+	 *
+	 * @param publicKey public key
+	 * @return key IDs as upper case hex strings without leading zeros
+	 */
 	public static List<String> getSignerKeyIDs(final PGPPublicKey publicKey) {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -686,20 +1017,46 @@ public class PGPUtilities {
 		while (signerIterator.hasNext()) {
 			final PGPSignature signature = (PGPSignature) signerIterator.next();
 			final long id = signature.getKeyID();
-			signatureIDs.add(Long.toHexString(id).toUpperCase());
+			signatureIDs.add(Long.toHexString(id).toUpperCase(Locale.ROOT));
 		}
 		return signatureIDs;
 	}
 
+	/**
+	 * Removes the "Version: " header lines from ASCII-armored data.
+	 *
+	 * @param armoredData ASCII-armored data
+	 * @return data without version header
+	 */
 	public static String removeVersionFromArmoredData(final String armoredData) {
 		return TextUtilities.removeLinesContainingText(armoredData, "Version: ");
 	}
 
+	/**
+	 * Sets a new expiration time for a key by adding a new self certification of its first user ID, see
+	 * {@link #updateKeyExpiration(PGPSecretKey, PGPPrivateKey, LocalDateTime)}.
+	 *
+	 * @param secretKey secret key to update
+	 * @param password password of the secret key
+	 * @param validity local date and time when the key expires, null for unlimited validity
+	 * @return updated secret key
+	 * @throws Exception if the private key cannot be read or the signature cannot be created
+	 */
 	public static PGPSecretKey updateKeyExpiration(final PGPSecretKey secretKey, final char[] password, final LocalDateTime validity) throws Exception {
 		final PGPPrivateKey privateKey = readPGPPrivateKey(secretKey, password);
 		return updateKeyExpiration(secretKey, privateKey, validity);
 	}
 
+	/**
+	 * Sets a new expiration time for a key by adding a new self certification of its first user ID.
+	 * Existing self certifications with an expiration time are removed.
+	 *
+	 * @param secretKey secret key to update
+	 * @param privateKey decrypted private key of the secret key
+	 * @param validity local date and time when the key expires, null for unlimited validity
+	 * @return updated secret key
+	 * @throws Exception if the key has no user ID or the signature cannot be created
+	 */
 	public static PGPSecretKey updateKeyExpiration(final PGPSecretKey secretKey, final PGPPrivateKey privateKey, final LocalDateTime validity) throws Exception {
 		final PGPPublicKey publicKey = secretKey.getPublicKey();
 
@@ -746,6 +1103,16 @@ public class PGPUtilities {
 		return PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
 	}
 
+	/**
+	 * Sets a new expiration time for the master key of a key ring by replacing the newest self certification of its
+	 * first user ID. All other settings of that certification (key flags, preferred algorithms etc.) are kept.
+	 *
+	 * @param secretKeyRing key ring to update
+	 * @param password password of the master secret key
+	 * @param expiration local date and time when the key expires, null for unlimited validity
+	 * @return updated key ring
+	 * @throws Exception if the key cannot be unlocked, has no user ID or the signature cannot be created
+	 */
 	public static PGPSecretKeyRing updateKeyExpiration(final PGPSecretKeyRing secretKeyRing, final char[] password, final LocalDateTime expiration) throws Exception {
 		final PGPSecretKey secretKey = secretKeyRing.getSecretKey();
 		if (secretKey == null) {
@@ -759,12 +1126,37 @@ public class PGPUtilities {
 
 		final PGPPublicKey publicKey = secretKey.getPublicKey();
 
+		final Iterator<String> userIds = publicKey.getUserIDs();
+		if (!userIds.hasNext()) {
+			throw new IllegalStateException("Mandatory User-ID of PGP key is missing");
+		}
+		final String userId = userIds.next();
+
+		// The newest self certification of the user ID carries the key's settings (key flags, preferred algorithms etc.),
+		// which must be kept in the new self certification. Only the expiration time is replaced.
+		PGPSignature oldSelfCertification = null;
+		final Iterator<PGPSignature> userIdSignatures = publicKey.getSignaturesForID(userId);
+		while (userIdSignatures.hasNext()) {
+			final PGPSignature signature = userIdSignatures.next();
+			if (signature.getKeyID() == publicKey.getKeyID() && signature.isCertification()
+					&& (oldSelfCertification == null || signature.getCreationTime().after(oldSelfCertification.getCreationTime()))) {
+				oldSelfCertification = signature;
+			}
+		}
+
 		@SuppressWarnings("deprecation")
 		final PGPSignatureGenerator sigGen = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(publicKey.getAlgorithm(), HashAlgorithmTags.SHA256).setProvider("BC"));
 
 		sigGen.init(PGPSignature.POSITIVE_CERTIFICATION, privateKey);
 
-		final PGPSignatureSubpacketGenerator spGen = new PGPSignatureSubpacketGenerator();
+		final PGPSignatureSubpacketGenerator spGen;
+		if (oldSelfCertification != null && oldSelfCertification.getHashedSubPackets() != null) {
+			spGen = new PGPSignatureSubpacketGenerator(oldSelfCertification.getHashedSubPackets());
+			spGen.removePacketsOfType(SignatureSubpacketTags.KEY_EXPIRE_TIME);
+			spGen.removePacketsOfType(SignatureSubpacketTags.CREATION_TIME);
+		} else {
+			spGen = new PGPSignatureSubpacketGenerator();
+		}
 
 		if (expiration != null) {
 			final long seconds = Duration.between(
@@ -777,17 +1169,31 @@ public class PGPUtilities {
 
 		sigGen.setHashedSubpackets(spGen.generate());
 
-		final PGPSignature newSig = sigGen.generateCertification(publicKey.getUserIDs().next(), publicKey);
+		final PGPSignature newSig = sigGen.generateCertification(userId, publicKey);
 
-		PGPPublicKey updatedPublicKey = PGPPublicKey.removeCertification(publicKey, findSelfSignature(publicKey));
+		// The new certification must be bound to the user ID. Adding it without user ID would store it as a
+		// direct key signature, which leaves the user ID without any valid self certification.
+		PGPPublicKey updatedPublicKey = publicKey;
+		if (oldSelfCertification != null) {
+			updatedPublicKey = PGPPublicKey.removeCertification(updatedPublicKey, userId, oldSelfCertification);
+		}
 
-		updatedPublicKey = PGPPublicKey.addCertification(updatedPublicKey, newSig);
+		updatedPublicKey = PGPPublicKey.addCertification(updatedPublicKey, userId, newSig);
 
 		final PGPSecretKey updatedSecretKey = PGPSecretKey.replacePublicKey(secretKey, updatedPublicKey);
 
 		return PGPSecretKeyRing.insertSecretKey(PGPSecretKeyRing.removeSecretKey(secretKeyRing, secretKey), updatedSecretKey);
 	}
 
+	/**
+	 * Changes the password of all secret keys of a key ring. The keys are protected with AES-256 and a strong S2K iteration count.
+	 *
+	 * @param secretKeyRing key ring
+	 * @param oldPassword current password
+	 * @param newPassword new password
+	 * @return updated key ring
+	 * @throws Exception if the old password is wrong or the keys cannot be encrypted
+	 */
 	public static PGPSecretKeyRing changeKeyPassword(final PGPSecretKeyRing secretKeyRing, final char[] oldPassword, final char[] newPassword) throws Exception {
 		PGPSecretKeyRing updatedRing = secretKeyRing;
 
@@ -808,6 +1214,12 @@ public class PGPUtilities {
 		return updatedRing;
 	}
 
+	/**
+	 * Returns the first signature of a key issued by the key itself.
+	 *
+	 * @param key public key
+	 * @return first self signature, or null if there is none
+	 */
 	public static PGPSignature findSelfSignature(final PGPPublicKey key) {
 		final Iterator<PGPSignature> it = key.getSignatures();
 
@@ -821,6 +1233,15 @@ public class PGPUtilities {
 		return null;
 	}
 
+	/**
+	 * Changes the password of a secret key. The key is protected with AES-256 and a strong S2K iteration count.
+	 *
+	 * @param secretKey secret key
+	 * @param oldPassword current password
+	 * @param newPassword new password
+	 * @return copy of the secret key protected with the new password
+	 * @throws Exception if the old password is wrong or the key cannot be encrypted
+	 */
 	public static PGPSecretKey changeKeyPassword(final PGPSecretKey secretKey,  final char[] oldPassword, final char[] newPassword) throws Exception {
 		final PBESecretKeyDecryptor oldDecryptor = new JcePBESecretKeyDecryptorBuilder().setProvider("BC").build(oldPassword);
 

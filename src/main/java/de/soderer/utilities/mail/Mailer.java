@@ -12,6 +12,7 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -67,7 +68,14 @@ import jakarta.mail.internet.MimePart;
 import jakarta.mail.internet.MimeUtility;
 import jakarta.mail.util.ByteArrayDataSource;
 
+/**
+ * Sends {@link Email} objects via SMTP, optionally signed and/or encrypted with S/MIME or PGP.
+ * Configuration methods return this instance for method chaining.
+ */
 public class Mailer {
+	/**
+	 * Return value of stream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private String smtpMailRelayHostname = "localhost";
@@ -78,51 +86,120 @@ public class Mailer {
 
 	private MailerConnectionSecurity connectionSecurity = MailerConnectionSecurity.None;
 
+	/**
+	 * Create a mailer for an SMTP relay on "localhost" with the default port and without authentication and encryption.
+	 */
+	public Mailer() {
+		// Configuration is done by the setters
+	}
+
+	/**
+	 * Get the hostname of the SMTP server.
+	 *
+	 * @return hostname
+	 */
 	public String getSmtpMailRelayHostname() {
 		return smtpMailRelayHostname;
 	}
 
+	/**
+	 * Set the hostname of the SMTP server.
+	 *
+	 * @param smtpMailRelayHostname hostname
+	 * @return this mailer
+	 */
 	public Mailer setSmtpMailRelayHostname(final String smtpMailRelayHostname) {
 		this.smtpMailRelayHostname = smtpMailRelayHostname;
 		return this;
 	}
 
+	/**
+	 * Get the port of the SMTP server.
+	 *
+	 * @return port, 0 or less for the default port of the connection security
+	 */
 	public int getSmtpMailRelayPort() {
 		return smtpMailRelayPort;
 	}
 
+	/**
+	 * Set the port of the SMTP server.
+	 *
+	 * @param smtpMailRelayPort port, 0 or less for the default port of the connection security
+	 * @return this mailer
+	 */
 	public Mailer setSmtpMailRelayPort(final int smtpMailRelayPort) {
 		this.smtpMailRelayPort = smtpMailRelayPort;
 		return this;
 	}
 
+	/**
+	 * Get the username for SMTP authentication.
+	 *
+	 * @return username, null for no authentication
+	 */
 	public String getSmtpUsername() {
 		return smtpUsername;
 	}
 
+	/**
+	 * Set the username for SMTP authentication.
+	 *
+	 * @param smtpUsername username, null for no authentication
+	 * @return this mailer
+	 */
 	public Mailer setSmtpUsername(final String smtpUsername) {
 		this.smtpUsername = smtpUsername;
 		return this;
 	}
 
+	/**
+	 * Get the password for SMTP authentication.
+	 *
+	 * @return password (not copied)
+	 */
 	public char[] getSmtpPassword() {
 		return smtpPassword;
 	}
 
+	/**
+	 * Set the password for SMTP authentication.
+	 *
+	 * @param smtpPassword password (not copied)
+	 * @return this mailer
+	 */
 	public Mailer setSmtpPassword(final char[] smtpPassword) {
 		this.smtpPassword = smtpPassword;
 		return this;
 	}
 
+	/**
+	 * Get the transport security of the connection to the SMTP server.
+	 *
+	 * @return connection security
+	 */
 	public MailerConnectionSecurity getConnectionSecurity() {
 		return connectionSecurity;
 	}
 
+	/**
+	 * Set the transport security of the connection to the SMTP server.
+	 *
+	 * @param connectionSecurity connection security
+	 * @return this mailer
+	 */
 	public Mailer setConnectionSecurity(final MailerConnectionSecurity connectionSecurity) {
 		this.connectionSecurity = connectionSecurity;
 		return this;
 	}
 
+	/**
+	 * Send an email. The email is checked for valid data first.
+	 *
+	 * @param email email to send
+	 * @return this mailer
+	 * @throws Exception if the email is invalid or cannot be built, signed, encrypted or sent
+	 */
 	public Mailer send(final Email email) throws Exception {
 		if (Utilities.isBlank(smtpMailRelayHostname)) {
 			smtpMailRelayHostname = "localhost";
@@ -132,26 +209,26 @@ public class Mailer {
 
 		// Email header "Return-Path"
 		if (email.getBounceAddress() != null) {
-			final String bounceEmailString;
-			if (email.getBounceAddress().getPersonal() != null) {
-				bounceEmailString = email.getBounceAddress().getPersonal() + " <" + email.getBounceAddress().getAddress() + ">";
-			} else {
-				bounceEmailString = email.getBounceAddress().getAddress();
-			}
-			mailProps.put("mail.smtp.from", bounceEmailString);
+			// The envelope sender (SMTP "MAIL FROM") is the plain address without display name
+			mailProps.put("mail.smtp.from", email.getBounceAddress().getAddress());
 		} else {
 			mailProps.put("mail.smtp.from", email.getFromAddress().getAddress());
 		}
 
 		mailProps.put("mail.smtp.host", smtpMailRelayHostname);
-		mailProps.put("mail.smtp.port", smtpMailRelayPort);
+		// Port 0 (not set) means the default port of the protocol
+		if (smtpMailRelayPort > 0) {
+			mailProps.put("mail.smtp.port", Integer.toString(smtpMailRelayPort));
+		}
 
 		if (connectionSecurity == MailerConnectionSecurity.SSL_TLS) {
-			mailProps.put("mail.smtp.socketFactory.port", smtpMailRelayPort);
-			mailProps.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-			mailProps.put("mail.smtp.socketFactory.fallback", "false");
+			mailProps.put("mail.smtp.ssl.enable", "true");
+			mailProps.put("mail.smtp.ssl.checkserveridentity", "true");
 		} else if (connectionSecurity == MailerConnectionSecurity.STARTTLS) {
 			mailProps.put("mail.smtp.starttls.enable", "true");
+			// Without "required" the mail (and the SMTP password) is sent unencrypted, if the server or an attacker in between does not offer STARTTLS
+			mailProps.put("mail.smtp.starttls.required", "true");
+			mailProps.put("mail.smtp.ssl.checkserveridentity", "true");
 		}
 
 		final Session session;
@@ -160,13 +237,14 @@ public class Mailer {
 			final Authenticator authenticator = new Authenticator() {
 				@Override
 				protected PasswordAuthentication getPasswordAuthentication() {
-					return new PasswordAuthentication(smtpUsername, new String(smtpPassword));
+					return new PasswordAuthentication(smtpUsername, smtpPassword == null ? "" : new String(smtpPassword));
 				}
 			};
-			session = Session.getDefaultInstance(mailProps, authenticator);
+			// A new session per send: Session.getDefaultInstance() returns one JVM wide session, which keeps the settings of the first call
+			session = Session.getInstance(mailProps, authenticator);
 		} else {
 			mailProps.put("mail.smtp.auth", false);
-			session = Session.getDefaultInstance(mailProps);
+			session = Session.getInstance(mailProps);
 		}
 
 		// create a message
@@ -179,7 +257,7 @@ public class Mailer {
 			mimeMessage = new MimeMessageWithId(session, messageID);
 		}
 
-		mimeMessage.setFrom(email.getFromAddress().getAddress());
+		mimeMessage.setFrom(email.getFromAddress());
 		mimeMessage.setSubject(email.getSubject(), email.getCharset().name());
 		mimeMessage.setSentDate(DateUtilities.getDateForLocalDateTime(LocalDateTime.now()));
 
@@ -207,13 +285,8 @@ public class Mailer {
 		}
 
 		if (email.getNotificationAddress() != null) {
-			final String notificationEmailString;
-			if (email.getNotificationAddress().getPersonal() != null) {
-				notificationEmailString = email.getNotificationAddress().getPersonal() + " <" + email.getNotificationAddress().getAddress() + ">";
-			} else {
-				notificationEmailString = email.getNotificationAddress().getAddress();
-			}
-			mimeMessage.setHeader("Disposition-Notification-To", notificationEmailString);
+			// InternetAddress.toString() encodes non ASCII display names as required in mail headers
+			mimeMessage.setHeader("Disposition-Notification-To", email.getNotificationAddress().toString());
 		}
 
 		Multipart rootMultipart = null;
@@ -402,7 +475,8 @@ public class Mailer {
 		return mimeMessage;
 	}
 
-	private static Multipart signMessageWithPgp(final MimeMessage mimeMessage, final Multipart rootMultipart, final PGPSecretKey privateKey, final char[] password, final String signatureMethodName) throws Exception {
+	private static Multipart signMessageWithPgp(final MimeMessage mimeMessage, final Multipart rootMultipart, final PGPSecretKey privateKey, final char[] password, final String signatureMethodNameParameter) throws Exception {
+		final String signatureMethodName = Utilities.isBlank(signatureMethodNameParameter) ? PgpHashMethod.SHA256.name() : signatureMethodNameParameter;
 		final MimeBodyPart bodyPart = new MimeBodyPart();
 		bodyPart.setContent(rootMultipart);
 
@@ -437,7 +511,7 @@ public class Mailer {
 
 		final String signature = PGPUtilities.removeVersionFromArmoredData(new String(byteOut.toByteArray(), StandardCharsets.UTF_8));
 
-		final Multipart multipartSigned = new de.soderer.utilities.mail.MimeMultipart("signed", HttpUtilities.generateBoundary(), Utilities.createMap("micalg", "pgp-" + signatureMethodName.toLowerCase().replace("_", "").replace("-", ""), "protocol", "application/pgp-signature"));
+		final Multipart multipartSigned = new de.soderer.utilities.mail.MimeMultipart("signed", HttpUtilities.generateBoundary(), Utilities.createMap("micalg", "pgp-" + signatureMethodName.toLowerCase(Locale.ROOT).replace("_", "").replace("-", ""), "protocol", "application/pgp-signature"));
 
 		final MimeBodyPart mimeBodyPart = new MimeBodyPart();
 

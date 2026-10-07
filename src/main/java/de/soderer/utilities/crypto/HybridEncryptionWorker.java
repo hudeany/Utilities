@@ -41,6 +41,9 @@ import de.soderer.utilities.worker.WorkerSimple;
  *   [remaining bytes: AES/GCM ciphertext, including the 16 byte GCM authentication tag at the end]
  */
 public class HybridEncryptionWorker extends WorkerSimple<Boolean> {
+	/**
+	 * Return value of stream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private static final int SESSION_KEY_LENGTH_BITS = 256;
@@ -55,11 +58,11 @@ public class HybridEncryptionWorker extends WorkerSimple<Boolean> {
 	private long dataSizeHint = -1;
 
 	/**
-	 * Hybrid encrypt inputStream
+	 * Hybrid encrypt inputStream with the default key wrap method {@link CryptographicUtilities#DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA}.
 	 *
-	 * @param parent
-	 * @param dataInputStream
-	 * @param encryptedDataOutputStream
+	 * @param parent parent to report progress to, may be null
+	 * @param dataInputStream stream with the data to encrypt
+	 * @param encryptedDataOutputStream stream to write the encrypted data to
 	 * @param publicKey recipient's RSA or EC public key, used only to wrap the AES session key
 	 */
 	public HybridEncryptionWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final OutputStream encryptedDataOutputStream, final PublicKey publicKey) {
@@ -69,13 +72,13 @@ public class HybridEncryptionWorker extends WorkerSimple<Boolean> {
 	/**
 	 * Hybrid encrypt inputStream
 	 *
-	 * @param parent
-	 * @param dataInputStream
-	 * @param encryptedDataOutputStream
+	 * @param parent parent to report progress to, may be null
+	 * @param dataInputStream stream with the data to encrypt
+	 * @param encryptedDataOutputStream stream to write the encrypted data to
 	 * @param publicKey recipient's RSA or EC public key, used only to wrap the AES session key
 	 * @param asymmetricKeyWrapMethod transformation used to wrap the AES session key
 	 *        (e.g. "RSA/NONE/OAEPWithSHA256AndMGF1Padding" or "ECIES"); the bulk data itself
-	 *        is always encrypted with AES/GCM regardless of this setting
+	 *        is always encrypted with AES/GCM regardless of this setting. Blank for the default.
 	 */
 	public HybridEncryptionWorker(final WorkerParentSimple parent, final InputStream dataInputStream, final OutputStream encryptedDataOutputStream, final PublicKey publicKey, final String asymmetricKeyWrapMethod) {
 		super(parent);
@@ -89,6 +92,11 @@ public class HybridEncryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	/**
+	 * Sets the expected data size in bytes for the progress display, if the stream cannot tell its size.
+	 *
+	 * @param dataSizeHint expected data size in bytes
+	 */
 	public void setDataSizeHint(final long dataSizeHint) {
 		this.dataSizeHint = dataSizeHint;
 	}

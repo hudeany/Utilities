@@ -8,6 +8,9 @@ import java.util.Arrays;
 
 import de.soderer.utilities.IoUtilities;
 
+/**
+ * Splits key storage data containing ASCII-armored PGP public and/or private key blocks into the separate blocks.
+ */
 public class PGPKeyStorageStringSplitter {
 	private static final String PUBLIC_KEY_START = "-----BEGIN PGP PUBLIC KEY BLOCK-----";
 	private static final String PUBLIC_KEY_END = "-----END PGP PUBLIC KEY BLOCK-----";
@@ -19,6 +22,8 @@ public class PGPKeyStorageStringSplitter {
 	private String privateKeyStorageString = null;
 
 	/**
+	 * Returns the extracted public key block.
+	 *
 	 * @return an InputStream over the extracted public key block. If no ASCII-armored PGP
 	 *         block markers were found at all in the source data, it is assumed to be a raw
 	 *         (non-armored/binary) key and the original data is returned as-is. If armor
@@ -39,6 +44,8 @@ public class PGPKeyStorageStringSplitter {
 	}
 
 	/**
+	 * Returns the extracted private key block.
+	 *
 	 * @return an InputStream over the extracted private key block. See {@link #getPublicKeyInputStream()}
 	 *         for the fallback behaviour on non-armored/binary data.
 	 */
@@ -55,6 +62,12 @@ public class PGPKeyStorageStringSplitter {
 		}
 	}
 
+	/**
+	 * Reads the key storage data completely and closes the stream.
+	 *
+	 * @param inputStream stream with the key storage data (ASCII-armored or binary)
+	 * @throws Exception if the data cannot be read
+	 */
 	public PGPKeyStorageStringSplitter(final InputStream inputStream) throws Exception {
 		try {
 			final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

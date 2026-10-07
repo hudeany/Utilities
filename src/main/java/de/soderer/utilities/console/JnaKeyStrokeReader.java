@@ -16,6 +16,8 @@ import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
 /**
+ * Reads single keys from the console via JNA on Windows and Linux.
+ *
  * @deprecated This class duplicates the logic already split between {@link WindowsKeyStrokeReader} and
  * {@link LinuxKeyStrokeReader} (Windows part via msvcrt/kernel32, Linux part via libc/termios), combined into one place.
  * Nothing in this package calls it - the actually used runtime path is {@link ConsoleUtilities#readKey()}, which uses
@@ -25,13 +27,23 @@ import de.soderer.utilities.Utilities;
  */
 @Deprecated
 public class JnaKeyStrokeReader {
+	private JnaKeyStrokeReader() {
+		// Only static methods
+	}
+
 	/**
 	 * Detection of Ctrl-C only works on Windows systems, because it ends Linux Java VM immediatelly
 	 */
 	@Deprecated
 	public static final int KeyCode_CtrlC = 3;
+	/**
+	 * Key code of CtrlV, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_CtrlV = 22;
+	/**
+	 * Key code of CtrlX, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_CtrlX = 24;
 
@@ -41,47 +53,107 @@ public class JnaKeyStrokeReader {
 	@Deprecated
 	public static final int KeyCode_ContextMenu_Insert = 6513249;
 
+	/**
+	 * Key code of Enter, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Enter;
+	/**
+	 * Key code of Backspace, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Backspace;
+	/**
+	 * Key code of Tab, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Tab = 9;
+	/**
+	 * Key code of Escape, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Escape = 27;
 
+	/**
+	 * Key code of Home, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Home;
+	/**
+	 * Key code of PageUp, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_PageUp;
+	/**
+	 * Key code of End, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_End;
+	/**
+	 * Key code of Insert, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Insert;
+	/**
+	 * Key code of Delete, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Delete;
+	/**
+	 * Key code of PageDown, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_PageDown;
 
+	/**
+	 * Key code of Up, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Up;
+	/**
+	 * Key code of Left, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Left;
+	/**
+	 * Key code of Right, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Right;
+	/**
+	 * Key code of Down, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_Down;
 
+	/**
+	 * Key code of AUml Lower, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_AUml_Lower;
+	/**
+	 * Key code of AUml Upper, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_AUml_Upper;
+	/**
+	 * Key code of OUml Lower, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_OUml_Lower;
+	/**
+	 * Key code of OUml Upper, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_OUml_Upper;
+	/**
+	 * Key code of UUml Lower, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_UUml_Lower;
+	/**
+	 * Key code of UUml Upper, depending on the operating system.
+	 */
 	@Deprecated
 	public static final int KeyCode_UUml_Upper;
 
@@ -151,6 +223,10 @@ public class JnaKeyStrokeReader {
 
 	/**
 	 * Read a character from the console without echo.
+	 *
+	 * @param wait true to wait for the next key, false to return immediately if no key is available
+	 * @return key code, -2 if no key is available and wait is false
+	 * @throws Exception if the console cannot be configured or read
 	 */
 	@Deprecated
 	public static int readKey(final boolean wait) throws Exception {
@@ -163,6 +239,8 @@ public class JnaKeyStrokeReader {
 
 	/**
 	 * Resets console mode to normal line mode
+	 *
+	 * @throws IOException if the console mode cannot be set
 	 */
 	@Deprecated
 	public static void resetConsoleMode() throws IOException {
@@ -398,18 +476,39 @@ public class JnaKeyStrokeReader {
 		}
 	}
 
+	/**
+	 * Native termios structure of Linux.
+	 */
 	@Deprecated
 	protected static class TerminalFlags extends Structure {
+		/**
+		 * Input mode flags.
+		 */
 		@Deprecated
 		public int c_iflag;
+		/**
+		 * Output mode flags.
+		 */
 		@Deprecated
 		public int c_oflag;
+		/**
+		 * Control mode flags.
+		 */
 		@Deprecated
 		public int c_cflag;
+		/**
+		 * Local mode flags.
+		 */
 		@Deprecated
 		public int c_lflag;
+		/**
+		 * Line discipline.
+		 */
 		@Deprecated
 		public byte c_line;
+		/**
+		 * Space for the remaining termios fields.
+		 */
 		@Deprecated
 		public byte[] filler = new byte[64];
 

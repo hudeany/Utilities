@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
@@ -55,20 +56,58 @@ import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.xml.XmlUtilities;
 
 /**
- * versionIndexFileLocation
- * 	may include placeholders:<br />
- * 		&lt;system> : replaced by "windows" or "linux"<br />
- *  	&lt;bitmode> : replaced by "32" or "64"<br />
- * 		&lt;username> : interactive username dialog<br />
- * 		&lt;password> : interactive password dialog<br />
- * 		&lt;time_seconds> : current timestamp in seconds (used by sourceforge.net)
+ * Checks for, downloads and installs new versions of the running application jar.
+ * <p>
+ * versionIndexFileLocation may include placeholders:<br>
+ * &nbsp;&nbsp;&lt;system&gt; : replaced by "windows" or "linux"<br>
+ * &nbsp;&nbsp;&lt;bitmode&gt; : replaced by "32" or "64"<br>
+ * &nbsp;&nbsp;&lt;username&gt; : interactive username dialog<br>
+ * &nbsp;&nbsp;&lt;password&gt; : interactive password dialog<br>
+ * &nbsp;&nbsp;&lt;time_seconds&gt; : current timestamp in seconds (used by sourceforge.net)
+ * <p>
+ * Supported version index locations are the JSON or XML index on soderer.de, the "latest release" API of
+ * GitHub ("api.github.com"), any other http(s) URL providing the JSON index format, and local "file://" JSON
+ * files. A downloaded update is only installed if its jar signature is trusted by one of the given CA
+ * certificates, unless unsafe updates are explicitly allowed.
  */
 public class ApplicationUpdateUtilities {
+	/**
+	 * Starts the updater with logging and step-by-step waits, for debugging.
+	 */
 	public static boolean DEBUGGING_UPDATER = false;
+	/**
+	 * Starts the restarter with logging, for debugging.
+	 */
 	public static boolean DEBUGGING_RESTARTER = false;
 
+	/**
+	 * Return value of InputStream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
+	private ApplicationUpdateUtilities() {
+		// Utility class with static methods only
+	}
+
+	/**
+	 * Checks for a new version and, after confirmation, downloads and installs it.
+	 * The confirmation is skipped if a new version is available and a username is given (e.g. for automatic updates).
+	 * On success with a new version the application exits, so the updater can replace its jar file.
+	 *
+	 * @param updateParent callbacks for user interaction, may be null for non-interactive use
+	 * @param versionIndexFileLocation location of the version index (see class description)
+	 * @param proxyConfiguration proxy to use for http requests, may be null for a direct connection
+	 * @param applicationName name of the application in the version index
+	 * @param applicationVersion currently running version
+	 * @param trustedCaCertificateFileNames comma separated class path resources of the CA certificates, which the update jar's signature must be trusted by
+	 * @param username username for "&lt;username&gt;" in the download URL, may be null
+	 * @param password password for "&lt;password&gt;" in the download URL, may be null
+	 * @param appParameters parameters for restarting the application after the update, may be null
+	 * @param restartAfterUpdate true to restart the application after the update
+	 * @param allowUnsafeUpdates true to allow updates without signature check, if no trusted CA certificates are given
+	 * @return true if the check (and a possible update) was executed without error, false if an error was shown via updateParent
+	 * @throws Exception if an error occurred and no updateParent is given to show it
+	 */
 	public static boolean executeUpdate(
 			final ApplicationUpdateParent updateParent,
 			final String versionIndexFileLocation,
@@ -103,6 +142,16 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
+	/**
+	 * Checks whether the version index offers a newer version than the running one.
+	 *
+	 * @param versionIndexFileLocation location of the version index (see class description)
+	 * @param proxyConfiguration proxy to use for http requests, may be null for a direct connection
+	 * @param applicationName name of the application in the version index
+	 * @param applicationVersion currently running version
+	 * @return the newer version and its download location (with placeholders replaced), or null if no newer version is available
+	 * @throws Exception if the version index is not reachable or invalid
+	 */
 	public static Tuple<Version, String> checkForNewVersionAvailable(final String versionIndexFileLocation, final ProxyConfiguration proxyConfiguration, final String applicationName, final Version applicationVersion) throws Exception {
 		try {
 			if (Utilities.isEmpty(versionIndexFileLocation)) {
@@ -287,19 +336,28 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
+	/**
+	 * Restarts the application by starting the embedded "Restarter.jar" and exiting the current JVM.
+	 * Errors are written to System.err, in that case the current JVM keeps running.
+	 *
+	 * @param jarFilePath path of the application jar to restart
+	 * @param jvmParameters JVM parameters for the restarted application, may be null
+	 * @param appParameters application parameters for the restarted application, may be null
+	 */
 	public static void restart(final String jarFilePath, final List<String> jvmParameters, final List<String> appParameters) {
 		try {
-			final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Restarter.jar");
-			if (updaterInputStream == null) {
-				throw new Exception("Restarter binary not available");
-			}
-
 			final File restarterFile = new File(System.getProperty("java.io.tmpdir"), "Restarter_" + new File(jarFilePath).getName() +".jar");
-			if (restarterFile.exists() && !restarterFile.delete()) {
-				throw new Exception("Cannot remove leftover restarter file '" + restarterFile.getAbsolutePath() + "', it may still be in use");
-			}
-			try (FileOutputStream updaterOut = new FileOutputStream(restarterFile)) {
-				IoUtilities.copy(updaterInputStream, updaterOut);
+			try (InputStream restarterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Restarter.jar")) {
+				if (restarterInputStream == null) {
+					throw new Exception("Restarter binary not available");
+				}
+
+				if (restarterFile.exists() && !restarterFile.delete()) {
+					throw new Exception("Cannot remove leftover restarter file '" + restarterFile.getAbsolutePath() + "', it may still be in use");
+				}
+				try (FileOutputStream restarterOut = new FileOutputStream(restarterFile)) {
+					IoUtilities.copy(restarterInputStream, restarterOut);
+				}
 			}
 
 			String javaBinPath = SystemUtilities.getJavaBinPath();
@@ -496,6 +554,22 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
+	/**
+	 * Downloads and installs the given update file without any user interaction. The update jar's signature is
+	 * always checked. On success the application exits, so the updater can replace its jar file.
+	 *
+	 * @param applicationClass main class of the application, used to find the running jar file and the CA certificate resources
+	 * @param updateFileLocation location of the update jar file (http(s) URL, "file://" URL or file path)
+	 * @param proxyConfiguration proxy to use for http requests, may be null for a direct connection
+	 * @param trustedCaCertificateFileNames comma separated class path resources of the CA certificates, which the update jar's signature must be trusted by
+	 * @param username username for "&lt;username&gt;" in the download URL, may be null
+	 * @param password password for "&lt;password&gt;" in the download URL, may be null
+	 * @param jvmParameters JVM parameters for restarting the application, may be null
+	 * @param appParameters application parameters for restarting the application, may be null
+	 * @param restartAfterUpdate true to restart the application after the update
+	 * @return true if the update was prepared (the method only returns if no updater could be started), false if the download failed
+	 * @throws Exception if the download, the signature check or starting the updater failed
+	 */
 	public static boolean updateNonInteractiveApplication(final Class<? extends ApplicationUpdateParent> applicationClass, final String updateFileLocation, final ProxyConfiguration proxyConfiguration, final String trustedCaCertificateFileNames, final String username, final char[] password, final List<String> jvmParameters, final List<String> appParameters, final boolean restartAfterUpdate) throws Exception {
 		try {
 			if (Utilities.isBlank(updateFileLocation)) {
@@ -555,16 +629,19 @@ public class ApplicationUpdateUtilities {
 				}
 
 				final String[] updaterCommand;
-				final InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar");
-				if (updaterInputStream != null) {
-					final File updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() +".jar");
-					if (updaterFile.exists() && !updaterFile.delete()) {
-						throw new Exception("Cannot remove leftover updater file '" + updaterFile.getAbsolutePath() + "' from a previous update, it may still be in use");
+				File updaterFile = null;
+				try (InputStream updaterInputStream = ApplicationUpdateUtilities.class.getClassLoader().getResourceAsStream("Updater.jar")) {
+					if (updaterInputStream != null) {
+						updaterFile = new File(new File(jarFilePath).getParent(), "Updater_" + new File(jarFilePath).getName() +".jar");
+						if (updaterFile.exists() && !updaterFile.delete()) {
+							throw new Exception("Cannot remove leftover updater file '" + updaterFile.getAbsolutePath() + "' from a previous update, it may still be in use");
+						}
+						try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
+							IoUtilities.copy(updaterInputStream, updaterOut);
+						}
 					}
-					try (FileOutputStream updaterOut = new FileOutputStream(updaterFile)) {
-						IoUtilities.copy(updaterInputStream, updaterOut);
-					}
-
+				}
+				if (updaterFile != null) {
 					String javaBinPath = SystemUtilities.getJavaBinPath();
 					if (Utilities.isBlank(javaBinPath)) {
 						if (SystemUtilities.isWindowsSystem()) {
@@ -695,7 +772,7 @@ public class ApplicationUpdateUtilities {
 					final boolean success = downloadUpdateFile(updateParent, downloadTempFile, downloadUrlWithCredentials, proxyConfiguration);
 					if (!success) {
 						// download stopped by user
-						updateParent.showUpdateError(LangResources.get("canceledByUser"));
+						showUpdateError(updateParent, LangResources.get("canceledByUser"));
 						return false;
 					}
 				} catch (final UserError e) {
@@ -750,7 +827,7 @@ public class ApplicationUpdateUtilities {
 			final boolean success = copyUpdateFile(updateParent, downloadTempFile, updateFileLocation);
 			if (!success) {
 				// download stopped by user
-				updateParent.showUpdateError(LangResources.get("canceledByUser"));
+				showUpdateError(updateParent, LangResources.get("canceledByUser"));
 				return false;
 			}
 		} else {
@@ -761,7 +838,7 @@ public class ApplicationUpdateUtilities {
 			final boolean success = copyUpdateFile(updateParent, downloadTempFile, updateFileLocation);
 			if (!success) {
 				// download stopped by user
-				updateParent.showUpdateError(LangResources.get("canceledByUser"));
+				showUpdateError(updateParent, LangResources.get("canceledByUser"));
 				return false;
 			}
 		}
@@ -890,6 +967,15 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
+	/**
+	 * Creates a batch file (Windows) or shell script (Linux) next to the application jar, which waits some seconds,
+	 * starts the application again and deletes itself.
+	 *
+	 * @param jarFilePath path of the application jar to restart
+	 * @param appParameter application parameters as one String, may be null
+	 * @return command to execute the created file, or null if the operating system is not supported
+	 * @throws Exception if the file cannot be written
+	 */
 	public static String[] createRestartBatchFile(final String jarFilePath, final String appParameter) throws Exception {
 		String javaBinPath = SystemUtilities.getJavaBinPath();
 		if (Utilities.isBlank(javaBinPath)) {
@@ -952,7 +1038,7 @@ public class ApplicationUpdateUtilities {
 			if (value.contains("<bitmode>")) {
 				if (System.getProperty("os.arch") != null && System.getProperty("os.arch").contains("64")) {
 					value = value.replace("<bitmode>", "64");
-				} else if (SystemUtilities.isLinuxSystem()) {
+				} else {
 					value = value.replace("<bitmode>", "32");
 				}
 			}
@@ -1110,6 +1196,15 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
+	/**
+	 * Checks that all files of a jar (except the manifest and the signature files) are signed with a currently valid
+	 * certificate, whose chain of trust leads to one of the given trusted certificates.
+	 * Revocation is not checked.
+	 *
+	 * @param jarFile jar file to check
+	 * @param trustedCertificates trusted CA certificates
+	 * @return true if the jar is completely signed by a trusted certificate, false otherwise or if no trusted certificates are given
+	 */
 	public static boolean verifyJarSignature(final File jarFile, final Collection<? extends Certificate> trustedCertificates) {
 		if (trustedCertificates == null || trustedCertificates.size() == 0) {
 			return false;
@@ -1134,8 +1229,10 @@ public class ApplicationUpdateUtilities {
 					}
 				}
 
-				// Every file must be signed, except for files inside the actual META-INF directory
-				if (!jarEntry.isDirectory() && !jarEntry.getName().startsWith("META-INF/")) {
+				// Every file must be signed, except for the manifest and the signature files themselves.
+				// Other files in META-INF (e.g. "META-INF/versions/..." of multi-release jars, which may contain
+				// executable classes) must be signed too.
+				if (!jarEntry.isDirectory() && !isSignatureRelatedEntry(jarEntry.getName())) {
 					boolean isSignedByTrustedCert = false;
 
 					final Certificate[] certificates = jarEntry.getCertificates();
@@ -1195,6 +1292,9 @@ public class ApplicationUpdateUtilities {
 		}
 	}
 
+	/**
+	 * Deletes the updater and restarter jar files left over from a previous update or restart of the running application.
+	 */
 	public static void removeUpdateLeftovers() {
 		final String jarFilePath = SystemUtilities.getCurrentlyRunningJarFilePath();
 		if (Utilities.isNotBlank(jarFilePath)) {
@@ -1207,6 +1307,24 @@ public class ApplicationUpdateUtilities {
 				System.err.println("Cannot remove leftover restarter file '" + restarterFile.getAbsolutePath() + "'");
 			}
 		}
+	}
+
+	/**
+	 * Checks whether a jar entry is the manifest or a signature file, which are not signed themselves.
+	 */
+	private static boolean isSignatureRelatedEntry(final String entryName) {
+		final String upperCaseName = entryName.toUpperCase(Locale.ROOT);
+		if (!upperCaseName.startsWith("META-INF/") || upperCaseName.indexOf('/', "META-INF/".length()) >= 0) {
+			// Only files directly inside META-INF can be signature related
+			return false;
+		}
+		return "META-INF/MANIFEST.MF".equals(upperCaseName)
+				|| "META-INF/INDEX.LIST".equals(upperCaseName)
+				|| upperCaseName.endsWith(".SF")
+				|| upperCaseName.endsWith(".DSA")
+				|| upperCaseName.endsWith(".RSA")
+				|| upperCaseName.endsWith(".EC")
+				|| upperCaseName.startsWith("META-INF/SIG-");
 	}
 
 	/**

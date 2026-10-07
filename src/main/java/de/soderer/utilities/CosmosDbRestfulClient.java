@@ -25,20 +25,35 @@ import de.soderer.network.HttpUtilities;
 import de.soderer.pac.utilities.ProxyConfiguration;
 
 /**
- * For documentation see: https://docs.microsoft.com/en-gb/rest/api/cosmos-db/
+ * Minimal REST client for the documents of one collection of an Azure Cosmos DB (SQL API), authenticated by master key.
+ * Instances are thread-safe.
+ *
+ * <p>
+ * For documentation see: <a href="https://docs.microsoft.com/en-gb/rest/api/cosmos-db/">https://docs.microsoft.com/en-gb/rest/api/cosmos-db/</a>
+ * </p>
  */
 public class CosmosDbRestfulClient {
 	private static final String COSMOSDB_API_VERSION = "2017-02-22";
 	private static final String AUTH_TOKEN_TYPE = "master";
 	private static final String AUTH_TOKEN_VERSION = "1.0";
 
-	private final Mac sha256HMAC;
+	/** Master key; a new Mac instance is created per request, because Mac instances are not thread-safe */
+	private final SecretKeySpec masterKeySpec;
 	private String cosmosDbEndpoint;
 	private final String databaseID;
 	private final String collectionID;
 
 	private ProxyConfiguration proxyConfiguration = null;
 
+	/**
+	 * Creates a client for a collection.
+	 *
+	 * @param cosmosDbEndpoint endpoint URL like "https://myaccount.documents.azure.com:443" (a trailing slash is removed)
+	 * @param masterkeyBase64 base64 encoded master key of the account
+	 * @param databaseID id of the database
+	 * @param collectionID id of the collection (a trailing slash is removed)
+	 * @throws Exception if the master key is invalid
+	 */
 	public CosmosDbRestfulClient(final String cosmosDbEndpoint, final String masterkeyBase64, final String databaseID, String collectionID) throws Exception {
 		// trim trailing slash
 		if (collectionID != null && collectionID.endsWith("/")) {
@@ -53,53 +68,56 @@ public class CosmosDbRestfulClient {
 		this.collectionID = collectionID;
 
 		final byte[] masterkey = Base64.getDecoder().decode(masterkeyBase64);
-		sha256HMAC = Mac.getInstance("HmacSHA256");
-		final SecretKeySpec secret_key = new SecretKeySpec(masterkey, "HmacSHA256");
-		sha256HMAC.init(secret_key);
+		masterKeySpec = new SecretKeySpec(masterkey, "HmacSHA256");
+		// Check the key once, so invalid keys are reported here
+		Mac.getInstance("HmacSHA256").init(masterKeySpec);
 	}
 
+	/**
+	 * Sets the proxy configuration for all requests.
+	 *
+	 * @param proxyConfiguration proxy configuration, or null for direct connections
+	 * @return this instance for chaining
+	 */
 	public CosmosDbRestfulClient setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
 		this.proxyConfiguration = proxyConfiguration;
 		return this;
 	}
 
 	/**
-	 * Store a JSON document in a CosmosDB
+	 * Stores a new JSON document. Fails if a document with the same id already exists.
 	 *
-	 * @param documentJsonContent
-	 * @return
-	 * 		true for new document created<br />
-	 * 		false for existing document replaced
-	 * @throws Exception
+	 * @param documentJsonContent JSON document including its "id" property
+	 * @return true for new document created, false for existing document replaced
+	 * @throws Exception if the request fails, the document already exists (and overwriting is disabled),
+	 *             authentication fails or there are too many requests
 	 */
 	public boolean storeDocument(final String documentJsonContent) throws Exception {
 		return storeDocument(documentJsonContent, false, null);
 	}
 
 	/**
-	 * Store a JSON document in a CosmosDB
+	 * Stores a JSON document.
 	 *
-	 * @param documentJsonContent
-	 * @param overwriteIfExists
-	 * @return
-	 * 		true for new document created<br />
-	 * 		false for existing document replaced
-	 * @throws Exception
+	 * @param documentJsonContent JSON document including its "id" property
+	 * @param overwriteIfExists true to replace an existing document with the same id (upsert)
+	 * @return true for new document created, false for existing document replaced
+	 * @throws Exception if the request fails, the document already exists (and overwriting is disabled),
+	 *             authentication fails or there are too many requests
 	 */
 	public boolean storeDocument(final String documentJsonContent, final boolean overwriteIfExists) throws Exception {
 		return storeDocument(documentJsonContent, overwriteIfExists, null);
 	}
 
 	/**
-	 * Store a JSON document in a CosmosDB
+	 * Stores a JSON document with additional request headers.
 	 *
-	 * @param documentJsonContent
-	 * @param overwriteIfExists
-	 * @param additionalHeaders like "x-ms-documentdb-post-trigger-include"="CreateNewDocumentPost"
-	 * @return
-	 * 		true for new document created<br />
-	 * 		false for existing document replaced
-	 * @throws Exception
+	 * @param documentJsonContent JSON document including its "id" property
+	 * @param overwriteIfExists true to replace an existing document with the same id (upsert)
+	 * @param additionalHeaders additional HTTP headers like "x-ms-documentdb-post-trigger-include"="CreateNewDocumentPost", may be null
+	 * @return true for new document created, false for existing document replaced
+	 * @throws Exception if the request fails, the document already exists (and overwriting is disabled),
+	 *             authentication fails or there are too many requests
 	 */
 	public boolean storeDocument(final String documentJsonContent, final boolean overwriteIfExists, final Map<String, String> additionalHeaders) throws Exception {
 		final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs";
@@ -152,27 +170,24 @@ public class CosmosDbRestfulClient {
 	}
 
 	/**
-	 * Remove a document from a CosmosDB
+	 * Removes a document.
 	 *
-	 * @param documentID
-	 * @return
-	 * 		true for document removed<br />
-	 * 		false for document does not exist
-	 * @throws Exception
+	 * @param documentID id of the document
+	 * @return true for document removed, false if the document does not exist
+	 * @throws Exception if the request fails, authentication fails or there are too many requests
 	 */
 	public boolean removeDocument(final String documentID) throws Exception {
 		return removeDocument(documentID, false);
 	}
 
 	/**
-	 * Remove a document from a CosmosDB
+	 * Removes a document.
 	 *
-	 * @param documentID
-	 * @param throwExceptionIfNotExists
-	 * @return
-	 * 		true for document removed<br />
-	 * 		false for document does not exist (or Exception if "throwExceptionIfNotExists" is true)
-	 * @throws Exception
+	 * @param documentID id of the document
+	 * @param throwExceptionIfNotExists true to throw an exception instead of returning false if the document does not exist
+	 * @return true for document removed, false if the document does not exist
+	 * @throws Exception if the request fails, authentication fails, there are too many requests or the document
+	 *             does not exist and throwExceptionIfNotExists is set
 	 */
 	public boolean removeDocument(final String documentID, final boolean throwExceptionIfNotExists) throws Exception {
 		final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID;
@@ -208,7 +223,11 @@ public class CosmosDbRestfulClient {
 	}
 
 	/**
-	 * Get a specific document by its id
+	 * Reads a document by its id.
+	 *
+	 * @param documentID id of the document
+	 * @return JSON content of the document, or null if it does not exist
+	 * @throws Exception if the request fails, authentication fails or there are too many requests
 	 */
 	public String getDocument(final String documentID) throws Exception {
 		final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID;
@@ -240,24 +259,25 @@ public class CosmosDbRestfulClient {
 	}
 
 	/**
-	 * Execute a sql query<br />
-	 * <br />
-	 * Example query:<br />
-	 *     SELECT * FROM root WHERE root.id = 'abc'
+	 * Executes a SQL query on the collection, e.g. "SELECT * FROM root WHERE root.id = 'abc'".
+	 * Prefer {@link #executeSqlQuery(String, Map)} with parameters for values from untrusted sources.
+	 *
+	 * @param sqlQuery SQL query
+	 * @return JSON response content (with the result documents in the array "Documents")
+	 * @throws Exception if the request fails, authentication fails or there are too many requests
 	 */
 	public String executeSqlQuery(final String sqlQuery) throws Exception {
 		return executeSqlQuery(sqlQuery, null);
 	}
 
 	/**
-	 * Execute a sql query with optional parameters<br />
-	 * <br />
-	 * Example query:<br />
-	 *     SELECT * FROM root WHERE root.id = @idname
-	 * <br />
-	 * <br />
-	 * Example parameterMap:<br />
-	 *     "@idname" = "abc"
+	 * Executes a parameterized SQL query on the collection, e.g. "SELECT * FROM root WHERE root.id = @idname"
+	 * with the parameter "@idname" = "abc".
+	 *
+	 * @param sqlQuery SQL query with parameter names like "@name"
+	 * @param parameters parameter values by name (a missing leading "@" is added), may be null
+	 * @return JSON response content (with the result documents in the array "Documents")
+	 * @throws Exception if the request fails, authentication fails or there are too many requests
 	 */
 	public String executeSqlQuery(final String sqlQuery, final Map<String, Object> parameters) throws Exception {
 		final String requestUrl = cosmosDbEndpoint + "/dbs/" + databaseID + "/colls/" + collectionID + "/docs";
@@ -303,16 +323,23 @@ public class CosmosDbRestfulClient {
 	}
 
 	/**
-	 * Get amaount of stored documents
+	 * Number of documents in the collection.
+	 *
+	 * @return number of documents
+	 * @throws Exception if the request fails
 	 */
 	public int getNumberOfDocuments() throws Exception {
 		final String responseContent = executeSqlQuery("SELECT COUNT(root.id) AS number FROM root");
 		final JsonObject queryResponseJsonObject = ((JsonObject) JsonReader.readJsonItemString(responseContent));
-		return (int) ((JsonObject) ((JsonArray) queryResponseJsonObject.get("Documents")).get(0)).getSimpleValue("number");
+		// The JSON reader may return Integer or Long depending on the size of the number
+		return ((Number) ((JsonObject) ((JsonArray) queryResponseJsonObject.get("Documents")).get(0)).getSimpleValue("number")).intValue();
 	}
 
 	/**
-	 * List all stored documents by their ids
+	 * Ids of all documents in the collection (following continuation tokens).
+	 *
+	 * @return list of document ids
+	 * @throws Exception if a request fails
 	 */
 	public List<String> listDocumentIDs() throws Exception {
 		final List<String> documentIDs = new ArrayList<>();
@@ -384,13 +411,15 @@ public class CosmosDbRestfulClient {
 	 */
 	private String generateAuthSignature(final String httpVerb, final String resourceType, final String resourceID, final String authDate) throws Exception {
 		final String authSignaturePayLoad = String.format("%s\n%s\n%s\n%s\n%s\n",
-				httpVerb.toLowerCase(),
-				resourceType.toLowerCase(),
+				httpVerb.toLowerCase(Locale.ROOT),
+				resourceType.toLowerCase(Locale.ROOT),
 				resourceID,
-				authDate.toLowerCase(),
+				authDate.toLowerCase(Locale.ROOT),
 				""
 				);
 
+		final Mac sha256HMAC = Mac.getInstance("HmacSHA256");
+		sha256HMAC.init(masterKeySpec);
 		final String base64AuthHashSignature = Base64.getEncoder().encodeToString(sha256HMAC.doFinal(authSignaturePayLoad.getBytes(StandardCharsets.UTF_8)));
 
 		final String authHashSignature = String.format("type=%s&ver=%s&sig=%s",

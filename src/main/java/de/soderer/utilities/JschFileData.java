@@ -6,14 +6,27 @@ import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
+/**
+ * File information parsed from a line of an "ls -l" listing (as received via an SSH exec channel).
+ */
 public class JschFileData {
+	/**
+	 * Type of a file, as given by the first character of an "ls -l" line
+	 */
 	public enum JschFileType {
+		/** Regular file ('-') */
 		RegularFile,
+		/** Directory ('d') */
 		Directory,
+		/** Character device file ('c') */
 		CharacterDeviceFile,
+		/** Block device file ('b') */
 		BlockDeviceFile,
+		/** Local socket file ('s') */
 		LocalSocketFile,
+		/** Named pipe ('p') */
 		NamedPipe,
+		/** Symbolic link ('l') */
 		SymbolicLink
 	}
 
@@ -23,6 +36,14 @@ public class JschFileData {
 	private long fileSize;
 	private LocalDateTime changeDate;
 
+	/**
+	 * Parses a line of an "ls -l" listing, e.g. "-rw-r--r-- 1 user group 23 Feb 2 23:37 /home/user/test.txt".
+	 * Dates without year (files changed within the last months) are assigned to the current year, or to the previous year
+	 * if that date would be in the future. For symbolic links the link target ("name -&gt; target") is not part of the name.
+	 *
+	 * @param dataString line of an "ls -l" listing
+	 * @throws Exception if the line cannot be parsed
+	 */
 	public JschFileData(final String dataString) throws Exception {
 		if (Utilities.isBlank(dataString)) {
 			throw new Exception("Invalid file data string: " + dataString);
@@ -148,6 +169,10 @@ public class JschFileData {
 					final String changeDateString = DateUtilities.parseThreeLetterMonth(dateString1) + " " + dateString2 + " " + dateString3;
 					try {
 						changeDate = DateUtilities.parseLocalDateTime("M d HH:mm yyyy", changeDateString + " " + new GregorianCalendar().get(Calendar.YEAR));
+						// "ls" omits the year for dates within the last six months, which may be in the previous year
+						if (changeDate.isAfter(LocalDateTime.now().plusDays(1))) {
+							changeDate = changeDate.minusYears(1);
+						}
 					} catch (@SuppressWarnings("unused") final Exception e) {
 						try {
 							changeDate = DateUtilities.parseLocalDate("M d yyyy", changeDateString).atStartOfDay();
@@ -167,6 +192,10 @@ public class JschFileData {
 				while ((nextChar = reader.readNextCharacter()) != null) {
 					filePathAndName += nextChar;
 				}
+				if (fileType == JschFileType.SymbolicLink && filePathAndName.contains(" -> ")) {
+					// Remove the link target before splitting path and name, because the target may contain '/' too
+					filePathAndName = filePathAndName.substring(0, filePathAndName.indexOf(" -> "));
+				}
 				if (filePathAndName.contains("/")) {
 					filePath = filePathAndName.substring(0, filePathAndName.lastIndexOf("/"));
 					fileName = filePathAndName.substring(filePathAndName.lastIndexOf("/") + 1);
@@ -175,31 +204,53 @@ public class JschFileData {
 					fileName = filePathAndName;
 				}
 
-				if (fileType == JschFileType.SymbolicLink) {
-					fileName = fileName.substring(0, fileName.indexOf(" ->"));
-				}
 			}
 		} catch (@SuppressWarnings("unused") final Exception e) {
 			throw new Exception("Invalid file data string: " + dataString);
 		}
 	}
 
+	/**
+	 * Type of the file.
+	 *
+	 * @return file type
+	 */
 	public JschFileType getFileType() {
 		return fileType;
 	}
 
+	/**
+	 * Size of a regular file.
+	 *
+	 * @return size in bytes, 0 for all other file types
+	 */
 	public long getSize() {
 		return fileSize;
 	}
 
+	/**
+	 * Last change date (minute precision, or day precision for older files).
+	 *
+	 * @return change date, or null for device files or if it could not be parsed
+	 */
 	public LocalDateTime getChangeDate() {
 		return changeDate;
 	}
 
+	/**
+	 * Directory path of the file as given in the listing (without trailing '/').
+	 *
+	 * @return file path, empty if the listing contained no path
+	 */
 	public String getFilePath() {
 		return filePath;
 	}
 
+	/**
+	 * Name of the file without path (and without link target for symbolic links).
+	 *
+	 * @return file name
+	 */
 	public String getFileName() {
 		return fileName;
 	}

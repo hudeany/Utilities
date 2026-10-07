@@ -58,6 +58,9 @@ public class LangResources {
 	/** Base name of the language property files in the classpath root (e.g. "LanguageProperties_de.properties") */
 	private static final String BUNDLE_NAME = "LanguageProperties";
 
+	/** Matches a placeholder like "{0}" */
+	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(\\d+)\\}");
+
 	/** Matches the file name of a language file and extracts its language code like "de", "de_CH" or "de_BY" */
 	private static final Pattern LANGUAGE_FILE_NAME_PATTERN = Pattern.compile("^" + Pattern.quote(BUNDLE_NAME) + "_([a-z]{2,3}(?:_[A-Za-z0-9]{2,8})*)\\.properties$");
 
@@ -89,6 +92,10 @@ public class LangResources {
 			this.applicationBundle = applicationBundle;
 			this.builtInTexts = builtInTexts;
 		}
+	}
+
+	private LangResources() {
+		// Utility class
 	}
 
 	static {
@@ -268,7 +275,10 @@ public class LangResources {
 	 * Text for a message key in the current language, with the placeholders
 	 * "{0}", "{1}", ... replaced by the arguments. The application's own
 	 * language files take precedence over the built-in texts of this library.
+	 * Placeholders contained in the arguments themselves are not replaced.
 	 *
+	 * @param resourceKey message key
+	 * @param arguments values for the placeholders (null values are replaced by an empty string)
 	 * @return the text, or a "Missing resourceKey" message if the key is
 	 *         neither defined by the application nor built in
 	 */
@@ -284,6 +294,9 @@ public class LangResources {
 	/**
 	 * Whether a text exists for the message key, either in the application's
 	 * language files or built into this library
+	 *
+	 * @param resourceKey message key, may be null
+	 * @return true if a text exists, false for null
 	 */
 	public static boolean existsKey(final String resourceKey) {
 		return getPattern(resourceKey) != null;
@@ -292,18 +305,34 @@ public class LangResources {
 	/**
 	 * Replaces the placeholders "{0}", "{1}", ... literally by the arguments (no MessageFormat quoting)
 	 */
-	static String format(String pattern, final Object[] arguments) {
-		if (arguments != null) {
-			for (int i = 0; i < arguments.length; i++) {
-				final Object item = arguments [i];
-				pattern = pattern.replace("{" + i + "}", item == null ? "" : item.toString());
+	static String format(final String pattern, final Object[] arguments) {
+		if (arguments == null || arguments.length == 0) {
+			return pattern;
+		} else {
+			// Single pass, so placeholders contained in the arguments themselves are not replaced
+			final Matcher matcher = PLACEHOLDER_PATTERN.matcher(pattern);
+			final StringBuilder result = new StringBuilder();
+			while (matcher.find()) {
+				final int index;
+				try {
+					index = Integer.parseInt(matcher.group(1));
+				} catch (@SuppressWarnings("unused") final NumberFormatException e) {
+					continue;
+				}
+				if (index < arguments.length) {
+					final Object item = arguments[index];
+					matcher.appendReplacement(result, Matcher.quoteReplacement(item == null ? "" : item.toString()));
+				}
 			}
+			matcher.appendTail(result);
+			return result.toString();
 		}
-		return pattern;
 	}
 
 	/**
 	 * All message keys built into this library, in definition order
+	 *
+	 * @return unmodifiable set of keys
 	 */
 	public static Set<String> getBuiltInKeys() {
 		return Collections.unmodifiableSet(BUILT_IN_ENGLISH.keySet());
@@ -314,6 +343,9 @@ public class LangResources {
 	 * German, French, Spanish or Italian for locales of those languages
 	 * (including regional variants like "de_CH"), English for all other
 	 * locales.
+	 *
+	 * @param locale locale of the language, may be null for English
+	 * @return unmodifiable map of keys and texts
 	 */
 	public static Map<String, String> getBuiltInTexts(final Locale locale) {
 		final String language = locale == null ? "" : locale.getLanguage().toLowerCase(Locale.ROOT);
@@ -336,6 +368,10 @@ public class LangResources {
 	 * the built-in text, otherwise null
 	 */
 	private static String getPattern(final String resourceKey) {
+		if (resourceKey == null) {
+			// ResourceBundle.containsKey() does not accept null
+			return null;
+		}
 		final LanguageTexts texts = getLanguageTexts();
 		if (texts.applicationBundle != null && texts.applicationBundle.containsKey(resourceKey)) {
 			return texts.applicationBundle.getString(resourceKey);

@@ -24,17 +24,45 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.VisibleException;
 import de.soderer.utilities.mail.MailUtilities;
 
+/**
+ * Modal dialog showing an error message, with buttons to show the stack trace
+ * details and to send the error via the standard email client.
+ *
+ * <p>
+ * The message shown is the visible message of a {@link VisibleException}, the
+ * message of any other throwable, or a generic error text.
+ * </p>
+ */
 public class ErrorDialog extends ModalDialog<Boolean> {
 	private static final long serialVersionUID = 8028942277125473906L;
 
+	/** Name of the application, shown in the title and the email subject */
 	private final String applicationName;
+
+	/** Version of the application, may be blank */
 	private final String applicationVersion;
+
+	/** Recipient address of the error email */
 	private final String emailRecipient;
+
+	/** Error to show, may be null */
 	private final Throwable throwable;
 
+	/** Button toggling the details, its text shows whether the details are expanded */
 	private JButton detailButton;
+
+	/** Panel holding the summary and the stack trace while the details are shown */
 	private JPanel detailPanel;
 
+	/**
+	 * Creates an error dialog.
+	 *
+	 * @param parent owner frame, may be null
+	 * @param applicationName name of the application, shown in the title and the email subject
+	 * @param applicationVersion version of the application, may be blank
+	 * @param emailRecipient recipient address of the error email
+	 * @param throwable error to show, may be null
+	 */
 	public ErrorDialog(final Frame parent, final String applicationName, final String applicationVersion, final String emailRecipient, final Throwable throwable) {
 		super(parent, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + LangResources.get("error"));
 
@@ -127,7 +155,7 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 				emailRecipient,
 				"Error in " + applicationName
 				+ (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : ""),
-				ExceptionUtilities.throwableToString(throwable)
+				getErrorDetails()
 				);
 
 		if (!success) {
@@ -136,6 +164,10 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 					getTitle(),
 					JOptionPane.ERROR_MESSAGE);
 		}
+	}
+
+	private String getErrorDetails() {
+		return throwable == null ? getMainText() : ExceptionUtilities.throwableToString(throwable);
 	}
 
 	private void toggleDetails() {
@@ -148,8 +180,9 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 		detailPanel.removeAll();
 
 		if (show) {
-			final String text2 = throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
-			final String text3 = ExceptionUtilities.throwableToString(throwable);
+			// The dialog may be created without a throwable, the details must not fail with a NullPointerException then
+			final String text2 = throwable == null ? getMainText() : throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
+			final String text3 = throwable == null ? null : ExceptionUtilities.throwableToString(throwable);
 
 			final JTextArea summary = new JTextArea(text2);
 			summary.setEditable(false);

@@ -26,7 +26,19 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Text scanner based on a copy of {@link java.util.Scanner}, extended by the information how many
+ * characters were read from the source and at which absolute character positions the last match
+ * started and ended (see {@link #getDataRead()}, {@link #getLastMatchStart()} and
+ * {@link #getLastMatchEnd()}). This allows to locate found tokens within large text files.
+ * <p>
+ * The constructors taking an {@link InputStream} without charset decode the data as UTF-8, the
+ * constructors taking a {@link File} or {@link ReadableByteChannel} without charset use the
+ * platform default charset.
+ * </p>
+ */
 public class TextFileScanner implements Iterator<String> {
+	/** Value returned by read operations at the end of data. */
 	public static final int EOF = -1;
 
 	private long dataRead = 0;
@@ -271,8 +283,7 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Constructs a new <code>Scanner</code> that produces values scanned from the specified input stream. Bytes from the stream are converted into characters using the underlying platform's
-	 * {@linkplain java.nio.charset.Charset#defaultCharset() default charset}.
+	 * Constructs a new <code>Scanner</code> that produces values scanned from the specified input stream. Bytes from the stream are converted into characters using UTF-8.
 	 *
 	 * @param source
 	 *            An input stream to be scanned
@@ -458,7 +469,10 @@ public class TextFileScanner implements Iterator<String> {
 		int n = 0;
 		try {
 			n = source.read(buf);
-			dataRead += n;
+			if (n > 0) {
+				// Do not count the EOF marker (-1) as read data
+				dataRead += n;
+			}
 		} catch (final IOException ioe) {
 			lastException = ioe;
 			n = EOF;
@@ -740,7 +754,7 @@ public class TextFileScanner implements Iterator<String> {
 	 *
 	 * <p>
 	 * If this scanner has not yet been closed then if its underlying {@linkplain java.lang.Readable readable} also implements the {@link java.io.Closeable} interface then the readable's
-	 * <tt>close</tt> method will be invoked. If this scanner is already closed then invoking this method will have no effect.
+	 * {@code close} method will be invoked. If this scanner is already closed then invoking this method will have no effect.
 	 *
 	 * <p>
 	 * Attempting to perform search operations after a scanner has been closed will result in an {@link IllegalStateException}.
@@ -796,12 +810,12 @@ public class TextFileScanner implements Iterator<String> {
 	 * Sets this scanner's delimiting pattern to a pattern constructed from the specified <code>String</code>.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>useDelimiter(pattern)</tt> behaves in exactly the same way as the invocation <tt>useDelimiter(Pattern.compile(pattern))</tt>.
+	 * An invocation of this method of the form {@code useDelimiter(pattern)} behaves in exactly the same way as the invocation {@code useDelimiter(Pattern.compile(pattern))}.
 	 *
 	 * <p>
-	 * Invoking the {@link #reset} method will set the scanner's delimiter to the <a href= "#default-delimiter">default</a>.
+	 * Invoking the {@link #reset} method will set the scanner's delimiter to the default (see {@link java.util.Scanner}).
 	 *
-	 * @param pattern
+	 * @param patternString
 	 *            A string specifying a delimiting pattern
 	 * @return this scanner
 	 */
@@ -818,7 +832,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * Returns this scanner's locale.
 	 *
 	 * <p>
-	 * A scanner's locale affects many elements of its default primitive matching regular expressions; see <a href= "#localized-numbers">localized numbers</a> above.
+	 * A scanner's locale affects many elements of its default primitive matching regular expressions; see the localized numbers section of {@link java.util.Scanner}.
 	 *
 	 * @return this scanner's locale
 	 */
@@ -830,10 +844,10 @@ public class TextFileScanner implements Iterator<String> {
 	 * Sets this scanner's locale to the specified locale.
 	 *
 	 * <p>
-	 * A scanner's locale affects many elements of its default primitive matching regular expressions; see <a href= "#localized-numbers">localized numbers</a> above.
+	 * A scanner's locale affects many elements of its default primitive matching regular expressions; see the localized numbers section of {@link java.util.Scanner}.
 	 *
 	 * <p>
-	 * Invoking the {@link #reset} method will set the scanner's locale to the <a href= "#initial-locale">initial locale</a>.
+	 * Invoking the {@link #reset} method will set the scanner's locale to the initial locale (see {@link java.util.Scanner}).
 	 *
 	 * @param localeToUse
 	 *            A string specifying the locale to use
@@ -886,7 +900,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * Returns this scanner's default radix.
 	 *
 	 * <p>
-	 * A scanner's radix affects elements of its default number matching regular expressions; see <a href= "#localized-numbers">localized numbers</a> above.
+	 * A scanner's radix affects elements of its default number matching regular expressions; see the localized numbers section of {@link java.util.Scanner}.
 	 *
 	 * @return the default radix of this scanner
 	 */
@@ -898,7 +912,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * Sets this scanner's default radix to the specified radix.
 	 *
 	 * <p>
-	 * A scanner's radix affects elements of its default number matching regular expressions; see <a href= "#localized-numbers">localized numbers</a> above.
+	 * A scanner's radix affects elements of its default number matching regular expressions; see the localized numbers section of {@link java.util.Scanner}.
 	 *
 	 * <p>
 	 * If the radix is less than <code>Character.MIN_RADIX</code> or greater than <code>Character.MAX_RADIX</code>, then an <code>IllegalArgumentException</code> is thrown.
@@ -942,7 +956,7 @@ public class TextFileScanner implements Iterator<String> {
 	 *
 	 * <p>
 	 * The various <code>next</code>methods of <code>Scanner</code> make a match result available if they complete without throwing an exception. For instance, after an invocation of the
-	 * {@link #nextInt} method that returned an int, this method returns a <code>MatchResult</code> for the search of the <a href="#Integer-regex"><i>Integer</i></a> regular expression defined above.
+	 * {@link #nextInt} method that returned an int, this method returns a <code>MatchResult</code> for the search of the <i>Integer</i> regular expression as defined in {@link java.util.Scanner}.
 	 * Similarly the {@link #findInLine}, {@link #findWithinHorizon}, and {@link #skip} methods will make a match available if they succeed.
 	 *
 	 * @return a match result for the last match operation
@@ -1053,9 +1067,9 @@ public class TextFileScanner implements Iterator<String> {
 	 * Returns true if the next token matches the pattern constructed from the specified string. The scanner does not advance past any input.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>hasNext(pattern)</tt> behaves in exactly the same way as the invocation <tt>hasNext(Pattern.compile(pattern))</tt>.
+	 * An invocation of this method of the form {@code hasNext(pattern)} behaves in exactly the same way as the invocation {@code hasNext(Pattern.compile(pattern))}.
 	 *
-	 * @param pattern
+	 * @param patternString
 	 *            a string specifying the pattern to scan
 	 * @return true if and only if this scanner has another token matching the specified pattern
 	 * @throws IllegalStateException
@@ -1074,9 +1088,9 @@ public class TextFileScanner implements Iterator<String> {
 	 * Returns the next token if it matches the pattern constructed from the specified string. If the match is successful, the scanner advances past the input that matched the pattern.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>next(pattern)</tt> behaves in exactly the same way as the invocation <tt>next(Pattern.compile(pattern))</tt>.
+	 * An invocation of this method of the form {@code next(pattern)} behaves in exactly the same way as the invocation {@code next(Pattern.compile(pattern))}.
 	 *
-	 * @param pattern
+	 * @param patternString
 	 *            a string specifying the pattern to scan
 	 * @return the next token
 	 * @throws NoSuchElementException
@@ -1233,9 +1247,9 @@ public class TextFileScanner implements Iterator<String> {
 	 * Attempts to find the next occurrence of a pattern constructed from the specified string, ignoring delimiters.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>findInLine(pattern)</tt> behaves in exactly the same way as the invocation <tt>findInLine(Pattern.compile(pattern))</tt>.
+	 * An invocation of this method of the form {@code findInLine(pattern)} behaves in exactly the same way as the invocation {@code findInLine(Pattern.compile(pattern))}.
 	 *
-	 * @param pattern
+	 * @param patternString
 	 *            a string specifying the pattern to search for
 	 * @return the text that matched the specified pattern
 	 * @throws IllegalStateException
@@ -1302,10 +1316,12 @@ public class TextFileScanner implements Iterator<String> {
 	 * Attempts to find the next occurrence of a pattern constructed from the specified string, ignoring delimiters.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>findWithinHorizon(pattern)</tt> behaves in exactly the same way as the invocation <tt>findWithinHorizon(Pattern.compile(pattern, horizon))</tt>.
+	 * An invocation of this method of the form {@code findWithinHorizon(pattern, horizon)} behaves in exactly the same way as the invocation {@code findWithinHorizon(Pattern.compile(pattern), horizon)}.
 	 *
-	 * @param pattern
+	 * @param patternString
 	 *            a string specifying the pattern to search for
+	 * @param horizon
+	 *            the maximum number of characters to search beyond the current position, 0 for no limit
 	 * @return the text that matched the specified pattern
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
@@ -1343,6 +1359,8 @@ public class TextFileScanner implements Iterator<String> {
 	 *
 	 * @param pattern
 	 *            the pattern to scan for
+	 * @param horizon
+	 *            the maximum number of characters to search beyond the current position, 0 for no limit
 	 * @return the text that matched the specified pattern
 	 * @throws IllegalStateException
 	 *             if this scanner is closed
@@ -1379,7 +1397,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * Skips input that matches the specified pattern, ignoring delimiters. This method will skip input if an anchored match of the specified pattern succeeds.
 	 *
 	 * <p>
-	 * If a match to the specified pattern is not found at the current position, then no input is skipped and a <tt>NoSuchElementException</tt> is thrown.
+	 * If a match to the specified pattern is not found at the current position, then no input is skipped and a {@code NoSuchElementException} is thrown.
 	 *
 	 * <p>
 	 * Since this method seeks to match the specified pattern starting at the scanner's current position, patterns that can match a lot of input (".*", for example) may cause the scanner to buffer a
@@ -1423,9 +1441,9 @@ public class TextFileScanner implements Iterator<String> {
 	 * Skips input that matches a pattern constructed from the specified string.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>skip(pattern)</tt> behaves in exactly the same way as the invocation <tt>skip(Pattern.compile(pattern))</tt>.
+	 * An invocation of this method of the form {@code skip(pattern)} behaves in exactly the same way as the invocation {@code skip(Pattern.compile(pattern))}.
 	 *
-	 * @param pattern
+	 * @param patternString
 	 *            a string specifying the pattern to skip over
 	 * @return this scanner
 	 * @throws IllegalStateException
@@ -1506,13 +1524,13 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as a <tt>byte</tt>.
+	 * Scans the next token of the input as a {@code byte}.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>nextByte()</tt> behaves in exactly the same way as the invocation <tt>nextByte(radix)</tt>, where <code>radix</code> is the default radix of this
+	 * An invocation of this method of the form {@code nextByte()} behaves in exactly the same way as the invocation {@code nextByte(radix)}, where <code>radix</code> is the default radix of this
 	 * scanner.
 	 *
-	 * @return the <tt>byte</tt> scanned from the input
+	 * @return the {@code byte} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -1525,17 +1543,17 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as a <tt>byte</tt>. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid byte value as described
+	 * Scans the next token of the input as a {@code byte}. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid byte value as described
 	 * below. If the translation is successful, the scanner advances past the input that matched.
 	 *
 	 * <p>
-	 * If the next token matches the <a href="#Integer-regex"><i>Integer</i></a> regular expression defined above then the token is converted into a <tt>byte</tt> value as if by removing all locale
+	 * If the next token matches the <i>Integer</i> regular expression as defined in {@link java.util.Scanner} then the token is converted into a {@code byte} value as if by removing all locale
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Byte#parseByte(String, int) Byte.parseByte} with the specified radix.
 	 *
 	 * @param radixToUse
 	 *            the radix used to interpret the token as a byte value
-	 * @return the <tt>byte</tt> scanned from the input
+	 * @return the {@code byte} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -1601,13 +1619,13 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as a <tt>short</tt>.
+	 * Scans the next token of the input as a {@code short}.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>nextShort()</tt> behaves in exactly the same way as the invocation <tt>nextShort(radix)</tt>, where <code>radix</code> is the default radix of this
+	 * An invocation of this method of the form {@code nextShort()} behaves in exactly the same way as the invocation {@code nextShort(radix)}, where <code>radix</code> is the default radix of this
 	 * scanner.
 	 *
-	 * @return the <tt>short</tt> scanned from the input
+	 * @return the {@code short} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -1620,17 +1638,17 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as a <tt>short</tt>. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid short value as described
+	 * Scans the next token of the input as a {@code short}. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid short value as described
 	 * below. If the translation is successful, the scanner advances past the input that matched.
 	 *
 	 * <p>
-	 * If the next token matches the <a href="#Integer-regex"><i>Integer</i></a> regular expression defined above then the token is converted into a <tt>short</tt> value as if by removing all locale
+	 * If the next token matches the <i>Integer</i> regular expression as defined in {@link java.util.Scanner} then the token is converted into a {@code short} value as if by removing all locale
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Short#parseShort(String, int) Short.parseShort} with the specified radix.
 	 *
 	 * @param radixToUse
 	 *            the radix used to interpret the token as a short value
-	 * @return the <tt>short</tt> scanned from the input
+	 * @return the {@code short} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -1717,13 +1735,13 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as an <tt>int</tt>.
+	 * Scans the next token of the input as an {@code int}.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>nextInt()</tt> behaves in exactly the same way as the invocation <tt>nextInt(radix)</tt>, where <code>radix</code> is the default radix of this
+	 * An invocation of this method of the form {@code nextInt()} behaves in exactly the same way as the invocation {@code nextInt(radix)}, where <code>radix</code> is the default radix of this
 	 * scanner.
 	 *
-	 * @return the <tt>int</tt> scanned from the input
+	 * @return the {@code int} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -1736,17 +1754,17 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as an <tt>int</tt>. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid int value as described
+	 * Scans the next token of the input as an {@code int}. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid int value as described
 	 * below. If the translation is successful, the scanner advances past the input that matched.
 	 *
 	 * <p>
-	 * If the next token matches the <a href="#Integer-regex"><i>Integer</i></a> regular expression defined above then the token is converted into an <tt>int</tt> value as if by removing all locale
+	 * If the next token matches the <i>Integer</i> regular expression as defined in {@link java.util.Scanner} then the token is converted into an {@code int} value as if by removing all locale
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Integer#parseInt(String, int) Integer.parseInt} with the specified radix.
 	 *
 	 * @param radixToUse
 	 *            the radix used to interpret the token as an int value
-	 * @return the <tt>int</tt> scanned from the input
+	 * @return the {@code int} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -1811,13 +1829,13 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as a <tt>long</tt>.
+	 * Scans the next token of the input as a {@code long}.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>nextLong()</tt> behaves in exactly the same way as the invocation <tt>nextLong(radix)</tt>, where <code>radix</code> is the default radix of this
+	 * An invocation of this method of the form {@code nextLong()} behaves in exactly the same way as the invocation {@code nextLong(radix)}, where <code>radix</code> is the default radix of this
 	 * scanner.
 	 *
-	 * @return the <tt>long</tt> scanned from the input
+	 * @return the {@code long} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -1830,17 +1848,17 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as a <tt>long</tt>. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid long value as described
+	 * Scans the next token of the input as a {@code long}. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid long value as described
 	 * below. If the translation is successful, the scanner advances past the input that matched.
 	 *
 	 * <p>
-	 * If the next token matches the <a href="#Integer-regex"><i>Integer</i></a> regular expression defined above then the token is converted into a <tt>long</tt> value as if by removing all locale
+	 * If the next token matches the <i>Integer</i> regular expression as defined in {@link java.util.Scanner} then the token is converted into a {@code long} value as if by removing all locale
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Long#parseLong(String, int) Long.parseLong} with the specified radix.
 	 *
 	 * @param radixToUse
 	 *            the radix used to interpret the token as an int value
-	 * @return the <tt>long</tt> scanned from the input
+	 * @return the {@code long} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -1945,16 +1963,16 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as a <tt>float</tt>. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid float value as described
+	 * Scans the next token of the input as a {@code float}. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid float value as described
 	 * below. If the translation is successful, the scanner advances past the input that matched.
 	 *
 	 * <p>
-	 * If the next token matches the <a href="#Float-regex"><i>Float</i></a> regular expression defined above then the token is converted into a <tt>float</tt> value as if by removing all locale
+	 * If the next token matches the <i>Float</i> regular expression as defined in {@link java.util.Scanner} then the token is converted into a {@code float} value as if by removing all locale
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Float#parseFloat Float.parseFloat}. If the token matches the localized NaN or
 	 * infinity strings, then either "Nan" or "Infinity" is passed to {@link Float#parseFloat(String) Float.parseFloat} as appropriate.
 	 *
-	 * @return the <tt>float</tt> scanned from the input
+	 * @return the {@code float} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Float</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -2001,16 +2019,16 @@ public class TextFileScanner implements Iterator<String> {
 	}
 
 	/**
-	 * Scans the next token of the input as a <tt>double</tt>. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid double value. If the
+	 * Scans the next token of the input as a {@code double}. This method will throw <code>InputMismatchException</code> if the next token cannot be translated into a valid double value. If the
 	 * translation is successful, the scanner advances past the input that matched.
 	 *
 	 * <p>
-	 * If the next token matches the <a href="#Float-regex"><i>Float</i></a> regular expression defined above then the token is converted into a <tt>double</tt> value as if by removing all locale
+	 * If the next token matches the <i>Float</i> regular expression as defined in {@link java.util.Scanner} then the token is converted into a {@code double} value as if by removing all locale
 	 * specific prefixes, group separators, and locale specific suffixes, then mapping non-ASCII digits into ASCII digits via {@link Character#digit Character.digit}, prepending a negative sign (-) if
 	 * the locale specific negative prefixes and suffixes were present, and passing the resulting string to {@link Double#parseDouble Double.parseDouble}. If the token matches the localized NaN or
 	 * infinity strings, then either "Nan" or "Infinity" is passed to {@link Double#parseDouble(String) Double.parseDouble} as appropriate.
 	 *
-	 * @return the <tt>double</tt> scanned from the input
+	 * @return the {@code double} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Float</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -2078,10 +2096,10 @@ public class TextFileScanner implements Iterator<String> {
 	 * Scans the next token of the input as a {@link java.math.BigInteger BigInteger}.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>nextBigInteger()</tt> behaves in exactly the same way as the invocation <tt>nextBigInteger(radix)</tt>, where <code>radix</code> is the default
+	 * An invocation of this method of the form {@code nextBigInteger()} behaves in exactly the same way as the invocation {@code nextBigInteger(radix)}, where <code>radix</code> is the default
 	 * radix of this scanner.
 	 *
-	 * @return the <tt>BigInteger</tt> scanned from the input
+	 * @return the {@code BigInteger} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -2097,13 +2115,13 @@ public class TextFileScanner implements Iterator<String> {
 	 * Scans the next token of the input as a {@link java.math.BigInteger BigInteger}.
 	 *
 	 * <p>
-	 * If the next token matches the <a href="#Integer-regex"><i>Integer</i></a> regular expression defined above then the token is converted into a <tt>BigInteger</tt> value as if by removing all
+	 * If the next token matches the <i>Integer</i> regular expression as defined in {@link java.util.Scanner} then the token is converted into a {@code BigInteger} value as if by removing all
 	 * group separators, mapping non-ASCII digits into ASCII digits via the {@link Character#digit Character.digit}, and passing the resulting string to the
 	 * {@link java.math.BigInteger#BigInteger(java.lang.String) BigInteger(String, int)} constructor with the specified radix.
 	 *
 	 * @param radixToUse
 	 *            the radix used to interpret the token
-	 * @return the <tt>BigInteger</tt> scanned from the input
+	 * @return the {@code BigInteger} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Integer</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -2158,11 +2176,11 @@ public class TextFileScanner implements Iterator<String> {
 	 * Scans the next token of the input as a {@link java.math.BigDecimal BigDecimal}.
 	 *
 	 * <p>
-	 * If the next token matches the <a href="#Decimal-regex"><i>Decimal</i></a> regular expression defined above then the token is converted into a <tt>BigDecimal</tt> value as if by removing all
+	 * If the next token matches the <i>Decimal</i> regular expression as defined in {@link java.util.Scanner} then the token is converted into a {@code BigDecimal} value as if by removing all
 	 * group separators, mapping non-ASCII digits into ASCII digits via the {@link Character#digit Character.digit}, and passing the resulting string to the
 	 * {@link java.math.BigDecimal#BigDecimal(java.lang.String) BigDecimal(String)} constructor.
 	 *
-	 * @return the <tt>BigDecimal</tt> scanned from the input
+	 * @return the {@code BigDecimal} scanned from the input
 	 * @throws InputMismatchException
 	 *             if the next token does not match the <i>Decimal</i> regular expression, or is out of range
 	 * @throws NoSuchElementException
@@ -2196,7 +2214,7 @@ public class TextFileScanner implements Iterator<String> {
 	 * Resetting a scanner discards all of its explicit state information which may have been changed by invocations of {@link #useDelimiter}, {@link #useLocale}, or {@link #useRadix}.
 	 *
 	 * <p>
-	 * An invocation of this method of the form <tt>scanner.reset()</tt> behaves in exactly the same way as the invocation
+	 * An invocation of this method of the form {@code scanner.reset()} behaves in exactly the same way as the invocation
 	 *
 	 * <blockquote>
 	 *
@@ -2218,14 +2236,36 @@ public class TextFileScanner implements Iterator<String> {
 		return this;
 	}
 
+	/**
+	 * Returns the number of characters read from the source so far. Because of internal buffering
+	 * this may be ahead of the characters already scanned.
+	 *
+	 * @return the number of characters read from the source
+	 */
 	public long getDataRead() {
 		return dataRead;
 	}
 
+	/**
+	 * Returns the absolute character index (zero based, counted from the start of the source) at
+	 * which the last successful match operation started.
+	 *
+	 * @return the start index of the last match
+	 * @throws IllegalStateException
+	 *             if no match has been performed, or if the last match was not successful
+	 */
 	public long getLastMatchStart() {
 		return dataRead - buf.length() + match().start();
 	}
 
+	/**
+	 * Returns the absolute character index (zero based, counted from the start of the source) directly
+	 * after the end of the last successful match operation.
+	 *
+	 * @return the end index (exclusive) of the last match
+	 * @throws IllegalStateException
+	 *             if no match has been performed, or if the last match was not successful
+	 */
 	public long getLastMatchEnd() {
 		return dataRead - buf.length() + match().end();
 	}

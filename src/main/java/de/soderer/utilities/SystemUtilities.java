@@ -22,40 +22,72 @@ import javax.crypto.Cipher;
 import de.soderer.utilities.collection.CaseInsensitiveMap;
 import de.soderer.utilities.jarinjarloader.JarInJarLoader;
 
+/**
+ * Information about the operating system, the running JVM and its process.
+ */
 public class SystemUtilities {
-	private static final boolean isWindows = getOsName().toLowerCase().contains("windows");
-	private static final boolean isLinux = getOsName().toLowerCase().contains("unix") || getOsName().toLowerCase().contains("linux");
+	private static final String OS_NAME_LOWER_CASE = getOsName() == null ? "" : getOsName().toLowerCase(Locale.ROOT);
+	private static final boolean isWindows = OS_NAME_LOWER_CASE.contains("windows");
+	private static final boolean isLinux = OS_NAME_LOWER_CASE.contains("unix") || OS_NAME_LOWER_CASE.contains("linux");
 
+	private SystemUtilities() {
+		// Utility class
+	}
+
+	/**
+	 * Name of the operating system (system property "os.name").
+	 *
+	 * @return operating system name, e.g. "Linux" or "Windows 11"
+	 */
 	public static String getOsName() {
 		return System.getProperty("os.name");
 	}
 
+	/**
+	 * Whether the operating system is Windows.
+	 *
+	 * @return true on Windows
+	 */
 	public static boolean isWindowsSystem() {
 		return isWindows;
 	}
 
+	/**
+	 * Whether the operating system is Linux or another system calling itself "Unix" (macOS is not included).
+	 *
+	 * @return true on Linux/Unix
+	 */
 	public static boolean isLinuxSystem() {
 		return isLinux;
 	}
 
+	/**
+	 * Process id of the running JVM.
+	 *
+	 * @return process id, or -1 if it cannot be determined
+	 */
 	public static int getProcessId() {
-		final String data = ManagementFactory.getRuntimeMXBean().getName();
-		if (data.contains("@")) {
-			return Integer.parseInt(data.substring(0, data.indexOf("@")));
-		} else if (isLinuxSystem()) {
-			return Integer.parseInt(data);
-		} else {
+		try {
+			return (int) ProcessHandle.current().pid();
+		} catch (@SuppressWarnings("unused") final UnsupportedOperationException e) {
 			return -1;
 		}
 	}
 
+	/**
+	 * Absolute path of the java executable of the running JVM.
+	 * On Windows "java.exe" is used if no console is attached, otherwise "javaw.exe".
+	 * On all other systems (Linux, macOS, ...) "java" is used.
+	 *
+	 * @return path of the java executable, or null if it cannot be found
+	 */
 	public static String getJavaBinPath() {
 		final String javaHomePath = System.getProperty("java.home");
 		if (javaHomePath == null) {
 			return null;
 		} else {
 			File javaBinFile;
-			if (SystemUtilities.isLinuxSystem()) {
+			if (!SystemUtilities.isWindowsSystem()) {
 				javaBinFile = new File(javaHomePath + File.separator + "bin" + File.separator + "java");
 			} else if (System.console() == null) {
 				javaBinFile = new File(javaHomePath + File.separator + "bin" + File.separator + "java.exe");
@@ -71,18 +103,39 @@ public class SystemUtilities {
 		}
 	}
 
+	/**
+	 * Uptime of the running JVM.
+	 *
+	 * @return uptime in milliseconds
+	 */
 	public static long getUptimeInMillis() {
 		return ManagementFactory.getRuntimeMXBean().getUptime();
 	}
 
+	/**
+	 * Start time of the running JVM in the local time zone.
+	 *
+	 * @return start time
+	 */
 	public static LocalDateTime getStarttime() {
 		return DateUtilities.getLocalDateTime(ManagementFactory.getRuntimeMXBean().getStartTime());
 	}
 
+	/**
+	 * Arguments the running JVM was started with (JVM options only, not the application's arguments).
+	 *
+	 * @return unmodifiable list of JVM input arguments
+	 */
 	public static List<String> getJavaStartupArguments() {
 		return ManagementFactory.getRuntimeMXBean().getInputArguments();
 	}
 
+	/**
+	 * Runtime information like memory usage, process id, uptime, start arguments, running jar file and free storage space.
+	 *
+	 * @param humanReadable true for formatted sizes (e.g. "1.5 GiByte"), false for plain byte numbers
+	 * @return case insensitive map of property names and values
+	 */
 	public static Map<String, String> getRuntimeProperties(final boolean humanReadable) {
 		final Runtime runtime = Runtime.getRuntime();
 		final Map<String, String> resultMap = new CaseInsensitiveMap<>();
@@ -124,6 +177,11 @@ public class SystemUtilities {
 		return resultMap;
 	}
 
+	/**
+	 * Path of the currently running jar file, as set by {@link JarInJarLoader} in a system property or environment variable.
+	 *
+	 * @return jar file path, or null if unknown
+	 */
 	public static String getCurrentlyRunningJarFilePath() {
 		String jarFilePath = System.getProperty(JarInJarLoader.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
 		if (jarFilePath == null) {
@@ -132,11 +190,16 @@ public class SystemUtilities {
 		return jarFilePath;
 	}
 
+	/**
+	 * Raw output lines of the operating system's process list command ("tasklist.exe" on Windows, "ps -e" otherwise).
+	 *
+	 * @return output lines, or null if the command failed
+	 */
 	public static List<String> getProcessListRaw() {
 		try {
 			final List<String> data = new ArrayList<>();
 			Process p;
-			if (getOsName().toLowerCase().contains("windows")) {
+			if (isWindows) {
 				p = Runtime.getRuntime().exec(new String[] {System.getenv("windir") + "\\system32\\" + "tasklist.exe"}, null, null);
 			} else {
 				p = Runtime.getRuntime().exec(new String[] {"ps", "-e"}, null, null);
@@ -154,6 +217,11 @@ public class SystemUtilities {
 		}
 	}
 
+	/**
+	 * Whether the JVM allows unlimited AES key lengths (no export restrictions of the JCE policy).
+	 *
+	 * @return true if unlimited key strength is allowed
+	 */
 	public static boolean isUnlimitedKeyStrengthAllowed() {
 		try {
 			return Cipher.getMaxAllowedKeyLength("AES") == Integer.MAX_VALUE;
@@ -168,11 +236,13 @@ public class SystemUtilities {
 	 * to the restarted application after an update.
 	 *
 	 * Excluded are:
-	 * - debugger and agent options: a restarted process must not suspend waiting for
-	 *   a debugger or load an agent it was not explicitly meant to load
-	 * - options originating from the environment variables JAVA_TOOL_OPTIONS and
+	 * <ul>
+	 * <li>debugger and agent options: a restarted process must not suspend waiting for
+	 *   a debugger or load an agent it was not explicitly meant to load</li>
+	 * <li>options originating from the environment variables JAVA_TOOL_OPTIONS and
 	 *   JDK_JAVA_OPTIONS: the restarted process inherits the environment and would
-	 *   otherwise receive them twice
+	 *   otherwise receive them twice</li>
+	 * </ul>
 	 *
 	 * @return modifiable list of JVM parameters, never null (empty if they cannot be determined)
 	 */

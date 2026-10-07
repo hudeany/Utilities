@@ -8,12 +8,25 @@ import java.io.OutputStream;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.remote.RemoteConnection;
 
+/**
+ * Worker that downloads a file from a {@link RemoteConnection} into a new local file.
+ * If it is cancelled, the partially downloaded file is deleted.
+ */
 public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWorker> {
 	private RemoteConnection connection = null;
 
 	private String remoteFilePath = null;
 	private File localFile = null;
 
+	/**
+	 * Creates a download worker after checking the remote file and the local destination.
+	 *
+	 * @param parent parent receiving the progress signals, may be null
+	 * @param connection connection to download from
+	 * @param remoteFilePath path of the remote file
+	 * @param localFile local file to create, must not exist yet, its directory must exist
+	 * @throws Exception if a parameter is missing, the remote file does not exist or the local file cannot be created
+	 */
 	public RemoteFileDownloadWorker(final WorkerParentSimple parent, final RemoteConnection connection, final String remoteFilePath, final File localFile) throws Exception {
 		super(parent);
 
@@ -29,7 +42,7 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 			throw new Exception("Remote file not found or is no file: \"" + remoteFilePath + "\"");
 		} else if (localFile == null) {
 			throw new Exception("No localFilePath");
-		} else if (!localFile.getParentFile().exists()) {
+		} else if (!localFile.getAbsoluteFile().getParentFile().exists()) {
 			throw new Exception("Local file parent directory does not exist: \"" + localFile.getAbsolutePath() + "\"");
 		} else if (localFile.exists()) {
 			throw new Exception("Local file already exists: \"" + localFile.getAbsolutePath() + "\"");

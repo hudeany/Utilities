@@ -26,6 +26,9 @@ import de.soderer.utilities.worker.WorkerSimple;
  * throws an exception instead of silently producing corrupted output.
  */
 public class HybridDecryptionWorker extends WorkerSimple<Boolean> {
+	/**
+	 * Return value of stream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private static final int GCM_NONCE_LENGTH_BYTES = 12;
@@ -40,11 +43,11 @@ public class HybridDecryptionWorker extends WorkerSimple<Boolean> {
 	private long dataSizeHint = -1;
 
 	/**
-	 * Hybrid decrypt inputStream
+	 * Hybrid decrypt inputStream with the default key wrap method {@link CryptographicUtilities#DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA}.
 	 *
-	 * @param parent
-	 * @param encryptedDataInputStream
-	 * @param decryptedDataOutputStream
+	 * @param parent parent to report progress to, may be null
+	 * @param encryptedDataInputStream stream with the data written by {@link HybridEncryptionWorker}
+	 * @param decryptedDataOutputStream stream to write the decrypted data to
 	 * @param privateKey recipient's RSA or EC private key, used only to unwrap the AES session key
 	 */
 	public HybridDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final PrivateKey privateKey) {
@@ -54,11 +57,11 @@ public class HybridDecryptionWorker extends WorkerSimple<Boolean> {
 	/**
 	 * Hybrid decrypt inputStream
 	 *
-	 * @param parent
-	 * @param encryptedDataInputStream
-	 * @param decryptedDataOutputStream
+	 * @param parent parent to report progress to, may be null
+	 * @param encryptedDataInputStream stream with the data written by {@link HybridEncryptionWorker}
+	 * @param decryptedDataOutputStream stream to write the decrypted data to
 	 * @param privateKey recipient's RSA or EC private key, used only to unwrap the AES session key
-	 * @param asymmetricKeyWrapMethod must match the method used by HybridEncryptionWorker
+	 * @param asymmetricKeyWrapMethod must match the method used by HybridEncryptionWorker, blank for the default
 	 */
 	public HybridDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final PrivateKey privateKey, final String asymmetricKeyWrapMethod) {
 		super(parent);
@@ -72,6 +75,11 @@ public class HybridDecryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	/**
+	 * Sets the expected data size in bytes for the progress display, if the stream cannot tell its size.
+	 *
+	 * @param dataSizeHint expected data size in bytes
+	 */
 	public void setDataSizeHint(final long dataSizeHint) {
 		this.dataSizeHint = dataSizeHint;
 	}

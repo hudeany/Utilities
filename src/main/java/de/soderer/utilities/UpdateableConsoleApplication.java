@@ -3,6 +3,7 @@ package de.soderer.utilities;
 import java.awt.HeadlessException;
 import java.io.Console;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 import de.soderer.utilities.appupdate.ApplicationUpdateParent;
 import de.soderer.utilities.console.ConsoleType;
@@ -11,15 +12,34 @@ import de.soderer.utilities.console.PasswordConsoleInput;
 import de.soderer.utilities.console.SimpleConsoleInput;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * {@link ApplicationUpdateParent} for console applications: asks for updates and credentials on the console and
+ * shows the update progress there.
+ */
 public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 	private final String applicationName;
 	private final Version applicationVersion;
 
+	/**
+	 * Creates the update parent for a console application.
+	 *
+	 * @param applicationName name of the application shown in messages
+	 * @param applicationVersion currently running version of the application
+	 * @throws HeadlessException never thrown, declared for compatibility
+	 */
 	public UpdateableConsoleApplication(final String applicationName, final Version applicationVersion) throws HeadlessException {
 		this.applicationName = applicationName;
 		this.applicationVersion = applicationVersion;
 	}
 
+	/**
+	 * Asks the user on the console whether to install a new version, or shows that there is no newer version.
+	 * Answers starting with 'y', 'j', 'o' or 's' (yes in English, German, French, Spanish/Italian) are accepted.
+	 *
+	 * @param availableNewVersion available new version, or null if there is none
+	 * @return true if the update should be installed
+	 * @throws Exception if no console is available
+	 */
 	@Override
 	public boolean askForUpdate(final Version availableNewVersion) throws Exception {
 		final Console console = System.console();
@@ -35,10 +55,21 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 			System.out.println(LangResources.get("newApplicationVersion", availableNewVersion.toString(), applicationName, applicationVersion.toString()));
 			final String input = new SimpleConsoleInput().withPrompt(LangResources.get("installUpdate") + " (" + LangResources.get("yN") + "): ").readInput();
 			System.out.println();
-			return input != null && (input.toLowerCase().startsWith("y") || input.toLowerCase().startsWith("j") || input.toLowerCase().startsWith("o") || input.toLowerCase().startsWith("s"));
+			final String answer = input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
+			return answer.startsWith("y") || answer.startsWith("j") || answer.startsWith("o") || answer.startsWith("s");
 		}
 	}
 
+	/**
+	 * Asks the user on the console for username and/or password.
+	 *
+	 * @param text text explaining what the credentials are needed for (not shown on the console)
+	 * @param aquireUsername whether a username is requested
+	 * @param aquirePassword whether a password is requested
+	 * @param firstRequest true for the first request
+	 * @return the entered credentials, or null if nothing was entered
+	 * @throws Exception if no console is available
+	 */
 	@Override
 	public Credentials aquireCredentials(final String text, final boolean aquireUsername, final boolean aquirePassword, final boolean firstRequest) throws Exception {
 		final Console console = System.console();
@@ -65,6 +96,11 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		}
 	}
 
+	/**
+	 * Prints an update error and waits for the user to press enter (if a console is available).
+	 *
+	 * @param errorText error text
+	 */
 	@Override
 	public void showUpdateError(final String errorText) {
 		System.err.println(errorText);
@@ -76,6 +112,15 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		}
 	}
 
+	/**
+	 * Shows the download progress: on ANSI consoles in place, in test consoles (e.g. IDE) as new line each time,
+	 * otherwise in place via carriage return.
+	 *
+	 * @param itemStart start time of the download
+	 * @param itemsToDo total number of items (bytes)
+	 * @param itemsDone number of items done
+	 * @param itemsUnitSign unit sign of the items
+	 */
 	@Override
 	public void showUpdateProgress(final LocalDateTime itemStart, final long itemsToDo, final long itemsDone, final String itemsUnitSign) {
 		if (ConsoleUtilities.getConsoleType() == ConsoleType.ANSI) {
@@ -84,13 +129,22 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 			System.out.print(ConsoleUtilities.getConsoleProgressString(80 - 1, itemStart, itemsToDo, itemsDone, itemsUnitSign));
 
 			ConsoleUtilities.moveCursorToSavedPosition();
-		} else if (ConsoleUtilities.getConsoleType() == ConsoleType.ANSI) {
+		} else if (ConsoleUtilities.getConsoleType() == ConsoleType.TEST) {
+			// Consoles without carriage return support (e.g. IDE): one line per progress update
 			System.out.print(ConsoleUtilities.getConsoleProgressString(80 - 1, itemStart, itemsToDo, itemsDone, itemsUnitSign) + "\n");
 		} else {
 			System.out.print("\r" + ConsoleUtilities.getConsoleProgressString(80 - 1, itemStart, itemsToDo, itemsDone, itemsUnitSign) + "\r");
 		}
 	}
 
+	/**
+	 * Shows that the update is done.
+	 *
+	 * @param startTime start time of the update
+	 * @param endTime end time of the update
+	 * @param itemsDone number of items done
+	 * @param itemsUnitSign unit sign of the items
+	 */
 	@Override
 	public void showUpdateDone(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 		System.out.println();
@@ -98,11 +152,24 @@ public class UpdateableConsoleApplication implements ApplicationUpdateParent {
 		System.out.println();
 	}
 
+	/**
+	 * Does nothing in console applications.
+	 *
+	 * @param worker download worker
+	 */
 	@Override
 	public void showUpdateDownloadStart(final WorkerSimple<Boolean> worker) {
 		// Do nothing
 	}
 
+	/**
+	 * Does nothing in console applications.
+	 *
+	 * @param startTime start time of the download
+	 * @param endTime end time of the download
+	 * @param itemsDone number of items done
+	 * @param itemsUnitSign unit sign of the items
+	 */
 	@Override
 	public void showUpdateDownloadEnd(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String itemsUnitSign) {
 		// Do nothing

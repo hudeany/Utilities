@@ -12,6 +12,11 @@ import java.util.regex.Pattern;
 
 import de.soderer.utilities.TextUtilities.LineBreak;
 
+/**
+ * Writer for .properties files in ISO-8859-1 encoding (characters outside printable ASCII are written as unicode
+ * escapes), which is readable by java.util.Properties and {@link PropertiesReader}.
+ * Supports comments, empty lines, a configurable key value separator and line break type.
+ */
 public class PropertiesWriter implements Closeable {
 	/**
 	 * Allowed separators: '=' or ':' optionally surrounded by blanks, or blanks only (no line breaks)
@@ -25,15 +30,30 @@ public class PropertiesWriter implements Closeable {
 	private int writtenProperties = 0;
 	private BufferedWriter outputWriter = null;
 
+	/**
+	 * Creates a writer.
+	 *
+	 * @param outputStream stream to write to, closed by {@link #close()}
+	 */
 	public PropertiesWriter(final OutputStream outputStream) {
 		this.outputStream = outputStream;
 		outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.ISO_8859_1));
 	}
 
+	/**
+	 * Line break written after each line.
+	 *
+	 * @return line break type (default Unix)
+	 */
 	public LineBreak getLinebreakType() {
 		return linebreakType;
 	}
 
+	/**
+	 * Sets the line break written after each line.
+	 *
+	 * @param linebreakType line break type, must not be null
+	 */
 	public void setLinebreakType(final LineBreak linebreakType) {
 		if (linebreakType == null) {
 			throw new IllegalArgumentException("Linebreak type must not be null");
@@ -41,11 +61,22 @@ public class PropertiesWriter implements Closeable {
 		this.linebreakType = linebreakType;
 	}
 
+	/**
+	 * Sets the line break written after each line.
+	 *
+	 * @param linebreakTypeParam line break type, must not be null
+	 * @return this instance for chaining
+	 */
 	public PropertiesWriter withLinebreakType(final LineBreak linebreakTypeParam) {
 		setLinebreakType(linebreakTypeParam);
 		return this;
 	}
 
+	/**
+	 * Separator written between key and value.
+	 *
+	 * @return separator (default "=")
+	 */
 	public String getKeyValueSeparator() {
 		return keyValueSeparator;
 	}
@@ -53,6 +84,9 @@ public class PropertiesWriter implements Closeable {
 	/**
 	 * Set the separator between key and value.
 	 * Allowed are '=' or ':' optionally surrounded by blanks (e.g. " = "), or blanks only.
+	 *
+	 * @param keyValueSeparator separator
+	 * @throws IllegalArgumentException if the separator is null or not allowed
 	 */
 	public void setKeyValueSeparator(final String keyValueSeparator) {
 		if (keyValueSeparator == null || !VALID_KEY_VALUE_SEPARATOR_PATTERN.matcher(keyValueSeparator).matches()) {
@@ -61,11 +95,28 @@ public class PropertiesWriter implements Closeable {
 		this.keyValueSeparator = keyValueSeparator;
 	}
 
+	/**
+	 * Set the separator between key and value.
+	 * Allowed are '=' or ':' optionally surrounded by blanks (e.g. " = "), or blanks only.
+	 *
+	 * @param keyValueSeparatorParam separator
+	 * @return this instance for chaining
+	 * @throws IllegalArgumentException if the separator is null or not allowed
+	 */
 	public PropertiesWriter withKeyValueSeparator(final String keyValueSeparatorParam) {
 		setKeyValueSeparator(keyValueSeparatorParam);
 		return this;
 	}
 
+	/**
+	 * Writes a property line with escaped key and value.
+	 *
+	 * @param key key, must not be empty
+	 * @param value value, null is written as empty value
+	 * @throws IllegalStateException if this writer is already closed
+	 * @throws IllegalArgumentException if the key is empty
+	 * @throws Exception if the data cannot be written
+	 */
 	public void writeProperty(final String key, final String value) throws Exception {
 		checkNotClosed();
 
@@ -87,10 +138,23 @@ public class PropertiesWriter implements Closeable {
 		writtenProperties++;
 	}
 
+	/**
+	 * Writes all properties in the iteration order of the map.
+	 *
+	 * @param properties keys and values
+	 * @throws Exception if the data cannot be written
+	 */
 	public void writeProperties(final Map<String, String> properties) throws Exception {
 		writeProperties(properties, null);
 	}
 
+	/**
+	 * Writes all properties in the iteration order of the map, each preceded by its comment.
+	 *
+	 * @param properties keys and values
+	 * @param comments comments by key (multi line comments are separated by line breaks), may be null
+	 * @throws Exception if the data cannot be written
+	 */
 	public void writeProperties(final Map<String, String> properties, final Map<String, String> comments) throws Exception {
 		checkNotClosed();
 
@@ -106,6 +170,9 @@ public class PropertiesWriter implements Closeable {
 	 * Escape a property key.
 	 * Keys need escaping of separators ('=', ':'), comment chars ('#', '!') and all whitespace,
 	 * because the first unescaped whitespace or separator ends the key.
+	 *
+	 * @param key key to escape
+	 * @return escaped key
 	 */
 	public static String escapeKey(final String key) {
 		final StringBuilder result = new StringBuilder(key.length() + 16);
@@ -131,6 +198,9 @@ public class PropertiesWriter implements Closeable {
 	 * Only characters that would change the meaning when loading are escaped.
 	 * Double quotes, '=', ':', '#' and '!' have no special meaning inside a value and are written as they are.
 	 * Line breaks are kept lossless ("\r\n" is written as "\r\n").
+	 *
+	 * @param value value to escape, may be null
+	 * @return escaped value, empty for null
 	 */
 	public static String escapeValue(final String value) {
 		if (value == null) {
@@ -202,6 +272,13 @@ public class PropertiesWriter implements Closeable {
 		return result.toString();
 	}
 
+	/**
+	 * Writes a comment, each of its lines prefixed by "# ".
+	 *
+	 * @param comment comment text, may contain line breaks
+	 * @throws IllegalStateException if this writer is already closed
+	 * @throws Exception if the data cannot be written
+	 */
 	public void writeComment(final String comment) throws Exception {
 		checkNotClosed();
 
@@ -210,6 +287,12 @@ public class PropertiesWriter implements Closeable {
 		}
 	}
 
+	/**
+	 * Writes an empty line.
+	 *
+	 * @throws IllegalStateException if this writer is already closed
+	 * @throws Exception if the data cannot be written
+	 */
 	public void writeEmptyLine() throws Exception {
 		checkNotClosed();
 

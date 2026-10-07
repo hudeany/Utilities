@@ -26,21 +26,63 @@ import de.soderer.utilities.LangResources;
 import de.soderer.utilities.UnsecureDataStore;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Modal dialog to manage named preference entries (e.g. connection settings)
+ * stored unencrypted in an {@link UnsecureDataStore} file.
+ *
+ * <p>
+ * The caller sets the current data entry via
+ * {@link #setCurrentDataEntry(Object)} before opening the dialog; its class
+ * determines which entries are listed. The user can load an entry (afterwards
+ * available via {@link #getCurrentDataEntry()}), store the current entry under a
+ * new or an existing name, or delete entries. After storing or deleting, the
+ * current data entry is null.
+ * </p>
+ */
 public class UnsecurePreferencesDialog extends ModalDialog<Boolean> {
 	private static final long serialVersionUID = -2855354859482098916L;
 
+	/** File the preference entries are loaded from and saved to */
 	private final File preferencesFile;
+
+	/** Data store with all preference entries, null until loaded or first created */
 	private UnsecureDataStore unsecureDataStore = null;
+
+	/** Data entry to store, or the loaded entry after loading; its class determines the listed entries */
 	private Object currentDataEntry;
 
+	/** Button loading the selected entry */
 	private final JButton loadButton;
+
+	/** Button storing the current data entry under the name entered in newNameField */
 	private final JButton createButton;
+
+	/** Button overwriting the selected entry with the current data entry */
 	private final JButton updateButton;
+
+	/** Button deleting the selected entries */
 	private final JButton deleteButton;
 
+	/** Input field for the name of a new entry */
 	private final JTextField newNameField;
+
+	/** List of the names of all stored entries of the current data entry's class */
 	private final JTable preferencesTable;
 
+	/**
+	 * Creates an unsecure preferences dialog.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text tooltip text of the name field and the entry list
+	 * @param unsecurePreferencesFile file of the data store
+	 * @param textButton_Load text of the load button
+	 * @param textButton_Create text of the create button
+	 * @param textButton_Update text of the update button
+	 * @param textButton_Delete text of the delete button
+	 * @param textButton_Save text of the save button
+	 * @param textButton_Cancel text of the cancel button
+	 */
 	public UnsecurePreferencesDialog(final Window parent, final String title, final String text, final File unsecurePreferencesFile,
 			final String textButton_Load, final String textButton_Create, final String textButton_Update, final String textButton_Delete,
 			final String textButton_Save, final String textButton_Cancel) {
@@ -238,19 +280,10 @@ public class UnsecurePreferencesDialog extends ModalDialog<Boolean> {
 				if (Utilities.isNotBlank(newNameField.getText())) {
 					unsecureDataStore.addEntry(newNameField.getText(), currentDataEntry);
 				} else if (preferencesTable.getSelectedRows().length == 1) {
+					// Only update the entry here, it is saved below (saving here too wrote the file twice and showed errors twice)
 					final DefaultTableModel tableModel = (DefaultTableModel) preferencesTable.getModel();
-					for (final int rowNum : preferencesTable.getSelectedRows()) {
-						final String entryName = (String) tableModel.getValueAt(rowNum, 0);
-						unsecureDataStore.addEntry(entryName, currentDataEntry);
-						try {
-							unsecureDataStore.save(preferencesFile);
-						} catch (final Exception e) {
-							e.printStackTrace();
-							new QuestionDialog((Window) getParent(), getTitle(), LangResources.get("cannotSaveKeystore"), LangResources.get("ok")).setBackgroundColor(SwingColor.LightRed).open();
-						}
-						currentDataEntry = null;
-						dispose();
-					}
+					final String entryName = (String) tableModel.getValueAt(preferencesTable.getSelectedRows()[0], 0);
+					unsecureDataStore.addEntry(entryName, currentDataEntry);
 				}
 
 				try {
@@ -296,10 +329,22 @@ public class UnsecurePreferencesDialog extends ModalDialog<Boolean> {
 		newNameField.requestFocus();
 	}
 
+	/**
+	 * Sets the data entry to store. Must be set before {@link #open()}, because
+	 * its class determines which entries are listed.
+	 *
+	 * @param dataEntry data entry, not null
+	 */
 	public void setCurrentDataEntry(final Object dataEntry) {
 		currentDataEntry = dataEntry;
 	}
 
+	/**
+	 * Returns the current data entry: the loaded entry after loading, null after
+	 * storing, deleting or canceling.
+	 *
+	 * @return current data entry, may be null
+	 */
 	public Object getCurrentDataEntry() {
 		return currentDataEntry;
 	}

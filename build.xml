@@ -229,23 +229,21 @@
 	<target name="create_javadoc" depends="create_jar">
 		<delete dir="${buildPath}/javadoc" />
 		<mkdir dir="${buildPath}/javadoc" />
-		
-		<echo message="JavaDoc deactivated" />
 
-		<!--javadoc destdir="${buildPath}/javadoc" encoding="UTF-8" charset="UTF-8" docencoding="UTF-8" source="17" failonerror="true">
+		<javadoc destdir="${buildPath}/javadoc" encoding="UTF-8" charset="UTF-8" docencoding="UTF-8" source="17" failonerror="true">
 			<classpath refid="runtime.libs" />
 			<arg value="-quiet" />
 			<fileset dir="src/main/java" includes="**/*.java" />
-		</javadoc-->
+		</javadoc>
 
-		<!--jar destfile="${buildPath}/${artifactId}-${version}-javadoc.jar">
+		<jar destfile="${buildPath}/${artifactId}-${version}-javadoc.jar">
 			<manifest>
 				<attribute name="Version" value="${version}" />
 			</manifest>
 
 			<fileset dir="${buildPath}/javadoc" />
 			<fileset dir="" includes="LICENSE.txt" />
-		</jar-->
+		</jar>
 
 		<delete dir="${buildPath}/javadoc" />
 	</target>

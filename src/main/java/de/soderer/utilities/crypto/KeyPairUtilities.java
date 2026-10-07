@@ -26,13 +26,26 @@ import java.security.spec.ECParameterSpec;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 
 import de.soderer.utilities.BitUtilities;
 import de.soderer.utilities.crypto.Asn1Codec.DerTag;
 
+/**
+ * Utilities for creating key pairs and for OpenSSH related key data: algorithm names ("ssh-rsa", "ecdsa-sha2-nistp256" etc.),
+ * the OpenSSH public key blob, key fingerprints and the authorized_keys line format.
+ */
 public class KeyPairUtilities {
+	private KeyPairUtilities() {
+		// Utility class
+	}
+
 	/**
-	 * Create a RSA keypair of given strength
+	 * Create a RSA keypair of given strength with the default JCE provider.
+	 *
+	 * @param keyStrength key size in bits, at least 2048
+	 * @return new key pair
+	 * @throws Exception if the key strength is below 2048 bit or the key cannot be generated
 	 */
 	public static KeyPair createRsaKeyPair(final int keyStrength) throws Exception {
 		if (keyStrength < 2048) {
@@ -46,9 +59,11 @@ public class KeyPairUtilities {
 	}
 
 	/**
-	 * Create a DSA keypair of 1024 bit strength<br/>
-	 * Watchout: OpenSSH only supports 1024 bit DSA key strength<br/>
+	 * Create a DSA keypair of 1024 bit strength<br>
+	 * Watchout: OpenSSH only supports 1024 bit DSA key strength
 	 *
+	 * @return new key pair
+	 * @throws Exception if the key cannot be generated
 	 * @deprecated DSA-1024 is considered cryptographically weak by current standards
 	 *             (NIST/BSI). Kept only for compatibility with legacy OpenSSH DSA keys;
 	 *             do not use for newly generated keys unless this specific legacy
@@ -62,9 +77,12 @@ public class KeyPairUtilities {
 	}
 
 	/**
-	 * Create a DSA keypair of given strength<br/>
-	 * Watchout: OpenSSH only supports 1024 bit DSA key strength<br/>
+	 * Create a DSA keypair of given strength<br>
+	 * Watchout: OpenSSH only supports 1024 bit DSA key strength
 	 *
+	 * @param keyStrength key size in bits
+	 * @return new key pair
+	 * @throws Exception if the key cannot be generated
 	 * @deprecated DSA is considered legacy and, at the 1024 bit strength required for
 	 *             OpenSSH compatibility, cryptographically weak by current standards
 	 *             (NIST/BSI). Use only for legacy compatibility, never for new keys
@@ -78,17 +96,18 @@ public class KeyPairUtilities {
 	}
 
 	/**
-	 * Create a ECDSA keypair of eliptic curve name.
-	 * Supported eliptic curve names are
-	 *   nistp256 or secp256
-	 *   nistp384 or secp384
-	 *   nistp521 or secp521
+	 * Create a ECDSA keypair of eliptic curve name.<br>
+	 * Supported eliptic curve names (case insensitive) are "nistp256" or "secp256", "nistp384" or "secp384" and "nistp521" or "secp521".
+	 *
+	 * @param ecdsaCurveName curve name
+	 * @return new key pair
+	 * @throws Exception if the curve name is empty or unknown
 	 */
 	public static KeyPair createEllipticCurveKeyPair(final String ecdsaCurveName) throws Exception {
 		if (ecdsaCurveName == null || "".equals(ecdsaCurveName.trim())) {
 			throw new Exception("Missing ECDSA curve name parameter");
 		}
-		final String curveName = ecdsaCurveName.toLowerCase().trim().replace("nist", "sec");
+		final String curveName = ecdsaCurveName.toLowerCase(Locale.ROOT).trim().replace("nist", "sec");
 		if (!"secp256".equals(curveName) && !"secp384".equals(curveName) && !"secp521".equals(curveName)) {
 			throw new Exception("Unknown ECDSA curve name: " + ecdsaCurveName);
 		}
@@ -100,6 +119,13 @@ public class KeyPairUtilities {
 		return keyPairGenerator.generateKeyPair();
 	}
 
+	/**
+	 * Create a ECDSA keypair of the NIST curve with the given size.
+	 *
+	 * @param curveId curve size in bits: 256, 384 or 521
+	 * @return new key pair
+	 * @throws Exception if the curve size is not supported
+	 */
 	public static KeyPair createEllipticCurveKeyPair(final int curveId) throws Exception {
 		if (256 != curveId && 384 != curveId && 521 != curveId) {
 			throw new Exception("Invalid ECDSA curve id parameter");
@@ -109,21 +135,38 @@ public class KeyPairUtilities {
 		return keyPairGenerator.generateKeyPair();
 	}
 
+	/**
+	 * Create an EdDSA keypair on curve Ed25519.
+	 *
+	 * @return new key pair
+	 * @throws Exception if the key cannot be generated
+	 */
 	public static KeyPair createEd25519CurveKeyPair() throws Exception {
 		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("Ed25519");
 		return keyPairGenerator.generateKeyPair();
 	}
 
+	/**
+	 * Create an EdDSA keypair on curve Ed448.
+	 *
+	 * @return new key pair
+	 * @throws Exception if the key cannot be generated
+	 */
 	public static KeyPair createEd448CurveKeyPair() throws Exception {
 		final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("Ed448");
 		return keyPairGenerator.generateKeyPair();
 	}
 
 	/**
-	 * Key type<br />
-	 * "ssh-rsa" for RSA key<br />
-	 * "ssh-dss" for DSA key<br />
-	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br />
+	 * Returns the OpenSSH key type name of a key pair (the private key is used if available):<br>
+	 * "ssh-rsa" for RSA key<br>
+	 * "ssh-dss" for DSA key<br>
+	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br>
+	 * "ssh-ed25519" or "ssh-ed448" for EdDSA key
+	 *
+	 * @param keyPair key pair
+	 * @return OpenSSH key type name
+	 * @throws Exception if the key is null or of an unsupported type
 	 */
 	public static String getAlgorithm(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
@@ -138,10 +181,15 @@ public class KeyPairUtilities {
 	}
 
 	/**
-	 * Key type<br />
-	 * "ssh-rsa" for RSA key<br />
-	 * "ssh-dss" for DSA key<br />
-	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br />
+	 * Returns the OpenSSH key type name of a public key:<br>
+	 * "ssh-rsa" for RSA key<br>
+	 * "ssh-dss" for DSA key<br>
+	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br>
+	 * "ssh-ed25519" or "ssh-ed448" for EdDSA key
+	 *
+	 * @param publicKey public key
+	 * @return OpenSSH key type name
+	 * @throws Exception if the key is null or of an unsupported type
 	 */
 	public static String getAlgorithm(final PublicKey publicKey) throws Exception {
 		if (publicKey == null){
@@ -152,7 +200,8 @@ public class KeyPairUtilities {
 			return "ssh-dss";
 		} else if ("EC".equals(publicKey.getAlgorithm()) || "ECDSA".equals(publicKey.getAlgorithm())) {
 			return "ecdsa-sha2-" + CryptographicUtilities.getEcDsaEllipticCurveName((ECPublicKey) publicKey);
-		} else if ("EdDSA".equals(publicKey.getAlgorithm())) {
+		} else if (publicKey instanceof EdECPublicKey) {
+			// JDK keys report the algorithm "EdDSA", BouncyCastle keys report "Ed25519" or "Ed448"
 			final EdECPublicKey publicEdDsaKey = (EdECPublicKey) publicKey;
 			if ("Ed25519".equals(publicEdDsaKey.getParams().getName())) {
 				return "ssh-ed25519";
@@ -167,10 +216,15 @@ public class KeyPairUtilities {
 	}
 
 	/**
-	 * Key type<br />
-	 * "ssh-rsa" for RSA key<br />
-	 * "ssh-dss" for DSA key<br />
-	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br />
+	 * Returns the OpenSSH key type name of a private key:<br>
+	 * "ssh-rsa" for RSA key<br>
+	 * "ssh-dss" for DSA key<br>
+	 * "ecdsa-sha2-nistp256" or "ecdsa-sha2-nistp384" or "ecdsa-sha2-nistp521" for ECDSA key<br>
+	 * "ssh-ed25519" or "ssh-ed448" for EdDSA key
+	 *
+	 * @param privateKey private key
+	 * @return OpenSSH key type name
+	 * @throws Exception if the key is null or of an unsupported type
 	 */
 	public static String getAlgorithm(final PrivateKey privateKey) throws Exception {
 		if (privateKey == null){
@@ -195,6 +249,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the key strength of the public key of a key pair, see {@link #getKeyStrength(PublicKey)}.
+	 *
+	 * @param keyPair key pair
+	 * @return key strength in bits
+	 * @throws Exception if the key pair is null or the key type is not supported
+	 */
 	public static int getKeyStrength(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -203,6 +264,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the key strength: the modulus size for RSA, the size of the prime p for DSA and the curve size for ECDSA keys.
+	 *
+	 * @param publicKey public key
+	 * @return key strength in bits
+	 * @throws Exception if the key is null or the key type is not supported (e.g. EdDSA)
+	 */
 	public static int getKeyStrength(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -211,7 +279,8 @@ public class KeyPairUtilities {
 			if ("ssh-rsa".equalsIgnoreCase(algorithmName)) {
 				return ((RSAPublicKey) publicKey).getModulus().bitLength();
 			} else if ("ssh-dss".equalsIgnoreCase(algorithmName)) {
-				return ((DSAPublicKey) publicKey).getY().bitLength();
+				// The DSA key size is the size of the prime p, the public value y may be some bits shorter
+				return ((DSAPublicKey) publicKey).getParams().getP().bitLength();
 			} else if ("ecdsa-sha2-nistp256".equalsIgnoreCase(algorithmName)) {
 				return 256;
 			} else if ("ecdsa-sha2-nistp384".equalsIgnoreCase(algorithmName)) {
@@ -224,6 +293,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the OpenSSH public key blob (as used in authorized_keys and for fingerprints) of a RSA, DSA, ECDSA or EdDSA public key.
+	 *
+	 * @param publicKey public key
+	 * @return OpenSSH public key blob
+	 * @throws Exception if the key is null or of an unsupported type
+	 */
 	public static byte[] getPublicKeyBytes(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -303,6 +379,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the MD5 fingerprint of the OpenSSH public key blob of the public key of a key pair (upper case hex with ":" separators).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getMd5Fingerprint(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -311,6 +394,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the MD5 fingerprint of the OpenSSH public key blob of a public key (upper case hex with ":" separators).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getMd5Fingerprint(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -318,13 +408,20 @@ public class KeyPairUtilities {
 			try {
 				final MessageDigest md = MessageDigest.getInstance("MD5");
 				md.update(getPublicKeyBytes(publicKey));
-				return BitUtilities.toHexString(md.digest(), ":").toUpperCase();
+				return BitUtilities.toHexString(md.digest(), ":").toUpperCase(Locale.ROOT);
 			} catch (final Exception e) {
 				throw new Exception("Cannot create MD5 fingerprint", e);
 			}
 		}
 	}
 
+	/**
+	 * Returns the SHA-1 fingerprint of the OpenSSH public key blob of the public key of a key pair (lower case hex with ":" separators).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getSha1Fingerprint(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -333,6 +430,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-1 fingerprint of the OpenSSH public key blob of a public key (lower case hex with ":" separators).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getSha1Fingerprint(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -347,6 +451,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-1 fingerprint of the OpenSSH public key blob of the public key of a key pair (Base64 encoded).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getSha1FingerprintBase64(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -355,6 +466,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-1 fingerprint of the OpenSSH public key blob of a public key (Base64 encoded).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getSha1FingerprintBase64(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -369,6 +487,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-256 fingerprint of the OpenSSH public key blob of the public key of a key pair (lower case hex with ":" separators).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getSha256Fingerprint(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -377,6 +502,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-256 fingerprint of the OpenSSH public key blob of a public key (lower case hex with ":" separators).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getSha256Fingerprint(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -391,6 +523,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-256 fingerprint of the OpenSSH public key blob of the public key of a key pair (Base64 encoded).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getSha256FingerprintBase64(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -399,6 +538,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-256 fingerprint of the OpenSSH public key blob of a public key (Base64 encoded).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getSha256FingerprintBase64(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -413,6 +559,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-384 fingerprint of the OpenSSH public key blob of the public key of a key pair (lower case hex with ":" separators).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getSha384Fingerprint(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -421,6 +574,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-384 fingerprint of the OpenSSH public key blob of a public key (lower case hex with ":" separators).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getSha384Fingerprint(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -435,6 +595,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-384 fingerprint of the OpenSSH public key blob of the public key of a key pair (Base64 encoded).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getSha384FingerprintBase64(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -443,6 +610,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-384 fingerprint of the OpenSSH public key blob of a public key (Base64 encoded).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getSha384FingerprintBase64(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -457,6 +631,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-512 fingerprint of the OpenSSH public key blob of the public key of a key pair (lower case hex with ":" separators).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getSha512Fingerprint(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -465,6 +646,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-512 fingerprint of the OpenSSH public key blob of a public key (lower case hex with ":" separators).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getSha512Fingerprint(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -479,6 +667,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-512 fingerprint of the OpenSSH public key blob of the public key of a key pair (Base64 encoded).
+	 *
+	 * @param keyPair key pair
+	 * @return fingerprint
+	 * @throws Exception if the key pair is null or the public key is not supported
+	 */
 	public static String getSha512FingerprintBase64(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -487,6 +682,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the SHA-512 fingerprint of the OpenSSH public key blob of a public key (Base64 encoded).
+	 *
+	 * @param publicKey public key
+	 * @return fingerprint
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String getSha512FingerprintBase64(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");
@@ -501,6 +703,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the authorized_keys line (key type and Base64 encoded public key blob, without comment) of the public key of a key pair.
+	 *
+	 * @param keyPair key pair
+	 * @return authorized_keys line like "ssh-ed25519 AAAA..."
+	 * @throws Exception if the key pair or its public key is missing or not supported
+	 */
 	public static String encodePublicKeyForAuthorizedKeys(final KeyPair keyPair) throws Exception {
 		if (keyPair == null) {
 			throw new Exception("Invalid empty keyPair parameter");
@@ -511,6 +720,13 @@ public class KeyPairUtilities {
 		}
 	}
 
+	/**
+	 * Returns the authorized_keys line (key type and Base64 encoded public key blob, without comment) of a public key.
+	 *
+	 * @param publicKey public key
+	 * @return authorized_keys line like "ssh-ed25519 AAAA..."
+	 * @throws Exception if the key is null or not supported
+	 */
 	public static String encodePublicKeyForAuthorizedKeys(final PublicKey publicKey) throws Exception {
 		if (publicKey == null) {
 			throw new Exception("Invalid empty publicKey parameter");

@@ -30,12 +30,34 @@ import java.nio.charset.StandardCharsets;
  * Pure 7-bit ASCII content is reported as UTF-8, since ASCII is a strict subset of UTF-8.
  */
 public class EncodingDetector {
+	/**
+	 * Utility class
+	 */
+	private EncodingDetector() {
+		// Utility class
+	}
 
+	/**
+	 * Result of an encoding detection.
+	 */
 	public static final class DetectionResult {
+		/** The detected charset. */
 		public final Charset charset;
+		/** True if the data starts with a BOM. */
 		public final boolean hasBom;
+		/** The length of the BOM in bytes, 0 if there is no BOM. */
 		public final int bomLength;
 
+		/**
+		 * Creates a new detection result.
+		 *
+		 * @param charset
+		 *            the detected charset
+		 * @param hasBom
+		 *            true if the data starts with a BOM
+		 * @param bomLength
+		 *            the length of the BOM in bytes, 0 if there is no BOM
+		 */
 		public DetectionResult(final Charset charset, final boolean hasBom, final int bomLength) {
 			this.charset = charset;
 			this.hasBom = hasBom;
@@ -48,6 +70,13 @@ public class EncodingDetector {
 		}
 	}
 
+	/**
+	 * Detects the most likely encoding of a byte sample taken from the start of the data.
+	 *
+	 * @param sampleBytes
+	 *            the first bytes of the data, may be null
+	 * @return the detection result, UTF-8 without BOM for empty or null data
+	 */
 	public static DetectionResult detectEncoding(final byte[] sampleBytes) {
 		if (sampleBytes == null || sampleBytes.length == 0) {
 			return new DetectionResult(StandardCharsets.UTF_8, false, 0);
@@ -122,8 +151,15 @@ public class EncodingDetector {
 			}
 
 			if (i + continuationBytesNeeded >= b.length) {
-				// Truncated at the end of the sample - the sample was simply cut off mid-character,
-				// not a sign of a different encoding, so stop validating here rather than fail.
+				// Truncated at the end of the sample - the sample may simply be cut off mid-character,
+				// which is not a sign of a different encoding. But the bytes that are present must
+				// still be continuation bytes, otherwise e.g. a Windows-1252 umlaut byte 0xE4 followed by an
+				// ASCII character at the very end would be accepted as UTF-8.
+				for (int j = i + 1; j < b.length; j++) {
+					if ((b[j] & 0xC0) != 0x80) {
+						return false;
+					}
+				}
 				break;
 			}
 

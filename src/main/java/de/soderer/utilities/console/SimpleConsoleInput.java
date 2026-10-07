@@ -8,18 +8,36 @@ import java.util.List;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.console.ConsoleUtilities.TextAttribute;
 
+/**
+ * Line input for ANSI consoles with cursor movement, insert/overwrite mode, paste (Ctrl+V), auto completion
+ * (Tab, Page up/down) and optional hidden input. In other consoles the input is read line by line via
+ * {@link System#console()}.
+ */
 public class SimpleConsoleInput {
+	/**
+	 * Creates an input with default settings.
+	 */
+	public SimpleConsoleInput() {
+		// Default settings
+	}
+
 	private boolean silent = false;
 	private Character hideCharacter = null;
 	private String allowedCharacters = null;
 	private String prompt = "";
+	/**
+	 * Content the input starts with.
+	 */
 	protected String presetContent = "";
+	/**
+	 * Values offered for auto completion, null for none.
+	 */
 	protected List<String> autoCompletionStrings = null;
 
 	/**
 	 * When silent = false a system beep occurs on input error
 	 *
-	 * @param silent
+	 * @return true if no beep occurs on input errors
 	 */
 	public boolean isSilent() {
 		return silent;
@@ -28,7 +46,7 @@ public class SimpleConsoleInput {
 	/**
 	 * When silent = false a system beep occurs on input error
 	 *
-	 * @param silent
+	 * @param silent true to suppress the beep on input errors
 	 */
 	public void setSilent(final boolean silent) {
 		this.silent = silent;
@@ -37,7 +55,7 @@ public class SimpleConsoleInput {
 	/**
 	 * For password inputs
 	 *
-	 * @return
+	 * @return character shown instead of the entered characters, null to show them
 	 */
 	public Character getHideCharacter() {
 		return hideCharacter;
@@ -45,6 +63,8 @@ public class SimpleConsoleInput {
 
 	/**
 	 * Get allowed Characters. Default is all chars of german keyboard layout
+	 *
+	 * @return additionally allowed characters, null for the default
 	 */
 	public String getAllowedCharacters() {
 		return allowedCharacters;
@@ -52,6 +72,8 @@ public class SimpleConsoleInput {
 
 	/**
 	 * Set allowed Characters. Default is all chars of german keyboard layout
+	 *
+	 * @param allowedCharacters additionally allowed characters, null for the default
 	 */
 	public void setAllowedCharacters(final String allowedCharacters) {
 		this.allowedCharacters = allowedCharacters;
@@ -60,56 +82,116 @@ public class SimpleConsoleInput {
 	/**
 	 * For password inputs
 	 *
-	 * @param hideCharacter
+	 * @param hideCharacter character shown instead of the entered characters, null to show them
 	 */
 	public void setHideCharacter(final Character hideCharacter) {
 		this.hideCharacter = hideCharacter;
 	}
 
+	/**
+	 * Sets the character shown instead of the entered characters.
+	 *
+	 * @param newHideCharacter character shown instead of the entered characters, null to show them
+	 * @return this input for chaining
+	 */
 	public SimpleConsoleInput withHideCharacter(final Character newHideCharacter) {
 		setHideCharacter(newHideCharacter);
 		return this;
 	}
 
+	/**
+	 * Returns the prompt shown in front of the input.
+	 *
+	 * @return prompt, never null
+	 */
 	public String getPrompt() {
 		return prompt;
 	}
 
+	/**
+	 * Sets the prompt shown in front of the input.
+	 *
+	 * @param prompt prompt, null for none
+	 */
 	public void setPrompt(final String prompt) {
 		this.prompt = (prompt == null ? "" : prompt);
 	}
 
+	/**
+	 * Sets the prompt shown in front of the input.
+	 *
+	 * @param newPrompt prompt, null for none
+	 * @return this input for chaining
+	 */
 	public SimpleConsoleInput withPrompt(final String newPrompt) {
 		setPrompt(newPrompt);
 		return this;
 	}
 
+	/**
+	 * Returns the content the input starts with.
+	 *
+	 * @return preset content, never null
+	 */
 	public String getPresetContent() {
 		return presetContent;
 	}
 
+	/**
+	 * Sets the content the input starts with.
+	 *
+	 * @param presetContent preset content, null for none
+	 */
 	public void setPresetContent(final String presetContent) {
 		this.presetContent = (presetContent == null ? "" : presetContent);
 	}
 
+	/**
+	 * Sets the content the input starts with.
+	 *
+	 * @param newPresetContent preset content, null for none
+	 * @return this input for chaining
+	 */
 	public SimpleConsoleInput withPresetContent(final String newPresetContent) {
 		setPresetContent(newPresetContent);
 		return this;
 	}
 
+	/**
+	 * Returns the values offered for auto completion.
+	 *
+	 * @return auto completion values, may be null
+	 */
 	public List<String> getAutoCompletionStrings() {
 		return autoCompletionStrings;
 	}
 
+	/**
+	 * Sets the values offered for auto completion.
+	 *
+	 * @param autoCompletionStrings auto completion values, null for none
+	 */
 	public void setAutoCompletionStrings(final List<String> autoCompletionStrings) {
 		this.autoCompletionStrings = autoCompletionStrings;
 	}
 
+	/**
+	 * Sets the values offered for auto completion.
+	 *
+	 * @param newAutoCompletionStrings auto completion values, null for none
+	 * @return this input for chaining
+	 */
 	public SimpleConsoleInput withAutoCompletionStrings(final List<String> newAutoCompletionStrings) {
 		setAutoCompletionStrings(newAutoCompletionStrings);
 		return this;
 	}
 
+	/**
+	 * Adds a value offered for auto completion.
+	 *
+	 * @param autoCompletionString auto completion value
+	 * @return this input for chaining
+	 */
 	public SimpleConsoleInput addAutoCompletionString(final String autoCompletionString) {
 		if (autoCompletionStrings == null) {
 			autoCompletionStrings = new ArrayList<>();
@@ -118,6 +200,12 @@ public class SimpleConsoleInput {
 		return this;
 	}
 
+	/**
+	 * Reads a line of input until Enter is pressed.
+	 *
+	 * @return entered text, null at the end of the input of a non ANSI console
+	 * @throws Exception if the console cannot be read, e.g. if no console is available
+	 */
 	public String readInput() throws Exception {
 		if (ConsoleUtilities.getConsoleType() == ConsoleType.ANSI) {
 			boolean insertMode = true;
@@ -382,7 +470,9 @@ public class SimpleConsoleInput {
 			throw new IllegalStateException("No console available to read input from (e.g. running without a real terminal, or with redirected standard input)");
 		}
 		if (hideCharacter != null) {
-			return new String(console.readPassword(prompt));
+			// readPassword returns null at the end of the input stream
+			final char[] password = console.readPassword(prompt);
+			return password == null ? null : new String(password);
 		} else {
 			return console.readLine(prompt);
 		}
@@ -391,8 +481,9 @@ public class SimpleConsoleInput {
 	/**
 	 * Override hook for other autoComplete functions
 	 *
-	 * @param checkContent
-	 * @param keyCode
+	 * @param checkContent current input content
+	 * @param keyCode key triggering the auto completion (Tab, Page up or Page down)
+	 * @return values to offer for auto completion, may be null
 	 */
 	protected List<String> getAutoCompletionStrings(final String checkContent, final int keyCode) {
 		return autoCompletionStrings;

@@ -8,9 +8,18 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Connection for "rsrc:" URLs, which reads the addressed resource via a class loader.
+ */
 public class JarInJarURLConnection extends URLConnection {
 	private final ClassLoader classLoader;
 
+	/**
+	 * Creates a connection for the given "rsrc:" URL.
+	 *
+	 * @param url URL of the resource, its file part is the resource path
+	 * @param classLoader class loader to read the resource with
+	 */
 	public JarInJarURLConnection(final URL url, final ClassLoader classLoader) {
 		super(url);
 		this.classLoader = classLoader;

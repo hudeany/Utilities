@@ -10,7 +10,7 @@ import java.util.function.Function;
 /**
  * Base class for LinkedHashMap variants that transform keys on the way in and out via
  * {@link #convertKey(Object)} (e.g. case-insensitive lookup by lowercasing String keys).
- *
+ * <p>
  * Note: {@link #keySet()} and {@link #entrySet()} return the standard {@link LinkedHashMap} views. Their own
  * mutation/lookup methods that take an externally supplied key (e.g. {@code keySet().remove(Object)},
  * {@code keySet().removeAll(Collection)}, {@code keySet().retainAll(Collection)},
@@ -20,26 +20,56 @@ import java.util.function.Function;
  * remove an entry that is actually stored under the converted key "foo", even though
  * {@code caseInsensitiveLinkedMap.remove("FOO")} works correctly. Iterating via {@link java.util.Iterator}
  * and calling {@code Iterator.remove()} is unaffected, since that always operates on the key as already stored.
+ *
+ * @param <K> type of the keys
+ * @param <V> type of the values
  */
 public abstract class AbstractLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	private static final long serialVersionUID = -7227298515931195921L;
 
+	/**
+	 * Creates an empty insertion-ordered map with default initial capacity and load factor.
+	 */
 	public AbstractLinkedHashMap() {
 		super();
 	}
 
+	/**
+	 * Creates an empty map with the given initial capacity, load factor and ordering mode.
+	 *
+	 * @param initialCapacity initial capacity of the map
+	 * @param loadFactor load factor of the map
+	 * @param accessOrder true for access order (least recently accessed first), false for insertion order
+	 */
 	public AbstractLinkedHashMap(final int initialCapacity, final float loadFactor, final boolean accessOrder) {
 		super(initialCapacity, loadFactor, accessOrder);
 	}
 
+	/**
+	 * Creates an empty insertion-ordered map with the given initial capacity and load factor.
+	 *
+	 * @param initialCapacity initial capacity of the map
+	 * @param loadFactor load factor of the map
+	 */
 	public AbstractLinkedHashMap(final int initialCapacity, final float loadFactor) {
 		super(initialCapacity, loadFactor);
 	}
 
+	/**
+	 * Creates an empty insertion-ordered map with the given initial capacity.
+	 *
+	 * @param initialCapacity initial capacity of the map
+	 */
 	public AbstractLinkedHashMap(final int initialCapacity) {
 		super(initialCapacity);
 	}
 
+	/**
+	 * Creates an insertion-ordered map containing all entries of the given map, with their keys converted via
+	 * {@link #convertKey(Object)}.
+	 *
+	 * @param map map whose entries are copied into this map
+	 */
 	public AbstractLinkedHashMap(final Map<? extends K, ? extends V> map) {
 		super(map.size());
 		putAll(map);
@@ -139,5 +169,11 @@ public abstract class AbstractLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 		return super.compute(convertKey(key), remappingFunction);
 	}
 
+	/**
+	 * Converts a key into the form in which it is stored and looked up in this map.
+	 *
+	 * @param key key as given by the caller, may be any object or null
+	 * @return the converted key used for storage and lookup
+	 */
 	protected abstract K convertKey(Object key);
 }

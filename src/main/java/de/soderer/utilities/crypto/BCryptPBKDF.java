@@ -135,13 +135,22 @@ public class BCryptPBKDF {
 	private int s[];
 
 	/**
-	 * Derive a byte array from a password (Password-Based Key Derivation Function) for use in other ciphers
+	 * Creates a new key derivation instance. Instances are not thread-safe.
+	 */
+	public BCryptPBKDF() {
+		// Nothing to initialize, the state is created for each derivation
+	}
+
+	/**
+	 * Derive a byte array from a password (Password-Based Key Derivation Function) for use in other ciphers,
+	 * compatible with OpenSSH's "bcrypt_pbkdf".<br>
+	 * Instances are not thread-safe, use one instance per thread.
 	 *
-	 * @param password
-	 * @param salt
-	 * @param rounds
-	 * @param output
-	 * @throws Exception
+	 * @param password password bytes
+	 * @param salt salt bytes (must not be empty)
+	 * @param rounds number of rounds (at least 1)
+	 * @param output array to fill with the derived bytes, its length determines the number of derived bytes
+	 * @throws Exception if rounds is less than 1 or the derivation fails
 	 */
 	public void derivePassword(final byte[] password, final byte[] salt, final int rounds, final byte[] output) throws Exception {
 		if (rounds < 1) {

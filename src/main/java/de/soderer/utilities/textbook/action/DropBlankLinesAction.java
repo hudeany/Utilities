@@ -4,8 +4,18 @@ import java.util.List;
 
 import de.soderer.utilities.Utilities;
 
+/**
+ * Removes the blank lines (containing only whitespace).
+ */
 public class DropBlankLinesAction implements TextLineAction {
 	private long numberOfDroppedLines = 0;
+
+	/**
+	 * Creates the action.
+	 */
+	public DropBlankLinesAction() {
+		// Nothing to initialize
+	}
 	
 	@Override
 	public boolean execute(long overallLineIndex, int pageLineIndex, List<String> pageLines, String lineWithLinebreak) throws Exception {
@@ -18,6 +28,11 @@ public class DropBlankLinesAction implements TextLineAction {
 		}
 	}
 
+	/**
+	 * Returns the number of lines removed so far.
+	 *
+	 * @return number of removed lines
+	 */
 	public long getNumberOfDroppedLines() {
 		return numberOfDroppedLines;
 	}

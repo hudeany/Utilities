@@ -10,7 +10,13 @@ import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.remote.RemoteConnection;
 
+/**
+ * Worker that uploads a local directory with all its files and subdirectories into a new remote directory.
+ */
 public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
+	/**
+	 * Return value of InputStream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private final RemoteConnection connection;
@@ -18,12 +24,28 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 	private String remoteParentDirectoryPath;
 	private final String remoteDirectoryName;
 
+	/**
+	 * Creates an upload worker. The local directory is copied into a new remote directory with the same name.
+	 *
+	 * @param parent parent receiving the progress signals, may be null
+	 * @param connection connection to upload to
+	 * @param localDirectory local directory to upload
+	 * @param remoteParentDirectoryPath existing remote directory to create the new directory in
+	 * @throws Exception if a parameter is missing, a directory does not exist or the remote directory exists already
+	 */
 	public DirectoryUploadWorker(final WorkerParentDual parent, final RemoteConnection connection, final File localDirectory, final String remoteParentDirectoryPath) throws Exception {
 		this(parent, connection, localDirectory, remoteParentDirectoryPath, null);
 	}
 
 	/**
-	 *Local directory "localParentDirectoryPath" will be copied to remote "remoteDirectoryPath/remoteDirectoryName"
+	 * Local directory "localDirectory" will be copied to remote "remoteParentDirectoryPath/remoteDirectoryName"
+	 *
+	 * @param parent parent receiving the progress signals, may be null
+	 * @param connection connection to upload to
+	 * @param localDirectory local directory to upload
+	 * @param remoteParentDirectoryPath existing remote directory to create the new directory in
+	 * @param remoteDirectoryName name of the new remote directory, or null for the name of the local directory
+	 * @throws Exception if a parameter is missing, a directory does not exist or the remote directory exists already
 	 */
 	public DirectoryUploadWorker(final WorkerParentDual parent, final RemoteConnection connection, final File localDirectory, final String remoteParentDirectoryPath, final String remoteDirectoryName) throws Exception {
 		super(parent);
@@ -72,8 +94,8 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 		signalUnlimitedProgress();
 		itemsToDo = FileUtilities.getAllSubfilesSize(localDirectory);
 		signalProgress(true);
-		connection.createFolder(remoteParentDirectoryPath, localDirectory.getName());
-		recursiveUpload(localDirectory, remoteParentDirectoryPath + "/" + localDirectory.getName());
+		connection.createFolder(remoteParentDirectoryPath, remoteDirectoryName);
+		recursiveUpload(localDirectory, remoteParentDirectoryPath + "/" + remoteDirectoryName);
 		return this;
 	}
 
@@ -118,18 +140,10 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 		public int read() throws IOException {
 			final int readByte = super.read();
 			if (readByte != EOF) {
-				subItemsDone ++;
+				subItemsDone++;
+				signalItemProgress();
 			}
 			return readByte;
-		}
-
-		@Override
-		public int read(final byte b[]) throws IOException {
-			final int readBytes = super.read(b);
-			if (readBytes != EOF) {
-				subItemsDone += readBytes;
-			}
-			return readBytes;
 		}
 
 		@Override
@@ -137,6 +151,7 @@ public class DirectoryUploadWorker extends WorkerDual<DirectoryUploadWorker> {
 			final int readBytes = super.read(b, off, len);
 			if (readBytes > 0) {
 				subItemsDone += readBytes;
+				signalItemProgress();
 			}
 			return readBytes;
 		}

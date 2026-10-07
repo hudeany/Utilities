@@ -28,9 +28,19 @@ public class ShowDataDialog extends ModalDialog<Boolean> {
 	private static final int MIN_WIDTH = 400;
 	private static final int MIN_HEIGHT = 200;
 
+	/** Read-only text area showing the text */
 	private final JTextArea textArea;
+
+	/** Scroll pane around the text area, sized to the text within the default limits */
 	private final JScrollPane textScrollPane;
 
+	/**
+	 * Creates a dialog showing a text.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text to show, may be null for an empty text
+	 */
 	public ShowDataDialog(final Window parent, final String title, final String text) {
 		super(parent, title);
 
@@ -78,7 +88,10 @@ public class ShowDataDialog extends ModalDialog<Boolean> {
 	}
 
 	/**
-	 * Allows the user to resize the dialog (e.g. for long reports).
+	 * Allows or forbids the user to resize the dialog (e.g. for long reports).
+	 *
+	 * @param resizable true to make the dialog resizable
+	 * @return this dialog for chaining
 	 */
 	public ShowDataDialog withResizable(final boolean resizable) {
 		setResizable(resizable);
@@ -87,7 +100,11 @@ public class ShowDataDialog extends ModalDialog<Boolean> {
 	}
 
 	/**
-	 * Uses a monospaced font, e.g. for column aligned data.
+	 * Switches between a monospaced font (e.g. for column aligned data) and the
+	 * default dialog font.
+	 *
+	 * @param monospaced true for a monospaced font
+	 * @return this dialog for chaining
 	 */
 	public ShowDataDialog withMonospacedFont(final boolean monospaced) {
 		final Font currentFont = textArea.getFont();
@@ -97,8 +114,11 @@ public class ShowDataDialog extends ModalDialog<Boolean> {
 	}
 
 	/**
-	 * Sets an explicit dialog size. A value &lt;= 0 keeps the current width or
-	 * height.
+	 * Sets an explicit dialog size and centers the dialog on its owner again.
+	 *
+	 * @param width new width in pixels, a value &lt;= 0 keeps the current width
+	 * @param height new height in pixels, a value &lt;= 0 keeps the current height
+	 * @return this dialog for chaining
 	 */
 	public ShowDataDialog withSize(final int width, final int height) {
 		setSize(width > 0 ? width : getWidth(), height > 0 ? height : getHeight());

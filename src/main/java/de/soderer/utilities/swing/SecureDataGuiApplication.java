@@ -8,40 +8,95 @@ import de.soderer.utilities.Credentials;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.SecureDataStore;
 
+/**
+ * Base class of GUI applications that keep sensitive values (e.g. credentials)
+ * in a password protected {@link SecureDataStore} keystore file.
+ *
+ * <p>
+ * The keystore password is asked for via a {@link CredentialsDialog} when
+ * needed (an empty password is tried first) and may be kept in memory for the
+ * lifetime of the application if the user chooses so.
+ * </p>
+ */
 public class SecureDataGuiApplication extends JFrame {
 	private static final long serialVersionUID = 1869492889654406822L;
 
+	/** Keystore file for sensitive values, null for no keystore */
 	private final File keystoreFile;
 
-	private char[] rememberedKeystorePassword = null;
+	/**
+	 * Keystore password kept in memory for the lifetime of the application if the
+	 * user chose so, null otherwise (transient: never serialized)
+	 */
+	private transient char[] rememberedKeystorePassword = null;
 
+	/**
+	 * Creates an application frame without keystore.
+	 *
+	 * @throws Exception declared for subclasses, not thrown here
+	 */
 	public SecureDataGuiApplication() throws Exception {
 		this(null);
 	}
 
+	/**
+	 * Creates an application frame.
+	 *
+	 * @param keystoreFile keystore file, may be null for no keystore
+	 * @throws Exception declared for subclasses, not thrown here
+	 */
 	public SecureDataGuiApplication(final File keystoreFile) throws Exception {
 		super();
 
 		this.keystoreFile = keystoreFile;
 	}
 
+	/**
+	 * Checks whether the keystore file exists.
+	 *
+	 * @return true if a keystore file is configured and exists
+	 */
 	protected boolean keystoreExists() {
 		return keystoreFile != null && keystoreFile.exists();
 	}
 
+	/**
+	 * Reads a value from the keystore. Asks the user for the keystore password if
+	 * needed.
+	 *
+	 * @param <T> type of the value
+	 * @param classType class of the value
+	 * @param entryName name of the entry
+	 * @return value, null if the keystore does not exist, could not be opened or
+	 *         does not contain the entry
+	 */
 	protected <T> T getKeystoreValue(final Class<T> classType, final String entryName) {
 		final SecureDataStore secureDataStore = openKeystore();
 		return secureDataStore != null ? secureDataStore.getEntry(classType, entryName) : null;
 	}
 
+	/**
+	 * Stores a value in the keystore, creating the keystore file if it does not
+	 * exist yet. Asks the user for the keystore password to save with. Nothing is
+	 * stored if the existing keystore cannot be opened or the user cancels the
+	 * password dialog.
+	 *
+	 * @param entryName name of the entry
+	 * @param value value to store
+	 * @throws Exception if the keystore cannot be saved
+	 */
 	protected void saveKeyStoreValue(final String entryName, final Object value) throws Exception {
 		if (keystoreFile != null) {
 			SecureDataStore secureDataStore = null;
 
 			if (keystoreExists()) {
 				secureDataStore = openKeystore();
-			} else if (keystoreFile != null && !keystoreFile.getParentFile().exists()) {
-				keystoreFile.getParentFile().mkdirs();
+				if (secureDataStore == null) {
+					// Keystore could not be opened (e.g. password dialog canceled): a new keystore would overwrite all existing entries
+					return;
+				}
+			} else if (keystoreFile.getAbsoluteFile().getParentFile() != null && !keystoreFile.getAbsoluteFile().getParentFile().exists()) {
+				keystoreFile.getAbsoluteFile().getParentFile().mkdirs();
 			}
 
 			if (secureDataStore != null) {

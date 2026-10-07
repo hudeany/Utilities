@@ -13,24 +13,38 @@ import de.soderer.utilities.remote.FileInfo;
 import de.soderer.utilities.remote.FolderInfo;
 import de.soderer.utilities.remote.RemoteConnection;
 
+/**
+ * Worker that downloads a remote directory with all its files and subdirectories into a new local directory.
+ * Remote names leading outside of the local destination are rejected (path traversal).
+ */
 public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker> {
 	private final RemoteConnection connection;
 	private final String remoteDirectoryPath;
 	private final File localParentDirectory;
 	private final String localDirectoryName;
 
+	/**
+	 * Creates a download worker. The remote directory is copied into a new local directory with the same name.
+	 *
+	 * @param parent parent receiving the progress signals, may be null
+	 * @param connection connection to download from
+	 * @param remoteDirectoryPath path of the remote directory
+	 * @param localParentDirectory existing local directory to create the new directory in
+	 * @throws Exception if a parameter is missing, the remote directory does not exist or the local directory exists already
+	 */
 	public DirectoryDownloadWorker(final WorkerParentDual parent, final RemoteConnection connection, final String remoteDirectoryPath, final File localParentDirectory) throws Exception {
 		this(parent, connection, remoteDirectoryPath, localParentDirectory, null);
 	}
 
 	/**
-	 * Remote directory "remoteDirectoryPath" will be copied to local "localParentDirectoryPath/remoteDirectoryName"
+	 * Remote directory "remoteDirectoryPath" will be copied to local "localParentDirectoryPath/localDirectoryName"
 	 *
-	 * @param parent
-	 * @param connection
-	 * @param remoteDirectoryPath
-	 * @param localParentDirectory
-	 * @throws Exception
+	 * @param parent parent receiving the progress signals, may be null
+	 * @param connection connection to download from
+	 * @param remoteDirectoryPath path of the remote directory
+	 * @param localParentDirectory existing local directory to create the new directory in
+	 * @param localDirectoryName name of the new local directory, or null for the name of the remote directory
+	 * @throws Exception if a parameter is missing, the remote directory does not exist or the local directory exists already
 	 */
 	public DirectoryDownloadWorker(final WorkerParentDual parent, final RemoteConnection connection, final String remoteDirectoryPath, final File localParentDirectory, final String localDirectoryName) throws Exception {
 		super(parent);
@@ -47,7 +61,7 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 		this.remoteDirectoryPath = FileUtilities.trimTrailingFileSeparator(remoteDirectoryPath);
 		this.localParentDirectory = localParentDirectory;
 		if (Utilities.isBlank(localDirectoryName)) {
-			this.localDirectoryName = FileUtilities.getFilenameFromPath(remoteDirectoryPath);
+			this.localDirectoryName = FileUtilities.getFilenameFromPath(this.remoteDirectoryPath);
 		} else {
 			this.localDirectoryName = localDirectoryName;
 		}

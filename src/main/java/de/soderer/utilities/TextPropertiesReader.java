@@ -6,9 +6,12 @@ import java.util.Map;
 import de.soderer.utilities.TextUtilities.LineBreak;
 
 /**
- * Scanner class for properties describing a text
+ * Scanner for statistical properties of a text: number of characters, non whitespace characters, lines and words,
+ * the characters used and the type of line breaks.
+ * Call {@link #readProperties()} before using the getters; until then they return -1 (or null).
  */
 public class TextPropertiesReader {
+	/** Text to scan */
 	protected String dataString = null;
 
 	private int characters = -1;
@@ -19,22 +22,24 @@ public class TextPropertiesReader {
 	private LineBreak linebreaks = LineBreak.Unknown;
 
 	/**
-	 * Internal constructor for derived classes
+	 * Internal constructor for derived classes, which set {@link #dataString} themselves
 	 */
 	protected TextPropertiesReader() {
 	}
 
 	/**
-	 * Open a new TextPropertiesReader with the text to scan lateron
+	 * Creates a scanner for a text, which is scanned by {@link #readProperties()} later on.
 	 *
-	 * @param dataString
+	 * @param dataString text to scan, must not be null when scanning
 	 */
 	public TextPropertiesReader(String dataString) {
 		this.dataString = dataString;
 	}
 
 	/**
-	 * Scan for the text properties of the given text
+	 * Scans the text and determines its properties.
+	 * Lines are separated by "\n", "\r\n" or "\r"; a final line without line break is counted too.
+	 * Words are sequences of non whitespace characters.
 	 */
 	public void readProperties() {
 		foundCharacters = new HashMap<>();
@@ -49,15 +54,13 @@ public class TextPropertiesReader {
 		for (int i = 0; i < dataString.length(); i++) {
 			char character = dataString.charAt(i);
 
-			if (foundCharacters.containsKey(character)) {
-				foundCharacters.put(character, foundCharacters.get(character) + 1);
-			} else {
-				foundCharacters.put(character, 1);
-			}
+			foundCharacters.merge(character, 1, Integer::sum);
 
 			if (character == '\r') {
-				if (dataString.charAt(i + 1) == '\n') {
+				if (i + 1 < dataString.length() && dataString.charAt(i + 1) == '\n') {
 					i++;
+					// The skipped '\n' is part of the text as well
+					foundCharacters.merge('\n', 1, Integer::sum);
 					foundLineBreakWindows = true;
 				} else {
 					foundLineBreakMac = true;
@@ -121,54 +124,54 @@ public class TextPropertiesReader {
 	}
 
 	/**
-	 * Get the number of characters of the text
+	 * Number of characters of the text.
 	 *
-	 * @return
+	 * @return number of characters, or -1 if not scanned yet
 	 */
 	public int getCharactersCount() {
 		return characters;
 	}
 
 	/**
-	 * Get the characters used in the text and their numbers of occurences
+	 * Characters used in the text and their numbers of occurrences.
 	 *
-	 * @return
+	 * @return map of characters and their counts, or null if not scanned yet
 	 */
 	public Map<Character, Integer> getFoundCharacters() {
 		return foundCharacters;
 	}
 
 	/**
-	 * Get the number of non whitespace characters of the text
+	 * Number of non whitespace characters of the text.
 	 *
-	 * @return
+	 * @return number of non whitespace characters, or -1 if not scanned yet
 	 */
 	public int getNonWhitespaceCharactersCount() {
 		return nonWhitespaceCharacters;
 	}
 
 	/**
-	 * Get the number of lines of the text
+	 * Number of lines of the text.
 	 *
-	 * @return
+	 * @return number of lines, or -1 if not scanned yet
 	 */
 	public int getLinesCount() {
 		return lines;
 	}
 
 	/**
-	 * Get the number of words separated by whitespaces of the text
+	 * Number of words (separated by whitespace) of the text.
 	 *
-	 * @return
+	 * @return number of words, or -1 if not scanned yet
 	 */
 	public int getWordsCount() {
 		return words;
 	}
 
 	/**
-	 * Get the linebreak type of the text
+	 * Type of line breaks used in the text.
 	 *
-	 * @return
+	 * @return line break type, {@link LineBreak#Mixed} for different types, {@link LineBreak#Unknown} if there are none or not scanned yet
 	 */
 	public LineBreak getLinebreakType() {
 		return linebreaks;

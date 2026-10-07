@@ -3,21 +3,44 @@ package de.soderer.utilities.collection;
 import java.util.Collection;
 import java.util.LinkedList;
 
+/**
+ * List that keeps each item only once, in the order of its latest addition, optionally limited to a maximum
+ * size. Adding an item that is already contained moves it to the end. When the maximum size is reached, the
+ * oldest items at the front are dropped (e.g. for "recently used" lists).
+ * <p>
+ * Only {@link #add(Object)}, {@link #addAll(Collection)} and the methods based on them (like {@code offer})
+ * apply these rules. Inserting via {@code add(int, Object)}, {@code addFirst}, {@code addLast}, {@code push},
+ * {@code offerFirst}, {@code offerLast} or {@code set} bypasses them.
+ *
+ * @param <T> type of the items
+ */
 public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 	private static final long serialVersionUID = 2008975571883451672L;
 
+	/** Maximum number of items to keep, -1 for no limit */
 	private int maxSize = -1;
 
 	/**
-	 * No length of queue set means the elements are only stored uniquely and double storage puts the item to the end. Thats the same effect as an infinite queue length.
+	 * Creates an empty list without size limit. Items are only stored uniquely and adding an item again moves it to the end. That's the same effect as an infinite queue length.
 	 */
 	public UniqueFifoQueuedList() {
 	}
 
+	/**
+	 * Creates an empty list with the given maximum size.
+	 *
+	 * @param maxSize maximum number of items to keep, -1 for no limit
+	 */
 	public UniqueFifoQueuedList(final int maxSize) {
 		this(maxSize, null);
 	}
 
+	/**
+	 * Creates a list with the given maximum size, filled with the given items in their iteration order.
+	 *
+	 * @param maxSize maximum number of items to keep, -1 for no limit
+	 * @param initialContent items to add initially, may be null
+	 */
 	public UniqueFifoQueuedList(final int maxSize, final Collection<T> initialContent) {
 		this.maxSize = maxSize;
 		if (initialContent != null) {
@@ -57,6 +80,11 @@ public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 		return modified;
 	}
 
+	/**
+	 * Returns the item that was added last.
+	 *
+	 * @return last item of this list, or null if the list is empty
+	 */
 	public T getLatestAdded() {
 		if (size() > 0) {
 			return get(size() - 1);

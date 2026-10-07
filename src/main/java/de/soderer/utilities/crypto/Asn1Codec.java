@@ -47,6 +47,18 @@ public class Asn1Codec {
 	 */
 	public static final int DER_TAG_CONTEXT_SPECIFIC_1 = 0xA1;
 
+	private Asn1Codec() {
+		// Utility class
+	}
+
+	/**
+	 * Encodes a non-negative value in the DER length format: values below 0x80 as a single byte (short form),
+	 * larger values as a byte 0x80 + n followed by the n big-endian value bytes (long form).
+	 *
+	 * @param value non-negative value to encode
+	 * @return DER encoded value bytes
+	 * @throws Exception if the value is negative or needs 128 or more value bytes
+	 */
 	public static byte[] getAsnEncodedInteger(final long value) throws Exception {
 		if (value < 0) {
 			throw new Exception("Minimum ASN.1 encoded Integer underrun");
@@ -71,9 +83,14 @@ public class Asn1Codec {
 	}
 
 	/**
-	 * Parses a DER length-prefixed integer value as produced by {@link #getAsnEncodedInteger(long)}.
-	 * "offset" points to the length byte (short or long form DER length encoding), directly
-	 * followed by the integer's value bytes.
+	 * Parses a DER length-prefixed integer value (the content of an ASN.1 INTEGER without its tag byte).
+	 * {@code offset} points to the length byte (short or long form DER length encoding), which is directly
+	 * followed by the integer's value bytes in two's complement big-endian representation.
+	 *
+	 * @param data data containing the encoded integer
+	 * @param offset index of the length byte within the data
+	 * @return parsed (signed) integer value
+	 * @throws Exception if the data is null, the offset is out of range or the data is truncated or invalid
 	 */
 	public static BigInteger parseAsnEncodedInteger(final byte[] data, final int offset) throws Exception {
 		if (data == null || offset < 0 || offset >= data.length) {
@@ -106,6 +123,14 @@ public class Asn1Codec {
 		}
 	}
 
+	/**
+	 * Creates a DER encoded tag consisting of the tag id, the DER encoded length and the concatenated data items.
+	 *
+	 * @param derTagId tag id, e.g. {@link #DER_TAG_SEQUENCE}
+	 * @param derDataItems data items to concatenate as the tag's content (must not be null)
+	 * @return DER encoded tag data
+	 * @throws IOException if the data cannot be written
+	 */
 	public static byte[] createDerTagData(final int derTagId, final byte[]... derDataItems) throws IOException {
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		out.write(derTagId);
@@ -137,6 +162,13 @@ public class Asn1Codec {
 		return lengthInBytes;
 	}
 
+	/**
+	 * Reads the first DER tag of the given data. Any data following that tag is ignored.
+	 *
+	 * @param data DER encoded data
+	 * @return the first tag with its content data
+	 * @throws Exception if the data is truncated or the encoded length does not match the available data
+	 */
 	public static DerTag readDerTag(final byte[] data) throws Exception {
 		try {
 			final ByteArrayInputStream input = new ByteArrayInputStream(data);
@@ -178,6 +210,13 @@ public class Asn1Codec {
 		}
 	}
 
+	/**
+	 * Reads all consecutive DER tags of the given data (e.g. the content of a SEQUENCE).
+	 *
+	 * @param data DER encoded data
+	 * @return list of all tags with their content data in the order of the data
+	 * @throws Exception if the data is truncated or contains an invalid length
+	 */
 	public static List<DerTag> readDerTags(final byte[] data) throws Exception {
 		try {
 			final ByteArrayInputStream input = new ByteArrayInputStream(data);
@@ -217,27 +256,56 @@ public class Asn1Codec {
 		}
 	}
 
+	/**
+	 * A single DER tag: tag id and content data (without the tag id and length bytes).
+	 */
 	public static class DerTag {
 		int tagId;
 		byte[] data;
 
+		/**
+		 * Creates a DER tag.
+		 *
+		 * @param tagId tag id, e.g. {@link Asn1Codec#DER_TAG_SEQUENCE}
+		 * @param data content data of the tag (stored by reference, not copied)
+		 */
 		public DerTag(final int tagId, final byte[] data) {
 			this.tagId = tagId;
 			this.data = data;
 		}
 
+		/**
+		 * Returns the tag id.
+		 *
+		 * @return tag id
+		 */
 		public int getTagId() {
 			return tagId;
 		}
 
+		/**
+		 * Sets the tag id.
+		 *
+		 * @param tagId tag id
+		 */
 		public void setTagId(final int tagId) {
 			this.tagId = tagId;
 		}
 
+		/**
+		 * Returns the content data of the tag.
+		 *
+		 * @return content data (the internal array, not a copy)
+		 */
 		public byte[] getData() {
 			return data;
 		}
 
+		/**
+		 * Sets the content data of the tag.
+		 *
+		 * @param data content data (stored by reference, not copied)
+		 */
 		public void setData(final byte[] data) {
 			this.data = data;
 		}

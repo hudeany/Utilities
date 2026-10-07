@@ -22,22 +22,53 @@ import javax.swing.JTextField;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Modal dialog with a text and a single input field.
+ *
+ * <p>
+ * {@link #open()} returns the entered value, or null if the dialog was
+ * canceled. The OK button is only enabled while the input is not empty. An
+ * optional input pattern rejects typed characters that would make the input
+ * not match the pattern.
+ * </p>
+ */
 public class SimpleInputDialog extends ModalDialog<String> {
 	private static final long serialVersionUID = 2945587731926296004L;
 
+	/** Text shown above the input field, may be blank */
 	private final String text;
 
+	/** Content panel, refilled by createComponents() */
 	private final JPanel panel;
 
+	/** Input field of the value */
 	private JTextField inputField;
+
+	/** OK button, only enabled while the input is not empty */
 	private JButton okButton;
 
+	/** Last input matching inputPattern, restored when a typed character breaks the pattern */
 	private String currentInputText = "";
+
+	/** Caret position at the time an invalid character was typed */
 	private int currentPosition = 0;
+
+	/** Pattern the whole input must match, null for no restriction */
 	private Pattern inputPattern = null;
+
+	/** Suppresses the input check while the field is reset programmatically */
 	private boolean isTechnicalChange = false;
+
+	/** Initial value of the input field, null for an empty field */
 	private String defaultText = null;
 
+	/**
+	 * Creates a simple input dialog.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the input field, may be blank
+	 */
 	public SimpleInputDialog(final Window parent, final String title, final String text) {
 		super(parent, title);
 
@@ -53,12 +84,24 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		returnValue = null;
 	}
 
+	/**
+	 * Sets the initial value of the input field.
+	 *
+	 * @param defaultText initial value, may be null for an empty field
+	 * @return this dialog for chaining
+	 */
 	public SimpleInputDialog setDefaultText(final String defaultText) {
 		this.defaultText = defaultText;
 		createComponents();
 		return this;
 	}
 
+	/**
+	 * Sets a regular expression the whole input must match while typing. Typed
+	 * characters that make the input not match are removed again.
+	 *
+	 * @param patternString regular expression, blank for no restriction
+	 */
 	public void setInputPattern(final String patternString) {
 		if (Utilities.isBlank(patternString)) {
 			inputPattern = null;
@@ -67,6 +110,9 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		}
 	}
 
+	/**
+	 * (Re)creates all components of the dialog from the current settings.
+	 */
 	protected void createComponents() {
 		panel.removeAll();
 
@@ -104,6 +150,8 @@ public class SimpleInputDialog extends ModalDialog<String> {
 		inputField.setFont(f2);
 		inputField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 		inputField.setText(defaultText != null ? defaultText : "");
+		// The last valid input must be the default text, otherwise an invalid keystroke would revert the field to the empty text
+		currentInputText = inputField.getText();
 		inputField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(final KeyEvent event) {

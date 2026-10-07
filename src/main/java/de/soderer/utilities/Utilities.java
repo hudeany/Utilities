@@ -21,7 +21,6 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -64,15 +63,37 @@ import javax.xml.stream.XMLStreamWriter;
 /**
  * Global Utilities
  *
- * This class does no Logging via Log4J, because it is often used before its initialisation
+ * <p>This class does no Logging via Log4J, because it is often used before its initialisation</p>
  */
 public class Utilities {
+	private Utilities() {
+		// Utility class
+	}
+
+	/**
+	 * Return value of stream read methods signaling the end of the stream
+	 */
 	public static final int EOF = -1;
 
+	/**
+	 * Template of a minimal XML document, "&lt;encoding&gt;" is a placeholder for the encoding name
+	 */
 	public static final String STANDARD_XML = "<?xml version=\"1.0\" encoding=\"<encoding>\" standalone=\"yes\"?>\n<root>\n</root>\n";
+	/**
+	 * Template of a minimal XHTML document, "&lt;encoding&gt;" is a placeholder for the charset name
+	 */
 	public static final String STANDARD_HTML = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=<encoding>\" />\n\t\t<title>HtmlTitle</title>\n\t\t<meta name=\"Title\" content=\"HtmlTitle\" />\n\t</head>\n\t<body>\n\t</body>\n</html>\n";
+	/**
+	 * Shebang line starting a bash script
+	 */
 	public static final String STANDARD_BASHSCRIPTSTART = "#!/bin/bash\n";
+	/**
+	 * Sample JSON document with all simple JSON data types
+	 */
 	public static final String STANDARD_JSON = "{\n\t\"property1\": null,\n\t\"property2\": " + Math.PI + ",\n\t\"property3\": true,\n\t\"property4\": \"Text\",\n\t\"property5\": [\n\t\tnull,\n\t\t" + Math.PI + ",\n\t\ttrue,\n\t\t\"Text\"\n\t]\n}\n";
+	/**
+	 * Sample YAML document with all simple data types, equivalent to {@link #STANDARD_JSON}
+	 */
 	public static final String STANDARD_YAML = "property1: null\nproperty2: " + Math.PI + "\nproperty3: true\nproperty4: Text\nproperty5:\n  - null\n  - " + Math.PI + "\n  - true\n  - Text\n";
 
 	/**
@@ -300,10 +321,9 @@ public class Utilities {
 	/**
 	 * Split a list into smaller lists to a maximum chunkSize
 	 *
-	 * @param originalList
-	 *            list to split
-	 * @param chunkSize
-	 *            maximum size of each chunk
+	 * @param <E> type of the list items
+	 * @param originalList list to split
+	 * @param chunkSize maximum size of each chunk
 	 * @return list of sublists (views on the original list), or null for an empty list or a chunk size less than 1
 	 */
 	public static <E> List<List<E>> chopListToChunks(final List<E> originalList, final int chunkSize) {
@@ -525,6 +545,13 @@ public class Utilities {
 		return false;
 	}
 
+	/**
+	 * Check whether a character array contains a character.
+	 *
+	 * @param characterArray characters to search in, may be null
+	 * @param searchCharacter character to search for, may be null
+	 * @return true if the character is contained, false if any parameter is null
+	 */
 	public static boolean contains(final char[] characterArray, final Character searchCharacter) {
 		if (characterArray == null || searchCharacter == null) {
 			return false;
@@ -574,9 +601,9 @@ public class Utilities {
 	/**
 	 * Get a collection like a set as a ordered list
 	 *
-	 * @param c
-	 *            collection to sort
-	 * @return new list with the sorted items
+	 * @param <T> type of the items
+	 * @param c collection to sort, must not contain null items
+	 * @return new list with the items in natural order
 	 */
 	public static <T extends Comparable<? super T>> List<T> asSortedList(final Collection<T> c) {
 		final List<T> list = new ArrayList<>(c);
@@ -587,10 +614,9 @@ public class Utilities {
 	/**
 	 * Sort a collection in natural order, but put the given items first in their given order
 	 *
-	 * @param collection
-	 *            items to sort
-	 * @param firstItems
-	 *            items to put first, in this order
+	 * @param <T> type of the items
+	 * @param collection items to sort, must not contain null items
+	 * @param firstItems items to put first, in this order
 	 * @return new sorted list
 	 */
 	@SafeVarargs
@@ -621,10 +647,10 @@ public class Utilities {
 	/**
 	 * Sort a map by a Comparator for the keytype
 	 *
-	 * @param mapToSort
-	 *            map to sort
-	 * @param comparator
-	 *            comparator for the keys
+	 * @param <Key> type of the keys
+	 * @param <Value> type of the values
+	 * @param mapToSort map to sort
+	 * @param comparator comparator for the keys
 	 * @return new map with the entries in sorted key order
 	 */
 	public static <Key, Value> Map<Key, Value> sortMap(final Map<Key, Value> mapToSort, final Comparator<Key> comparator) {
@@ -640,9 +666,9 @@ public class Utilities {
 	/**
 	 * Sort a map by the String keytype
 	 *
-	 * @param mapToSort
-	 *            map to sort
-	 * @return new map with the entries in sorted key order
+	 * @param <Value> type of the values
+	 * @param mapToSort map to sort, must not contain a null key
+	 * @return new map with the entries in natural key order
 	 */
 	public static <Value> Map<String, Value> sortMap(final Map<String, Value> mapToSort) {
 		final List<String> keys = new ArrayList<>(mapToSort.keySet());
@@ -666,10 +692,9 @@ public class Utilities {
 	/**
 	 * Check array equality. Items are compared by equals(), null items are allowed.
 	 *
-	 * @param array1
-	 *            first array
-	 * @param array2
-	 *            second array
+	 * @param <T> type of the items
+	 * @param array1 first array
+	 * @param array2 second array
 	 * @return true if both arrays are null or have equal items in the same order
 	 */
 	public static <T> boolean compare(final T[] array1, final T[] array2) {
@@ -683,8 +708,10 @@ public class Utilities {
 	 */
 	public static Map<String, String> getSystemPropertiesMap() {
 		final Map<String, String> propertiesMap = new HashMap<>();
-		for (final Object key : System.getProperties().keySet()) {
-			propertiesMap.put((String) key, System.getProperties().getProperty((String) key));
+		// stringPropertyNames() skips non-String keys, which caused a ClassCastException before
+		final Properties systemProperties = System.getProperties();
+		for (final String key : systemProperties.stringPropertyNames()) {
+			propertiesMap.put(key, systemProperties.getProperty(key));
 		}
 		if (SystemUtilities.isLinuxSystem()) {
 			final File distributionInfoFile = new File("/etc/os-release");
@@ -838,6 +865,18 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Parse a human readable number with optional unit prefix like "1.5 KiB", "2 MB" or "300 k".
+	 * Both SI prefixes (k, M, G, T, P, E) and binary prefixes (Ki, Mi, ...) are accepted, the factor is defined by siUnits.
+	 *
+	 * @param value text to parse
+	 * @param unitTypeSign unit sign at the end of the text to remove, e.g. "B" for bytes, may be null
+	 * @param siUnits true for factor 1000 per prefix step, false for factor 1024
+	 * @param locale locale defining the decimal and grouping separator
+	 * @return parsed value as float (may be rounded)
+	 * @throws RuntimeException if the value is blank
+	 * @throws NumberFormatException if the value is no number
+	 */
 	public static float parseHumanReadableNumber(String value, final String unitTypeSign, final boolean siUnits, final Locale locale) {
 		if (isBlank(value)) {
 			throw new RuntimeException("Not a numeric value");
@@ -847,7 +886,12 @@ public class Utilities {
 
 		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
 
-		value = value.replace(Character.toString(decimalFormatSymbols.getGroupingSeparator()), "").replace(Character.toString(decimalFormatSymbols.getDecimalSeparator()), ".");
+		value = value.replace(Character.toString(decimalFormatSymbols.getGroupingSeparator()), "").replace(Character.toString(decimalFormatSymbols.getDecimalSeparator()), ".").trim();
+
+		// Binary unit prefixes like "Ki" or "Mi", as created by getHumanReadableNumber (before, they caused a NumberFormatException)
+		if (value.length() > 1 && endsWithIgnoreCase(value, "i") && "kmgtpe".indexOf(Character.toLowerCase(value.charAt(value.length() - 2))) >= 0) {
+			value = value.substring(0, value.length() - 1);
+		}
 
 		long dimension = 1;
 		if (endsWithIgnoreCase(value, "k")) {
@@ -898,6 +942,17 @@ public class Utilities {
 		return numericValue;
 	}
 
+	/**
+	 * Get a human readable speed like "1.5 MiB/s" for the number of items processed in a time span.
+	 *
+	 * @param startTime start of the processing
+	 * @param endTime end of the processing
+	 * @param itemsDone number of items processed
+	 * @param unitTypeSign unit sign of the items, e.g. "B" for bytes, may be null
+	 * @param siUnits true for SI unit prefixes (factor 1000), false for binary unit prefixes (factor 1024)
+	 * @param locale locale for the decimal separator
+	 * @return speed per second with unit, or "Done in &lt;1 ms" if the time span is shorter than one millisecond
+	 */
 	public static String getHumanReadableSpeed(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String unitTypeSign, final boolean siUnits, final Locale locale) {
 		final long milliseconds = Duration.between(startTime, endTime).toMillis();
 		if (milliseconds > 0) {
@@ -909,7 +964,8 @@ public class Utilities {
 			String unitExtension = "";
 			int maxTrailingDigits = 0;
 			if (interimValue > unit) {
-				final int exponent = (int) (Math.log(interimValue) / Math.log(unit));
+				// "E" is the largest available unit prefix
+				final int exponent = Math.min((int) (Math.log(interimValue) / Math.log(unit)), HUMAN_READABLE_MAX_EXPONENT);
 				unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1) + (siUnits ? "" : "i");
 				interimValue = interimValue / Math.pow(unit, exponent);
 				maxTrailingDigits = exponent * 3;
@@ -959,7 +1015,8 @@ public class Utilities {
 	 * @return formatted number with grouping separators and unit, e.g. "1,234,567 B"
 	 */
 	public static String getHumanReadableInteger(final Long value, final String unitTypeSign, final Locale locale) {
-		final double interimValue = value.doubleValue();
+		// Format the long value itself, a double loses precision for values above 2^53
+		final long interimValue = value.longValue();
 		String unitExtension = "";
 		if (isNotBlank(unitTypeSign)) {
 			unitExtension = " " + unitTypeSign;
@@ -1154,10 +1211,9 @@ public class Utilities {
 	/**
 	 * Filter all Objects of given class
 	 *
-	 * @param collection
-	 *            items to filter
-	 * @param classToSelect
-	 *            class of the items to select
+	 * @param <T> type of the items to select
+	 * @param collection items to filter
+	 * @param classToSelect class of the items to select
 	 * @return list of all items that are instances of the given class
 	 */
 	@SuppressWarnings("unchecked")
@@ -1174,10 +1230,9 @@ public class Utilities {
 	/**
 	 * Filter all Objects of given class
 	 *
-	 * @param array
-	 *            items to filter
-	 * @param classToSelect
-	 *            class of the items to select
+	 * @param <T> type of the items to select
+	 * @param array items to filter
+	 * @param classToSelect class of the items to select
 	 * @return list of all items that are instances of the given class
 	 */
 	@SuppressWarnings("unchecked")
@@ -1191,49 +1246,115 @@ public class Utilities {
 		return list;
 	}
 
+	/**
+	 * Create a reversed copy of an array. The given array is not changed (see {@link #reverseArray(Object[])} for in-place reversal).
+	 *
+	 * @param <T> type of the items
+	 * @param array array to reverse, must not be null
+	 * @return new array of the same component type with the items in reverse order
+	 */
 	public static <T> T[] revertArray(final T[] array) {
+		// Array of the same component type (before, an Object[] was returned, causing a ClassCastException for e.g. String[] callers)
 		@SuppressWarnings("unchecked")
-		final T[] returnValue = (T[]) new Object[array.length];
+		final T[] returnValue = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length);
 		for (int i = 0; i < array.length; i++) {
 			returnValue[i] = array[array.length - 1 - i];
 		}
 		return returnValue;
 	}
 
+	/**
+	 * Get the host name of a URL without a leading "www.".
+	 *
+	 * @param url URL like "https://www.example.com/path"
+	 * @return host name like "example.com", or null if the URL has no host part
+	 * @throws Exception if the URL is invalid
+	 */
 	public static String getDomainFromUrl(final String url) throws Exception {
 		final URI uri = new URI(url);
 		final String domain = uri.getHost();
+		if (domain == null) {
+			// URLs without host part like "mailto:..." or relative URLs
+			return null;
+		}
 		return domain.startsWith("www.") ? domain.substring(4) : domain;
 	}
 
+	/**
+	 * Check whether a string is null or empty.
+	 *
+	 * @param value string to check
+	 * @return true for null or ""
+	 */
 	public static boolean isEmpty(final String value) {
 		return value == null || value.length() == 0;
 	}
 
+	/**
+	 * Check whether a string has at least one character.
+	 *
+	 * @param value string to check
+	 * @return false for null or "", otherwise true
+	 */
 	public static boolean isNotEmpty(final String value) {
 		return !isEmpty(value);
 	}
 
+	/**
+	 * Check whether a collection is null or empty.
+	 *
+	 * @param collection collection to check
+	 * @return true for null or an empty collection
+	 */
 	public static boolean isEmpty(final Collection<?> collection) {
 		return collection == null || collection.isEmpty();
 	}
 
+	/**
+	 * Check whether a collection has at least one item.
+	 *
+	 * @param collection collection to check
+	 * @return false for null or an empty collection, otherwise true
+	 */
 	public static boolean isNotEmpty(final Collection<?> collection) {
 		return !isEmpty(collection);
 	}
 
+	/**
+	 * Check whether a string is null, empty or contains only whitespace (characters up to U+0020, see {@link String#trim()}).
+	 *
+	 * @param value string to check
+	 * @return true for null, empty or whitespace only
+	 */
 	public static boolean isBlank(final String value) {
 		return value == null || value.length() == 0 || value.trim().length() == 0;
 	}
 
+	/**
+	 * Check whether a string contains at least one non-whitespace character (see {@link #isBlank(String)}).
+	 *
+	 * @param value string to check
+	 * @return true if the string is not blank
+	 */
 	public static boolean isNotBlank(final String value) {
 		return !isBlank(value);
 	}
 
+	/**
+	 * Check whether a character array is null or empty.
+	 *
+	 * @param value array to check
+	 * @return true for null or an empty array
+	 */
 	public static boolean isEmpty(final char[] value) {
 		return value == null || value.length == 0;
 	}
 
+	/**
+	 * Overwrite all characters of an array with zero, e.g. to remove a password from memory.
+	 *
+	 * @param array array to clear, may be null
+	 */
 	public static void clear(final char[] array) {
 		if (array != null) {
 			for (int i = 0; i < array.length; i++) {
@@ -1242,16 +1363,33 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Overwrite all bytes of an array with zero, e.g. to remove key data from memory.
+	 *
+	 * @param array array to clear, may be null
+	 */
 	public static void clear(final byte[] array) {
 		if (array != null) {
 			Arrays.fill(array, (byte) 0);
 		}
 	}
 
+	/**
+	 * Check whether a character array has at least one character.
+	 *
+	 * @param value array to check
+	 * @return false for null or an empty array, otherwise true
+	 */
 	public static boolean isNotEmpty(final char[] value) {
 		return !isEmpty(value);
 	}
 
+	/**
+	 * Check whether a character array is null, empty or contains only whitespace (see {@link Character#isWhitespace(char)}).
+	 *
+	 * @param value array to check
+	 * @return true for null, empty or whitespace only
+	 */
 	public static boolean isBlank(final char[] value) {
 		if (value == null || value.length == 0) {
 			return true;
@@ -1265,10 +1403,21 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Check whether a character array contains at least one non-whitespace character.
+	 *
+	 * @param value array to check
+	 * @return true if the array is not blank
+	 */
 	public static boolean isNotBlank(final char[] value) {
 		return !isBlank(value);
 	}
 
+	/**
+	 * Close a resource and ignore any IOException.
+	 *
+	 * @param closeable resource to close, may be null
+	 */
 	public static void closeQuietly(final Closeable closeable) {
 		if (closeable != null) {
 			try {
@@ -1305,6 +1454,12 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Close an XMLStreamWriter, errors are only printed to stderr.
+	 * XMLStreamWriter.close() does not close the underlying stream.
+	 *
+	 * @param xmlWriter writer to close, may be null
+	 */
 	public static void closeQuietly(XMLStreamWriter xmlWriter) {
 		if (xmlWriter != null) {
 			try {
@@ -1316,14 +1471,36 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Build a string by repeating a character.
+	 *
+	 * @param valueChar character to repeat
+	 * @param count number of repetitions, 0 or less for an empty string
+	 * @return repeated characters
+	 */
 	public static String repeat(final char valueChar, final int count) {
 		return repeat(Character.toString(valueChar), count, null);
 	}
 
+	/**
+	 * Build a string by repeating a text.
+	 *
+	 * @param value text to repeat, may be null
+	 * @param count number of repetitions, 0 or less for an empty string
+	 * @return repeated text, or null for null input
+	 */
 	public static String repeat(final String value, final int count) {
 		return repeat(value, count, null);
 	}
 
+	/**
+	 * Build a string by repeating a text with a separator between the repetitions.
+	 *
+	 * @param value text to repeat, may be null
+	 * @param count number of repetitions, 0 or less for an empty string
+	 * @param separatorString separator between the repetitions, null for none
+	 * @return repeated text, or null for null input
+	 */
 	public static String repeat(final String value, final int count, final String separatorString) {
 		if (value == null) {
 			return null;
@@ -1341,6 +1518,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Join the string representations of array items. Null items are shown as empty strings.
+	 *
+	 * @param array items to join, may be null
+	 * @param glue separator between the items, null for none
+	 * @return joined text, or null for a null array
+	 */
 	public static String join(final Object[] array, String glue) {
 		if (array == null) {
 			return null;
@@ -1367,6 +1551,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Join characters with a separator.
+	 *
+	 * @param array characters to join, may be null
+	 * @param glue separator between the characters, null for none
+	 * @return joined text, or null for a null array
+	 */
 	public static String join(final char[] array, String glue) {
 		if (array == null) {
 			return null;
@@ -1390,6 +1581,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Join the string representations of items. Null items are shown as empty strings.
+	 *
+	 * @param iterableObject items to join, may be null
+	 * @param glue separator between the items, null for none
+	 * @return joined text, or null for null items
+	 */
 	public static String join(final Iterable<?> iterableObject, String glue) {
 		if (iterableObject == null) {
 			return null;
@@ -1414,6 +1612,14 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Create a copy of an array without the first occurrence of an item (compared by equals).
+	 *
+	 * @param <T> type of the items
+	 * @param array array to copy, may be null
+	 * @param itemToRemove item to remove, may be null
+	 * @return new array without the item (an unchanged copy if the item is not contained), or null for a null array
+	 */
 	public static <T> T[] remove(final T[] array, final T itemToRemove) {
 		int indexToRemove = -1;
 		if (array == null) {
@@ -1452,6 +1658,14 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Create a copy of an array without the item at the given index.
+	 *
+	 * @param <T> type of the items
+	 * @param array array to copy, must not be null
+	 * @param itemIndexToRemove index of the item to remove, must be a valid index of the array
+	 * @return new array with one item less
+	 */
 	public static <T> T[] removeItemAtIndex(final T[] array, final int itemIndexToRemove) {
 		@SuppressWarnings("unchecked")
 		final T[] result = (T[]) Array.newInstance(array.getClass().getComponentType(), array.length - 1);
@@ -1465,11 +1679,18 @@ public class Utilities {
 		return result;
 	}
 
+	/**
+	 * Read the complete content of a file.
+	 *
+	 * @param file file to read
+	 * @return file content
+	 * @throws FileNotFoundException if the file does not exist or cannot be opened
+	 * @throws IOException if reading fails
+	 */
 	public static byte[] readFileToByteArray(final File file) throws FileNotFoundException, IOException {
 		try (FileInputStream in = new FileInputStream(file)) {
-			final byte[] returnArray = new byte[(int) file.length()];
-			in.read(returnArray);
-			return returnArray;
+			// A single read() call may return less data than requested, so read until the end of the stream
+			return in.readAllBytes();
 		}
 	}
 
@@ -1490,6 +1711,14 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Prepend a pad character at the left of a string to make it fit the given minimum length.
+	 *
+	 * @param value string to pad, may be null
+	 * @param size minimum length of the result
+	 * @param padChar character to prepend
+	 * @return padded string, unchanged if it is already long enough, or null for null input
+	 */
 	public static String leftPad(final String value, final int size, final char padChar) {
 		if (value == null) {
 			return null;
@@ -1542,6 +1771,12 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Null-safe {@link String#trim()}.
+	 *
+	 * @param value string to trim, may be null
+	 * @return trimmed string, or null for null input
+	 */
 	public static String trim(final String value) {
 		if (value == null) {
 			return null;
@@ -1550,6 +1785,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Remove all occurrences of a character at the start and the end of a string.
+	 *
+	 * @param value string to trim, may be null
+	 * @param trimChar character to remove
+	 * @return trimmed string, or null for null input
+	 */
 	public static String trim(String value, final char trimChar) {
 		while (value != null && value.startsWith(Character.toString(trimChar))) {
 			value = value.substring(1);
@@ -1562,10 +1804,25 @@ public class Utilities {
 		return value;
 	}
 
+	/**
+	 * Read the remaining data of a stream as text. The stream is not closed.
+	 *
+	 * @param inputStream stream to read
+	 * @param encoding charset of the data
+	 * @return text of the stream
+	 * @throws IOException if reading fails
+	 */
 	public static String toString(final InputStream inputStream, final Charset encoding) throws IOException {
 		return new String(IoUtilities.toByteArray(inputStream), encoding);
 	}
 
+	/**
+	 * Read the remaining characters of a reader. The reader is not closed.
+	 *
+	 * @param characterStream reader to read
+	 * @return text of the reader (always a String)
+	 * @throws IOException if reading fails
+	 */
 	public static Object toString(final Reader characterStream) throws IOException {
 		final StringBuilder returnValue = new StringBuilder();
 		int characterInt;
@@ -1575,6 +1832,14 @@ public class Utilities {
 		return returnValue.toString();
 	}
 
+	/**
+	 * Read all text lines of a stream. Linebreaks (LF, CR or CRLF) are not included. The stream is closed afterwards.
+	 *
+	 * @param inStream stream to read
+	 * @param encoding charset of the data
+	 * @return lines of the stream
+	 * @throws IOException if reading fails
+	 */
 	public static List<String> readLines(final InputStream inStream, final Charset encoding) throws IOException {
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(inStream, encoding))) {
 			final List<String> lines = new ArrayList<>();
@@ -1586,14 +1851,33 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Remove leading whitespace (regex \s) of a string.
+	 *
+	 * @param value string to trim, must not be null
+	 * @return string without leading whitespace
+	 */
 	public static String trimLeft(final String value) {
 		return value.replaceAll("^\\s+", "");
 	}
 
+	/**
+	 * Remove trailing whitespace (regex \s) of a string.
+	 *
+	 * @param value string to trim, must not be null
+	 * @return string without trailing whitespace
+	 */
 	public static String trimRight(final String value) {
 		return value.replaceAll("\\s+$", "");
 	}
 
+	/**
+	 * Add a jar file or directory to the system classloader by reflection.
+	 * This only works up to Java 8, because since Java 9 the system classloader is no URLClassLoader anymore.
+	 *
+	 * @param filePath path of the jar file or directory
+	 * @throws IOException if the file cannot be added
+	 */
 	public static void addFileToClasspath(final String filePath) throws IOException {
 		try {
 			final Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
@@ -1604,18 +1888,42 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Shorten a string to a maximum length by cutting off its end and appending a cut sign.
+	 *
+	 * @param value string to shorten, may be null
+	 * @param maxLength maximum length of the result including the cut sign
+	 * @param cutSign text appended if the string was shortened, null for none
+	 * @return shortened string, unchanged if it is not longer than maxLength
+	 */
 	public static String shortenStringToMaxLengthCutRight(final String value, final int maxLength, final String cutSign) {
 		if (value != null && value.length() > maxLength) {
-			return value.substring(0, maxLength - 4) + cutSign;
+			// Use the real length of the cut sign (before, always 4 characters were reserved, which only fits the default " ...")
+			final String cutSignToUse = cutSign == null ? "" : cutSign;
+			return value.substring(0, Math.max(0, maxLength - cutSignToUse.length())) + cutSignToUse;
 		} else {
 			return value;
 		}
 	}
 
+	/**
+	 * Shorten a string to a maximum length by cutting off its end and appending " ...".
+	 *
+	 * @param value string to shorten, may be null
+	 * @param maxLength maximum length of the result including the cut sign
+	 * @return shortened string, unchanged if it is not longer than maxLength
+	 */
 	public static String shortenStringToMaxLengthCutRight(final String value, final int maxLength) {
 		return shortenStringToMaxLengthCutRight(value, maxLength, " ...");
 	}
 
+	/**
+	 * Shorten a string to a maximum length by replacing its middle part by " ... ".
+	 *
+	 * @param value string to shorten, may be null
+	 * @param maxLength maximum length of the result, should be at least 5
+	 * @return shortened string, unchanged if it is not longer than maxLength
+	 */
 	public static String shortenStringToMaxLengthCutMiddle(final String value, final int maxLength) {
 		if (value != null && value.length() > maxLength) {
 			final int leftLength = (maxLength - 5) / 2;
@@ -1625,6 +1933,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Shorten a string to a maximum length by cutting off its start and prepending "... ".
+	 *
+	 * @param value string to shorten, may be null
+	 * @param maxLength maximum length of the result, should be at least 4
+	 * @return shortened string, unchanged if it is not longer than maxLength
+	 */
 	public static String shortenStringToMaxLengthCutLeft(final String value, final int maxLength) {
 		if (value != null && value.length() > maxLength) {
 			return "... " + value.substring((value.length() - maxLength) + 4);
@@ -1633,6 +1948,12 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Split a text at ',', ';', '|', blanks, tabs and linebreaks into trimmed, non-empty items.
+	 *
+	 * @param stringList text to split, may be null
+	 * @return list of items, or null for null input
+	 */
 	public static List<String> splitAndTrimList(final String stringList) {
 		if (stringList == null) {
 			return null;
@@ -1648,12 +1969,36 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Split a text at the given separator characters into trimmed, non-empty items.
+	 *
+	 * @param stringList text to split, may be null
+	 * @param separatorChars characters separating the items
+	 * @return list of items, or null for null input
+	 */
 	public static List<String> splitAndTrimList(final String stringList, final Character... separatorChars) {
 		if (stringList == null) {
 			return null;
 		} else {
 			final List<String> returnList = new ArrayList<>();
-			final String[] parts = stringList.split(join(separatorChars, "|").replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r"));
+			// Each separator is quoted, so regex meta characters like '.' or '|' are used literally
+			final StringBuilder separatorRegex = new StringBuilder();
+			for (final Character separatorChar : separatorChars) {
+				if (separatorChar != null) {
+					if (separatorRegex.length() > 0) {
+						separatorRegex.append('|');
+					}
+					separatorRegex.append(Pattern.quote(separatorChar.toString()));
+				}
+			}
+			if (separatorRegex.length() == 0) {
+				final List<String> singleItemList = new ArrayList<>();
+				if (isNotEmpty(stringList)) {
+					singleItemList.add(stringList.trim());
+				}
+				return singleItemList;
+			}
+			final String[] parts = stringList.split(separatorRegex.toString());
 			for (final String part : parts) {
 				if (isNotEmpty(part)) {
 					returnList.add(part.trim());
@@ -1663,6 +2008,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Check case-insensitively whether a string ends with a suffix, independent of the default locale.
+	 *
+	 * @param data string to check, may be null
+	 * @param suffix suffix to look for, may be null
+	 * @return true if data ends with suffix; true if both are null or only suffix is null; false if only data is null
+	 */
 	public static boolean endsWithIgnoreCase(final String data, final String suffix) {
 		if (data == suffix) {
 			// both null or same object
@@ -1673,7 +2025,8 @@ public class Utilities {
 		} else if (suffix == null) {
 			// suffix is null but data is not
 			return true;
-		} else if (data.toLowerCase().endsWith(suffix.toLowerCase())) {
+		} else if (data.length() >= suffix.length() && data.regionMatches(true, data.length() - suffix.length(), suffix, 0, suffix.length())) {
+			// regionMatches is independent of the default locale (toLowerCase() fails for 'I' in Turkish locale)
 			// both are set, so ignore the case for standard endsWith-method
 			return true;
 		} else {
@@ -1682,6 +2035,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Find the first case-insensitive occurrence of a text, independent of the default locale.
+	 *
+	 * @param data string to search in, may be null
+	 * @param part text to search for, may be null
+	 * @return index of the first occurrence in data, 0 if both are the same object (or null), -1 if not found or only one is null
+	 */
 	public static int indexOfIgnoreCase(final String data, final String part) {
 		if (data == part) {
 			// both null or same object
@@ -1690,11 +2050,25 @@ public class Utilities {
 			// suffix is null but data is not or vice versa
 			return -1;
 		} else {
-			// anything else
-			return data.toLowerCase().indexOf(part.toLowerCase());
+			// regionMatches is independent of the default locale and keeps the indexes of the original text
+			// (toLowerCase() may change the text length, e.g. for 'İ', and depends on the default locale)
+			for (int i = 0; i <= data.length() - part.length(); i++) {
+				if (data.regionMatches(true, i, part, 0, part.length())) {
+					return i;
+				}
+			}
+			return -1;
 		}
 	}
 
+	/**
+	 * Split a text at the given separator characters into trimmed, non-empty items.
+	 * Separators within single or double quotes are ignored, the quotes are kept in the items.
+	 *
+	 * @param stringList text to split, must not be null
+	 * @param separatorChars characters separating the items
+	 * @return list of items
+	 */
 	public static List<String> splitAndTrimListQuoted(final String stringList, final char... separatorChars) {
 		final List<String> returnList = new ArrayList<>();
 		StringBuilder nextLine = new StringBuilder();
@@ -1739,6 +2113,13 @@ public class Utilities {
 		return returnList;
 	}
 
+	/**
+	 * Check whether a collection contains a string, ignoring case.
+	 *
+	 * @param list strings to search in, may be null
+	 * @param item string to search for, may be null
+	 * @return true if an item equals the string ignoring case (or both are null)
+	 */
 	public static boolean containsIgnoreCase(final Collection<String> list, final String item) {
 		if (list == null) {
 			return false;
@@ -1752,6 +2133,12 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Delete a file or a directory recursively.
+	 *
+	 * @param file file or directory to delete
+	 * @return true if everything was deleted, false if any file could not be deleted (deletion stops at the first failure)
+	 */
 	public static boolean delete(final File file) {
 		if (file.isDirectory()) {
 			// listFiles() returns null if the directory cannot be read, so its content cannot be deleted either
@@ -1768,6 +2155,14 @@ public class Utilities {
 		return file.delete();
 	}
 
+	/**
+	 * Limit a value to a range.
+	 *
+	 * @param minimum lower limit
+	 * @param value value to limit
+	 * @param maximum upper limit
+	 * @return minimum if value is smaller, maximum if value is greater, otherwise value
+	 */
 	public static int limitValue(final int minimum, final int value, final int maximum) {
 		if (value < minimum) {
 			return minimum;
@@ -1778,14 +2173,29 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Check case-insensitively whether a string starts with a prefix, independent of the default locale.
+	 *
+	 * @param data string to check, may be null
+	 * @param prefix prefix to look for, may be null
+	 * @return true if data starts with prefix, false if any parameter is null
+	 */
 	public static boolean startsWithCaseinsensitive(final String data, final String prefix) {
 		if (data == null || prefix == null) {
 			return false;
 		} else {
-			return data.toLowerCase().startsWith(prefix.toLowerCase());
+			// regionMatches is independent of the default locale (toLowerCase() fails for 'I' in Turkish locale)
+			return data.regionMatches(true, 0, prefix, 0, prefix.length());
 		}
 	}
 
+	/**
+	 * Create a map from alternating keys and values.
+	 *
+	 * @param data key1, value1, key2, value2, ...
+	 * @return new map with the given entries
+	 * @throws Exception if an odd number of strings is given
+	 */
 	public static Map<String, String> createMap(final String... data) throws Exception {
 		final Map<String, String> returnMap = new HashMap<>();
 		if (data != null && data.length > 0) {
@@ -1820,6 +2230,12 @@ public class Utilities {
 		return false;
 	}
 
+	/**
+	 * Replace a leading "~" as well as "$HOME" and "${HOME}" in a file path by the user's home directory.
+	 *
+	 * @param filePath file path, may be null
+	 * @return file path with the home directory, or null for null input
+	 */
 	public static String replaceUsersHome(String filePath) {
 		if (filePath == null) {
 			return filePath;
@@ -1838,6 +2254,12 @@ public class Utilities {
 				.replace("$HOME", homePath);
 	}
 
+	/**
+	 * Replace a leading user's home directory in a file path by "~".
+	 *
+	 * @param filePath file path, may be null
+	 * @return file path starting with "~" if it is within the home directory, otherwise unchanged
+	 */
 	public static String replaceUsersHomeByTilde(final String filePath) {
 		if (filePath == null) {
 			return filePath;
@@ -1854,6 +2276,11 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Get the user's download directory, read from XDG_DOWNLOAD_DIR in "~/.config/user-dirs.dirs" on Linux, or "~/Downloads" otherwise.
+	 *
+	 * @return absolute path of the download directory
+	 */
 	public static String getUsersDefaultDownloadDirectory() {
 		final String userHome = System.getProperty("user.home");
 
@@ -1881,6 +2308,13 @@ public class Utilities {
 		return new File(userHome, "Downloads").getAbsolutePath();
 	}
 
+	/**
+	 * Null-safe substring that tolerates a start index behind the end of the text.
+	 *
+	 * @param text text, may be null
+	 * @param startIndex start index, must not be negative
+	 * @return substring, "" if startIndex is greater than the text length, or null for null text
+	 */
 	public static String substring(final String text, final int startIndex) {
 		if (text == null) {
 			return null;
@@ -1893,6 +2327,14 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Null-safe substring that tolerates indexes behind the end of the text.
+	 *
+	 * @param text text, may be null
+	 * @param startIndex start index (inclusive), must not be negative
+	 * @param endIndex end index (exclusive), cut to the text length
+	 * @return substring, "" if startIndex is greater than the text length, or null for null text
+	 */
 	public static String substring(final String text, final int startIndex, final int endIndex) {
 		if (text == null) {
 			return null;
@@ -1907,6 +2349,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Null-safe check whether a text contains another text.
+	 *
+	 * @param text text to search in, may be null
+	 * @param searchText text to search for, must not be null
+	 * @return true if contained, false for null text
+	 */
 	public static boolean contains(final String text, final String searchText) {
 		if (text == null) {
 			return false;
@@ -1915,6 +2364,14 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Skip an exact number of bytes of a stream.
+	 *
+	 * @param inputStream stream
+	 * @param bytesToSkip number of bytes to skip
+	 * @return number of bytes skipped
+	 * @throws Exception if the stream cannot skip further (e.g. at its end)
+	 */
 	public static long skipInputStreamData(final InputStream inputStream, final long bytesToSkip) throws Exception {
 		long bytesSkipped = 0;
 		while (bytesSkipped < bytesToSkip) {
@@ -1927,40 +2384,87 @@ public class Utilities {
 		return bytesSkipped;
 	}
 
+	/**
+	 * Convert an int into 4 bytes in big endian order.
+	 *
+	 * @param value int value
+	 * @return 4 bytes, most significant first
+	 */
 	public static byte[] convertIntToByteArray(final int value) {
 		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8), (byte) value };
 	}
 
+	/**
+	 * Convert up to 4 bytes in big endian order into an int.
+	 *
+	 * @param bytes 0 to 4 bytes, most significant first
+	 * @return int value (unsigned interpretation for less than 4 bytes)
+	 * @throws Exception if more than 4 bytes are given
+	 */
 	public static int convertByteArrayToInt(final byte[] bytes) throws Exception {
 		if (bytes.length > 4) {
 			throw new Exception("ByteArray is too big for int value");
 		} else {
-			return ByteBuffer.wrap(bytes).getInt();
+			// Big endian, also for less than 4 bytes (before, ByteBuffer.getInt() threw a BufferUnderflowException for them)
+			int value = 0;
+			for (final byte nextByte : bytes) {
+				value = (value << 8) | (nextByte & 0xFF);
+			}
+			return value;
 		}
 	}
 
+	/**
+	 * Split a text at a delimiter character, which can be escaped by an escape character.
+	 * Escaped delimiters are not split at and are unescaped in the result.
+	 *
+	 * @param text text to split, must not be null
+	 * @param delimiterChar delimiter character
+	 * @param escapeChar escape character preceding a delimiter that is part of the data
+	 * @param limit limit like in {@link String#split(String, int)}
+	 * @return parts of the text
+	 */
 	public static String[] split(final String text, final char delimiterChar, final char escapeChar, final int limit) {
 		final String escapeCharString = Character.toString(escapeChar);
 		final String delimiterCharString = Character.toString(delimiterChar);
 		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
 		final String[] returnParts = text.split(splitRegex, limit);
 		for (int i = 0; i < returnParts.length; i++) {
-			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
+			// An escaped delimiter becomes the plain delimiter (before, the delimiter was dropped and the escape character kept)
+			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, delimiterCharString);
 		}
 		return returnParts;
 	}
 
+	/**
+	 * Split a text at a delimiter character, which can be escaped by an escape character.
+	 * Escaped delimiters are not split at and are unescaped in the result. Trailing empty parts are removed.
+	 *
+	 * @param text text to split, must not be null
+	 * @param delimiterChar delimiter character
+	 * @param escapeChar escape character preceding a delimiter that is part of the data
+	 * @return parts of the text
+	 */
 	public static String[] split(final String text, final char delimiterChar, final char escapeChar) {
 		final String escapeCharString = Character.toString(escapeChar);
 		final String delimiterCharString = Character.toString(delimiterChar);
 		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
 		final String[] returnParts = text.split(splitRegex);
 		for (int i = 0; i < returnParts.length; i++) {
-			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, escapeCharString);
+			// An escaped delimiter becomes the plain delimiter (before, the delimiter was dropped and the escape character kept)
+			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, delimiterCharString);
 		}
 		return returnParts;
 	}
 
+	/**
+	 * Split a command line into arguments at blanks, tabs and linebreaks.
+	 * Arguments may be enclosed in single or double quotes; within quotes a backslash escapes the quote character.
+	 *
+	 * @param argumentLine command line, must not be null
+	 * @return list of arguments
+	 * @throws Exception if a quote is not closed
+	 */
 	public static List<String> parseArguments(final String argumentLine) throws Exception {
 		final List<String> returnList = new ArrayList<>();
 		StringBuilder currentArgument = new StringBuilder();
@@ -2009,6 +2513,15 @@ public class Utilities {
 		return returnList;
 	}
 
+	/**
+	 * Split a text into tokens at the given delimiter characters.
+	 * Tokens may be enclosed in single or double quotes; within quotes a backslash escapes the quote character.
+	 *
+	 * @param line text to split, must not be null
+	 * @param delimiters characters separating the tokens
+	 * @return list of tokens
+	 * @throws Exception if a quote is not closed
+	 */
 	public static List<String> parseTokens(final String line, final char... delimiters) throws Exception {
 		final List<String> returnList = new ArrayList<>();
 		StringBuilder currentArgument = new StringBuilder();
@@ -2057,6 +2570,13 @@ public class Utilities {
 		return returnList;
 	}
 
+	/**
+	 * Check whether a character equals any of the given characters.
+	 *
+	 * @param checkChar character to check
+	 * @param compareChars characters to compare with
+	 * @return true if the character is one of compareChars
+	 */
 	public static boolean equalsAnyChar(final char checkChar, final char... compareChars) {
 		for (final char compareChar : compareChars) {
 			if (checkChar == compareChar) {
@@ -2066,6 +2586,12 @@ public class Utilities {
 		return false;
 	}
 
+	/**
+	 * Create a modifiable list of strings.
+	 *
+	 * @param items strings for the list
+	 * @return new ArrayList with the given strings
+	 */
 	public static List<String> getList(final String... items) {
 		final List<String> returnList = new ArrayList<>();
 		for (final String item : items) {
@@ -2074,10 +2600,22 @@ public class Utilities {
 		return returnList;
 	}
 
+	/**
+	 * Get the system temp directory (system property "java.io.tmpdir").
+	 *
+	 * @return path of the temp directory
+	 */
 	public static String getSystemTempDir() {
 		return System.getProperty("java.io.tmpdir");
 	}
 
+	/**
+	 * Reverse the order of the items of an array in place.
+	 *
+	 * @param <T> type of the items
+	 * @param arrayData array to reverse, must not be null
+	 * @return the given array, now reversed
+	 */
 	public static <T> T[] reverseArray(final T[] arrayData) {
 		for (int i = 0; i < arrayData.length / 2; i++) {
 			final int j = arrayData.length - 1 - i;
@@ -2088,6 +2626,12 @@ public class Utilities {
 		return arrayData;
 	}
 
+	/**
+	 * Reverse the order of the values of an array in place.
+	 *
+	 * @param arrayData array to reverse, must not be null
+	 * @return the given array, now reversed
+	 */
 	public static int[] reverseArray(final int[] arrayData) {
 		for (int i = 0; i < arrayData.length / 2; i++) {
 			final int j = arrayData.length - 1 - i;
@@ -2098,6 +2642,12 @@ public class Utilities {
 		return arrayData;
 	}
 
+	/**
+	 * Reverse the order of the bytes of an array in place.
+	 *
+	 * @param arrayData array to reverse, must not be null
+	 * @return the given array, now reversed
+	 */
 	public static byte[] reverseArray(final byte[] arrayData) {
 		for (int i = 0; i < arrayData.length / 2; i++) {
 			final int j = arrayData.length - 1 - i;
@@ -2134,9 +2684,12 @@ public class Utilities {
 		for (final String alias : Collections.list(readKeyStore.aliases())) {
 			writeKeyStore.setCertificateEntry(alias, readKeyStore.getCertificate(alias));
 		}
-		keyStoreFileWithNullPassword.delete();
+		// Create the new keystore data completely before overwriting the file, so the original file is not lost if storing fails
+		// (before, the file was deleted first)
+		final ByteArrayOutputStream keyStoreData = new ByteArrayOutputStream();
+		writeKeyStore.store(keyStoreData, "".toCharArray());
 		try (FileOutputStream outputStream = new FileOutputStream(keyStoreFileWithNullPassword)) {
-			writeKeyStore.store(outputStream, "".toCharArray());
+			outputStream.write(keyStoreData.toByteArray());
 		}
 	}
 
@@ -2170,10 +2723,23 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Join all non-blank strings of a list.
+	 *
+	 * @param listOfStrings strings to join, must not be null
+	 * @param glue separator between the strings, null for none
+	 * @return joined text
+	 */
 	public static String joinNotBlank(final List<String> listOfStrings, final String glue) {
 		return join(listOfStrings.stream().filter(x -> isNotBlank(x)).collect(Collectors.toList()), glue);
 	}
 
+	/**
+	 * Null-safe conversion to upper case using the rules of the default locale.
+	 *
+	 * @param value text, may be null
+	 * @return upper case text, or null for null input
+	 */
 	public static String upperCase(final String value) {
 		if (value == null) {
 			return null;
@@ -2182,6 +2748,14 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Check whether an array contains a sequence of items (compared by equals).
+	 *
+	 * @param <T> type of the items
+	 * @param dataArray array to search in, may be null
+	 * @param searchArray sequence to search for, may be null
+	 * @return true if the sequence is contained (always for an empty sequence), false if any array is null
+	 */
 	public static <T> boolean arrayContains(final T[] dataArray, final T[] searchArray) {
 		if (dataArray == null || searchArray == null || dataArray.length < searchArray.length) {
 			return false;
@@ -2202,6 +2776,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Check whether a byte array contains a sequence of bytes.
+	 *
+	 * @param dataArray array to search in, may be null
+	 * @param searchArray sequence to search for, may be null
+	 * @return true if the sequence is contained (always for an empty sequence), false if any array is null
+	 */
 	public static boolean arrayContains(final byte[] dataArray, final byte[] searchArray) {
 		if (dataArray == null || searchArray == null || dataArray.length < searchArray.length) {
 			return false;
@@ -2262,6 +2843,13 @@ public class Utilities {
 		}
 	}
 
+	/**
+	 * Escape a text for use in a Java string literal.
+	 * Backslash, double quote and control characters are escaped, all characters outside printable ASCII become unicode escapes.
+	 *
+	 * @param text text to escape, must not be null
+	 * @return escaped text
+	 */
 	public static String escapeJavaString(final String text) {
 		final StringBuilder escapedTextBuilder = new StringBuilder();
 
@@ -2300,6 +2888,14 @@ public class Utilities {
 		return escapedTextBuilder.toString();
 	}
 
+	/**
+	 * Unescape a text escaped like a Java string literal.
+	 * Supported escapes: \n \r \t \b \f \\ \' \", \xHH (8 bit), &#92;uHHHH (16 bit) and \UHHHHHHHH (unicode code point).
+	 *
+	 * @param javaEscapedText escaped text, must not be null
+	 * @return unescaped text
+	 * @throws Exception if an escape sequence is invalid
+	 */
 	public static String unescapeJavaString(final String javaEscapedText) throws Exception {
 		final StringBuilder unescapedTextBuilder = new StringBuilder();
 		final int length = javaEscapedText.length();
@@ -2376,8 +2972,12 @@ public class Utilities {
 						if (i + 9 < length) {
 							final String hex = javaEscapedText.substring(i + 2, i + 10);
 							try {
-								final int code = Integer.parseInt(hex, 32);
-								unescapedTextBuilder.append((char) code);
+								// Radix 16 and full code point (before, radix 32 was used and the value was truncated to a char)
+								final int codePoint = Integer.parseInt(hex, 16);
+								if (!Character.isValidCodePoint(codePoint)) {
+									throw new Exception("Invalid unicode code point at character index " + i + " ('" + "\\U" + hex + "')");
+								}
+								unescapedTextBuilder.appendCodePoint(codePoint);
 								i += 9;
 							} catch (final NumberFormatException e) {
 								throw new Exception("Invalid unicode sequence at character index " + i + " ('" + "\\U" + hex + "')", e);
@@ -2440,6 +3040,15 @@ public class Utilities {
 		return escapedTextBuilder.toString();
 	}
 
+	/**
+	 * Unescape a text escaped like a value in a .properties file.
+	 * Supported escapes: \n \r \t \b \f, escaped blank, \\ \' \", \xHH (8 bit), &#92;uHHHH (16 bit) and \UHHHHHHHH (unicode code point).
+	 * A backslash before any other character is removed.
+	 *
+	 * @param propertiesEscapedText escaped text, must not be null
+	 * @return unescaped text
+	 * @throws Exception if a hex or unicode escape sequence is invalid
+	 */
 	public static String unescapePropertiesString(final String propertiesEscapedText) throws Exception {
 		final StringBuilder unescapedTextBuilder = new StringBuilder();
 		final int length = propertiesEscapedText.length();
@@ -2547,6 +3156,13 @@ public class Utilities {
 		return unescapedTextBuilder.toString();
 	}
 
+	/**
+	 * Surround a single-line text by a box of characters, e.g. for console output.
+	 *
+	 * @param text single-line text, must not be null
+	 * @param boxCharacter character of the box border
+	 * @return three lines of text: border, text line, border
+	 */
 	public static String getBoxedString(final String text, final char boxCharacter) {
 		String returnString = "";
 		final String boxCharacterString = Character.toString(boxCharacter);
@@ -2556,12 +3172,26 @@ public class Utilities {
 		return returnString;
 	}
 
+	/**
+	 * Collect the remaining items of an iterator into a list.
+	 *
+	 * @param <T> type of the items
+	 * @param iterator iterator to read
+	 * @return new list with the remaining items
+	 */
 	public static <T> List<T> getListForIterator(final Iterator<T> iterator) {
 		final List<T> list = new ArrayList<>();
 		iterator.forEachRemaining(list::add);
 		return list;
 	}
 
+	/**
+	 * Collect the remaining items of an enumeration into a list.
+	 *
+	 * @param <T> type of the items
+	 * @param enumeration enumeration to read
+	 * @return new list with the remaining items
+	 */
 	public static <T> List<T> getListForEnumeration(final Enumeration<T> enumeration) {
 		return Collections.list(enumeration);
 	}

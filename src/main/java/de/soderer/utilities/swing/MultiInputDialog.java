@@ -24,21 +24,45 @@ import javax.swing.JTextField;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Modal dialog with a text and one labeled input field per label text.
+ *
+ * <p>
+ * {@link #open()} returns the entered values in the order of the labels, or
+ * null if the dialog was canceled.
+ * </p>
+ */
 public class MultiInputDialog extends ModalDialog<List<String>> {
 	private static final long serialVersionUID = -4064311167723709652L;
 
+	/** Text shown above the input fields, may be blank */
 	private final String text;
+
+	/** Labels of the input fields, one input field per label */
 	private final String[] labelTexts;
+
+	/** Initial values of the input fields in the order of the labels, null for empty fields */
 	private String[] defaultTexts = null;
 
+	/** Content panel, refilled by createComponents() */
 	private final JPanel panel;
+
+	/** Input fields in the order of the labels */
 	private final List<JTextField> textFields = new ArrayList<>();
 
+	/**
+	 * Creates a multi input dialog.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the input fields, may be blank
+	 * @param labelTexts labels of the input fields, one input field per label
+	 */
 	public MultiInputDialog(final Window parent, final String title, final String text, final String... labelTexts) {
 		super(parent, title);
 
 		this.text = text;
-		this.labelTexts = labelTexts;
+		this.labelTexts = labelTexts == null ? new String[0] : labelTexts;
 
 		setResizable(false);
 
@@ -49,12 +73,22 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 		returnValue = null;
 	}
 
+	/**
+	 * Sets the initial values of the input fields.
+	 *
+	 * @param defaultTexts initial values in the order of the labels; missing or
+	 *            null entries leave the field empty
+	 * @return this dialog for chaining
+	 */
 	public MultiInputDialog setDefaultTexts(final String[] defaultTexts) {
 		this.defaultTexts = defaultTexts;
 		createComponents();
 		return this;
 	}
 
+	/**
+	 * (Re)creates all components of the dialog from the current settings.
+	 */
 	protected void createComponents() {
 		panel.removeAll();
 		textFields.clear();
@@ -170,6 +204,9 @@ public class MultiInputDialog extends ModalDialog<List<String>> {
 
 		setLocationRelativeTo(getOwner());
 
-		textFields.get(0).requestFocus();
+		// A dialog without labels has no input field to focus
+		if (!textFields.isEmpty()) {
+			textFields.get(0).requestFocus();
+		}
 	}
 }

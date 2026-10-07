@@ -19,16 +19,36 @@ import de.soderer.utilities.crypto.PGPUtilities.PgpHashMethod;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * Worker that creates an ASCII-armored detached PGP signature of binary data.
+ */
 public class PGPFileSignatureWorker extends WorkerSimple<byte[]> {
 	private InputStream dataToSign = null;
 	private PGPSecretKey secretKey = null;
 	private char[] password = null;
 	private String hashingMethod = null;
 
+	/**
+	 * Creates a PGP signature worker with the hashing method {@link PGPUtilities#DEFAULT_HASHING_METHOD}.
+	 *
+	 * @param parent parent to report progress to, may be null
+	 * @param dataToSign stream with the data to sign, closed after the work
+	 * @param secretKey secret key to sign with
+	 * @param password password of the secret key
+	 */
 	public PGPFileSignatureWorker(final WorkerParentSimple parent, final InputStream dataToSign, final PGPSecretKey secretKey, final char[] password) {
 		this(parent, dataToSign, secretKey, password, null);
 	}
 
+	/**
+	 * Creates a PGP signature worker.
+	 *
+	 * @param parent parent to report progress to, may be null
+	 * @param dataToSign stream with the data to sign, closed after the work
+	 * @param secretKey secret key to sign with
+	 * @param password password of the secret key
+	 * @param hashingMethod hashing method name like "SHA256", see {@link PgpHashMethod}, blank for {@link PGPUtilities#DEFAULT_HASHING_METHOD}
+	 */
 	public PGPFileSignatureWorker(final WorkerParentSimple parent, final InputStream dataToSign, final PGPSecretKey secretKey, final char[] password, final String hashingMethod) {
 		super(parent);
 		this.dataToSign = dataToSign;

@@ -38,14 +38,32 @@ import de.soderer.utilities.Utilities;
 public class ComboSelectionDialog extends ModalDialog<String> {
 	private static final long serialVersionUID = 6203467613120944811L;
 
+	/** Selection with autocomplete, its items may be reordered and deleted by the user */
 	private final DropDown dropDown;
+
+	/** OK button, only enabled while a valid, non-empty value is selected */
 	private final JButton okButton;
 
+	/**
+	 * Creates a selection dialog without preselected value (a single item is
+	 * preselected anyway).
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the selection, may be blank
+	 * @param items items to select from, may be null for none
+	 */
 	public ComboSelectionDialog(final Window parent, final String title, final String text, final Collection<String> items) {
 		this(parent, title, text, items, -1);
 	}
 
 	/**
+	 * Creates a selection dialog.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the selection, may be blank
+	 * @param items items to select from, may be null for none
 	 * @param preselectedIndex index of the item shown initially, or -1 for an
 	 *                         empty selection (a single item is always
 	 *                         preselected)
@@ -141,13 +159,25 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 		checkButtonStatus();
 	}
 
+	/**
+	 * Creates a selection dialog without preselected value (a single item is
+	 * preselected anyway).
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the selection, may be blank
+	 * @param items items to select from, may be null for none
+	 */
 	public ComboSelectionDialog(final Window parent, final String title, final String text, final String... items) {
 		this(parent, title, text, items == null ? null : Arrays.asList(items), -1);
 	}
 
 	/**
-	 * Sets an explicit dialog size. A value &lt;= 0 keeps the current width or
-	 * height.
+	 * Sets an explicit dialog size and centers the dialog on its owner again.
+	 *
+	 * @param width new width in pixels, a value &lt;= 0 keeps the current width
+	 * @param height new height in pixels, a value &lt;= 0 keeps the current height
+	 * @return this dialog for chaining
 	 */
 	public ComboSelectionDialog withSize(final int width, final int height) {
 		setSize(width > 0 ? width : getWidth(), height > 0 ? height : getHeight());
@@ -157,8 +187,10 @@ public class ComboSelectionDialog extends ModalDialog<String> {
 	}
 
 	/**
-	 * Current items in their current order, including reordering and deletions
-	 * done by the user in the dialog.
+	 * Returns the current items in their current order, including reordering and
+	 * deletions done by the user in the dialog.
+	 *
+	 * @return new list of the items
 	 */
 	public List<String> getItems() {
 		return new ArrayList<>(Arrays.asList(dropDown.getItems()));

@@ -1,8 +1,13 @@
 package de.soderer.utilities.textbook.action;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
+/**
+ * Counts the lines not containing a text or a match of a regular expression. Lines are not changed.
+ * The text is searched including the line break, a regular expression may match anywhere in the line.
+ */
 public class CountLinesNotContainingAction implements TextLineAction {
 	private final Pattern pattern;
 	private final String searchText;
@@ -10,6 +15,13 @@ public class CountLinesNotContainingAction implements TextLineAction {
 	
 	private long numberOfLines = 0;
 	
+	/**
+	 * Creates the action.
+	 *
+	 * @param searchText text or regular expression to search
+	 * @param caseSensitive true to respect the case
+	 * @param regularExpression true if searchText is a regular expression
+	 */
 	public CountLinesNotContainingAction(final String searchText, boolean caseSensitive, boolean regularExpression) {
 		this.searchText = searchText;
 		this.caseSensitive = caseSensitive;
@@ -22,18 +34,23 @@ public class CountLinesNotContainingAction implements TextLineAction {
 	
 	@Override
 	public boolean execute(long overallLineIndex, int pageLineIndex, List<String> pageLines, String lineWithLinebreak) throws Exception {
-		if (pattern != null && !pattern.matcher(lineWithLinebreak).matches()) {
+		if (pattern != null && !pattern.matcher(lineWithLinebreak).find()) {
 			numberOfLines++;
 		} else if (pattern == null) {
 			if (caseSensitive && !lineWithLinebreak.contains(searchText)) {
 				numberOfLines++;
-			} else if (!caseSensitive && !lineWithLinebreak.toLowerCase().contains(searchText.toLowerCase())) {
+			} else if (!caseSensitive && !lineWithLinebreak.toLowerCase(Locale.ROOT).contains(searchText.toLowerCase(Locale.ROOT))) {
 				numberOfLines++;
 			}
 		}
 		return false;
 	}
 
+	/**
+	 * Returns the number of not matching lines found so far.
+	 *
+	 * @return number of not matching lines
+	 */
 	public long getNumberOfLines() {
 		return numberOfLines;
 	}

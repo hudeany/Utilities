@@ -10,7 +10,12 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 
+/**
+ * Input stream delivering the characters of a {@link Reader} encoded with a charset, the reverse of
+ * an {@link java.io.InputStreamReader}.
+ */
 public class ReaderInputStream extends InputStream {
+	/** Value returned by read operations at the end of data. */
 	public static final int EOF = -1;
 
 	private static final int DEFAULT_BUFFER_SIZE = 1024;
@@ -21,11 +26,33 @@ public class ReaderInputStream extends InputStream {
 	private final ByteBuffer encoderOut;
 	private CoderResult lastCoderResult;
 	private boolean endOfInput;
+	/** True after all input was encoded and flushing the encoder was started. */
+	private boolean encoderFlushStarted;
+	/** True after the encoder was flushed completely at the end of input. */
+	private boolean encoderFlushed;
 
+	/**
+	 * Creates a new stream using the given encoder and the default buffer size.
+	 *
+	 * @param reader
+	 *            the reader to read characters from
+	 * @param encoder
+	 *            the encoder for the characters, which defines the handling of unmappable characters
+	 */
 	public ReaderInputStream(final Reader reader, final CharsetEncoder encoder) {
 		this(reader, encoder, DEFAULT_BUFFER_SIZE);
 	}
 
+	/**
+	 * Creates a new stream using the given encoder.
+	 *
+	 * @param reader
+	 *            the reader to read characters from
+	 * @param encoder
+	 *            the encoder for the characters, which defines the handling of unmappable characters
+	 * @param bufferSize
+	 *            the size of the character buffer
+	 */
 	public ReaderInputStream(final Reader reader, final CharsetEncoder encoder, final int bufferSize) {
 		this.reader = reader;
 		this.encoder = encoder;
@@ -35,10 +62,30 @@ public class ReaderInputStream extends InputStream {
 		encoderOut.flip();
 	}
 
+	/**
+	 * Creates a new stream for a charset. Malformed and unmappable characters are replaced by the
+	 * charset's replacement bytes.
+	 *
+	 * @param reader
+	 *            the reader to read characters from
+	 * @param charset
+	 *            the charset to encode the characters with
+	 * @param bufferSize
+	 *            the size of the character buffer
+	 */
 	public ReaderInputStream(final Reader reader, final Charset charset, final int bufferSize) {
 		this(reader, charset.newEncoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE), bufferSize);
 	}
 
+	/**
+	 * Creates a new stream for a charset using the default buffer size. Malformed and unmappable
+	 * characters are replaced by the charset's replacement bytes.
+	 *
+	 * @param reader
+	 *            the reader to read characters from
+	 * @param charset
+	 *            the charset to encode the characters with
+	 */
 	public ReaderInputStream(final Reader reader, final Charset charset) {
 		this(reader, charset, DEFAULT_BUFFER_SIZE);
 	}
@@ -56,7 +103,20 @@ public class ReaderInputStream extends InputStream {
 			encoderIn.flip();
 		}
 		encoderOut.compact();
-		lastCoderResult = encoder.encode(encoderIn, encoderOut, endOfInput);
+		if (!encoderFlushStarted) {
+			lastCoderResult = encoder.encode(encoderIn, encoderOut, endOfInput);
+			if (endOfInput && lastCoderResult.isUnderflow()) {
+				// All input was encoded, the encoder may not be used for encoding anymore after flushing
+				encoderFlushStarted = true;
+			}
+		}
+		if (encoderFlushStarted && !encoderFlushed) {
+			// Stateful encoders (e.g. ISO-2022-JP) may need to write final bytes at the end of input
+			lastCoderResult = encoder.flush(encoderOut);
+			if (lastCoderResult.isUnderflow()) {
+				encoderFlushed = true;
+			}
+		}
 		encoderOut.flip();
 	}
 

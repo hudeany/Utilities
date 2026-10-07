@@ -1,6 +1,13 @@
 package de.soderer.utilities;
 
+/**
+ * Descriptor of a remote file or directory for SCP transfers in the form "\\hostname/path/filename".
+ * Path separators (Unix "/" or DOS "\") are kept as they are, unlike java.io.File, which would convert them.
+ * The filename may contain wildcards like '*'. A descriptor without filename denotes a directory.
+ * This class only parses and composes descriptors, it does not access any server.
+ */
 public class SCPFile {
+	/** Prefix of every file descriptor (two backslashes) */
 	public static final String PRELUDE = "\\\\";
 	private static final String UNIX_SEPARATOR = "/";
 	private static final String DOS_SEPARATOR = "\\";
@@ -10,15 +17,18 @@ public class SCPFile {
 	private String filename = null; // also allows wildcards like '*'
 
 	/**
-	 * This class encapsulates file descriptors and shares their parts. It works explicitly with non system file separators, which are not changed while working with them. Class java.io.File would
-	 * change them.
+	 * Parses a file descriptor.
+	 * Allowed formats:
+	 * <ul>
+	 * <li>"\\hostname\path1\path2\filename": DOS file</li>
+	 * <li>"\\hostname/path1/path2/filename": Unix file</li>
+	 * <li>"\\hostname/path1/path2/": directory</li>
+	 * <li>"\\hostname/filename": file in the root directory</li>
+	 * </ul>
+	 * The filename may contain wildcards like '*'.
 	 *
-	 * Allowed formats: "\\hostname\path1\path2\filename" => DOS-file "\\hostname/path1/path2/filename" => Unix-file "\\hostname/path1/path2/" => directory "\\hostname/filename" => root-directory-file
-	 *
-	 * Filename also allows wildcards like '*'
-	 *
-	 * @param hostnamePathAndFileName
-	 * @throws Exception
+	 * @param hostnamePathAndFileName file descriptor
+	 * @throws Exception if the descriptor is empty, lacks the prelude, a path or a hostname
 	 */
 	public SCPFile(String hostnamePathAndFileName) throws Exception {
 		if (Utilities.isEmpty(hostnamePathAndFileName)) {
@@ -57,6 +67,14 @@ public class SCPFile {
 		}
 	}
 
+	/**
+	 * Creates a descriptor from its parts. A missing trailing separator is appended to the path.
+	 *
+	 * @param hostname hostname of the server
+	 * @param path directory path
+	 * @param filename filename (may contain wildcards like '*'), or null for the directory itself
+	 * @throws Exception if hostname or path is empty or the filename contains a path separator
+	 */
 	public SCPFile(String hostname, String path, String filename) throws Exception {
 		if (Utilities.isEmpty(hostname)) {
 			throw new Exception("SCPFile: Empty hostname");
@@ -73,23 +91,52 @@ public class SCPFile {
 		this.filename = filename;
 	}
 
+	/**
+	 * Creates a directory descriptor.
+	 *
+	 * @param hostname hostname of the server
+	 * @param path directory path
+	 * @throws Exception if hostname or path is empty
+	 */
 	public SCPFile(String hostname, String path) throws Exception {
 		this(hostname, path, null);
 	}
 
+	/**
+	 * Hostname of the server.
+	 *
+	 * @return hostname
+	 */
 	public String getHostname() {
 		return hostname;
 	}
 
+	/**
+	 * Sets the hostname of the server.
+	 *
+	 * @param hostname hostname
+	 * @return this instance for chaining
+	 */
 	public SCPFile setHostname(String hostname) {
 		this.hostname = hostname;
 		return this;
 	}
 
+	/**
+	 * Directory path, always ending with a path separator.
+	 *
+	 * @return path
+	 */
 	public String getPath() {
 		return path;
 	}
 
+	/**
+	 * Sets the directory path. A missing trailing separator is appended ("\\" if the path contains DOS separators, otherwise "/").
+	 *
+	 * @param path directory path, must not be null
+	 * @return this instance for chaining
+	 */
 	public SCPFile setPath(String path) {
 		if (path.endsWith(DOS_SEPARATOR) || path.endsWith(UNIX_SEPARATOR)) {
 			this.path = path;
@@ -103,14 +150,19 @@ public class SCPFile {
 	}
 
 	/**
-	 * Filename also allows wildcards like '*'
+	 * Filename, which may contain wildcards like '*'.
 	 *
-	 * @return
+	 * @return filename, or null (or empty) for a directory descriptor
 	 */
 	public String getFilename() {
 		return filename;
 	}
 
+	/**
+	 * Full descriptor in the form "\\hostname/path/filename".
+	 *
+	 * @return descriptor string
+	 */
 	@Override
 	public String toString() {
 		if (Utilities.isEmpty(filename)) {
@@ -120,6 +172,11 @@ public class SCPFile {
 		}
 	}
 
+	/**
+	 * Path and filename without host part.
+	 *
+	 * @return path and filename, or only the path for a directory descriptor
+	 */
 	public String getPathAndFilename() {
 		if (Utilities.isEmpty(filename)) {
 			return path;
@@ -129,10 +186,13 @@ public class SCPFile {
 	}
 
 	/**
-	 * Also allows wildcards like '*' Put value to null => Directory of original file Put value from null to "test" => new File in original directory
+	 * Sets the filename, which may contain wildcards like '*'.
+	 * Setting null turns this descriptor into the descriptor of its directory, setting a name for a directory
+	 * descriptor denotes a file within that directory.
 	 *
-	 * @param filename
-	 * @throws Exception
+	 * @param filename new filename, or null
+	 * @return this instance for chaining
+	 * @throws Exception if the filename contains a path separator
 	 */
 	public SCPFile setFilename(String filename) throws Exception {
 		if (filename != null && (filename.contains(UNIX_SEPARATOR) || filename.contains(DOS_SEPARATOR))) {
@@ -142,18 +202,40 @@ public class SCPFile {
 		return this;
 	}
 
+	/**
+	 * Descriptor of the directory of this descriptor.
+	 *
+	 * @return new directory descriptor
+	 * @throws Exception if the hostname or path is empty
+	 */
 	public SCPFile getDirectory() throws Exception {
 		return new SCPFile(hostname, path);
 	}
 
+	/**
+	 * Whether this descriptor denotes a directory (has no filename).
+	 *
+	 * @return true for a directory
+	 */
 	public boolean isDirectory() {
 		return Utilities.isEmpty(filename);
 	}
 
+	/**
+	 * Whether this descriptor denotes a file (has a filename).
+	 *
+	 * @return true for a file
+	 */
 	public boolean isFile() {
 		return !isDirectory();
 	}
 
+	/**
+	 * Parent descriptor: the directory of a file, or the parent directory of a directory.
+	 *
+	 * @return new parent directory descriptor
+	 * @throws Exception if a directory has no parent (root directory)
+	 */
 	public SCPFile getParent() throws Exception {
 		if (isDirectory()) {
 			String newPath = path.substring(0, path.length() - 1);
@@ -163,7 +245,7 @@ public class SCPFile {
 			int lastIndexOfPathSeparator = Math.max(newPath.lastIndexOf(UNIX_SEPARATOR), newPath.lastIndexOf(DOS_SEPARATOR));
 			return new SCPFile(hostname, newPath.substring(0, lastIndexOfPathSeparator + 1));
 		} else {
-			return new SCPFile(hostname, path); // ohne Dateiname => Verzeichnis
+			return new SCPFile(hostname, path); // without filename => directory
 		}
 	}
 }

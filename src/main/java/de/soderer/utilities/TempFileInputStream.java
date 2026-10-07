@@ -14,11 +14,28 @@ import java.io.InputStream;
 public class TempFileInputStream extends FilterInputStream {
 	private final File tempFile;
 
+	/**
+	 * Creates a stream reading the given temporary file, which is deleted on close.
+	 *
+	 * @param tempFile
+	 *            the temporary file to read and delete
+	 * @throws FileNotFoundException
+	 *             if the file cannot be opened for reading
+	 */
 	public TempFileInputStream(final File tempFile) throws FileNotFoundException {
 		super(new FileInputStream(tempFile));
 		this.tempFile = tempFile;
 	}
 
+	/**
+	 * Creates a stream reading from the given stream, which deletes the given temporary file or
+	 * directory (recursively) on close.
+	 *
+	 * @param inputStream
+	 *            the stream to read from, for example a stream reading the temporary file
+	 * @param tempFile
+	 *            the temporary file or directory to delete on close, may be null
+	 */
 	public TempFileInputStream(final InputStream inputStream, final File tempFile) {
 		super(inputStream);
 		this.tempFile = tempFile;
@@ -26,9 +43,13 @@ public class TempFileInputStream extends FilterInputStream {
 
 	@Override
 	public void close() throws IOException {
-		super.close();
-		if (tempFile != null && tempFile.exists()) {
-			FileUtilities.delete(tempFile);
+		try {
+			super.close();
+		} finally {
+			// Delete the temporary data even if closing the underlying stream failed
+			if (tempFile != null && tempFile.exists()) {
+				FileUtilities.delete(tempFile);
+			}
 		}
 	}
 }

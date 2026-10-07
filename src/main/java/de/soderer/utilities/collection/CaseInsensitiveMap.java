@@ -4,27 +4,56 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Generic String keyed Map that ignores the String case
+ * Generic String keyed Map that ignores the String case.
+ * Keys are stored lowercased (with {@link Locale#ROOT}), so {@link #keySet()} returns the lowercased keys.
+ *
+ * @param <V> type of the values
  */
 public class CaseInsensitiveMap<V> extends AbstractHashMap<String, V> {
 	private static final long serialVersionUID = -528027610172636779L;
 
+	/**
+	 * Creates a new empty map. Convenience factory that allows the value type to be inferred.
+	 *
+	 * @param <V> type of the values
+	 * @return new empty map
+	 */
 	public static <V> CaseInsensitiveMap<V> create() {
 		return new CaseInsensitiveMap<>();
 	}
 
+	/**
+	 * Creates an empty map with default initial capacity and load factor.
+	 */
 	public CaseInsensitiveMap() {
 		super();
 	}
 
+	/**
+	 * Creates an empty map with the given initial capacity and load factor.
+	 *
+	 * @param initialCapacity initial capacity of the map
+	 * @param loadFactor load factor of the map
+	 */
 	public CaseInsensitiveMap(final int initialCapacity, final float loadFactor) {
 		super(initialCapacity, loadFactor);
 	}
 
+	/**
+	 * Creates an empty map with the given initial capacity.
+	 *
+	 * @param initialCapacity initial capacity of the map
+	 */
 	public CaseInsensitiveMap(final int initialCapacity) {
 		super(initialCapacity);
 	}
 
+	/**
+	 * Creates a map containing all entries of the given map. Keys that differ only in case are merged, the
+	 * value of the last one in the given map's iteration order wins.
+	 *
+	 * @param map map whose entries are copied into this map
+	 */
 	public CaseInsensitiveMap(final Map<? extends String, ? extends V> map) {
 		super(map.size());
 		putAll(map);

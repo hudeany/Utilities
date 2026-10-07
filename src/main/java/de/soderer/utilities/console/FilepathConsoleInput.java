@@ -7,7 +7,18 @@ import java.util.stream.Collectors;
 
 import de.soderer.utilities.Utilities;
 
+/**
+ * Console input for file paths with auto completion from the file system: Tab completes or steps into a directory,
+ * Page up and Page down scroll through the siblings of the current path. "~" is supported for the user's home directory.
+ */
 public class FilepathConsoleInput extends SimpleConsoleInput {
+	/**
+	 * Creates an input with default settings.
+	 */
+	public FilepathConsoleInput() {
+		// Default settings
+	}
+
 	@Override
 	public void setPresetContent(final String presetContent) {
 		this.presetContent = (presetContent == null ? "" : presetContent.replace("/", File.separator).replace("\\", File.separator));

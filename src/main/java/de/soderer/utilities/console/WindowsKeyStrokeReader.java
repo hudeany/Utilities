@@ -7,7 +7,15 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 
+/**
+ * Reads single keys from a Windows console without echo via the native functions of msvcrt and kernel32 (JNA).
+ * Ctrl+C is read as key instead of ending the application. The original console mode is restored on exit.
+ */
 public class WindowsKeyStrokeReader {
+	private WindowsKeyStrokeReader() {
+		// Only static methods
+	}
+
 	private static volatile boolean initDone;
 	private static volatile boolean stdinIsConsole;
 	private static volatile boolean consoleModeAltered;
@@ -19,6 +27,10 @@ public class WindowsKeyStrokeReader {
 
 	/**
 	 * Read a character from the console without echo
+	 *
+	 * @param wait true to wait for the next key, false to return immediately if no key is available
+	 * @return key code (special keys as 0xE000 + scan code), -2 if no key is available and wait is false, -1 at the end of redirected input
+	 * @throws Exception if the native functions cannot be used
 	 */
 	public static int readKey(final boolean wait) throws Exception {
 		init();

@@ -3,7 +3,6 @@ package de.soderer.utilities.console;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.lang.Thread.State;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedList;
@@ -14,69 +13,199 @@ import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.SystemUtilities;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Static helper methods for ANSI terminals: reading single keys, cursor positioning, colored text, terminal size
+ * detection and progress bars.
+ * <p>
+ * Key codes returned by {@link #readKey()} are the values of the KeyCode_* constants for special keys and the
+ * character code for all other keys.
+ */
 public class ConsoleUtilities {
+	private ConsoleUtilities() {
+		// Only static methods
+	}
+
 	private static volatile Queue<Character> consoleInputBuffer = null;
 
 	private static volatile ConsoleType consoleType = null;
 	private static volatile boolean linuxConsoleActivatedRawMode = false;
 
+	/**
+	 * Key code of Ctrl+C.
+	 */
 	public static final int KeyCode_CtrlC = 3;
+	/**
+	 * Key code of Ctrl+V (paste).
+	 */
 	public static final int KeyCode_CtrlV = 22;
+	/**
+	 * Key code of Ctrl+X.
+	 */
 	public static final int KeyCode_CtrlX = 24;
 
+	/**
+	 * Key code of Ctrl+Home.
+	 */
 	public static final int KeyCode_CtrlHome = 57463;
+	/**
+	 * Key code of Ctrl+End.
+	 */
 	public static final int KeyCode_CtrlEnd = 57461;
+	/**
+	 * Key code of Ctrl+Arrow up.
+	 */
 	public static final int KeyCode_CtrlArrowUp = 57485;
+	/**
+	 * Key code of Ctrl+Arrow left.
+	 */
 	public static final int KeyCode_CtrlArrowLeft = 57459;
+	/**
+	 * Key code of Ctrl+Arrow right.
+	 */
 	public static final int KeyCode_CtrlArrowRight = 57460;
+	/**
+	 * Key code of Ctrl+Arrow down.
+	 */
 	public static final int KeyCode_CtrlArrowDown = 57489;
 
+	/**
+	 * Key code of Enter.
+	 */
 	public static final int KeyCode_Enter = 13;
+	/**
+	 * Key code of Backspace.
+	 */
 	public static final int KeyCode_Backspace = 8;
+	/**
+	 * Key code of Tab.
+	 */
 	public static final int KeyCode_Tab = 9;
 	/**
 	 * There is no Windows Code for ReverseTab
 	 */
 	public static final int KeyCode_ReverseTab = -1;
+	/**
+	 * Key code of Escape.
+	 */
 	public static final int KeyCode_Escape = 27;
 
+	/**
+	 * Key code of Home.
+	 */
 	public static final int KeyCode_Home = 57415;
+	/**
+	 * Key code of Page up.
+	 */
 	public static final int KeyCode_PageUp = 57417;
+	/**
+	 * Key code of End.
+	 */
 	public static final int KeyCode_End = 57423;
+	/**
+	 * Key code of Insert.
+	 */
 	public static final int KeyCode_Insert = 57426;
+	/**
+	 * Key code of Delete.
+	 */
 	public static final int KeyCode_Delete = 57427;
+	/**
+	 * Key code of Page down.
+	 */
 	public static final int KeyCode_PageDown = 57425;
 
+	/**
+	 * Key code of Arrow up.
+	 */
 	public static final int KeyCode_ArrowUp = 57416;
+	/**
+	 * Key code of Arrow left.
+	 */
 	public static final int KeyCode_ArrowLeft = 57419;
+	/**
+	 * Key code of Arrow right.
+	 */
 	public static final int KeyCode_ArrowRight = 57421;
+	/**
+	 * Key code of Arrow down.
+	 */
 	public static final int KeyCode_ArrowDown = 57424;
 
 	/**
-	 * Additional attributes
-		Bold 1
-		Underline 4
-		No underline 24
-		Negative(reverse the foreground and background) 7
-		Positive(no negative) 27
-		Default 0
+	 * ANSI colors for foreground and background of text.
+	 * <p>
+	 * Additional attributes:
+	 * Bold 1,
+	 * Underline 4,
+	 * No underline 24,
+	 * Negative (reverse the foreground and background) 7,
+	 * Positive (no negative) 27,
+	 * Default 0
 	 */
 	public enum TextColor {
+		/**
+		 * Black.
+		 */
 		Black(30, 40),
+		/**
+		 * Red.
+		 */
 		Red(31, 41),
+		/**
+		 * Green.
+		 */
 		Green(32, 42),
+		/**
+		 * Yellow.
+		 */
 		Yellow(33, 43),
+		/**
+		 * Blue.
+		 */
 		Blue(34, 44),
+		/**
+		 * Magenta.
+		 */
 		Magenta(35, 45),
+		/**
+		 * Cyan.
+		 */
 		Cyan(36, 46),
+		/**
+		 * Light gray.
+		 */
 		Light_gray(37, 47),
+		/**
+		 * Dark gray.
+		 */
 		Dark_gray(90, 100),
+		/**
+		 * Light red.
+		 */
 		Light_red(91, 101),
+		/**
+		 * Light green.
+		 */
 		Light_green(92, 102),
+		/**
+		 * Light yellow.
+		 */
 		Light_yellow(93, 103),
+		/**
+		 * Light blue.
+		 */
 		Light_blue(94, 104),
+		/**
+		 * Light magenta.
+		 */
 		Light_magenta(95, 105),
+		/**
+		 * Light cyan.
+		 */
 		Light_cyan(96, 106),
+		/**
+		 * White.
+		 */
 		White(97, 107);
 
 		private final int foreGroundColorCode;
@@ -87,21 +216,37 @@ public class ConsoleUtilities {
 			this.backGroundColorCode = backGroundColorCode;
 		}
 
+		/**
+		 * Returns the ANSI code of this color as foreground color.
+		 *
+		 * @return ANSI foreground color code
+		 */
 		public int getForeGroundColorCode() {
 			return foreGroundColorCode;
 		}
 
+		/**
+		 * Returns the ANSI code of this color as background color.
+		 *
+		 * @return ANSI background color code
+		 */
 		public int getBackGroundColorCode() {
 			return backGroundColorCode;
 		}
 	}
 
+	/**
+	 * ANSI text attributes.
+	 */
 	public enum TextAttribute {
 		/**
 		 * Reset Text decoration
 		 */
 		RESET("\033[0m"),
 
+		/**
+		 * Bold or high intensity text.
+		 */
 		HIGH_INTENSITY("\033[1m"),
 
 		/**
@@ -114,6 +259,9 @@ public class ConsoleUtilities {
 		 */
 		ITALIC("\033[3m"),
 
+		/**
+		 * Underlined text.
+		 */
 		UNDERLINE("\033[4m"),
 
 		/**
@@ -126,8 +274,14 @@ public class ConsoleUtilities {
 		 */
 		RAPID_BLINK("\033[6m"),
 
+		/**
+		 * Swapped foreground and background colors.
+		 */
 		REVERSE_VIDEO("\033[7m"),
 
+		/**
+		 * Invisible text.
+		 */
 		INVISIBLE_TEXT("\033[8m");
 
 		private final String ansiCode;
@@ -136,11 +290,22 @@ public class ConsoleUtilities {
 			this.ansiCode = ansiCode;
 		}
 
+		/**
+		 * Returns the ANSI escape sequence of this attribute.
+		 *
+		 * @return ANSI escape sequence
+		 */
 		public String getAnsiCode() {
 			return ansiCode;
 		}
 	}
 
+	/**
+	 * Detects the type of the console once: ANSI for Windows consoles and terminals with a TERM variable, whose size
+	 * can be detected, TEST otherwise (e.g. IDE consoles).
+	 *
+	 * @return detected console type
+	 */
 	public static ConsoleType getConsoleType() {
 		if (consoleType == null) {
 			if (SystemUtilities.isWindowsSystem() || (System.console() != null && System.getenv().get("TERM") != null)) {
@@ -157,6 +322,13 @@ public class ConsoleUtilities {
 		return consoleType;
 	}
 
+	/**
+	 * Switches the Linux terminal into raw mode without echo via 'stty', so single keys can be read.
+	 * A shutdown hook resets the mode on exit.
+	 *
+	 * @return true if the mode was switched, false if it was already active
+	 * @throws Exception if 'stty' fails
+	 */
 	public static boolean activateLinuxConsoleRawMode() throws Exception {
 		if (!linuxConsoleActivatedRawMode) {
 			final int exitCode = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty raw -echo < /dev/tty" }).waitFor();
@@ -171,6 +343,11 @@ public class ConsoleUtilities {
 		}
 	}
 
+	/**
+	 * Switches the Linux terminal back from raw mode to normal line mode with echo via 'stty'.
+	 *
+	 * @throws Exception if 'stty' fails
+	 */
 	public static void deactivateLinuxConsoleRawMode() throws Exception {
 		if (linuxConsoleActivatedRawMode) {
 			final int exitCode = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty -raw echo </dev/tty" }).waitFor();
@@ -196,12 +373,14 @@ public class ConsoleUtilities {
 	}
 
 	/**
-	 * Create a progress string for terminal output e.g.: "65% [=================================>                   ] 103.234 200/s eta 5m"
+	 * Create a progress string for terminal output e.g.: "65% [=================================&gt;                   ] 103.234 200/s eta 5m"
 	 *
-	 * @param start
-	 * @param itemsToDo
-	 * @param itemsDone
-	 * @return
+	 * @param lineLength total length of the progress string
+	 * @param start start time of the work
+	 * @param itemsToDo total number of items, 0 or below if unknown
+	 * @param itemsDone number of items done
+	 * @param itemUnitSign unit of the items for display, may be null
+	 * @return progress string of the given length (or longer, if the info texts do not fit)
 	 */
 	public static String getConsoleProgressString(final int lineLength, final LocalDateTime start, final long itemsToDo, final long itemsDone, final String itemUnitSign) {
 		final LocalDateTime now = LocalDateTime.now();
@@ -245,10 +424,21 @@ public class ConsoleUtilities {
 		return leftPart + Utilities.repeat("=", barDone - 1) + ">" + Utilities.repeat(" ", barWith - barDone) + rightPart;
 	}
 
+	/**
+	 * Prints a text framed by '*' characters.
+	 *
+	 * @param text text to print, nothing is printed for null
+	 */
 	public static void printBoxed(final String text) {
 		printBoxed(text, '*');
 	}
 
+	/**
+	 * Prints a text framed by the given character.
+	 *
+	 * @param text text to print, nothing is printed for null
+	 * @param boxChar character of the frame
+	 */
 	public static void printBoxed(final String text, final char boxChar) {
 		if (text != null) {
 			System.out.println(Utilities.repeat(boxChar, text.length() + 4));
@@ -257,6 +447,9 @@ public class ConsoleUtilities {
 		}
 	}
 
+	/**
+	 * Clears the console screen ("cls" on Windows, ANSI sequence otherwise).
+	 */
 	public static void clearScreen() {
 		if (SystemUtilities.isWindowsSystem()) {
 			try {
@@ -270,14 +463,38 @@ public class ConsoleUtilities {
 		}
 	}
 
+	/**
+	 * Returns a text with ANSI codes for the given foreground color, followed by a reset.
+	 *
+	 * @param text text to color
+	 * @param foreGroundColor foreground color, null for none
+	 * @return text with ANSI codes
+	 */
 	public static String getAnsiColoredText(final String text, final TextColor foreGroundColor) {
 		return getAnsiFormattedText(text, foreGroundColor, null);
 	}
 
+	/**
+	 * Returns a text with ANSI codes for the given colors, followed by a reset.
+	 *
+	 * @param foreGroundColor foreground color, null for none
+	 * @param backGroundColor background color, null for none
+	 * @param text text to color
+	 * @return text with ANSI codes
+	 */
 	public static String getAnsiColoredText(final TextColor foreGroundColor, final TextColor backGroundColor, final String text) {
 		return getAnsiFormattedText(text, foreGroundColor, backGroundColor);
 	}
 
+	/**
+	 * Returns a text with ANSI codes for the given colors and attributes, followed by a reset.
+	 *
+	 * @param text text to format
+	 * @param foreGroundColor foreground color, null for none
+	 * @param backGroundColor background color, null for none
+	 * @param attributes text attributes, may be empty
+	 * @return text with ANSI codes
+	 */
 	public static String getAnsiFormattedText(final String text, final TextColor foreGroundColor, final TextColor backGroundColor, final TextAttribute... attributes) {
 		final StringBuilder builder = new StringBuilder();
 		if (foreGroundColor != null) {
@@ -296,26 +513,47 @@ public class ConsoleUtilities {
 		return builder.toString();
 	}
 
+	/**
+	 * Saves the current cursor position (ANSI).
+	 */
 	public static void saveCurrentCursorPosition() {
 		System.out.print("\033[s");
 	}
 
+	/**
+	 * Moves the cursor to a position (ANSI).
+	 *
+	 * @param line 1-based line
+	 * @param column 1-based column
+	 */
 	public static void moveCursorToPosition(final int line, final int column) {
 		System.out.print("\033[" + line + ";" + column + "H");
 	}
 
+	/**
+	 * Moves the cursor back to the position saved by {@link #saveCurrentCursorPosition()} (ANSI).
+	 */
 	public static void moveCursorToSavedPosition() {
 		System.out.print("\033[u");
 	}
 
+	/**
+	 * Clears the current line from the cursor to its end (ANSI).
+	 */
 	public static void clearLineContentAfterCursor() {
 		System.out.print("\033[K");
 	}
 
+	/**
+	 * Hides the cursor (ANSI).
+	 */
 	public static void hideCursor() {
 		System.out.print("\033[?25l");
 	}
 
+	/**
+	 * Shows the cursor again (ANSI).
+	 */
 	public static void showCursor() {
 		System.out.print("\033[?25h");
 	}
@@ -341,6 +579,12 @@ public class ConsoleUtilities {
 		}
 	}
 
+	/**
+	 * Requests the current cursor position from the terminal (ANSI "\033[6n").
+	 *
+	 * @return current cursor position
+	 * @throws Exception if the terminal does not answer as expected
+	 */
 	public static Position getCursorPosition() throws Exception {
 		try {
 			final StringBuilder response = new StringBuilder();
@@ -395,6 +639,13 @@ public class ConsoleUtilities {
 		}
 	}
 
+	/**
+	 * Detects the terminal size by moving the cursor to the far bottom right and requesting its position.
+	 * If a Windows console does not answer within a second, the console type is set to TEST and 24x80 is returned.
+	 *
+	 * @return terminal size
+	 * @throws Exception if the terminal does not answer as expected
+	 */
 	public static Size getTerminalSize() throws Exception {
 		try {
 			final StringBuilder response = new StringBuilder();
@@ -410,8 +661,9 @@ public class ConsoleUtilities {
 					// Marking it a daemon at least prevents it from keeping the JVM alive.
 					consoleWithDetectionThread.setDaemon(true);
 					consoleWithDetectionThread.start();
-					Thread.sleep(1000);
-					if (consoleWithDetectionThread.getState() != State.TERMINATED) {
+					// join() (instead of sleep and a state check) also makes the response written by the thread visible here
+					consoleWithDetectionThread.join(1000);
+					if (consoleWithDetectionThread.isAlive()) {
 						// Note: interrupt() cannot cancel a thread blocked in a native call (_getwch/getwchar).
 						// The thread is abandoned here (daemon) rather than actually stopped; this is a known limitation.
 						consoleWithDetectionThread.interrupt();
@@ -456,6 +708,12 @@ public class ConsoleUtilities {
 		}
 	}
 
+	/**
+	 * Detects the terminal size via the "tput lines" and "tput cols" commands.
+	 *
+	 * @return terminal size
+	 * @throws Exception if tput is not available or returns unexpected output
+	 */
 	public static Size getUnixTerminalSizeByTput() throws Exception {
 		try {
 			return new Size(Integer.parseInt(executeTputCommand("lines").trim()), Integer.parseInt(executeTputCommand("cols").trim()));
@@ -478,12 +736,15 @@ public class ConsoleUtilities {
 
 	/**
 	 * Reads a single key from the console (Linux: raw termios mode via 'stty', Windows: {@link WindowsKeyStrokeReader}).
-	 *
+	 * <p>
 	 * Known limitation: escape sequences are identified purely by the number of bytes read in one {@link Reader#read(char[])}
 	 * call (3, 4 or 6 bytes). If an escape sequence and a following regular key end up in the same OS-level read
 	 * (e.g. very fast typing right after an arrow key), this can misidentify the key. This has not been changed here,
 	 * since a correct fix requires stateful byte-by-byte parsing of the escape sequence grammar instead of length-based
 	 * dispatch, which is a larger change than a targeted bug fix.
+	 *
+	 * @return key code: one of the KeyCode_* constants for special keys, the character code otherwise
+	 * @throws Exception if the console cannot be read
 	 */
 	public static int readKey() throws Exception {
 		try {
@@ -607,6 +868,12 @@ public class ConsoleUtilities {
 		}
 	}
 
+	/**
+	 * Reads the next raw character from the console, without interpreting escape sequences.
+	 *
+	 * @return character code, or -1 at the end of the input
+	 * @throws Exception if the console cannot be read
+	 */
 	public static int readNextRawKey() throws Exception {
 		try {
 			if (SystemUtilities.isWindowsSystem()) {

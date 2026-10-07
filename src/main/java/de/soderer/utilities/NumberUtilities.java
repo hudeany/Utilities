@@ -5,12 +5,43 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.regex.Pattern;
 
+/**
+ * Helpers for checking, parsing, comparing and formatting numbers.
+ */
 public class NumberUtilities {
+	/**
+	 * Integer format with grouping separators of the default locale, like "1,234,567".
+	 * Note: DecimalFormat is not thread-safe, so concurrent use of this shared instance must be synchronized by the caller.
+	 */
 	public static DecimalFormat NUMBER_WITH_POINTS = new DecimalFormat("###,##0");
+
+	/**
+	 * Integer format with at least 2 digits (leading zeros), like "07".
+	 * Note: DecimalFormat is not thread-safe, so concurrent use of this shared instance must be synchronized by the caller.
+	 */
 	public static DecimalFormat NUMBER_WITH_MIN_2_DIGITS = new DecimalFormat("00");
+
+	/**
+	 * Integer format with at least 4 digits (leading zeros), like "0007".
+	 * Note: DecimalFormat is not thread-safe, so concurrent use of this shared instance must be synchronized by the caller.
+	 */
 	public static DecimalFormat NUMBER_WITH_MIN_4_DIGITS = new DecimalFormat("0000");
+
+	/**
+	 * Integer format with at least 6 digits (leading zeros), like "000007".
+	 * Note: DecimalFormat is not thread-safe, so concurrent use of this shared instance must be synchronized by the caller.
+	 */
 	public static DecimalFormat NUMBER_WITH_MIN_6_DIGITS = new DecimalFormat("000000");
+
+	/**
+	 * Integer format with at least 7 digits (leading zeros), like "0000007".
+	 * Note: DecimalFormat is not thread-safe, so concurrent use of this shared instance must be synchronized by the caller.
+	 */
 	public static DecimalFormat NUMBER_WITH_MIN_7_DIGITS = new DecimalFormat("0000000");
+
+	private NumberUtilities() {
+		// Utility class
+	}
 
 	/**
 	 * Check for String of digits
@@ -176,33 +207,56 @@ public class NumberUtilities {
 		}
 	}
 
+	/**
+	 * Check for a hexadecimal number with "0x" or "0X" prefix, like {@code 0x1F}.
+	 *
+	 * @param numberString
+	 *            string to check
+	 * @return true if the string is a prefixed hexadecimal number, false for null
+	 */
 	public static boolean isHexNumber(final String numberString) {
-		return Pattern.matches("0(x|X)[0-9A-Fa-f]+", numberString);
+		return numberString != null && Pattern.matches("0(x|X)[0-9A-Fa-f]+", numberString);
 	}
 
+	/**
+	 * Parse a hexadecimal number with "0x" or "0X" prefix as non-negative value.
+	 * The resulting type is the smallest of Integer, Long or BigInteger able to contain the value.
+	 *
+	 * @param hexNumberString
+	 *            hexadecimal number like {@code 0xFFFFFFFF}
+	 * @return parsed number, e.g. Long 4294967295 for {@code 0xFFFFFFFF}
+	 * @throws NumberFormatException
+	 *             if the string is not a prefixed hexadecimal number
+	 */
 	public static Number parseHexNumber(final String hexNumberString) throws NumberFormatException {
 		if (!isHexNumber(hexNumberString)) {
 			throw new NumberFormatException("Not a hex number: '" + hexNumberString + "'");
 		} else {
-			if (hexNumberString.length() < 12) {
-				return Integer.parseInt(hexNumberString.substring(2), 16);
+			// Choose the type by the bit length of the value (before, values like 0x80000000 to 0xFFFFFFFF threw a NumberFormatException,
+			// because up to 9 hex digits were parsed as int, and Long.MAX_VALUE was returned as BigInteger)
+			final BigInteger value = new BigInteger(hexNumberString.substring(2), 16);
+			if (value.bitLength() < Integer.SIZE) {
+				return value.intValue();
+			} else if (value.bitLength() < Long.SIZE) {
+				return value.longValue();
 			} else {
-				final BigInteger value = new BigInteger(hexNumberString.substring(2), 16);
-				final boolean isInteger = new BigInteger(Integer.toString(Integer.MIN_VALUE)).compareTo(value) == -1 && value.compareTo(new BigInteger(Integer.toString(Integer.MAX_VALUE))) == -1;
-				if (isInteger) {
-					return Integer.parseInt(hexNumberString.substring(2), 16);
-				} else {
-					final boolean isLong = new BigInteger(Long.toString(Long.MIN_VALUE)).compareTo(value) == -1 && value.compareTo(new BigInteger(Long.toString(Long.MAX_VALUE))) == -1;
-					if (isLong) {
-						return Long.parseLong(hexNumberString.substring(2), 16);
-					} else {
-						return value;
-					}
-				}
+				return value;
 			}
 		}
 	}
 
+	/**
+	 * Format a number by its {@link Object#toString()} representation with another decimal separator.
+	 * If the decimal separator is '.', the text is returned unchanged.
+	 *
+	 * @param number
+	 *            number to format, may be null
+	 * @param decimalSeparator
+	 *            decimal separator replacing '.'
+	 * @param groupingSeparator
+	 *            grouping separator replacing ',' in the text, null to remove ',' characters
+	 * @return formatted number, or null for null input
+	 */
 	public static String formatNumber(final Number number, final char decimalSeparator, final Character groupingSeparator) {
 		if (number == null) {
 			return null;
@@ -220,6 +274,20 @@ public class NumberUtilities {
 		}
 	}
 
+	/**
+	 * Format a number like {@link #formatNumber(Number, char, Character)} and right-align it by prepending blanks,
+	 * so that the part before the decimal separator has at least the given number of characters.
+	 *
+	 * @param number
+	 *            number to format, may be null
+	 * @param minPreSeparatorCharacters
+	 *            minimum number of characters before the decimal separator
+	 * @param decimalSeparator
+	 *            decimal separator replacing '.'
+	 * @param groupingSeparator
+	 *            grouping separator replacing ',' in the text, null to remove ',' characters
+	 * @return formatted number, or null for null input
+	 */
 	public static String formatNumber(final Number number, final int minPreSeparatorCharacters, final char decimalSeparator, final Character groupingSeparator) {
 		if (number == null) {
 			return null;
@@ -246,6 +314,13 @@ public class NumberUtilities {
 		}
 	}
 
+	/**
+	 * Check whether a BigDecimal has an integer value (no non-zero decimals), like "5.000".
+	 *
+	 * @param bigDecimal
+	 *            value to check
+	 * @return true if the value has no fractional part, false for null
+	 */
 	public static boolean isInteger(final BigDecimal bigDecimal) {
 		if (bigDecimal == null) {
 			return false;

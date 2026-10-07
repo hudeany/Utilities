@@ -13,6 +13,8 @@ import com.sun.jna.Structure;
 import de.soderer.utilities.Utilities;
 
 /**
+ * Reads single keys from a Linux terminal via libc/termios (JNA).
+ *
  * @deprecated Duplicates the Linux part of {@link JnaKeyStrokeReader} (libc/termios based raw mode + read).
  * Nothing in this package calls it - the actually used runtime path is {@link ConsoleUtilities#readKey()}, which
  * handles Linux raw mode via an external 'stty' process call instead. Kept only for reference; consolidate onto
@@ -20,6 +22,10 @@ import de.soderer.utilities.Utilities;
  */
 @Deprecated
 public class LinuxKeyStrokeReader {
+	private LinuxKeyStrokeReader() {
+		// Only static methods
+	}
+
 	private static volatile boolean initDone;
 	private static volatile boolean stdinIsConsole;
 	private static volatile boolean consoleModeAltered;
@@ -31,6 +37,10 @@ public class LinuxKeyStrokeReader {
 
 	/**
 	 * Read a character from the console without echo.
+	 *
+	 * @param wait true to wait for the next key, false to return immediately if no key is available
+	 * @return key code (multi byte sequences combined into one int), -2 if no key is available and wait is false
+	 * @throws Exception if the terminal cannot be configured or read
 	 */
 	@Deprecated
 	public static int readKey(final boolean wait) throws Exception {
@@ -122,18 +132,39 @@ public class LinuxKeyStrokeReader {
 		return Utilities.convertByteArrayToInt(buffer);
 	}
 
+	/**
+	 * Native termios structure of Linux.
+	 */
 	@Deprecated
 	protected static class TerminalFlags extends Structure {
+		/**
+		 * Input mode flags.
+		 */
 		@Deprecated
 		public int c_iflag;
+		/**
+		 * Output mode flags.
+		 */
 		@Deprecated
 		public int c_oflag;
+		/**
+		 * Control mode flags.
+		 */
 		@Deprecated
 		public int c_cflag;
+		/**
+		 * Local mode flags.
+		 */
 		@Deprecated
 		public int c_lflag;
+		/**
+		 * Line discipline.
+		 */
 		@Deprecated
 		public byte c_line;
+		/**
+		 * Space for the remaining termios fields.
+		 */
 		@Deprecated
 		public byte[] filler = new byte[64];
 

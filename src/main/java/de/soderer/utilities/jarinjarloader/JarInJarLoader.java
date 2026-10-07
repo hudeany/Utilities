@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -21,18 +22,54 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
+/**
+ * Start class for applications packed as a single jar file with their library jars inside (jar in jar).
+ * <p>
+ * It reads the main class from the manifest attribute "Rsrc-Main-Class" and the embedded libraries from
+ * "Rsrc-Class-Path". Without "Rsrc-Class-Path" all jar files contained in the application jar are used, where
+ * only the SWT jar matching the current OS and architecture (Windows or Linux, 64 bit) is included.
+ * Then it starts the main class with a class loader, that loads classes from the embedded jars via the
+ * "rsrc:" URL protocol.
+ */
 public class JarInJarLoader {
+	/**
+	 * Name of the system property, which is set to the absolute path of the running application jar file.
+	 */
 	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
+
+	/**
+	 * Constructor for subclasses, which provide their own main method calling {@link #jarInJarLoaderStart(String[])}.
+	 */
+	protected JarInJarLoader() {
+		// Only static methods
+	}
 
 	private static class ManifestInfo {
 		String mainClass;
 		String[] classPath;
 	}
 
+	/**
+	 * Starts the application configured in the manifest.
+	 *
+	 * @param args command line arguments, which are passed on to the application's main method
+	 * @throws Exception if the manifest is incomplete, the platform is not supported, or the application fails to start
+	 */
 	public static void main(final String[] args) throws Exception {
 		jarInJarLoaderStart(args);
 	}
 
+	/**
+	 * Starts the application configured in the manifest. Can be called by subclasses with their own main method.
+	 *
+	 * @param args command line arguments, which are passed on to the application's main method
+	 * @throws IOException if no manifest with the required attributes is found or the platform is not supported by the embedded SWT jars
+	 * @throws MalformedURLException if an embedded class path entry results in an invalid URL
+	 * @throws InvocationTargetException if the application's main method throws an exception
+	 * @throws IllegalAccessException if the application's main method is not accessible
+	 * @throws ClassNotFoundException if the application's main class is not found
+	 * @throws NoSuchMethodException if the application's main class has no main method
+	 */
 	protected static void jarInJarLoaderStart(final String[] args) throws IOException, MalformedURLException,
 	InvocationTargetException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException {
 		// Fill an environment variable with the path of the executed jar file
@@ -65,7 +102,7 @@ public class JarInJarLoader {
 		final URLClassLoader jceClassLoader = new URLClassLoader(classPathUrls, getParentClassLoader());
 		Thread.currentThread().setContextClassLoader(jceClassLoader);
 		final Class<?> mainClass = Class.forName(manifestInfo.mainClass, true, jceClassLoader);
-		final Method mainMethod = mainClass.getMethod("main", new Class[] { args.getClass() });
+		final Method mainMethod = mainClass.getMethod("main", String[].class);
 		mainMethod.invoke((Object) null, new Object[] { args });
 	}
 
@@ -101,8 +138,8 @@ public class JarInJarLoader {
 						}
 						boolean swtFound = false;
 						boolean swtLoaded = false;
-						final String osName = System.getProperty("os.name").toLowerCase();
-						final String osArch = System.getProperty("os.arch").toLowerCase();
+						final String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+						final String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
 						try {
 							for (final String entryName : getZipFileEntries(new File(jarFilePath))) {
 								if (endsWithIgnoreCase(entryName, ".jar")) {
@@ -124,7 +161,7 @@ public class JarInJarLoader {
 							e.printStackTrace();
 						}
 						if (swtFound && !swtLoaded) {
-							throw new Exception("Unsupported OS name or architecture for this SWT application: " + osName + " / " + osArch);
+							throw new UnsupportedOperationException("Unsupported OS name or architecture for this SWT application: " + osName + " / " + osArch);
 						}
 					}
 					manifestInfo.classPath = rsrcClassPath.split(" ");
@@ -132,6 +169,9 @@ public class JarInJarLoader {
 						return manifestInfo;
 					}
 				}
+			} catch (final UnsupportedOperationException e) {
+				// Report the unsupported platform instead of the misleading "missing attributes" error below
+				throw new IOException(e.getMessage(), e);
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				// Skip invalid manifest file
 			}
@@ -181,7 +221,7 @@ public class JarInJarLoader {
 		} else if (suffix == null) {
 			// suffix is null but data is not
 			return false;
-		} else if (data.toLowerCase().endsWith(suffix.toLowerCase())) {
+		} else if (data.toLowerCase(Locale.ROOT).endsWith(suffix.toLowerCase(Locale.ROOT))) {
 			// both are set, so ignore the case for standard endsWith-method
 			return true;
 		} else {

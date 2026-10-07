@@ -1,6 +1,7 @@
 package de.soderer.utilities.collection;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,17 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+/**
+ * LinkedHashMap that additionally allows access to its keys and values by their position in insertion order.
+ * <p>
+ * The positions are taken from a lazily built list of the keys, which is discarded by all mutating methods of
+ * this map itself. Structural changes made through the views ({@link #keySet()}, {@link #values()},
+ * {@link #entrySet()}) or their iterators do not discard it, so after such changes index based access may
+ * return outdated results until the next mutation via the map's own methods.
+ *
+ * @param <K> type of the keys
+ * @param <V> type of the values
+ */
 public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	private static final long serialVersionUID = -1676269301623131177L;
 
@@ -17,6 +29,13 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	 * access after deserialization or cloning instead of being carried along.
 	 */
 	private transient List<K> keyList = null;
+
+	/**
+	 * Creates an empty map.
+	 */
+	public IndexedLinkedHashMap() {
+		super();
+	}
 
 	@SuppressWarnings("unlikely-arg-type")
 	@Override
@@ -90,14 +109,26 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 		return clone;
 	}
 
+	/**
+	 * Returns the keys of this map in insertion order.
+	 *
+	 * @return unmodifiable list of the keys in insertion order
+	 */
 	public List<K> getKeyList() {
 		if (keyList == null) {
-			keyList = new ArrayList<>(keySet());
+			// Unmodifiable, because callers changing this cached list would corrupt all later index lookups
+			keyList = Collections.unmodifiableList(new ArrayList<>(keySet()));
 		}
 
 		return keyList;
 	}
 
+	/**
+	 * Returns the position of the given key in insertion order.
+	 *
+	 * @param key key to search for, may be null
+	 * @return position of the key, or -1 if the key is not contained in this map
+	 */
 	public int getIndexOfKey(final K key) {
 		for (int i = 0; i < getKeyList().size(); i++) {
 			if (Objects.equals(getKeyList().get(i), key)) {
@@ -107,10 +138,24 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 		return -1;
 	}
 
+	/**
+	 * Returns the key at the given position in insertion order.
+	 *
+	 * @param i position of the key
+	 * @return key at the given position
+	 * @throws IndexOutOfBoundsException if the position is out of range
+	 */
 	public K getKey(final int i) {
 		return getKeyList().get(i);
 	}
 
+	/**
+	 * Returns the value of the key at the given position in insertion order.
+	 *
+	 * @param i position of the key
+	 * @return value of the key at the given position
+	 * @throws IndexOutOfBoundsException if the position is out of range
+	 */
 	public V getValue(final int i) {
 		return get(getKey(i));
 	}

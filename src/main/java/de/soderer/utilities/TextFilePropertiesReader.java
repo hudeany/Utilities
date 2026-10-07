@@ -8,6 +8,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * {@link TextPropertiesReader} for the content of a file or byte array, which also detects the text encoding.
+ * Encodings are described by a {@link Tuple} of the charset name and whether a BOM (byte order mark) is used.
+ * If no encoding is given, it is detected; undetectable data is read as UTF-8, or as ISO-8859-1 if it is no valid UTF-8.
+ */
 public class TextFilePropertiesReader extends TextPropertiesReader {
 	private File file;
 	private byte[] data;
@@ -15,18 +20,44 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	private Tuple<String, Boolean> encodingData = null;
 	private long filesize = -1;
 
+	/**
+	 * Creates a reader for a file.
+	 *
+	 * @param filePath path of the file
+	 * @param encodingData encoding name and whether a BOM (byte order mark) is used, or null to detect the encoding
+	 * @throws Exception if the file does not exist or is no file
+	 */
 	public TextFilePropertiesReader(final String filePath, final Tuple<String, Boolean> encodingData) throws Exception {
 		this(new File(filePath), encodingData);
 	}
 
+	/**
+	 * Creates a reader for a file with encoding detection.
+	 *
+	 * @param filePath path of the file
+	 * @throws Exception if the file does not exist or is no file
+	 */
 	public TextFilePropertiesReader(final String filePath) throws Exception {
 		this(new File(filePath));
 	}
 
+	/**
+	 * Creates a reader for a file with encoding detection.
+	 *
+	 * @param file the file
+	 * @throws Exception if the file does not exist or is no file
+	 */
 	public TextFilePropertiesReader(final File file) throws Exception {
 		this(file, null);
 	}
 
+	/**
+	 * Creates a reader for a file.
+	 *
+	 * @param file the file
+	 * @param encodingData encoding name and whether a BOM (byte order mark) is used, or null to detect the encoding
+	 * @throws Exception if the file does not exist or is no file
+	 */
 	public TextFilePropertiesReader(final File file, final Tuple<String, Boolean> encodingData) throws Exception {
 		this.file = file;
 
@@ -39,16 +70,33 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		this.encodingData = encodingData;
 	}
 
+	/**
+	 * Creates a reader for data in memory with encoding detection.
+	 *
+	 * @param data the data (not copied)
+	 */
 	public TextFilePropertiesReader(final byte[] data) {
 		this(data, null);
 	}
 
+	/**
+	 * Creates a reader for data in memory.
+	 *
+	 * @param data the data (not copied)
+	 * @param encodingData encoding name and whether a BOM (byte order mark) is used, or null to detect the encoding
+	 */
 	public TextFilePropertiesReader(final byte[] data, final Tuple<String, Boolean> encodingData) {
 		this.data = data;
 		filesize = data.length;
 		this.encodingData = encodingData;
 	}
 
+	/**
+	 * Reads and decodes the complete file (or data) and scans its text properties.
+	 *
+	 * @return the decoded text (without BOM)
+	 * @throws Exception if the file cannot be read or the encoding is not supported
+	 */
 	public String readFileToString() throws Exception {
 		if (data == null) {
 			filesize = file.length();
@@ -81,6 +129,15 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		return dataString;
 	}
 
+	/**
+	 * Reads and decodes a part of the file (or data) and scans its text properties.
+	 * The range is moved and shortened to fit into the data, so e.g. a too large start position reads the last bytes.
+	 *
+	 * @param startPosition position of the first byte to read
+	 * @param length number of bytes to read
+	 * @return the decoded text
+	 * @throws Exception if the file cannot be read or the encoding is not supported
+	 */
 	public String readFileToString(long startPosition, int length) throws Exception {
 		if (data == null) {
 			filesize = file.length();
@@ -96,8 +153,12 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 
 			final byte[] subdata = new byte[length];
 			try (FileInputStream inputStream = new FileInputStream(file)) {
-				inputStream.skip(startPosition);
-				inputStream.read(subdata);
+				// skip() and read() may process fewer bytes than requested
+				inputStream.skipNBytes(startPosition);
+				final int readBytes = inputStream.readNBytes(subdata, 0, length);
+				if (readBytes != length) {
+					throw new IOException("Unexpected end of file: " + readBytes + " of " + length + " bytes read");
+				}
 			}
 
 			if (encodingData == null) {
@@ -167,6 +228,10 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 
+	/**
+	 * Reads the complete file (or data) and scans its text properties.
+	 * Errors are only printed to standard error, use {@link #readFileToString()} to get them as exceptions.
+	 */
 	@Override
 	public void readProperties() {
 		try {
@@ -176,14 +241,31 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 
+	/**
+	 * Size of the file or data.
+	 *
+	 * @return size in bytes, or -1 if a file was not read yet
+	 */
 	public long getFilesize() {
 		return filesize;
 	}
 
+	/**
+	 * Encoding given or detected when reading.
+	 *
+	 * @return encoding name and BOM flag, or null if not determined yet
+	 */
 	public Tuple<String, Boolean> getEncoding() {
 		return encodingData;
 	}
 
+	/**
+	 * Converts an encoding display string (see {@link #getEncodingDisplayString(Tuple)}) to encoding data.
+	 * "UTF-16BE-BOM", "UTF-16LE-BOM" and "UTF-8-BOM" (and the Java names "UnicodeBig" and "UnicodeLittle") denote BOM usage.
+	 *
+	 * @param encodingString encoding display string or charset name
+	 * @return encoding name and BOM flag
+	 */
 	public static Tuple<String, Boolean> getEncodingData(final String encodingString) {
 		if ("UnicodeBig".equalsIgnoreCase(encodingString) || "UTF-16BE-BOM".equalsIgnoreCase(encodingString)) {
 			return new Tuple<>("UTF-16BE", true);
@@ -196,6 +278,12 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 
+	/**
+	 * Display string of encoding data, e.g. "UTF-8-BOM" for UTF-8 with BOM. "UTF-16" is shown as big endian variant.
+	 *
+	 * @param encodingData encoding name and BOM flag, may be null
+	 * @return display string, empty for null
+	 */
 	public static String getEncodingDisplayString(final Tuple<String, Boolean> encodingData) {
 		if (encodingData == null) {
 			return "";
@@ -224,6 +312,14 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 
+	/**
+	 * Encodes a text, with a leading BOM if the encoding data says so.
+	 *
+	 * @param text text to encode
+	 * @param encodingData encoding name and BOM flag
+	 * @return encoded bytes
+	 * @throws Exception if the encoding data is missing or the encoding is not supported
+	 */
 	public static byte[] encodeString(final String text, final Tuple<String, Boolean> encodingData) throws Exception {
 		if (encodingData == null) {
 			throw new Exception("Missing encoding data");
@@ -239,12 +335,23 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 				encoding = "UTF-16LE";
 			} else if (StandardCharsets.UTF_8.name().equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
 				output.write(BOM.UTF_8.getBytes());
+			} else if ("UTF-16".equalsIgnoreCase(encodingData.getFirst())) {
+				// Java's "UTF-16" encoder always writes a BOM, but this encoding data says "without BOM" (displayed as "UTF-16BE")
+				encoding = "UTF-16BE";
 			}
 			output.write(text.getBytes(encoding));
 			return output.toByteArray();
 		}
 	}
 
+	/**
+	 * Decodes data with the given encoding. A leading UTF-8 or UTF-16 BOM is skipped.
+	 *
+	 * @param data data to decode
+	 * @param encodingData encoding name and BOM flag
+	 * @return decoded text
+	 * @throws IOException if the encoding is not supported
+	 */
 	public static String decodeByteArray(final byte[] data, final Tuple<String, Boolean> encodingData) throws IOException {
 		if (data.length > 2 && data[0] == BOM.UTF_16_BE.getBytes()[0] && data[1] == BOM.UTF_16_BE.getBytes()[1]) {
 			return new String(data, 2, data.length - 2, encodingData.getFirst());
@@ -257,12 +364,23 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 
+	/**
+	 * Sets the encoding used if the encoding cannot be detected (default UTF-8 without BOM).
+	 *
+	 * @param value encoding name and BOM flag; null is ignored
+	 */
 	public void setDefaultEncodingData(final Tuple<String, Boolean> value) {
 		if (value != null) {
 			defaultEncoding = value;
 		}
 	}
 
+	/**
+	 * Scans the file for the byte positions of all line starts.
+	 *
+	 * @return line start positions, or null if the file cannot be read
+	 * @throws Exception if this reader was created for data in memory (not supported)
+	 */
 	public List<Long> scanLineStartIndexes() throws Exception {
 		if (file != null) {
 			try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(file))) {
@@ -275,6 +393,12 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 
+	/**
+	 * Scans the file for the byte positions of all line breaks.
+	 *
+	 * @return line break positions, or null if the file cannot be read
+	 * @throws Exception if this reader was created for data in memory (not supported)
+	 */
 	public List<Long> scanLinebreakIndexes() throws Exception {
 		if (file != null) {
 			try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(file))) {

@@ -49,11 +49,15 @@ public class GoogleCloudConnection implements RemoteConnection {
 
 	private String accessToken = null;
 
+	/** Time after which the access token is renewed (tokens expire after one hour). */
+	private LocalDateTime accessTokenRenewalTime = null;
+
 	/**
-	 * GoogleCloudConnection
+	 * Creates a connection to Google Cloud Storage, authenticated with the given service account credentials.
 	 *
-	 * @param applicationCredentialsJsonString
-	 * @throws Exception
+	 * @param applicationCredentialsJsonString content of the service account credentials JSON file
+	 * @param proxyConfiguration proxy to use for the requests, may be null for a direct connection
+	 * @throws Exception if the credentials are missing or the access token cannot be acquired
 	 */
 	public GoogleCloudConnection(final String applicationCredentialsJsonString, final ProxyConfiguration proxyConfiguration) throws Exception {
 		this.applicationCredentialsJsonString = applicationCredentialsJsonString;
@@ -79,7 +83,7 @@ public class GoogleCloudConnection implements RemoteConnection {
 				throw new Exception("Mandatory credentials data is missing: client_email");
 			}
 			final String privateKeyString = (String) credentials.getSimpleValue("private_key");
-			if (Utilities.isBlank(clientEmail)) {
+			if (Utilities.isBlank(privateKeyString)) {
 				throw new Exception("Mandatory credentials data is missing: private_key");
 			}
 
@@ -113,6 +117,13 @@ public class GoogleCloudConnection implements RemoteConnection {
 		}
 
 		accessToken = (String) ((JsonObject) accessTokenResponseNode).getSimpleValue("access_token");
+		long expiresInSeconds = 3600;
+		final Object expiresInObject = ((JsonObject) accessTokenResponseNode).getSimpleValue("expires_in");
+		if (expiresInObject instanceof Number) {
+			expiresInSeconds = ((Number) expiresInObject).longValue();
+		}
+		// Renew a minute early, so a request does not start with a token that expires during the request
+		accessTokenRenewalTime = LocalDateTime.now().plusSeconds(Math.max(0, expiresInSeconds - 60));
 	}
 
 	@Override
@@ -148,68 +159,42 @@ public class GoogleCloudConnection implements RemoteConnection {
 
 		final List<FileInfo> files = new ArrayList<>();
 
-		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o";
-		final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
-		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
-
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
-
-		if (response.getHttpCode() == 200) {
-			final JsonNode responseNode = Json5Reader.readJsonItemString(response.getContent());
-			if (responseNode.getJsonDataType() != JsonDataType.OBJECT) {
-				throw new Exception("Request for getDirectory returned invalid data: Must be JsonObject, but was " + responseNode.getJsonDataType());
-			}
-			final Object itemsArrayObject = ((JsonObject) responseNode).get("items");
-			if (itemsArrayObject instanceof JsonArray) {
-				String filePathToCheck = pathForExecution.getSecond();
-				if (filePathToCheck.length() > 0) {
-					filePathToCheck = filePathToCheck + "/";
-				}
-
-				boolean pathExists = false;
-				for (final Object itemObject : (JsonArray) itemsArrayObject) {
-					final String name = (String) ((JsonObject) itemObject).getSimpleValue("name");
-					if (name.startsWith(filePathToCheck)) {
-						pathExists = true;
-						final String relativeObjectPath = name.substring(filePathToCheck.length());
-						if (relativeObjectPath.length() > 0) {
-							if (!relativeObjectPath.contains("/")) {
-								// file found
-								final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).getSimpleValue("updated"));
-								final long size = Long.parseLong((String) ((JsonObject) itemObject).getSimpleValue("size"));
-								files.add(new FileInfo(relativeObjectPath, size, modificationDate));
-							} else if (relativeObjectPath.indexOf("/") == relativeObjectPath.lastIndexOf("/")) {
-								// real folder found
-								final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).getSimpleValue("updated"));
-								final String folderName = relativeObjectPath.substring(0, relativeObjectPath.indexOf("/"));
-								interimFolders.put(folderName, new FolderInfo(folderName, modificationDate));
-							} else {
-								// pseudo folder found
-								final String folderName = relativeObjectPath.substring(0, relativeObjectPath.indexOf("/"));
-								if (!interimFolders.containsKey(folderName)) {
-									interimFolders.put(folderName, new FolderInfo(folderName, null));
-								}
-							}
-						}
-					}
-				}
-
-				if (!pathExists) {
-					return null;
-				} else {
-					final List<FolderInfo> folders = new ArrayList<>();
-					for (final FolderInfo folderInfo : interimFolders.values()) {
-						folders.add(folderInfo);
-					}
-
-					return new Tuple<>(folders, files);
-				}
-			} else {
-				throw new Exception("Request for getDirectory returned invalid data: Must be JsonArray of items, but was " + itemsArrayObject.getClass().getSimpleName());
-			}
-		} else {
-			throw new Exception("Request for getDirectory failed: " + response.toString());
+		String filePathToCheck = pathForExecution.getSecond();
+		if (filePathToCheck.length() > 0) {
+			filePathToCheck = filePathToCheck + "/";
 		}
+
+		final List<JsonObject> objects = listObjects(pathForExecution.getFirst(), filePathToCheck);
+		if (objects.isEmpty() && filePathToCheck.length() > 0) {
+			// Neither the folder object nor any object inside of it exists
+			return null;
+		}
+
+		for (final JsonObject itemObject : objects) {
+			final String name = (String) itemObject.getSimpleValue("name");
+			final String relativeObjectPath = name.substring(filePathToCheck.length());
+			if (relativeObjectPath.length() > 0) {
+				if (!relativeObjectPath.contains("/")) {
+					// file found
+					final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) itemObject.getSimpleValue("updated"));
+					final long size = Long.parseLong(itemObject.getSimpleValue("size").toString());
+					files.add(new FileInfo(relativeObjectPath, size, modificationDate));
+				} else if (relativeObjectPath.indexOf("/") == relativeObjectPath.lastIndexOf("/") && relativeObjectPath.endsWith("/")) {
+					// real folder found
+					final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) itemObject.getSimpleValue("updated"));
+					final String folderName = relativeObjectPath.substring(0, relativeObjectPath.indexOf("/"));
+					interimFolders.put(folderName, new FolderInfo(folderName, modificationDate));
+				} else {
+					// pseudo folder found
+					final String folderName = relativeObjectPath.substring(0, relativeObjectPath.indexOf("/"));
+					if (!interimFolders.containsKey(folderName)) {
+						interimFolders.put(folderName, new FolderInfo(folderName, null));
+					}
+				}
+			}
+		}
+
+		return new Tuple<>(new ArrayList<>(interimFolders.values()), files);
 	}
 
 	@Override
@@ -218,53 +203,26 @@ public class GoogleCloudConnection implements RemoteConnection {
 
 		final Tuple<String, String> pathForExecution = prepareFilePath(folderPath);
 
-		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o";
-		final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
-		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
-
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
-
-		if (response.getHttpCode() == 200) {
-			final JsonNode responseNode = Json5Reader.readJsonItemString(response.getContent());
-			if (responseNode.getJsonDataType() != JsonDataType.OBJECT) {
-				throw new Exception("Request for getFolderInfo returned invalid data: Must be JsonObject, but was " + responseNode.getJsonDataType());
-			}
-			final Object itemsArrayObject = ((JsonObject) responseNode).getSimpleValue("items");
-			if (itemsArrayObject instanceof JsonArray) {
-				String filePathToCheck = pathForExecution.getSecond();
-				if (filePathToCheck.length() > 0) {
-					filePathToCheck = filePathToCheck + "/";
-				}
-
-				FolderInfo pseudoFolder = null;
-
-				for (final Object itemObject : (JsonArray) itemsArrayObject) {
-					final String name = (String) ((JsonObject) itemObject).getSimpleValue("name");
-					if (name.startsWith(filePathToCheck)) {
-						final String relativeObjectPath = name.substring(filePathToCheck.length());
-						if (relativeObjectPath.length() == 0) {
-							// real folder found
-							final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).getSimpleValue("updated"));
-							final String folderName = pathForExecution.getSecond().substring(pathForExecution.getSecond().lastIndexOf("/") + 1);
-							return new FolderInfo(folderName, modificationDate);
-						} else if (relativeObjectPath.contains("/")) {
-							// pseudo folder found
-							final String folderName = pathForExecution.getSecond().substring(pathForExecution.getSecond().lastIndexOf("/") + 1);
-							if (Utilities.isNotEmpty(folderName)) {
-								pseudoFolder = new FolderInfo(folderName, null);
-							} else {
-								pseudoFolder = new FolderInfo(pathForExecution.getFirst(), null);
-							}
-						}
-					}
-				}
-				return pseudoFolder;
-			} else {
-				throw new Exception("Request for getFolderInfo returned invalid data: Must be JsonArray of items, but was " + itemsArrayObject.getClass().getSimpleName());
-			}
-		} else {
-			throw new Exception("Request for getFolderInfo failed: " + response.toString());
+		String filePathToCheck = pathForExecution.getSecond();
+		if (filePathToCheck.length() > 0) {
+			filePathToCheck = filePathToCheck + "/";
 		}
+
+		final String folderName = pathForExecution.getSecond().substring(pathForExecution.getSecond().lastIndexOf("/") + 1);
+		FolderInfo pseudoFolder = null;
+		for (final JsonObject itemObject : listObjects(pathForExecution.getFirst(), filePathToCheck)) {
+			final String name = (String) itemObject.getSimpleValue("name");
+			final String relativeObjectPath = name.substring(filePathToCheck.length());
+			if (relativeObjectPath.length() == 0) {
+				// real folder found
+				final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) itemObject.getSimpleValue("updated"));
+				return new FolderInfo(folderName, modificationDate);
+			} else if (pseudoFolder == null) {
+				// pseudo folder found (objects with this path prefix exist)
+				pseudoFolder = new FolderInfo(Utilities.isNotEmpty(folderName) ? folderName : pathForExecution.getFirst(), null);
+			}
+		}
+		return pseudoFolder;
 	}
 
 	@Override
@@ -323,37 +281,32 @@ public class GoogleCloudConnection implements RemoteConnection {
 		checkForConnection();
 
 		final Tuple<String, String> pathForExecution = prepareFilePath(filePath);
+		if (pathForExecution.getSecond().length() == 0) {
+			// A bucket is no file
+			return null;
+		}
 
-		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o";
+		// Request the object's metadata directly instead of searching it in the (paged) object list
+		final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(pathForExecution.getFirst()) + "/o/" + urlEncodePath(pathForExecution.getSecond());
 		final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
 		request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
 
 		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
-
-		if (response.getHttpCode() == 200) {
-			final JsonNode responseNode = Json5Reader.readJsonItemString(response.getContent());
-			if (responseNode.getJsonDataType() != JsonDataType.OBJECT) {
-				throw new Exception("Request for getFolderInfo returned invalid data: Must be JsonObject, but was " + responseNode.getJsonDataType());
-			}
-			final Object itemsArrayObject = ((JsonObject) responseNode).get("items");
-			if (itemsArrayObject instanceof JsonArray) {
-				final String filePathToCheck = pathForExecution.getSecond();
-
-				for (final Object itemObject : (JsonArray) itemsArrayObject) {
-					final String name = (String) ((JsonObject) itemObject).getSimpleValue("name");
-					if (name.equals(filePathToCheck)) {
-						final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) ((JsonObject) itemObject).getSimpleValue("updated"));
-						final long size = Long.parseLong((String) ((JsonObject) itemObject).getSimpleValue("size"));
-						return new FileInfo(name.substring(name.lastIndexOf("/") + 1), size, modificationDate);
-					}
-				}
-				return null;
-			} else {
-				throw new Exception("Request for getFolderInfo returned invalid data: Must be JsonArray of items, but was " + itemsArrayObject.getClass().getSimpleName());
-			}
-		} else {
-			throw new Exception("Request for getFolderInfo failed: " + response.toString());
+		if (response.getHttpCode() == 404) {
+			return null;
+		} else if (response.getHttpCode() != 200) {
+			throw new Exception("Request for getFileInfo failed: " + response.toString());
 		}
+
+		final JsonNode responseNode = Json5Reader.readJsonItemString(response.getContent());
+		if (responseNode.getJsonDataType() != JsonDataType.OBJECT) {
+			throw new Exception("Request for getFileInfo returned invalid data: Must be JsonObject, but was " + responseNode.getJsonDataType());
+		}
+		final JsonObject itemObject = (JsonObject) responseNode;
+		final String name = (String) itemObject.getSimpleValue("name");
+		final ZonedDateTime modificationDate = DateUtilities.parseIso8601DateTimeString((String) itemObject.getSimpleValue("updated"));
+		final long size = Long.parseLong(itemObject.getSimpleValue("size").toString());
+		return new FileInfo(name.substring(name.lastIndexOf("/") + 1), size, modificationDate);
 	}
 
 	@Override
@@ -422,7 +375,46 @@ public class GoogleCloudConnection implements RemoteConnection {
 	private void checkForConnection() throws Exception {
 		if (accessToken == null) {
 			throw new Exception("GoogleCloudConnection is not connected");
+		} else if (accessTokenRenewalTime != null && LocalDateTime.now().isAfter(accessTokenRenewalTime)) {
+			// The access token expires after one hour, long running sessions need a new one
+			connect();
 		}
+	}
+
+	/**
+	 * Lists all objects of a bucket whose names start with the given prefix. Follows the paging of the API,
+	 * which returns at most 1000 objects per request.
+	 */
+	private List<JsonObject> listObjects(final String bucketName, final String prefix) throws Exception {
+		final List<JsonObject> objects = new ArrayList<>();
+		String pageToken = null;
+		do {
+			final String requestUrl = "https://storage.googleapis.com/storage/v1/b/" + urlEncodePath(bucketName) + "/o?prefix=" + urlEncodePath(prefix)
+					+ (pageToken != null ? "&pageToken=" + urlEncodePath(pageToken) : "");
+			final HttpRequest request = new HttpRequest(HttpMethod.GET, requestUrl);
+			request.addHeader("Authorization", "Bearer " + URLEncoder.encode(accessToken, "UTF-8"));
+
+			final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
+			if (response.getHttpCode() != 200) {
+				throw new Exception("Request for object list failed: " + response.toString());
+			}
+			final JsonNode responseNode = Json5Reader.readJsonItemString(response.getContent());
+			if (responseNode.getJsonDataType() != JsonDataType.OBJECT) {
+				throw new Exception("Request for object list returned invalid data: Must be JsonObject, but was " + responseNode.getJsonDataType());
+			}
+			final Object itemsArrayObject = ((JsonObject) responseNode).get("items");
+			if (itemsArrayObject instanceof JsonArray) {
+				for (final Object itemObject : (JsonArray) itemsArrayObject) {
+					objects.add((JsonObject) itemObject);
+				}
+			} else if (itemsArrayObject != null) {
+				throw new Exception("Request for object list returned invalid data: Must be JsonArray of items, but was " + itemsArrayObject.getClass().getSimpleName());
+			}
+			// "items" is missing if no objects match
+			final Object nextPageToken = ((JsonObject) responseNode).getSimpleValue("nextPageToken");
+			pageToken = nextPageToken == null ? null : nextPageToken.toString();
+		} while (pageToken != null);
+		return objects;
 	}
 
 	private static Tuple<String, String> prepareFilePath(String path) throws Exception {

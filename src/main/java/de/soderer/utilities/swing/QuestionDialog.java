@@ -20,17 +20,46 @@ import javax.swing.JTextArea;
 import de.soderer.utilities.LangResources;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Modal dialog showing a (possibly multi-line) text with a row of answer
+ * buttons and an optional checkbox.
+ *
+ * <p>
+ * {@link #open()} returns the index of the pressed button, or null if the
+ * dialog was closed via the window decoration or (without button texts) via
+ * the close button.
+ * </p>
+ */
 public class QuestionDialog extends ModalDialog<Integer> {
 	private static final long serialVersionUID = 2020023796052296409L;
 
+	/** Text to show */
 	private final String text;
+
+	/** Background color of the text area, null for the panel's background */
 	private Color backgroundcolor = null;
+
+	/** Texts of the answer buttons; if none are given, a single "close" button is shown */
 	private final String[] buttonTexts;
+
+	/** Text of the additional checkbox, blank for no checkbox */
 	private String checkboxText = null;
+
+	/** Status of the checkbox, also available after the dialog was closed */
 	private boolean checkboxStatus = false;
 
+	/** Content panel, rebuilt whenever an option affecting the layout changes */
 	private JPanel panel;
 
+	/**
+	 * Creates a question dialog. The first button is the default button.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text to show
+	 * @param buttonTexts texts of the answer buttons; if none are given, a single
+	 *            "close" button is shown
+	 */
 	public QuestionDialog(final Window parent, final String title, final String text, final String... buttonTexts) {
 		super(parent, title);
 
@@ -153,6 +182,13 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		}
 	}
 
+	/**
+	 * Sets the background color of the text area, e.g.
+	 * {@link SwingColor#LightRed} for error messages.
+	 *
+	 * @param backgroundcolor background color, null for the panel's background
+	 * @return this dialog for chaining
+	 */
 	public QuestionDialog setBackgroundColor(final Color backgroundcolor) {
 		this.backgroundcolor = backgroundcolor;
 		remove(panel);
@@ -160,6 +196,12 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		return this;
 	}
 
+	/**
+	 * Sets the text of an additional checkbox shown below the text.
+	 *
+	 * @param checkboxText text of the checkbox, blank for no checkbox
+	 * @return this dialog for chaining
+	 */
 	public QuestionDialog setCheckboxText(final String checkboxText) {
 		this.checkboxText = checkboxText;
 		remove(panel);
@@ -167,6 +209,12 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		return this;
 	}
 
+	/**
+	 * Sets the initial status of the checkbox.
+	 *
+	 * @param checkboxStatus true to check the checkbox initially
+	 * @return this dialog for chaining
+	 */
 	public QuestionDialog setCheckboxStatus(final boolean checkboxStatus) {
 		this.checkboxStatus = checkboxStatus;
 		remove(panel);
@@ -174,6 +222,11 @@ public class QuestionDialog extends ModalDialog<Integer> {
 		return this;
 	}
 
+	/**
+	 * Returns the status of the checkbox, also after the dialog was closed.
+	 *
+	 * @return true if the checkbox is checked
+	 */
 	public boolean getCheckboxStatus() {
 		return checkboxStatus;
 	}

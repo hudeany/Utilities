@@ -18,7 +18,21 @@ import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.Utilities;
 
+/**
+ * Static helper methods for reading and writing gzip compressed tar archives (".tar.gz").
+ */
 public class TarGzUtilities {
+	private TarGzUtilities() {
+		// Utility class with static methods only
+	}
+
+	/**
+	 * Returns the total size of all files in a tar.gz archive.
+	 *
+	 * @param tarGzFile tar.gz archive to read
+	 * @return sum of the uncompressed sizes of all files in bytes
+	 * @throws Exception if the archive does not exist or cannot be read
+	 */
 	public static long getUncompressedSize(final File tarGzFile) throws Exception {
 		if (!tarGzFile.exists()) {
 			throw new Exception("TarGz file does not exist: " + tarGzFile.getAbsolutePath());
@@ -40,6 +54,13 @@ public class TarGzUtilities {
 		}
 	}
 
+	/**
+	 * Returns the number of files (without directories) in a tar.gz archive.
+	 *
+	 * @param tarGzFile tar.gz archive to read
+	 * @return number of files
+	 * @throws Exception if the archive does not exist or cannot be read
+	 */
 	public static int getFilesCount(final File tarGzFile) throws Exception {
 		if (!tarGzFile.exists()) {
 			throw new Exception("TarGz file does not exist: " + tarGzFile.getAbsolutePath());
@@ -61,6 +82,14 @@ public class TarGzUtilities {
 		}
 	}
 
+	/**
+	 * Extracts all files of a tar.gz archive into a new directory. Entries pointing outside of the destination
+	 * directory (path traversal) are rejected. On error the destination directory is deleted again.
+	 *
+	 * @param tarGzFile tar.gz archive to extract
+	 * @param decompressToPath destination directory, which must not exist yet
+	 * @throws Exception if the archive does not exist or cannot be extracted, or the destination already exists
+	 */
 	public static void decompress(final File tarGzFile, final File decompressToPath) throws Exception {
 		if (!tarGzFile.exists()) {
 			throw new Exception("TarGz file does not exist: " + tarGzFile.getAbsolutePath());
@@ -83,7 +112,8 @@ public class TarGzUtilities {
 						throw new Exception("Traversal error in tar gz file: " + tarGzFile.getAbsolutePath());
 					}
 					final File currentfile = new File(decompressToPath, entryFilePath);
-					if (!currentfile.getCanonicalPath().startsWith(decompressToPath.getCanonicalPath())) {
+					// Compare with trailing separator, otherwise a sibling directory like "dest2" would pass for "dest"
+					if (!currentfile.getCanonicalPath().startsWith(decompressToPath.getCanonicalPath() + File.separator)) {
 						throw new Exception("Traversal error in tar gz file: " + tarGzFile.getAbsolutePath() + "/");
 					}
 					final File parent = currentfile.getParentFile();
@@ -109,15 +139,30 @@ public class TarGzUtilities {
 		}
 	}
 
+	/**
+	 * Creates a tar.gz archive containing a single file, stored under its file name.
+	 *
+	 * @param tarGzFile tar.gz archive to create, must not exist yet
+	 * @param fileToCompress file to put into the archive
+	 * @throws IOException if the archive exists already or cannot be written
+	 */
 	public static void compress(final File tarGzFile, final File fileToCompress) throws IOException {
 		compress(tarGzFile, fileToCompress, null);
 	}
 
+	/**
+	 * Creates a tar.gz archive containing a single file.
+	 *
+	 * @param tarGzFile tar.gz archive to create, must not exist yet
+	 * @param fileToCompress file to put into the archive
+	 * @param filePathInTarGzFile path of the file inside the archive, or null to use the file name
+	 * @throws IOException if the archive exists already or cannot be written
+	 */
 	public static void compress(final File tarGzFile, final File fileToCompress, String filePathInTarGzFile) throws IOException {
 		if (tarGzFile.exists()) {
 			throw new IOException("TarGz file already exists: " + tarGzFile.getAbsolutePath());
-		} else if (!tarGzFile.getParentFile().exists()) {
-			throw new IOException("Parent directory for TarGz file does not exist: " + tarGzFile.getParentFile().getAbsolutePath());
+		} else if (!tarGzFile.getAbsoluteFile().getParentFile().exists()) {
+			throw new IOException("Parent directory for TarGz file does not exist: " + tarGzFile.getAbsoluteFile().getParentFile().getAbsolutePath());
 		}
 
 		if (filePathInTarGzFile == null) {
@@ -138,10 +183,25 @@ public class TarGzUtilities {
 		}
 	}
 
+	/**
+	 * Opens the first file of a tar.gz archive for reading.
+	 *
+	 * @param tarGzFile tar.gz archive to read
+	 * @return stream positioned at the content of the first file, the caller must close it
+	 * @throws Exception if the archive does not exist, cannot be read or contains no file
+	 */
 	public static InputStream openCompressedFile(final File tarGzFile) throws Exception {
 		return openCompressedFile(tarGzFile, null);
 	}
 
+	/**
+	 * Opens a file of a tar.gz archive for reading.
+	 *
+	 * @param tarGzFile tar.gz archive to read
+	 * @param filePathInTarGzFile path of the file inside the archive, or null for the first file
+	 * @return stream positioned at the content of the file, the caller must close it
+	 * @throws Exception if the archive does not exist, cannot be read or does not contain the file
+	 */
 	public static InputStream openCompressedFile(final File tarGzFile, final String filePathInTarGzFile) throws Exception {
 		if (!tarGzFile.exists()) {
 			throw new Exception("TarGz file does not exist: " + tarGzFile.getAbsolutePath());

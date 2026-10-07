@@ -24,6 +24,10 @@ import com.sun.jna.platform.win32.WinUser.MSG;
  * for implementing a real, properly scoped input hook.
  */
 public class LowLevelJnaKeyLogger {
+	private LowLevelJnaKeyLogger() {
+		// Only static methods
+	}
+
 	/**
 	 * Virtual-key code for 'Q', used here only to let this sample terminate itself.
 	 */
@@ -32,6 +36,11 @@ public class LowLevelJnaKeyLogger {
 	private static boolean quit;
 	private static HHOOK hhk;
 
+	/**
+	 * Installs the keyboard hook and prints the key events until 'Q' is pressed.
+	 *
+	 * @param args not used
+	 */
 	public static void main(final String[] args) {
 		final boolean handDownInEventChain = false;
 
@@ -43,28 +52,28 @@ public class LowLevelJnaKeyLogger {
 				if (nCode >= 0) {
 					switch (wParam.intValue()) {
 						case WinUser.WM_KEYUP:
-							System.err.println("key down, key=" + info.vkCode);
-
-							if (info.vkCode == VK_Q) {
-								quit = true;
-							}
-							break;
-						case WinUser.WM_KEYDOWN:
 							System.err.println("key up, key=" + info.vkCode);
 
 							if (info.vkCode == VK_Q) {
 								quit = true;
 							}
 							break;
+						case WinUser.WM_KEYDOWN:
+							System.err.println("key down, key=" + info.vkCode);
+
+							if (info.vkCode == VK_Q) {
+								quit = true;
+							}
+							break;
 						case WinUser.WM_SYSKEYUP:
-							System.err.println("syskey down, key=" + info.vkCode);
+							System.err.println("syskey up, key=" + info.vkCode);
 
 							if (info.vkCode == VK_Q) {
 								quit = true;
 							}
 							break;
 						case WinUser.WM_SYSKEYDOWN:
-							System.err.println("syskey up, key=" + info.vkCode);
+							System.err.println("syskey down, key=" + info.vkCode);
 
 							if (info.vkCode == VK_Q) {
 								quit = true;

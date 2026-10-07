@@ -18,11 +18,26 @@ import javax.swing.table.DefaultTableModel;
 
 import de.soderer.utilities.Utilities;
 
+/**
+ * Modal dialog showing a read-only table of string values with a close
+ * button. {@link #open()} returns null.
+ */
 public class TableDialog extends ModalDialog<Boolean> {
 	private static final long serialVersionUID = -718203702968699038L;
 
+	/** Read-only table showing the values */
 	private JTable table;
 
+	/**
+	 * Creates a table dialog.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the table, may be blank
+	 * @param headers column headers
+	 * @param items rows of the table, each with one value per header
+	 * @param closeButtonText text of the close button
+	 */
 	public TableDialog(final Window parent, final String title, final String text, final List<String> headers, final List<List<String>> items, final String closeButtonText) {
 		super(parent, title);
 

@@ -16,17 +16,42 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumn;
 
 import de.soderer.utilities.Utilities;
 
+/**
+ * Modal dialog showing a table with a checkbox in front of every row, so the
+ * user can select rows.
+ *
+ * <p>
+ * {@link #open()} returns true if the user confirmed the selection, false if
+ * the dialog was canceled and null if it was closed via the window decoration.
+ * The selected rows are available via {@link #getSelectedItems()}.
+ * </p>
+ */
 public class SelectableTableDialog extends ModalDialog<Boolean> {
 	private static final long serialVersionUID = -718203702968699038L;
 
+	/** Table with a checkbox column in front of the value columns */
 	private JTable table;
 
+	/** Rows selected by the user with their values in the order of the headers, null if the dialog was not confirmed */
 	private List<List<String>> selectedItems;
 
+	/**
+	 * Creates a selectable table dialog.
+	 *
+	 * @param parent owner window, may be null
+	 * @param title title of the dialog
+	 * @param text text shown above the table, may be blank
+	 * @param headers column headers
+	 * @param items rows of the table, each with one value per header
+	 * @param defaultState initial status of the row checkboxes
+	 * @param selectAllButtonText text of the "select all" button, blank for no button
+	 * @param selectNoneButtonText text of the "select none" button, blank for no button
+	 * @param selectButtonText text of the button confirming the selection
+	 * @param cancelButtonText text of the cancel button
+	 */
 	public SelectableTableDialog(final Window parent, final String title, final String text, final List<String> headers, final List<List<String>> items, final boolean defaultState, final String selectAllButtonText, final String selectNoneButtonText, final String selectButtonText, final String cancelButtonText) {
 		super(parent, title);
 
@@ -111,13 +136,9 @@ public class SelectableTableDialog extends ModalDialog<Boolean> {
 			selectAllButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(final ActionEvent event) {
-					for (int rowIndex = 0; rowIndex < table.getRowCount(); rowIndex++) {
-						for (int searchIndex = 0; searchIndex < table.getColumnCount(); searchIndex++) {
-							final TableColumn column = table.getColumnModel().getColumn(searchIndex);
-							if ("".equals(column.getHeaderValue())) {
-								table.getModel().setValueAt(true, rowIndex, searchIndex);
-							}
-						}
+					// Model indexes: the user may have reordered the view columns
+					for (int rowIndex = 0; rowIndex < tableModel.getRowCount(); rowIndex++) {
+						tableModel.setValueAt(true, rowIndex, 0);
 					}
 				}
 			});
@@ -131,13 +152,9 @@ public class SelectableTableDialog extends ModalDialog<Boolean> {
 			selectNoneButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(final ActionEvent event) {
-					for (int rowIndex = 0; rowIndex < table.getRowCount(); rowIndex++) {
-						for (int searchIndex = 0; searchIndex < table.getColumnCount(); searchIndex++) {
-							final TableColumn column = table.getColumnModel().getColumn(searchIndex);
-							if ("".equals(column.getHeaderValue())) {
-								table.getModel().setValueAt(false, rowIndex, searchIndex);
-							}
-						}
+					// Model indexes: the user may have reordered the view columns
+					for (int rowIndex = 0; rowIndex < tableModel.getRowCount(); rowIndex++) {
+						tableModel.setValueAt(false, rowIndex, 0);
 					}
 				}
 			});
@@ -156,29 +173,14 @@ public class SelectableTableDialog extends ModalDialog<Boolean> {
 		selectButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent event) {
+				// Read the model by model indexes (column 0 is the checkbox, column i + 1 is header i):
+				// view column indexes differ from the model indexes after the user reordered columns
 				selectedItems = new ArrayList<>();
-				for (int rowIndex = 0; rowIndex < table.getRowCount(); rowIndex++) {
-					boolean selected = false;
-					for (int searchIndex = 0; searchIndex < table.getColumnCount(); searchIndex++) {
-						final TableColumn column = table.getColumnModel().getColumn(searchIndex);
-						if ("".equals(column.getHeaderValue())) {
-							selected = (Boolean) table.getModel().getValueAt(rowIndex, searchIndex);
-						}
-					}
-					if (selected) {
+				for (int rowIndex = 0; rowIndex < tableModel.getRowCount(); rowIndex++) {
+					if (Boolean.TRUE.equals(tableModel.getValueAt(rowIndex, 0))) {
 						final List<String> item = new ArrayList<>();
-						for (final String columnName : headers) {
-							int columnIndex = 0;
-							for (int searchIndex = 0; searchIndex < table.getColumnCount(); searchIndex++) {
-								final TableColumn column = table.getColumnModel().getColumn(searchIndex);
-								if (columnName.equals(column.getHeaderValue())) {
-									columnIndex = searchIndex;
-									break;
-								}
-							}
-							if (columnIndex > 0) {
-								item.add((String) table.getModel().getValueAt(rowIndex, columnIndex));
-							}
+						for (int columnIndex = 1; columnIndex <= headers.size(); columnIndex++) {
+							item.add((String) tableModel.getValueAt(rowIndex, columnIndex));
 						}
 						selectedItems.add(item);
 					}
@@ -210,7 +212,7 @@ public class SelectableTableDialog extends ModalDialog<Boolean> {
 		panel.add(tablePanel);
 		if (Utilities.isNotBlank(selectAllButtonText) || Utilities.isNotBlank(selectNoneButtonText)) {
 			panel.add(buttonPanel1);
-			add(Box.createRigidArea(new Dimension(0, 5)));
+			panel.add(Box.createRigidArea(new Dimension(0, 5)));
 		}
 		panel.add(buttonPanel2);
 
@@ -223,6 +225,12 @@ public class SelectableTableDialog extends ModalDialog<Boolean> {
 		getRootPane().setDefaultButton(selectButton);
 	}
 
+	/**
+	 * Returns the rows selected by the user.
+	 *
+	 * @return selected rows with their values in the order of the headers, null
+	 *         if the dialog was not confirmed
+	 */
 	public List<List<String>> getSelectedItems() {
 		return selectedItems;
 	}

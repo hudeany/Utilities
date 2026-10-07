@@ -30,7 +30,9 @@ import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
 /**
- * May need installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength Download: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
+ * Worker that decrypts PGP encrypted data (ASCII-armored or binary) with a PGP secret key.<br>
+ * By default the message must be integrity protected (modification detection code).<br>
+ * Old JREs may need the installed "US_export_policy.jar" and "local_policy.jar" for unlimited key strength.
  */
 public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 	private InputStream encryptedData = null;
@@ -39,6 +41,15 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 	private char[] password = null;
 	private boolean useIntegrityPacket = true;
 
+	/**
+	 * Creates a PGP decryption worker. The streams are not closed by the worker.
+	 *
+	 * @param parent parent to report progress to, may be null
+	 * @param encryptedData stream with the PGP encrypted data
+	 * @param decryptedData stream to write the decrypted data to
+	 * @param secretKey secret key of the recipient
+	 * @param password password of the secret key
+	 */
 	public PGPFileDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedData, final OutputStream decryptedData, final PGPSecretKey secretKey, final char[] password) {
 		super(parent);
 		this.encryptedData = encryptedData;
@@ -47,10 +58,21 @@ public class PGPFileDecryptionWorker extends WorkerSimple<Boolean> {
 		this.password = password;
 	}
 
+	/**
+	 * Returns whether messages without integrity packet are rejected.
+	 *
+	 * @return true if an integrity packet is required
+	 */
 	public boolean isUseIntegrityPacket() {
 		return useIntegrityPacket;
 	}
 
+	/**
+	 * Sets whether messages without integrity packet are rejected (default true).
+	 *
+	 * @param useIntegrityPacket true to require an integrity packet
+	 * @return this worker
+	 */
 	public PGPFileDecryptionWorker setUseIntegrityPacket(final boolean useIntegrityPacket) {
 		this.useIntegrityPacket = useIntegrityPacket;
 		return this;

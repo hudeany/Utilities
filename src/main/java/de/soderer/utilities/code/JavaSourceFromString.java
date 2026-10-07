@@ -16,9 +16,19 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 
+/**
+ * Java source file whose content is held in a String, for compiling code at runtime with
+ * {@link javax.tools.JavaCompiler}.
+ */
 public class JavaSourceFromString extends SimpleJavaFileObject {
 	private final String code;
 
+	/**
+	 * Creates a source file object for the given class.
+	 *
+	 * @param name fully qualified name of the class, e.g. "de.soderer.test.SimpleWorker"
+	 * @param code complete Java source code of the class
+	 */
 	public JavaSourceFromString(final String name, final String code) {
 		super(URI.create("string:///" + name.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
 		this.code = code;
@@ -29,6 +39,12 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
 		return code;
 	}
 
+	/**
+	 * Example of compiling and executing a class from a source String at runtime.
+	 * The class is compiled into "~/tmp/jitClasses".
+	 *
+	 * @param args not used
+	 */
 	public static void main(final String[] args) {
 		try {
 			final JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
@@ -55,28 +71,22 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
 			options.add("-d");
 			options.add(compilationPath);
 			options.add("-classpath");
-			try (URLClassLoader urlClassLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader()) {
-				final StringBuilder stringBuilder = new StringBuilder();
-				for (final URL url : urlClassLoader.getURLs()) {
-					stringBuilder.append(url.getFile()).append(File.pathSeparator);
-				}
-				stringBuilder.append(compilationPath);
-				options.add(stringBuilder.toString());
+			// Since Java 9 the application class loader is no URLClassLoader anymore, and it must not be closed
+			options.add(System.getProperty("java.class.path") + File.pathSeparator + compilationPath);
 
-				final StringWriter output = new StringWriter();
-				final boolean success = javaCompiler.getTask(output, null, null, options, null, fileObjects).call();
-				if (success) {
-					try (URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { new File(compilationPath).toURI().toURL() })) {
-						final Class<?> clazz = Class.forName("de.soderer.test.SimpleWorker", true, classLoader);
-						final Constructor<?> constructor = ClassUtilities.getConstructor(clazz);
-						constructor.setAccessible(true);
-						final Object instance = constructor.newInstance();
-						final Method method = clazz.getMethod("runJob");
-						method.invoke(instance);
-					}
-				} else {
-					throw new Exception("Compilation failed :" + output);
+			final StringWriter output = new StringWriter();
+			final boolean success = javaCompiler.getTask(output, null, null, options, null, fileObjects).call();
+			if (success) {
+				try (URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { new File(compilationPath).toURI().toURL() })) {
+					final Class<?> clazz = Class.forName("de.soderer.test.SimpleWorker", true, classLoader);
+					final Constructor<?> constructor = ClassUtilities.getConstructor(clazz);
+					constructor.setAccessible(true);
+					final Object instance = constructor.newInstance();
+					final Method method = clazz.getMethod("runJob");
+					method.invoke(instance);
 				}
+			} else {
+				throw new Exception("Compilation failed :" + output);
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();

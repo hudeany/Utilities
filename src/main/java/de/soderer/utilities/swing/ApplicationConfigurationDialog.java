@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -85,16 +86,37 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 
 	private static final int MAX_INITIAL_HEIGHT = 600;
 
+	/** Application window, owner of the dialog and parent of an update started from the dialog */
 	private final UpdateableGuiApplication updateParent;
+
+	/** Name of the application, used in titles and for desktop link and icon file names */
 	private final String applicationName;
+
+	/** WM_CLASS of the application, used for the Linux desktop link (may be null) */
 	private final String applicationClassName;
+
+	/** Version of the application, shown in the title and used for the update check */
 	private final Version applicationVersion;
+
+	/** Build time of the application, shown as first row (may be null) */
 	private final LocalDateTime applicationBuildTime;
+
+	/** Configuration shown and changed by this dialog */
 	private final ConfigurationProperties applicationConfiguration;
+
+	/** Icon data (.ico) for the Windows desktop link (may be null) */
 	private final byte[] iconImageDataWindows;
+
+	/** Icon of the dialog and the Linux desktop link (may be null) */
 	private final Image iconImageLinux;
+
+	/** URL of the version information for the update check, blank for no update button */
 	private final String versioninfoDownloadURL;
+
+	/** Trusted CA certificates for the update signature check */
 	private final String trustedUpdateCaCertificates;
+
+	/** Application parameters passed to a restarted application after an update */
 	private final List<String> appParameters;
 
 	/** Changed values not yet written to the configuration (String or Boolean) */
@@ -106,6 +128,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	/** Suppresses change tracking and info messages while values are set programmatically */
 	private boolean technicalChange = false;
 
+	/** Input component per configuration key (text field, checkbox or drop down) */
 	private final Map<String, JComponent> valueComponents = new HashMap<>();
 
 	/** Languages offered for selection, if the configuration contains no enum definition for the language key */
@@ -117,8 +140,31 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	/** Per drop down key: stored value -> text shown in the drop down */
 	private final Map<String, Map<String, String>> dropDownDisplayValues = new HashMap<>();
 
+	/** Last selected language, to show the restart info only when the language really changes */
 	private String lastLanguageValue;
 
+	/**
+	 * Creates the configuration dialog.
+	 *
+	 * @param updateParent application window, owner of the dialog and parent of an
+	 *            update started from the dialog
+	 * @param applicationName name of the application
+	 * @param applicationClassName WM_CLASS of the application, used for the Linux
+	 *            desktop link, may be null
+	 * @param applicationVersion version of the application
+	 * @param applicationBuildTime build time of the application, may be null
+	 * @param applicationConfiguration configuration to show and change
+	 * @param iconImageDataWindows icon data (.ico) for the Windows desktop link,
+	 *            may be null
+	 * @param iconImageLinux icon of the dialog and the Linux desktop link, may be
+	 *            null
+	 * @param versioninfoDownloadURL URL of the version information for the update
+	 *            check, blank for no update button
+	 * @param trustedUpdateCaCertificates trusted CA certificates for the update
+	 *            signature check
+	 * @param appParameters application parameters passed to a restarted
+	 *            application after an update
+	 */
 	public ApplicationConfigurationDialog(final UpdateableGuiApplication updateParent, final String applicationName, final String applicationClassName, final Version applicationVersion, final LocalDateTime applicationBuildTime, final ConfigurationProperties applicationConfiguration, final byte[] iconImageDataWindows, final Image iconImageLinux, final String versioninfoDownloadURL, final String trustedUpdateCaCertificates, final List<String> appParameters) {
 		super(updateParent, applicationName + " (Version " + applicationVersion.toString() + ") " + LangResources.get("configuration"));
 
@@ -384,7 +430,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	private void updateProxyUrlEnabledStatus() {
 		final JComponent proxyUrlComponent = valueComponents.get(ConfigurationProperties.CONFIG_KEY_PROXY_URL);
 		if (proxyUrlComponent != null && valueComponents.containsKey(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE)) {
-			final String proxyType = getProxyConfigurationType() == null ? "" : getProxyConfigurationType().replaceAll("[^A-Za-z]", "").toLowerCase();
+			final String proxyType = getProxyConfigurationType() == null ? "" : getProxyConfigurationType().replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
 			proxyUrlComponent.setEnabled(!"none".equals(proxyType) && !"system".equals(proxyType) && !"wpad".equals(proxyType));
 		}
 	}
@@ -687,7 +733,7 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 				// %U-parameter allows drag and drop of files on starter bar in unity
 				// JVM option "--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED" allows the application to be pinned in the Linux Gnome applications dock.
 				// JVM options must be placed before "-jar", everything after the jar file path is passed to the application.
-				data.append("Exec=java --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED -jar \"" + applicationJarFileName + "\" %U\n");
+				data.append("Exec=java --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED -jar " + quoteDesktopExecArgument(applicationJarFileName) + " %U\n");
 				data.append("Terminal=false\n");
 				data.append("Type=Application\n");
 
@@ -783,6 +829,29 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 	}
 
 	/**
+	 * Quotes a single argument for the "Exec" key of a Linux .desktop file.
+	 * Within the quotes the characters '"', '`', '$' and the backslash must be escaped by a
+	 * backslash, then backslashes must be escaped once more, because the value of
+	 * the key is a string with its own escape rules. Field codes are introduced
+	 * by '%', so a literal '%' must be doubled.
+	 */
+	private static String quoteDesktopExecArgument(final String argument) {
+		final StringBuilder quotedArgument = new StringBuilder("\"");
+		for (final char character : argument.toCharArray()) {
+			if (character == '\\') {
+				quotedArgument.append("\\\\\\\\");
+			} else if (character == '"' || character == '`' || character == '$') {
+				quotedArgument.append("\\\\").append(character);
+			} else if (character == '%') {
+				quotedArgument.append("%%");
+			} else {
+				quotedArgument.append(character);
+			}
+		}
+		return quotedArgument.append('"').toString();
+	}
+
+	/**
 	 * ImageIO can only write RenderedImages, but e.g. ImageIcon.getImage() returns
 	 * a toolkit image, so any other image type is drawn into a BufferedImage.
 	 */
@@ -849,46 +918,90 @@ public class ApplicationConfigurationDialog extends ModalDialog<Result> {
 		updateProxyUrlEnabledStatus();
 	}
 
+	/**
+	 * Returns the language shown in the dialog (possibly not yet saved).
+	 *
+	 * @return language code, may be null
+	 */
 	public String getLanguage() {
 		return getCurrentValue(ConfigurationProperties.CONFIG_KEY_LANGUAGE);
 	}
 
+	/**
+	 * Sets the language shown in the dialog. It is written to the configuration
+	 * together with the user's changes when the user saves.
+	 *
+	 * @param language language code
+	 */
 	public void setLanguage(final String language) {
 		lastLanguageValue = language;
 		setCurrentValue(ConfigurationProperties.CONFIG_KEY_LANGUAGE, language);
 	}
 
+	/**
+	 * Returns the proxy configuration type shown in the dialog (possibly not yet
+	 * saved).
+	 *
+	 * @return proxy configuration type (e.g. "None", "System", "Proxy-URL"), may be
+	 *         null
+	 */
 	public String getProxyConfigurationType() {
 		return getCurrentValue(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE);
 	}
 
+	/**
+	 * Sets the proxy configuration type shown in the dialog. It is written to the
+	 * configuration together with the user's changes when the user saves.
+	 *
+	 * @param proxyConfigurationType proxy configuration type
+	 */
 	public void setProxyConfigurationType(final String proxyConfigurationType) {
 		setCurrentValue(ConfigurationProperties.CONFIG_KEY_PROXY_CONFIGURATION_TYPE, proxyConfigurationType);
 	}
 
+	/**
+	 * Returns the proxy URL shown in the dialog (possibly not yet saved).
+	 *
+	 * @return proxy URL, may be null
+	 */
 	public String getProxyUrl() {
 		return getCurrentValue(ConfigurationProperties.CONFIG_KEY_PROXY_URL);
 	}
 
+	/**
+	 * Sets the proxy URL shown in the dialog. It is written to the configuration
+	 * together with the user's changes when the user saves.
+	 *
+	 * @param proxyUrl proxy URL
+	 */
 	public void setProxyUrl(final String proxyUrl) {
 		setCurrentValue(ConfigurationProperties.CONFIG_KEY_PROXY_URL, proxyUrl);
 	}
 
+	/**
+	 * Returns the languages offered for selection, if the configuration contains
+	 * no enum definition for the language key.
+	 *
+	 * @return language codes
+	 */
 	public List<String> getAvailableLanguages() {
 		return availableLanguages;
 	}
 
 	/**
-	 * Languages offered for selection, if the configuration itself contains no
-	 * enum definition for the language key.
+	 * Sets the languages offered for selection, if the configuration itself
+	 * contains no enum definition for the language key.
+	 *
+	 * @param availableLanguages language codes, null for none
+	 * @return this dialog for chaining
 	 */
 	public ApplicationConfigurationDialog setAvailableLanguages(final List<String> availableLanguages) {
-		this.availableLanguages = availableLanguages;
+		this.availableLanguages = availableLanguages == null ? new ArrayList<>() : availableLanguages;
 
 		if (availableLanguagesDropDown != null) {
 			technicalChange = true;
 			try {
-				fillDropDown(ConfigurationProperties.CONFIG_KEY_LANGUAGE, availableLanguagesDropDown, availableLanguages, getLanguage());
+				fillDropDown(ConfigurationProperties.CONFIG_KEY_LANGUAGE, availableLanguagesDropDown, this.availableLanguages, getLanguage());
 			} finally {
 				technicalChange = false;
 			}

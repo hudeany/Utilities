@@ -6,17 +6,33 @@ import java.awt.datatransfer.DataFlavor;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.console.ConsoleUtilities.TextAttribute;
 
+/**
+ * Password input for ANSI consoles, showing a hide character instead of the entered characters, with cursor movement,
+ * insert/overwrite mode and paste (Ctrl+V). The input is kept as char array and never as String.
+ * In other consoles the password is read via {@link System#console()}.
+ */
 public class PasswordConsoleInput {
 	private boolean silent = false;
 	private final char hideCharacter;
 	private String allowedCharacters = null;
 	private String prompt = "";
+	/**
+	 * Content the input starts with.
+	 */
 	protected String presetContent = "";
 
+	/**
+	 * Creates a password input showing '*' for each entered character.
+	 */
 	public PasswordConsoleInput() {
 		this('*');
 	}
 
+	/**
+	 * Creates a password input showing the given character for each entered character.
+	 *
+	 * @param hideCharacter character shown instead of the entered characters
+	 */
 	public PasswordConsoleInput(final char hideCharacter) {
 		this.hideCharacter = hideCharacter;
 	}
@@ -24,7 +40,7 @@ public class PasswordConsoleInput {
 	/**
 	 * When silent = false a system beep occurs on input error
 	 *
-	 * @param silent
+	 * @return true if no beep occurs on input errors
 	 */
 	public boolean isSilent() {
 		return silent;
@@ -33,7 +49,7 @@ public class PasswordConsoleInput {
 	/**
 	 * When silent = false a system beep occurs on input error
 	 *
-	 * @param silent
+	 * @param silent true to suppress the beep on input errors
 	 */
 	public void setSilent(final boolean silent) {
 		this.silent = silent;
@@ -42,7 +58,7 @@ public class PasswordConsoleInput {
 	/**
 	 * For password inputs
 	 *
-	 * @return
+	 * @return character shown instead of the entered characters
 	 */
 	public char getHideCharacter() {
 		return hideCharacter;
@@ -50,6 +66,8 @@ public class PasswordConsoleInput {
 
 	/**
 	 * Get allowed Characters. Default is all chars of german keyboard layout
+	 *
+	 * @return additionally allowed characters, null for the default
 	 */
 	public String getAllowedCharacters() {
 		return allowedCharacters;
@@ -57,37 +75,77 @@ public class PasswordConsoleInput {
 
 	/**
 	 * Set allowed Characters. Default is all chars of german keyboard layout
+	 *
+	 * @param allowedCharacters additionally allowed characters, null for the default
 	 */
 	public void setAllowedCharacters(final String allowedCharacters) {
 		this.allowedCharacters = allowedCharacters;
 	}
 
+	/**
+	 * Returns the prompt shown in front of the input.
+	 *
+	 * @return prompt, never null
+	 */
 	public String getPrompt() {
 		return prompt;
 	}
 
+	/**
+	 * Sets the prompt shown in front of the input.
+	 *
+	 * @param prompt prompt, null for none
+	 */
 	public void setPrompt(final String prompt) {
 		this.prompt = (prompt == null ? "" : prompt);
 	}
 
+	/**
+	 * Sets the prompt shown in front of the input.
+	 *
+	 * @param newPrompt prompt, null for none
+	 * @return this input for chaining
+	 */
 	public PasswordConsoleInput withPrompt(final String newPrompt) {
 		setPrompt(newPrompt);
 		return this;
 	}
 
+	/**
+	 * Returns the content the input starts with.
+	 *
+	 * @return preset content, never null
+	 */
 	public String getPresetContent() {
 		return presetContent;
 	}
 
+	/**
+	 * Sets the content the input starts with.
+	 *
+	 * @param presetContent preset content, null for none
+	 */
 	public void setPresetContent(final String presetContent) {
 		this.presetContent = (presetContent == null ? "" : presetContent);
 	}
 
+	/**
+	 * Sets the content the input starts with.
+	 *
+	 * @param newPresetContent preset content, null for none
+	 * @return this input for chaining
+	 */
 	public PasswordConsoleInput withPresetContent(final String newPresetContent) {
 		setPresetContent(newPresetContent);
 		return this;
 	}
 
+	/**
+	 * Reads a password until Enter is pressed.
+	 *
+	 * @return entered password, null at the end of the input of a non ANSI console
+	 * @throws Exception if the console cannot be read, e.g. if no console is available
+	 */
 	public char[] readInput() throws Exception {
 		if (ConsoleUtilities.getConsoleType() == ConsoleType.ANSI) {
 			boolean insertMode = true;

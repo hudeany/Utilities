@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.Security;
+import java.util.Locale;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -22,7 +23,15 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * Worker that decrypts a stream encrypted by {@link AsymmetricEncryptionWorker} with a private key.<br>
+ * Supported methods are "ECIES" and RSA or ElGamal with PKCS1, OAEP or no padding (e.g. "RSA/NONE/OAEPPadding").
+ * RSA/ElGamal data is decrypted block by block. Both streams are closed after the work.
+ */
 public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
+	/**
+	 * Return value of stream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private InputStream encryptedDataInputStream = null;
@@ -32,25 +41,25 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 	private long dataSizeHint = -1;
 
 	/**
-	 * Asymmetric decrypt inputStream
+	 * Asymmetric decrypt inputStream with the default method {@link CryptographicUtilities#DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA}.
 	 *
-	 * @param parent
-	 * @param fileToDecrypt
-	 * @param decryptedFile
-	 * @param privateKey
+	 * @param parent parent to report progress to, may be null
+	 * @param encryptedDataInputStream stream with the encrypted data
+	 * @param decryptedDataOutputStream stream to write the decrypted data to
+	 * @param privateKey private key to decrypt with
 	 */
 	public AsymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final PrivateKey privateKey) {
 		this(parent, encryptedDataInputStream, decryptedDataOutputStream, privateKey, null);
 	}
 
 	/**
-	 * Asymmetric decrypt inputStream
+	 * Asymmetric decrypt inputStream.
 	 *
-	 * @param parent
-	 * @param fileToDecrypt
-	 * @param decryptedFile
-	 * @param privateKey
-	 * @param encryptionMethod
+	 * @param parent parent to report progress to, may be null
+	 * @param encryptedDataInputStream stream with the encrypted data
+	 * @param decryptedDataOutputStream stream to write the decrypted data to
+	 * @param privateKey private key to decrypt with
+	 * @param encryptionMethod encryption method used for encryption, blank for {@link CryptographicUtilities#DEFAULT_ASYMMETRIC_ENCRYPTION_METHOD_RSA}
 	 */
 	public AsymmetricDecryptionWorker(final WorkerParentSimple parent, final InputStream encryptedDataInputStream, final OutputStream decryptedDataOutputStream, final PrivateKey privateKey, final String encryptionMethod) {
 		super(parent);
@@ -64,6 +73,11 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 		}
 	}
 
+	/**
+	 * Sets the expected data size in bytes for the progress display, if the stream cannot tell its size.
+	 *
+	 * @param dataSizeHint expected data size in bytes
+	 */
 	public void setDataSizeHint(final long dataSizeHint) {
 		this.dataSizeHint = dataSizeHint;
 	}
@@ -73,7 +87,7 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 		if (encryptionMethod == null || "".equals(encryptionMethod.trim())) {
 			throw new Exception("Empty symmetric decryption method");
 		}
-		encryptionMethod = encryptionMethod.toLowerCase();
+		encryptionMethod = encryptionMethod.toLowerCase(Locale.ROOT);
 
 		signalProgress();
 
@@ -125,7 +139,8 @@ public class AsymmetricDecryptionWorker extends WorkerSimple<Boolean> {
 					final int bufferSize = decryptCipher.getInputBlockSize() <= 0 ? 4096 : decryptCipher.getInputBlockSize();
 					final byte[] buffer = new byte[bufferSize];
 					int bytesRead;
-					while ((bytesRead = inputStream.read(buffer)) != EOF) {
+					// Always read complete cipher blocks, a short read of the stream must not split a block
+					while ((bytesRead = inputStream.readNBytes(buffer, 0, buffer.length)) > 0) {
 						if (cancel) {
 							break;
 						} else {

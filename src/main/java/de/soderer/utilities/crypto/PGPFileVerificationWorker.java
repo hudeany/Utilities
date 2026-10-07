@@ -16,16 +16,36 @@ import de.soderer.utilities.Utilities;
 import de.soderer.utilities.worker.WorkerParentSimple;
 import de.soderer.utilities.worker.WorkerSimple;
 
+/**
+ * Worker that verifies a detached PGP signature (ASCII-armored or binary) of data with a PGP public key.
+ */
 public class PGPFileVerificationWorker extends WorkerSimple<Boolean> {
 	private InputStream dataToVerify = null;
 	private InputStream signatureData = null;
 	private PGPPublicKey publicKey = null;
 	private String signatureMethod = null;
 
+	/**
+	 * Creates a PGP verification worker.
+	 *
+	 * @param parent parent to report progress to, may be null
+	 * @param dataToVerify stream with the signed data
+	 * @param publicKey public key of the signer
+	 * @param signatureData stream with the detached signature, closed after the work
+	 */
 	public PGPFileVerificationWorker(final WorkerParentSimple parent, final InputStream dataToVerify, final PGPPublicKey publicKey, final InputStream signatureData) {
 		this(parent, dataToVerify, publicKey, signatureData, null);
 	}
 
+	/**
+	 * Creates a PGP verification worker.
+	 *
+	 * @param parent parent to report progress to, may be null
+	 * @param dataToVerify stream with the signed data
+	 * @param publicKey public key of the signer
+	 * @param signatureData stream with the detached signature, closed after the work
+	 * @param signatureMethod not used, the methods are defined by the signature itself
+	 */
 	public PGPFileVerificationWorker(final WorkerParentSimple parent, final InputStream dataToVerify, final PGPPublicKey publicKey, final InputStream signatureData, final String signatureMethod) {
 		super(parent);
 		this.dataToVerify = dataToVerify;

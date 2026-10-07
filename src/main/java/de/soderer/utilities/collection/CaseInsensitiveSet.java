@@ -9,22 +9,46 @@ import java.util.Locale;
 public class CaseInsensitiveSet extends AbstractHashSet<String> {
 	private static final long serialVersionUID = 9146520978777587374L;
 
+	/**
+	 * Creates an empty set with default initial capacity and load factor.
+	 */
 	public CaseInsensitiveSet() {
 		super();
 	}
 
+	/**
+	 * Creates an empty set with the given initial capacity and load factor.
+	 *
+	 * @param initialCapacity initial capacity of the set
+	 * @param loadFactor load factor of the set
+	 */
 	public CaseInsensitiveSet(final int initialCapacity, final float loadFactor) {
 		super(initialCapacity, loadFactor);
 	}
 
+	/**
+	 * Creates an empty set with the given initial capacity.
+	 *
+	 * @param initialCapacity initial capacity of the set
+	 */
 	public CaseInsensitiveSet(final int initialCapacity) {
 		super(initialCapacity);
 	}
 
+	/**
+	 * Creates a set containing all Strings of the given collection, lowercased.
+	 *
+	 * @param collection Strings to add to this set
+	 */
 	public CaseInsensitiveSet(final Collection<? extends String> collection) {
 		super(collection);
 	}
 
+	/**
+	 * Creates a set containing all given Strings, lowercased.
+	 *
+	 * @param values Strings to add to this set
+	 */
 	public CaseInsensitiveSet(final String[] values) {
 		for (final String value : values) {
 			add(value);

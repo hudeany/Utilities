@@ -5,15 +5,30 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Locale;
 
 import de.soderer.utilities.Utilities;
 
+/**
+ * Worker that copies a local file (given as path or "file://" URL) to a new file.
+ * Its result is true on success and false if it was cancelled.
+ */
 public class FileCopyWorker extends WorkerSimple<Boolean> {
+	/**
+	 * Return value of InputStream read methods at the end of the stream.
+	 */
 	public static final int EOF = -1;
 
 	private final String copySourceFileUrlString;
 	private final File destinationFile;
 
+	/**
+	 * Creates a copy worker.
+	 *
+	 * @param parent parent receiving the progress signals, may be null
+	 * @param copySourceFileUrlString path or "file://" URL of the file to copy
+	 * @param destinationFile file to create, must not exist yet
+	 */
 	public FileCopyWorker(final WorkerParentSimple parent, final String copySourceFileUrlString, final File destinationFile) {
 		super(parent);
 
@@ -31,7 +46,7 @@ public class FileCopyWorker extends WorkerSimple<Boolean> {
 
 		signalUnlimitedProgress();
 
-		if (copySourceFileUrlString.toLowerCase().startsWith("file://")) {
+		if (copySourceFileUrlString.toLowerCase(Locale.ROOT).startsWith("file://")) {
 			final URL sourceFileUrl = new URL(copySourceFileUrlString);
 			signalProgress(true);
 			try (InputStream inputStream = sourceFileUrl.openStream();
@@ -50,6 +65,8 @@ public class FileCopyWorker extends WorkerSimple<Boolean> {
 				}
 				Utilities.clear(buffer);
 			} catch (final Exception e) {
+				// The destination did not exist before, so a partially written file can be removed
+				destinationFile.delete();
 				throw new Exception("Cannot copy file: " + e.getMessage(), e);
 			}
 		} else if (new File(copySourceFileUrlString).exists()) {
@@ -70,6 +87,8 @@ public class FileCopyWorker extends WorkerSimple<Boolean> {
 				}
 				Utilities.clear(buffer);
 			} catch (final Exception e) {
+				// The destination did not exist before, so a partially written file can be removed
+				destinationFile.delete();
 				throw new Exception("Cannot copy file: " + e.getMessage(), e);
 			}
 		} else {
