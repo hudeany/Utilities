@@ -1,0 +1,2 @@
+Testcase: de.soderer.utilities.ApplicationUpdateTest
+Tests run: 2, Failures: 0, Skipped: 0, Aborted: 0, Time elapsed: 518 milli sec(s)

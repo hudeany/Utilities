@@ -1,0 +1,38 @@
+Testcase: de.soderer.utilities.UtilitiesTest
+Test: testParseMapStringQuoted() took 1 milli sec(s) FAILED: aBc"125 ==> expected: <Actual map was: {abc123=123, abc 124=abc 124, aBc"125=aBc"125}> but was: <aBc"125>
+org.opentest4j.AssertionFailedError: aBc"125 ==> expected: <Actual map was: {abc123=123, abc 124=abc 124, aBc"125=aBc"125}> but was: <aBc"125>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:158)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:139)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:201)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:184)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1199)
+	at de.soderer.utilities.UtilitiesTest.testParseMapStringQuoted(UtilitiesTest.java:640)
+
+Test: testParseMapStringWithBlankSeparator() took 0 milli sec(s) FAILED: 122 ==> expected: <Actual map was: {abc122=122, abc123=123, abc 124=abc 124, aBc"125=aBc"125}> but was: <122>
+org.opentest4j.AssertionFailedError: 122 ==> expected: <Actual map was: {abc122=122, abc123=123, abc 124=abc 124, aBc"125=aBc"125}> but was: <122>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:158)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:139)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:201)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:184)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1199)
+	at de.soderer.utilities.UtilitiesTest.testParseMapStringWithBlankSeparator(UtilitiesTest.java:588)
+
+Test: testParseMapStringBlankSeparated() took 1 milli sec(s) FAILED: 123 ==> expected: <Actual map was: {abc123=123, abc 124=abc 124, aBc"125=aBc"125}> but was: <123>
+org.opentest4j.AssertionFailedError: 123 ==> expected: <Actual map was: {abc123=123, abc 124=abc 124, aBc"125=aBc"125}> but was: <123>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:158)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:139)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:201)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:184)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1199)
+	at de.soderer.utilities.UtilitiesTest.testParseMapStringBlankSeparated(UtilitiesTest.java:614)
+
+Test: testParseMapString() took 1 milli sec(s) FAILED: aBc"125 ==> expected: <Actual map was: {abc122=122, abc123=123, abc 124=abc 124, aBc"125=aBc"125, abc 126=abc 12 6}> but was: <aBc"125>
+org.opentest4j.AssertionFailedError: aBc"125 ==> expected: <Actual map was: {abc122=122, abc123=123, abc 124=abc 124, aBc"125=aBc"125, abc 126=abc 12 6}> but was: <aBc"125>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:158)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:139)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:201)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:184)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1199)
+	at de.soderer.utilities.UtilitiesTest.testParseMapString(UtilitiesTest.java:562)
+
+Tests run: 46, Failures: 4, Skipped: 0, Aborted: 0, Time elapsed: 37 milli sec(s)
