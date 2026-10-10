@@ -2600,4 +2600,46 @@ public class DropDown extends JPanel {
 			return super.getPreferredSpan(axis);
 		}
 	}
+
+	/**
+	 * Number of characters that remain visible when the combo is shrunk to its
+	 * minimum width.
+	 */
+	private static final int MINIMUM_VISIBLE_COLUMNS = 3;
+
+	/**
+	 * Minimum size: the full preferred height (a text field must never be squeezed
+	 * vertically), but only a few characters wide.
+	 *
+	 * <p>
+	 * Without this override, the minimum size would be derived from the
+	 * JScrollPane around the text pane, which only reports the tiny minimum size
+	 * of its JViewport. Layouts like GridBagLayout fall back to the minimum sizes
+	 * of all components (in both axes) as soon as the preferred sizes do not fit,
+	 * which would collapse the combo to a thin line.
+	 * </p>
+	 */
+	@Override
+	public Dimension getMinimumSize() {
+		if (isMinimumSizeSet()) {
+			return super.getMinimumSize();
+		}
+
+		final Dimension preferredSize = getPreferredSize();
+		final FontMetrics fontMetrics = textPane.getFontMetrics(textPane.getFont());
+		final Insets panelInsets = getInsets();
+		final Insets scrollInsets = textScrollPane.getInsets();
+		final Insets textInsets = textPane.getInsets();
+
+		int minimumWidth = panelInsets.left + panelInsets.right
+				+ scrollInsets.left + scrollInsets.right
+				+ textInsets.left + textInsets.right
+				+ MINIMUM_VISIBLE_COLUMNS * fontMetrics.charWidth('m');
+
+		if (dropdownButton.isVisible()) {
+			minimumWidth += dropdownButton.getPreferredSize().width;
+		}
+
+		return new Dimension(Math.min(minimumWidth, preferredSize.width), preferredSize.height);
+	}
 }
