@@ -4,7 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Frame;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.io.InputStream;
 
@@ -57,13 +57,14 @@ public class ErrorDialog extends ModalDialog<Boolean> {
 	/**
 	 * Creates an error dialog.
 	 *
-	 * @param parent owner frame, may be null
+	 * @param parent owner window, may be null. Should be the window the error occurred in: if a modal
+	 *        dialog is open, a dialog owned by a window behind it is blocked and hidden behind that dialog
 	 * @param applicationName name of the application, shown in the title and the email subject
 	 * @param applicationVersion version of the application, may be blank
 	 * @param emailRecipient recipient address of the error email
 	 * @param throwable error to show, may be null
 	 */
-	public ErrorDialog(final Frame parent, final String applicationName, final String applicationVersion, final String emailRecipient, final Throwable throwable) {
+	public ErrorDialog(final Window parent, final String applicationName, final String applicationVersion, final String emailRecipient, final Throwable throwable) {
 		super(parent, applicationName + (Utilities.isNotBlank(applicationVersion) ? " (" + applicationVersion + ")" : "") + " " + LangResources.get("error"));
 
 		this.applicationName = applicationName;
