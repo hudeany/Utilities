@@ -58,13 +58,9 @@
 		<!-- remote package: Smb1Connection -->
 		<getMavenDependency groupId="org.codelibs" artifactId="jcifs" version="${jcifs.version}" />
 
-		<!-- ConfigurationProperties (lists stored as csv lines) -->
 		<getDependency name="csv" version="${csv.version}" url="https://github.com/hudeany/csv/releases/download/{version}/csv-{version}.jar" />
-		<!-- JwtUtilities, UnsecureDataStore, CosmosDbRestfulClient, DeepLHelper -->
 		<getDependency name="json" version="${json.version}" url="https://github.com/hudeany/json/releases/download/{version}/json-{version}.jar" />
-		<!-- PunycodeCodec, remote.HttpFileConnection, CosmosDbRestfulClient, DeepLHelper -->
 		<getDependency name="network" version="${network.version}" url="https://github.com/hudeany/Network/releases/download/{version}/network-{version}.jar" />
-		<!-- ConfigurationProperties, worker.FileDownloadWorker, remote.* connections, CosmosDbRestfulClient -->
 		<getDependency name="proxyautoconfig" version="${proxyautoconfig.version}" url="https://github.com/hudeany/ProxyAutoConfig/releases/download/{version}/proxyautoconfig-{version}.jar" />
 	</target>
 
