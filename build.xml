@@ -31,6 +31,7 @@
 	<property name="network.version" value="26.0.37" />
 	<property name="dkim.version" value="26.1.6" />
 	<property name="proxyautoconfig.version" value="26.1.4" />
+	<property name="soderer-console.version" value="26.0.0" />
 
 	<!-- Special: AntBuildHelp is used to download the runtime libraries -->
 	<property name="antbuildhelp.version" value="26.0.9" />
@@ -84,6 +85,7 @@
 		<getDependency name="csv" version="${csv.version}" url="https://github.com/hudeany/csv/releases/download/{version}/csv-{version}.jar" />
 		<getDependency name="json" version="${json.version}" url="https://github.com/hudeany/json/releases/download/{version}/json-{version}.jar" />
 		<getDependency name="proxyautoconfig" version="${proxyautoconfig.version}" url="https://github.com/hudeany/ProxyAutoConfig/releases/download/{version}/proxyautoconfig-{version}.jar" />
+		<getDependency name="soderer-console" version="${soderer-console.version}" url="https://github.com/hudeany/Console/releases/download/{version}/soderer-console-{version}.jar" />
 		<getMavenDependency repositoryUrl="https://soderer.de/maven2" groupId="de.soderer" artifactId="network" version="${network.version}" />
 		<getMavenDependency repositoryUrl="https://soderer.de/maven2" groupId="de.soderer" artifactId="dkim" version="${dkim.version}" />
 	</target>

@@ -13,39 +13,15 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.TimeZone;
 
 import org.junit.jupiter.api.Test;
 
-import jakarta.mail.internet.InternetAddress;
-
 @SuppressWarnings("static-method")
 public class DateUtilitiesTest {
-	@Test
-	public void test1() {
-		try {
-			final List<InternetAddress> participants = new ArrayList<>();
-			participants.add(new InternetAddress("test1@example.com", "First Test"));
-			participants.add(new InternetAddress("test2@example.com"));
-
-			DateUtilities.createICalEventInvitation(
-					"Test date",
-					"Lots of description text and a <a href=\"https://example.com\">link</a>.",
-					ZonedDateTime.now(),
-					ZonedDateTime.now().plusHours(5),
-					"here",
-					new InternetAddress("test@example.com"),
-					participants);
-		} catch (final Exception e) {
-			fail(e.getMessage());
-		}
-	}
-
 	@Test
 	public void gregorianDateTest() {
 		try {

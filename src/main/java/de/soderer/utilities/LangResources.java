@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
@@ -27,6 +28,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Language dependent texts (I18N).
@@ -38,15 +40,27 @@ import java.util.regex.Pattern;
  * <li>The application's own language files "LanguageProperties*.properties"
  * in the classpath root, if the application brings any. These always take
  * precedence, so an application may also override any built-in text.</li>
- * <li>The built-in texts of this library (German, English, French, Spanish
- * and Italian) for all message keys used within soderer-utilities, e.g. by
- * the Swing and SWT dialogs. Other languages fall back to English.</li>
+ * <li>The built-in texts (German, English, French, Spanish and Italian):
+ * the general texts of this library and the texts other libraries registered
+ * via {@link #registerBuiltInText(String, String, String, String, String, String)}.
+ * Other languages fall back to English.</li>
  * </ol>
  *
  * <p>
  * So the library's dialogs always work, even for applications without any
  * language files of their own.
  * </p>
+ *
+ * <p>
+ * Libraries bring their own texts by registering them once, e.g. in a static
+ * initializer of the class that uses them:
+ * </p>
+ *
+ * <pre>
+ * static {
+ * 	LangResources.registerBuiltInText("myKey", "English", "Deutsch", "Français", "Español", "Italiano");
+ * }
+ * </pre>
  *
  * <p>
  * Placeholders use the "{0}", "{1}", ... syntax, which is replaced literally
@@ -64,12 +78,37 @@ public class LangResources {
 	/** Matches the file name of a language file and extracts its language code like "de", "de_CH" or "de_BY" */
 	private static final Pattern LANGUAGE_FILE_NAME_PATTERN = Pattern.compile("^" + Pattern.quote(BUNDLE_NAME) + "_([a-z]{2,3}(?:_[A-Za-z0-9]{2,8})*)\\.properties$");
 
-	/** Built-in texts of this library per language, see {@link #getBuiltInTexts(Locale)} */
+	/**
+	 * Built-in texts per language, only modified while holding the class lock.
+	 * Readers use the immutable snapshot {@link #builtInTexts} instead.
+	 */
 	private static final Map<String, String> BUILT_IN_GERMAN = new LinkedHashMap<>();
 	private static final Map<String, String> BUILT_IN_ENGLISH = new LinkedHashMap<>();
 	private static final Map<String, String> BUILT_IN_FRENCH = new LinkedHashMap<>();
 	private static final Map<String, String> BUILT_IN_SPANISH = new LinkedHashMap<>();
 	private static final Map<String, String> BUILT_IN_ITALIAN = new LinkedHashMap<>();
+
+	/**
+	 * Immutable snapshot of the built-in texts, replaced as a whole on each
+	 * registration, so readers need no locking
+	 */
+	private static volatile BuiltInTexts builtInTexts;
+
+	private static final class BuiltInTexts {
+		private final Map<String, String> english;
+		private final Map<String, String> german;
+		private final Map<String, String> french;
+		private final Map<String, String> spanish;
+		private final Map<String, String> italian;
+
+		private BuiltInTexts() {
+			english = Collections.unmodifiableMap(new LinkedHashMap<>(BUILT_IN_ENGLISH));
+			german = Collections.unmodifiableMap(new LinkedHashMap<>(BUILT_IN_GERMAN));
+			french = Collections.unmodifiableMap(new LinkedHashMap<>(BUILT_IN_FRENCH));
+			spanish = Collections.unmodifiableMap(new LinkedHashMap<>(BUILT_IN_SPANISH));
+			italian = Collections.unmodifiableMap(new LinkedHashMap<>(BUILT_IN_ITALIAN));
+		}
+	}
 
 	/** Language codes of all language files found in the classpath (without the root file) */
 	private static List<String> availableLanguages;
@@ -82,15 +121,17 @@ public class LangResources {
 
 	/**
 	 * The application's resource bundle (null, if the application has no
-	 * language files) and the matching built-in texts of this library
+	 * language files) and the locale for picking the built-in texts. The
+	 * built-in texts are looked up on each access, so texts registered later
+	 * are found, too.
 	 */
 	private static final class LanguageTexts {
 		private final ResourceBundle applicationBundle;
-		private final Map<String, String> builtInTexts;
+		private final Locale locale;
 
-		private LanguageTexts(final ResourceBundle applicationBundle, final Map<String, String> builtInTexts) {
+		private LanguageTexts(final ResourceBundle applicationBundle, final Locale locale) {
 			this.applicationBundle = applicationBundle;
-			this.builtInTexts = builtInTexts;
+			this.locale = locale;
 		}
 	}
 
@@ -252,14 +293,52 @@ public class LangResources {
 		addBuiltInText("conf.Application.ProxyConfigurationType", "Proxy configuration", "Proxy-Konfiguration", "Configuration du proxy", "Configuración del proxy", "Configurazione proxy");
 		addBuiltInText("conf.Application.ProxyUrl",               "Proxy URL", "Proxy-URL", "URL du proxy", "URL del proxy", "URL del proxy");
 		addBuiltInText("conf.Application.DailyUpdateCheck",       "Daily update check", "Tägliche Update Prüfung", "Vérification quotidienne des mises à jour", "Comprobación diaria de actualizaciones", "Controllo giornaliero degli aggiornamenti");
+
+		// Publish all texts of the static initializer at once
+		builtInTexts = new BuiltInTexts();
 	}
 
+	/**
+	 * Registers a built-in text of a library in all supported languages. Meant
+	 * to be called once by a library, e.g. in a static initializer of the class
+	 * using the text.
+	 *
+	 * <p>
+	 * The application's own language files still take precedence. If the key is
+	 * already built in, the existing text is kept, so a library cannot change
+	 * the texts of this library or of other libraries registered before.
+	 * </p>
+	 *
+	 * @param key message key, not null
+	 * @param englishText English text, also used for all unsupported languages, not null
+	 * @param germanText German text, null for the English text
+	 * @param frenchText French text, null for the English text
+	 * @param spanishText Spanish text, null for the English text
+	 * @param italianText Italian text, null for the English text
+	 * @return true if the text was registered, false if the key already existed
+	 */
+	public static synchronized boolean registerBuiltInText(final String key, final String englishText, final String germanText, final String frenchText, final String spanishText, final String italianText) {
+		if (key == null || englishText == null) {
+			throw new IllegalArgumentException("Key and English text must not be null");
+		} else if (BUILT_IN_ENGLISH.containsKey(key)) {
+			return false;
+		} else {
+			addBuiltInText(key, englishText, germanText, frenchText, spanishText, italianText);
+			builtInTexts = new BuiltInTexts();
+			return true;
+		}
+	}
+
+	/**
+	 * Adds a text to the modifiable maps. Callers must hold the class lock (or
+	 * run in the static initializer) and publish a new snapshot afterwards.
+	 */
 	private static void addBuiltInText(final String key, final String englishText, final String germanText, final String frenchText, final String spanishText, final String italianText) {
 		BUILT_IN_ENGLISH.put(key, englishText);
-		BUILT_IN_GERMAN.put(key, germanText);
-		BUILT_IN_FRENCH.put(key, frenchText);
-		BUILT_IN_SPANISH.put(key, spanishText);
-		BUILT_IN_ITALIAN.put(key, italianText);
+		BUILT_IN_GERMAN.put(key, germanText == null ? englishText : germanText);
+		BUILT_IN_FRENCH.put(key, frenchText == null ? englishText : frenchText);
+		BUILT_IN_SPANISH.put(key, spanishText == null ? englishText : spanishText);
+		BUILT_IN_ITALIAN.put(key, italianText == null ? englishText : italianText);
 	}
 
 	/**
@@ -287,7 +366,7 @@ public class LangResources {
 		if (pattern != null) {
 			return format(pattern, arguments);
 		} else {
-			return "Missing resourceKey: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Utilities.join(arguments, ", ") : "");
+			return "Missing resourceKey: " + resourceKey + (arguments != null && arguments.length > 0 ? " " + Arrays.stream(arguments).map(String::valueOf).collect(Collectors.joining(", ")) : "");
 		}
 	}
 
@@ -330,16 +409,18 @@ public class LangResources {
 	}
 
 	/**
-	 * All message keys built into this library, in definition order
+	 * All built-in message keys (of this library and registered by other
+	 * libraries), in definition order
 	 *
 	 * @return unmodifiable set of keys
 	 */
 	public static Set<String> getBuiltInKeys() {
-		return Collections.unmodifiableSet(BUILT_IN_ENGLISH.keySet());
+		return builtInTexts.english.keySet();
 	}
 
 	/**
-	 * All built-in texts of a language, without the application's own texts.
+	 * All built-in texts of a language (of this library and registered by
+	 * other libraries), without the application's own texts.
 	 * German, French, Spanish or Italian for locales of those languages
 	 * (including regional variants like "de_CH"), English for all other
 	 * locales.
@@ -348,18 +429,19 @@ public class LangResources {
 	 * @return unmodifiable map of keys and texts
 	 */
 	public static Map<String, String> getBuiltInTexts(final Locale locale) {
+		final BuiltInTexts texts = builtInTexts;
 		final String language = locale == null ? "" : locale.getLanguage().toLowerCase(Locale.ROOT);
 		switch (language) {
 			case "de":
-				return Collections.unmodifiableMap(BUILT_IN_GERMAN);
+				return texts.german;
 			case "fr":
-				return Collections.unmodifiableMap(BUILT_IN_FRENCH);
+				return texts.french;
 			case "es":
-				return Collections.unmodifiableMap(BUILT_IN_SPANISH);
+				return texts.spanish;
 			case "it":
-				return Collections.unmodifiableMap(BUILT_IN_ITALIAN);
+				return texts.italian;
 			default:
-				return Collections.unmodifiableMap(BUILT_IN_ENGLISH);
+				return texts.english;
 		}
 	}
 
@@ -376,7 +458,7 @@ public class LangResources {
 		if (texts.applicationBundle != null && texts.applicationBundle.containsKey(resourceKey)) {
 			return texts.applicationBundle.getString(resourceKey);
 		} else {
-			return texts.builtInTexts.get(resourceKey);
+			return getBuiltInTexts(texts.locale).get(resourceKey);
 		}
 	}
 
@@ -408,7 +490,7 @@ public class LangResources {
 			// e.g. a malformed language file: report it, but keep the built-in texts working
 			e.printStackTrace();
 		}
-		return new LanguageTexts(applicationBundle, getBuiltInTexts(locale));
+		return new LanguageTexts(applicationBundle, locale);
 	}
 
 	/**

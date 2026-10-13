@@ -25,9 +25,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipInputStream;
 
-import de.soderer.utilities.crypto.DirectoryHashingWorker;
-import de.soderer.utilities.crypto.FileHashingWorker;
-
 /**
  * Utilities for files and directories: searching, reading, writing, comparing and deleting.
  */
@@ -788,71 +785,6 @@ public class FileUtilities {
 		if (!file.delete()) {
 			throw new IOException("Failed to delete " + file);
 		}
-	}
-
-	/**
-	 * Checks whether two directory trees have the same structure and file contents, by comparing their
-	 * SHA-512 directory hashes (see {@link HashItem}).
-	 *
-	 * @param file1
-	 *            the first directory
-	 * @param file2
-	 *            the second directory
-	 * @return true, if the directory trees are equal
-	 * @throws Exception
-	 *             if a directory is null, does not exist or is no directory, or reading fails
-	 */
-	public static boolean directoriesAreEqual(final File file1, final File file2) throws Exception {
-		if (file1 == null) {
-			throw new Exception("First directory is missing");
-		} else if (!file1.exists()) {
-			throw new Exception("First directory does not exists: " + file1.getAbsolutePath());
-		} else if (!file1.isDirectory()) {
-			throw new Exception("First directory is not a directory: " + file1.getAbsolutePath());
-		} else if (file2 == null) {
-			throw new Exception("Second directory is missing");
-		} else if (!file2.exists()) {
-			throw new Exception("Second directory does not exists: " + file2.getAbsolutePath());
-		} else if (!file2.isDirectory()) {
-			throw new Exception("Second directory is not a directory: " + file2.getAbsolutePath());
-		}
-
-		final HashItem hash1 = new DirectoryHashingWorker(null, file1, HashAlgorithm.SHA_512).work();
-		final HashItem hash2 = new DirectoryHashingWorker(null, file2, HashAlgorithm.SHA_512).work();
-
-		return Arrays.equals(hash1.getHash(), hash2.getHash());
-	}
-
-	/**
-	 * Checks whether two files have the same content, by comparing their SHA-512 hashes.
-	 *
-	 * @param file1
-	 *            the first file
-	 * @param file2
-	 *            the second file
-	 * @return true, if the files are equal
-	 * @throws Exception
-	 *             if a file is null, does not exist or is no file, or reading fails
-	 */
-	public static boolean filesAreEqual(final File file1, final File file2) throws Exception {
-		if (file1 == null) {
-			throw new Exception("First file is missing");
-		} else if (!file1.exists()) {
-			throw new Exception("First file does not exists: " + file1.getAbsolutePath());
-		} else if (!file1.isFile()) {
-			throw new Exception("First file is not a file: " + file1.getAbsolutePath());
-		} else if (file2 == null) {
-			throw new Exception("Second file is missing");
-		} else if (!file2.exists()) {
-			throw new Exception("Second file does not exists: " + file2.getAbsolutePath());
-		} else if (!file2.isFile()) {
-			throw new Exception("Second file is not a file: " + file2.getAbsolutePath());
-		}
-
-		final byte[] hash1 = new FileHashingWorker(null, file1, HashAlgorithm.SHA_512).work();
-		final byte[] hash2 = new FileHashingWorker(null, file2, HashAlgorithm.SHA_512).work();
-
-		return Arrays.equals(hash1, hash2);
 	}
 
 	/**
