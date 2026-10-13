@@ -1,17 +1,19 @@
 package de.soderer.utilities.remote;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.File;
 import java.nio.file.Files;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.worker.DirectoryDownloadWorker;
 import de.soderer.utilities.worker.RemoteFileDownloadWorker;
 
+@SuppressWarnings("static-method")
 public class HttpConnectionTest {
 	private File localTestDirectory;
 
@@ -19,12 +21,12 @@ public class HttpConnectionTest {
 		return new HttpFileConnection(true, "www-us.apache.org", "dist", null, null, 443);
 	}
 
-	@Before
+	@BeforeEach
 	public void setup() throws Exception {
 		localTestDirectory = Files.createTempDirectory("HttpConnectionTest_").toFile();
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() throws Exception {
 		if (localTestDirectory.exists()) {
 			FileUtilities.delete(localTestDirectory);
@@ -37,7 +39,7 @@ public class HttpConnectionTest {
 			new DirectoryDownloadWorker(null, connection, "/tomcat/tomcat-9/v9.0.43/bin", localTestDirectory.getParentFile(), "test").work();
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 
@@ -47,7 +49,7 @@ public class HttpConnectionTest {
 			new RemoteFileDownloadWorker(null, connection, "/tomcat/tomcat-9/v9.0.43/bin/apache-tomcat-9.0.43.tar.gz", new File(localTestDirectory, "apache-tomcat-9.0.43.tar.gz")).work();
 		} catch (final Exception e) {
 			e.printStackTrace();
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }
