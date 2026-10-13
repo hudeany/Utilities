@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project default="build_jar" name="Build library JavaUtilities">
+<project default="build_jar" name="Utilities">
 	<!-- ===== Project specific part ===== -->
 
 	<!-- Artifact name used for the jar file names and the Maven artifactId -->
