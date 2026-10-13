@@ -63,7 +63,7 @@
 		<!-- JwtUtilities, UnsecureDataStore, CosmosDbRestfulClient, DeepLHelper -->
 		<getDependency name="json" version="${json.version}" url="https://github.com/hudeany/json/releases/download/{version}/json-{version}.jar" />
 		<!-- PunycodeCodec, remote.HttpFileConnection, CosmosDbRestfulClient, DeepLHelper -->
-		<getMavenDependency repositoryUrl="https://soderer.de/maven2" groupId="de.soderer" artifactId="network" version="${network.version}" />
+		<getDependency name="network" version="${network.version}" url="https://github.com/hudeany/Network/releases/download/{version}/network-{version}.jar" />
 		<!-- ConfigurationProperties, worker.FileDownloadWorker, remote.* connections, CosmosDbRestfulClient -->
 		<getDependency name="proxyautoconfig" version="${proxyautoconfig.version}" url="https://github.com/hudeany/ProxyAutoConfig/releases/download/{version}/proxyautoconfig-{version}.jar" />
 	</target>
