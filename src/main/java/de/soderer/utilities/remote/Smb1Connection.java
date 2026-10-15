@@ -8,13 +8,14 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.codelibs.jcifs.smb1.NtlmPasswordAuthentication;
+import org.codelibs.jcifs.smb1.SmbFile;
+
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
 import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
-import jcifs.smb.NtlmPasswordAuthentication;
-import jcifs.smb.SmbFile;
 
 /**
  * Remote connection via the outdated SMB version 1 protocol, based on jcifs. Use {@link SmbConnection} for SMB 2 and 3.

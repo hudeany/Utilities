@@ -168,6 +168,7 @@ public class LangResources {
 		addBuiltInText("openMail",                    "Open mail with errordata to developer", "Mail mit Fehlerdaten an den Entwickler öffnen", "Ouvrir un e-mail au développeur avec les données d'erreur", "Abrir un correo al desarrollador con los datos del error", "Apri un'e-mail allo sviluppatore con i dati dell'errore");
 		addBuiltInText("password",                    "Password", "Passwort", "Mot de passe", "Contraseña", "Password");
 		addBuiltInText("passwordRequired",            "Error:\nPassword is required", "Fehler:\nPasswort ist notwendig", "Erreur :\nLe mot de passe est obligatoire", "Error:\nLa contraseña es obligatoria", "Errore:\nLa password è obbligatoria");
+		addBuiltInText("passwordConfirmation",        "Confirm password", "Passwort bestätigen", "Confirmer le mot de passe", "Confirmar contraseña", "Conferma password");
 		addBuiltInText("restartNow",                  "Restart application now", "Jetzt Anwendung neustarten", "Redémarrer l'application maintenant", "Reiniciar la aplicación ahora", "Riavvia l'applicazione ora");
 		addBuiltInText("showSwingProperties",         "Show Swing properties", "Swing-Eigenschaften anzeigen", "Afficher les propriétés Swing", "Mostrar propiedades de Swing", "Mostra proprietà Swing");
 		addBuiltInText("sureQuestion",                "Are you sure?", "Sind sie sich sicher?", "Êtes-vous sûr ?", "¿Está seguro?", "Sei sicuro?");
