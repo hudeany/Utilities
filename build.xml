@@ -6,7 +6,7 @@
 	<property name="artifactId" value="soderer-utilities" />
 
 	<!-- Special: AntBuildHelp is used to download the runtime libraries -->
-	<property name="antbuildhelp.version" value="26.0.10" />
+	<property name="antbuildhelp.version" value="26.0.11" />
 
 	<available file="lib_build/antbuildhelp-${antbuildhelp.version}.jar" property="antbuildhelp.available" />
 	<target name="get_antbuildhelp" unless="antbuildhelp.available">
