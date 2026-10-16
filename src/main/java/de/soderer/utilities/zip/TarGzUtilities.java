@@ -419,7 +419,7 @@ public class TarGzUtilities {
 	 * then. Using it in one place keeps the code compatible with older and newer versions.
 	 */
 	private static TarArchiveEntry getNextEntry(final TarArchiveInputStream tarArchiveInputStream) throws IOException {
-		return tarArchiveInputStream.getNextTarEntry();
+		return tarArchiveInputStream.getNextEntry();
 	}
 
 	/**
