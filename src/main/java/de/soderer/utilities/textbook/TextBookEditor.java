@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
@@ -20,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -82,6 +82,12 @@ public class TextBookEditor implements AutoCloseable {
 	 */
 	public long maximumInMemoryPages;
 	private final Charset charset;
+	/**
+	 * Charset for converting between text and file bytes. Equals charset, except for "UTF-16" and "UTF-32" without
+	 * byte order, which are replaced by the variant with the byte order of the file's BOM: their encoders would write
+	 * a BOM for each converted part and their decoders assume big endian for data after the start of the file.
+	 */
+	private Charset byteCharset;
 	private long size;
 	private LocalDateTime modificationDate;
 	private BOM bom = BOM.NONE;
@@ -167,6 +173,7 @@ public class TextBookEditor implements AutoCloseable {
 		} else if (charset == null) {
 			throw new Exception("Mandatory charset parameter is missing");
 		}
+		byteCharset = charset;
 	}
 
 	/**
@@ -200,6 +207,11 @@ public class TextBookEditor implements AutoCloseable {
 		if (charset == null) {
 			throw new Exception("Mandatory charset parameter is missing");
 		}
+		if ("UTF-16".equalsIgnoreCase(charset.name())) {
+			// Java's "UTF-16" encoder writes a big endian BOM, which is written once at the start of the file
+			bom = BOM.UTF_16_BE;
+		}
+		byteCharset = getByteCharset(charset, bom);
 
 		final Page startPage = new Page(this);
 		startPage.setNewContentLines(new ArrayList<>());
@@ -257,7 +269,15 @@ public class TextBookEditor implements AutoCloseable {
 		Page currentPage = null;
 
 		long index = 0;
-		try (LineReader lineReader = getTextFileLineReader(textFile, charset)) {
+		try {
+			byteCharset = getByteCharset(charset, readBom(textFile));
+		} catch (final Exception e) {
+			size = 0;
+			modificationDate = null;
+			pages = null;
+			throw e;
+		}
+		try (LineReader lineReader = getTextFileLineReader(textFile, byteCharset)) {
 			String nextLine;
 			while ((nextLine = lineReader.readLine()) != null) {
 				if (currentPage == null) {
@@ -271,14 +291,27 @@ public class TextBookEditor implements AutoCloseable {
 
 				currentPage.setAmountOfLines(currentPage.getAmountOfLines() + 1);
 
-				index = index + nextLine.getBytes(charset).length;
+				index = index + nextLine.getBytes(byteCharset).length;
 				index = index + getLineBreakByteLength(lineReader.getLatestLineBreakType());
 			}
 			if (currentPage != null) {
 				currentPage.setEndFileIndex(index);
+			} else {
+				// An empty file gets one empty page, so lines can be inserted
+				currentPage = new Page(this);
+				currentPage.setStartFileIndex(0);
+				currentPage.setEndFileIndex(0);
 			}
 			bom = lineReader.getBom();
 			lineBreakType = lineReader.getGlobalLineBreakType();
+
+			// The page byte ranges are calculated by encoding the read lines again. Bytes which are invalid in the
+			// charset are read as replacement characters with a different byte length, so the ranges would not match
+			// the file anymore and writing would mix up the content of the unedited pages.
+			final long textDataSize = getTextFileRawDataSize(textFile) - bom.getBytes().length;
+			if (index != textDataSize) {
+				throw new Exception("Text file contains data, which is invalid in charset " + charset.name() + " (" + textDataSize + " bytes, but " + index + " bytes of valid text): " + textFile.getCanonicalPath());
+			}
 		} catch (final Exception e) {
 			size = 0;
 			modificationDate = null;
@@ -298,9 +331,59 @@ public class TextBookEditor implements AutoCloseable {
 	 */
 	private int getLineBreakByteLength(final LineBreak lineBreakTypeOfLine) {
 		if (lineBreakTypeOfLine == LineBreak.Unix || lineBreakTypeOfLine == LineBreak.Mac || lineBreakTypeOfLine == LineBreak.Windows) {
-			return lineBreakTypeOfLine.toString().getBytes(charset).length;
+			return lineBreakTypeOfLine.toString().getBytes(byteCharset).length;
 		} else {
 			return 0;
+		}
+	}
+
+	/**
+	 * Returns the charset for converting between text and file bytes, see {@link #byteCharset}.
+	 */
+	private static Charset getByteCharset(final Charset charset, final BOM fileBom) {
+		if ("UTF-16".equalsIgnoreCase(charset.name())) {
+			return fileBom == BOM.UTF_16_LE ? StandardCharsets.UTF_16LE : StandardCharsets.UTF_16BE;
+		} else if ("UTF-32".equalsIgnoreCase(charset.name())) {
+			return Charset.forName(fileBom == BOM.UTF_32_LE ? "UTF-32LE" : "UTF-32BE");
+		} else {
+			return charset;
+		}
+	}
+
+	/**
+	 * Reads the BOM at the start of the text file (or its zip entry).
+	 */
+	private static BOM readBom(final File textFile) throws Exception {
+		final byte[] startBytes;
+		try (InputStream inputStream = getTextFileRawInputStream(textFile)) {
+			startBytes = inputStream.readNBytes(4);
+		}
+		// UTF-32LE must be checked before UTF-16LE, which starts with the same bytes
+		for (final BOM nextBom : new BOM[] { BOM.UTF_32_LE, BOM.UTF_32_BE, BOM.UTF_8, BOM.UTF_16_LE, BOM.UTF_16_BE }) {
+			final byte[] bomBytes = nextBom.getBytes();
+			if (startBytes.length >= bomBytes.length && Arrays.equals(Arrays.copyOf(startBytes, bomBytes.length), bomBytes)) {
+				return nextBom;
+			}
+		}
+		return BOM.NONE;
+	}
+
+	/**
+	 * Returns the number of bytes of the text file (or its uncompressed zip entry), including a BOM.
+	 */
+	private static long getTextFileRawDataSize(final File textFile) throws Exception {
+		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
+			try (InputStream inputStream = getTextFileRawInputStream(textFile)) {
+				long dataSize = 0;
+				final byte[] buffer = new byte[65536];
+				int bytesRead;
+				while ((bytesRead = inputStream.read(buffer)) != EOF) {
+					dataSize += bytesRead;
+				}
+				return dataSize;
+			}
+		} else {
+			return textFile.length();
 		}
 	}
 
@@ -409,6 +492,9 @@ public class TextBookEditor implements AutoCloseable {
 	 * @throws Exception if the lines do not exist or a page cannot be read
 	 */
 	public void replaceLines(final long startLineNumber, final long endLineNumber, final List<String> newContentLines) throws Exception {
+		if (startLineNumber < 1 || endLineNumber < startLineNumber) {
+			throw new IllegalArgumentException("Invalid lines to replace: " + startLineNumber + " to " + endLineNumber);
+		}
 		long startPageLineIndex = -1;
 		Page startPage = null;
 		long endPageLineIndex = -1;
@@ -522,6 +608,9 @@ public class TextBookEditor implements AutoCloseable {
 	 * @throws Exception if the line does not exist or a page cannot be read
 	 */
 	public void insertLines(final long insertAfterLineNumber, final List<String> contentLines) throws Exception {
+		if (insertAfterLineNumber < 0) {
+			throw new IllegalArgumentException("Invalid line to insert after: " + insertAfterLineNumber);
+		}
 		long lineIndex = 0;
 		for (final Page page : pages) {
 			if (lineIndex + page.getAmountOfLines() >= insertAfterLineNumber) {
@@ -696,6 +785,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * @throws Exception if a page cannot be read
 	 */
 	public TextPosition search(final String searchText, final boolean caseSensitive, final boolean regularExpression, final TextPosition start, final TextPosition end) throws Exception {
+		checkSearchText(searchText, regularExpression);
 		Pattern pattern = null;
 		if (regularExpression) {
 			pattern = Pattern.compile(searchText, caseSensitive ? 0 : Pattern.CASE_INSENSITIVE);
@@ -708,6 +798,9 @@ public class TextBookEditor implements AutoCloseable {
 				if (end == null || lineIndex <= end.getLine() - 1) {
 					final List<String> pageLines = getPageLinesForRead(page);
 					for (int pageLineIndex = 0; pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
+						if (isBeforeStartLine(pageLineIndex + lineIndex, start)) {
+							continue;
+						}
 						final String line = pageLines.get(pageLineIndex);
 						final int partStartColumn = getPartStartColumn(line, pageLineIndex + lineIndex, start);
 						final String linePart = line.substring(partStartColumn, getPartEndColumn(line, pageLineIndex + lineIndex, start, end));
@@ -718,10 +811,9 @@ public class TextBookEditor implements AutoCloseable {
 								return new TextPosition(pageLineIndex + lineIndex + 1, partStartColumn + matcher.start());
 							}
 						} else {
-							if (caseSensitive && linePart.contains(searchText)) {
-								return new TextPosition(pageLineIndex + lineIndex + 1, partStartColumn + linePart.indexOf(searchText));
-							} else if (!caseSensitive && linePart.toLowerCase(Locale.ROOT).contains(searchText.toLowerCase(Locale.ROOT))) {
-								return new TextPosition(pageLineIndex + lineIndex + 1, partStartColumn + linePart.toLowerCase(Locale.ROOT).indexOf(searchText.toLowerCase(Locale.ROOT)));
+							final int foundIndex = indexOf(linePart, searchText, 0, caseSensitive);
+							if (foundIndex >= 0) {
+								return new TextPosition(pageLineIndex + lineIndex + 1, partStartColumn + foundIndex);
 							}
 						}
 					}
@@ -757,13 +849,9 @@ public class TextBookEditor implements AutoCloseable {
 	 * @return number of occurrences
 	 * @throws Exception if a page cannot be read
 	 */
-	public long searchCount(String searchText, final boolean caseSensitive, final boolean regularExpression, final TextPosition start, final TextPosition end) throws Exception {
+	public long searchCount(final String searchText, final boolean caseSensitive, final boolean regularExpression, final TextPosition start, final TextPosition end) throws Exception {
+		checkSearchText(searchText, regularExpression);
 		long numberOfFindings = 0;
-
-		// Regular expressions must not be lowercased, that would change their meaning (e.g. "\D" to "\d")
-		if (!caseSensitive && !regularExpression) {
-			searchText = searchText.toLowerCase(Locale.ROOT);
-		}
 
 		Pattern pattern = null;
 		if (regularExpression) {
@@ -777,6 +865,9 @@ public class TextBookEditor implements AutoCloseable {
 				if (end == null || lineIndex <= end.getLine() - 1) {
 					final List<String> pageLines = getPageLinesForRead(page);
 					for (int pageLineIndex = 0; pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
+						if (isBeforeStartLine(pageLineIndex + lineIndex, start)) {
+							continue;
+						}
 						final String line = pageLines.get(pageLineIndex);
 						final String linePart = line.substring(getPartStartColumn(line, pageLineIndex + lineIndex, start), getPartEndColumn(line, pageLineIndex + lineIndex, start, end));
 
@@ -785,21 +876,10 @@ public class TextBookEditor implements AutoCloseable {
 							while (matcher.find()) {
 								numberOfFindings++;
 							}
-						} else if (caseSensitive) {
-							int lastStart = linePart.indexOf(searchText);
-							int lastEnd = 0;
-							while (lastStart > -1) {
-								lastEnd = lastStart + searchText.length();
-								lastStart = linePart.indexOf(searchText, lastEnd);
-								numberOfFindings++;
-							}
 						} else {
-							final String linePartLower = linePart.toLowerCase(Locale.ROOT);
-							int lastStart = linePartLower.indexOf(searchText);
-							int lastEnd = 0;
+							int lastStart = indexOf(linePart, searchText, 0, caseSensitive);
 							while (lastStart > -1) {
-								lastEnd = lastStart + searchText.length();
-								lastStart = linePartLower.indexOf(searchText, lastEnd);
+								lastStart = indexOf(linePart, searchText, lastStart + searchText.length(), caseSensitive);
 								numberOfFindings++;
 							}
 						}
@@ -841,13 +921,9 @@ public class TextBookEditor implements AutoCloseable {
 	 * @return number of replacements
 	 * @throws Exception if a page cannot be read
 	 */
-	public long searchAndReplace(String searchText, final String replaceText, final boolean onlyReplaceFirstOccurrence, final boolean caseSensitive, final boolean regularExpression, final TextPosition start, final TextPosition end) throws Exception {
+	public long searchAndReplace(final String searchText, final String replaceText, final boolean onlyReplaceFirstOccurrence, final boolean caseSensitive, final boolean regularExpression, final TextPosition start, final TextPosition end) throws Exception {
+		checkSearchText(searchText, regularExpression);
 		long numberOfReplacements = 0;
-
-		// Regular expressions must not be lowercased, that would change their meaning (e.g. "\D" to "\d")
-		if (!caseSensitive && !regularExpression) {
-			searchText = searchText.toLowerCase(Locale.ROOT);
-		}
 
 		Pattern pattern = null;
 		if (regularExpression) {
@@ -867,6 +943,9 @@ public class TextBookEditor implements AutoCloseable {
 				final boolean pageWasAlreadyEdited = page.getNewContentLines() != null;
 				final List<String> pageLines = pageWasAlreadyEdited ? getPageLinesForRead(page) : new ArrayList<>(getPageLinesForRead(page));
 				for (int pageLineIndex = 0; (!changed || !onlyReplaceFirstOccurrence) && pageLineIndex < pageLines.size() && (end == null || pageLineIndex + lineIndex <= end.getLine() - 1); pageLineIndex++) {
+					if (isBeforeStartLine(pageLineIndex + lineIndex, start)) {
+						continue;
+					}
 					boolean changedLine = false;
 					final String line = pageLines.get(pageLineIndex);
 					final int partStartColumn = getPartStartColumn(line, pageLineIndex + lineIndex, start);
@@ -887,29 +966,15 @@ public class TextBookEditor implements AutoCloseable {
 						if (changedLine) {
 							resultLinePart.append(linePart.substring(lastEnd));
 						}
-					} else if (caseSensitive) {
-						int lastStart = linePart.indexOf(searchText);
-						int lastEnd = 0;
-						while ((!changedLine || !onlyReplaceFirstOccurrence) && lastStart > -1) {
-							resultLinePart.append(linePart.substring(lastEnd, lastStart));
-							lastEnd = lastStart + searchText.length();
-							resultLinePart.append(replaceText);
-							lastStart = linePart.indexOf(searchText, lastEnd);
-							changedLine = true;
-							numberOfReplacements++;
-						}
-						if (changedLine) {
-							resultLinePart.append(linePart.substring(lastEnd));
-						}
 					} else {
-						final String linePartLower = linePart.toLowerCase(Locale.ROOT);
-						int lastStart = linePartLower.indexOf(searchText);
+						// Searching in a lowercased copy would give wrong positions, if lowercasing changes the length of the text
+						int lastStart = indexOf(linePart, searchText, 0, caseSensitive);
 						int lastEnd = 0;
 						while ((!changedLine || !onlyReplaceFirstOccurrence) && lastStart > -1) {
 							resultLinePart.append(linePart.substring(lastEnd, lastStart));
 							lastEnd = lastStart + searchText.length();
 							resultLinePart.append(replaceText);
-							lastStart = linePartLower.indexOf(searchText, lastEnd);
+							lastStart = indexOf(linePart, searchText, lastEnd, caseSensitive);
 							changedLine = true;
 							numberOfReplacements++;
 						}
@@ -935,6 +1000,39 @@ public class TextBookEditor implements AutoCloseable {
 			lineIndex += previousAmountOfLines;
 		}
 		return numberOfReplacements;
+	}
+
+	/**
+	 * An empty search text would be found endlessly at the same position.
+	 */
+	private static void checkSearchText(final String searchText, final boolean regularExpression) {
+		if (searchText == null || (!regularExpression && searchText.isEmpty())) {
+			throw new IllegalArgumentException("Search text must not be empty");
+		}
+	}
+
+	/**
+	 * Checks whether a line lies before the start line of a search, so it must not be searched.
+	 */
+	private static boolean isBeforeStartLine(final long lineIndex, final TextPosition start) {
+		return start != null && lineIndex < start.getLine() - 1;
+	}
+
+	/**
+	 * Searches a text, optionally ignoring the case without changing the positions (like lowercasing the text could do).
+	 *
+	 * @return index of the first occurrence at or after fromIndex, or -1
+	 */
+	private static int indexOf(final String text, final String searchText, final int fromIndex, final boolean caseSensitive) {
+		if (caseSensitive) {
+			return text.indexOf(searchText, fromIndex);
+		}
+		for (int i = fromIndex; i <= text.length() - searchText.length(); i++) {
+			if (text.regionMatches(true, i, searchText, 0, searchText.length())) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	/**
@@ -1015,7 +1113,7 @@ public class TextBookEditor implements AutoCloseable {
 						final List<String> newContentLines = page.getNewContentLines();
 						if (newContentLines != null) {
 							final String newDataString = Utilities.join(newContentLines, null);
-							outputStream.write(newDataString.getBytes(charset));
+							outputStream.write(newDataString.getBytes(byteCharset));
 							skipBytes(inputStream, page.getEndFileIndex() - currentReadIndex);
 							currentReadIndex = page.getEndFileIndex();
 						} else {
@@ -1036,11 +1134,12 @@ public class TextBookEditor implements AutoCloseable {
 				}
 			} else {
 				try (OutputStream outputStream = getTextFileOutputStream(outputFile, targetFile)) {
+					outputStream.write(bom.getBytes());
 					for (final Page page : pages) {
 						final List<String> newContentLines = page.getNewContentLines();
 						if (newContentLines != null) {
 							final String newDataString = Utilities.join(newContentLines, null);
-							outputStream.write(newDataString.getBytes(charset));
+							outputStream.write(newDataString.getBytes(byteCharset));
 						} else {
 							throw new Exception("Invalid missing page data to write");
 						}
@@ -1080,7 +1179,7 @@ public class TextBookEditor implements AutoCloseable {
 			final List<String> dataLines = new ArrayList<>();
 			String nextLine;
 			while (index < endFileIndex && (nextLine = lineReader.readLine()) != null) {
-				index = index + nextLine.getBytes(charset).length;
+				index = index + nextLine.getBytes(byteCharset).length;
 				index = index + getLineBreakByteLength(lineReader.getLatestLineBreakType());
 				if (lineReader.getLatestLineBreakType() == LineBreak.Unix) {
 					nextLine += LineBreak.Unix.toString();
@@ -1110,12 +1209,13 @@ public class TextBookEditor implements AutoCloseable {
 	 */
 	private LineReader openTextFileLineReaderAtByteOffset(final long byteOffset) throws Exception {
 		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
-			final LineReader lineReader = getTextFileLineReader(textFile, charset);
+			// The offset is given in bytes, so bytes must be skipped, not characters (which differ for multibyte charsets)
+			final InputStream inputStream = getTextFileRawInputStream(textFile);
 			try {
-				lineReader.skipChars(byteOffset);
-				return lineReader;
+				skipBytes(inputStream, bom.getBytes().length + byteOffset);
+				return new LineReader(new InputStreamReader(inputStream, byteCharset));
 			} catch (final Exception e) {
-				lineReader.close();
+				inputStream.close();
 				throw new Exception("Cannot skip data while reading textfile: " + textFile.getCanonicalPath(), e);
 			}
 		} else {
@@ -1124,7 +1224,7 @@ public class TextBookEditor implements AutoCloseable {
 			try {
 				randomAccessFile.seek(bom.getBytes().length + byteOffset);
 				final InputStream inputStream = Channels.newInputStream(randomAccessFile.getChannel());
-				return new LineReader(new InputStreamReader(inputStream, charset));
+				return new LineReader(new InputStreamReader(inputStream, byteCharset));
 			} catch (final Exception e) {
 				randomAccessFile.close();
 				throw new Exception("Cannot seek to position in textfile: " + textFile.getCanonicalPath(), e);
@@ -1162,7 +1262,7 @@ public class TextBookEditor implements AutoCloseable {
 			byteArrayOutputStream.write(bom.getBytes());
 			for (int pageIndex = 0; pageIndex < pages.size(); pageIndex++) {
 				for (final String line : getLinesByPage(pageIndex)) {
-					byteArrayOutputStream.write(line.getBytes(charset));
+					byteArrayOutputStream.write(line.getBytes(byteCharset));
 				}
 			}
 			return byteArrayOutputStream.toByteArray();
@@ -1189,7 +1289,6 @@ public class TextBookEditor implements AutoCloseable {
 	public long getNumberOfPages() {
 		if (revalidateStatisticData) {
 			calculateStatisticData();
-			revalidateStatisticData = false;
 		}
 		return numberOfPages;
 	}
@@ -1243,6 +1342,7 @@ public class TextBookEditor implements AutoCloseable {
 	}
 
 	private void calculateStatisticData() {
+		revalidateStatisticData = false;
 		numberOfLines = 0;
 		numberOfPages = 0;
 		for (final Page page : pages) {
@@ -1371,7 +1471,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * Counts the empty lines (without any character except the line break).
 	 *
 	 * @return number of empty lines
-	 * @throws Exception if a page cannot be read or a line has no line break
+	 * @throws Exception if a page cannot be read
 	 */
 	public long countEmptyLines() throws Exception {
 		return countEmptyLines(0, Long.MAX_VALUE);
@@ -1383,7 +1483,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * @param startLineNumber 1-based number of the first line to check
 	 * @param endLineNumber 1-based number of the last line to check (inclusive)
 	 * @return number of empty lines
-	 * @throws Exception if a page cannot be read or a line has no line break
+	 * @throws Exception if a page cannot be read
 	 */
 	public long countEmptyLines(final long startLineNumber, final long endLineNumber) throws Exception {
 		return ((CountEmptyLinesAction) executeTextLineAction(startLineNumber, endLineNumber, new CountEmptyLinesAction())).getNumberOfLines();
@@ -1415,7 +1515,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * Removes all empty lines (without any character except the line break).
 	 *
 	 * @return number of removed lines
-	 * @throws Exception if a page cannot be read or a line has no line break
+	 * @throws Exception if a page cannot be read
 	 */
 	public long dropEmptyLines() throws Exception {
 		return dropEmptyLines(0, Long.MAX_VALUE);
@@ -1427,7 +1527,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * @param startLineNumber 1-based number of the first line to check
 	 * @param endLineNumber 1-based number of the last line to check (inclusive)
 	 * @return number of removed lines
-	 * @throws Exception if a page cannot be read or a line has no line break
+	 * @throws Exception if a page cannot be read
 	 */
 	public long dropEmptyLines(final long startLineNumber, final long endLineNumber) throws Exception {
 		revalidateStatisticData = true;
@@ -1530,8 +1630,10 @@ public class TextBookEditor implements AutoCloseable {
 	 */
 	@Override
 	public void close() throws Exception {
-		for (final Page page : pages) {
-			page.clear();
+		if (pages != null) {
+			for (final Page page : pages) {
+				page.clear();
+			}
 		}
 		readPageCache.clear();
 	}

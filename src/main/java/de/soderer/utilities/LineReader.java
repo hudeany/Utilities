@@ -60,8 +60,8 @@ public class LineReader implements Closeable {
 	 * @param inputStream
 	 *            the stream to read from
 	 * @param charset
-	 *            the encoding of the data. For data with UTF-16 BOM the generic UTF-16 charset may
-	 *            be used, the byte order is then taken from the BOM.
+	 *            the encoding of the data. For data with UTF-16 or UTF-32 BOM the generic UTF-16 or
+	 *            UTF-32 charset may be used, the byte order is then taken from the BOM.
 	 * @throws IOException
 	 *             if reading the BOM fails or the BOM does not fit the charset
 	 */
@@ -83,6 +83,19 @@ public class LineReader implements Closeable {
 				charset = StandardCharsets.UTF_16BE;
 			} else if (!StandardCharsets.UTF_16BE.equals(charset)) {
 				throw new IOException("Invalid charset for inputstream with UTF_16_BE BOM: " + charset.displayName());
+			}
+		} else if (bom == BOM.UTF_32_LE) {
+			if ("UTF-32".equals(charset.name())) {
+				// The BOM was skipped, so the generic UTF-32 decoder would fall back to big-endian
+				charset = Charset.forName("UTF-32LE");
+			} else if (!"UTF-32LE".equals(charset.name())) {
+				throw new IOException("Invalid charset for inputstream with UTF_32_LE BOM: " + charset.displayName());
+			}
+		} else if (bom == BOM.UTF_32_BE) {
+			if ("UTF-32".equals(charset.name())) {
+				charset = Charset.forName("UTF-32BE");
+			} else if (!"UTF-32BE".equals(charset.name())) {
+				throw new IOException("Invalid charset for inputstream with UTF_32_BE BOM: " + charset.displayName());
 			}
 		}
 		pushbackReader = new PushbackReader(new BufferedReader(new InputStreamReader(bomInputStream, charset)));

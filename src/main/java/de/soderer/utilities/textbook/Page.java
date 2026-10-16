@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -125,11 +126,15 @@ public class Page {
 
 	/**
 	 * Sets the changed lines of this page, which replace its content in the text file.
+	 * Lines containing line breaks within them (e.g. inserted text or a replacement with a line break) are split
+	 * into separate lines, and lines without line break (except the last one) are joined with their following line,
+	 * so the number of lines matches the lines of the written file and of the temporary file.
 	 *
 	 * @param newContentLines changed lines including their line breaks
 	 * @throws Exception if moving pages to temporary files fails
 	 */
-	public void setNewContentLines(final List<String> newContentLines) throws Exception {
+	public void setNewContentLines(List<String> newContentLines) throws Exception {
+		newContentLines = normalizeLines(newContentLines);
 		if (interimStorageFile != null) {
 			interimStorageFile.delete();
 			interimStorageFile = null;
@@ -152,11 +157,18 @@ public class Page {
 	 */
 	public void storeInterimData() throws Exception {
 		if (newContentLines != null) {
-			interimStorageFile = File.createTempFile(getParentTextBookEditor().getInterimStorageKey() + "_", ".tmp.zip");
-			try (ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(interimStorageFile)))) {
+			final File newInterimStorageFile = File.createTempFile(getParentTextBookEditor().getInterimStorageKey() + "_", ".tmp.zip");
+			// Remove the copy of the text data also if the application ends without closing the editor
+			newInterimStorageFile.deleteOnExit();
+			try (ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(newInterimStorageFile)))) {
 				outputStream.putNextEntry(new ZipEntry("InterimStorageFile.tmp"));
 				outputStream.write(Utilities.join(newContentLines, null).getBytes(StandardCharsets.UTF_8));
+			} catch (final Exception e) {
+				// Keep the content in memory, an incomplete file must not be used
+				newInterimStorageFile.delete();
+				throw e;
 			}
+			interimStorageFile = newInterimStorageFile;
 			// Keep the line count, it is used for all line index calculations while the content is stored
 			amountOfLines = newContentLines.size();
 			newContentLines = null;
@@ -190,5 +202,54 @@ public class Page {
 	 */
 	public boolean hasNewContentData() {
 		return interimStorageFile != null || newContentLines != null;
+	}
+
+	/**
+	 * Returns lines, each ending with exactly one line break (CR, LF or CRLF), except the last line, which may have
+	 * none. The given list is returned unchanged, if it is already in this form.
+	 */
+	static List<String> normalizeLines(final List<String> lines) {
+		if (lines == null || isNormalized(lines)) {
+			return lines;
+		}
+		final String text = Utilities.join(lines, null);
+		final List<String> normalizedLines = new ArrayList<>();
+		int lineStart = 0;
+		for (int i = 0; i < text.length(); i++) {
+			final char nextChar = text.charAt(i);
+			if (nextChar == '\n' || (nextChar == '\r' && (i + 1 >= text.length() || text.charAt(i + 1) != '\n'))) {
+				normalizedLines.add(text.substring(lineStart, i + 1));
+				lineStart = i + 1;
+			}
+		}
+		if (lineStart < text.length()) {
+			normalizedLines.add(text.substring(lineStart));
+		}
+		return normalizedLines;
+	}
+
+	private static boolean isNormalized(final List<String> lines) {
+		for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+			final String line = lines.get(lineIndex);
+			int breakLength = 0;
+			if (line.endsWith("\r\n")) {
+				breakLength = 2;
+			} else if (line.endsWith("\n") || line.endsWith("\r")) {
+				breakLength = 1;
+			} else if (lineIndex < lines.size() - 1) {
+				// A line without line break would be joined with the next line in the file
+				return false;
+			}
+			for (int i = 0; i < line.length() - breakLength; i++) {
+				if (line.charAt(i) == '\r' || line.charAt(i) == '\n') {
+					return false;
+				}
+			}
+			if (breakLength == 1 && line.endsWith("\r") && lineIndex < lines.size() - 1 && lines.get(lineIndex + 1).startsWith("\n")) {
+				// A CR at the end of a line and a LF at the start of the next one form a single CRLF line break
+				return false;
+			}
+		}
+		return true;
 	}
 }

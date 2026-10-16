@@ -28,7 +28,8 @@ public class CountEmptyLinesAction implements TextLineAction {
 		} else if (lineWithLinebreak.endsWith(LineBreak.Unix.toString())) {
 			lineWithoutLinebreak = lineWithLinebreak.substring(0, lineWithLinebreak.length() - 1);
 		} else {
-			throw new Exception("Missing linebreak of text line: " + overallLineIndex);
+			// The last line of a text may have no line break
+			lineWithoutLinebreak = lineWithLinebreak;
 		}
 
 		if (Utilities.isEmpty(lineWithoutLinebreak)) {
