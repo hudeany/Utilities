@@ -15,9 +15,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
-import de.soderer.pac.PacScriptParser;
-import de.soderer.pac.utilities.ProxyConfiguration;
-import de.soderer.pac.utilities.ProxyConfiguration.ProxyConfigurationType;
 import de.soderer.utilities.collection.UniqueFifoQueuedList;
 import de.soderer.utilities.csv.CsvDataException;
 import de.soderer.utilities.csv.CsvFormat;
@@ -27,22 +24,15 @@ import de.soderer.utilities.csv.CsvWriter;
 /**
  * Application configuration stored as properties file "~/.&lt;applicationName&gt;.config" (or
  * "~/.&lt;applicationName&gt;/.&lt;applicationName&gt;.config" when using a sub directory).
- * Supports typed values, lists (stored as csv line), recent lists with a maximum size and the proxy configuration.
+ * Supports typed values, lists (stored as csv line) and recent lists with a maximum size.
  * Changes are only persisted by {@link #save()}.
+ * Application specific settings like the proxy configuration are added by subclasses (e.g. in ApplicationBase).
  */
 public class ConfigurationProperties {
 	/** Key of the application version */
 	public static final String CONFIG_KEY_VERSION = "Application.Version";
 	/** Key of the application language (language code like "en") */
 	public static final String CONFIG_KEY_LANGUAGE = "Application.Language";
-	/** Key of the proxy configuration type (name of a {@link ProxyConfigurationType}) */
-	public static final String CONFIG_KEY_PROXY_CONFIGURATION_TYPE = "Application.ProxyConfigurationType";
-	/** Key of the proxy URL (or PAC file URL) */
-	public static final String CONFIG_KEY_PROXY_URL = "Application.ProxyUrl";
-	/** Key of the flag for a daily update check */
-	public static final String CONFIG_KEY_DAILY_UPDATE_CHECK = "Application.DailyUpdateCheck";
-	/** Key of the date of the next daily update check */
-	public static final String CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK = "Application.NextDailyUpdateCheck";
 
 	/**
 	 * Internal key: names of all list keys, which are stored in the current list format
@@ -62,8 +52,6 @@ public class ConfigurationProperties {
 	private final Properties properties = new Properties();
 	private final String applicationName;
 	private boolean useSubDirectory = false;
-
-	private ProxyConfiguration proxyConfiguration = null;
 
 	/** List keys already stored in the current (plain) list format */
 	private final Set<String> plainListKeys = new TreeSet<>();
@@ -208,9 +196,6 @@ public class ConfigurationProperties {
 	 */
 	public void set(final String name, final String value) {
 		properties.setProperty(name, value == null ? "" : value);
-		if (CONFIG_KEY_PROXY_CONFIGURATION_TYPE.equals(name) || CONFIG_KEY_PROXY_URL.equals(name)) {
-			proxyConfiguration = null;
-		}
 	}
 
 	/**
@@ -503,17 +488,14 @@ public class ConfigurationProperties {
 	 */
 	public void removeKey(final String name) {
 		properties.remove(name);
-		if (CONFIG_KEY_PROXY_CONFIGURATION_TYPE.equals(name) || CONFIG_KEY_PROXY_URL.equals(name)) {
-			proxyConfiguration = null;
-		}
 		if (plainListKeys.remove(name)) {
 			storePlainListKeys();
 		}
 	}
 
 	/**
-	 * Sets up the default keys of the library (language, proxy configuration, daily update check) and migrates or
-	 * removes obsolete keys. May save the configuration.
+	 * Sets up the default keys of the library (language) and removes obsolete keys. May save the configuration.
+	 * Subclasses add their own default keys and must call this method.
 	 */
 	public void setupDefaultConfig() {
 		if (containsKey(CONFIG_KEY_LANGUAGE + ENUM_EXTENSION)) {
@@ -522,39 +504,6 @@ public class ConfigurationProperties {
 		}
 		if (!containsKey(CONFIG_KEY_LANGUAGE)) {
 			set(CONFIG_KEY_LANGUAGE, Locale.getDefault().getLanguage());
-		}
-
-		set(CONFIG_KEY_PROXY_CONFIGURATION_TYPE + ConfigurationProperties.ENUM_EXTENSION, "None,System,Proxy-URL,WPAD,PAC-URL");
-		if (!containsKey(CONFIG_KEY_PROXY_CONFIGURATION_TYPE)) {
-			if (PacScriptParser.findPacFileUrlByWpad() != null) {
-				set(CONFIG_KEY_PROXY_CONFIGURATION_TYPE, ProxyConfigurationType.WPAD.name());
-			} else {
-				set(CONFIG_KEY_PROXY_CONFIGURATION_TYPE, ProxyConfigurationType.None.name());
-			}
-			save();
-		}
-		if (!containsKey(CONFIG_KEY_PROXY_URL)) {
-			set(CONFIG_KEY_PROXY_URL, "");
-		}
-
-		if (containsKey("DailyUpdateCheck")) {
-			if (!containsKey(CONFIG_KEY_DAILY_UPDATE_CHECK)) {
-				set(CONFIG_KEY_DAILY_UPDATE_CHECK, getBoolean("DailyUpdateCheck"));
-			}
-			removeKey("DailyUpdateCheck");
-		}
-		if (!containsKey(CONFIG_KEY_DAILY_UPDATE_CHECK)) {
-			set(CONFIG_KEY_DAILY_UPDATE_CHECK, false);
-		}
-
-		if (containsKey("NextDailyUpdateCheck")) {
-			if (!containsKey(CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK)) {
-				set(CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK, get("NextDailyUpdateCheck"));
-			}
-			removeKey("NextDailyUpdateCheck");
-		}
-		if (!containsKey(CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK)) {
-			set(CONFIG_KEY_NEXT_DAILY_UPDATE_CHECK, "");
 		}
 
 		// TODO: Remove obsolete old legacy key in future
@@ -570,19 +519,5 @@ public class ConfigurationProperties {
 	 */
 	public String getLanguage() {
 		return get(CONFIG_KEY_LANGUAGE);
-	}
-
-	/**
-	 * Proxy configuration of the configured type and URL, cached until one of these keys changes.
-	 *
-	 * @return proxy configuration
-	 */
-	public ProxyConfiguration getProxyConfiguration() {
-		if (proxyConfiguration == null) {
-			final ProxyConfigurationType proxyConfigurationType = ProxyConfigurationType.getFromString(get(CONFIG_KEY_PROXY_CONFIGURATION_TYPE));
-			final String proxyUrl = get(CONFIG_KEY_PROXY_URL);
-			proxyConfiguration = new ProxyConfiguration(proxyConfigurationType, proxyUrl);
-		}
-		return proxyConfiguration;
 	}
 }

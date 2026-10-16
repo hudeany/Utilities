@@ -22,7 +22,6 @@ import de.soderer.network.HttpMethod;
 import de.soderer.network.HttpRequest;
 import de.soderer.network.HttpResponse;
 import de.soderer.network.HttpUtilities;
-import de.soderer.pac.utilities.ProxyConfiguration;
 
 /**
  * Minimal REST client for the documents of one collection of an Azure Cosmos DB (SQL API), authenticated by master key.
@@ -43,7 +42,7 @@ public class CosmosDbRestfulClient {
 	private final String databaseID;
 	private final String collectionID;
 
-	private ProxyConfiguration proxyConfiguration = null;
+	private Proxy proxy = null;
 
 	/**
 	 * Creates a client for a collection.
@@ -74,13 +73,22 @@ public class CosmosDbRestfulClient {
 	}
 
 	/**
-	 * Sets the proxy configuration for all requests.
+	 * Sets the proxy for all requests.
 	 *
-	 * @param proxyConfiguration proxy configuration, or null for direct connections
+	 * @param proxy proxy, or null for direct connections
+	 */
+	public void setProxy(final Proxy proxy) {
+		this.proxy = proxy;
+	}
+
+	/**
+	 * Sets the proxy for all requests.
+	 *
+	 * @param newProxy proxy, or null for direct connections
 	 * @return this instance for chaining
 	 */
-	public CosmosDbRestfulClient setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
-		this.proxyConfiguration = proxyConfiguration;
+	public CosmosDbRestfulClient withProxy(final Proxy newProxy) {
+		setProxy(newProxy);
 		return this;
 	}
 
@@ -147,7 +155,12 @@ public class CosmosDbRestfulClient {
 		//		request.addHeader("x-ms-documentdb-pre-trigger-include", "CreateNewDocument");
 		//		request.addHeader("content-type", "application/json");
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
+		final HttpResponse response;
+		if (proxy != null) {
+			response = HttpUtilities.executeHttpRequest(request, proxy);
+		} else {
+			response = HttpUtilities.executeHttpRequest(request);
+		}
 
 		if (response.getHttpCode() == 200) {
 			// Replaced existing document
@@ -199,7 +212,12 @@ public class CosmosDbRestfulClient {
 		request.addHeader("x-ms-date", authDate);
 		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("DELETE", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), StandardCharsets.UTF_8));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
+		final HttpResponse response;
+		if (proxy != null) {
+			response = HttpUtilities.executeHttpRequest(request, proxy);
+		} else {
+			response = HttpUtilities.executeHttpRequest(request);
+		}
 
 		if (response.getHttpCode() == 204) {
 			// Removed existing document
@@ -239,7 +257,12 @@ public class CosmosDbRestfulClient {
 		request.addHeader("x-ms-date", authDate);
 		request.addHeader("authorization", HttpUtilities.urlEncode(generateAuthSignature("GET", "docs", "dbs/" + databaseID + "/colls/" + collectionID + "/docs/" + documentID, authDate), StandardCharsets.UTF_8));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
+		final HttpResponse response;
+		if (proxy != null) {
+			response = HttpUtilities.executeHttpRequest(request, proxy);
+		} else {
+			response = HttpUtilities.executeHttpRequest(request);
+		}
 
 		if (response.getHttpCode() == 200) {
 			// Document was found
@@ -307,7 +330,12 @@ public class CosmosDbRestfulClient {
 
 		request.setRequestBody(JsonWriter.getJsonItemString(requestObject));
 
-		final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
+		final HttpResponse response;
+		if (proxy != null) {
+			response = HttpUtilities.executeHttpRequest(request, proxy);
+		} else {
+			response = HttpUtilities.executeHttpRequest(request);
+		}
 
 		if (response.getHttpCode() == 200) {
 			return response.getContent();
@@ -366,7 +394,12 @@ public class CosmosDbRestfulClient {
 
 			request.setRequestBody(JsonWriter.getJsonItemString(requestObject));
 
-			final HttpResponse response = HttpUtilities.executeHttpRequest(request, proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(requestUrl));
+			final HttpResponse response;
+			if (proxy != null) {
+				response = HttpUtilities.executeHttpRequest(request, proxy);
+			} else {
+				response = HttpUtilities.executeHttpRequest(request);
+			}
 
 			if (response.getHttpCode() == 200) {
 				final JsonObject queryResponseJsonObject = ((JsonObject) JsonReader.readJsonItemString(response.getContent()));

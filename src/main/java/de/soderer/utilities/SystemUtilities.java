@@ -21,12 +21,16 @@ import java.util.Map;
 import javax.crypto.Cipher;
 
 import de.soderer.utilities.collection.CaseInsensitiveMap;
-import de.soderer.utilities.jarinjarloader.JarInJarLoader;
 
 /**
  * Information about the operating system, the running JVM and its process.
  */
 public class SystemUtilities {
+	/**
+	 * Name of the system property, which is set to the absolute path of the running application jar file.
+	 */
+	public static final String SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR = "process.jar";
+
 	private static final String OS_NAME_LOWER_CASE = getOsName() == null ? "" : getOsName().toLowerCase(Locale.ROOT);
 	private static final boolean isWindows = OS_NAME_LOWER_CASE.contains("windows");
 	private static final boolean isLinux = OS_NAME_LOWER_CASE.contains("unix") || OS_NAME_LOWER_CASE.contains("linux");
@@ -197,14 +201,14 @@ public class SystemUtilities {
 	}
 
 	/**
-	 * Path of the currently running jar file, as set by {@link JarInJarLoader} in a system property or environment variable.
+	 * Path of the currently running jar file, as used by JarInJarLoader in a system property or environment variable.
 	 *
 	 * @return jar file path, or null if unknown
 	 */
 	public static String getCurrentlyRunningJarFilePath() {
-		String jarFilePath = System.getProperty(JarInJarLoader.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+		String jarFilePath = System.getProperty(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
 		if (jarFilePath == null) {
-			jarFilePath = System.getenv(JarInJarLoader.SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
+			jarFilePath = System.getenv(SYSTEM_PARAMETER_NAME_CURRENT_RUNNING_JAR);
 		}
 		return jarFilePath;
 	}

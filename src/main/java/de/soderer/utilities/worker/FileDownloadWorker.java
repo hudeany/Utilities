@@ -9,7 +9,6 @@ import java.net.URI;
 import java.net.URLConnection;
 import java.util.Locale;
 
-import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.UserError;
 import de.soderer.utilities.Utilities;
 
@@ -31,7 +30,7 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 
 	private final String downloadUrl;
 	private final File destinationFile;
-	private ProxyConfiguration proxyConfiguration = null;
+	private Proxy proxy = null;
 
 	/**
 	 * Creates a download worker.
@@ -48,13 +47,22 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	}
 
 	/**
-	 * Sets the proxy configuration for the download.
+	 * Sets the proxy for the download.
 	 *
-	 * @param proxyConfiguration proxy configuration, or null for a direct connection
+	 * @param proxy proxy configuration, or null for a direct connection
+	 */
+	public void setProxy(final Proxy proxy) {
+		this.proxy = proxy;
+	}
+
+	/**
+	 * Sets the proxy for the download.
+	 *
+	 * @param newProxy proxy configuration, or null for a direct connection
 	 * @return this worker for chaining
 	 */
-	public FileDownloadWorker setProxyConfiguration(final ProxyConfiguration proxyConfiguration) {
-		this.proxyConfiguration = proxyConfiguration;
+	public FileDownloadWorker withProxy(final Proxy newProxy) {
+		setProxy(newProxy);
 		return this;
 	}
 
@@ -130,7 +138,12 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	private URLConnection openCheckedConnection() throws Exception {
 		String currentUrl = downloadUrl;
 		for (int redirectCount = 0;; redirectCount++) {
-			final URLConnection urlConnection = URI.create(currentUrl).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(currentUrl));
+			final URLConnection urlConnection;
+			if (proxy != null) {
+				urlConnection = URI.create(currentUrl).toURL().openConnection(proxy);
+			} else {
+				urlConnection = URI.create(currentUrl).toURL().openConnection();
+			}
 			urlConnection.setConnectTimeout(30_000);
 			urlConnection.setReadTimeout(30_000);
 			if (!(urlConnection instanceof HttpURLConnection)) {
