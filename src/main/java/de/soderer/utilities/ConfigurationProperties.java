@@ -16,10 +16,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import de.soderer.utilities.collection.UniqueFifoQueuedList;
-import de.soderer.utilities.csv.CsvDataException;
-import de.soderer.utilities.csv.CsvFormat;
-import de.soderer.utilities.csv.CsvReader;
-import de.soderer.utilities.csv.CsvWriter;
 
 /**
  * Application configuration stored as properties file "~/.&lt;applicationName&gt;.config" (or
@@ -56,30 +52,11 @@ public class ConfigurationProperties {
 	/** List keys already stored in the current (plain) list format */
 	private final Set<String> plainListKeys = new TreeSet<>();
 
-	/**
-	 * CSV format of list values (e.g. recent lists) in the configuration.
-	 * Plain RFC 4180 csv: backslashes (e.g. in Windows paths) are stored as they are.
-	 * No backslash escaping is needed, because java.util.Properties already takes care of
-	 * backslashes and linebreaks when the configuration file is stored and loaded.
-	 */
-	private static CsvFormat createListCsvFormat() {
-		return new CsvFormat()
-				.withSeparator(';')
-				.withStringQuote('"')
-				.withEscapeLineBreaks(false);
-	}
+	/** Separator of list values */
+	private static final char LIST_SEPARATOR = ';';
 
-	/**
-	 * Legacy CSV format of list values with backslash escaping.
-	 * Only used to read lists of existing configuration files, which were stored before
-	 * the switch to the plain list format.
-	 */
-	private static CsvFormat createLegacyListCsvFormat() {
-		return new CsvFormat()
-				.withSeparator(';')
-				.withStringQuote('"')
-				.withEscapeLineBreaks(true);
-	}
+	/** String quote of list values, doubled within quoted values */
+	private static final char LIST_STRING_QUOTE = '"';
 
 	/**
 	 * Internal keys are managed by this class and are not meant to be edited by the user
@@ -129,7 +106,7 @@ public class ConfigurationProperties {
 		final String plainListKeysValue = properties.getProperty(CONFIG_KEY_PLAIN_LIST_KEYS);
 		if (Utilities.isNotEmpty(plainListKeysValue)) {
 			try {
-				plainListKeys.addAll(CsvReader.parseCsvLine(createListCsvFormat(), plainListKeysValue));
+				plainListKeys.addAll(parseListValue(plainListKeysValue, false));
 			} catch (final Exception e) {
 				System.err.println("Cannot read configuration key '" + CONFIG_KEY_PLAIN_LIST_KEYS + "': " + e.getMessage());
 			}
@@ -311,7 +288,7 @@ public class ConfigurationProperties {
 			return new ArrayList<>();
 		} else if (plainListKeys.contains(name)) {
 			try {
-				return new ArrayList<>(CsvReader.parseCsvLine(createListCsvFormat(), value));
+				return parseListValue(value, false);
 			} catch (final Exception e) {
 				// Do not silently lose the list, report why it could not be read
 				System.err.println("Cannot read list value of configuration key '" + name + "': " + e.getMessage());
@@ -321,11 +298,11 @@ public class ConfigurationProperties {
 			// Value was stored in the legacy format with backslash escaping, so migrate it to the plain list format
 			List<String> list;
 			try {
-				list = CsvReader.parseCsvLine(createLegacyListCsvFormat(), value);
+				list = parseListValue(value, true);
 			} catch (@SuppressWarnings("unused") final Exception legacyException) {
 				// Not readable as legacy value (e.g. edited manually with single backslashes), so read it as plain list
 				try {
-					list = CsvReader.parseCsvLine(createListCsvFormat(), value);
+					list = parseListValue(value, false);
 				} catch (final Exception e) {
 					System.err.println("Cannot read list value of configuration key '" + name + "': " + e.getMessage());
 					return new ArrayList<>();
@@ -360,24 +337,229 @@ public class ConfigurationProperties {
 	 * @param list values, null is stored as empty list
 	 */
 	public void set(final String name, final List<String> list) {
-		try {
-			set(name, CsvWriter.getCsvLine(createListCsvFormat(), list == null ? new ArrayList<>() : list));
-		} catch (final CsvDataException e) {
-			// Can not happen, because the list format always allows quotation
-			throw new IllegalStateException("Cannot store list value for '" + name + "': " + e.getMessage(), e);
-		}
+		set(name, formatListValue(list == null ? new ArrayList<>() : list));
 		if (plainListKeys.add(name)) {
 			storePlainListKeys();
 		}
 	}
 
 	private void storePlainListKeys() {
-		try {
-			properties.setProperty(CONFIG_KEY_PLAIN_LIST_KEYS, CsvWriter.getCsvLine(createListCsvFormat(), new ArrayList<>(plainListKeys)));
-		} catch (final CsvDataException e) {
-			// Can not happen, because the list format always allows quotation
-			throw new IllegalStateException("Cannot store configuration key '" + CONFIG_KEY_PLAIN_LIST_KEYS + "': " + e.getMessage(), e);
+		properties.setProperty(CONFIG_KEY_PLAIN_LIST_KEYS, formatListValue(new ArrayList<>(plainListKeys)));
+	}
+
+	/**
+	 * Formats list values as one csv line (separator ';', string quote '"', RFC 4180).
+	 * Values are only quoted if needed (containing separator, string quote or linebreak), string quotes within quoted
+	 * values are doubled. Null values are stored as empty values. Backslashes are stored as they are, because
+	 * java.util.Properties already takes care of backslashes and linebreaks when the configuration file is stored.
+	 *
+	 * @param values values to format
+	 * @return csv line without trailing linebreak
+	 */
+	static String formatListValue(final List<String> values) {
+		final StringBuilder csvLine = new StringBuilder();
+		for (int i = 0; i < values.size(); i++) {
+			if (i > 0) {
+				csvLine.append(LIST_SEPARATOR);
+			}
+			final String value = values.get(i) == null ? "" : values.get(i);
+			if (value.indexOf(LIST_STRING_QUOTE) >= 0 || value.indexOf(LIST_SEPARATOR) >= 0 || value.indexOf('\r') >= 0 || value.indexOf('\n') >= 0) {
+				csvLine.append(LIST_STRING_QUOTE);
+				csvLine.append(value.replace(String.valueOf(LIST_STRING_QUOTE), String.valueOf(LIST_STRING_QUOTE) + LIST_STRING_QUOTE));
+				csvLine.append(LIST_STRING_QUOTE);
+			} else {
+				csvLine.append(value);
+			}
 		}
+		return csvLine.toString();
+	}
+
+	/**
+	 * Parses one csv line of list values (separator ';', string quote '"', RFC 4180), as written by
+	 * {@link #formatListValue(List)}. Quoted values may contain linebreaks, which are normalized to LF. Unquoted values
+	 * are not trimmed, whitespace around quoted values is ignored. A leading byte order mark is skipped.
+	 *
+	 * @param csvLine csv line, may end with a linebreak
+	 * @param legacyBackslashEscaping true to resolve backslash escape sequences (legacy format, see
+	 *            {@link #unescapeBackslashSequences(String)})
+	 * @return new modifiable list of values
+	 * @throws Exception if the text contains no or more than one csv line, a quoted value is not closed, there is text
+	 *             after a quoted value or an escape sequence is invalid
+	 */
+	static List<String> parseListValue(final String csvLine, final boolean legacyBackslashEscaping) throws Exception {
+		final List<List<String>> lines = new ArrayList<>();
+		List<String> lineValues = new ArrayList<>();
+		StringBuilder nextValue = new StringBuilder();
+		boolean insideString = false;
+		boolean isQuotedString = false;
+		char previousCharacter = (char) -1;
+
+		final int startIndex = !csvLine.isEmpty() && csvLine.charAt(0) == '\uFEFF' ? 1 : 0;
+		for (int i = startIndex; i < csvLine.length(); i++) {
+			final char nextChar = csvLine.charAt(i);
+			if (nextChar == LIST_STRING_QUOTE && (isQuotedString || nextValue.toString().trim().isEmpty())) {
+				insideString = !insideString;
+				nextValue.append(nextChar);
+				isQuotedString = true;
+			} else if (insideString) {
+				nextValue.append(nextChar);
+			} else if (nextChar == '\r' || nextChar == '\n') {
+				if (nextValue.length() > 0 || previousCharacter == LIST_SEPARATOR) {
+					lineValues.add(parseListItem(nextValue.toString(), legacyBackslashEscaping));
+					nextValue = new StringBuilder();
+					isQuotedString = false;
+				}
+				if (!lineValues.isEmpty()) {
+					// Line completed, linebreaks without any value before them are skipped
+					lines.add(lineValues);
+					lineValues = new ArrayList<>();
+					previousCharacter = (char) -1;
+					continue;
+				}
+			} else if (nextChar == LIST_SEPARATOR) {
+				lineValues.add(parseListItem(nextValue.toString(), legacyBackslashEscaping));
+				nextValue = new StringBuilder();
+				isQuotedString = false;
+			} else if (isQuotedString) {
+				if (!Character.isWhitespace(nextChar)) {
+					throw new Exception("Not allowed text '" + nextChar + "' after quoted value");
+				}
+			} else {
+				nextValue.append(nextChar);
+			}
+			previousCharacter = nextChar;
+		}
+
+		if (insideString) {
+			throw new Exception("Unexpected end of data within quoted value");
+		}
+		if (nextValue.length() > 0 || previousCharacter == LIST_SEPARATOR) {
+			lineValues.add(parseListItem(nextValue.toString(), legacyBackslashEscaping));
+		}
+		if (!lineValues.isEmpty()) {
+			lines.add(lineValues);
+		}
+
+		if (lines.isEmpty()) {
+			throw new Exception("No csv lines in data");
+		} else if (lines.size() > 1) {
+			throw new Exception("Too many csv lines in data");
+		} else {
+			return lines.get(0);
+		}
+	}
+
+	/**
+	 * Removes the enclosing string quotes of a raw list value and resolves doubled string quotes and (legacy format)
+	 * backslash escape sequences.
+	 *
+	 * @param rawValue raw value as read from the csv line, including string quotes
+	 * @param legacyBackslashEscaping true to resolve backslash escape sequences
+	 * @return value
+	 * @throws Exception if an escape sequence is invalid
+	 */
+	private static String parseListItem(final String rawValue, final boolean legacyBackslashEscaping) throws Exception {
+		String value = rawValue;
+		if (!value.isEmpty()) {
+			if (value.indexOf(LIST_STRING_QUOTE) >= 0) {
+				value = value.trim();
+			}
+			if (value.length() > 1 && value.charAt(0) == LIST_STRING_QUOTE && value.charAt(value.length() - 1) == LIST_STRING_QUOTE) {
+				value = value.substring(1, value.length() - 1).replace(String.valueOf(LIST_STRING_QUOTE) + LIST_STRING_QUOTE, String.valueOf(LIST_STRING_QUOTE));
+			}
+			value = normalizeLinebreaks(value);
+			if (legacyBackslashEscaping) {
+				value = normalizeLinebreaks(unescapeBackslashSequences(value));
+			}
+		}
+		return value;
+	}
+
+	/**
+	 * Normalizes all linebreaks (CRLF, CR, LF) to LF.
+	 *
+	 * @param value text to normalize
+	 * @return normalized text
+	 */
+	private static String normalizeLinebreaks(final String value) {
+		return value.replace("\r\n", "\n").replace("\r", "\n");
+	}
+
+	/**
+	 * Resolves backslash escape sequences of the legacy list format: \n, \r, \t, \b, \f, escaped space, \\, \', \",
+	 * hexadecimal sequences with 2 digits (\x41), 16 bit unicode sequences with 4 digits (\u0041) and unicode code
+	 * points with 8 digits (\U0001F600).
+	 *
+	 * @param escapedText text to unescape
+	 * @return unescaped text
+	 * @throws Exception if the text contains an unknown or invalid escape sequence or ends with a single backslash
+	 */
+	private static String unescapeBackslashSequences(final String escapedText) throws Exception {
+		final StringBuilder unescapedText = new StringBuilder();
+		for (int i = 0; i < escapedText.length(); i++) {
+			final char nextChar = escapedText.charAt(i);
+			if (nextChar != '\\') {
+				unescapedText.append(nextChar);
+			} else if (i + 1 >= escapedText.length()) {
+				throw new Exception("Invalid escape sequence at character index " + i + " (unescaped backslash at end of text)");
+			} else {
+				final char escapedChar = escapedText.charAt(i + 1);
+				switch (escapedChar) {
+					case 'n' -> unescapedText.append('\n');
+					case 'r' -> unescapedText.append('\r');
+					case 't' -> unescapedText.append('\t');
+					case 'b' -> unescapedText.append('\b');
+					case 'f' -> unescapedText.append('\f');
+					case ' ', '\\', '\'', '"' -> unescapedText.append(escapedChar);
+					case 'x' -> unescapedText.append((char) parseHexDigits(escapedText, i, 2));
+					case 'u' -> unescapedText.append((char) parseHexDigits(escapedText, i, 4));
+					case 'U' -> {
+						final int codePoint = parseHexDigits(escapedText, i, 8);
+						if (!Character.isValidCodePoint(codePoint)) {
+							throw new Exception("Invalid unicode sequence at character index " + i);
+						}
+						unescapedText.appendCodePoint(codePoint);
+					}
+					default -> throw new Exception("Invalid escape sequence at character index " + i + " ('\\" + escapedChar + "')");
+				}
+				// Skip the escaped character and the hexadecimal digits of hex and unicode sequences
+				i += switch (escapedChar) {
+					case 'x' -> 3;
+					case 'u' -> 5;
+					case 'U' -> 9;
+					default -> 1;
+				};
+			}
+		}
+		return unescapedText.toString();
+	}
+
+	/**
+	 * Parses the ASCII hexadecimal digits of an escape sequence like \x41, \u0041 or \U0001F600.
+	 *
+	 * @param text text containing the escape sequence
+	 * @param sequenceStartIndex index of the backslash starting the escape sequence
+	 * @param digitCount number of hexadecimal digits after the backslash and the type character
+	 * @return parsed value
+	 * @throws Exception if there are not enough characters left or a character is no ASCII hexadecimal digit
+	 */
+	private static int parseHexDigits(final String text, final int sequenceStartIndex, final int digitCount) throws Exception {
+		int value = 0;
+		for (int i = sequenceStartIndex + 2; i < sequenceStartIndex + 2 + digitCount; i++) {
+			final char digitChar = i < text.length() ? text.charAt(i) : 'g';
+			final int digit;
+			if (digitChar >= '0' && digitChar <= '9') {
+				digit = digitChar - '0';
+			} else if (digitChar >= 'a' && digitChar <= 'f') {
+				digit = digitChar - 'a' + 10;
+			} else if (digitChar >= 'A' && digitChar <= 'F') {
+				digit = digitChar - 'A' + 10;
+			} else {
+				throw new Exception("Invalid hexadecimal escape sequence at character index " + sequenceStartIndex);
+			}
+			value = (value << 4) | digit;
+		}
+		return value;
 	}
 
 	/**
