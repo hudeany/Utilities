@@ -76,9 +76,8 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 			throw new Exception("Cannot download file: " + e.getMessage(), e);
 		}
 		itemsToDo = urlConnection.getContentLengthLong();
-		if (itemsToDo < 0) {
-			itemsToDo = urlConnection.getContentLength();
-		}
+		// The announced size of the transferred data, which must be received completely
+		final long contentLength = itemsToDo;
 		if (itemsToDo < 0) {
 			itemsToDo = urlConnection.getHeaderFieldLong("Original-Content-Length", 0);
 		}
@@ -110,6 +109,10 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 		if (cancel) {
 			destinationFile.delete();
 			return false;
+		} else if (contentLength >= 0 && itemsDone != contentLength) {
+			// A connection closed early by the server or a proxy may end the data without an error
+			destinationFile.delete();
+			throw new Exception("Cannot download file: Download incomplete, received " + itemsDone + " of " + contentLength + " bytes");
 		} else {
 			signalProgress(true);
 			return true;
