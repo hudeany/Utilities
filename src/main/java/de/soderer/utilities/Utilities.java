@@ -21,9 +21,13 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -56,6 +60,9 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
 
@@ -102,7 +109,7 @@ public class Utilities {
 	 * @return random UUID in upper case without hyphens (32 hex characters)
 	 */
 	public static String generateUUID() {
-		return UUID.randomUUID().toString().toUpperCase().replaceAll("-", "");
+		return UUID.randomUUID().toString().toUpperCase(Locale.ROOT).replace("-", "");
 	}
 
 	/**
@@ -143,7 +150,8 @@ public class Utilities {
 		try (ByteArrayOutputStream encoded = new ByteArrayOutputStream();
 				GZIPOutputStream gzipCompresser = new GZIPOutputStream(encoded)) {
 			gzipCompresser.write(clearData);
-			gzipCompresser.close();
+			// finish() writes the remaining compressed data and the GZIP trailer, closing is done by try-with-resources
+			gzipCompresser.finish();
 			return encoded.toByteArray();
 		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
@@ -162,8 +170,10 @@ public class Utilities {
 	public static byte[] gunzipByteArray(final byte[] zippedData) throws Exception {
 		try {
 			final ByteArrayOutputStream decoded = new ByteArrayOutputStream();
-			final ByteArrayInputStream encoded = new ByteArrayInputStream(zippedData);
-			IoUtilities.copy(new GZIPInputStream(encoded), decoded);
+			// Closing the GZIPInputStream releases the native memory of its Inflater immediately
+			try (GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(zippedData))) {
+				IoUtilities.copy(gzipInputStream, decoded);
+			}
 			return decoded.toByteArray();
 		} catch (@SuppressWarnings("unused") final IOException e) {
 			return null;
@@ -290,14 +300,7 @@ public class Utilities {
 	 * @return email address of the certificate subject, or null if not available
 	 */
 	public static String getEmailFromCertificate(final X509Certificate cert) {
-		final String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
-		for (final String namePart : nameParts) {
-			if (namePart.matches("^[ \\t]*EMAILADDRESS=.*")) {
-				return namePart.substring(namePart.indexOf("=") + 1).trim();
-			}
-		}
-
-		return null;
+		return getSubjectAttribute(cert, "EMAILADDRESS");
 	}
 
 	/**
@@ -308,14 +311,24 @@ public class Utilities {
 	 * @return common name (CN) of the certificate subject, or null if not available
 	 */
 	public static String getCnFromCertificate(final X509Certificate cert) {
-		final String[] nameParts = cert.getSubjectX500Principal().toString().split(",");
-		for (final String namePart : nameParts) {
-			if (namePart.matches("^[ \\t]*CN=.*")) {
-				return namePart.substring(namePart.indexOf("=") + 1).trim();
-			}
-		}
+		return getSubjectAttribute(cert, "CN");
+	}
 
-		return null;
+	/**
+	 * Returns an attribute of the certificate subject. The distinguished name is parsed properly, so values containing
+	 * commas (quoted like CN="Doe, John" or escaped like CN=Doe\, John) are returned completely and unquoted.
+	 */
+	private static String getSubjectAttribute(final X509Certificate cert, final String attributeType) {
+		try {
+			for (final Rdn rdn : new LdapName(cert.getSubjectX500Principal().toString()).getRdns()) {
+				if (attributeType.equalsIgnoreCase(rdn.getType())) {
+					return rdn.getValue().toString().trim();
+				}
+			}
+			return null;
+		} catch (@SuppressWarnings("unused") final InvalidNameException e) {
+			return null;
+		}
 	}
 
 	/**
@@ -1160,13 +1173,21 @@ public class Utilities {
 	 */
 	public static void downloadFile(final String url, final String localeDestionationPath, final Proxy proxy) throws Exception {
 		final URLConnection urlConnection = URI.create(url).toURL().openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
+		// Without timeouts an unresponsive server would block forever
+		urlConnection.setConnectTimeout(DOWNLOAD_TIMEOUT_MILLIS);
+		urlConnection.setReadTimeout(DOWNLOAD_TIMEOUT_MILLIS);
 		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
 				FileOutputStream fileOutputStream = new FileOutputStream(localeDestionationPath)) {
 			IoUtilities.copy(bufferedInputStream, fileOutputStream);
 		} catch (final Exception e) {
+			// Do not leave an incomplete file behind
+			new File(localeDestionationPath).delete();
 			throw new Exception("Cannot download file", e);
 		}
 	}
+
+	/** Timeout in milliseconds for connecting and for each read of a download */
+	private static final int DOWNLOAD_TIMEOUT_MILLIS = 60_000;
 
 	/**
 	 * Download a file from url
@@ -1179,12 +1200,7 @@ public class Utilities {
 	 *             if the download or writing the file fails
 	 */
 	public static void downloadFile(final String url, final String localeDestionationPath) throws Exception {
-		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(URI.create(url).toURL().openStream());
-				FileOutputStream fileOutputStream = new FileOutputStream(localeDestionationPath)) {
-			IoUtilities.copy(bufferedInputStream, fileOutputStream);
-		} catch (final Exception e) {
-			throw new Exception("Cannot download file", e);
-		}
+		downloadFile(url, localeDestionationPath, null);
 	}
 
 	/**
@@ -2095,8 +2111,9 @@ public class Utilities {
 					final String line = nextLine.toString().trim();
 					if (line.length() > 0) {
 						returnList.add(line);
-						splitFound = true;
 					}
+					// The separator is consumed also after an empty item (before, it was added to the next item)
+					splitFound = true;
 					nextLine = new StringBuilder();
 					break;
 				}
@@ -2134,13 +2151,14 @@ public class Utilities {
 	}
 
 	/**
-	 * Delete a file or a directory recursively.
+	 * Delete a file or a directory recursively. Symbolic links are deleted themselves, the link targets are never followed.
 	 *
 	 * @param file file or directory to delete
 	 * @return true if everything was deleted, false if any file could not be deleted (deletion stops at the first failure)
 	 */
 	public static boolean delete(final File file) {
-		if (file.isDirectory()) {
+		// A symbolic link to a directory must not be followed, otherwise content outside of the deleted tree is deleted
+		if (file.isDirectory() && !Files.isSymbolicLink(file.toPath())) {
 			// listFiles() returns null if the directory cannot be read, so its content cannot be deleted either
 			final File[] subFiles = file.listFiles();
 			if (subFiles == null) {
@@ -2459,7 +2477,8 @@ public class Utilities {
 
 	/**
 	 * Split a command line into arguments at blanks, tabs and linebreaks.
-	 * Arguments may be enclosed in single or double quotes; within quotes a backslash escapes the quote character.
+	 * Like in a shell, quoted parts (single or double quotes) may contain blanks and are part of the surrounding argument,
+	 * e.g. {@code --name="a b"} becomes {@code --name=a b}. Within quotes a backslash escapes the quote character.
 	 *
 	 * @param argumentLine command line, must not be null
 	 * @return list of arguments
@@ -2470,6 +2489,7 @@ public class Utilities {
 		StringBuilder currentArgument = new StringBuilder();
 		Character enclosingChar = null;
 		boolean escapedNextChar = false;
+		boolean argumentStarted = false;
 		for (final char nextChar : argumentLine.replace("\r\n", "\n").replace("\r", "\n").toCharArray()) {
 			if (enclosingChar != null) {
 				if (escapedNextChar) {
@@ -2481,41 +2501,40 @@ public class Utilities {
 				} else if (nextChar == '\\') {
 					escapedNextChar = true;
 				} else if (nextChar == enclosingChar) {
-					returnList.add(currentArgument.toString());
+					// Like in a shell the quoted part continues the current argument, e.g. --name="a b" becomes --name=a b
 					enclosingChar = null;
-					currentArgument = new StringBuilder();
 				} else {
 					currentArgument.append(nextChar);
 				}
 			} else {
 				if (nextChar == '\'' || nextChar == '"') {
-					if (currentArgument.length() > 0) {
-						returnList.add(currentArgument.toString());
-						currentArgument = new StringBuilder();
-					}
 					enclosingChar = nextChar;
+					// Also an empty quoted text like "" is an argument
+					argumentStarted = true;
 				} else if (nextChar == ' ' || nextChar == '\n' || nextChar == '\t') {
-					if (currentArgument.length() > 0) {
+					if (argumentStarted) {
 						returnList.add(currentArgument.toString());
 						currentArgument = new StringBuilder();
+						argumentStarted = false;
 					}
 				} else {
 					currentArgument.append(nextChar);
+					argumentStarted = true;
 				}
 			}
 		}
 		if (enclosingChar != null) {
 			throw new Exception("Invalid quotation. Missing closing " + enclosingChar);
-		} else if (currentArgument.length() > 0) {
+		} else if (argumentStarted) {
 			returnList.add(currentArgument.toString());
-			currentArgument = new StringBuilder();
 		}
 		return returnList;
 	}
 
 	/**
 	 * Split a text into tokens at the given delimiter characters.
-	 * Tokens may be enclosed in single or double quotes; within quotes a backslash escapes the quote character.
+	 * Like in a shell, quoted parts (single or double quotes) may contain delimiters and are part of the surrounding
+	 * token, e.g. {@code key="a;b"} becomes {@code key=a;b}. Within quotes a backslash escapes the quote character.
 	 *
 	 * @param line text to split, must not be null
 	 * @param delimiters characters separating the tokens
@@ -2527,6 +2546,7 @@ public class Utilities {
 		StringBuilder currentArgument = new StringBuilder();
 		Character enclosingChar = null;
 		boolean escapedNextChar = false;
+		boolean argumentStarted = false;
 		for (final char nextChar : line.replace("\r\n", "\n").replace("\r", "\n").toCharArray()) {
 			if (enclosingChar != null) {
 				if (escapedNextChar) {
@@ -2538,34 +2558,32 @@ public class Utilities {
 				} else if (nextChar == '\\') {
 					escapedNextChar = true;
 				} else if (nextChar == enclosingChar) {
-					returnList.add(currentArgument.toString());
+					// Like in a shell the quoted part continues the current argument, e.g. --name="a b" becomes --name=a b
 					enclosingChar = null;
-					currentArgument = new StringBuilder();
 				} else {
 					currentArgument.append(nextChar);
 				}
 			} else {
 				if (nextChar == '\'' || nextChar == '"') {
-					if (currentArgument.length() > 0) {
-						returnList.add(currentArgument.toString());
-						currentArgument = new StringBuilder();
-					}
 					enclosingChar = nextChar;
+					// Also an empty quoted text like "" is an argument
+					argumentStarted = true;
 				} else if (equalsAnyChar(nextChar, delimiters)) {
-					if (currentArgument.length() > 0) {
+					if (argumentStarted) {
 						returnList.add(currentArgument.toString());
 						currentArgument = new StringBuilder();
+						argumentStarted = false;
 					}
 				} else {
 					currentArgument.append(nextChar);
+					argumentStarted = true;
 				}
 			}
 		}
 		if (enclosingChar != null) {
 			throw new Exception("Invalid quotation. Missing closing " + enclosingChar);
-		} else if (currentArgument.length() > 0) {
+		} else if (argumentStarted) {
 			returnList.add(currentArgument.toString());
-			currentArgument = new StringBuilder();
 		}
 		return returnList;
 	}
@@ -2688,8 +2706,13 @@ public class Utilities {
 		// (before, the file was deleted first)
 		final ByteArrayOutputStream keyStoreData = new ByteArrayOutputStream();
 		writeKeyStore.store(keyStoreData, "".toCharArray());
-		try (FileOutputStream outputStream = new FileOutputStream(keyStoreFileWithNullPassword)) {
-			outputStream.write(keyStoreData.toByteArray());
+		// Write into a temp file first and replace the original afterwards, so an interrupted write cannot damage it
+		final File tempFile = File.createTempFile(keyStoreFileWithNullPassword.getName() + ".", ".tmp", keyStoreFileWithNullPassword.getAbsoluteFile().getParentFile());
+		try {
+			Files.write(tempFile.toPath(), keyStoreData.toByteArray());
+			Files.move(tempFile.toPath(), keyStoreFileWithNullPassword.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		} finally {
+			Files.deleteIfExists(tempFile.toPath());
 		}
 	}
 
@@ -2710,14 +2733,25 @@ public class Utilities {
 	 */
 	public static String fixStringEncodingIfNeeded(final String comment) {
 		boolean wrongEncodingDetected = false;
-		for (final byte nextByte : comment.getBytes(StandardCharsets.ISO_8859_1)) {
-			if (nextByte == -61) {
+		for (final char nextChar : comment.toCharArray()) {
+			if (nextChar > 0xFF) {
+				// Characters outside of ISO-8859-1 cannot result from wrongly decoded bytes, so the text is correct
+				return comment;
+			} else if (nextChar == 0xC3) {
 				wrongEncodingDetected = true;
-				break;
 			}
 		}
 		if (wrongEncodingDetected) {
-			return new String(comment.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+			// Only convert if the bytes are valid UTF-8, otherwise the text was correct (e.g. a real "Ã")
+			try {
+				return StandardCharsets.UTF_8.newDecoder()
+						.onMalformedInput(CodingErrorAction.REPORT)
+						.onUnmappableCharacter(CodingErrorAction.REPORT)
+						.decode(ByteBuffer.wrap(comment.getBytes(StandardCharsets.ISO_8859_1)))
+						.toString();
+			} catch (@SuppressWarnings("unused") final CharacterCodingException e) {
+				return comment;
+			}
 		} else {
 			return comment;
 		}
@@ -2735,7 +2769,9 @@ public class Utilities {
 	}
 
 	/**
-	 * Null-safe conversion to upper case using the rules of the default locale.
+	 * Null-safe conversion to upper case, independent of the default locale.
+	 * Locale.ROOT is used, because the default locale changes the result, e.g. "i" becomes the dotted "\u0130" in
+	 * Turkish, which breaks comparisons of keywords, identifiers and file names.
 	 *
 	 * @param value text, may be null
 	 * @return upper case text, or null for null input
@@ -2744,7 +2780,7 @@ public class Utilities {
 		if (value == null) {
 			return null;
 		} else {
-			return value.toUpperCase();
+			return value.toUpperCase(Locale.ROOT);
 		}
 	}
 
@@ -3010,7 +3046,14 @@ public class Utilities {
 	public static String escapePropertiesString(final String text) {
 		final StringBuilder escapedTextBuilder = new StringBuilder();
 
+		boolean isLeadingPosition = true;
 		for (final char nextChar : text.toCharArray()) {
+			if (isLeadingPosition && nextChar == ' ') {
+				// java.util.Properties removes leading blanks of a value, unless they are escaped
+				escapedTextBuilder.append("\\ ");
+				continue;
+			}
+			isLeadingPosition = false;
 			switch (nextChar) {
 				case '\\':
 					escapedTextBuilder.append("\\\\");

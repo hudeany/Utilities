@@ -1,10 +1,13 @@
 package de.soderer.utilities;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.nio.charset.Charset;
 
 /**
@@ -94,34 +97,52 @@ public class IoUtilities {
 	 *             if reading or writing fails
 	 */
 	public static long copy(final Reader inputReader, final OutputStream outputStream, final Charset encoding) throws IOException {
-		final char[] buffer = new char[4096];
-		int lengthRead = -1;
-		long bytesCopied = 0;
-		// A surrogate pair split at the buffer boundary must be encoded together, so a trailing high surrogate is kept for the next chunk
-		Character pendingHighSurrogate = null;
-		while ((lengthRead = inputReader.read(buffer)) > -1) {
-			final StringBuilder data = new StringBuilder(lengthRead + 1);
-			if (pendingHighSurrogate != null) {
-				data.append(pendingHighSurrogate.charValue());
-				pendingHighSurrogate = null;
+		// One continuous encoder for the whole data: encoding chunk by chunk with String.getBytes would write a byte order
+		// mark for every chunk with encodings like UTF-16 and would split surrogate pairs at chunk boundaries
+		// Closing the writer is safe: CountingOutputStream only flushes on close and keeps the given output stream open
+		try (CountingOutputStream countingOutputStream = new CountingOutputStream(outputStream);
+				Writer writer = new OutputStreamWriter(countingOutputStream, encoding)) {
+			final char[] buffer = new char[4096];
+			int lengthRead;
+			while ((lengthRead = inputReader.read(buffer)) != EOF) {
+				writer.write(buffer, 0, lengthRead);
 			}
-			data.append(buffer, 0, lengthRead);
-			if (data.length() > 0 && Character.isHighSurrogate(data.charAt(data.length() - 1))) {
-				pendingHighSurrogate = data.charAt(data.length() - 1);
-				data.setLength(data.length() - 1);
-			}
-			final byte[] dataBytes = data.toString().getBytes(encoding);
-			outputStream.write(dataBytes);
-			bytesCopied += dataBytes.length;
+			writer.flush();
+			return countingOutputStream.getByteCount();
 		}
-		if (pendingHighSurrogate != null) {
-			// Unpaired high surrogate at the end of data
-			final byte[] dataBytes = String.valueOf(pendingHighSurrogate.charValue()).getBytes(encoding);
-			outputStream.write(dataBytes);
-			bytesCopied += dataBytes.length;
+	}
+
+	/**
+	 * Counts the bytes written to an output stream. Closing it only flushes and does not close the underlying stream,
+	 * which belongs to the caller.
+	 */
+	private static class CountingOutputStream extends FilterOutputStream {
+		private long byteCount = 0;
+
+		CountingOutputStream(final OutputStream outputStream) {
+			super(outputStream);
 		}
-		outputStream.flush();
-		return bytesCopied;
+
+		@Override
+		public void write(final int byteValue) throws IOException {
+			out.write(byteValue);
+			byteCount++;
+		}
+
+		@Override
+		public void write(final byte[] data, final int offset, final int length) throws IOException {
+			out.write(data, offset, length);
+			byteCount += length;
+		}
+
+		@Override
+		public void close() throws IOException {
+			flush();
+		}
+
+		long getByteCount() {
+			return byteCount;
+		}
 	}
 
 	/**

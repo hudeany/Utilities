@@ -95,7 +95,7 @@ public class FileUtilities {
 				final File[] subFiles = startDirectory.listFiles();
 				if (subFiles != null) {
 					for (final File file : subFiles) {
-						if (file.isDirectory()) {
+						if (isRealDirectory(file)) {
 							files.addAll(getFilesWithWildcards(file, fileFilterWithWildcards, traverseCompletely));
 						}
 					}
@@ -140,7 +140,8 @@ public class FileUtilities {
 	 * @param searchCaseSensitive
 	 *            true to search case sensitive
 	 * @param searchTextIsRegularExpression
-	 *            true if the search texts are regular expressions, false for literal texts
+	 *            true if the search texts are regular expressions (in MULTILINE mode, so "^" and "$" match at line
+	 *            starts and ends), false for literal texts
 	 * @param defaultEncoding
 	 *            the encoding used for files without BOM
 	 * @return true, if any of the texts was found, false also for an empty file or no search texts
@@ -163,10 +164,11 @@ public class FileUtilities {
 			for (int i = 0; i < searchTexts.size(); i++) {
 				Pattern searchPattern;
 				if (searchTextIsRegularExpression) {
+					// MULTILINE like in fileReplaceText, so "^" and "$" match at line starts and ends in both methods
 					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i));
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE);
 					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE);
+						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
 					}
 				} else {
 					if (searchCaseSensitive) {
@@ -241,6 +243,8 @@ public class FileUtilities {
 	public static boolean fileReplaceText(final File searchFile, final List<String> searchTexts, final List<String> replacementTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final Charset defaultEncoding) throws Exception {
 		if (!searchFile.exists()) {
 			throw new FileNotFoundException("File not found: " + searchFile.getAbsolutePath());
+		} else if (searchTexts != null && replacementTexts != null && searchTexts.size() != replacementTexts.size()) {
+			throw new IllegalArgumentException("Number of search texts (" + searchTexts.size() + ") and replacement texts (" + replacementTexts.size() + ") differ");
 		}
 		boolean foundAndReplaced = false;
 		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0 && replacementTexts != null && replacementTexts.size() > 0) {
@@ -386,8 +390,10 @@ public class FileUtilities {
 		final File[] subFiles = startDirectory.isDirectory() ? startDirectory.listFiles() : null;
 		if (subFiles != null) {
 			for (final File file : subFiles) {
-				if (file.isDirectory() && traverseCompletely) {
-					files.addAll(getFilesByPattern(file, pattern, traverseCompletely));
+				if (file.isDirectory()) {
+					if (traverseCompletely && isRealDirectory(file)) {
+						files.addAll(getFilesByPattern(file, pattern, traverseCompletely));
+					}
 				} else if (file.isFile() && pattern.matcher(file.getName()).matches()) {
 					files.add(file);
 				}
@@ -397,7 +403,7 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Returns all files (not directories) within a directory tree.
+	 * Returns all files (not directories) within a directory tree. Symbolic links to directories are not followed.
 	 *
 	 * @param directory
 	 *            the root directory
@@ -412,7 +418,9 @@ public class FileUtilities {
 			if (subFiles != null) {
 				for (final File file : subFiles) {
 					if (file.isDirectory()) {
-						files.addAll(getAllSubfiles(file));
+						if (isRealDirectory(file)) {
+							files.addAll(getAllSubfiles(file));
+						}
 					} else {
 						files.add(file);
 					}
@@ -425,7 +433,7 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Returns the number of all files (not directories) within a directory tree.
+	 * Returns the number of all files (not directories) within a directory tree. Symbolic links to directories are not followed.
 	 *
 	 * @param directory
 	 *            the root directory
@@ -440,7 +448,9 @@ public class FileUtilities {
 			if (subFiles != null) {
 				for (final File file : subFiles) {
 					if (file.isDirectory()) {
-						fileCount += getAllSubfilesNumber(file);
+						if (isRealDirectory(file)) {
+							fileCount += getAllSubfilesNumber(file);
+						}
 					} else {
 						fileCount++;
 					}
@@ -453,7 +463,16 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Returns the size of all files within a directory tree.
+	 * Checks whether a file is a directory and no symbolic link to one. The recursive methods of this class do not
+	 * descend into symbolic links (like "find" by default), because a link to a parent directory would cause an endless
+	 * recursion, and files reachable via several paths would be counted repeatedly.
+	 */
+	private static boolean isRealDirectory(final File file) {
+		return file.isDirectory() && !Files.isSymbolicLink(file.toPath());
+	}
+
+	/**
+	 * Returns the size of all files within a directory tree. Symbolic links to directories are not followed.
 	 *
 	 * @param directory
 	 *            the root directory
@@ -468,7 +487,9 @@ public class FileUtilities {
 			if (subFiles != null) {
 				for (final File file : subFiles) {
 					if (file.isDirectory()) {
-						fileSizeSum += getAllSubfilesSize(file);
+						if (isRealDirectory(file)) {
+							fileSizeSum += getAllSubfilesSize(file);
+						}
 					} else {
 						fileSizeSum += file.length();
 					}
