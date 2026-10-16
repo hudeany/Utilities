@@ -3,6 +3,7 @@ package de.soderer.utilities.worker;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.HttpURLConnection;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URLConnection;
@@ -22,6 +23,11 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 	 * Return value of InputStream read methods at the end of the stream.
 	 */
 	public static final int EOF = -1;
+
+	/**
+	 * Maximum number of HTTP redirects followed.
+	 */
+	private static final int MAX_REDIRECTS = 5;
 
 	private final String downloadUrl;
 	private final File destinationFile;
@@ -61,9 +67,14 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 		}
 
 		signalUnlimitedProgress();
-		final URLConnection urlConnection = URI.create(downloadUrl).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(downloadUrl));
-		urlConnection.setConnectTimeout(30_000);
-		urlConnection.setReadTimeout(30_000);
+		final URLConnection urlConnection;
+		try {
+			urlConnection = openCheckedConnection();
+		} catch (final UserError e) {
+			throw e;
+		} catch (final Exception e) {
+			throw new Exception("Cannot download file: " + e.getMessage(), e);
+		}
 		itemsToDo = urlConnection.getContentLengthLong();
 		if (itemsToDo < 0) {
 			itemsToDo = urlConnection.getContentLength();
@@ -102,6 +113,52 @@ public class FileDownloadWorker extends WorkerSimple<Boolean> {
 		} else {
 			signalProgress(true);
 			return true;
+		}
+	}
+
+	/**
+	 * Opens the connection to the download URL. For HTTP the response code is checked and redirects are followed,
+	 * also from http to https (which HttpURLConnection does not do itself), but not from https to http.
+	 * Without this check the body of an error or redirect response would be stored as downloaded file.
+	 *
+	 * @return connection with a successful response
+	 * @throws Exception if the server responds with an error, too many redirects or an insecure redirect
+	 */
+	private URLConnection openCheckedConnection() throws Exception {
+		String currentUrl = downloadUrl;
+		for (int redirectCount = 0;; redirectCount++) {
+			final URLConnection urlConnection = URI.create(currentUrl).toURL().openConnection(proxyConfiguration == null ? Proxy.NO_PROXY : proxyConfiguration.getProxy(currentUrl));
+			urlConnection.setConnectTimeout(30_000);
+			urlConnection.setReadTimeout(30_000);
+			if (!(urlConnection instanceof HttpURLConnection)) {
+				return urlConnection;
+			}
+
+			final HttpURLConnection httpConnection = (HttpURLConnection) urlConnection;
+			httpConnection.setInstanceFollowRedirects(false);
+			final int responseCode = httpConnection.getResponseCode();
+			if (responseCode == 301 || responseCode == 302 || responseCode == 303 || responseCode == 307 || responseCode == 308) {
+				final String location = httpConnection.getHeaderField("Location");
+				httpConnection.disconnect();
+				if (location == null) {
+					throw new Exception("HTTP redirect " + responseCode + " without location");
+				} else if (redirectCount >= MAX_REDIRECTS) {
+					throw new Exception("Too many HTTP redirects");
+				}
+				final String nextUrl = URI.create(currentUrl).resolve(location).toString();
+				if (currentUrl.toLowerCase(Locale.ROOT).startsWith("https:") && !nextUrl.toLowerCase(Locale.ROOT).startsWith("https:")) {
+					throw new Exception("Insecure HTTP redirect from https to: " + nextUrl);
+				}
+				currentUrl = nextUrl;
+			} else if (responseCode == 401) {
+				httpConnection.disconnect();
+				throw new UserError("error.userNotAuthenticatedOrNotAuthorized", UserError.Reason.UnauthenticatedOrUnauthorized);
+			} else if (responseCode < 200 || responseCode >= 300) {
+				httpConnection.disconnect();
+				throw new Exception("Server returned HTTP response code: " + responseCode);
+			} else {
+				return httpConnection;
+			}
 		}
 	}
 }

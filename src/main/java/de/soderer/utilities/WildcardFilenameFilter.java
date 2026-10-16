@@ -3,9 +3,6 @@ package de.soderer.utilities;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 
 /**
@@ -148,114 +145,59 @@ public class WildcardFilenameFilter implements FileFilter, FilenameFilter {
 		return buffer.toString();
 	}
 
+	/**
+	 * Checks whether a file name matches a wildcard pattern. When a later part of the pattern does not match, the
+	 * last "*" is extended by one character and matching continues from there, so combinations like "*?" are handled
+	 * correctly.
+	 */
 	private static boolean checkWildcardFilenamePattern(final String fileName, final String wildcardFilenamePattern, final boolean caseSensitive) {
 		if (fileName == null && wildcardFilenamePattern == null) {
 			return true;
 		} else if (fileName == null || wildcardFilenamePattern == null) {
 			return false;
 		} else {
-			final String[] wildcardFilenamePatternParts = splitOnTokens(wildcardFilenamePattern);
-			boolean anyChars = false;
 			int textIndex = 0;
-			int wildcardFilenamePatternPartsIndex = 0;
-			final Deque<int[]> backtrack = new ArrayDeque<>(wildcardFilenamePatternParts.length);
-
-			do {
-				if (!backtrack.isEmpty()) {
-					final int[] array = backtrack.pop();
-					wildcardFilenamePatternPartsIndex = array[0];
-					textIndex = array[1];
-					anyChars = true;
+			int patternIndex = 0;
+			// Position of the last "*" in the pattern and of the text it was matched against, -1 if there was none yet
+			int lastStarPatternIndex = -1;
+			int lastStarTextIndex = 0;
+			while (textIndex < fileName.length()) {
+				if (patternIndex < wildcardFilenamePattern.length() && wildcardFilenamePattern.charAt(patternIndex) == '*') {
+					lastStarPatternIndex = patternIndex;
+					lastStarTextIndex = textIndex;
+					patternIndex++;
+				} else if (patternIndex < wildcardFilenamePattern.length()
+						&& (wildcardFilenamePattern.charAt(patternIndex) == '?' || charactersMatch(fileName.charAt(textIndex), wildcardFilenamePattern.charAt(patternIndex), caseSensitive))) {
+					patternIndex++;
+					textIndex++;
+				} else if (lastStarPatternIndex >= 0) {
+					// Let the last "*" match one more character and retry the rest of the pattern
+					patternIndex = lastStarPatternIndex + 1;
+					lastStarTextIndex++;
+					textIndex = lastStarTextIndex;
+				} else {
+					return false;
 				}
+			}
+			// Remaining "*" match the empty rest of the text
+			while (patternIndex < wildcardFilenamePattern.length() && wildcardFilenamePattern.charAt(patternIndex) == '*') {
+				patternIndex++;
+			}
+			return patternIndex == wildcardFilenamePattern.length();
+		}
+	}
 
-				while (wildcardFilenamePatternPartsIndex < wildcardFilenamePatternParts.length) {
-					if (wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex].equals("?")) {
-						textIndex++;
-						if (textIndex > fileName.length()) {
-							break;
-						}
-						anyChars = false;
-					} else if (wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex].equals("*")) {
-						anyChars = true;
-						if (wildcardFilenamePatternPartsIndex == wildcardFilenamePatternParts.length - 1) {
-							textIndex = fileName.length();
-						}
-					} else {
-						if (anyChars) {
-							textIndex = checkIndexOf(fileName, textIndex, wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex], caseSensitive);
-							if (textIndex == -1) {
-								break;
-							}
-							final int repeat = checkIndexOf(fileName, textIndex + 1, wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex], caseSensitive);
-							if (repeat >= 0) {
-								backtrack.push(new int[] { wildcardFilenamePatternPartsIndex, repeat });
-							}
-						} else {
-							if (!fileName.regionMatches(!caseSensitive, textIndex,
-									wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex], 0,
-									wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex].length())) {
-								break;
-							}
-						}
-
-						textIndex += wildcardFilenamePatternParts[wildcardFilenamePatternPartsIndex].length();
-						anyChars = false;
-					}
-
-					wildcardFilenamePatternPartsIndex++;
-				}
-
-				if (wildcardFilenamePatternPartsIndex == wildcardFilenamePatternParts.length && textIndex == fileName.length()) {
-					return true;
-				}
-
-			} while (!backtrack.isEmpty());
-
+	/**
+	 * Compares two characters, ignoring the case like {@link String#regionMatches(boolean, int, String, int, int)}.
+	 */
+	private static boolean charactersMatch(final char textChar, final char patternChar, final boolean caseSensitive) {
+		if (textChar == patternChar) {
+			return true;
+		} else if (caseSensitive) {
 			return false;
+		} else {
+			return Character.toUpperCase(textChar) == Character.toUpperCase(patternChar)
+					|| Character.toLowerCase(textChar) == Character.toLowerCase(patternChar);
 		}
-	}
-
-	private static String[] splitOnTokens(final String text) {
-		if (text.indexOf('?') == -1 && text.indexOf('*') == -1) {
-			return new String[] { text };
-		}
-
-		final char[] array = text.toCharArray();
-		final ArrayList<String> list = new ArrayList<>();
-		final StringBuilder buffer = new StringBuilder();
-		char previousChar = 0;
-		for (final char nextChar : array) {
-			if (nextChar == '?' || nextChar == '*') {
-				if (buffer.length() != 0) {
-					list.add(buffer.toString());
-					buffer.setLength(0);
-				}
-				if (nextChar == '?') {
-					list.add("?");
-				} else if (previousChar != '*') {
-					list.add("*");
-				}
-			} else {
-				buffer.append(nextChar);
-			}
-			previousChar = nextChar;
-		}
-		if (buffer.length() != 0) {
-			list.add(buffer.toString());
-		}
-
-		return list.toArray(new String[0]);
-	}
-
-	private static int checkIndexOf(final String str, final int strStartIndex, final String search, final boolean caseSensitive) {
-		final int endIndex = str.length() - search.length();
-		if (endIndex >= strStartIndex) {
-			for (int i = strStartIndex; i <= endIndex; i++) {
-				if (str.regionMatches(!caseSensitive, i, search, 0, search.length())) {
-					return i;
-				}
-			}
-		}
-		return -1;
 	}
 }

@@ -6,6 +6,7 @@ import java.io.LineNumberReader;
 import java.io.StringReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -659,7 +660,18 @@ public class TextUtilities {
 	 * @return Tuple First = charset name, Second = true if the data starts with a byte order mark (BOM)
 	 */
 	public static Tuple<String, Boolean> detectEncoding(final byte[] data) {
-		final DetectionResult result = EncodingDetector.detectEncoding(data);
+		return detectEncoding(data, null);
+	}
+
+	/**
+	 * Try to detect the encoding of byte array text data.
+	 *
+	 * @param data text data
+	 * @param nonUtf8FallbackCharset charset for data without BOM which is no valid UTF-8, or null for Windows-1252
+	 * @return Tuple First = charset name, Second = true if the data starts with a byte order mark (BOM)
+	 */
+	public static Tuple<String, Boolean> detectEncoding(final byte[] data, final Charset nonUtf8FallbackCharset) {
+		final DetectionResult result = EncodingDetector.detectEncoding(data, nonUtf8FallbackCharset);
 		return new Tuple<>(result.charset.name(), result.hasBom);
 	}
 

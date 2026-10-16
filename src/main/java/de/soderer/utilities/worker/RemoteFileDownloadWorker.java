@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.remote.FileInfo;
 import de.soderer.utilities.remote.RemoteConnection;
 
 /**
@@ -53,7 +54,11 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 	public RemoteFileDownloadWorker work() throws Exception {
 		signalUnlimitedProgress();
 
-		itemsToDo = connection.getFileInfo(remoteFilePath).getFileSize();
+		final FileInfo fileInfo = connection.getFileInfo(remoteFilePath);
+		if (fileInfo == null) {
+			throw new Exception("Remote file not found or is no file: \"" + remoteFilePath + "\"");
+		}
+		itemsToDo = fileInfo.getFileSize();
 
 		signalProgress();
 
@@ -71,10 +76,16 @@ public class RemoteFileDownloadWorker extends WorkerSimple<RemoteFileDownloadWor
 				}
 			}
 			Utilities.clear(buffer);
+		} catch (final Exception e) {
+			// The local file did not exist before, so a partially written file can be removed
+			localFile.delete();
+			throw e;
 		}
 
-		if (cancel && localFile.exists()) {
+		if (cancel) {
 			localFile.delete();
+		} else {
+			signalProgress(true);
 		}
 
 		return this;

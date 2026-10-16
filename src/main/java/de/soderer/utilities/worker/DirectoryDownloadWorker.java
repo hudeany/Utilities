@@ -15,7 +15,7 @@ import de.soderer.utilities.remote.RemoteConnection;
 
 /**
  * Worker that downloads a remote directory with all its files and subdirectories into a new local directory.
- * Remote names leading outside of the local destination are rejected (path traversal).
+ * Remote names leading outside of the local destination are rejected (path traversal), the entries "." and ".." are skipped.
  */
 public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker> {
 	private final RemoteConnection connection;
@@ -62,6 +62,9 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 		this.localParentDirectory = localParentDirectory;
 		if (Utilities.isBlank(localDirectoryName)) {
 			this.localDirectoryName = FileUtilities.getFilenameFromPath(this.remoteDirectoryPath);
+			if (Utilities.isBlank(this.localDirectoryName)) {
+				throw new Exception("Cannot derive the local directory name from remote directory \"" + remoteDirectoryPath + "\", localDirectoryName is needed");
+			}
 		} else {
 			this.localDirectoryName = localDirectoryName;
 		}
@@ -85,7 +88,8 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 		itemsToDo = getRemoteDirectorySize(remoteDirectoryPath);
 		signalProgress(true);
 		final File destinationParentDirectoryPath = new File(localParentDirectory, localDirectoryName);
-		destinationParentDirectoryPath.mkdir();
+		assertNoPathTraversal(localParentDirectory, destinationParentDirectoryPath);
+		createDirectory(destinationParentDirectoryPath);
 		recursiveDownload(remoteDirectoryPath, destinationParentDirectoryPath);
 		return this;
 	}
@@ -99,6 +103,9 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 		}
 
 		for (final FolderInfo folderInfo : directory.getFirst()) {
+			if (isSelfOrParentEntry(folderInfo.getFolderName())) {
+				continue;
+			}
 			fileSizeSum += getRemoteDirectorySize(subDirectoryPath + "/" + folderInfo.getFolderName());
 		}
 
@@ -109,7 +116,7 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 		final Tuple<List<FolderInfo>, List<FileInfo>> directory = connection.getDirectory(remoteFolderPath);
 
 		for (final FileInfo fileInfo : directory.getSecond()) {
-			if (!cancel) {
+			if (!cancel && !isSelfOrParentEntry(fileInfo.getFileName())) {
 				final String nextRemoteFile = remoteFolderPath + "/" + fileInfo.getFileName();
 				final File nextLocalFile = new File(destinationParentDirectory, fileInfo.getFileName());
 				assertNoPathTraversal(destinationParentDirectory, nextLocalFile);
@@ -134,19 +141,23 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 					Utilities.clear(buffer);
 					itemsDone += subItemsDone;
 					signalProgress();
+				} catch (final Exception e) {
+					// The local file is new, so a partially written file can be removed
+					nextLocalFile.delete();
+					throw e;
 				}
 
-				if (cancel && nextLocalFile.exists()) {
+				if (cancel) {
 					nextLocalFile.delete();
 				}
 			}
 		}
 
 		for (final FolderInfo subFolderInfo : directory.getFirst()) {
-			if (!cancel) {
+			if (!cancel && !isSelfOrParentEntry(subFolderInfo.getFolderName())) {
 				final File nextFolderDestination = new File(destinationParentDirectory, subFolderInfo.getFolderName());
 				assertNoPathTraversal(destinationParentDirectory, nextFolderDestination);
-				nextFolderDestination.mkdir();
+				createDirectory(nextFolderDestination);
 				recursiveDownload(remoteFolderPath + "/" + subFolderInfo.getFolderName(), nextFolderDestination);
 			}
 		}
@@ -159,10 +170,30 @@ public class DirectoryDownloadWorker extends WorkerDual<DirectoryDownloadWorker>
 	 * and write files anywhere on the local file system (path traversal / "zip-slip"-style attack).
 	 */
 	private static void assertNoPathTraversal(final File destinationParentDirectory, final File candidate) throws Exception {
-		final String parentCanonicalPath = destinationParentDirectory.getCanonicalPath() + File.separator;
+		String parentCanonicalPath = destinationParentDirectory.getCanonicalPath();
+		if (!parentCanonicalPath.endsWith(File.separator)) {
+			// A root directory like "/" or "C:\" already ends with a separator
+			parentCanonicalPath += File.separator;
+		}
 		final String candidateCanonicalPath = candidate.getCanonicalPath();
-		if (!(candidateCanonicalPath + File.separator).startsWith(parentCanonicalPath)) {
+		// The candidate must be strictly inside the parent directory, a name like "." would point to the parent itself
+		if (!candidateCanonicalPath.startsWith(parentCanonicalPath) || candidateCanonicalPath.length() <= parentCanonicalPath.length()) {
 			throw new Exception("Remote item name leads outside of the download destination: \"" + candidate.getName() + "\"");
+		}
+	}
+
+	/**
+	 * Checks for the directory entries "." and "..", which some servers include in their listings.
+	 * Following "." would download the same directory endlessly.
+	 */
+	private static boolean isSelfOrParentEntry(final String name) {
+		return ".".equals(name) || "..".equals(name);
+	}
+
+	private static void createDirectory(final File directory) throws Exception {
+		// An existing directory is accepted, e.g. for remote names differing only in case on a case insensitive file system
+		if (!directory.mkdir() && !directory.isDirectory()) {
+			throw new Exception("Cannot create local directory: \"" + directory.getAbsolutePath() + "\"");
 		}
 	}
 }

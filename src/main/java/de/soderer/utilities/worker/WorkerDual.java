@@ -35,6 +35,11 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	 * Processed part of the current item.
 	 */
 	protected long subItemsDone = -1;
+	/**
+	 * Time of the last item progress signal sent to the parent. It is separate from the time of the last overall
+	 * progress signal, so frequent item signals do not suppress the overall progress signals.
+	 */
+	protected LocalDateTime lastItemProgressShow = LocalDateTime.now();
 
 	/**
 	 * Creates a worker reporting to the given parent.
@@ -77,14 +82,14 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	 */
 	protected void signalItemProgress(final boolean overrideRefreshTime) {
 		if (parent != null && !cancel) {
-			if (Duration.between(lastProgressShow, LocalDateTime.now()).toMillis() > progressDisplayDelayMilliseconds
+			if (Duration.between(lastItemProgressShow, LocalDateTime.now()).toMillis() > progressDisplayDelayMilliseconds
 					|| overrideRefreshTime) {
 				if (parent instanceof WorkerParentDual) {
 					((WorkerParentDual) parent).receiveItemProgressSignal(startTimeSub, subItemsToDo, subItemsDone, subItemsUnitSign);
 				} else {
 					parent.receiveProgressSignal(startTimeSub, subItemsToDo, subItemsDone, subItemsUnitSign);
 				}
-				lastProgressShow = LocalDateTime.now();
+				lastItemProgressShow = LocalDateTime.now();
 			}
 		}
 	}
@@ -93,31 +98,25 @@ public abstract class WorkerDual<T> extends WorkerSimple<T> {
 	 * Signals that the current item is finished.
 	 */
 	protected void signalItemDone() {
-		endTimeSub = LocalDateTime.now();
-		if (parent != null) {
-			if (parent instanceof WorkerParentDual) {
-				((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, null);
-			} else {
-				parent.receiveDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, null);
-			}
-			currentItemName = null;
-		}
+		signalItemDone(null);
 	}
 
 	/**
 	 * Signals that the current item is finished, with a text describing its result.
+	 * A {@link WorkerParentSimple} gets an overall progress signal instead, because its done signal means that the
+	 * whole worker is done.
 	 *
 	 * @param resultText text describing the result of the item, may be null
 	 */
 	protected void signalItemDone(final String resultText) {
 		endTimeSub = LocalDateTime.now();
+		currentItemName = null;
 		if (parent != null) {
 			if (parent instanceof WorkerParentDual) {
 				((WorkerParentDual) parent).receiveItemDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, resultText);
 			} else {
-				parent.receiveDoneSignal(startTimeSub, endTimeSub, subItemsDone, subItemsUnitSign, resultText);
+				signalProgress(true);
 			}
-			currentItemName = null;
 		}
 	}
 

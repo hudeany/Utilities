@@ -12,7 +12,9 @@ import de.soderer.utilities.remote.RemoteConnection;
 
 /**
  * Worker that uploads a local file to a {@link RemoteConnection}.
- * If it is cancelled, the uploaded file is deleted again after the upload.
+ * A cancellation aborts the running upload. If the upload is cancelled or fails, the partially uploaded file is deleted.
+ * Note: Some servers may need a moment until a deletion after an aborted transfer is possible, so the deletion is only
+ * tried once.
  */
 public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker> {
 	/**
@@ -74,16 +76,40 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 		signalProgress();
 		try (InputStream inputStream = new ProgressInputStream(new FileInputStream(localFile))) {
 			connection.uploadFile(remoteFilePath, inputStream);
-			signalProgress();
+		} catch (final Exception e) {
+			deleteRemoteFileQuietly();
+			if (cancel) {
+				return this;
+			} else {
+				throw e;
+			}
 		}
 
-		if (cancel && connection.getFileInfo(remoteFilePath) != null) {
-			connection.deleteFile(remoteFilePath);
+		if (cancel) {
+			deleteRemoteFileQuietly();
+		} else {
+			signalProgress(true);
 		}
 
 		return this;
 	}
 
+	/**
+	 * Deletes the (partially) uploaded remote file. The remote file did not exist before, which is checked by the constructor.
+	 */
+	private void deleteRemoteFileQuietly() {
+		try {
+			if (connection.getFileInfo(remoteFilePath) != null) {
+				connection.deleteFile(remoteFilePath);
+			}
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			// The connection may be unusable after an aborted transfer, nothing more can be done here
+		}
+	}
+
+	/**
+	 * Counts the uploaded bytes and aborts the upload with an IOException when the worker is cancelled.
+	 */
 	private class ProgressInputStream extends FilterInputStream {
 		protected ProgressInputStream(final InputStream inputStream) {
 			super(inputStream);
@@ -91,6 +117,7 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 
 		@Override
 		public int read() throws IOException {
+			checkCancel();
 			final int readByte = super.read();
 			if (readByte != EOF) {
 				itemsDone++;
@@ -101,12 +128,19 @@ public class RemoteFileUploadWorker extends WorkerSimple<RemoteFileUploadWorker>
 
 		@Override
 		public int read(final byte b[], final int off, final int len) throws IOException {
+			checkCancel();
 			final int readBytes = super.read(b, off, len);
 			if (readBytes > 0) {
 				itemsDone += readBytes;
 				signalProgress();
 			}
 			return readBytes;
+		}
+
+		private void checkCancel() throws IOException {
+			if (cancel) {
+				throw new IOException("Upload cancelled");
+			}
 		}
 	}
 }

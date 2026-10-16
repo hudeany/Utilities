@@ -4,7 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URI;
+import java.net.URLConnection;
 import java.util.Locale;
 
 import de.soderer.utilities.Utilities;
@@ -47,11 +48,12 @@ public class FileCopyWorker extends WorkerSimple<Boolean> {
 		signalUnlimitedProgress();
 
 		if (copySourceFileUrlString.toLowerCase(Locale.ROOT).startsWith("file://")) {
-			final URL sourceFileUrl = new URL(copySourceFileUrlString);
+			final URLConnection urlConnection = toFileUri(copySourceFileUrlString).toURL().openConnection();
+			// available() is no total size and is limited to 2 GB, the content length of a file URL is the file size
+			itemsToDo = urlConnection.getContentLengthLong();
 			signalProgress(true);
-			try (InputStream inputStream = sourceFileUrl.openStream();
+			try (InputStream inputStream = urlConnection.getInputStream();
 					FileOutputStream fileOutputStream = new FileOutputStream(destinationFile)) {
-				itemsToDo = inputStream.available();
 				final byte[] buffer = new byte[4096];
 				int readLength;
 				while ((readLength = inputStream.read(buffer)) != EOF) {
@@ -101,6 +103,22 @@ public class FileCopyWorker extends WorkerSimple<Boolean> {
 		} else {
 			signalProgress(true);
 			return true;
+		}
+	}
+
+	/**
+	 * Converts a "file://" URL string to a URI without the deprecated URL(String) constructor. A correctly encoded
+	 * URL is used as it is, a URL with unencoded characters like blanks (which URL(String) accepted) is encoded.
+	 *
+	 * @param fileUrlString URL string starting with "file://"
+	 * @return URI of the file
+	 * @throws Exception if the URL string is invalid
+	 */
+	private static URI toFileUri(final String fileUrlString) throws Exception {
+		try {
+			return URI.create(fileUrlString);
+		} catch (@SuppressWarnings("unused") final IllegalArgumentException e) {
+			return new URI("file", null, fileUrlString.substring("file://".length()), null);
 		}
 	}
 }

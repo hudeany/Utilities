@@ -2,6 +2,7 @@ package de.soderer.utilities.worker;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +16,9 @@ import java.util.concurrent.TimeoutException;
  * <p>
  * Deviating from the {@link java.util.concurrent.Future} contract, {@link #get()} does not block, but throws an
  * ExecutionException while the worker is not done yet, so callers wait for {@link #isDone()} first.
+ * {@link #get(long, TimeUnit)} waits for the worker up to the given time.
+ * <p>
+ * If the worker is cancelled before it is started, {@link #work()} is not called at all.
  *
  * @param <T> type of the result
  */
@@ -56,6 +60,10 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 	 */
 	protected volatile boolean cancel = false;
 	private volatile boolean isDone = false;
+	/**
+	 * Released when the worker is done, used to wait for it without polling.
+	 */
+	private final CountDownLatch doneLatch = new CountDownLatch(1);
 
 	/**
 	 * Creates a worker reporting to the given parent.
@@ -125,6 +133,16 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		return cancel(false);
 	}
 
+	/**
+	 * Requests cancellation of the worker.
+	 * <p>
+	 * With waitForDone the call blocks until the worker is done. It does not wait for a worker which was not started
+	 * yet, because such a worker skips its work when it is started later. If the waiting thread is interrupted, the
+	 * call returns early and the interrupt flag of the thread is set again.
+	 *
+	 * @param waitForDone true to wait until the worker is done
+	 * @return always true
+	 */
 	@Override
 	public boolean cancel(final boolean waitForDone) {
 		if (!cancel) {
@@ -133,13 +151,11 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 				parent.cancel();
 			}
 		}
-		if (waitForDone) {
-			while (!isDone()) {
-				try {
-					Thread.sleep(500);
-				} catch (@SuppressWarnings("unused") final InterruptedException e) {
-					// do nothing
-				}
+		if (waitForDone && startTime != null) {
+			try {
+				doneLatch.await();
+			} catch (@SuppressWarnings("unused") final InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		}
 		return cancel;
@@ -171,8 +187,21 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 		return error;
 	}
 
+	/**
+	 * Waits up to the given time for the worker to be done, then checks for an error and returns the result.
+	 *
+	 * @param timeout maximum time to wait
+	 * @param unit unit of the timeout
+	 * @return result of the worker
+	 * @throws InterruptedException if the waiting thread is interrupted
+	 * @throws ExecutionException if the worker failed with an error (as cause)
+	 * @throws TimeoutException if the worker is not done within the given time
+	 */
 	@Override
-	public T get(final long arg0, final TimeUnit arg1) throws InterruptedException, ExecutionException, TimeoutException {
+	public T get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+		if (!isDone && !doneLatch.await(timeout, unit)) {
+			throw new TimeoutException("Worker is not done yet");
+		}
 		return get();
 	}
 
@@ -270,7 +299,9 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 			itemsDone = 0L;
 
 			try {
-				result = work();
+				if (!cancel) {
+					result = work();
+				}
 			} catch (final Exception e) {
 				error = e;
 			} catch (final Throwable e) {
@@ -281,12 +312,15 @@ public abstract class WorkerSimple<T> implements RunnableFuture<T> {
 				endTime = LocalDateTime.now();
 			}
 			isDone = true;
+			doneLatch.countDown();
 			if (parent != null) {
-				// Ensure to let display show 100%
-				try {
-					Thread.sleep(progressDisplayDelayMilliseconds);
-				} catch (@SuppressWarnings("unused") final InterruptedException e) {
-					// Do nothing
+				if (!cancel && error == null) {
+					// Ensure to let display show 100%
+					try {
+						Thread.sleep(progressDisplayDelayMilliseconds);
+					} catch (@SuppressWarnings("unused") final InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
 				}
 				parent.receiveDoneSignal(startTime, endTime, itemsDone, itemsUnitSign, getResultText());
 			}

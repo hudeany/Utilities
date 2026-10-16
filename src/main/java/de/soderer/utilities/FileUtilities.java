@@ -106,8 +106,8 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Checks whether a text file contains a text. The encoding of the file is detected by its BOM, the
-	 * default encoding is used for files without BOM.
+	 * Checks whether a text file contains a text. The encoding of the file is detected by its BOM or as UTF-8,
+	 * the default encoding is used for other files.
 	 *
 	 * @param searchFile
 	 *            the file to search in
@@ -118,7 +118,7 @@ public class FileUtilities {
 	 * @param searchTextIsRegularExpression
 	 *            true if the search text is a regular expression, false for a literal text
 	 * @param defaultEncoding
-	 *            the encoding used for files without BOM
+	 *            the encoding used for files without BOM which are no valid UTF-8, or null for Windows-1252
 	 * @return true, if the text was found
 	 * @throws Exception
 	 *             if the file cannot be read or the regular expression is invalid
@@ -131,7 +131,7 @@ public class FileUtilities {
 
 	/**
 	 * Checks whether a text file contains any of some texts. The encoding of the file is detected by its
-	 * BOM, the default encoding is used for files without BOM.
+	 * BOM or as UTF-8 (checking the whole file), the default encoding is used for other files.
 	 *
 	 * @param searchFile
 	 *            the file to search in
@@ -143,23 +143,17 @@ public class FileUtilities {
 	 *            true if the search texts are regular expressions (in MULTILINE mode, so "^" and "$" match at line
 	 *            starts and ends), false for literal texts
 	 * @param defaultEncoding
-	 *            the encoding used for files without BOM
+	 *            the encoding used for files without BOM which are no valid UTF-8, or null for Windows-1252
 	 * @return true, if any of the texts was found, false also for an empty file or no search texts
 	 * @throws Exception
 	 *             if the file cannot be read or a regular expression is invalid
 	 */
 	public static boolean fileSearchText(final File searchFile, final List<String> searchTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final Charset defaultEncoding) throws Exception {
 		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
-			final byte[] encodingBuffer = readFirstFileData(searchFile, 100);
-			Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
-			if (encodingData == null) {
-				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding.name());
-			}
-
-			final String dataString;
-			try (FileInputStream fileInputStream = new FileInputStream(searchFile)) {
-				dataString = Utilities.toString(fileInputStream, Charset.forName(encodingData.getFirst()));
-			}
+			// The whole file is checked, a file starting with plain ASCII may contain non UTF-8 characters later on
+			final byte[] fileData = readFileToByteArray(searchFile);
+			final Charset encoding = detectEncodingOfFileData(fileData, defaultEncoding);
+			final String dataString = new String(fileData, encoding);
 
 			for (int i = 0; i < searchTexts.size(); i++) {
 				Pattern searchPattern;
@@ -202,7 +196,7 @@ public class FileUtilities {
 	 * @param searchTextIsRegularExpression
 	 *            true if the search text is a regular expression, false for a literal text
 	 * @param defaultEncoding
-	 *            the encoding used for files without BOM
+	 *            the encoding used for files without BOM which are no valid UTF-8, or null for Windows-1252
 	 * @return true, if the text was found and replaced
 	 * @throws Exception
 	 *             if the file cannot be read or written or the regular expression is invalid
@@ -234,7 +228,7 @@ public class FileUtilities {
 	 * @param searchTextIsRegularExpression
 	 *            true if the search texts are regular expressions, false for literal texts
 	 * @param defaultEncoding
-	 *            the encoding used for files without BOM
+	 *            the encoding used for files without BOM which are no valid UTF-8, or null for Windows-1252
 	 * @return true, if any text was found and replaced
 	 * @throws Exception
 	 *             if the file does not exist, cannot be read or written or a regular expression is
@@ -248,17 +242,11 @@ public class FileUtilities {
 		}
 		boolean foundAndReplaced = false;
 		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0 && replacementTexts != null && replacementTexts.size() > 0) {
-			final byte[] encodingBuffer = readFirstFileData(searchFile, 100);
-			Tuple<String, Boolean> encodingData = TextUtilities.detectEncoding(encodingBuffer);
-			if (encodingData == null) {
-				encodingData = TextFilePropertiesReader.getEncodingData(defaultEncoding.name());
-			}
-
-			String dataString;
-			// The file must be closed before it is overwritten
-			try (FileInputStream fileInputStream = new FileInputStream(searchFile)) {
-				dataString = Utilities.toString(fileInputStream, Charset.forName(encodingData.getFirst()));
-			}
+			// The whole file is checked, a file starting with plain ASCII may contain non UTF-8 characters later on.
+			// Detecting only the start would decode such characters as replacement characters and destroy them when writing.
+			final byte[] fileData = readFileToByteArray(searchFile);
+			final Charset encoding = detectEncodingOfFileData(fileData, defaultEncoding);
+			String dataString = new String(fileData, encoding);
 
 			for (int i = 0; i < searchTexts.size(); i++) {
 				Pattern searchPattern;
@@ -286,10 +274,22 @@ public class FileUtilities {
 			}
 
 			if (foundAndReplaced) {
-				FileUtilities.writeStringToFile(searchFile, dataString, Charset.forName(encodingData.getFirst()));
+				if (!encoding.newEncoder().canEncode(dataString)) {
+					// Writing would silently replace these characters by '?'
+					throw new Exception("Replacement result contains characters which cannot be stored in the file encoding " + encoding.name() + ": " + searchFile.getAbsolutePath());
+				}
+				FileUtilities.writeStringToFile(searchFile, dataString, encoding);
 			}
 		}
 		return foundAndReplaced;
+	}
+
+	/**
+	 * Detects the encoding of the complete data of a text file: by its BOM, as UTF-8 if it is valid UTF-8, otherwise
+	 * the default encoding.
+	 */
+	private static Charset detectEncodingOfFileData(final byte[] fileData, final Charset defaultEncoding) {
+		return Charset.forName(TextUtilities.detectEncoding(fileData, defaultEncoding).getFirst());
 	}
 
 	/**
