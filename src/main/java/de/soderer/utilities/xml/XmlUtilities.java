@@ -18,11 +18,14 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -34,6 +37,9 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
@@ -93,17 +99,35 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * Checks whether data starts with an XML declaration ("&lt;?xml ").
+	 * Default timeout in milliseconds for connecting to and reading from a URL.
+	 */
+	private static final int DOWNLOAD_TIMEOUT_MILLIS = 60_000;
+
+	/**
+	 * Encoding attribute inside an XML declaration
+	 */
+	private static final Pattern XML_DECLARATION_ENCODING_PATTERN = Pattern.compile("\\sencoding\\s*=\\s*[\"']([A-Za-z][A-Za-z0-9._\\-]*)[\"']", Pattern.CASE_INSENSITIVE);
+
+	/**
+	 * Checks whether data starts with an XML declaration ("&lt;?xml" followed by whitespace).
+	 * A leading UTF-8 byte order mark is skipped.
 	 *
 	 * @param data data to check
 	 * @return true if the data starts with an XML declaration
 	 */
 	public static boolean isXmlDocument(final byte[] data) {
-		if (data == null || data.length < 6) {
+		if (data == null) {
 			return false;
-		} else {
-			return "<?xml ".equals(new String(Arrays.copyOfRange(data, 0, 6), StandardCharsets.UTF_8).toLowerCase(Locale.ROOT));
 		}
+		int offset = 0;
+		if (data.length >= 3 && (data[0] & 0xFF) == 0xEF && (data[1] & 0xFF) == 0xBB && (data[2] & 0xFF) == 0xBF) {
+			offset = 3;
+		}
+		if (data.length < offset + 6) {
+			return false;
+		}
+		final String start = new String(data, offset, 6, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT);
+		return start.startsWith("<?xml") && Character.isWhitespace(start.charAt(5));
 	}
 
 	/**
@@ -122,7 +146,8 @@ public class XmlUtilities {
 
 	/**
 	 * Download and parse xml file.
-	 * Does not follow redirection (HTTP Code 302, 301 and others)
+	 * Redirects are only followed within the same protocol (Java default), so a redirect from http to https
+	 * results in an exception with the HTTP code. Connecting and each read time out after 60 seconds.
 	 *
 	 * @param url
 	 *            the url
@@ -139,26 +164,27 @@ public class XmlUtilities {
 		} else {
 			urlConnection = URI.create(url).toURL().openConnection(proxy);
 		}
+		// Without timeouts an unresponsive server would block forever
+		urlConnection.setConnectTimeout(DOWNLOAD_TIMEOUT_MILLIS);
+		urlConnection.setReadTimeout(DOWNLOAD_TIMEOUT_MILLIS);
 
-		try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
-			final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
-			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-			final Document document = documentBuilder.parse(new InputSource(inputStream));
-			return document;
-		} catch (final Exception e) {
-			final HttpURLConnection urlConnection2;
-			if (proxy == null) {
-				urlConnection2 = (HttpURLConnection) URI.create(url).toURL().openConnection();
-			} else {
-				urlConnection2 = (HttpURLConnection) URI.create(url).toURL().openConnection(proxy);
+		try {
+			// The HTTP code is checked on the same connection, so the URL is requested only once
+			if (urlConnection instanceof HttpURLConnection) {
+				final int httpCode = ((HttpURLConnection) urlConnection).getResponseCode();
+				if (httpCode != HttpURLConnection.HTTP_OK) {
+					throw new Exception("Cannot retrieve xml document from Url '" + url + "'. HTTP code was: " + httpCode);
+				}
 			}
 
-			urlConnection2.connect();
-			final int httpCode = urlConnection2.getResponseCode();
-			if (httpCode != 200) {
-				throw new Exception("Cannot retrieve xml document from Url '" + url + "'. HTTP code was: " + httpCode);
-			} else {
-				throw e;
+			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+				final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
+				final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+				return documentBuilder.parse(new InputSource(inputStream));
+			}
+		} finally {
+			if (urlConnection instanceof HttpURLConnection) {
+				((HttpURLConnection) urlConnection).disconnect();
 			}
 		}
 	}
@@ -341,19 +367,21 @@ public class XmlUtilities {
 	 * @return the attribute value
 	 */
 	public static String getAttributeValue(final Node pNode, final String pAttributeName) {
-		String returnString = null;
-
 		final NamedNodeMap attributes = pNode.getAttributes();
 		if (attributes != null) {
+			// XML names are case sensitive, so an exact match takes precedence over a case insensitive one
+			final Node exactMatch = attributes.getNamedItem(pAttributeName);
+			if (exactMatch != null) {
+				return exactMatch.getNodeValue();
+			}
 			for (int i = 0; i < attributes.getLength(); i++) {
 				if (attributes.item(i).getNodeName().equalsIgnoreCase(pAttributeName)) {
-					returnString = attributes.item(i).getNodeValue();
-					break;
+					return attributes.item(i).getNodeValue();
 				}
 			}
 		}
 
-		return returnString;
+		return null;
 	}
 
 	/**
@@ -429,6 +457,10 @@ public class XmlUtilities {
 		try (OutputStream outputStream = new FileOutputStream(file)) {
 			final StreamResult result = new StreamResult(outputStream);
 			transformNode(document, encoding, false, result);
+		} catch (final Exception e) {
+			// Do not leave a truncated file behind
+			file.delete();
+			throw e;
 		}
 	}
 
@@ -438,7 +470,7 @@ public class XmlUtilities {
 	 * @param node
 	 *            the node
 	 * @param encoding
-	 *            the encoding
+	 *            the encoding, or null for UTF-8
 	 * @param removeXmlHeader
 	 *            the remove xml header
 	 * @param result
@@ -446,7 +478,11 @@ public class XmlUtilities {
 	 * @throws Exception
 	 *             the exception
 	 */
-	private static void transformNode(final Node node, final Charset encoding, final boolean removeXmlHeader, final StreamResult result) throws Exception {
+	private static void transformNode(final Node node, Charset encoding, final boolean removeXmlHeader, final StreamResult result) throws Exception {
+		if (encoding == null) {
+			encoding = StandardCharsets.UTF_8;
+		}
+
 		TransformerFactory transformerFactory = null;
 		Transformer transformer = null;
 		DOMSource source = null;
@@ -482,21 +518,21 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * Parses the xml data and xsd verify by dom.
+	 * Parses XML data and validates it against an XML schema.
+	 * Only the given schema is used, schema locations named in the XML data (xsi:schemaLocation) are ignored and
+	 * never loaded. Trailing zero bytes of the data are ignored.
 	 *
 	 * @param pData
-	 *            the p data
+	 *            the XML data, null results in null
 	 * @param byteEncoding
-	 *            the byte encoding
+	 *            the encoding of the data, or null to detect it from the XML declaration
 	 * @param xsdFileName
-	 *            the xsd file name
+	 *            the XML schema file path or URL, or null for no validation
 	 * @return the document
 	 * @throws Exception
-	 *             the exception
-	 * @throws Exception
-	 *             the exception
+	 *             if the data is empty, invalid or does not match the schema (warnings included)
 	 */
-	public static Document parseXMLDataAndXSDVerifyByDOM(byte[] pData, final String byteEncoding, final String xsdFileName) throws Exception, Exception {
+	public static Document parseXMLDataAndXSDVerifyByDOM(byte[] pData, final String byteEncoding, final String xsdFileName) throws Exception {
 		try {
 			if (pData == null) {
 				return null;
@@ -505,26 +541,27 @@ public class XmlUtilities {
 			}
 
 			if (pData[pData.length - 1] == 0) {
-				pData = new String(pData, StandardCharsets.UTF_8).trim().getBytes(StandardCharsets.UTF_8);
+				// Remove trailing zero bytes on byte level, a conversion to String would corrupt non UTF-8 data
+				int length = pData.length;
+				while (length > 0 && pData[length - 1] == 0) {
+					length--;
+				}
+				pData = Arrays.copyOf(pData, length);
 			}
 
 			final DocumentBuilderFactory docBuilderFactory = createSecureDocumentBuilderFactory();
-			if (docBuilderFactory == null) {
-				throw new Exception("DocumentBuilderFactory error");
-			}
 			docBuilderFactory.setNamespaceAware(true);
 
 			if (xsdFileName != null) {
-				final String schemaURI = xsdFileName;
-				docBuilderFactory.setValidating(true);
-				docBuilderFactory.setAttribute("http://java.sun.com/xml/jaxp/properties/schemaLanguage", "http://www.w3.org/2001/XMLSchema");
-				docBuilderFactory.setAttribute("http://java.sun.com/xml/jaxp/properties/schemaSource", schemaURI);
+				// A Schema object validates only against its own grammar, xsi:schemaLocation hints of the data are not loaded
+				final SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+				final File xsdFile = new File(xsdFileName);
+				final StreamSource schemaSource = xsdFile.isFile() ? new StreamSource(xsdFile) : new StreamSource(xsdFileName);
+				final Schema schema = schemaFactory.newSchema(schemaSource);
+				docBuilderFactory.setSchema(schema);
 			}
 
 			final DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
-			if (docBuilder == null) {
-				throw new Exception("DocumentBuilder error");
-			}
 
 			final InputSource inputSource = new InputSource(new ByteArrayInputStream(pData));
 			if (byteEncoding != null) {
@@ -923,7 +960,7 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * Removes the attribute.
+	 * Removes the attribute. Nothing happens if the attribute does not exist.
 	 *
 	 * @param baseNode
 	 *            the base node
@@ -931,7 +968,7 @@ public class XmlUtilities {
 	 *            the attribute name
 	 */
 	public static void removeAttribute(final Element baseNode, final String attributeName) {
-		baseNode.getAttributes().removeNamedItem(attributeName);
+		baseNode.removeAttribute(attributeName);
 	}
 
 	/**
@@ -955,49 +992,43 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * Gets the encoding of xml byte array.
+	 * Gets the encoding of xml byte array. A byte order mark (UTF-8, UTF-16) takes precedence, otherwise the encoding
+	 * attribute of the XML declaration is used.
 	 *
 	 * @param xmlData
 	 *            the xml data
 	 * @return the encoding of xml byte array
 	 * @throws Exception
-	 *             the exception
+	 *             if there is neither a byte order mark nor an XML declaration with a supported encoding
 	 */
 	public static Charset getEncodingOfXmlByteArray(final byte[] xmlData) throws Exception {
-		final String encodingAttributeName = "ENCODING";
-		final String xmlDataString = new String(xmlData, StandardCharsets.UTF_8);
-		final String first50CharactersInUtf8UpperCase = xmlDataString.substring(0, Math.min(50, xmlDataString.length())).toUpperCase(Locale.ROOT);
-		if (first50CharactersInUtf8UpperCase.contains(encodingAttributeName)) {
-			final int encodingstart = first50CharactersInUtf8UpperCase.indexOf(encodingAttributeName) + encodingAttributeName.length();
+		if (xmlData == null) {
+			throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
+		} else if (xmlData.length >= 3 && (xmlData[0] & 0xFF) == 0xEF && (xmlData[1] & 0xFF) == 0xBB && (xmlData[2] & 0xFF) == 0xBF) {
+			return StandardCharsets.UTF_8;
+		} else if (xmlData.length >= 2 && (xmlData[0] & 0xFF) == 0xFE && (xmlData[1] & 0xFF) == 0xFF) {
+			return StandardCharsets.UTF_16BE;
+		} else if (xmlData.length >= 2 && (xmlData[0] & 0xFF) == 0xFF && (xmlData[1] & 0xFF) == 0xFE) {
+			return StandardCharsets.UTF_16LE;
+		}
 
-			int contentStart = firstFoundIndex(first50CharactersInUtf8UpperCase.indexOf("'", encodingstart), first50CharactersInUtf8UpperCase.indexOf("\"", encodingstart));
-			if (contentStart < 0) {
-				throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
-			}
-			contentStart = contentStart + 1;
-
-			final int contentEnd = firstFoundIndex(first50CharactersInUtf8UpperCase.indexOf("'", contentStart), first50CharactersInUtf8UpperCase.indexOf("\"", contentStart));
-			if (contentEnd < 0) {
-				throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
-			}
-
-			final String encodingString = first50CharactersInUtf8UpperCase.substring(contentStart, contentEnd);
-			return Charset.forName(encodingString);
-		} else {
+		// The XML declaration consists of ASCII characters only, so the encoding name can be read in any ASCII compatible encoding
+		final String xmlDataStart = new String(xmlData, 0, Math.min(xmlData.length, 1024), StandardCharsets.ISO_8859_1);
+		if (!xmlDataStart.regionMatches(true, 0, "<?xml", 0, 5)) {
 			throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
 		}
-	}
-
-	/**
-	 * Returns the smaller of two indexOf results, ignoring a -1 (not found) of one of them.
-	 */
-	private static int firstFoundIndex(final int index1, final int index2) {
-		if (index1 < 0) {
-			return index2;
-		} else if (index2 < 0) {
-			return index1;
-		} else {
-			return Math.min(index1, index2);
+		final int declarationEnd = xmlDataStart.indexOf("?>");
+		if (declarationEnd < 0) {
+			throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
+		}
+		final Matcher matcher = XML_DECLARATION_ENCODING_PATTERN.matcher(xmlDataStart.substring(0, declarationEnd));
+		if (!matcher.find()) {
+			throw new Exception("XmlByteArray-Encoding nicht ermittelbar");
+		}
+		try {
+			return Charset.forName(matcher.group(1));
+		} catch (final IllegalArgumentException e) {
+			throw new Exception("XmlByteArray-Encoding nicht unterstützt: " + matcher.group(1), e);
 		}
 	}
 
@@ -1022,7 +1053,7 @@ public class XmlUtilities {
 	 * @return the simple values of node
 	 */
 	public static Map<String, String> getSimpleValuesOfNode(final Node dataNode) {
-		final Map<String, String> returnMap = new HashMap<>();
+		final Map<String, String> returnMap = new LinkedHashMap<>();
 
 		final NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
@@ -1055,18 +1086,18 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * Returns the direct child nodes of a node by their names, leaving out text nodes.
-	 * If several children have the same name, the last one is returned.
+	 * Returns the direct child elements of a node by their names (text, CDATA, comments and processing instructions
+	 * are left out). If several children have the same name, the last one is returned.
 	 *
 	 * @param dataNode node to get the children of
 	 * @return child nodes by name
 	 */
 	public static Map<String, Node> getChildNodesMap(final Node dataNode) {
-		final Map<String, Node> childNodes = new HashMap<>();
+		final Map<String, Node> childNodes = new LinkedHashMap<>();
 		final NodeList childNodesList = dataNode.getChildNodes();
 		for (int i = 0; i < childNodesList.getLength(); i++) {
 			final Node childNode = childNodesList.item(i);
-			if (childNode.getNodeType() != Node.TEXT_NODE) {
+			if (childNode.getNodeType() == Node.ELEMENT_NODE) {
 				childNodes.put(childNode.getNodeName(), childNode);
 			}
 		}
@@ -1075,11 +1106,12 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * Gets the nodenames of childs.
+	 * Returns the names of the direct child elements of a node (text, CDATA, comments and processing instructions
+	 * are left out).
 	 *
 	 * @param dataNode
 	 *            the data node
-	 * @return the nodenames of childs
+	 * @return the names of the child elements in document order
 	 */
 	public static List<String> getNodenamesOfChilds(final Node dataNode) {
 		final List<String> returnList = new ArrayList<>();
@@ -1087,7 +1119,7 @@ public class XmlUtilities {
 		final NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			final Node node = list.item(i);
-			if (node.getNodeType() != Node.TEXT_NODE) {
+			if (node.getNodeType() == Node.ELEMENT_NODE) {
 				returnList.add(node.getNodeName());
 			}
 		}
@@ -1135,7 +1167,7 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * Returns the direct child nodes of a node, leaving out text nodes.
+	 * Returns the direct child elements of a node (text, CDATA, comments and processing instructions are left out).
 	 *
 	 * @param dataNode node to get the children of
 	 * @return child nodes in document order
@@ -1146,7 +1178,7 @@ public class XmlUtilities {
 		final NodeList list = dataNode.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			final Node node = list.item(i);
-			if (node.getNodeType() != Node.TEXT_NODE) {
+			if (node.getNodeType() == Node.ELEMENT_NODE) {
 				returnList.add(node);
 			}
 		}
@@ -1232,7 +1264,7 @@ public class XmlUtilities {
 			if (Utilities.isBlank(xmlNode.getNodeValue())) {
 				return "";
 			} else {
-				return xmlNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;");
+				return escapeTextValue(xmlNode.getNodeValue());
 			}
 		} else if (xmlNode.getNodeType() == Node.COMMENT_NODE) {
 			if (Utilities.isBlank(xmlNode.getNodeValue())) {
@@ -1264,8 +1296,14 @@ public class XmlUtilities {
 			} else if (documentType.getSystemId() != null) {
 				result.append(" SYSTEM \"").append(documentType.getSystemId()).append("\"");
 			}
+			if (Utilities.isNotBlank(documentType.getInternalSubset())) {
+				// Entity and element declarations of the document itself must be kept
+				result.append(" [").append(documentType.getInternalSubset()).append("]");
+			}
 			result.append(">\n");
 			return result.toString();
+		} else if (xmlNode.getNodeType() == Node.ENTITY_REFERENCE_NODE) {
+			return "&" + xmlNode.getNodeName() + ";";
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.CDATA_SECTION_NODE) {
 			// A single CDATA child is written inline, so no whitespace is added to its content
 			return TextUtilities.repeatString("\t", indentationLevel) + "<" + xmlNode.getNodeName() + formatAttributes(xmlNode, indentationLevel) + ">"
@@ -1287,7 +1325,7 @@ public class XmlUtilities {
 				result.append(xmlNode.getNodeName());
 				result.append(formatAttributes(xmlNode, indentationLevel));
 				result.append(">");
-				result.append(xmlNode.getChildNodes().item(0).getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
+				result.append(escapeTextValue(xmlNode.getChildNodes().item(0).getNodeValue()));
 				result.append("</");
 				result.append(xmlNode.getNodeName());
 				result.append(">\n");
@@ -1300,7 +1338,7 @@ public class XmlUtilities {
 					final Node xmlSubNode = xmlNode.getChildNodes().item(nodeIndex);
 					if (xmlSubNode.getNodeType() == Node.TEXT_NODE) {
 						if (Utilities.isNotBlank(xmlSubNode.getNodeValue())) {
-							innerXml.append(xmlSubNode.getNodeValue().replace("&", "&amp;").replace("<", "&lt;"));
+							innerXml.append(escapeTextValue(xmlSubNode.getNodeValue()));
 						}
 					} else {
 						innerXml.append(formatXmlNode(xmlSubNode, indentationLevel + 1));
@@ -1327,8 +1365,21 @@ public class XmlUtilities {
 		}
 	}
 
+	/**
+	 * Escapes text content. "&gt;" is needed for the sequence "]]&gt;", a carriage return would otherwise be lost by
+	 * line break normalization.
+	 */
+	private static String escapeTextValue(final String value) {
+		return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\r", "&#13;");
+	}
+
+	/**
+	 * Escapes an attribute value. Line breaks and tabs are written as character references, because a parser would
+	 * otherwise normalize them to spaces.
+	 */
 	private static String escapeAttributeValue(final String value) {
-		return value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;");
+		return value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;")
+				.replace("\n", "&#10;").replace("\r", "&#13;").replace("\t", "&#9;");
 	}
 
 	private static String formatAttributes(final Node xmlNode, final int indentationLevel) {

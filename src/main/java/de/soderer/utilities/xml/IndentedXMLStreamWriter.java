@@ -41,6 +41,8 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 	// Internal status
 	private int currentDepth = 0;
 	private boolean closeElementInNewLine = false;
+	/** True if nothing has been written yet in the current line */
+	private boolean atLineStart = true;
 
 	/**
 	 * Creates a writer with UTF-8 encoding and tab indentation.
@@ -88,47 +90,56 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 		return indentationStringBuilder.toString();
 	}
 
+	/**
+	 * Writes the XML declaration with version "1.0" and the encoding of this writer.
+	 */
 	@Override
 	public void writeStartDocument() throws XMLStreamException {
 		writeStartDocument(null, null, null);
 	}
 
+	/**
+	 * Writes the XML declaration with the given version and the encoding of this writer.
+	 */
 	@Override
 	public void writeStartDocument(final String version) throws XMLStreamException {
 		writeStartDocument(null, null, version);
 	}
 
+	/**
+	 * Writes the XML declaration with the given encoding name and version.
+	 */
 	@Override
 	public void writeStartDocument(final String xmlDeclarationEncoding, final String version) throws XMLStreamException {
 		writeStartDocument(null, xmlDeclarationEncoding == null ? null : Charset.forName(xmlDeclarationEncoding), version);
 	}
 
 	/**
-	 * Writes the XML declaration with the given optional attributes.
+	 * Writes the XML declaration.
 	 *
-	 * @param standAlone value of the "standalone" attribute, or null to leave it out
-	 * @param xmlDeclarationEncoding value of the "encoding" attribute, or null to leave it out
-	 * @param version value of the "version" attribute, or null to leave it out
+	 * @param standAlone value of the "standalone" attribute ("yes" or "no"), or null to leave it out
+	 * @param xmlDeclarationEncoding value of the "encoding" attribute, or null for the encoding of this writer
+	 * @param version value of the "version" attribute, or null for "1.0"
 	 * @throws XMLStreamException if the declaration cannot be written
 	 */
 	public void writeStartDocument(final Boolean standAlone, final Charset xmlDeclarationEncoding, final String version) throws XMLStreamException {
+		// The version is mandatory, the encoding must be named because a parser assumes UTF-8 otherwise
 		final StringBuilder xmlDeclBuilder = new StringBuilder("<?xml");
-		if (version != null) {
-			xmlDeclBuilder.append(" version=\"").append(version).append("\"");
-		}
-		if (xmlDeclarationEncoding != null) {
-			xmlDeclBuilder.append(" encoding=\"").append(xmlDeclarationEncoding).append("\"");
-		}
+		xmlDeclBuilder.append(" version=\"").append(version == null ? "1.0" : version).append("\"");
+		xmlDeclBuilder.append(" encoding=\"").append(xmlDeclarationEncoding == null ? encoding.name() : xmlDeclarationEncoding.name()).append("\"");
 		if (standAlone != null) {
-			xmlDeclBuilder.append(" standalone=\"").append(standAlone).append("\"");
+			xmlDeclBuilder.append(" standalone=\"").append(standAlone ? "yes" : "no").append("\"");
 		}
 		xmlDeclBuilder.append("?>\n");
 		try {
+			// Data buffered by the underlying writer must not end up behind the declaration
+			writer.flush();
 			// The declaration must be written in the same encoding as the rest of the document
 			outputStream.write(xmlDeclBuilder.toString().getBytes(encoding));
 		} catch (final IOException e) {
 			throw new XMLStreamException(e);
 		}
+		atLineStart = true;
 	}
 
 	@Override
@@ -176,26 +187,29 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 	@Override
 	public void writeCharacters(final String text) throws XMLStreamException {
 		closeElementInNewLine = false;
+		atLineStart = false;
 		writer.writeCharacters(text);
 	}
 
 	@Override
 	public void writeCharacters(final char[] text, final int start, final int len) throws XMLStreamException {
 		closeElementInNewLine = false;
+		atLineStart = false;
 		writer.writeCharacters(text, start, len);
 	}
 
 	@Override
 	public void writeCData(final String data) throws XMLStreamException {
 		closeElementInNewLine = false;
+		atLineStart = false;
 		writer.writeCData(data);
 	}
 
 	@Override
 	public void writeComment(final String data) throws XMLStreamException {
-		writer.writeCharacters("\n");
-		doIndent();
+		startNewLine();
 		writer.writeComment(data);
+		closeElementInNewLine = true;
 	}
 
 	@Override
@@ -205,6 +219,8 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 
 	@Override
 	public void writeEntityRef(final String name) throws XMLStreamException {
+		closeElementInNewLine = false;
+		atLineStart = false;
 		writer.writeEntityRef(name);
 	}
 
@@ -246,16 +262,21 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 
 	@Override
 	public void writeProcessingInstruction(final String target) throws XMLStreamException {
+		startNewLine();
 		writer.writeProcessingInstruction(target);
+		closeElementInNewLine = true;
 	}
 
 	@Override
 	public void writeProcessingInstruction(final String target, final String data) throws XMLStreamException {
+		startNewLine();
 		writer.writeProcessingInstruction(target, data);
+		closeElementInNewLine = true;
 	}
 
 	@Override
 	public void writeDTD(final String dtd) throws XMLStreamException {
+		startNewLine();
 		writer.writeDTD(dtd);
 	}
 
@@ -296,11 +317,8 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 	 * @throws Exception if the document contains unsupported node types or cannot be written
 	 */
 	public void write(final Document document) throws Exception {
-		if (document.getXmlStandalone()) {
-			writeStartDocument(true, encoding, "1.0");
-		} else {
-			writeStartDocument(encoding.name(), "1.0");
-		}
+		final String version = document.getXmlVersion() == null ? "1.0" : document.getXmlVersion();
+		writeStartDocument(document.getXmlStandalone() ? Boolean.TRUE : null, encoding, version);
 		final NodeList childList = document.getChildNodes();
 		for (int childNodeIndex = 0; childNodeIndex < childList.getLength(); childNodeIndex++) {
 			final Node childNode = childList.item(childNodeIndex);
@@ -330,9 +348,12 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 				} else if (documentType.getSystemId() != null) {
 					doctype.append(" SYSTEM \"").append(documentType.getSystemId()).append("\"");
 				}
+				if (documentType.getInternalSubset() != null && !isBlank(documentType.getInternalSubset())) {
+					// Entity and element declarations of the document itself must be kept
+					doctype.append(" [").append(documentType.getInternalSubset()).append("]");
+				}
 				doctype.append(">");
-				writer.writeDTD(doctype.toString());
-				writer.writeCharacters("\n");
+				writeDTD(doctype.toString());
 				break;
 			case Node.ELEMENT_NODE:
 				final NodeList childList = node.getChildNodes();
@@ -362,7 +383,7 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 				}
 				break;
 			case Node.TEXT_NODE:
-				if (node.getNodeValue() != null && (!node.getNodeValue().startsWith("\n") || !isBlank(node.getNodeValue()))) {
+				if (node.getNodeValue() != null && (!(node.getNodeValue().startsWith("\n") || node.getNodeValue().startsWith("\r")) || !isBlank(node.getNodeValue()))) {
 					// The underlying XMLStreamWriter escapes the text itself
 					writeCharacters(node.getNodeValue());
 				}
@@ -380,6 +401,9 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 				break;
 			case Node.PROCESSING_INSTRUCTION_NODE:
 				writeProcessingInstruction(node.getNodeName(), node.getNodeValue());
+				break;
+			case Node.ENTITY_REFERENCE_NODE:
+				writeEntityRef(node.getNodeName());
 				break;
 			default:
 				throw new Exception("Unexpected xml node type: " + node.getNodeType());
@@ -399,40 +423,43 @@ public class IndentedXMLStreamWriter implements XMLStreamWriter, AutoCloseable {
 	}
 
 	private void onStartElement() throws XMLStreamException {
+		startNewLine();
 		closeElementInNewLine = false;
-		if (currentDepth > 0) {
-			writer.writeCharacters("\n");
-		}
-		doIndent();
 		currentDepth++;
 	}
 
 	private void onEndElement() throws XMLStreamException {
 		currentDepth--;
 		if (closeElementInNewLine) {
-			writer.writeCharacters("\n");
-			doIndent();
+			startNewLine();
 		}
 		closeElementInNewLine = true;
+		atLineStart = false;
 	}
 
 	private void onEndDocument() throws XMLStreamException {
-		writer.writeCharacters("\n");
+		if (!atLineStart) {
+			writer.writeCharacters("\n");
+			atLineStart = true;
+		}
 	}
 
 	private void onEmptyElement() throws XMLStreamException {
+		startNewLine();
 		closeElementInNewLine = true;
-		if (currentDepth > 0) {
-			writer.writeCharacters("\n");
-		}
-		doIndent();
 	}
 
-	private void doIndent() throws XMLStreamException {
-		if (currentDepth > 0) {
-			for (int i = 0; i < currentDepth; i++) {
-				writer.writeCharacters(indentationString);
-			}
+	/**
+	 * Starts a new indented line, unless the current line is still empty.
+	 */
+	private void startNewLine() throws XMLStreamException {
+		if (!atLineStart) {
+			writer.writeCharacters("\n");
 		}
+		for (int i = 0; i < currentDepth; i++) {
+			writer.writeCharacters(indentationString);
+		}
+		// The caller writes the node content next
+		atLineStart = false;
 	}
 }
