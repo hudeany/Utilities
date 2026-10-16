@@ -6,12 +6,12 @@
 	<property name="artifactId" value="soderer-utilities" />
 
 	<!-- Dependency versions -->
-	<property name="commons-compress.version" value="1.23.0" />
-	<property name="commons-net.version" value="3.11.1" />
-	<property name="jsch.version" value="0.2.23" />
-	<property name="smbj.version" value="0.10.0" />
+	<property name="commons-compress.version" value="1.28.0" />
+	<property name="commons-net.version" value="3.13.0" />
+	<property name="jsch.version" value="2.28.8" />
+	<property name="smbj.version" value="0.15.0" />
 	<property name="jcifs.version" value="3.0.4" />
-	<property name="zip4j.version" value="2.11.5" />
+	<property name="zip4j.version" value="2.11.6" />
 
 	<property name="csv.version" value="26.1.10" />
 	<property name="json.version" value="26.2.9" />

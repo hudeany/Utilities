@@ -9,15 +9,15 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/6"/>
-	<classpathentry kind="lib" path="lib/commons-compress-1.23.0.jar"/>
 	<classpathentry kind="lib" path="lib/csv-26.1.10.jar"/>
 	<classpathentry kind="lib" path="lib/jcifs-3.0.4.jar"/>
-	<classpathentry kind="lib" path="lib/jsch-0.2.23.jar"/>
 	<classpathentry kind="lib" path="lib/json-26.2.9.jar"/>
 	<classpathentry kind="lib" path="lib/network-26.0.37.jar"/>
 	<classpathentry kind="lib" path="lib/proxyautoconfig-26.1.4.jar"/>
-	<classpathentry kind="lib" path="lib/smbj-0.10.0.jar"/>
-	<classpathentry kind="lib" path="lib/zip4j-2.11.5.jar"/>
-	<classpathentry kind="lib" path="lib/commons-net-3.11.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-compress-1.28.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons-net-3.13.0.jar"/>
+	<classpathentry kind="lib" path="lib/jsch-2.28.8.jar"/>
+	<classpathentry kind="lib" path="lib/smbj-0.15.0.jar"/>
+	<classpathentry kind="lib" path="lib/zip4j-2.11.6.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
