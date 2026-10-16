@@ -1,8 +1,8 @@
 package de.soderer.utilities.jarinjarloader;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
@@ -37,7 +37,8 @@ public class JarInJarURLConnection extends URLConnection {
 		final String file = URLDecoder.decode(url.getFile().replace("+", "%2B"), StandardCharsets.UTF_8);
 		final InputStream result = classLoader.getResourceAsStream(file);
 		if (result == null) {
-			throw new MalformedURLException("Could not open InputStream for URL '" + url + "'");
+			// FileNotFoundException is the IOException expected for a missing resource (like for file and jar URLs)
+			throw new FileNotFoundException("Could not open InputStream for URL '" + url + "'");
 		} else {
 			return result;
 		}
