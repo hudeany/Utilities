@@ -13,8 +13,8 @@
 	<property name="jcifs.version" value="3.0.4" />
 	<property name="zip4j.version" value="2.11.5" />
 
-	<property name="csv.version" value="26.1.9" />
-	<property name="json.version" value="26.2.8" />
+	<property name="csv.version" value="26.1.10" />
+	<property name="json.version" value="26.2.9" />
 	<property name="network.version" value="26.0.37" />
 	<property name="proxyautoconfig.version" value="26.1.4" />
 
