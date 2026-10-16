@@ -2,6 +2,7 @@ package de.soderer.utilities.remote;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -24,14 +25,18 @@ import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
-import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
+import de.soderer.utilities.Utilities;
 
 /**
  * Read-only remote connection to files offered by a web server with directory listings (Apache style "index of" pages).
- * Credentials are sent as URL parameters "username" and "password".
+ * Credentials are sent as URL parameters "username" and "password", so they may show up in server and proxy logs
+ * and are transferred unencrypted without TLS.
  */
 public class HttpFileConnection implements RemoteConnection {
+	/** Timeout in milliseconds for connecting and for each read */
+	private static final int TIMEOUT_MILLIS = 60_000;
+
 	/** The useTLS. */
 	private boolean useTLS = false;
 
@@ -277,6 +282,9 @@ public class HttpFileConnection implements RemoteConnection {
 				}
 				return null;
 			}
+		} catch (@SuppressWarnings("unused") final FileNotFoundException e) {
+			// HTTP 404: the parent folder does not exist, so neither does the file
+			return null;
 		} catch (final Exception e) {
 			throw new Exception("Cannot download file info for '" + filePath + "': " + e.getMessage(), e);
 		}
@@ -285,14 +293,23 @@ public class HttpFileConnection implements RemoteConnection {
 	@Override
 	public FolderInfo getFolderInfo(String folderPath) throws Exception {
 		folderPath = FileUtilities.trimLeadingFileSeparator(FileUtilities.trimTrailingFileSeparator(folderPath));
-		final String folderName = FileUtilities.getFilenameFromPath(folderPath);
+		final String folderName = Utilities.isEmpty(folderPath) ? "/" : FileUtilities.getFilenameFromPath(folderPath);
 		try {
-			final URLConnection urlConnection = openUrlConnection(folderPath);
+			// The trailing "/" requests the directory listing; for a file path the server answers with 404
+			final URLConnection urlConnection = openUrlConnection(folderPath.length() == 0 ? "" : folderPath + "/");
 
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
+				final byte[] data = IoUtilities.toByteArray(inputStream);
+				if (!new String(data, StandardCharsets.UTF_8).contains("<pre>")) {
+					// No directory listing (e.g. a file served despite the trailing "/")
+					return null;
+				}
 				// Check existence only. Modification date is not available in general.
 				return new FolderInfo(folderName, null);
 			}
+		} catch (@SuppressWarnings("unused") final FileNotFoundException e) {
+			// HTTP 404: like the other RemoteConnection implementations, null for missing paths
+			return null;
 		} catch (final Exception e) {
 			throw new Exception("Cannot download directory data for '" + folderPath + "': " + e.getMessage(), e);
 		}
@@ -303,7 +320,7 @@ public class HttpFileConnection implements RemoteConnection {
 				(useTLS ? "https://" : "http://")
 				+ hostname
 				+ (useTLS ? (port == 443 ? "" : ":" + port) : (port == 80 ? "" : ":" + port))
-				+ (startPath != null ? "/" + encodePath(startPath) : "")
+				+ (Utilities.isNotBlank(FileUtilities.trimLeadingFileSeparator(startPath)) ? "/" + encodePath(FileUtilities.trimTrailingFileSeparator(FileUtilities.trimLeadingFileSeparator(startPath))) : "")
 				+ "/" + encodePath(path)
 				+ (username != null ? "?username=" + HttpUtilities.urlEncode(username, StandardCharsets.UTF_8) + (password != null ? "&password=" + HttpUtilities.urlEncode(password, StandardCharsets.UTF_8) : "") : "")
 				).toURL();
@@ -320,7 +337,11 @@ public class HttpFileConnection implements RemoteConnection {
 		} catch (final Exception e) {
 			throw new IOException("Cannot determine proxy for URL: " + e.getMessage(), e);
 		}
-		return url.openConnection(proxy);
+		final URLConnection urlConnection = url.openConnection(proxy);
+		// Without timeouts an unresponsive server would block forever
+		urlConnection.setConnectTimeout(TIMEOUT_MILLIS);
+		urlConnection.setReadTimeout(TIMEOUT_MILLIS);
+		return urlConnection;
 	}
 
 	/**
@@ -388,15 +409,27 @@ public class HttpFileConnection implements RemoteConnection {
 		return fileLines;
 	}
 
-	private static List<String> getFolderNames(final byte[] data) throws Exception {
+	private static List<String> getFolderLines(final byte[] data) throws Exception {
 		final List<String> folderLines = new ArrayList<>();
 		for (final String nextLine : getEntryLines(data)) {
 			if (nextLine.contains("alt=\"[DIR]\">")) {
-				final String folderName = FileUtilities.trimTrailingFileSeparator(getEntryNameFromLine(nextLine));
-				folderLines.add(folderName);
+				folderLines.add(nextLine);
 			}
 		}
 		return folderLines;
+	}
+
+	/**
+	 * Reads the modification date of a listing line, or null if it is missing or cannot be parsed.
+	 */
+	private static LocalDateTime getModificationDateFromLine(final String line) {
+		try {
+			final String infoPart = line.substring(line.lastIndexOf("</a>") + 4).trim();
+			final int separatorIndex = infoPart.lastIndexOf(" ");
+			return DateUtilities.parseLocalDateTime(DateUtilities.YYYY_MM_DD_HH_MM, infoPart.substring(0, separatorIndex).trim());
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			return null;
+		}
 	}
 
 	/**
@@ -431,8 +464,11 @@ public class HttpFileConnection implements RemoteConnection {
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				final byte[] data = IoUtilities.toByteArray(inputStream);
 				final List<FolderInfo> folderInfoList = new ArrayList<>();
-				for (final String subFolderName : getFolderNames(data)) {
-					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
+				for (final String folderLine : getFolderLines(data)) {
+					// The listing itself proves the existence, so no request per sub folder is needed
+					final String subFolderName = FileUtilities.trimTrailingFileSeparator(getEntryNameFromLine(folderLine));
+					final LocalDateTime modificationDate = getModificationDateFromLine(folderLine);
+					folderInfoList.add(new FolderInfo(subFolderName, modificationDate == null ? null : modificationDate.atZone(ZoneId.systemDefault())));
 				}
 				final List<FileInfo> fileInfoList = new ArrayList<>();
 				for (final String fileLine : getFileLines(data)) {

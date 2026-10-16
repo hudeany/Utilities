@@ -7,7 +7,7 @@
 
 	<!-- Dependency versions -->
 	<property name="commons-compress.version" value="1.23.0" />
-	<property name="commons-net.version" value="3.7.1" />
+	<property name="commons-net.version" value="3.11.1" />
 	<property name="jsch.version" value="0.2.23" />
 	<property name="smbj.version" value="0.10.0" />
 	<property name="jcifs.version" value="3.0.4" />

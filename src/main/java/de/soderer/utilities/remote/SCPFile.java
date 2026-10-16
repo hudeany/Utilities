@@ -1,4 +1,6 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
+
+import de.soderer.utilities.Utilities;
 
 /**
  * Descriptor of a remote file or directory for SCP transfers in the form "\\hostname/path/filename".

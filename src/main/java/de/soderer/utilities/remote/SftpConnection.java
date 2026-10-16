@@ -12,10 +12,13 @@ import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,30 +30,40 @@ import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.ProxyHTTP;
+import com.jcraft.jsch.ProxySOCKS5;
 import com.jcraft.jsch.Session;
 
 import de.soderer.pac.utilities.ProxyConfiguration;
 import de.soderer.utilities.ExceptionUtilities;
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
-import de.soderer.utilities.JschFileData;
-import de.soderer.utilities.JschFileData.JschFileType;
-import de.soderer.utilities.ServerAccessData;
-import de.soderer.utilities.SshFileChangeWatcherThread.LineListener;
 import de.soderer.utilities.Tuple;
-import de.soderer.utilities.UnknownHostKeyException;
 import de.soderer.utilities.Utilities;
+import de.soderer.utilities.remote.JschFileData.JschFileType;
+import de.soderer.utilities.remote.SshFileChangeWatcherThread.LineListener;
 
 /**
  * Remote connection via SSH (scp and shell commands), based on JSch. Authentication by key file and/or password.
  * The server's host key is checked against a known hosts file or an expected fingerprint (see {@link #DISABLE_HOST_KEY_CHECK}).
- * Paths are passed to the remote shell in single quotes.
+ * Paths are passed to the remote shell in single quotes. Directory listings are read with "ls" in the C locale,
+ * so the output does not depend on the server's language settings.
  */
 public class SftpConnection implements RemoteConnection {
 	/**
 	 * Return value of InputStream read methods at the end of the stream.
 	 */
 	public static final int EOF = -1;
+
+	/**
+	 * Timeout in milliseconds for establishing the SSH session and opening channels.
+	 */
+	private static final int CONNECT_TIMEOUT_MILLIS = 30_000;
+
+	/**
+	 * Prefix for commands whose output is parsed, so it is always in English and independent of the server locale.
+	 * "env" also works in shells without the "VAR=value command" syntax (e.g. csh).
+	 */
+	private static final String C_LOCALE_PREFIX = "env LC_ALL=C ";
 
 	/** The host. */
 	private String hostname = null;
@@ -199,14 +212,27 @@ public class SftpConnection implements RemoteConnection {
 				final Proxy proxy = proxyConfiguration.getProxy(hostname);
 				if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
 					final InetSocketAddress proxyAdress = (InetSocketAddress) proxy.address();
-					session.setProxy(new ProxyHTTP(proxyAdress.getHostName(), proxyAdress.getPort()));
+					// getHostString avoids a reverse DNS lookup of a proxy given by IP address
+					if (proxy.type() == Proxy.Type.SOCKS) {
+						session.setProxy(new ProxySOCKS5(proxyAdress.getHostString(), proxyAdress.getPort()));
+					} else {
+						session.setProxy(new ProxyHTTP(proxyAdress.getHostString(), proxyAdress.getPort()));
+					}
 				}
 			}
 
 			if (keyFileData != null) {
-				jsch.addIdentity(username, keyFileData, null, password == null ? new byte[0] : new String(password).getBytes(StandardCharsets.UTF_8));
+				final byte[] passphrase = toUtf8Bytes(password);
+				try {
+					jsch.addIdentity(username, keyFileData, null, passphrase);
+				} finally {
+					Arrays.fill(passphrase, (byte) 0);
+				}
 			} else if (password != null) {
-				session.setPassword(new String(password));
+				// The byte variant avoids an immutable String copy of the password; JSch keeps its own copy until disconnect
+				final byte[] passwordBytes = toUtf8Bytes(password);
+				session.setPassword(passwordBytes);
+				Arrays.fill(passwordBytes, (byte) 0);
 			} else {
 				throw new Exception("At least one of keyFileData or password is expected");
 			}
@@ -234,6 +260,8 @@ public class SftpConnection implements RemoteConnection {
 					try (FileInputStream fileInputStream = new FileInputStream(knownHostsFile)) {
 						jsch.setKnownHosts(fileInputStream);
 					}
+					// JSch's default "ask" would also reject unknown keys without a UserInfo, but "yes" makes it explicit
+					session.setConfig("StrictHostKeyChecking", "yes");
 				} else {
 					throw new Exception("Cannot find known hosts file: " + knownHostsFile.getAbsolutePath());
 				}
@@ -255,7 +283,8 @@ public class SftpConnection implements RemoteConnection {
 			//				}
 			//			}
 
-			session.connect();
+			// Without timeout an unresponsive server would block forever
+			session.connect(CONNECT_TIMEOUT_MILLIS);
 
 			if (checkHostKeyFingerprint && newKnownHosts != null) {
 				// The host key was verified by its fingerprint, so it can be stored as known host
@@ -265,9 +294,9 @@ public class SftpConnection implements RemoteConnection {
 		} catch (final JSchException jse) {
 			if (jse.getCause() != null && jse.getCause() instanceof UnknownHostException) {
 				close();
-				throw new Exception("Cannot connect to host: " + hostname);
-			} else if (jse.getMessage() != null && (jse.getMessage().contains("UnknownHostKey") || jse.getMessage().contains("reject HostKey"))) {
-				final HostKey actualHostKey = session.getHostKey();
+				throw new Exception("Cannot connect to host: " + hostname, jse);
+			} else if (jse.getMessage() != null && (jse.getMessage().contains("UnknownHostKey") || jse.getMessage().contains("reject HostKey") || jse.getMessage().contains("HostKey has been changed"))) {
+				final HostKey actualHostKey = session == null ? null : session.getHostKey();
 				final String actualHostKeyFingerprint = actualHostKey == null ? null : actualHostKey.getFingerPrint(jsch);
 				close();
 				throw new UnknownHostKeyException("Cannot connect to host, because its hostkey is unknown or does not match the expected fingerprint", hostname, actualHostKeyFingerprint);
@@ -298,13 +327,13 @@ public class SftpConnection implements RemoteConnection {
 		try {
 			// Read links
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find " + quoteForShell(directoryPath + (directoryPath.endsWith("/") ? "" : "/")) + " -mindepth 1 -maxdepth 1 -type l");
+			((ChannelExec) channel).setCommand("find " + quotePathForShell(directoryPath + (directoryPath.endsWith("/") ? "" : "/")) + " -mindepth 1 -maxdepth 1 -type l");
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
 					InputStream inErrorStream = channel.getExtInputStream()) {
 
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				for (final String folderLine : Utilities.readLines(inStream, StandardCharsets.UTF_8)) {
 					linkList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
@@ -343,13 +372,13 @@ public class SftpConnection implements RemoteConnection {
 		try {
 			// Read links
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("find " + quoteForShell(filePath + (filePath.endsWith("/") ? "" : "/")) + " -mindepth 1 -maxdepth 1 -type l");
+			((ChannelExec) channel).setCommand("find " + quotePathForShell(filePath + (filePath.endsWith("/") ? "" : "/")) + " -mindepth 1 -maxdepth 1 -type l");
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
 					InputStream inErrorStream = channel.getExtInputStream()) {
 
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				for (final String folderLine : Utilities.readLines(inStream, StandardCharsets.UTF_8)) {
 					linkList.add(folderLine.substring(folderLine.lastIndexOf("/") + 1));
@@ -376,7 +405,7 @@ public class SftpConnection implements RemoteConnection {
 
 	@Override
 	public void createFolder(final String selectedFilePath, final String folderName) throws Exception {
-		executeCommand("mkdir " + quoteForShell(selectedFilePath + "/" + folderName));
+		executeCommand("mkdir " + quotePathForShell(selectedFilePath + "/" + folderName));
 	}
 
 	@Override
@@ -384,7 +413,7 @@ public class SftpConnection implements RemoteConnection {
 		ChannelSftp channel = null;
 		try {
 			channel = (ChannelSftp) session.openChannel("sftp");
-			channel.connect();
+			channel.connect(CONNECT_TIMEOUT_MILLIS);
 			channel.put(inputStream, filePath);
 		} catch (final Exception e) {
 			throw new Exception("Error in uploadFileData", e);
@@ -403,19 +432,20 @@ public class SftpConnection implements RemoteConnection {
 	public void uploadFileAlternative(final String filePath, final InputStream fileInputStream) throws Exception {
 		Channel channel = null;
 		try {
+			final String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+			checkScpFileName(fileName);
 			final byte[] fileData = IoUtilities.toByteArray(fileInputStream);
-			String command = "scp -p -t " + quoteForShell(filePath);
+			String command = "scp -p -t " + quotePathForShell(filePath);
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
 			try (OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				checkAcknowledge(inStream);
 
 				// send command "C0664 filesize filename"
-				final String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
 				command = "C0664 " + fileData.length + " " + fileName + "\n";
 				outStream.write(command.getBytes(StandardCharsets.UTF_8));
 				outStream.flush();
@@ -449,12 +479,13 @@ public class SftpConnection implements RemoteConnection {
 			}
 
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -ld " + quoteForShell(filePath));
+			// -L: for a symbolic link the target is described, so links to folders are no files and the size is the target's
+			((ChannelExec) channel).setCommand(C_LOCALE_PREFIX + "ls -ldL " + quotePathForShell(filePath));
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
 					InputStream inErrorStream = channel.getExtInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				final byte[] successData = IoUtilities.toByteArray(inStream);
 				final String successString = new String(successData, StandardCharsets.UTF_8);
@@ -469,7 +500,7 @@ public class SftpConnection implements RemoteConnection {
 						// Directories are no files
 						return null;
 					}
-					final ZonedDateTime changeDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
+					final ZonedDateTime changeDate = toZonedDateTime(fileData.getChangeDate());
 					return new FileInfo(fileName, fileData.getSize(), changeDate);
 				}
 			}
@@ -483,22 +514,22 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("scp -f " + quoteForShell(filePath));
+			((ChannelExec) channel).setCommand("scp -f " + quotePathForShell(filePath));
 
 			final OutputStream outStream = channel.getOutputStream();
 			final InputStream inStream = channel.getInputStream();
 
-			channel.connect();
+			channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 			// send '\0' to start data transfer
 			sendZeroByte(outStream);
 
 			// scp answers with "C<rights> <size> <name>" or with an error marker byte 1 or 2 followed by the message
 			final int firstByte = inStream.read();
-			if (firstByte == 1 || firstByte == 2 || firstByte < 0) {
-				final byte[] errortextData = readStreamUntilEndOrLinefeed(inStream);
+			if (firstByte != 'C') {
+				final byte[] errortextData = firstByte < 0 ? new byte[0] : readStreamUntilEndOrLinefeed(inStream);
 				final String errortext = new String(errortextData, StandardCharsets.UTF_8).trim();
-				throw new Exception("Download of file '" + filePath + "' failed: " + errortext);
+				throw new Exception("Download of file '" + filePath + "' failed: " + (errortext.length() > 0 ? errortext : "Unexpected scp response"));
 			}
 
 			// read rights key like '0644 ' (5 bytes), the leading 'C' was read above
@@ -538,7 +569,7 @@ public class SftpConnection implements RemoteConnection {
 	public void deleteFile(final String remoteHostPathAndFileName) throws Exception {
 		try {
 			// exec 'rm /full/path/to/file' remotely, a non zero exit code (e.g. missing permissions) results in an exception
-			executeCommand("rm -f " + quoteForShell(remoteHostPathAndFileName));
+			executeCommand("rm -f " + quotePathForShell(remoteHostPathAndFileName));
 		} catch (final Exception e) {
 			throw new Exception("Error in SSH delete: " + e.getMessage(), e);
 		}
@@ -548,7 +579,7 @@ public class SftpConnection implements RemoteConnection {
 	public void deleteFolder(final String remoteHostPathAndFolderName) throws Exception {
 		try {
 			// A non zero exit code (e.g. missing permissions) results in an exception
-			executeCommand("rm -rf " + quoteForShell(remoteHostPathAndFolderName));
+			executeCommand("rm -rf " + quotePathForShell(remoteHostPathAndFolderName));
 		} catch (final Exception e) {
 			throw new Exception("Error in SSH delete: " + e.getMessage(), e);
 		}
@@ -575,6 +606,7 @@ public class SftpConnection implements RemoteConnection {
 		if (Utilities.isEmpty(remoteHostFileName)) {
 			remoteHostFileName = getFileNameOfPathAndFileName(localPathAndFileName);
 		}
+		checkScpFileName(remoteHostFileName);
 
 		final List<String> directory = listFiles(remoteHostPath);
 		if (!directory.contains(".")) {
@@ -587,14 +619,14 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			// exec 'scp -t rfile' remotely
-			String command = "scp -p -t " + quoteForShell(remoteHostPathAndFileName);
+			String command = "scp -p -t " + quotePathForShell(remoteHostPathAndFileName);
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
 			try (OutputStream out = channel.getOutputStream();
 					InputStream in = channel.getInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				checkAcknowledge(in);
 
@@ -627,7 +659,7 @@ public class SftpConnection implements RemoteConnection {
 				}
 			}
 		} catch (final Exception e) {
-			throw new Exception("Error in SSH upload: " + e.getMessage());
+			throw new Exception("Error in SSH upload: " + e.getMessage(), e);
 		} finally {
 			closeQuietly(channel);
 		}
@@ -656,6 +688,7 @@ public class SftpConnection implements RemoteConnection {
 	 * @throws Exception if the remote folder does not exist, the remote file exists and must not be replaced, or the upload fails
 	 */
 	public void uploadFileData(final String remoteHostPath, final String remoteHostFileName, final byte[] fileData, final FilePermissions filePermissions, final boolean overwriteIfExists) throws Exception {
+		checkScpFileName(remoteHostFileName);
 		final List<String> directory = listFiles(remoteHostPath);
 		if (!directory.contains(".")) {
 			throw new Exception("Error in SSH upload: Destination folder '" + remoteHostPath + "' does not exist on destination host");
@@ -667,14 +700,14 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			// exec 'scp -t rfile' remotely
-			String command = "scp -p -t " + quoteForShell(remoteHostPath + "/" + remoteHostFileName);
+			String command = "scp -p -t " + quotePathForShell(remoteHostPath + "/" + remoteHostFileName);
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
 			// get I/O streams for remote scp
 			try (OutputStream out = channel.getOutputStream();
 					InputStream in = channel.getInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				checkAcknowledge(in);
 
@@ -701,7 +734,7 @@ public class SftpConnection implements RemoteConnection {
 				channel.disconnect();
 			}
 		} catch (final Exception e) {
-			throw new Exception("Error in SSH upload: " + e.getMessage());
+			throw new Exception("Error in SSH upload: " + e.getMessage(), e);
 		} finally {
 			closeQuietly(channel);
 		}
@@ -720,33 +753,20 @@ public class SftpConnection implements RemoteConnection {
 			final List<String> returnList = new ArrayList<>();
 
 			// exec 'ls -1a <path>' remotely
-			final String command = "ls -1a " + quoteForShell(remoteHostPath);
+			final String command = "ls -1a " + quotePathForShell(remoteHostPath);
 			channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 
-			// get I/O streams for remote scp
-			// OutputStream out = channel.getOutputStream();
 			try (InputStream in = channel.getInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
-				// byte[] buf = new byte[4096];
-
-				// send '\0'
-				// sendZeroByte(out);
-
-				int charValue = checkAcknowledge(in);
-				StringBuilder inputString = new StringBuilder();
-
-				while (charValue != EOF) {
-					if (charValue == '\n') { // EOL
-						returnList.add(inputString.toString());
-						inputString = new StringBuilder();
-					} else {
-						inputString.append((char) charValue);
+				// Plain command output (no scp protocol): decode as UTF-8, a byte-wise char cast would break non-ASCII names
+				final String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+				for (final String line : output.split("\n")) {
+					if (line.length() > 0) {
+						returnList.add(line);
 					}
-					charValue = checkAcknowledge(in);
 				}
-
 				return returnList;
 			}
 		} catch (final Exception e) {
@@ -769,30 +789,19 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " " + quoteForShell(filePath));
+			((ChannelExec) channel).setCommand("tail -f -n " + numberOfLastLinesToShow + " " + quotePathForShell(filePath));
 
-			try (OutputStream outStream = channel.getOutputStream();
-					InputStream inStream = channel.getInputStream()) {
-				channel.connect();
+			try (InputStream inStream = channel.getInputStream()) {
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
-				// send '\0' to start data transfer
-				sendZeroByte(outStream);
-
-				while (true) {
-					// reads all now available data at once
-					byte[] nextData = IoUtilities.toByteArray(inStream);
-					while (nextData.length > 0) {
-						lineListener.addLineData(nextData);
-						nextData = IoUtilities.toByteArray(inStream);
+				// Each read returns the data available so far and blocks only while there is none, so new lines are passed on
+				// immediately. Reading until the end of the stream would never return, because "tail -f" does not end.
+				final byte[] buffer = new byte[8192];
+				int readBytes;
+				while ((readBytes = inStream.read(buffer)) != EOF) {
+					if (readBytes > 0) {
+						lineListener.addLineData(Arrays.copyOf(buffer, readBytes));
 					}
-
-					// waits if no more data is available right now
-					final byte[] nextLineData = Utilities.readStreamUntilEndOrLinefeed(inStream);
-					if (nextLineData.length == 0 && channel.isClosed()) {
-						// The remote tail process has ended
-						break;
-					}
-					lineListener.addLineData(nextLineData);
 				}
 			}
 		} catch (@SuppressWarnings("unused") final java.io.InterruptedIOException e) {
@@ -816,11 +825,11 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("tail -n " + numberOfLastLinesToShow + " " + quoteForShell(filePath));
+			((ChannelExec) channel).setCommand("tail -n " + numberOfLastLinesToShow + " " + quotePathForShell(filePath));
 
 			try (OutputStream outStream = channel.getOutputStream();
 					InputStream inStream = channel.getInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				// send '\0' to start data transfer
 				sendZeroByte(outStream);
@@ -854,7 +863,7 @@ public class SftpConnection implements RemoteConnection {
 			// get I/O streams for remote command execution
 			try (InputStream in = channel.getInputStream();
 					InputStream inError = channel.getExtInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				// stderr is read in parallel, otherwise a remote process writing much to stderr blocks before closing stdout
 				final ByteArrayOutputStream errorBuffer = new ByteArrayOutputStream();
@@ -934,12 +943,13 @@ public class SftpConnection implements RemoteConnection {
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -al " + quoteForShell(Utilities.isEmpty(folderPath) ? "/" : folderPath));
+			// The trailing "/" makes ls fail for files and follow symbolic links to folders
+			((ChannelExec) channel).setCommand(C_LOCALE_PREFIX + "ls -al " + quotePathForShell(toFolderPathWithTrailingSeparator(folderPath)));
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
 					InputStream inErrorStream = channel.getExtInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				final byte[] successData = IoUtilities.toByteArray(inStream);
 				final String successString = new String(successData, StandardCharsets.UTF_8);
@@ -947,7 +957,7 @@ public class SftpConnection implements RemoteConnection {
 				final byte[] errorData = IoUtilities.toByteArray(inErrorStream);
 
 				if (errorData != null && errorData.length > 0) {
-					if (new String(errorData, StandardCharsets.UTF_8).toLowerCase().contains("permission denied")) {
+					if (new String(errorData, StandardCharsets.UTF_8).toLowerCase(java.util.Locale.ROOT).contains("permission denied")) {
 						throw new PermissionDeniedException("Permission denied", folderPath);
 					}
 					return null;
@@ -959,7 +969,7 @@ public class SftpConnection implements RemoteConnection {
 							if (!isFirstLine || !(nextLine.startsWith("total") || nextLine.startsWith("insgesamt"))) {
 								final JschFileData fileData = new JschFileData(nextLine);
 								if (".".equals(fileData.getFileName())) {
-									modificationDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
+									modificationDate = toZonedDateTime(fileData.getChangeDate());
 									break;
 								}
 							}
@@ -1084,6 +1094,56 @@ public class SftpConnection implements RemoteConnection {
 		return "'" + value.replace("'", "'\"'\"'") + "'";
 	}
 
+	/**
+	 * Quotes a path for use as a single argument in a remote POSIX shell command. A relative path starting with "-"
+	 * is prefixed with "./", because quoting alone does not stop a command from reading it as an option.
+	 */
+	static String quotePathForShell(final String path) {
+		return quoteForShell(path.startsWith("-") ? "./" + path : path);
+	}
+
+	/**
+	 * Converts a change date of an "ls" line into the local time zone. JschFileData returns null for dates it cannot
+	 * parse, which must not abort the whole listing.
+	 */
+	private static ZonedDateTime toZonedDateTime(final java.time.LocalDateTime changeDate) {
+		return changeDate == null ? null : changeDate.atZone(ZoneId.systemDefault());
+	}
+
+	/**
+	 * Returns a folder path ending with "/" ("/" for an empty path).
+	 */
+	private static String toFolderPathWithTrailingSeparator(final String folderPath) {
+		if (Utilities.isEmpty(folderPath)) {
+			return "/";
+		} else {
+			return folderPath.endsWith("/") ? folderPath : folderPath + "/";
+		}
+	}
+
+	/**
+	 * The file name is sent in the scp header line "C&lt;mode&gt; &lt;size&gt; &lt;name&gt;\n", so it must not contain line breaks or
+	 * separators, which would corrupt the protocol.
+	 */
+	private static void checkScpFileName(final String fileName) throws Exception {
+		if (Utilities.isEmpty(fileName) || fileName.contains("/") || fileName.contains("\n") || fileName.contains("\r") || ".".equals(fileName) || "..".equals(fileName)) {
+			throw new Exception("Invalid file name for scp upload: '" + fileName + "'");
+		}
+	}
+
+	/**
+	 * Encodes a password as UTF-8 without creating an immutable String copy. The caller must clear the result.
+	 */
+	private static byte[] toUtf8Bytes(final char[] password) {
+		if (password == null) {
+			return new byte[0];
+		}
+		final ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(CharBuffer.wrap(password));
+		final byte[] bytes = Arrays.copyOfRange(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
+		Arrays.fill(byteBuffer.array(), (byte) 0);
+		return bytes;
+	}
+
 	private static int checkAcknowledge(final InputStream in) throws IOException {
 		final int returnCode = in.read();
 		// returnCode may be 0 for success,
@@ -1196,10 +1256,14 @@ public class SftpConnection implements RemoteConnection {
 			}
 			isClosed = true;
 			try {
-				checkAcknowledge(dataInputStream);
+				// The closing acknowledge follows the file data, so it can only be read after a complete download.
+				// After a partial read the next byte is file data, and waiting for the acknowledge could block forever.
+				if (available <= 0) {
+					checkAcknowledge(dataInputStream);
 
-				// send '\0' to confirm the end of the transfer
-				sendZeroByte(controllOutputStream);
+					// send '\0' to confirm the end of the transfer
+					sendZeroByte(controllOutputStream);
+				}
 			} finally {
 				// The channel was only opened for this download
 				closeQuietly(channel);
@@ -1242,26 +1306,19 @@ public class SftpConnection implements RemoteConnection {
 	@Override
 	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(String folderPath) throws Exception {
 		final List<FileInfo> fileInfoList = new ArrayList<>();
-		final List<String> subFolderNames = new ArrayList<>();
+		final List<FolderInfo> folderInfoList = new ArrayList<>();
 
 		folderPath = FileUtilities.trimTrailingFileSeparator(folderPath);
-
-		String folderName;
-		if (folderPath.contains("/")) {
-			folderName = folderPath.substring(folderPath.lastIndexOf("/") + 1);
-		} else {
-			folderName = folderPath;
-		}
 
 		Channel channel = null;
 		try {
 			channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand("ls -al " + quoteForShell(Utilities.isEmpty(folderPath) ? "/" : folderPath));
+			((ChannelExec) channel).setCommand(C_LOCALE_PREFIX + "ls -al " + quotePathForShell(toFolderPathWithTrailingSeparator(folderPath)));
 
 			// Streams must be fetched before channel connect
 			try (InputStream inStream = channel.getInputStream();
 					InputStream inErrorStream = channel.getExtInputStream()) {
-				channel.connect();
+				channel.connect(CONNECT_TIMEOUT_MILLIS);
 
 				final byte[] successData = IoUtilities.toByteArray(inStream);
 				final String successString = new String(successData, StandardCharsets.UTF_8);
@@ -1279,13 +1336,14 @@ public class SftpConnection implements RemoteConnection {
 								final JschFileData fileData = new JschFileData(nextLine);
 								if (!".".equals(fileData.getFileName()) && !"..".equals(fileData.getFileName())) {
 									if (fileData.getFileType() == JschFileType.RegularFile) {
-										final ZonedDateTime changeDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
+										final ZonedDateTime changeDate = toZonedDateTime(fileData.getChangeDate());
 										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), changeDate));
 									} else if (fileData.getFileType() == JschFileType.SymbolicLink) {
-										final ZonedDateTime changeDate = fileData.getChangeDate().atZone(ZoneId.systemDefault());
+										final ZonedDateTime changeDate = toZonedDateTime(fileData.getChangeDate());
 										fileInfoList.add(new FileInfo(fileData.getFileName(), fileData.getSize(), changeDate));
 									} else if (fileData.getFileType() == JschFileType.Directory) {
-										subFolderNames.add(fileData.getFileName());
+										// The listing already contains the folder's modification date, no extra request per folder needed
+										folderInfoList.add(new FolderInfo(fileData.getFileName(), toZonedDateTime(fileData.getChangeDate())));
 									}
 								}
 							}
@@ -1298,24 +1356,6 @@ public class SftpConnection implements RemoteConnection {
 			closeQuietly(channel);
 		}
 
-		final List<FolderInfo> folderInfoList = new ArrayList<>();
-
-		for (final String subFolderName : subFolderNames) {
-			FolderInfo folderInfo;
-			try {
-				folderInfo = getFolderInfo(folderPath + "/" + subFolderName);
-				if (folderInfo == null) {
-					folderInfo = new FolderInfo(subFolderName, null);
-				}
-			} catch (@SuppressWarnings("unused") final Exception e) {
-				folderInfo = new FolderInfo(subFolderName, null);
-			}
-			folderInfoList.add(folderInfo);
-		}
-
-		if (Utilities.isEmpty(folderName)) {
-			folderName = "/";
-		}
 		return new Tuple<>(folderInfoList, fileInfoList);
 	}
 }

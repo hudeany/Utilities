@@ -13,7 +13,6 @@ import org.codelibs.jcifs.smb1.SmbFile;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
-import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
@@ -220,8 +219,10 @@ public class Smb1Connection implements RemoteConnection {
 
 			for (final SmbFile subFile : smbFile.listFiles()) {
 				if (subFile.isDirectory()) {
+					// The listed entry already carries its date, no extra request per folder needed
 					final String subFolderName = FileUtilities.trimTrailingFileSeparator(subFile.getName());
-					folderInfoList.add(getFolderInfo(folderPath + "/" + subFolderName));
+					final ZonedDateTime changeDate = Instant.ofEpochMilli(subFile.getDate()).atZone(ZoneId.systemDefault());
+					folderInfoList.add(new FolderInfo(subFolderName, changeDate));
 				} else if (subFile.isFile()) {
 					long fileSize = subFile.getContentLengthLong();
 					if (fileSize < 0) {

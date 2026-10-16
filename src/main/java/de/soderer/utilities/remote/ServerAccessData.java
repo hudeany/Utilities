@@ -1,6 +1,8 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 import java.util.Locale;
+
+import de.soderer.utilities.Utilities;
 
 /**
  * Access data of a remote server for the protocols ssh, sftp, ftp, smb, smb1, http and https

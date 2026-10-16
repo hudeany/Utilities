@@ -1,4 +1,4 @@
-package de.soderer.utilities;
+package de.soderer.utilities.remote;
 
 /**
  * Signals that the host key presented by a remote server (e.g. via SSH) is not known or not trusted yet.

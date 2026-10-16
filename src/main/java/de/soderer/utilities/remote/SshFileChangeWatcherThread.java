@@ -1,6 +1,4 @@
-package de.soderer.utilities;
-
-import de.soderer.utilities.remote.SftpConnection;
+package de.soderer.utilities.remote;
 
 /**
  * Daemon thread that shows the last lines of a remote file via SSH and then follows all lines appended to it ("tail -f").

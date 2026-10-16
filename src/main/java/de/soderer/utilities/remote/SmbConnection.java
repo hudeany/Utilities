@@ -34,7 +34,6 @@ import com.hierynomus.smbj.share.File;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
-import de.soderer.utilities.ServerAccessData;
 import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
