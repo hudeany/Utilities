@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.Month;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -617,7 +617,7 @@ public class DateUtilities {
 	 * "ONCE"                      =&gt; only once (returns null)
 	 * "0600;0800"                 =&gt; daily at 06:00 and 08:00
 	 * "MoMi:1700"                 =&gt; every monday and wednesday at 17:00
-	 * "M05:1600"                  =&gt; every 05th day of month at 16:00
+	 * "M05:1600"                  =&gt; every 05th day of month at 16:00 (a day beyond the month's end means its last day)
 	 * "Q:1600"                    =&gt; every first day of quarter at 16:00
 	 * "QW:1600"                   =&gt; every first working day of quarter at 16:00
 	 * "MoDiMiDoFr:1700;!23012011" =&gt; mondays to fridays at 17:00 except for 23.01.2011 (holidays marked by '!')
@@ -653,7 +653,8 @@ public class DateUtilities {
 		// Holidays to exclude
 		final List<LocalDate> excludedDays = new ArrayList<>();
 
-		final String[] timingParameterList = timingString.split(";|,| ");
+		// Empty parts, e.g. from "0600; 0800" (separator followed by a blank), are ignored
+		final String[] timingParameterList = timingString.trim().split("[;, ]+");
 		for (final String timingParameter : timingParameterList) {
 			if (timingParameter.startsWith("!")) {
 				try {
@@ -753,6 +754,10 @@ public class DateUtilities {
 				}
 				final String day = timingParameter.substring(timingParameter.indexOf("M") + 1, timingParameter.indexOf(":"));
 				final String time = timingParameter.substring(timingParameter.indexOf(":") + 1);
+				final int dayOfMonth = Integer.parseInt(day);
+				if (dayOfMonth != 99 && (dayOfMonth < 1 || dayOfMonth > 31)) {
+					throw new Exception("Invalid day of month in timing data: " + timingParameter);
+				}
 
 				nextStartByThisParameter = nextStartByThisParameter.with(LocalTime.of(Integer.parseInt(time.substring(0, 2)), Integer.parseInt(time.substring(2))));
 
@@ -766,10 +771,11 @@ public class DateUtilities {
 						nextStartByThisParameter = nextStartByThisParameter.with(nextStartByThisParameter.toLocalDate().with(TemporalAdjusters.lastDayOfMonth()));
 					}
 				} else {
-					nextStartByThisParameter = nextStartByThisParameter.with(nextStartByThisParameter.toLocalDate().withDayOfMonth(Integer.parseInt(day)));
+					// A day beyond the end of a month (e.g. 31 in November) means the last day of that month
+					nextStartByThisParameter = withDayOfMonthOrLastDay(nextStartByThisParameter, dayOfMonth);
 					// ensure that the first estimated "next time" is in the past, before making forward steps
 					if (nextStartByThisParameter.isAfter(calulationStartDateTime)) {
-						nextStartByThisParameter = nextStartByThisParameter.minusMonths(1);
+						nextStartByThisParameter = withDayOfMonthOrLastDay(nextStartByThisParameter.minusMonths(1), dayOfMonth);
 					}
 				}
 
@@ -780,60 +786,28 @@ public class DateUtilities {
 					nextStartByThisParameter = nextStartByThisParameter.plusMonths(Integer.parseInt(xMonth));
 					nextStartByThisParameter = nextStartByThisParameter.with(nextStartByThisParameter.toLocalDate().with(TemporalAdjusters.lastDayOfMonth()));
 				} else {
-					nextStartByThisParameter = nextStartByThisParameter.plusMonths(Integer.parseInt(xMonth));
+					// plusMonths shortens e.g. January 31 to February 28, so the wanted day is set again
+					nextStartByThisParameter = withDayOfMonthOrLastDay(nextStartByThisParameter.plusMonths(Integer.parseInt(xMonth)), dayOfMonth);
 				}
 
 				// Move also when meeting holiday rule
 				while (dayListIncludes(excludedDays, nextStartByThisParameter.toLocalDate())) {
 					nextStartByThisParameter = nextStartByThisParameter.plusDays(1);
 				}
-			} else if (timingParameter.startsWith("Q:")) {
-				// quarterly execution (Q:1200) at first day of month
-				// The first day of the next quarter's month is used directly, because the current day of month (e.g. 31) may not exist in that month
-				if (nextStartByThisParameter.get(IsoFields.QUARTER_OF_YEAR) == 1) {
-					nextStartByThisParameter = nextStartByThisParameter.with(LocalDate.of(nextStartByThisParameter.getYear(), Month.APRIL, 1));
-				} else if (nextStartByThisParameter.get(IsoFields.QUARTER_OF_YEAR) == 2) {
-					nextStartByThisParameter = nextStartByThisParameter.with(LocalDate.of(nextStartByThisParameter.getYear(), Month.JULY, 1));
-				} else if (nextStartByThisParameter.get(IsoFields.QUARTER_OF_YEAR) == 3) {
-					nextStartByThisParameter = nextStartByThisParameter.with(LocalDate.of(nextStartByThisParameter.getYear(), Month.OCTOBER, 1));
-				} else {
-					nextStartByThisParameter = nextStartByThisParameter.with(LocalDate.of(nextStartByThisParameter.getYear(), Month.JANUARY, 1));
-					nextStartByThisParameter = nextStartByThisParameter.plusYears(1);
-				}
-
-				nextStartByThisParameter = nextStartByThisParameter.with(nextStartByThisParameter.toLocalDate().with(TemporalAdjusters.firstDayOfMonth()));
+			} else if (timingParameter.startsWith("Q:") || timingParameter.startsWith("QW:")) {
+				// quarterly execution (Q:1200) at first day of quarter, or (QW:1200) at first working day of quarter
+				final boolean onlyWorkingDays = timingParameter.startsWith("QW:");
 				final String time = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter = nextStartByThisParameter.with(LocalTime.of(Integer.parseInt(time.substring(0, 2)), Integer.parseInt(time.substring(2))));
+				final LocalTime startTime = LocalTime.of(Integer.parseInt(time.substring(0, 2)), Integer.parseInt(time.substring(2)));
 
-				// Move also when meeting holiday rule
-				while (dayListIncludes(excludedDays, nextStartByThisParameter.toLocalDate())) {
-					nextStartByThisParameter = nextStartByThisParameter.plusDays(1);
+				// The current quarter is checked first, because its start may still be ahead (e.g. on January 1st before the start time)
+				final LocalDate currentDate = nextStartByThisParameter.toLocalDate();
+				LocalDate quarterStart = LocalDate.of(currentDate.getYear(), (currentDate.get(IsoFields.QUARTER_OF_YEAR) - 1) * 3 + 1, 1);
+				nextStartByThisParameter = getQuarterStart(quarterStart, startTime, zoneId, onlyWorkingDays, excludedDays);
+				if (!nextStartByThisParameter.isAfter(calulationStartDateTime)) {
+					quarterStart = quarterStart.plusMonths(3);
+					nextStartByThisParameter = getQuarterStart(quarterStart, startTime, zoneId, onlyWorkingDays, excludedDays);
 				}
-			} else if (timingParameter.startsWith("QW:")) {
-				// quarterly execution (QW:1200) at first workingday of month
-				// The first day of the next quarter's month is used directly, because the current day of month (e.g. 31) may not exist in that month
-				if (nextStartByThisParameter.get(IsoFields.QUARTER_OF_YEAR) == 1) {
-					nextStartByThisParameter = nextStartByThisParameter.with(LocalDate.of(nextStartByThisParameter.getYear(), Month.APRIL, 1));
-				} else if (nextStartByThisParameter.get(IsoFields.QUARTER_OF_YEAR) == 2) {
-					nextStartByThisParameter = nextStartByThisParameter.with(LocalDate.of(nextStartByThisParameter.getYear(), Month.JULY, 1));
-				} else if (nextStartByThisParameter.get(IsoFields.QUARTER_OF_YEAR) == 3) {
-					nextStartByThisParameter = nextStartByThisParameter.with(LocalDate.of(nextStartByThisParameter.getYear(), Month.OCTOBER, 1));
-				} else {
-					nextStartByThisParameter = nextStartByThisParameter.with(LocalDate.of(nextStartByThisParameter.getYear(), Month.JANUARY, 1));
-					nextStartByThisParameter = nextStartByThisParameter.plusYears(1);
-				}
-
-				nextStartByThisParameter = nextStartByThisParameter.with(nextStartByThisParameter.toLocalDate().with(TemporalAdjusters.firstDayOfMonth()));
-
-				// Move also when meeting holiday rule
-				while (nextStartByThisParameter.getDayOfWeek() == DayOfWeek.SATURDAY
-						|| nextStartByThisParameter.getDayOfWeek() == DayOfWeek.SUNDAY
-						|| dayListIncludes(excludedDays, nextStartByThisParameter.toLocalDate())) {
-					nextStartByThisParameter = nextStartByThisParameter.plusDays(1);
-				}
-
-				final String time = timingParameter.substring(timingParameter.indexOf(":") + 1);
-				nextStartByThisParameter = nextStartByThisParameter.with(LocalTime.of(Integer.parseInt(time.substring(0, 2)), Integer.parseInt(time.substring(2))));
 			} else if (WEEKDAILY_RULE_PATTERN.matcher(timingParameter).matches()) {
 				// every xth of a weekday in a month
 				final int weekDayOrder = Integer.parseInt(timingParameter.substring(0, 1));
@@ -902,6 +876,25 @@ public class DateUtilities {
 		}
 
 		return returnStart;
+	}
+
+	/**
+	 * Sets the day of month, or the last day of the month if it is shorter (e.g. day 31 in November).
+	 */
+	private static ZonedDateTime withDayOfMonthOrLastDay(final ZonedDateTime dateTime, final int dayOfMonth) {
+		return dateTime.withDayOfMonth(Math.min(dayOfMonth, dateTime.toLocalDate().lengthOfMonth()));
+	}
+
+	/**
+	 * Returns the start of a quarter: its first day (or first working day) at the given time, moved behind excluded days.
+	 */
+	private static ZonedDateTime getQuarterStart(final LocalDate firstDayOfQuarter, final LocalTime startTime, final ZoneId zoneId, final boolean onlyWorkingDays, final List<LocalDate> excludedDays) {
+		LocalDate startDay = firstDayOfQuarter;
+		while ((onlyWorkingDays && (startDay.getDayOfWeek() == DayOfWeek.SATURDAY || startDay.getDayOfWeek() == DayOfWeek.SUNDAY))
+				|| dayListIncludes(excludedDays, startDay)) {
+			startDay = startDay.plusDays(1);
+		}
+		return ZonedDateTime.of(startDay, startTime, zoneId);
 	}
 
 	/**
@@ -997,7 +990,8 @@ public class DateUtilities {
 					return parseLocalDateTime(DD_MM_YYYY_HH_MM, value).atZone(timeZone);
 				} catch (@SuppressWarnings("unused") final DateTimeParseException e2) {
 					try {
-						return parseLocalDateTime(DD_MM_YYYY, value).atZone(timeZone);
+						// A date-only pattern can only be parsed as LocalDate, LocalDateTime.parse always fails for it
+						return parseLocalDate(DD_MM_YYYY, value).atStartOfDay(timeZone);
 					} catch (@SuppressWarnings("unused") final DateTimeParseException e3) {
 						throw new Exception("Unknown date format");
 					}
@@ -1005,16 +999,18 @@ public class DateUtilities {
 			}
 		} else {
 			try {
-				return parseLocalDateTime("yyyyMMdd'T'HHmmssX", value).atZone(timeZone);
+				// The offset of the value must be kept, LocalDateTime.parse would silently drop it
+				return OffsetDateTime.parse(value, DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX")).atZoneSameInstant(timeZone);
 			} catch (@SuppressWarnings("unused") final DateTimeParseException e1) {
 				try {
 					return parseLocalDateTime(YYYYMMDDHHMMSS, value).atZone(timeZone);
 				} catch (@SuppressWarnings("unused") final DateTimeParseException e2) {
 					try {
-						return parseLocalDateTime(DDMMYYYY, value).atZone(timeZone);
+						// Strict, so "20251224" is no valid "ddMMyyyy" (month 25) and is parsed as "yyyyMMdd" below
+						return parseStrictLocalDate(DDMMYYYY, value).atStartOfDay(timeZone);
 					} catch (@SuppressWarnings("unused") final DateTimeParseException e3) {
 						try {
-							return parseLocalDateTime("yyyyMMdd", value).atZone(timeZone);
+							return parseStrictLocalDate(YYYYMMDD, value).atStartOfDay(timeZone);
 						} catch (@SuppressWarnings("unused") final DateTimeParseException e4) {
 							throw new Exception("Unknown date format");
 						}
@@ -1130,11 +1126,12 @@ public class DateUtilities {
 	 * Converts a date to a zoned date time in the system default time zone.
 	 *
 	 * @param date
-	 *            the date, no java.sql.Date
+	 *            the date (also java.sql.Date)
 	 * @return the zoned date time
 	 */
 	public static ZonedDateTime getZonedDateTimeForDate(final Date date) {
-		return date.toInstant().atZone(ZoneId.systemDefault());
+		// getTime() also works for java.sql.Date, whose toInstant() throws an UnsupportedOperationException
+		return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault());
 	}
 
 	/**
@@ -1178,25 +1175,14 @@ public class DateUtilities {
 		}
 
 		if (dateValueString.contains("T")) {
-			if (dateValueString.contains(".")) {
-				if (hasTimezone) {
-					// Date with time and partial seconds
-					final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss[.n]XXXXX").withResolverStyle(ResolverStyle.STRICT);
-					return ZonedDateTime.parse(dateValueString, dateTimeFormatter);
-				} else {
-					// Date with time and milliseconds
-					final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss[.n]").withResolverStyle(ResolverStyle.STRICT);
-					return LocalDateTime.parse(dateValueString, dateTimeFormatter).atZone(defaultZoneId);
-				}
+			// Date with time, optionally with fractions of a second.
+			// The ISO formatters read ".5" as half a second, while the pattern "[.n]" read it as 5 nanoseconds.
+			if (hasTimezone) {
+				final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withResolverStyle(ResolverStyle.STRICT);
+				return ZonedDateTime.parse(dateValueString, dateTimeFormatter);
 			} else {
-				// Date with time
-				if (hasTimezone) {
-					final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withResolverStyle(ResolverStyle.STRICT);
-					return ZonedDateTime.parse(dateValueString, dateTimeFormatter);
-				} else {
-					final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withResolverStyle(ResolverStyle.STRICT);
-					return LocalDateTime.parse(dateValueString, dateTimeFormatter).atZone(defaultZoneId);
-				}
+				final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withResolverStyle(ResolverStyle.STRICT);
+				return LocalDateTime.parse(dateValueString, dateTimeFormatter).atZone(defaultZoneId);
 			}
 		} else {
 			// Date only
@@ -1859,7 +1845,7 @@ public class DateUtilities {
 			case "FEB":
 				return 2;
 			case "MAR":
-			case "MÄR":
+			case "M\u00C4R":
 				return 3;
 			case "APR":
 				return 4;

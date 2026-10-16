@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.LineNumberReader;
 import java.io.StringReader;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +41,7 @@ public class TextUtilities {
 	/**
 	 * A simple string for testing, which includes all german characters
 	 */
-	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 äöüßÄÖÜµ!?§@€$%&/\\<>(){}[]'\"´`^°¹²³*#.,;:=+-~_|½¼¬";
+	public static final String GERMAN_TEST_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 \u00E4\u00F6\u00FC\u00DF\u00C4\u00D6\u00DC\u00B5!?\u00A7@\u20AC$%&/\\<>(){}[]'\"\u00B4`^\u00B0\u00B9\u00B2\u00B3*#.,;:=+-~_|\u00BD\u00BC\u00AC";
 
 	/**
 	 * A simple string for testing, which includes all special characters
@@ -1224,14 +1227,25 @@ public class TextUtilities {
 	 */
 	public static String fixEncodingErrorUTF8AsISO8859(final String text) {
 		boolean wrongEncodingDetected = false;
-		for (final byte nextByte : text.getBytes(StandardCharsets.ISO_8859_1)) {
-			if (nextByte == -61) {
+		for (final char nextChar : text.toCharArray()) {
+			if (nextChar > 0xFF) {
+				// Characters outside of ISO-8859-1 cannot result from wrongly decoded bytes, so the text is correct
+				return text;
+			} else if (nextChar == 0xC3) {
 				wrongEncodingDetected = true;
-				break;
 			}
 		}
 		if (wrongEncodingDetected) {
-			return new String(text.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+			// Only convert if the bytes are valid UTF-8, otherwise the text was correct (e.g. a real "\u00c3")
+			try {
+				return StandardCharsets.UTF_8.newDecoder()
+						.onMalformedInput(CodingErrorAction.REPORT)
+						.onUnmappableCharacter(CodingErrorAction.REPORT)
+						.decode(ByteBuffer.wrap(text.getBytes(StandardCharsets.ISO_8859_1)))
+						.toString();
+			} catch (@SuppressWarnings("unused") final CharacterCodingException e) {
+				return text;
+			}
 		} else {
 			return text;
 		}
@@ -1334,14 +1348,15 @@ public class TextUtilities {
 			// Avoid an endless loop
 			throw new IllegalArgumentException("Invalid maximum line length: " + maxLineLength);
 		}
-		String returnText = "";
+		// StringBuilder instead of String concatenation, which copied the whole text for every line
+		final StringBuilder returnText = new StringBuilder(text.length() + text.length() / maxLineLength + 1);
 		for (String line : getLines(text)) {
 			while (line.length() > maxLineLength) {
-				returnText += line.substring(0, maxLineLength) + "\n";
+				returnText.append(line, 0, maxLineLength).append('\n');
 				line = line.substring(maxLineLength);
 			}
-			returnText += line + "\n";
+			returnText.append(line).append('\n');
 		}
-		return returnText;
+		return returnText.toString();
 	}
 }

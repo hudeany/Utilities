@@ -15,7 +15,7 @@ import java.util.Locale;
  * Character based base reader for text formats, which offers a fixed size look ahead buffer.
  * <p>
  * The next characters can be inspected by the peek methods before they are consumed by
- * {@link #readChar()}. A leading UTF-8 BOM is skipped. Optionally all line breaks (CRLF, CR) are
+ * {@link #readChar()}. A leading byte order mark (BOM) of a UTF encoding is skipped. Optionally all line breaks (CRLF, CR) are
  * normalized to LF (see {@link #setNormalizeLinebreaks(boolean)}); a CRLF line break can only be
  * normalized if the look ahead buffer has a size of at least 2 characters.
  * </p>
@@ -198,7 +198,8 @@ public class BasicReadAheadReader implements Closeable {
 	private void initializeBuffers() throws IOException {
 		int currentCharInt = inputReader.read();
 		if (currentCharInt != -1) {
-			if (currentCharInt == BOM_UTF_8_CHAR && StandardCharsets.UTF_8.equals(encoding)) {
+			// The BOM character U+FEFF also remains with UTF-16LE/BE and UTF-32 decoders, only "UTF-16" removes it itself
+			if (currentCharInt == BOM_UTF_8_CHAR && encoding.name().toUpperCase(Locale.ROOT).startsWith("UTF-")) {
 				currentCharInt = inputReader.read();
 				if (currentCharInt != -1) {
 					nextChars[0] = (char) currentCharInt;
@@ -560,7 +561,7 @@ public class BasicReadAheadReader implements Closeable {
 					unescapedChar = '\t';
 				} else if ('_' == peekChar()) {
 					readChar();
-					unescapedChar = ' '; // NBSP/non-breaking space
+					unescapedChar = '\u00A0'; // NBSP/non-breaking space
 				} else if ('0' == peekChar()) {
 					readChar();
 					unescapedChar = '\0';
@@ -569,10 +570,10 @@ public class BasicReadAheadReader implements Closeable {
 					unescapedChar = '\u0085'; // Next Line
 				} else if ('L' == peekChar()) {
 					readChar();
-					unescapedChar = ' '; // Unicode LINE SEPARATOR (LS or LSEP)
+					unescapedChar = '\u2028'; // Unicode LINE SEPARATOR (LS or LSEP)
 				} else if ('P' == peekChar()) {
 					readChar();
-					unescapedChar = ' '; // Unicode PARAGRAPH SEPARATOR (PS or PSEP)
+					unescapedChar = '\u2029'; // Unicode PARAGRAPH SEPARATOR (PS or PSEP)
 				} else if ('x' == peekChar()) {
 					readChar();
 					// hexadecimal encoded character
@@ -624,7 +625,8 @@ public class BasicReadAheadReader implements Closeable {
 		for (int i = 0; i < numberOfDigits && isNotEOF(); i++) {
 			final Character hexDigit = readChar();
 			hexcode.append(hexDigit);
-			if (Character.digit(hexDigit, 16) == -1) {
+			// Only ASCII hex digits (Character.digit would also accept e.g. fullwidth or Arabic-Indic digits), like in BasicReader
+			if (!((hexDigit >= '0' && hexDigit <= '9') || (hexDigit >= 'a' && hexDigit <= 'f') || (hexDigit >= 'A' && hexDigit <= 'F'))) {
 				throw new Exception("Invalid unicode sequence at character index " + (getCurrentColumn() - hexcode.length()) + " in line " + getCurrentLine() + " ('" + hexcode + "')");
 			}
 		}

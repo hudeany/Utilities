@@ -895,8 +895,8 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Detects the charset of a text file. Files starting with a UTF-8 or UTF-16 BOM get the matching
-	 * charset. Otherwise the first 4 KB are searched for German umlauts encoded with each of the given
+	 * Detects the charset of a text file. Files starting with a UTF-8, UTF-16 or UTF-32 BOM get the
+	 * matching charset. Otherwise the first 4 KB are searched for German umlauts encoded with each of the given
 	 * charsets in order.
 	 *
 	 * @param dataFile
@@ -923,6 +923,10 @@ public class FileUtilities {
 					return StandardCharsets.UTF_16BE;
 				} else if (fileInputStream.getBOM() == BOM.UTF_16_LE) {
 					return StandardCharsets.UTF_16LE;
+				} else if (fileInputStream.getBOM() == BOM.UTF_32_BE) {
+					return Charset.forName("UTF-32BE");
+				} else if (fileInputStream.getBOM() == BOM.UTF_32_LE) {
+					return Charset.forName("UTF-32LE");
 				} else {
 					return null;
 				}
