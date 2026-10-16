@@ -11,15 +11,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
@@ -27,7 +29,6 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.InputStreamWithOtherItemsToClose;
 import de.soderer.utilities.Utilities;
 
@@ -45,6 +46,11 @@ public class ZipUtilities {
 	public static final int EOF = -1;
 
 	/**
+	 * Charset of zip entry names, which are not marked as UTF-8 (zip specification default, used e.g. by Windows Explorer)
+	 */
+	private static final Charset LEGACY_ZIP_CHARSET = Charset.forName("Cp437");
+
+	/**
 	 * Checks whether a file starts with the signature of a zip file entry ("PK\3\4").
 	 * An empty zip file without entries is not detected as zip file.
 	 *
@@ -55,9 +61,8 @@ public class ZipUtilities {
 	 */
 	public static boolean isZipArchiveFile(final File potentialZipFile) throws FileNotFoundException, IOException {
 		try (FileInputStream inputStream = new FileInputStream(potentialZipFile)) {
-			final byte[] magicBytes = new byte[4];
-			final int readBytes = inputStream.read(magicBytes);
-			return readBytes == 4 && magicBytes[0] == 0x50 && magicBytes[1] == 0x4B && magicBytes[2] == 0x03 && magicBytes[3] == 0x04;
+			final byte[] magicBytes = inputStream.readNBytes(4);
+			return magicBytes.length == 4 && magicBytes[0] == 0x50 && magicBytes[1] == 0x4B && magicBytes[2] == 0x03 && magicBytes[3] == 0x04;
 		}
 	}
 
@@ -79,7 +84,7 @@ public class ZipUtilities {
 	 * Zip a file or recursively all files and subdirectories of a directory.
 	 *
 	 * @param sourceFile file or directory to zip
-	 * @param destinationZipFile zip file to create, must not exist yet
+	 * @param destinationZipFile zip file to create, must not exist yet and must not be located inside the source directory
 	 * @param fileNameEncodingCharset charset for the entry names, or null for UTF-8
 	 * @throws IOException if the source does not exist, the zip file exists already or cannot be written
 	 */
@@ -93,9 +98,11 @@ public class ZipUtilities {
 			throw new IOException("DestinationFile already exists");
 		}
 
+		checkZipFileIsNotInsideSource(sourceFile, destinationZipFile);
+
 		try (ZipOutputStream zipOutputStream = openNewZipOutputStream(destinationZipFile, fileNameEncodingCharset)) {
 			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
-		} catch (final IOException e) {
+		} catch (final IOException | RuntimeException e) {
 			if (destinationZipFile.exists()) {
 				destinationZipFile.delete();
 			}
@@ -116,12 +123,12 @@ public class ZipUtilities {
 	}
 
 	/**
-	 * Extracts a single entry of a zip file into a new file.
+	 * Extracts a single entry of a zip file into a new file. On error no partial file is left behind.
 	 *
 	 * @param zipFile zip file to read
 	 * @param destinationFilePath file to create, must not exist yet, its directory must exist
 	 * @param fileNameEncodingCharset charset of the entry names, or null for Cp437 (entries marked as UTF-8 are always read as UTF-8)
-	 * @param filePathInZipFile name of the entry to extract
+	 * @param filePathInZipFile name of the entry to extract (directory entries are not taken into account)
 	 * @return the created file
 	 * @throws Exception if the zip file cannot be read, the destination exists already or the entry is not found
 	 */
@@ -136,15 +143,15 @@ public class ZipUtilities {
 		}
 
 		if (fileNameEncodingCharset == null) {
-			fileNameEncodingCharset = Charset.forName("Cp437");
+			fileNameEncodingCharset = LEGACY_ZIP_CHARSET;
 		}
 
-		final byte[] buffer = new byte[1024];
+		final byte[] buffer = new byte[8192];
 		try (InputStream inputStream = new FileInputStream(zipFile);
 				final ZipInputStream zis = new ZipInputStream(inputStream, fileNameEncodingCharset)) {
 			ZipEntry zipEntry = zis.getNextEntry();
 			while (zipEntry != null) {
-				if (zipEntry.getName().equals(filePathInZipFile)) {
+				if (!zipEntry.isDirectory() && zipEntry.getName().equals(filePathInZipFile)) {
 					final File destFile = destinationFilePath;
 
 					final File parentDirectory = destFile.getAbsoluteFile().getParentFile();
@@ -158,9 +165,13 @@ public class ZipUtilities {
 
 					try (FileOutputStream fos = new FileOutputStream(destFile)) {
 						int len;
-						while ((len = zis.read(buffer)) > 0) {
+						while ((len = zis.read(buffer)) != EOF) {
 							fos.write(buffer, 0, len);
 						}
+					} catch (final IOException | RuntimeException e) {
+						// Do not leave a truncated file behind
+						destFile.delete();
+						throw e;
 					}
 
 					return destFile;
@@ -196,40 +207,43 @@ public class ZipUtilities {
 		}
 
 		if (fileNameEncodingCharset == null) {
-			fileNameEncodingCharset = Charset.forName("Cp437");
+			fileNameEncodingCharset = LEGACY_ZIP_CHARSET;
 		}
 
 		final String destinationDirectoryPath = destinationDirectory.getCanonicalPath();
-		final byte[] buffer = new byte[1024];
+		final byte[] buffer = new byte[8192];
 		try (InputStream inputStream = new FileInputStream(zipFile);
 				final ZipInputStream zis = new ZipInputStream(inputStream, fileNameEncodingCharset)) {
 			ZipEntry zipEntry = zis.getNextEntry();
 			while (zipEntry != null) {
 				if (zipEntry.getName().endsWith("/")) {
 					final File newDirectory = new File(destinationDirectory, zipEntry.getName());
-					final String newDirectoryPath = newDirectory.getCanonicalPath();
-					if (!newDirectoryPath.startsWith(destinationDirectoryPath + File.separator)) {
+					// Directory entries like "./" denote the destination directory itself
+					if (!isInsideDirectory(destinationDirectoryPath, newDirectory.getCanonicalPath(), true)) {
 						throw new IOException(
 								"ZipEntry is outside of the destination directory: " + zipEntry.getName());
 					}
 
 					if (!newDirectory.exists()) {
-						newDirectory.mkdirs();
+						if (!newDirectory.mkdirs()) {
+							throw new IOException("Cannot create directory: " + newDirectory.getAbsolutePath());
+						}
 					} else if (!newDirectory.isDirectory()) {
 						throw new IOException("Destination directory exists but is not a directory: "
 								+ newDirectory.getAbsolutePath());
 					}
 				} else {
 					final File destFile = new File(destinationDirectory, zipEntry.getName());
-					final String destFilePath = destFile.getCanonicalPath();
-					if (!destFilePath.startsWith(destinationDirectoryPath + File.separator)) {
+					if (!isInsideDirectory(destinationDirectoryPath, destFile.getCanonicalPath(), false)) {
 						throw new IOException(
 								"ZipEntry is outside of the destination directory: " + zipEntry.getName());
 					}
 
 					final File parentDirectory = destFile.getParentFile();
 					if (!parentDirectory.exists()) {
-						parentDirectory.mkdirs();
+						if (!parentDirectory.mkdirs()) {
+							throw new IOException("Cannot create directory: " + parentDirectory.getAbsolutePath());
+						}
 					} else if (!parentDirectory.isDirectory()) {
 						throw new IOException("Destination directory exists but is not a directory: "
 								+ parentDirectory.getAbsolutePath());
@@ -237,7 +251,7 @@ public class ZipUtilities {
 
 					try (FileOutputStream fos = new FileOutputStream(destFile)) {
 						int len;
-						while ((len = zis.read(buffer)) > 0) {
+						while ((len = zis.read(buffer)) != EOF) {
 							fos.write(buffer, 0, len);
 						}
 					}
@@ -263,11 +277,28 @@ public class ZipUtilities {
 		final String destDirPath = destinationDir.getCanonicalPath();
 		final String destFilePath = destFile.getCanonicalPath();
 
-		if (!destFilePath.startsWith(destDirPath + File.separator)) {
+		if (!isInsideDirectory(destDirPath, destFilePath, zipEntry.isDirectory())) {
 			throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
 		}
 
 		return destFile;
+	}
+
+	/**
+	 * Checks whether a canonical path is located inside a canonical directory path. Works also for root
+	 * directories like "/" or "C:\", whose canonical path already ends with a separator.
+	 *
+	 * @param canonicalDirectoryPath canonical path of the directory
+	 * @param canonicalPath canonical path to check
+	 * @param allowDirectoryItself true if the directory itself is accepted
+	 * @return true if the path is inside the directory
+	 */
+	static boolean isInsideDirectory(final String canonicalDirectoryPath, final String canonicalPath, final boolean allowDirectoryItself) {
+		if (canonicalPath.equals(canonicalDirectoryPath)) {
+			return allowDirectoryItself;
+		}
+		final String directoryPrefix = canonicalDirectoryPath.endsWith(File.separator) ? canonicalDirectoryPath : canonicalDirectoryPath + File.separator;
+		return canonicalPath.startsWith(directoryPrefix);
 	}
 
 	/**
@@ -284,7 +315,8 @@ public class ZipUtilities {
 	}
 
 	/**
-	 * Zip a file or recursively all files and subdirectories of a directory.
+	 * Zip a file or recursively all files and subdirectories of a directory. Empty directories are stored as
+	 * directory entries. Directory cycles caused by symbolic links are rejected.
 	 *
 	 * @param sourceFile file or directory to add
 	 * @param relativeDirPath directory inside the zip file to add to, null or empty for the top level
@@ -305,41 +337,65 @@ public class ZipUtilities {
 			relativeDirPath = "";
 		}
 
-		// Zip entry names always use "/" as separator, regardless of the operating system
+		// Zip entry names always use "/" as separator and must not start with a separator
 		relativeDirPath = relativeDirPath.replace('\\', '/');
+		while (relativeDirPath.startsWith("/")) {
+			relativeDirPath = relativeDirPath.substring(1);
+		}
 		if (relativeDirPath.length() > 0 && !relativeDirPath.endsWith("/")) {
 			relativeDirPath = relativeDirPath + "/";
 		}
 
-		try {
-			if (!sourceFile.isDirectory()) {
-				final ZipEntry entry = new ZipEntry(relativeDirPath + sourceFile.getName());
-				entry.setTime(sourceFile.lastModified());
-				destinationZipFileStream.putNextEntry(entry);
+		addFileToOpenZipFileStream(sourceFile, relativeDirPath, destinationZipFileStream, new HashSet<>());
+	}
 
-				try (BufferedInputStream bufferedFileInputStream = new BufferedInputStream(
-						new FileInputStream(sourceFile))) {
-					final byte[] bufferArray = new byte[4096];
-					int byteBufferFillLength;
-					while ((byteBufferFillLength = bufferedFileInputStream.read(bufferArray)) != EOF) {
-						destinationZipFileStream.write(bufferArray, 0, byteBufferFillLength);
-					}
+	/**
+	 * Recursive part of addFileToOpenZipFileStream.
+	 *
+	 * @param relativeDirPath normalized directory path inside the zip file, empty or ending with "/"
+	 * @param ancestorDirectories canonical paths of the directories currently being zipped, to detect cycles
+	 */
+	private static void addFileToOpenZipFileStream(final File sourceFile, final String relativeDirPath,
+			final ZipOutputStream destinationZipFileStream, final Set<String> ancestorDirectories) throws IOException {
+		if (!sourceFile.isDirectory()) {
+			final ZipEntry entry = new ZipEntry(relativeDirPath + sourceFile.getName());
+			entry.setTime(sourceFile.lastModified());
+			destinationZipFileStream.putNextEntry(entry);
 
-					destinationZipFileStream.flush();
-					destinationZipFileStream.closeEntry();
-				}
-			} else {
-				final File[] sourceSubFiles = sourceFile.listFiles();
-				if (sourceSubFiles == null) {
-					throw new IOException("Cannot read directory: " + sourceFile.getAbsolutePath());
-				}
-				for (final File sourceSubFile : sourceSubFiles) {
-					addFileToOpenZipFileStream(sourceSubFile, relativeDirPath + sourceFile.getName(),
-							destinationZipFileStream);
+			try (BufferedInputStream bufferedFileInputStream = new BufferedInputStream(
+					new FileInputStream(sourceFile))) {
+				final byte[] bufferArray = new byte[8192];
+				int byteBufferFillLength;
+				while ((byteBufferFillLength = bufferedFileInputStream.read(bufferArray)) != EOF) {
+					destinationZipFileStream.write(bufferArray, 0, byteBufferFillLength);
 				}
 			}
-		} catch (final IOException e) {
-			throw e;
+			destinationZipFileStream.closeEntry();
+		} else {
+			final String canonicalDirectoryPath = sourceFile.getCanonicalPath();
+			if (!ancestorDirectories.add(canonicalDirectoryPath)) {
+				throw new IOException("Directory cycle detected (symbolic link): " + sourceFile.getAbsolutePath());
+			}
+
+			final File[] sourceSubFiles = sourceFile.listFiles();
+			if (sourceSubFiles == null) {
+				throw new IOException("Cannot read directory: " + sourceFile.getAbsolutePath());
+			}
+
+			final String directoryEntryPath = relativeDirPath + sourceFile.getName() + "/";
+			if (sourceSubFiles.length == 0) {
+				// Store empty directories explicitly, otherwise they would get lost
+				final ZipEntry directoryEntry = new ZipEntry(directoryEntryPath);
+				directoryEntry.setTime(sourceFile.lastModified());
+				destinationZipFileStream.putNextEntry(directoryEntry);
+				destinationZipFileStream.closeEntry();
+			} else {
+				for (final File sourceSubFile : sourceSubFiles) {
+					addFileToOpenZipFileStream(sourceSubFile, directoryEntryPath, destinationZipFileStream, ancestorDirectories);
+				}
+			}
+
+			ancestorDirectories.remove(canonicalDirectoryPath);
 		}
 	}
 
@@ -416,7 +472,7 @@ public class ZipUtilities {
 			throw new IOException("FileData is missing");
 		}
 
-		if (Utilities.isEmpty(filename) || filename.trim().length() == 0) {
+		if (Utilities.isBlank(filename)) {
 			throw new IOException("Filename is missing");
 		}
 
@@ -434,42 +490,64 @@ public class ZipUtilities {
 			entryName = entryName.substring(1);
 		}
 		final ZipEntry entry = new ZipEntry(entryName);
-		entry.setTime(DateUtilities.getDateForLocalDateTime(LocalDateTime.now()).toInstant().toEpochMilli());
+		entry.setTime(System.currentTimeMillis());
 		destinationZipFileStream.putNextEntry(entry);
 
 		destinationZipFileStream.write(fileData);
 
-		destinationZipFileStream.flush();
 		destinationZipFileStream.closeEntry();
 	}
 
 	/**
 	 * Add a file or recursively all files and subdirectories of a directory to an
-	 * existing ZipFile. All existing entries are preserved.
+	 * existing ZipFile. All existing entries are preserved. If adding fails, the zip file is left unchanged.
 	 *
 	 * @param sourceFile file or directory to add
 	 * @param zipFile existing zip file to extend
-	 * @throws IOException if a file cannot be read or the zip file cannot be written
+	 * @throws IOException if a file cannot be read, an entry exists already or the zip file cannot be written
 	 */
 	public static void addFileToExistingZipFile(final File sourceFile, final File zipFile) throws IOException {
-		try (ZipOutputStream zipOutputStream = openExistingZipFileForExtension(zipFile)) {
-			addFileToOpenZipFileStream(sourceFile, zipOutputStream);
-		}
+		addFileToExistingZipFile(Collections.singletonList(sourceFile), zipFile);
 	}
 
 	/**
 	 * Add a list of files or recursively all files and subdirectories of a
-	 * directory to an existing ZipFile. All existing entries are preserved.
+	 * directory to an existing ZipFile. All existing entries are preserved. If adding fails, the zip file is left
+	 * unchanged.
 	 *
 	 * @param sourceFiles files or directories to add
 	 * @param zipFile existing zip file to extend
-	 * @throws IOException if a file cannot be read or the zip file cannot be written
+	 * @throws IOException if a file cannot be read, an entry exists already or the zip file cannot be written
 	 */
 	public static void addFileToExistingZipFile(final List<File> sourceFiles, final File zipFile) throws IOException {
-		try (ZipOutputStream zipOutputStream = openExistingZipFileForExtension(zipFile)) {
-			for (final File file : sourceFiles) {
-				addFileToOpenZipFileStream(file, zipOutputStream);
+		if (!zipFile.exists()) {
+			throw new IOException("ZipFile '" + zipFile.getAbsolutePath() + "' does not exist");
+		}
+		for (final File sourceFile : sourceFiles) {
+			if (!sourceFile.exists()) {
+				throw new IOException("SourceFile '" + sourceFile.getAbsolutePath() + "' does not exist");
 			}
+			checkZipFileIsNotInsideSource(sourceFile, zipFile);
+		}
+
+		// The new content is written into a temp file, which replaces the original only after complete success
+		final File tempZipFile = File.createTempFile(zipFile.getName() + ".", ".tmp", zipFile.getAbsoluteFile().getParentFile());
+		try {
+			try (ZipFile sourceZipFile = openZipFileForReading(zipFile);
+					ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(tempZipFile)))) {
+				copyZipEntries(sourceZipFile, zipOutputStream, null);
+				for (final File sourceFile : sourceFiles) {
+					addFileToOpenZipFileStream(sourceFile, zipOutputStream);
+				}
+			}
+			Files.move(tempZipFile.toPath(), zipFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		} catch (final IOException | RuntimeException e) {
+			try {
+				Files.deleteIfExists(tempZipFile.toPath());
+			} catch (final IOException deleteException) {
+				e.addSuppressed(deleteException);
+			}
+			throw e;
 		}
 	}
 
@@ -491,7 +569,9 @@ public class ZipUtilities {
 
 	/**
 	 * Open an existing ZipFile for appending new files. All existing entries are
-	 * preserved by copying them into a new zip file with the same name.
+	 * preserved by copying them into a new zip file with the same name.<br>
+	 * If opening fails, the original zip file is restored. Errors while appending to the returned stream cannot be
+	 * rolled back anymore; use addFileToExistingZipFile for an all-or-nothing extension.
 	 *
 	 * @param zipFile existing zip file to extend
 	 * @return open zip stream containing all existing entries, the caller must close it
@@ -505,76 +585,42 @@ public class ZipUtilities {
 		Files.move(zipFile.toPath(), originalFileTemp.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
 		ZipOutputStream zipOutputStream = null;
-		ZipFile sourceZipFile = null;
-		try {
+		try (ZipFile sourceZipFile = openZipFileForReading(originalFileTemp)) {
 			zipOutputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
-			sourceZipFile = new ZipFile(originalFileTemp);
-			final Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
-			while (srcEntries.hasMoreElements()) {
-				final ZipEntry sourceZipFileEntry = srcEntries.nextElement();
-				zipOutputStream.putNextEntry(createRecompressedEntryCopy(sourceZipFileEntry));
-
-				try (BufferedInputStream bufferedInputStream = new BufferedInputStream(
-						sourceZipFile.getInputStream(sourceZipFileEntry))) {
-					final byte[] bufferArray = new byte[4096];
-					int byteBufferFillLength = bufferedInputStream.read(bufferArray);
-					while (byteBufferFillLength != EOF) {
-						zipOutputStream.write(bufferArray, 0, byteBufferFillLength);
-						byteBufferFillLength = bufferedInputStream.read(bufferArray);
-					}
-
-					zipOutputStream.closeEntry();
-				}
-			}
-
+			copyZipEntries(sourceZipFile, zipOutputStream, null);
 			zipOutputStream.flush();
-			sourceZipFile.close();
-			originalFileTemp.delete();
-
-			return zipOutputStream;
-		} catch (final IOException e) {
-			if (zipFile.exists()) {
-				Utilities.closeQuietly(zipOutputStream);
-				zipFile.delete();
-			}
-
-			Files.move(originalFileTemp.toPath(), zipFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-			if (sourceZipFile != null) {
-				sourceZipFile.close();
-				sourceZipFile = null;
+		} catch (final IOException | RuntimeException e) {
+			// sourceZipFile is already closed at this point, which is required on Windows for moving the file back
+			Utilities.closeQuietly(zipOutputStream);
+			try {
+				Files.move(originalFileTemp.toPath(), zipFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			} catch (final IOException moveException) {
+				e.addSuppressed(moveException);
 			}
 			throw e;
-		} finally {
-			Utilities.closeQuietly(sourceZipFile);
 		}
+
+		originalFileTemp.delete();
+		return zipOutputStream;
 	}
 
 	/**
 	 * Read all entries of a ZipFile into memory
 	 *
 	 * @param zipFile zip file to read
-	 * @return All entries in a map, with the entry names as keys and their content as values
+	 * @return All entries in a map (in the order of the zip file), with the entry names as keys and their content as values
 	 * @throws IOException if the zip file cannot be read
 	 */
 	public static Map<String, byte[]> readExistingZipFile(final File zipFile) throws IOException {
-		final Map<String, byte[]> returnMap = new HashMap<>();
-		try (ZipFile sourceZipFile = new ZipFile(zipFile)) {
+		final Map<String, byte[]> returnMap = new LinkedHashMap<>();
+		try (ZipFile sourceZipFile = openZipFileForReading(zipFile)) {
 			final Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
 			while (srcEntries.hasMoreElements()) {
 				final ZipEntry sourceZipFileEntry = srcEntries.nextElement();
 
-				try (BufferedInputStream bufferedInputStream = new BufferedInputStream(
-						sourceZipFile.getInputStream(sourceZipFileEntry))) {
+				try (InputStream inputStream = sourceZipFile.getInputStream(sourceZipFileEntry)) {
 					final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-					final byte[] bufferArray = new byte[4096];
-					int byteBufferFillLength = bufferedInputStream.read(bufferArray);
-					while (byteBufferFillLength != EOF) {
-						byteArrayOutputStream.write(bufferArray, 0, byteBufferFillLength);
-						byteBufferFillLength = bufferedInputStream.read(bufferArray);
-					}
-
+					inputStream.transferTo(byteArrayOutputStream);
 					returnMap.put(sourceZipFileEntry.getName(), byteArrayOutputStream.toByteArray());
 				}
 			}
@@ -591,7 +637,7 @@ public class ZipUtilities {
 	 * @throws IOException if the file cannot be read
 	 */
 	public static List<String> getZipFileEntries(final File file) throws ZipException, IOException {
-		try (ZipFile zipFile = new ZipFile(file)) {
+		try (ZipFile zipFile = openZipFileForReading(file)) {
 			final Enumeration<? extends ZipEntry> entries = zipFile.entries();
 			final List<String> entryList = new ArrayList<>();
 			while (entries.hasMoreElements()) {
@@ -612,6 +658,10 @@ public class ZipUtilities {
 	 */
 	public static void removeFilesFromZipFile(final File zipFile, final Charset fileNameEncodingCharset,
 			final String... filePatterns) throws Exception {
+		if (!zipFile.exists()) {
+			throw new IOException("ZipFile '" + zipFile.getAbsolutePath() + "' does not exist");
+		}
+
 		// Temp file in the same directory, so it can replace the original file by a simple move
 		final File tempZipFile = File.createTempFile(zipFile.getName() + ".", ".tmp", zipFile.getAbsoluteFile().getParentFile());
 		try {
@@ -629,6 +679,7 @@ public class ZipUtilities {
 
 	/**
 	 * Copies a zip file into a new zip file, leaving out all entries matching any of the given patterns.
+	 * On error the new zip file is deleted again.
 	 *
 	 * @param originalZipFile zip file to read
 	 * @param shrinkedZipFile zip file to create, must not exist yet
@@ -638,42 +689,106 @@ public class ZipUtilities {
 	 */
 	public static void removeFilesFromZipFile(final File originalZipFile, final File shrinkedZipFile,
 			final Charset fileNameEncodingCharset, final String... filePatterns) throws Exception {
-		try (ZipFile sourceZipFile = new ZipFile(originalZipFile);
+		if (filePatterns == null) {
+			throw new IllegalArgumentException("FilePatterns are missing");
+		} else if (shrinkedZipFile.exists()) {
+			throw new IOException("DestinationFile already exists");
+		}
+
+		final List<Pattern> patternsToFilter = new ArrayList<>();
+		for (final String filePattern : filePatterns) {
+			if (filePattern == null) {
+				throw new IllegalArgumentException("FilePattern is missing");
+			}
+			patternsToFilter.add(Pattern.compile(wildcardPatternToRegex(filePattern.replace("\\", "/"))));
+		}
+
+		try (ZipFile sourceZipFile = openZipFileForReading(originalZipFile);
 				ZipOutputStream destinationZipOutputStream = openNewZipOutputStream(shrinkedZipFile,
 						fileNameEncodingCharset)) {
-			final List<Pattern> patternsToFilter = new ArrayList<>();
-			for (final String filePattern : filePatterns) {
-				patternsToFilter.add(Pattern.compile(wildcardPatternToRegex(filePattern.replace("\\", "/"))));
+			copyZipEntries(sourceZipFile, destinationZipOutputStream, patternsToFilter);
+		} catch (final IOException | RuntimeException e) {
+			if (shrinkedZipFile.exists()) {
+				shrinkedZipFile.delete();
 			}
+			throw e;
+		}
+	}
 
-			final Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
-			while (srcEntries.hasMoreElements()) {
-				final ZipEntry sourceZipFileEntry = srcEntries.nextElement();
-				boolean keepFileEntry = true;
+	/**
+	 * Copies all entries of a zip file into an open zip stream.
+	 *
+	 * @param sourceZipFile zip file to read
+	 * @param destinationZipOutputStream open zip stream to write to
+	 * @param patternsToFilter entries matching any of these patterns are left out, may be null
+	 */
+	private static void copyZipEntries(final ZipFile sourceZipFile, final ZipOutputStream destinationZipOutputStream,
+			final List<Pattern> patternsToFilter) throws IOException {
+		final Enumeration<? extends ZipEntry> srcEntries = sourceZipFile.entries();
+		while (srcEntries.hasMoreElements()) {
+			final ZipEntry sourceZipFileEntry = srcEntries.nextElement();
+			boolean keepFileEntry = true;
+			if (patternsToFilter != null) {
 				for (final Pattern pattern : patternsToFilter) {
-					if (pattern.matcher(sourceZipFileEntry.getName()).find()) {
+					if (pattern.matcher(sourceZipFileEntry.getName()).matches()) {
 						keepFileEntry = false;
 						break;
 					}
 				}
-				if (keepFileEntry) {
-					destinationZipOutputStream.putNextEntry(createRecompressedEntryCopy(sourceZipFileEntry));
-
-					try (BufferedInputStream bufferedInputStream = new BufferedInputStream(
-							sourceZipFile.getInputStream(sourceZipFileEntry))) {
-						final byte[] bufferArray = new byte[4096];
-						int byteBufferFillLength = bufferedInputStream.read(bufferArray);
-						while (byteBufferFillLength != EOF) {
-							destinationZipOutputStream.write(bufferArray, 0, byteBufferFillLength);
-							byteBufferFillLength = bufferedInputStream.read(bufferArray);
-						}
-
-						destinationZipOutputStream.closeEntry();
-					}
-				}
 			}
+			if (keepFileEntry) {
+				destinationZipOutputStream.putNextEntry(createRecompressedEntryCopy(sourceZipFileEntry));
+				try (InputStream inputStream = sourceZipFile.getInputStream(sourceZipFileEntry)) {
+					inputStream.transferTo(destinationZipOutputStream);
+				}
+				destinationZipOutputStream.closeEntry();
+			}
+		}
+	}
+
+	/**
+	 * Opens a zip file for reading. Entry names are read as UTF-8. If the zip file contains entry names, which are
+	 * not valid UTF-8 and not marked as UTF-8 (e.g. created by Windows Explorer), they are read as Cp437 like in
+	 * unzipFile.
+	 *
+	 * @param file zip file to open
+	 * @return open zip file, the caller must close it
+	 * @throws IOException if the file is no valid zip file or cannot be read
+	 */
+	private static ZipFile openZipFileForReading(final File file) throws IOException {
+		ZipException utf8Exception;
+		try {
+			final ZipFile zipFile = new ZipFile(file, StandardCharsets.UTF_8);
+			try {
+				// Older JDKs report invalid entry names only on access, so all names are decoded once
+				final Enumeration<? extends ZipEntry> entries = zipFile.entries();
+				while (entries.hasMoreElements()) {
+					entries.nextElement().getName();
+				}
+				return zipFile;
+			} catch (final IllegalArgumentException e) {
+				zipFile.close();
+				utf8Exception = new ZipException("Invalid UTF-8 entry name: " + e.getMessage());
+			}
+		} catch (final ZipException e) {
+			utf8Exception = e;
+		}
+
+		try {
+			return new ZipFile(file, LEGACY_ZIP_CHARSET);
 		} catch (final IOException e) {
+			e.addSuppressed(utf8Exception);
 			throw e;
+		}
+	}
+
+	/**
+	 * Ensures that a zip file is not located inside a directory to be zipped, which would make the zip file
+	 * contain itself.
+	 */
+	private static void checkZipFileIsNotInsideSource(final File sourceFile, final File zipFile) throws IOException {
+		if (sourceFile.isDirectory() && isInsideDirectory(sourceFile.getCanonicalPath(), zipFile.getCanonicalPath(), false)) {
+			throw new IOException("Zip file '" + zipFile.getAbsolutePath() + "' must not be located inside the source directory '" + sourceFile.getAbsolutePath() + "'");
 		}
 	}
 
@@ -720,7 +835,7 @@ public class ZipUtilities {
 	 * @throws IOException if the file cannot be read
 	 */
 	public static long getDataSizeUncompressed(final File zippedFile) throws ZipException, IOException {
-		try (ZipFile zipFile = new ZipFile(zippedFile)) {
+		try (ZipFile zipFile = openZipFileForReading(zippedFile)) {
 			long uncompressedSize = 0;
 			final Enumeration<? extends ZipEntry> e = zipFile.entries();
 			while (e.hasMoreElements()) {
@@ -738,18 +853,18 @@ public class ZipUtilities {
 	}
 
 	/**
-	 * Opens the only file of a zip file for reading.
+	 * Opens the only file of a zip file for reading. Directory entries are ignored.
 	 *
 	 * @param importFilePathOrData path of the zip file
 	 * @return stream with the content of the file, closing it also closes the zip file
-	 * @throws Exception if the zip file cannot be read, is empty or contains more than one file
+	 * @throws Exception if the zip file cannot be read, contains no file or more than one file
 	 */
 	public static InputStreamWithOtherItemsToClose openZipFile(final String importFilePathOrData) throws Exception {
 		return openZipFile(importFilePathOrData, null);
 	}
 
 	/**
-	 * Opens a file of a zip file for reading.
+	 * Opens a file of a zip file for reading. Directory entries are ignored.
 	 *
 	 * @param importFilePathOrData path of the zip file
 	 * @param zippedFilePathAndName path of the file inside the zip file, or null if the zip file contains only one file
@@ -758,34 +873,38 @@ public class ZipUtilities {
 	 */
 	@SuppressWarnings("resource")
 	public static InputStreamWithOtherItemsToClose openZipFile(final String importFilePathOrData, final String zippedFilePathAndName) throws Exception {
+		final File file = new File(importFilePathOrData);
+		if (!file.exists()) {
+			throw new IOException("Zip file '" + importFilePathOrData + "' does not exist");
+		} else if (!file.isFile()) {
+			throw new IOException("Zip file '" + importFilePathOrData + "' is not a file");
+		}
+
 		ZipFile zipFile = null;
 		try {
-			zipFile = new ZipFile(importFilePathOrData);
-			final List<? extends ZipEntry> fileHeaders = Collections.list(zipFile.entries());
-			ZipEntry selectedFileHeader = null;
+			zipFile = openZipFileForReading(file);
+			final List<ZipEntry> fileEntries = new ArrayList<>();
+			for (final ZipEntry entry : Collections.list(zipFile.entries())) {
+				if (!entry.isDirectory()) {
+					fileEntries.add(entry);
+				}
+			}
 
-			if (fileHeaders != null && fileHeaders.size() > 0) {
-				if (Utilities.isBlank(zippedFilePathAndName)) {
-					if (fileHeaders.size() == 1 && !fileHeaders.get(0).isDirectory()) {
-						return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(fileHeaders.get(0)), fileHeaders.get(0).getName(), zipFile);
-					} else {
-						throw new Exception("Zip file '" + importFilePathOrData + "' contains more than one file");
-					}
+			if (fileEntries.isEmpty()) {
+				throw new Exception("Zip file '" + importFilePathOrData + "' contains no file");
+			} else if (Utilities.isBlank(zippedFilePathAndName)) {
+				if (fileEntries.size() == 1) {
+					return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(fileEntries.get(0)), fileEntries.get(0).getName(), zipFile);
 				} else {
-					for (final ZipEntry fileHeader : fileHeaders) {
-						if (!fileHeader.isDirectory() && fileHeader.getName().equals(zippedFilePathAndName)) {
-							selectedFileHeader = fileHeader;
-							break;
-						}
-					}
-					if (selectedFileHeader != null) {
-						return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(selectedFileHeader), selectedFileHeader.getName(), zipFile);
-					} else {
-						throw new Exception("Zip file '" + importFilePathOrData + "' does not include defined zipped file '" + zippedFilePathAndName + "'");
-					}
+					throw new Exception("Zip file '" + importFilePathOrData + "' contains more than one file");
 				}
 			} else {
-				throw new Exception("Zip file '" + importFilePathOrData + "' is empty");
+				for (final ZipEntry fileEntry : fileEntries) {
+					if (fileEntry.getName().equals(zippedFilePathAndName)) {
+						return new InputStreamWithOtherItemsToClose(zipFile.getInputStream(fileEntry), fileEntry.getName(), zipFile);
+					}
+				}
+				throw new Exception("Zip file '" + importFilePathOrData + "' does not include defined zipped file '" + zippedFilePathAndName + "'");
 			}
 		} catch (final Exception e) {
 			try {
