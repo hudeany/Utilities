@@ -1,6 +1,7 @@
 package de.soderer.utilities;
 
 import java.io.BufferedReader;
+import java.io.Console;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -76,7 +77,8 @@ public class SystemUtilities {
 
 	/**
 	 * Absolute path of the java executable of the running JVM.
-	 * On Windows "java.exe" is used if no console is attached, otherwise "javaw.exe".
+	 * On Windows "java.exe" is used if a console is attached, otherwise "javaw.exe", which runs without console window
+	 * (so a restarted GUI application does not open a console window).
 	 * On all other systems (Linux, macOS, ...) "java" is used.
 	 *
 	 * @return path of the java executable, or null if it cannot be found
@@ -89,7 +91,7 @@ public class SystemUtilities {
 			File javaBinFile;
 			if (!SystemUtilities.isWindowsSystem()) {
 				javaBinFile = new File(javaHomePath + File.separator + "bin" + File.separator + "java");
-			} else if (System.console() == null) {
+			} else if (hasTerminalConsole()) {
 				javaBinFile = new File(javaHomePath + File.separator + "bin" + File.separator + "java.exe");
 			} else {
 				javaBinFile = new File(javaHomePath + File.separator + "bin" + File.separator + "javaw.exe");
@@ -100,6 +102,23 @@ public class SystemUtilities {
 			} else {
 				return null;
 			}
+		}
+	}
+
+	/**
+	 * Whether the JVM runs in a terminal. Since Java 22 System.console() also returns a console without terminal
+	 * (e.g. when started by javaw.exe), so Console.isTerminal() is checked, if available.
+	 */
+	private static boolean hasTerminalConsole() {
+		final Console console = System.console();
+		if (console == null) {
+			return false;
+		}
+		try {
+			return (Boolean) Console.class.getMethod("isTerminal").invoke(console);
+		} catch (@SuppressWarnings("unused") final ReflectiveOperationException e) {
+			// Before Java 22 a console is only available with terminal
+			return true;
 		}
 	}
 
@@ -192,23 +211,30 @@ public class SystemUtilities {
 
 	/**
 	 * Raw output lines of the operating system's process list command ("tasklist.exe" on Windows, "ps -e" otherwise).
+	 * Error output of the command is included.
 	 *
 	 * @return output lines, or null if the command failed
 	 */
 	public static List<String> getProcessListRaw() {
 		try {
 			final List<String> data = new ArrayList<>();
-			Process p;
+			final ProcessBuilder processBuilder;
 			if (isWindows) {
-				p = Runtime.getRuntime().exec(new String[] {System.getenv("windir") + "\\system32\\" + "tasklist.exe"}, null, null);
+				processBuilder = new ProcessBuilder(System.getenv("windir") + "\\system32\\" + "tasklist.exe");
 			} else {
-				p = Runtime.getRuntime().exec(new String[] {"ps", "-e"}, null, null);
+				processBuilder = new ProcessBuilder("ps", "-e");
 			}
-			try (BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+			// Error output must be read too, otherwise a full error output buffer would block the command
+			processBuilder.redirectErrorStream(true);
+			final Process process = processBuilder.start();
+			try (BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 				String line;
 				while ((line = input.readLine()) != null) {
 					data.add(line);
 				}
+			}
+			if (process.waitFor() != 0) {
+				return null;
 			}
 			return data;
 		} catch (final Exception e) {

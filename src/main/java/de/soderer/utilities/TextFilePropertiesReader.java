@@ -357,9 +357,9 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 				output.write(BOM.UTF_16_LE.getBytes());
 				encoding = "UTF-16LE";
 			} else if ("UTF-32BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
-				output.write(UTF_32_BE_BOM);
+				output.write(BOM.UTF_32_BE.getBytes());
 			} else if ("UTF-32LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
-				output.write(UTF_32_LE_BOM);
+				output.write(BOM.UTF_32_LE.getBytes());
 			} else if (StandardCharsets.UTF_8.name().equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
 				output.write(BOM.UTF_8.getBytes());
 			} else if ("UTF-16".equalsIgnoreCase(encodingData.getFirst())) {
@@ -388,12 +388,6 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 	}
 
-	/** UTF-32 big endian BOM */
-	private static final byte[] UTF_32_BE_BOM = new byte[] { 0x00, 0x00, (byte) 0xFE, (byte) 0xFF };
-
-	/** UTF-32 little endian BOM */
-	private static final byte[] UTF_32_LE_BOM = new byte[] { (byte) 0xFF, (byte) 0xFE, 0x00, 0x00 };
-
 	/**
 	 * Returns the charset to decode data of an encoding. "UnicodeBig" and "UnicodeLittle" are decoded with "UTF-16",
 	 * which detects the byte order by the BOM itself.
@@ -419,9 +413,9 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			return 2;
 		} else if (charsetName.equals("UTF-16LE") && startsWith(data, BOM.UTF_16_LE.getBytes())) {
 			return 2;
-		} else if (charsetName.equals("UTF-32BE") && startsWith(data, UTF_32_BE_BOM)) {
+		} else if (charsetName.equals("UTF-32BE") && startsWith(data, BOM.UTF_32_BE.getBytes())) {
 			return 4;
-		} else if (charsetName.equals("UTF-32LE") && startsWith(data, UTF_32_LE_BOM)) {
+		} else if (charsetName.equals("UTF-32LE") && startsWith(data, BOM.UTF_32_LE.getBytes())) {
 			return 4;
 		} else {
 			return 0;
