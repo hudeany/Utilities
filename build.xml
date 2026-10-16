@@ -5,25 +5,8 @@
 	<!-- Artifact name used for the jar file names and the Maven artifactId -->
 	<property name="artifactId" value="soderer-utilities" />
 
-	<!-- Special: AntBuildHelp is used to download the runtime libraries -->
-	<property name="antbuildhelp.version" value="26.0.11" />
-
-	<available file="lib_build/antbuildhelp-${antbuildhelp.version}.jar" property="antbuildhelp.available" />
-	<target name="get_antbuildhelp" unless="antbuildhelp.available">
-		<mkdir dir="lib_build/" />
-		<delete>
-			<fileset dir="lib_build" includes="antbuildhelp-*.jar" />
-		</delete>
-		<get src="https://github.com/hudeany/antbuildhelp/releases/download/${antbuildhelp.version}/antbuildhelp-${antbuildhelp.version}.jar" dest="lib_build/" />
-	</target>
-
-	<target name="register_antbuildhelp" depends="get_antbuildhelp">
-		<typedef resource="de/soderer/antbuildhelp/antlib.xml" classpath="lib_build/antbuildhelp-${antbuildhelp.version}.jar" />
-	</target>
-
 	<!-- Runtime libraries of this project go to "lib/" (may stay empty) -->
-	<target name="download_dependencies" depends="register_antbuildhelp">
-		<!-- Start with an empty "lib/", so jars of removed dependencies do not stay on the classpath -->
+	<target name="download_dependencies">
 		<mkdir dir="lib/" />
 		<delete includeEmptyDirs="true">
 			<fileset dir="lib/">
@@ -150,8 +133,6 @@
 			<testclasses outputdir="${buildPath}">
 				<fileset dir="${buildPath}/testbin">
 					<include name="**/*.class" />
-					<!-- Special: tests that need manual interaction are skipped (as in the former surefire configuration) -->
-					<exclude name="**/*ManuallyTest*.class" />
 				</fileset>
 				<!-- Writes a report per test class to TEST-*.txt, including details of failed tests -->
 				<listener type="legacy-brief" sendSysOut="false" sendSysErr="false" />
@@ -174,6 +155,7 @@
 		<delete dir="${buildPath}/javadoc" />
 		<mkdir dir="${buildPath}/javadoc" />
 
+		<!-- doclint disabled so missing javadoc comments do not break the build -->
 		<javadoc destdir="${buildPath}/javadoc" encoding="UTF-8" charset="UTF-8" docencoding="UTF-8" source="17" failonerror="true">
 			<classpath refid="runtime.libs" />
 			<arg value="-quiet" />
