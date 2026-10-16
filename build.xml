@@ -9,7 +9,6 @@
 	<property name="commons-compress.version" value="1.28.0" />
 	<property name="commons-net.version" value="3.13.0" />
 	<property name="jsch.version" value="2.28.8" />
-	<property name="smbj.version" value="0.15.0" />
 	<property name="jcifs.version" value="3.0.4" />
 	<property name="zip4j.version" value="2.11.6" />
 
@@ -44,18 +43,11 @@
 			</fileset>
 		</delete>
 
-		<!-- zip package: TarGzUtilities -->
 		<getMavenDependency groupId="org.apache.commons" artifactId="commons-compress" version="${commons-compress.version}" />
-		<!-- zip package: Zip4jUtilities -->
 		<getMavenDependency groupId="net.lingala.zip4j" artifactId="zip4j" version="${zip4j.version}" />
 
-		<!-- remote package: FtpConnection -->
 		<getMavenDependency groupId="commons-net" artifactId="commons-net" version="${commons-net.version}" />
-		<!-- remote package: SftpConnection -->
 		<getMavenDependency groupId="com.github.mwiede" artifactId="jsch" version="${jsch.version}" />
-		<!-- remote package: SmbConnection -->
-		<getMavenDependency groupId="com.hierynomus" artifactId="smbj" version="${smbj.version}" />
-		<!-- remote package: Smb1Connection -->
 		<getMavenDependency groupId="org.codelibs" artifactId="jcifs" version="${jcifs.version}" />
 
 		<getDependency name="csv" version="${csv.version}" url="https://github.com/hudeany/csv/releases/download/{version}/csv-{version}.jar" />

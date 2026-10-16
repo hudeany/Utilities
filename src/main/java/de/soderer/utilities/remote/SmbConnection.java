@@ -8,29 +8,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Properties;
 
-import com.hierynomus.mserref.NtStatus;
-import com.hierynomus.msdtyp.AccessMask;
-import com.hierynomus.msdtyp.FileTime;
-import com.hierynomus.msfscc.FileAttributes;
-import com.hierynomus.msfscc.fileinformation.FileAllInformation;
-import com.hierynomus.msfscc.fileinformation.FileBasicInformation;
-import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation;
-import com.hierynomus.mssmb.SMB1NotSupportedException;
-import com.hierynomus.mssmb2.SMB2CreateDisposition;
-import com.hierynomus.mssmb2.SMB2ShareAccess;
-import com.hierynomus.mssmb2.SMBApiException;
-import com.hierynomus.protocol.commons.EnumWithValue;
-import com.hierynomus.smbj.SMBClient;
-import com.hierynomus.smbj.SmbConfig;
-import com.hierynomus.smbj.auth.AuthenticationContext;
-import com.hierynomus.smbj.connection.Connection;
-import com.hierynomus.smbj.session.Session;
-import com.hierynomus.smbj.share.DiskShare;
-import com.hierynomus.smbj.share.File;
+import org.codelibs.jcifs.smb.CIFSContext;
+import org.codelibs.jcifs.smb.SmbConstants;
+import org.codelibs.jcifs.smb.config.PropertyConfiguration;
+import org.codelibs.jcifs.smb.context.BaseContext;
+import org.codelibs.jcifs.smb.impl.NtlmPasswordAuthenticator;
+import org.codelibs.jcifs.smb.impl.SmbFile;
 
 import de.soderer.utilities.FileUtilities;
 import de.soderer.utilities.IoUtilities;
@@ -38,132 +24,143 @@ import de.soderer.utilities.Tuple;
 import de.soderer.utilities.Utilities;
 
 /**
- * SMB2/3 remote connection based on smbj.
+ * SMB remote connection based on jcifs (org.codelibs:jcifs 3.x).
  *
- * Lost connections (network drop, server restart) are detected and re-established
- * automatically on the next operation, as long as close() has not been called.
+ * By default SMB 2.0.2 up to SMB 3.1.1 is negotiated. The outdated and insecure SMB1 protocol
+ * is only allowed if explicitly requested (protocol "smb1" or allowSmb1 = true).
+ *
+ * Lost connections (network drop, server restart) are re-established by jcifs automatically
+ * on the next operation, as long as close() has not been called.
  */
 public class SmbConnection implements RemoteConnection {
+	/** Default port for SMB over TCP. */
+	public static final int DEFAULT_PORT = 445;
+
 	/** The host. */
-	private String hostname = null;
+	private final String hostname;
 
 	/** The port. */
-	private int port = 445;
-
-	/** The user. */
-	private String username = null;
-
-	/** The password. Kept for automatic reconnect, wiped on close(). */
-	private char[] password = null;
+	private int port = DEFAULT_PORT;
 
 	/** The share name. */
-	private String sharename = null;
+	private final String sharename;
 
-	/** Set by close(); prevents any further automatic reconnect. */
+	/** Whether the outdated SMB1 protocol may be negotiated. */
+	private final boolean allowSmb1;
+
+	/** jcifs context holding configuration, credentials and the transport pool. */
+	private CIFSContext context = null;
+
+	/** Root folder of the share, all other paths are resolved relative to it. */
+	private SmbFile shareRoot = null;
+
+	/** Set by close(); prevents any further usage. */
 	private boolean closed = false;
 
 	/**
-	 * Currently connected client
+	 * Creates a connection to a share using SMB2/3.
+	 *
+	 * @param hostname host name of the server
+	 * @param port port of the server, 445 if out of range
+	 * @param username user name, blank for anonymous access
+	 * @param sharename name of the share
+	 * @param password password, not stored by this class
+	 * @throws Exception if the connection fails
 	 */
-	private SMBClient client = null;
-	private Connection connection = null;
-	private Session session = null;
-	private DiskShare diskShare = null;
+	public SmbConnection(final String hostname, final int port, final String username, final String sharename, final char[] password) throws Exception {
+		this(hostname, port, username, sharename, password, false);
+	}
 
 	/**
 	 * Creates a connection to a share.
 	 *
 	 * @param hostname host name of the server
 	 * @param port port of the server, 445 if out of range
-	 * @param username user name
+	 * @param username user name, blank for anonymous access
 	 * @param sharename name of the share
-	 * @param password password, is copied and wiped on close
+	 * @param password password, not stored by this class
+	 * @param allowSmb1 true to also allow the outdated and insecure SMB1 protocol
 	 * @throws Exception if the connection fails
 	 */
-	public SmbConnection(final String hostname, final int port, final String username, final String sharename, final char[] password) throws Exception {
+	public SmbConnection(final String hostname, final int port, final String username, final String sharename, final char[] password, final boolean allowSmb1) throws Exception {
 		this.hostname = hostname;
 		if (0 < port && port <= 65535) {
 			this.port = port;
 		}
-		this.username = username;
-		this.sharename = sharename;
-		this.password = password == null ? null : password.clone();
+		this.sharename = sharename == null ? "" : sharename;
+		this.allowSmb1 = allowSmb1;
 
-		connect();
+		connect(username, password);
 	}
 
 	/**
 	 * Creates a connection from access data.
 	 *
-	 * @param serverEntry access data with protocol "smb"
-	 * @throws Exception if the protocol is not "smb" or the connection fails
+	 * @param serverEntry access data with protocol "smb" (SMB2/3) or "smb1" (SMB1 allowed as fallback)
+	 * @throws Exception if the protocol is not supported or the connection fails
 	 */
 	public SmbConnection(final ServerAccessData serverEntry) throws Exception {
-		if (!"smb".equalsIgnoreCase(serverEntry.getProtocol())) {
-			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for smb connection. Only 'smb' is allowed");
+		if ("smb".equalsIgnoreCase(serverEntry.getProtocol())) {
+			allowSmb1 = false;
+		} else if ("smb1".equalsIgnoreCase(serverEntry.getProtocol())) {
+			allowSmb1 = true;
 		} else {
-			hostname = serverEntry.getHostname();
-			if (0 < serverEntry.getPort() && serverEntry.getPort() <= 65535) {
-				port = serverEntry.getPort();
-			}
-			username = serverEntry.getUsername();
-			sharename = serverEntry.getSharename();
-			password = serverEntry.getPassword() == null ? null : serverEntry.getPassword().clone();
-
-			connect();
+			throw new Exception("Invalid protocol '" + serverEntry.getProtocol() + "' for smb connection. Only 'smb' and 'smb1' are allowed");
 		}
+
+		hostname = serverEntry.getHostname();
+		if (0 < serverEntry.getPort() && serverEntry.getPort() <= 65535) {
+			port = serverEntry.getPort();
+		}
+		sharename = serverEntry.getSharename() == null ? "" : serverEntry.getSharename();
+
+		connect(serverEntry.getUsername(), serverEntry.getPassword());
 	}
 
 	/**
-	 * Connect.
+	 * Creates the jcifs context and checks that the share is accessible.
 	 */
-	private void connect() throws Exception {
+	private void connect(final String username, final char[] password) throws Exception {
 		try {
-			final SmbConfig smbConfig = SmbConfig.builder().withMultiProtocolNegotiate(true).build();
-			client = new SMBClient(smbConfig);
-			connection = client.connect(hostname, port);
-			session = connection.authenticate(new AuthenticationContext(username, password == null ? new char[0] : password, ""));
-			diskShare = (DiskShare) session.connectShare(sharename == null ? "" : sharename);
+			final Properties properties = new Properties();
+			properties.setProperty("jcifs.client.minVersion", allowSmb1 ? "SMB1" : "SMB202");
+			properties.setProperty("jcifs.client.maxVersion", "SMB311");
+			if (allowSmb1) {
+				// Old SMB1-only devices often only listen on the NetBIOS session port 139, so fall back to it if 445 fails
+				properties.setProperty("jcifs.client.port139.enabled", "true");
+			}
+			// Never silently fall back to a guest login if the given credentials are rejected
+			properties.setProperty("jcifs.client.allowGuestFallback", "false");
+
+			final CIFSContext baseContext = new BaseContext(new PropertyConfiguration(properties));
+			if (Utilities.isNotBlank(username)) {
+				// jcifs keeps the password internally as String, so the char[] cannot be wiped completely
+				context = baseContext.withCredentials(new NtlmPasswordAuthenticator("", username, password == null ? "" : new String(password)));
+			} else {
+				context = baseContext.withAnonymousCredentials();
+			}
+
+			shareRoot = new SmbFile("smb://" + hostname + ":" + port + "/" + sharename + "/", context);
+
+			// jcifs connects lazily, so access the share once to detect unreachable hosts, rejected credentials and missing shares now
+			if (!shareRoot.exists()) {
+				throw new Exception("Share '" + sharename + "' does not exist");
+			}
 		} catch (final Exception e) {
 			disconnect();
-
-			// Check the exception itself and its cause chain for missing SMB2/3 support
-			int level = 0;
-			Throwable causeException = e;
-			while (causeException != null && level < 10) {
-				if (causeException instanceof SMB1NotSupportedException) {
-					throw new Exception("SMBv1 is not supported", e);
-				}
-				if (causeException.getCause() == causeException) {
-					break;
-				}
-				causeException = causeException.getCause();
-				level++;
-			}
-
 			// Keep the original exception as cause, so callers can tell unreachable host, auth failure and missing share apart
-			throw new Exception("Connection to smb://" + hostname + ":" + port + "/" + (sharename == null ? "" : sharename) + " failed: " + e.getMessage(), e);
+			throw new Exception("Connection to smb://" + hostname + ":" + port + "/" + sharename + " failed: " + e.getMessage(), e);
 		}
 	}
 
-	/**
-	 * Checks whether the connection is still usable and reconnects if it was lost.
-	 */
 	private void checkForConnection() throws Exception {
-		if (closed) {
+		if (closed || context == null || shareRoot == null) {
 			throw new Exception("SmbConnection is closed");
 		}
-
-		if (client == null
-				|| connection == null || !connection.isConnected()
-				|| diskShare == null || !diskShare.isConnected()) {
-			disconnect();
-			connect();
-		}
 	}
 
 	/**
-	 * Normalizes a path to the smbj convention: forward slashes, no leading or trailing separator.
+	 * Normalizes a path: forward slashes, no leading or trailing separator.
 	 */
 	private static String normalizePath(final String path) {
 		if (path == null) {
@@ -182,21 +179,44 @@ public class SmbConnection implements RemoteConnection {
 		}
 	}
 
-	private static ZonedDateTime toZonedDateTime(final FileTime fileTime) {
-		return Instant.ofEpochMilli(fileTime.toEpochMillis()).atZone(ZoneId.systemDefault());
+	private static ZonedDateTime toZonedDateTime(final long epochMillis) {
+		return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault());
+	}
+
+	/**
+	 * Resolves a path relative to the share root. jcifs requires a trailing slash for folders.
+	 * The returned SmbFile holds a tree handle and must be closed by the caller.
+	 */
+	private SmbFile resolve(final String path, final boolean isFolder) throws Exception {
+		final String normalized = normalizePath(path);
+		if (normalized.length() == 0) {
+			// jcifs rejects an empty relative name, so create a separate handle for the share root itself
+			return new SmbFile(shareRoot.getURL(), context);
+		} else {
+			// The relative constructor encodes special characters like '#', '%' or spaces itself
+			return new SmbFile(shareRoot, isFolder ? normalized + "/" : normalized);
+		}
 	}
 
 	@Override
 	public void deleteFolder(final String folderPath) throws Exception {
 		checkForConnection();
-		diskShare.rmdir(normalizePath(folderPath), true);
+		if (normalizePath(folderPath).length() == 0) {
+			throw new Exception("The share root cannot be deleted");
+		}
+		try (SmbFile folder = resolve(folderPath, true)) {
+			// Deletes the folder including its whole content
+			folder.delete();
+		}
 	}
 
 	@Override
 	public void createFolder(final String parentFolderPath, final String folderName) throws Exception {
 		checkForConnection();
 		final String parent = normalizePath(parentFolderPath);
-		diskShare.mkdir((parent.length() > 0 ? parent + "/" : "") + folderName);
+		try (SmbFile folder = resolve((parent.length() > 0 ? parent + "/" : "") + folderName, true)) {
+			folder.mkdir();
+		}
 	}
 
 	/**
@@ -207,23 +227,14 @@ public class SmbConnection implements RemoteConnection {
 	 */
 	public void createFolderPath(final String folderPath) throws Exception {
 		checkForConnection();
-		final String normalized = normalizePath(folderPath);
-		if (normalized.length() == 0) {
+		if (normalizePath(folderPath).length() == 0) {
 			return;
 		}
-
-		final StringBuilder currentPath = new StringBuilder();
-		for (final String pathElement : normalized.split("/")) {
-			if (pathElement.length() == 0) {
-				continue;
-			}
-			if (currentPath.length() > 0) {
-				currentPath.append("/");
-			}
-			currentPath.append(pathElement);
-
-			if (!diskShare.folderExists(currentPath.toString())) {
-				diskShare.mkdir(currentPath.toString());
+		try (SmbFile folder = resolve(folderPath, true)) {
+			if (!folder.exists()) {
+				folder.mkdirs();
+			} else if (!folder.isDirectory()) {
+				throw new Exception("Path '" + folderPath + "' already exists as a file");
 			}
 		}
 	}
@@ -231,7 +242,13 @@ public class SmbConnection implements RemoteConnection {
 	@Override
 	public void deleteFile(final String filePath) throws Exception {
 		checkForConnection();
-		diskShare.rm(normalizePath(filePath));
+		try (SmbFile file = resolve(filePath, false)) {
+			if (file.isDirectory()) {
+				// Prevent deleteFile from recursively deleting a whole folder by mistake
+				throw new Exception("Path '" + filePath + "' is a folder");
+			}
+			file.delete();
+		}
 	}
 
 	/**
@@ -243,7 +260,9 @@ public class SmbConnection implements RemoteConnection {
 	 */
 	public boolean fileExists(final String filePath) throws Exception {
 		checkForConnection();
-		return diskShare.fileExists(normalizePath(filePath));
+		try (SmbFile file = resolve(filePath, false)) {
+			return file.exists() && !file.isDirectory();
+		}
 	}
 
 	/**
@@ -255,46 +274,48 @@ public class SmbConnection implements RemoteConnection {
 	 */
 	public boolean folderExists(final String folderPath) throws Exception {
 		checkForConnection();
-		return diskShare.folderExists(normalizePath(folderPath));
+		try (SmbFile folder = resolve(folderPath, true)) {
+			return folder.exists() && folder.isDirectory();
+		}
 	}
 
 	@Override
 	public FileInfo getFileInfo(final String filePath) throws Exception {
 		checkForConnection();
 		final String normalized = normalizePath(filePath);
-		final FileAllInformation fileAllInformation = getFileInformationOrNull(normalized);
-		if (fileAllInformation == null || fileAllInformation.getStandardInformation().isDirectory()) {
-			// Like the other RemoteConnection implementations: null for missing paths and for folders
-			return null;
+		try (SmbFile file = resolve(normalized, false)) {
+			if (!file.exists() || file.isDirectory()) {
+				// Like the other RemoteConnection implementations: null for missing paths and for folders
+				return null;
+			}
+			return new FileInfo(getLastPathElement(normalized), file.length(), toZonedDateTime(file.lastModified()));
 		}
-		// Use end-of-file (logical size), not allocation size (cluster-rounded)
-		return new FileInfo(getLastPathElement(normalized), fileAllInformation.getStandardInformation().getEndOfFile(), toZonedDateTime(fileAllInformation.getBasicInformation().getLastWriteTime()));
 	}
 
 	@Override
 	public InputStream downloadFile(final String filePath) throws Exception {
 		checkForConnection();
+		// Ownership of the SmbFile is transferred to the returned stream, which closes it
 		@SuppressWarnings("resource")
-		final File remoteSmbjFile = diskShare.openFile(normalizePath(filePath), EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+		final SmbFile file = resolve(filePath, false);
 		try {
-			return new SmbInputStream(remoteSmbjFile.getInputStream(), remoteSmbjFile);
+			return new SmbInputStream(file.openInputStream(SmbConstants.DEFAULT_SHARING), file);
 		} catch (final Exception e) {
-			// Do not leak the open file handle if the stream cannot be created
-			remoteSmbjFile.close();
+			// Do not leak the tree handle if the stream cannot be opened
+			file.close();
 			throw e;
 		}
 	}
 
 	/**
-	 * Uploads a new file. Fails if the file already exists (FILE_CREATE is an atomic exclusive create),
-	 * which also makes this method usable for creating lock files.
+	 * Uploads a new file. Fails if the file already exists (O_EXCL is mapped to the atomic exclusive create
+	 * disposition FILE_CREATE), which also makes this method usable for creating lock files.
 	 */
 	@Override
 	public void uploadFile(final String filePath, final InputStream fileInputStream) throws Exception {
 		checkForConnection();
-		// GENERIC_WRITE is sufficient; GENERIC_ALL would also require WRITE_DAC/WRITE_OWNER and fail for plain write permission
-		try (File newFile = diskShare.openFile(normalizePath(filePath), EnumSet.of(AccessMask.GENERIC_WRITE), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_CREATE, null);
-				OutputStream outputStream = newFile.getOutputStream()) {
+		try (SmbFile file = resolve(filePath, false);
+				OutputStream outputStream = file.openOutputStream(false, SmbConstants.O_CREAT | SmbConstants.O_WRONLY | SmbConstants.O_EXCL, 0, SmbConstants.DEFAULT_SHARING)) {
 			IoUtilities.copy(fileInputStream, outputStream);
 		}
 	}
@@ -304,14 +325,14 @@ public class SmbConnection implements RemoteConnection {
 	 *
 	 * @param fromPath current path relative to the share root
 	 * @param toPath target path relative to the share root
-	 * @param replaceExisting if true an existing target file is replaced atomically
+	 * @param replaceExisting if true an existing target file is replaced
 	 * @throws Exception if the file cannot be renamed
 	 */
 	public void renameFile(final String fromPath, final String toPath, final boolean replaceExisting) throws Exception {
 		checkForConnection();
-		// DELETE access is required on the source for a rename
-		try (File file = diskShare.openFile(normalizePath(fromPath), EnumSet.of(AccessMask.DELETE, AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
-			file.rename(normalizePath(toPath), replaceExisting);
+		try (SmbFile source = resolve(fromPath, false);
+				SmbFile target = resolve(toPath, false)) {
+			source.renameTo(target, replaceExisting);
 		}
 	}
 
@@ -324,14 +345,9 @@ public class SmbConnection implements RemoteConnection {
 	 */
 	public void setLastModified(final String filePath, final long epochMillis) throws Exception {
 		checkForConnection();
-		try (File file = diskShare.openFile(normalizePath(filePath), EnumSet.of(AccessMask.FILE_WRITE_ATTRIBUTES), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
-			// Attribute value 0 means "do not change attributes"
-			file.setFileInformation(new FileBasicInformation(
-					FileBasicInformation.DONT_SET,
-					FileBasicInformation.DONT_SET,
-					FileTime.ofEpochMillis(epochMillis),
-					FileBasicInformation.DONT_SET,
-					0));
+		try (SmbFile file = resolve(filePath, false)) {
+			// jcifs passes 0 for the other timestamps and the attributes, which means "do not change"
+			file.setLastModified(epochMillis);
 		}
 	}
 
@@ -344,50 +360,33 @@ public class SmbConnection implements RemoteConnection {
 			folderName = "/";
 		}
 
-		// Query the folder itself directly instead of listing its whole content to find the "." entry
-		final FileAllInformation fileAllInformation = getFileInformationOrNull(normalized);
-		if (fileAllInformation == null || !fileAllInformation.getStandardInformation().isDirectory()) {
-			// Like the other RemoteConnection implementations: null for missing paths and for files
-			return null;
-		}
-		return new FolderInfo(folderName, toZonedDateTime(fileAllInformation.getBasicInformation().getLastWriteTime()));
-	}
-
-	/**
-	 * Returns the information about a file or folder, or null if the path does not exist.
-	 */
-	private FileAllInformation getFileInformationOrNull(final String normalizedPath) {
-		try {
-			return diskShare.getFileInformation(normalizedPath);
-		} catch (final SMBApiException e) {
-			if (e.getStatus() == NtStatus.STATUS_OBJECT_NAME_NOT_FOUND || e.getStatus() == NtStatus.STATUS_OBJECT_PATH_NOT_FOUND) {
+		try (SmbFile folder = resolve(normalized, true)) {
+			if (!folder.exists() || !folder.isDirectory()) {
+				// Like the other RemoteConnection implementations: null for missing paths and for files
 				return null;
-			} else {
-				throw e;
 			}
+			return new FolderInfo(folderName, toZonedDateTime(folder.lastModified()));
 		}
 	}
 
 	@Override
 	public Tuple<List<FolderInfo>, List<FileInfo>> getDirectory(final String folderPath) throws Exception {
 		checkForConnection();
-		final String normalized = normalizePath(folderPath);
 
 		final List<FolderInfo> folderInfoList = new ArrayList<>();
 		final List<FileInfo> fileInfoList = new ArrayList<>();
-		for (final FileIdBothDirectoryInformation entry : diskShare.list(normalized, "*")) {
-			final String entryName = entry.getFileName();
-			if (".".equals(entryName) || "..".equals(entryName)) {
-				continue;
-			}
-
-			// Directory listing already contains size and timestamps, no need to open each entry
-			final ZonedDateTime changeDate = toZonedDateTime(entry.getLastWriteTime());
-			if (EnumWithValue.EnumUtils.isSet(entry.getFileAttributes(), FileAttributes.FILE_ATTRIBUTE_DIRECTORY)) {
-				folderInfoList.add(new FolderInfo(entryName, changeDate));
-			} else {
-				// Use end-of-file (logical size), not allocation size (cluster-rounded)
-				fileInfoList.add(new FileInfo(entryName, entry.getEndOfFile(), changeDate));
+		try (SmbFile folder = resolve(folderPath, true)) {
+			for (final SmbFile entry : folder.listFiles()) {
+				try (entry) {
+					// Listed entries already carry size, attributes and timestamps, no extra request per entry needed
+					final ZonedDateTime changeDate = toZonedDateTime(entry.lastModified());
+					if (entry.isDirectory()) {
+						// jcifs returns folder names with a trailing slash
+						folderInfoList.add(new FolderInfo(FileUtilities.trimTrailingFileSeparator(entry.getName()), changeDate));
+					} else {
+						fileInfoList.add(new FileInfo(entry.getName(), entry.length(), changeDate));
+					}
+				}
 			}
 		}
 
@@ -395,69 +394,45 @@ public class SmbConnection implements RemoteConnection {
 	}
 
 	/**
-	 * Closes the connection permanently and wipes the stored password.
+	 * Closes the connection permanently and releases all transports of this connection.
 	 */
 	@Override
 	public void close() {
 		closed = true;
 		disconnect();
-		if (password != null) {
-			Arrays.fill(password, '\0');
-			password = null;
-		}
 	}
 
-	/**
-	 * Releases all smbj resources without marking the connection as closed (used for reconnect).
-	 */
 	private void disconnect() {
-		if (diskShare != null) {
+		if (shareRoot != null) {
 			try {
-				diskShare.close();
+				shareRoot.close();
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				// do nothing
 			}
-			diskShare = null;
+			shareRoot = null;
 		}
 
-		if (session != null) {
+		if (context != null) {
 			try {
-				session.close();
+				// Closes the transport pool of this context, the context is not shared with other connections
+				context.close();
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				// do nothing
 			}
-			session = null;
-		}
-
-		if (connection != null) {
-			try {
-				connection.close();
-			} catch (@SuppressWarnings("unused") final Exception e) {
-				// do nothing
-			}
-			connection = null;
-		}
-
-		if (client != null) {
-			try {
-				client.close();
-			} catch (@SuppressWarnings("unused") final Exception e) {
-				// do nothing
-			}
-			client = null;
+			context = null;
 		}
 	}
 
 	/**
-	 * InputStream wrapper that also closes the remote file handle.
+	 * InputStream wrapper that also releases the SmbFile and its tree handle.
 	 */
 	static class SmbInputStream extends FilterInputStream {
-		private final File remoteSmbjFile;
+		private final SmbFile remoteFile;
 		private boolean isClosed = false;
 
-		protected SmbInputStream(final InputStream inputStream, final File remoteSmbjFile) {
+		protected SmbInputStream(final InputStream inputStream, final SmbFile remoteFile) {
 			super(inputStream);
-			this.remoteSmbjFile = remoteSmbjFile;
+			this.remoteFile = remoteFile;
 		}
 
 		@Override
@@ -470,7 +445,7 @@ public class SmbConnection implements RemoteConnection {
 				super.close();
 			} finally {
 				// Always release the remote handle, even if closing the stream failed
-				remoteSmbjFile.close();
+				remoteFile.close();
 			}
 		}
 	}

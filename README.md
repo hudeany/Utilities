@@ -38,7 +38,7 @@ optional dependencies — only add them if you use those packages.
 | `worker` | `WorkerSimple` / `WorkerDual`: background jobs with progress reporting, cancel support and result; ready-made workers for copying, downloading and uploading files |
 | `xml` | `XmlUtilities` (parsing, XPath, formatting), `IndentedXMLStreamWriter` |
 | `zip` | `ZipUtilities` (JDK), `TarGzUtilities` (commons-compress), `Zip4jUtilities` (password protected zip files, zip4j) |
-| `remote` | One interface `RemoteConnection` for SFTP/SCP (JSch), FTP (commons-net), SMB 2/3 (smbj), SMB 1 (jcifs) and HTTP directory listings |
+| `remote` | One interface `RemoteConnection` for SFTP/SCP (JSch), FTP (commons-net), SMB 2/3 (jcifs), SMB 1 (jcifs) and HTTP directory listings |
 | `textbook` | `TextBookEditor` for editing very large text files page by page, with line actions (filter, count, drop lines) |
 | `code` | `ClassUtilities` (reflection), `JavaSourceFromString` (compiling Java code at runtime) |
 | `jarinjarloader` | Start class for applications packed as a single jar with their library jars inside |
@@ -56,7 +56,7 @@ Optional, only for the packages that use them:
 | zip4j | `zip.Zip4jUtilities` |
 | commons-net | `remote.FtpConnection` |
 | jsch | `remote.SftpConnection` |
-| smbj | `remote.SmbConnection` |
+| jcifs | `remote.SmbConnection` |
 | jcifs | `remote.Smb1Connection` |
 | network | `PunycodeCodec`, `remote.HttpFileConnection` |
 | proxyautoconfig | proxy support of the `remote` connections |
