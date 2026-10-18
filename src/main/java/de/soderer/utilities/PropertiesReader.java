@@ -6,7 +6,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -23,11 +27,23 @@ import de.soderer.utilities.collection.CaseInsensitiveLinkedMap;
  * the comments of the keys, the duplicate keys and the number of empty lines before each key (e.g. to rewrite a file
  * with the same structure). Keys are read case insensitive by default.
  * Escapes, continuation lines and separators ('=', ':' or whitespace) are handled like java.util.Properties does.
+ * <p>
+ * Without a given encoding the data is read as UTF-8, and as ISO-8859-1 if it is no valid UTF-8, like
+ * java.util.PropertyResourceBundle does since Java 9. So files written with or without unicode escapes are both
+ * readable. A leading byte order mark is ignored.
+ * </p>
  */
 public class PropertiesReader implements Closeable {
 	private static final Pattern UNICODE_ESCAPE_PATTERN = Pattern.compile("\\\\u([0-9A-Fa-f]{4})");
 
+	/** Byte order mark, which is ignored at the beginning of the data */
+	private static final char BYTE_ORDER_MARK = '\uFEFF';
+
+	private InputStream inputStream;
 	private BufferedReader inputReader;
+
+	/** Encoding used to decode the data */
+	private final Charset encoding;
 
 	private boolean readKeysCaseInsensitive = true;
 
@@ -59,32 +75,77 @@ public class PropertiesReader implements Closeable {
 	private Map<String, Integer> emptyLinesBefore = new LinkedHashMap<>();
 
 	/**
-	 * Creates a reader for ISO-8859-1 encoded data (the standard encoding of .properties files).
+	 * Creates a reader, which detects the encoding: the data is read as UTF-8, and as ISO-8859-1 if it is no valid
+	 * UTF-8 (like java.util.PropertyResourceBundle since Java 9). The whole data is read and decoded immediately,
+	 * because invalid UTF-8 bytes may occur anywhere in the data.
 	 *
 	 * @param inputStream stream to read, closed by {@link #close()}
-	 * @throws Exception if the stream is null
+	 * @throws Exception if the stream is null or cannot be read
 	 */
 	public PropertiesReader(final InputStream inputStream) throws Exception {
 		if (inputStream == null) {
 			throw new Exception("Invalid empty inputStream");
-		} else {
-			inputReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.ISO_8859_1));
 		}
+
+		this.inputStream = inputStream;
+		final byte[] data = inputStream.readAllBytes();
+		String text;
+		Charset detectedEncoding;
+		try {
+			text = StandardCharsets.UTF_8.newDecoder()
+					.onMalformedInput(CodingErrorAction.REPORT)
+					.onUnmappableCharacter(CodingErrorAction.REPORT)
+					.decode(ByteBuffer.wrap(data))
+					.toString();
+			detectedEncoding = StandardCharsets.UTF_8;
+		} catch (@SuppressWarnings("unused") final CharacterCodingException e) {
+			// Every byte sequence is valid ISO-8859-1
+			text = new String(data, StandardCharsets.ISO_8859_1);
+			detectedEncoding = StandardCharsets.ISO_8859_1;
+		}
+		encoding = detectedEncoding;
+
+		if (!text.isEmpty() && text.charAt(0) == BYTE_ORDER_MARK) {
+			text = text.substring(1);
+		}
+		inputReader = new BufferedReader(new StringReader(text));
 	}
 
 	/**
-	 * Creates a reader for data in the given encoding.
+	 * Creates a reader for data in the given encoding. A leading byte order mark is ignored.
 	 *
 	 * @param inputStream stream to read, closed by {@link #close()}
 	 * @param encoding encoding of the data
-	 * @throws Exception if the stream is null
+	 * @throws Exception if the stream is null or cannot be read
 	 */
 	public PropertiesReader(final InputStream inputStream, final Charset encoding) throws Exception {
 		if (inputStream == null) {
 			throw new Exception("Invalid empty inputStream");
-		} else {
-			inputReader = new BufferedReader(new InputStreamReader(inputStream, encoding));
+		} else if (encoding == null) {
+			throw new Exception("Invalid empty encoding");
 		}
+
+		this.inputStream = inputStream;
+		this.encoding = encoding;
+		inputReader = new BufferedReader(new InputStreamReader(inputStream, encoding));
+		skipByteOrderMark(inputReader);
+	}
+
+	private static void skipByteOrderMark(final BufferedReader reader) throws IOException {
+		reader.mark(1);
+		if (reader.read() != BYTE_ORDER_MARK) {
+			reader.reset();
+		}
+	}
+
+	/**
+	 * Encoding used to decode the data. With encoding detection this is UTF-8 for valid UTF-8 data (including pure
+	 * ASCII data, e.g. files with unicode escapes only), and ISO-8859-1 otherwise.
+	 *
+	 * @return the encoding
+	 */
+	public Charset getEncoding() {
+		return encoding;
 	}
 
 	/**
@@ -323,7 +384,8 @@ public class PropertiesReader implements Closeable {
 	}
 
 	/**
-	 * Decode unicode escapes in comment lines, which are written for chars not representable in ISO-8859-1.
+	 * Decode unicode escapes in comment lines, which are written for chars not representable in the file encoding
+	 * (and for a byte order mark and unpaired surrogates).
 	 */
 	private static String unescapeComment(final String commentLine) {
 		final Matcher matcher = UNICODE_ESCAPE_PATTERN.matcher(commentLine);
@@ -370,6 +432,8 @@ public class PropertiesReader implements Closeable {
 	public void close() {
 		closeQuietly(inputReader);
 		inputReader = null;
+		closeQuietly(inputStream);
+		inputStream = null;
 	}
 
 	/**

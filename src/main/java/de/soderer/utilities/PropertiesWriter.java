@@ -13,8 +13,13 @@ import java.util.regex.Pattern;
 import de.soderer.utilities.TextUtilities.LineBreak;
 
 /**
- * Writer for .properties files in ISO-8859-1 encoding (characters outside printable ASCII are written as unicode
- * escapes), which is readable by java.util.Properties and {@link PropertiesReader}.
+ * Writer for .properties files, which are readable by java.util.Properties and {@link PropertiesReader}.
+ * <p>
+ * By default the files are written in ISO-8859-1 encoding, characters outside printable ASCII are written as unicode
+ * escapes ("\\uXXXX"). Optionally the files are written in UTF-8 encoding without escaping non-ASCII characters, as
+ * supported by java.util.PropertyResourceBundle since Java 9 and by java.util.Properties.load(Reader) with an UTF-8
+ * reader.
+ * </p>
  * Supports comments, empty lines, a configurable key value separator and line break type.
  */
 public class PropertiesWriter implements Closeable {
@@ -23,21 +28,47 @@ public class PropertiesWriter implements Closeable {
 	 */
 	private static final Pattern VALID_KEY_VALUE_SEPARATOR_PATTERN = Pattern.compile("[ \\t\\f]*[=:][ \\t\\f]*|[ \\t\\f]+");
 
+	/** Byte order mark, which would be removed by some readers at the beginning of a file */
+	private static final char BYTE_ORDER_MARK = '\uFEFF';
+
 	private LineBreak linebreakType = LineBreak.Unix;
 	private String keyValueSeparator = "=";
+
+	private final boolean storeAsUtf8;
 
 	private OutputStream outputStream;
 	private int writtenProperties = 0;
 	private BufferedWriter outputWriter = null;
 
 	/**
-	 * Creates a writer.
+	 * Creates a writer for ISO-8859-1 encoded files with unicode escapes for all non-ASCII characters.
 	 *
 	 * @param outputStream stream to write to, closed by {@link #close()}
 	 */
 	public PropertiesWriter(final OutputStream outputStream) {
+		this(outputStream, false);
+	}
+
+	/**
+	 * Creates a writer.
+	 *
+	 * @param outputStream stream to write to, closed by {@link #close()}
+	 * @param storeAsUtf8 true to write an UTF-8 file (without BOM) with non-ASCII characters unescaped, false to write
+	 *            an ISO-8859-1 file with unicode escapes for all non-ASCII characters
+	 */
+	public PropertiesWriter(final OutputStream outputStream, final boolean storeAsUtf8) {
 		this.outputStream = outputStream;
-		outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.ISO_8859_1));
+		this.storeAsUtf8 = storeAsUtf8;
+		outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, storeAsUtf8 ? StandardCharsets.UTF_8 : StandardCharsets.ISO_8859_1));
+	}
+
+	/**
+	 * Whether the file is written in UTF-8 encoding without escaping non-ASCII characters.
+	 *
+	 * @return true for UTF-8, false for ISO-8859-1 with unicode escapes
+	 */
+	public boolean isStoreAsUtf8() {
+		return storeAsUtf8;
 	}
 
 	/**
@@ -124,13 +155,13 @@ public class PropertiesWriter implements Closeable {
 			throw new IllegalArgumentException("Property key must not be empty");
 		}
 
-		String escapedValue = escapeValue(value);
+		String escapedValue = escapeValue(value, !storeAsUtf8);
 		if (keyValueSeparator.trim().isEmpty() && (escapedValue.startsWith("=") || escapedValue.startsWith(":"))) {
 			// With a blanks-only separator, a leading '=' or ':' of the value would be read as the actual separator
 			escapedValue = "\\" + escapedValue;
 		}
 
-		outputWriter.write(escapeKey(key));
+		outputWriter.write(escapeKey(key, !storeAsUtf8));
 		outputWriter.write(keyValueSeparator);
 		outputWriter.write(escapedValue);
 		outputWriter.write(linebreakType.toString());
@@ -167,14 +198,27 @@ public class PropertiesWriter implements Closeable {
 	}
 
 	/**
+	 * Escape a property key for ISO-8859-1 files (all non-ASCII characters as unicode escapes).
+	 *
+	 * @param key key to escape
+	 * @return escaped key
+	 * @see #escapeKey(String, boolean)
+	 */
+	public static String escapeKey(final String key) {
+		return escapeKey(key, true);
+	}
+
+	/**
 	 * Escape a property key.
 	 * Keys need escaping of separators ('=', ':'), comment chars ('#', '!') and all whitespace,
 	 * because the first unescaped whitespace or separator ends the key.
 	 *
 	 * @param key key to escape
+	 * @param escapeNonAscii true to write all non-ASCII characters as unicode escapes (ISO-8859-1 files), false to
+	 *            keep them unescaped (UTF-8 files)
 	 * @return escaped key
 	 */
-	public static String escapeKey(final String key) {
+	public static String escapeKey(final String key, final boolean escapeNonAscii) {
 		final StringBuilder result = new StringBuilder(key.length() + 16);
 		for (int i = 0; i < key.length(); i++) {
 			final char c = key.charAt(i);
@@ -187,10 +231,21 @@ public class PropertiesWriter implements Closeable {
 					result.append('\\').append(c);
 					break;
 				default:
-					appendEscapedCommonChar(result, c);
+					appendEscapedCommonChar(result, key, i, escapeNonAscii);
 			}
 		}
 		return result.toString();
+	}
+
+	/**
+	 * Escape a property value for ISO-8859-1 files (all non-ASCII characters as unicode escapes).
+	 *
+	 * @param value value to escape, may be null
+	 * @return escaped value, empty for null
+	 * @see #escapeValue(String, boolean)
+	 */
+	public static String escapeValue(final String value) {
+		return escapeValue(value, true);
 	}
 
 	/**
@@ -200,9 +255,11 @@ public class PropertiesWriter implements Closeable {
 	 * Line breaks are kept lossless ("\r\n" is written as "\r\n").
 	 *
 	 * @param value value to escape, may be null
+	 * @param escapeNonAscii true to write all non-ASCII characters as unicode escapes (ISO-8859-1 files), false to
+	 *            keep them unescaped (UTF-8 files)
 	 * @return escaped value, empty for null
 	 */
-	public static String escapeValue(final String value) {
+	public static String escapeValue(final String value, final boolean escapeNonAscii) {
 		if (value == null) {
 			return "";
 		}
@@ -214,7 +271,7 @@ public class PropertiesWriter implements Closeable {
 				// Leading whitespace would be stripped when loading
 				result.append("\\ ");
 			} else {
-				appendEscapedCommonChar(result, c);
+				appendEscapedCommonChar(result, value, i, escapeNonAscii);
 			}
 		}
 		return result.toString();
@@ -222,9 +279,12 @@ public class PropertiesWriter implements Closeable {
 
 	/**
 	 * Escape characters that need escaping in keys and values alike:
-	 * backslash, control characters and everything outside printable ASCII.
+	 * backslash and control characters, and depending on escapeNonAscii everything outside printable ASCII.
+	 * Without escapeNonAscii only the byte order mark and unpaired surrogates are escaped, because they cannot be
+	 * stored lossless as UTF-8 text.
 	 */
-	private static void appendEscapedCommonChar(final StringBuilder result, final char c) {
+	private static void appendEscapedCommonChar(final StringBuilder result, final String text, final int index, final boolean escapeNonAscii) {
+		final char c = text.charAt(index);
 		switch (c) {
 			case '\\':
 				result.append("\\\\");
@@ -242,11 +302,28 @@ public class PropertiesWriter implements Closeable {
 				result.append("\\f");
 				break;
 			default:
-				if (c < 0x20 || c > 0x7E) {
+				if (c < 0x20 || c == 0x7F) {
+					appendUnicodeEscape(result, c);
+				} else if (c > 0x7E && (escapeNonAscii || c == BYTE_ORDER_MARK || isUnpairedSurrogate(text, index))) {
 					appendUnicodeEscape(result, c);
 				} else {
 					result.append(c);
 				}
+		}
+	}
+
+	/**
+	 * Checks whether the char at the index is a surrogate without its matching partner, which cannot be encoded in
+	 * UTF-8 and would be replaced by '?'.
+	 */
+	private static boolean isUnpairedSurrogate(final String text, final int index) {
+		final char c = text.charAt(index);
+		if (Character.isHighSurrogate(c)) {
+			return index + 1 >= text.length() || !Character.isLowSurrogate(text.charAt(index + 1));
+		} else if (Character.isLowSurrogate(c)) {
+			return index == 0 || !Character.isHighSurrogate(text.charAt(index - 1));
+		} else {
+			return false;
 		}
 	}
 
@@ -256,14 +333,21 @@ public class PropertiesWriter implements Closeable {
 
 	/**
 	 * Escape a comment line.
-	 * Only characters not representable in ISO-8859-1 are written as unicode escapes,
-	 * so umlauts etc. stay readable. PropertiesReader decodes these escapes in comments.
+	 * For ISO-8859-1 files only characters not representable in ISO-8859-1 are written as unicode escapes,
+	 * so umlauts etc. stay readable. For UTF-8 files only the byte order mark and unpaired surrogates are escaped.
+	 * PropertiesReader decodes these escapes in comments.
 	 */
-	private static String escapeCommentLine(final String commentLine) {
+	private static String escapeCommentLine(final String commentLine, final boolean utf8) {
 		final StringBuilder result = new StringBuilder(commentLine.length() + 16);
 		for (int i = 0; i < commentLine.length(); i++) {
 			final char c = commentLine.charAt(i);
-			if (c > 0xFF) {
+			if (utf8) {
+				if (c == BYTE_ORDER_MARK || isUnpairedSurrogate(commentLine, i)) {
+					appendUnicodeEscape(result, c);
+				} else {
+					result.append(c);
+				}
+			} else if (c > 0xFF) {
 				appendUnicodeEscape(result, c);
 			} else {
 				result.append(c);
@@ -283,7 +367,7 @@ public class PropertiesWriter implements Closeable {
 		checkNotClosed();
 
 		for (final String commentLine : comment.replace("\r\n", "\n").replace("\r", "\n").split("\n")) {
-			outputWriter.write("# " + escapeCommentLine(commentLine) + linebreakType.toString());
+			outputWriter.write("# " + escapeCommentLine(commentLine, storeAsUtf8) + linebreakType.toString());
 		}
 	}
 
