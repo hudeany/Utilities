@@ -52,6 +52,9 @@ public class ConfigurationProperties {
 	/** List keys already stored in the current (plain) list format */
 	private final Set<String> plainListKeys = new TreeSet<>();
 
+	/** Keys holding a {@link YesNoAsk} value, registered at runtime, used by configuration dialogs to offer a selection */
+	private final Set<String> yesNoAskKeys = new TreeSet<>();
+
 	/** Separator of list values */
 	private static final char LIST_SEPARATOR = ';';
 
@@ -236,6 +239,7 @@ public class ConfigurationProperties {
 
 	/**
 	 * Boolean value of a key (see {@link Utilities#interpretAsBool(String)}).
+	 * Use {@link #getYesNoAsk(String, YesNoAsk)} for keys that may contain ‘ask’
 	 *
 	 * @param name configuration key
 	 * @return value, false if the key does not exist
@@ -701,5 +705,52 @@ public class ConfigurationProperties {
 	 */
 	public String getLanguage() {
 		return get(CONFIG_KEY_LANGUAGE);
+	}
+
+	/**
+	 * Registers a key as {@link YesNoAsk} value and ensures it is contained in the configuration (with the default value,
+	 * if it is missing). Existing boolean values ("true" / "false") stay valid.
+	 * Must be called on every application start, because the registration is not persisted.
+	 *
+	 * @param name configuration key
+	 * @param defaultValue value to set if the key is missing
+	 */
+	public void ensureYesNoAsk(final String name, final YesNoAsk defaultValue) {
+		yesNoAskKeys.add(name);
+		if (!properties.containsKey(name)) {
+			properties.setProperty(name, defaultValue.getStorageValue());
+		}
+	}
+
+	/**
+	 * Sets a {@link YesNoAsk} value and registers the key as such.
+	 *
+	 * @param name configuration key
+	 * @param value value, null is stored as empty string
+	 */
+	public void set(final String name, final YesNoAsk value) {
+		yesNoAskKeys.add(name);
+		set(name, value == null ? "" : value.getStorageValue());
+	}
+
+	/**
+	 * {@link YesNoAsk} value of a key.
+	 *
+	 * @param name configuration key
+	 * @param defaultValue value if the key does not exist or its value is empty
+	 * @return value
+	 */
+	public YesNoAsk getYesNoAsk(final String name, final YesNoAsk defaultValue) {
+		return YesNoAsk.fromString(properties.getProperty(name), defaultValue);
+	}
+
+	/**
+	 * Whether a key was registered as {@link YesNoAsk} value (see {@link #ensureYesNoAsk(String, YesNoAsk)}).
+	 *
+	 * @param name configuration key
+	 * @return true for YesNoAsk keys
+	 */
+	public boolean isYesNoAskKey(final String name) {
+		return yesNoAskKeys.contains(name);
 	}
 }
