@@ -11,6 +11,13 @@ public class DateUtilitiesForDb {
 	public static final String YYYY_MM_DD_HHMMSS = "yyyy-MM-dd HH:mm:ss";
 
 	/**
+	 * Formatter for "yyyy-MM-dd HH:mm:ss.NNNNNN". Uses the proleptic year "uuuu", because the year of era "yyyy"
+	 * would print years before 1 without sign (year 0 as "0001"). The fraction "SSSSSS" is truncated, not rounded.
+	 * DateTimeFormatter is immutable and thread safe and always prints ASCII digits.
+	 */
+	private static final DateTimeFormatter TIMESTAMP_MICROSECONDS_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSSSSS");
+
+	/**
 	 * Utility class
 	 */
 	private DateUtilitiesForDb() {
@@ -18,8 +25,13 @@ public class DateUtilitiesForDb {
 	}
 
 	/**
-	 * Formats a timestamp with microsecond precision (the fraction of a second as used by .Net),
-	 * interpreted in the system default time zone.
+	 * Formats a timestamp with microsecond precision (the fraction of a second as used by .Net).
+	 * <p>
+	 * The date and time fields of the timestamp are used as they are (like {@link Timestamp#toString()}), without a
+	 * conversion via the instant. A conversion via the instant would shift old dates, because java.sql.Timestamp uses
+	 * the Julian calendar before 1582 and the local mean time offsets of the time zone before about 1900, e.g.
+	 * "0001-01-01 00:00:00" would become "0001-12-29 23:53:28" in time zone Europe/Berlin.
+	 * </p>
 	 *
 	 * @param ts
 	 *            the timestamp to format, may be null
@@ -30,10 +42,7 @@ public class DateUtilitiesForDb {
 		if (ts == null) {
 			return "";
 		} else {
-			final String s = DateTimeFormatter.ofPattern(YYYY_MM_DD_HHMMSS).format(DateUtilities.getLocalDateTimeForDate(ts));
-			// Nanos must be left padded to 9 digits before truncating to microseconds, e.g. 5000 nanos are "000005"
-			final String microsString = String.format("%09d", ts.getNanos()).substring(0, 6);
-			return s + "." + microsString;
+			return TIMESTAMP_MICROSECONDS_FORMATTER.format(ts.toLocalDateTime());
 		}
 	}
 }

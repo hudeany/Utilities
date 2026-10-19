@@ -1,7 +1,11 @@
 package de.soderer.utilities;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 
 /**
@@ -13,14 +17,16 @@ import java.util.Locale;
  *
  * Detection order:
  * <ol>
- *   <li>Byte-order-mark (BOM) signatures - unambiguous when present.</li>
+ *   <li>Byte-order-mark (BOM) signatures - unambiguous when present (see {@link BOM}).</li>
  *   <li>UTF-32 and UTF-16 without BOM, recognized by their zero bytes (see
  *       {@link #detectUtf32WithoutBom(byte[])} and {@link #detectUtf16WithoutBom(byte[])}). Text without any
  *       zero byte, like pure CJK text in UTF-16, cannot be recognized this way.</li>
  *   <li>Whether the sample is well-formed UTF-8 (strict validation: rejects overlong encodings
- *       and directly-encoded surrogate halves; a sequence truncated at the very end of the sample
+ *       and directly-encoded surrogate halves). A sequence truncated at the very end of the sample
  *       is ignored rather than treated as invalid, since the sample may simply be cut off
- *       mid-character).</li>
+ *       mid-character - unless the sample is known to be the complete data (see
+ *       {@link #detectEncoding(byte[], Charset, boolean)} and {@link #detectEncoding(Path, int, Charset)}),
+ *       because then e.g. a Windows-1252 text ending with "&szlig;" would be taken for UTF-8.</li>
  *   <li>Otherwise, Windows-1252 (or the fallback charset given to {@link #detectEncoding(byte[], Charset)}). Windows-1252 and ISO-8859-1 are byte-identical outside the
  *       0x80-0x9F range, and real C1 control codes in that range essentially never appear in
  *       genuine text, so there is no reliable way to tell them apart from content alone once
@@ -28,12 +34,17 @@ import java.util.Locale;
  *       likely to be Windows-1252 than genuine ISO-8859-1. This also makes a save-as-Windows-1252
  *       round trip detect correctly even when the saved text happens not to use any byte in the
  *       0x80-0x9F range at all (e.g. plain German text with just &auml;&ouml;&uuml;&szlig; and no smart quotes, dashes,
- *       or euro sign).</li>
+ *       or euro sign). Only if the sample contains one of the five bytes undefined in Windows-1252
+ *       (0x81, 0x8D, 0x8F, 0x90, 0x9D), ISO-8859-1 is used instead, because decoding them with
+ *       Windows-1252 would replace them by U+FFFD and lose data.</li>
  * </ol>
  *
  * Pure 7-bit ASCII content is reported as UTF-8, since ASCII is a strict subset of UTF-8.
  */
 public class EncodingDetector {
+	/** Default charset for 8-bit data which is no valid UTF-8. */
+	private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");
+
 	/**
 	 * Utility class
 	 */
@@ -75,14 +86,31 @@ public class EncodingDetector {
 	}
 
 	/**
-	 * Detects the most likely encoding of a byte sample taken from the start of the data.
+	 * Detects the most likely encoding of a byte sample taken from the start of the data. The sample
+	 * may be cut off, so a multi-byte UTF-8 sequence truncated at its end is accepted.
 	 *
 	 * @param sampleBytes
 	 *            the first bytes of the data, may be null
 	 * @return the detection result, UTF-8 without BOM for empty or null data
 	 */
 	public static DetectionResult detectEncoding(final byte[] sampleBytes) {
-		return detectEncoding(sampleBytes, null);
+		return detectEncoding(sampleBytes, null, false);
+	}
+
+	/**
+	 * Detects the most likely encoding of a byte sample taken from the start of the data. The sample
+	 * may be cut off, so a multi-byte UTF-8 sequence truncated at its end is accepted.
+	 *
+	 * @param sampleBytes
+	 *            the first bytes of the data, may be null
+	 * @param nonUtf8FallbackCharset
+	 *            the charset for data without BOM which is no valid UTF-8, or null for Windows-1252
+	 *            (ISO-8859-1 for data with bytes undefined in Windows-1252). A fallback charset which
+	 *            cannot decode such data (any UTF encoding) is ignored and the default is used instead.
+	 * @return the detection result, UTF-8 without BOM for empty or null data
+	 */
+	public static DetectionResult detectEncoding(final byte[] sampleBytes, final Charset nonUtf8FallbackCharset) {
+		return detectEncoding(sampleBytes, nonUtf8FallbackCharset, false);
 	}
 
 	/**
@@ -91,19 +119,22 @@ public class EncodingDetector {
 	 * @param sampleBytes
 	 *            the first bytes of the data, may be null
 	 * @param nonUtf8FallbackCharset
-	 *            the charset for data without BOM which is no valid UTF-8, or null for Windows-1252.
-	 *            A fallback charset which cannot decode such data (UTF-8 itself, UTF-16 or UTF-32) is
-	 *            ignored and Windows-1252 is used instead.
+	 *            the charset for data without BOM which is no valid UTF-8, or null for Windows-1252
+	 *            (ISO-8859-1 for data with bytes undefined in Windows-1252). A fallback charset which
+	 *            cannot decode such data (any UTF encoding) is ignored and the default is used instead.
+	 * @param isCompleteData
+	 *            true, if the sample contains the complete data. Then a multi-byte UTF-8 sequence
+	 *            truncated at its end is invalid, because it cannot be continued.
 	 * @return the detection result, UTF-8 without BOM for empty or null data
 	 */
-	public static DetectionResult detectEncoding(final byte[] sampleBytes, final Charset nonUtf8FallbackCharset) {
+	public static DetectionResult detectEncoding(final byte[] sampleBytes, final Charset nonUtf8FallbackCharset, final boolean isCompleteData) {
 		if (sampleBytes == null || sampleBytes.length == 0) {
 			return new DetectionResult(StandardCharsets.UTF_8, false, 0);
 		}
 
-		final DetectionResult bomResult = detectBom(sampleBytes);
-		if (bomResult != null) {
-			return bomResult;
+		final BOM bom = BOM.detect(sampleBytes);
+		if (bom != BOM.NONE) {
+			return new DetectionResult(bom.getCharset(), true, bom.getLength());
 		}
 
 		// Must be checked before UTF-8, because ASCII text in UTF-16 or UTF-32 is also well-formed UTF-8 (with NUL characters)
@@ -116,39 +147,60 @@ public class EncodingDetector {
 			return new DetectionResult(utf16Charset, false, 0);
 		}
 
-		if (isWellFormedUtf8(sampleBytes)) {
+		if (isWellFormedUtf8(sampleBytes, !isCompleteData)) {
 			return new DetectionResult(StandardCharsets.UTF_8, false, 0);
 		}
 
-		if (nonUtf8FallbackCharset != null && !nonUtf8FallbackCharset.name().toUpperCase(Locale.ROOT).startsWith("UTF-")) {
+		if (nonUtf8FallbackCharset != null && !nonUtf8FallbackCharset.name().toUpperCase(Locale.ROOT).contains("UTF-")) {
 			return new DetectionResult(nonUtf8FallbackCharset, false, 0);
+		} else if (containsBytesUndefinedInWindows1252(sampleBytes)) {
+			return new DetectionResult(StandardCharsets.ISO_8859_1, false, 0);
 		} else {
-			return new DetectionResult(Charset.forName("windows-1252"), false, 0);
+			return new DetectionResult(WINDOWS_1252, false, 0);
 		}
 	}
 
 	/**
-	 * Checks longer/more specific BOM signatures before shorter ones - the UTF-32LE BOM
-	 * (FF FE 00 00) starts with the same two bytes as the UTF-16LE BOM (FF FE), so it must be
-	 * checked first or a UTF-32LE file would be misdetected as UTF-16LE.
+	 * Detects the most likely encoding of a file by a sample of its first bytes. Whether the sample
+	 * contains the complete file is taken into account (see
+	 * {@link #detectEncoding(byte[], Charset, boolean)}).
+	 *
+	 * @param file
+	 *            the file to check
+	 * @param maxSampleSize
+	 *            the maximum number of bytes to read from the start of the file
+	 * @param nonUtf8FallbackCharset
+	 *            the charset for data without BOM which is no valid UTF-8, or null for the default
+	 *            (see {@link #detectEncoding(byte[], Charset, boolean)})
+	 * @return the detection result, UTF-8 without BOM for an empty file
+	 * @throws IOException
+	 *             if the file cannot be read
+	 * @throws IllegalArgumentException
+	 *             if the maximum sample size is not positive
 	 */
-	private static DetectionResult detectBom(final byte[] b) {
-		if (b.length >= 3 && (b[0] & 0xFF) == 0xEF && (b[1] & 0xFF) == 0xBB && (b[2] & 0xFF) == 0xBF) {
-			return new DetectionResult(StandardCharsets.UTF_8, true, 3);
+	public static DetectionResult detectEncoding(final Path file, final int maxSampleSize, final Charset nonUtf8FallbackCharset) throws IOException {
+		if (maxSampleSize < 1) {
+			throw new IllegalArgumentException("Invalid sample size: " + maxSampleSize);
 		}
-		if (b.length >= 4 && (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE && b[2] == 0x00 && b[3] == 0x00) {
-			return new DetectionResult(Charset.forName("UTF-32LE"), true, 4);
+		try (InputStream inputStream = Files.newInputStream(file)) {
+			// readNBytes reads until the sample is full or the end of data, a single read may return fewer bytes
+			final byte[] sampleBytes = inputStream.readNBytes(maxSampleSize);
+			final boolean isCompleteData = sampleBytes.length < maxSampleSize || inputStream.read() == -1;
+			return detectEncoding(sampleBytes, nonUtf8FallbackCharset, isCompleteData);
 		}
-		if (b.length >= 4 && b[0] == 0x00 && b[1] == 0x00 && (b[2] & 0xFF) == 0xFE && (b[3] & 0xFF) == 0xFF) {
-			return new DetectionResult(Charset.forName("UTF-32BE"), true, 4);
+	}
+
+	/**
+	 * Checks for the bytes 0x81, 0x8D, 0x8F, 0x90 and 0x9D, which are undefined in Windows-1252.
+	 */
+	private static boolean containsBytesUndefinedInWindows1252(final byte[] b) {
+		for (final byte value : b) {
+			final int unsignedValue = value & 0xFF;
+			if (unsignedValue == 0x81 || unsignedValue == 0x8D || unsignedValue == 0x8F || unsignedValue == 0x90 || unsignedValue == 0x9D) {
+				return true;
+			}
 		}
-		if (b.length >= 2 && (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE) {
-			return new DetectionResult(StandardCharsets.UTF_16LE, true, 2);
-		}
-		if (b.length >= 2 && (b[0] & 0xFF) == 0xFE && (b[1] & 0xFF) == 0xFF) {
-			return new DetectionResult(StandardCharsets.UTF_16BE, true, 2);
-		}
-		return null;
+		return false;
 	}
 
 	/**
@@ -243,9 +295,9 @@ public class EncodingDetector {
 			return null;
 		}
 		if (isPlausibleUtf32(b, length, true)) {
-			return Charset.forName("UTF-32LE");
+			return BOM.UTF_32_LE.getCharset();
 		} else if (isPlausibleUtf32(b, length, false)) {
-			return Charset.forName("UTF-32BE");
+			return BOM.UTF_32_BE.getCharset();
 		} else {
 			return null;
 		}
@@ -260,7 +312,8 @@ public class EncodingDetector {
 			} else {
 				codePoint = ((b[i] & 0xFF) << 24) | ((b[i + 1] & 0xFF) << 16) | ((b[i + 2] & 0xFF) << 8) | (b[i + 3] & 0xFF);
 			}
-			if (codePoint > 0x10FFFF || (codePoint >= 0xD800 && codePoint <= 0xDFFF) || isUnusualControlCharacter(codePoint)) {
+			// A highest byte of 0x80 or more results in a negative int
+			if (codePoint < 0 || codePoint > 0x10FFFF || (codePoint >= 0xD800 && codePoint <= 0xDFFF) || isUnusualControlCharacter(codePoint)) {
 				return false;
 			} else if (codePoint < 0x10000) {
 				bmpCount++;
@@ -274,10 +327,47 @@ public class EncodingDetector {
 	 * and carriage return, including the NUL character.
 	 */
 	private static boolean isUnusualControlCharacter(final int codePoint) {
-		return codePoint < 0x20 && codePoint != '\t' && codePoint != '\n' && codePoint != '\f' && codePoint != '\r';
+		return codePoint >= 0 && codePoint < 0x20 && codePoint != '\t' && codePoint != '\n' && codePoint != '\f' && codePoint != '\r';
 	}
 
-	private static boolean isWellFormedUtf8(final byte[] b) {
+	/**
+	 * Checks the second byte of a multi-byte UTF-8 sequence. Besides being a continuation byte, it is restricted after
+	 * some leading bytes, which already decides about overlong encodings, surrogates and code points above U+10FFFF.
+	 * This allows to reject such sequences even when they are truncated at the end of the sample.
+	 */
+	private static boolean isValidSecondUtf8Byte(final int byte1, final int byte2) {
+		if ((byte2 & 0xC0) != 0x80) {
+			return false;
+		}
+		switch (byte1) {
+			case 0xE0:
+				// Below 0xA0 would be an overlong encoding of a code point below U+0800
+				return byte2 >= 0xA0;
+			case 0xED:
+				// Above 0x9F would be a surrogate U+D800-U+DFFF
+				return byte2 <= 0x9F;
+			case 0xF0:
+				// Below 0x90 would be an overlong encoding of a code point below U+10000
+				return byte2 >= 0x90;
+			case 0xF4:
+				// Above 0x8F would be a code point above U+10FFFF
+				return byte2 <= 0x8F;
+			default:
+				return true;
+		}
+	}
+
+	/**
+	 * Checks whether the data is well-formed UTF-8.
+	 *
+	 * @param b
+	 *            the data
+	 * @param allowTruncatedEnd
+	 *            true to accept a multi-byte sequence truncated at the end of the data, as long as its present bytes are
+	 *            valid
+	 * @return true, if the data is well-formed UTF-8
+	 */
+	private static boolean isWellFormedUtf8(final byte[] b, final boolean allowTruncatedEnd) {
 		int i = 0;
 		while (i < b.length) {
 			final int byte1 = b[i] & 0xFF;
@@ -308,17 +398,23 @@ public class EncodingDetector {
 				minCodepoint = 0x10000;
 				firstByteValueBits = byte1 & 0x07;
 			} else {
-				// Continuation byte (0x80-0xBF) or invalid leading byte (0xF8-0xFF) where a new
-				// character was expected to start.
+				// Continuation byte (0x80-0xBF) where a new character was expected to start
 				return false;
 			}
 
 			if (i + continuationBytesNeeded >= b.length) {
-				// Truncated at the end of the sample - the sample may simply be cut off mid-character,
-				// which is not a sign of a different encoding. But the bytes that are present must
-				// still be continuation bytes, otherwise e.g. a Windows-1252 umlaut byte 0xE4 followed by an
-				// ASCII character at the very end would be accepted as UTF-8.
-				for (int j = i + 1; j < b.length; j++) {
+				// Truncated at the end of the data
+				if (!allowTruncatedEnd) {
+					// The data is complete, so the sequence can never be completed
+					return false;
+				}
+				// The sample may simply be cut off mid-character, which is not a sign of a different encoding. But the
+				// bytes that are present must still be valid, otherwise e.g. a Windows-1252 umlaut byte 0xE4 followed by
+				// an ASCII character at the very end would be accepted as UTF-8.
+				if (i + 1 < b.length && !isValidSecondUtf8Byte(byte1, b[i + 1] & 0xFF)) {
+					return false;
+				}
+				for (int j = i + 2; j < b.length; j++) {
 					if ((b[j] & 0xC0) != 0x80) {
 						return false;
 					}
@@ -326,6 +422,9 @@ public class EncodingDetector {
 				break;
 			}
 
+			if (!isValidSecondUtf8Byte(byte1, b[i + 1] & 0xFF)) {
+				return false;
+			}
 			int codepoint = firstByteValueBits;
 			for (int j = 1; j <= continuationBytesNeeded; j++) {
 				final int continuationByte = b[i + j] & 0xFF;
