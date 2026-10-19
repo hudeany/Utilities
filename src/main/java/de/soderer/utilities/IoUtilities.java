@@ -28,15 +28,16 @@ public class IoUtilities {
 	 * Reads all remaining data of a stream and decodes it as text.
 	 *
 	 * @param inputStream
-	 *            the stream to read, must not be null
+	 *            the stream to read, may be null
 	 * @param encoding
 	 *            the encoding of the data
-	 * @return the decoded text
+	 * @return the decoded text, or null if the stream is null (like {@link #toByteArray(InputStream)})
 	 * @throws IOException
 	 *             if reading fails
 	 */
 	public static String toString(final InputStream inputStream, final Charset encoding) throws IOException {
-		return new String(toByteArray(inputStream), encoding);
+		final byte[] data = toByteArray(inputStream);
+		return data == null ? null : new String(data, encoding);
 	}
 
 	/**
@@ -100,16 +101,17 @@ public class IoUtilities {
 		// One continuous encoder for the whole data: encoding chunk by chunk with String.getBytes would write a byte order
 		// mark for every chunk with encodings like UTF-16 and would split surrogate pairs at chunk boundaries
 		// Closing the writer is safe: CountingOutputStream only flushes on close and keeps the given output stream open
-		try (CountingOutputStream countingOutputStream = new CountingOutputStream(outputStream);
-				Writer writer = new OutputStreamWriter(countingOutputStream, encoding)) {
+		final CountingOutputStream countingOutputStream = new CountingOutputStream(outputStream);
+		try (Writer writer = new OutputStreamWriter(countingOutputStream, encoding)) {
 			final char[] buffer = new char[4096];
 			int lengthRead;
 			while ((lengthRead = inputReader.read(buffer)) != EOF) {
 				writer.write(buffer, 0, lengthRead);
 			}
-			writer.flush();
-			return countingOutputStream.getByteCount();
 		}
+		// Counted after closing the writer, because closing writes the final bytes of the encoder, like the switch back
+		// to ASCII of ISO-2022-JP or a replacement for an incomplete surrogate pair at the end of the data
+		return countingOutputStream.getByteCount();
 	}
 
 	/**

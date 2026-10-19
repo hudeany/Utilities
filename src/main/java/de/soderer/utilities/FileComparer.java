@@ -1,10 +1,13 @@
 package de.soderer.utilities;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utilities to compare files and texts and to create a line based diff of them.
@@ -52,23 +55,11 @@ public class FileComparer {
 	 *            the second file
 	 * @return true, if both files have exactly the same content
 	 * @throws IOException
-	 *             if reading fails
+	 *             if a file does not exist or reading fails
 	 */
 	public static boolean compareExactly(final File file1, final File file2) throws IOException {
-		if (file1.length() == file2.length()) {
-			try (BufferedInputStream fileInputStream1 = new BufferedInputStream(new FileInputStream(file1));
-					BufferedInputStream fileInputStream2 = new BufferedInputStream(new FileInputStream(file2))) {
-				int buffer = 0;
-				while ((buffer = fileInputStream1.read()) != EOF) {
-					if (buffer != fileInputStream2.read()) {
-						return false;
-					}
-				}
-				return true;
-			}
-		} else {
-			return false;
-		}
+		// Compares in blocks and up to the end of both files, so a file growing during the comparison is not taken as equal
+		return Files.mismatch(file1.toPath(), file2.toPath()) == -1L;
 	}
 
 	/**
@@ -96,12 +87,13 @@ public class FileComparer {
 	 * @param file2
 	 *            the second file
 	 * @param ignoreLeadingAndTrailingWhitespaces
-	 *            true to remove leading and trailing whitespace of each line before comparing
+	 *            true to ignore leading and trailing whitespace of each line when comparing. The lines are
+	 *            output unchanged.
 	 * @param blockSensitiveCompare
 	 *            true to synchronize the texts at the largest common block of lines, false to
 	 *            synchronize at the next equal line
 	 * @param outputMode
-	 *            the lines to output
+	 *            the lines to output, null for {@link OutputMode#All}
 	 * @return the diff text, starting with two header lines naming the files and their modification
 	 *         dates
 	 * @throws Exception
@@ -120,12 +112,9 @@ public class FileComparer {
 		final TextFilePropertiesReader fileReader2 = new TextFilePropertiesReader(file2);
 		final String dataString2 = fileReader2.readFileToString();
 
-		final StringBuilder result = new StringBuilder();
-		result.append(generateUnifiedDiff(file1.getAbsolutePath() + " " + DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, DateUtilities.getLocalDateTime(file1.lastModified())), dataString1,
+		return generateUnifiedDiff(file1.getAbsolutePath() + " " + DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, DateUtilities.getLocalDateTime(file1.lastModified())), dataString1,
 				file2.getAbsolutePath() + " " + DateUtilities.formatDate(DateUtilities.YYYY_MM_DD_HHMMSS, DateUtilities.getLocalDateTime(file2.lastModified())), dataString2, ignoreLeadingAndTrailingWhitespaces, blockSensitiveCompare,
-				outputMode));
-
-		return result.toString();
+				outputMode);
 	}
 
 	/**
@@ -143,17 +132,18 @@ public class FileComparer {
 	 * @param dataString2
 	 *            the second text
 	 * @param ignoreLeadingAndTrailingWhitespaces
-	 *            true to remove leading and trailing whitespace of each line before comparing
+	 *            true to ignore leading and trailing whitespace of each line when comparing. The lines are
+	 *            output unchanged, lines contained in both texts as in the first text.
 	 * @param blockSensitiveCompare
 	 *            true to synchronize the texts at the largest common block of lines, false to
 	 *            synchronize at the next equal line
 	 * @param outputMode
-	 *            the lines to output
+	 *            the lines to output, null for {@link OutputMode#All}
 	 * @return the diff text, starting with two header lines naming the sources
 	 * @throws Exception
 	 *             if a text is null
 	 */
-	public static String generateUnifiedDiff(final String sourceName1, String dataString1, final String sourceName2, String dataString2, final boolean ignoreLeadingAndTrailingWhitespaces, final boolean blockSensitiveCompare,
+	public static String generateUnifiedDiff(final String sourceName1, final String dataString1, final String sourceName2, final String dataString2, final boolean ignoreLeadingAndTrailingWhitespaces, final boolean blockSensitiveCompare,
 			final OutputMode outputMode) throws Exception {
 		if (dataString1 == null) {
 			throw new Exception("Datastring 1 is invalid");
@@ -161,23 +151,25 @@ public class FileComparer {
 			throw new Exception("Datastring 2 is invalid");
 		}
 
-		if (ignoreLeadingAndTrailingWhitespaces) {
-			dataString1 = TextUtilities.removeLeadingAndTrailingWhitespaces(dataString1);
-			dataString2 = TextUtilities.removeLeadingAndTrailingWhitespaces(dataString2);
-		}
+		final boolean outputCommonalities = outputMode == null || outputMode == OutputMode.All || outputMode == OutputMode.CommonalitiesOnly;
+		final boolean outputDifferences = outputMode == null || outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly;
 
 		final List<String> lines1 = TextUtilities.getLines(dataString1);
 		int position1 = 0;
 		final List<String> lines2 = TextUtilities.getLines(dataString2);
 		int position2 = 0;
 
+		// Lines are compared by these keys, but output unchanged
+		final List<String> compareLines1 = ignoreLeadingAndTrailingWhitespaces ? stripLines(lines1) : lines1;
+		final List<String> compareLines2 = ignoreLeadingAndTrailingWhitespaces ? stripLines(lines2) : lines2;
+
 		final StringBuilder result = new StringBuilder();
 		result.append(Utilities.repeat(SOURCE1_SIGN, 3) + " " + sourceName1 + "\n");
 		result.append(Utilities.repeat(SOURCE2_SIGN, 3) + " " + sourceName2 + "\n");
 
 		while (position1 < lines1.size() && position2 < lines2.size()) {
-			if (lines1.get(position1).equals(lines2.get(position2))) {
-				if (outputMode == OutputMode.All || outputMode == OutputMode.CommonalitiesOnly) {
+			if (compareLines1.get(position1).equals(compareLines2.get(position2))) {
+				if (outputCommonalities) {
 					result.append(" ");
 					result.append(lines1.get(position1));
 					result.append("\n");
@@ -187,9 +179,9 @@ public class FileComparer {
 			} else {
 				Tuple<Integer, Integer> nextEquationPosition;
 				if (blockSensitiveCompare) {
-					nextEquationPosition = findNextEquationByBlock(position1, lines1, position2, lines2);
+					nextEquationPosition = findNextEquationByBlock(position1, compareLines1, position2, compareLines2);
 				} else {
-					nextEquationPosition = findNextEquationStraigth(position1, lines1, position2, lines2);
+					nextEquationPosition = findNextEquationStraigth(position1, compareLines1, position2, compareLines2);
 				}
 				if (nextEquationPosition == null) {
 					// no more equations
@@ -197,7 +189,7 @@ public class FileComparer {
 				} else {
 					// print differences up to next equation
 					while (position1 < nextEquationPosition.getFirst()) {
-						if (outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly) {
+						if (outputDifferences) {
 							result.append(SOURCE1_SIGN);
 							result.append(lines1.get(position1));
 							result.append("\n");
@@ -205,7 +197,7 @@ public class FileComparer {
 						position1++;
 					}
 					while (position2 < nextEquationPosition.getSecond()) {
-						if (outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly) {
+						if (outputDifferences) {
 							result.append(SOURCE2_SIGN);
 							result.append(lines2.get(position2));
 							result.append("\n");
@@ -218,7 +210,7 @@ public class FileComparer {
 
 		// add file tails not contained in other file
 		while (position1 < lines1.size()) {
-			if (outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly) {
+			if (outputDifferences) {
 				result.append(SOURCE1_SIGN);
 				result.append(lines1.get(position1));
 				result.append("\n");
@@ -226,7 +218,7 @@ public class FileComparer {
 			position1++;
 		}
 		while (position2 < lines2.size()) {
-			if (outputMode == OutputMode.All || outputMode == OutputMode.DifferencesOnly) {
+			if (outputDifferences) {
 				result.append(SOURCE2_SIGN);
 				result.append(lines2.get(position2));
 				result.append("\n");
@@ -235,6 +227,21 @@ public class FileComparer {
 		}
 
 		return result.toString();
+	}
+
+	/**
+	 * Removes leading and trailing whitespace of each line.
+	 *
+	 * @param lines
+	 *            the lines
+	 * @return new list of stripped lines
+	 */
+	private static List<String> stripLines(final List<String> lines) {
+		final List<String> strippedLines = new ArrayList<>(lines.size());
+		for (final String line : lines) {
+			strippedLines.add(line.strip());
+		}
+		return strippedLines;
 	}
 
 	/**
@@ -321,7 +328,12 @@ public class FileComparer {
 
 	/**
 	 * Finds the start of the largest block of consecutive equal items in two list ranges. Of several
-	 * blocks with the same size the first one found is returned.
+	 * blocks with the same size the first one found (lowest index in the first list, then in the second list) is returned.
+	 * <p>
+	 * Only pairs of equal items are visited, found by an index of the second list, and pairs within an already measured
+	 * block are skipped, because they cannot start a larger block. This avoids comparing every pair of items. The items
+	 * must implement {@link Object#hashCode()} consistent with {@link Object#equals(Object)}.
+	 * </p>
 	 *
 	 * @param <T>
 	 *            the type of the list items
@@ -349,26 +361,43 @@ public class FileComparer {
 		if (endPosition2 < 0 || endPosition2 >= list2.size()) {
 			endPosition2 = list2.size() - 1;
 		}
+
+		// Positions of each item within the range of the second list, ascending
+		final Map<T, List<Integer>> positionsInList2 = new HashMap<>();
+		for (int position2 = Math.max(0, startPosition2); position2 <= endPosition2; position2++) {
+			positionsInList2.computeIfAbsent(list2.get(position2), k -> new ArrayList<>()).add(position2);
+		}
+
+		// End (exclusive, index in the first list) of the last measured block on each diagonal (position2 - position1)
+		final Map<Integer, Integer> measuredBlockEndByDiagonal = new HashMap<>();
+
 		Tuple<Integer, Integer> largestEquationPosition = null;
 		int largestEquationLength = 0;
 
-		for (int position1 = startPosition1; position1 <= endPosition1; position1++) {
-			for (int position2 = startPosition2; position2 <= endPosition2; position2++) {
-				if (list1.get(position1).equals(list2.get(position2))) {
-					// found an equations start, so check for maxLength
-					int equationLength = 1;
-					while (position1 + equationLength <= endPosition1 && position2 + equationLength <= endPosition2) {
-						if (list1.get(position1 + equationLength).equals(list2.get(position2 + equationLength))) {
-							equationLength++;
-						} else {
-							break;
-						}
-					}
+		for (int position1 = Math.max(0, startPosition1); position1 <= endPosition1; position1++) {
+			final List<Integer> equalPositions2 = positionsInList2.getOrDefault(list1.get(position1), Collections.emptyList());
+			for (final int position2 : equalPositions2) {
+				final int diagonal = position2 - position1;
+				final Integer measuredBlockEnd = measuredBlockEndByDiagonal.get(diagonal);
+				if (measuredBlockEnd != null && position1 < measuredBlockEnd) {
+					// Within a measured block, so this pair starts a shorter block, which can never be the largest
+					continue;
+				}
 
-					if (largestEquationLength < equationLength) {
-						largestEquationLength = equationLength;
-						largestEquationPosition = new Tuple<>(position1, position2);
+				// found an equations start, so check for maxLength
+				int equationLength = 1;
+				while (position1 + equationLength <= endPosition1 && position2 + equationLength <= endPosition2) {
+					if (list1.get(position1 + equationLength).equals(list2.get(position2 + equationLength))) {
+						equationLength++;
+					} else {
+						break;
 					}
+				}
+				measuredBlockEndByDiagonal.put(diagonal, position1 + equationLength);
+
+				if (largestEquationLength < equationLength) {
+					largestEquationLength = equationLength;
+					largestEquationPosition = new Tuple<>(position1, position2);
 				}
 			}
 		}

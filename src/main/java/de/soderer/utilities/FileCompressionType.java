@@ -1,5 +1,8 @@
 package de.soderer.utilities;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 /**
  * Compression formats of data files.
  */
@@ -29,20 +32,29 @@ public enum FileCompressionType {
 	}
 
 	/**
-	 * Returns the compression format for a name, ignoring case.
+	 * Returns the compression format for a name or a default file extension, ignoring case and surrounding whitespace.
 	 *
 	 * @param compressionTypeString
-	 *            the name of the compression format, like "zip" or "targz"
+	 *            the name of the compression format, like "zip" or "targz", or its default file extension with or
+	 *            without leading dot, like "tar.gz" or ".tgz"
 	 * @return the matching compression format
-	 * @throws RuntimeException
-	 *             if there is no compression format with this name
+	 * @throws IllegalArgumentException
+	 *             if there is no compression format with this name or extension
 	 */
 	public static FileCompressionType getFromString(final String compressionTypeString) {
-		for (final FileCompressionType compressionType : FileCompressionType.values()) {
-			if (compressionType.toString().equalsIgnoreCase(compressionTypeString)) {
-				return compressionType;
+		if (compressionTypeString != null) {
+			String searchValue = compressionTypeString.trim();
+			if (searchValue.startsWith(".")) {
+				searchValue = searchValue.substring(1);
+			}
+			for (final FileCompressionType compressionType : FileCompressionType.values()) {
+				// name() instead of toString(), so an overridden toString() cannot change the accepted names
+				if (compressionType.name().equalsIgnoreCase(searchValue) || compressionType.defaultFileExtension.equalsIgnoreCase(searchValue)) {
+					return compressionType;
+				}
 			}
 		}
-		throw new RuntimeException("Invalid compression type: " + compressionTypeString);
+		throw new IllegalArgumentException("Invalid compression type: '" + compressionTypeString + "' (valid: "
+				+ Arrays.stream(values()).map(FileCompressionType::name).collect(Collectors.joining(", ")) + ")");
 	}
 }

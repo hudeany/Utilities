@@ -13,7 +13,6 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
@@ -58,7 +57,8 @@ public class FileUtilities {
 		final File[] directoryFiles = directory.listFiles();
 		if (directoryFiles != null) {
 			for (final File file : directoryFiles) {
-				if (file.getName().startsWith(nameStart) && file.getName().endsWith("." + extension)) {
+				// Directories with a matching name (like "data.csv/") are no files
+				if (file.isFile() && file.getName().startsWith(nameStart) && file.getName().endsWith("." + extension)) {
 					files.add(file);
 				}
 			}
@@ -146,31 +146,20 @@ public class FileUtilities {
 	 *            the encoding used for files without BOM which are no valid UTF-8, or null for Windows-1252
 	 * @return true, if any of the texts was found, false also for an empty file or no search texts
 	 * @throws Exception
-	 *             if the file cannot be read or a regular expression is invalid
+	 *             if the file does not exist, cannot be read or a regular expression is invalid
 	 */
 	public static boolean fileSearchText(final File searchFile, final List<String> searchTexts, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression, final Charset defaultEncoding) throws Exception {
+		if (!searchFile.exists()) {
+			throw new FileNotFoundException("File not found: " + searchFile.getAbsolutePath());
+		}
 		if (searchFile.length() > 0 && searchTexts != null && searchTexts.size() > 0) {
 			// The whole file is checked, a file starting with plain ASCII may contain non UTF-8 characters later on
 			final byte[] fileData = readFileToByteArray(searchFile);
 			final Charset encoding = detectEncodingOfFileData(fileData, defaultEncoding);
-			final String dataString = new String(fileData, encoding);
+			final String dataString = removeBomCharacter(new String(fileData, encoding));
 
 			for (int i = 0; i < searchTexts.size(); i++) {
-				Pattern searchPattern;
-				if (searchTextIsRegularExpression) {
-					// MULTILINE like in fileReplaceText, so "^" and "$" match at line starts and ends in both methods
-					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE);
-					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
-					}
-				} else {
-					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.LITERAL);
-					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-					}
-				}
+				final Pattern searchPattern = compileSearchPattern(searchTexts.get(i), searchCaseSensitive, searchTextIsRegularExpression);
 				final Matcher matcher = searchPattern.matcher(dataString);
 				if (matcher.find()) {
 					return true;
@@ -246,23 +235,15 @@ public class FileUtilities {
 			// Detecting only the start would decode such characters as replacement characters and destroy them when writing.
 			final byte[] fileData = readFileToByteArray(searchFile);
 			final Charset encoding = detectEncodingOfFileData(fileData, defaultEncoding);
-			String dataString = new String(fileData, encoding);
+			final String decodedData = new String(fileData, encoding);
+			// The BOM character is removed while replacing, so "^" also matches the first line, and restored for writing
+			final boolean hasBomCharacter = decodedData.startsWith(BOM_CHARACTER);
+			String dataString = removeBomCharacter(decodedData);
 
 			for (int i = 0; i < searchTexts.size(); i++) {
-				Pattern searchPattern;
+				final Pattern searchPattern = compileSearchPattern(searchTexts.get(i), searchCaseSensitive, searchTextIsRegularExpression);
 				String replacementText = replacementTexts.get(i);
-				if (searchTextIsRegularExpression) {
-					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE);
-					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
-					}
-				} else {
-					if (searchCaseSensitive) {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.LITERAL);
-					} else {
-						searchPattern = Pattern.compile(searchTexts.get(i), Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-					}
+				if (!searchTextIsRegularExpression) {
 					// A literal replacement must not interpret "$" (group reference) and "\\"
 					replacementText = Matcher.quoteReplacement(replacementText);
 				}
@@ -271,6 +252,10 @@ public class FileUtilities {
 					dataString = matcher.replaceAll(replacementText);
 					foundAndReplaced = true;
 				}
+			}
+
+			if (hasBomCharacter) {
+				dataString = BOM_CHARACTER + dataString;
 			}
 
 			if (foundAndReplaced) {
@@ -285,11 +270,47 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Detects the encoding of the complete data of a text file: by its BOM, as UTF-8 if it is valid UTF-8, otherwise
-	 * the default encoding.
+	 * Detects the encoding of the complete data of a text file: by its BOM, as UTF-16 or UTF-32 by their zero bytes, as
+	 * UTF-8 if it is valid UTF-8, otherwise the default encoding (see {@link EncodingDetector}). The data is complete,
+	 * so a multi-byte UTF-8 sequence truncated at its end means it is no UTF-8.
 	 */
 	private static Charset detectEncodingOfFileData(final byte[] fileData, final Charset defaultEncoding) {
-		return Charset.forName(TextUtilities.detectEncoding(fileData, defaultEncoding).getFirst());
+		return EncodingDetector.detectEncoding(fileData, defaultEncoding, true).charset;
+	}
+
+	/** BOM character U+FEFF, as decoded from the BOM of any UTF encoding */
+	private static final String BOM_CHARACTER = "﻿";
+
+	/**
+	 * Removes a leading BOM character of decoded text.
+	 *
+	 * @param text
+	 *            the decoded text
+	 * @return the text without leading BOM character
+	 */
+	private static String removeBomCharacter(final String text) {
+		return text.startsWith(BOM_CHARACTER) ? text.substring(BOM_CHARACTER.length()) : text;
+	}
+
+	/**
+	 * Compiles a search pattern for the text search and replace methods. Regular expressions use MULTILINE mode, so
+	 * "^" and "$" match at line starts and ends. Case insensitive search also covers non ASCII letters like umlauts.
+	 *
+	 * @param searchText
+	 *            the text or regular expression to search for
+	 * @param searchCaseSensitive
+	 *            true to search case sensitive
+	 * @param searchTextIsRegularExpression
+	 *            true if the search text is a regular expression, false for a literal text
+	 * @return the compiled pattern
+	 */
+	private static Pattern compileSearchPattern(final String searchText, final boolean searchCaseSensitive, final boolean searchTextIsRegularExpression) {
+		int flags = searchTextIsRegularExpression ? Pattern.MULTILINE : Pattern.LITERAL;
+		if (!searchCaseSensitive) {
+			// Without UNICODE_CASE only ASCII letters are compared case insensitive, so "ä" would not match "Ä"
+			flags |= Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
+		}
+		return Pattern.compile(searchText, flags);
 	}
 
 	/**
@@ -512,24 +533,37 @@ public class FileUtilities {
 	 *             if reading fails
 	 */
 	public static int getLineCount(final File file) throws IOException {
-		InputStream inputStream = null;
-		try {
-			inputStream = new FileInputStream(file);
-			if (Utilities.endsWithIgnoreCase(file.getName(), ".zip")) {
-				inputStream = new ZipInputStream(inputStream);
-				((ZipInputStream) inputStream).getNextEntry();
-			}
-
-			try (LineNumberReader lineNumberReader = new LineNumberReader(new InputStreamReader(inputStream))) {
-				while (lineNumberReader.readLine() != null) {
-					// do nothing
+		if (Utilities.endsWithIgnoreCase(file.getName(), ".zip")) {
+			try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(file))) {
+				if (zipInputStream.getNextEntry() == null) {
+					// Zip file without entries
+					return 0;
 				}
-
-				return lineNumberReader.getLineNumber();
+				return getLineCount(zipInputStream);
 			}
-		} finally {
-			Utilities.closeQuietly(inputStream);
+		} else {
+			try (InputStream inputStream = new FileInputStream(file)) {
+				return getLineCount(inputStream);
+			}
 		}
+	}
+
+	/**
+	 * Counts the lines of a stream, decoded with the platform default charset. The stream is not closed.
+	 *
+	 * @param inputStream
+	 *            the stream to read
+	 * @return the number of lines
+	 * @throws IOException
+	 *             if reading fails
+	 */
+	private static int getLineCount(final InputStream inputStream) throws IOException {
+		// Not closed here, the caller closes the stream
+		final LineNumberReader lineNumberReader = new LineNumberReader(new InputStreamReader(inputStream));
+		while (lineNumberReader.readLine() != null) {
+			// do nothing
+		}
+		return lineNumberReader.getLineNumber();
 	}
 
 	/**
@@ -574,14 +608,7 @@ public class FileUtilities {
 	 *             if reading fails
 	 */
 	public static byte[] readFileToByteArray(final File dataFile) throws Exception {
-		ByteArrayOutputStream output = null;
-		try (FileInputStream input = new FileInputStream(dataFile)) {
-			output = new ByteArrayOutputStream();
-			IoUtilities.copy(input, output);
-			return output.toByteArray();
-		} catch (final Exception e) {
-			throw e;
-		}
+		return Files.readAllBytes(dataFile.toPath());
 	}
 
 	/**
@@ -809,14 +836,78 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Removes the content of all lines starting with "#". The empty lines remain.
+	 * Removes the content of all comment lines of a properties text. As in {@link java.util.Properties}, a comment
+	 * line starts with "#" or "!" after optional blanks, tabs and form feeds, and a line following a line ending with
+	 * an odd number of backslashes is a continuation of a value, never a comment. The empty lines remain, so line
+	 * numbers stay the same.
 	 *
 	 * @param propertiesTextData
 	 *            the properties text
 	 * @return the text without comment lines
 	 */
 	public static String removePropertiesCommentLines(final String propertiesTextData) {
-		return propertiesTextData.replaceAll("(?m)^#.*", "");
+		final StringBuilder result = new StringBuilder(propertiesTextData.length());
+		boolean isContinuationLine = false;
+		int lineStart = 0;
+		while (lineStart < propertiesTextData.length()) {
+			int lineEnd = lineStart;
+			while (lineEnd < propertiesTextData.length() && propertiesTextData.charAt(lineEnd) != '\r' && propertiesTextData.charAt(lineEnd) != '\n') {
+				lineEnd++;
+			}
+			int linebreakEnd = lineEnd;
+			if (linebreakEnd < propertiesTextData.length()) {
+				linebreakEnd++;
+				if (propertiesTextData.charAt(lineEnd) == '\r' && linebreakEnd < propertiesTextData.length() && propertiesTextData.charAt(linebreakEnd) == '\n') {
+					linebreakEnd++;
+				}
+			}
+
+			final String line = propertiesTextData.substring(lineStart, lineEnd);
+			if (!isContinuationLine && isPropertiesCommentLine(line)) {
+				// Comments never continue on the next line
+				isContinuationLine = false;
+			} else {
+				result.append(line);
+				isContinuationLine = endsWithOddNumberOfBackslashes(line);
+			}
+			result.append(propertiesTextData, lineEnd, linebreakEnd);
+			lineStart = linebreakEnd;
+		}
+		return result.toString();
+	}
+
+	/**
+	 * Checks whether a line of a properties text is a comment line.
+	 *
+	 * @param line
+	 *            the line without line break
+	 * @return true, if the first character after blanks, tabs and form feeds is "#" or "!"
+	 */
+	private static boolean isPropertiesCommentLine(final String line) {
+		for (int i = 0; i < line.length(); i++) {
+			final char character = line.charAt(i);
+			if (character == '#' || character == '!') {
+				return true;
+			} else if (character != ' ' && character != '\t' && character != '\f') {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks whether a line ends with an odd number of backslashes, which continues the value on the next line.
+	 *
+	 * @param line
+	 *            the line without line break
+	 * @return true, if the line is continued
+	 */
+	private static boolean endsWithOddNumberOfBackslashes(final String line) {
+		int backslashCount = 0;
+		for (int i = line.length() - 1; i >= 0 && line.charAt(i) == '\\'; i--) {
+			backslashCount++;
+		}
+		return backslashCount % 2 == 1;
 	}
 
 	/**
@@ -903,7 +994,7 @@ public class FileUtilities {
 	 *            the file to check
 	 * @param charsets
 	 *            the candidate charsets in order of preference
-	 * @return the detected charset, or null if the file is empty, has another BOM or none of the
+	 * @return the detected charset, or null if the file is empty or none of the
 	 *         charsets was detected
 	 * @throws FileNotFoundException
 	 *             if the file does not exist
@@ -916,20 +1007,8 @@ public class FileUtilities {
 			final int readBytesLength = firstBytes.length;
 			if (readBytesLength <= 0) {
 				return null;
-			} else if (fileInputStream.getBOM() != null && fileInputStream.getBOM() != BOM.NONE) {
-				if (fileInputStream.getBOM() == BOM.UTF_8) {
-					return StandardCharsets.UTF_8;
-				} else if (fileInputStream.getBOM() == BOM.UTF_16_BE) {
-					return StandardCharsets.UTF_16BE;
-				} else if (fileInputStream.getBOM() == BOM.UTF_16_LE) {
-					return StandardCharsets.UTF_16LE;
-				} else if (fileInputStream.getBOM() == BOM.UTF_32_BE) {
-					return Charset.forName("UTF-32BE");
-				} else if (fileInputStream.getBOM() == BOM.UTF_32_LE) {
-					return Charset.forName("UTF-32LE");
-				} else {
-					return null;
-				}
+			} else if (fileInputStream.getBOM() != BOM.NONE) {
+				return fileInputStream.getBOM().getCharset();
 			} else {
 				for (final Charset charset : charsets) {
 					// String.getBytes returns exactly the encoded bytes, while the backing array of

@@ -1,43 +1,76 @@
 package de.soderer.utilities;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 /**
  * Data formats of import and export files.
  */
 public enum FileDataType {
 	/** Comma separated values (CSV) */
-	CSV,
+	CSV("csv"),
 	/** Microsoft Excel spreadsheet (xls, xlsx) */
-	EXCEL,
+	EXCEL("xlsx", "xls"),
 	/** JSON data */
-	JSON,
+	JSON("json"),
 	/** YAML data */
-	YAML,
+	YAML("yaml", "yml"),
 	/** KeePass database (kdbx) */
-	KDBX,
+	KDBX("kdbx"),
 	/** OpenDocument spreadsheet (ods) */
-	ODS,
+	ODS("ods"),
 	/** SQL statements */
-	SQL,
+	SQL("sql"),
 	/** vCard data (vcf) */
-	VCF,
+	VCF("vcf"),
 	/** XML data */
-	XML;
+	XML("xml");
+
+	/** File extensions without leading dot, the first one is the default */
+	private final String[] fileExtensions;
+
+	FileDataType(final String... fileExtensions) {
+		this.fileExtensions = fileExtensions;
+	}
 
 	/**
-	 * Returns the data type for a name, ignoring case.
+	 * Returns the default file extension of this data format.
+	 *
+	 * @return the file extension without leading dot, like "csv" or "xlsx"
+	 */
+	public String getDefaultFileExtension() {
+		return fileExtensions[0];
+	}
+
+	/**
+	 * Returns the data type for a name or a file extension, ignoring case and surrounding whitespace.
 	 *
 	 * @param dataTypeString
-	 *            the name of the data type, like "csv"
+	 *            the name of the data type, like "csv", or one of its file extensions with or without leading dot, like
+	 *            "yml" or ".xls"
 	 * @return the matching data type
-	 * @throws RuntimeException
-	 *             if there is no data type with this name
+	 * @throws IllegalArgumentException
+	 *             if there is no data type with this name or extension
 	 */
 	public static FileDataType getFromString(final String dataTypeString) {
-		for (final FileDataType dataType : FileDataType.values()) {
-			if (dataType.toString().equalsIgnoreCase(dataTypeString)) {
-				return dataType;
+		if (dataTypeString != null) {
+			String searchValue = dataTypeString.trim();
+			if (searchValue.startsWith(".")) {
+				searchValue = searchValue.substring(1);
+			}
+			for (final FileDataType dataType : FileDataType.values()) {
+				// name() instead of toString(), so an overridden toString() cannot change the accepted names
+				if (dataType.name().equalsIgnoreCase(searchValue)) {
+					return dataType;
+				}
+				for (final String fileExtension : dataType.fileExtensions) {
+					if (fileExtension.equalsIgnoreCase(searchValue)) {
+						return dataType;
+					}
+				}
 			}
 		}
-		throw new RuntimeException("Invalid file data type: " + dataTypeString);
+		throw new IllegalArgumentException("Invalid file data type: '" + dataTypeString + "' (valid: "
+				+ Arrays.stream(values()).map(FileDataType::name).collect(Collectors.joining(", ")) + ")");
 	}
 }
