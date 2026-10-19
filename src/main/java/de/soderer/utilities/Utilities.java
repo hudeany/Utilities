@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -13,13 +14,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.lang.reflect.Array;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.HttpURLConnection;
 import java.net.Proxy;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -55,6 +56,9 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -65,7 +69,6 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
-
 
 /**
  * Global Utilities
@@ -197,20 +200,26 @@ public class Utilities {
 	 * @param clearData
 	 *            data to encode
 	 * @param maxCharactersPerLine
-	 *            maximum number of characters per line
+	 *            maximum number of characters per line, must be at least 1
 	 * @param splitCharacters
-	 *            characters appended after every full line, e.g. a linebreak
-	 * @return Base64 string split into lines
+	 *            characters inserted between the lines, e.g. a linebreak (null for none)
+	 * @return Base64 string split into lines, without split characters at the end
+	 * @throws IllegalArgumentException
+	 *             if maxCharactersPerLine is less than 1
 	 */
 	public static String encodeBase64(final byte[] clearData, final int maxCharactersPerLine, final String splitCharacters) {
+		if (maxCharactersPerLine < 1) {
+			throw new IllegalArgumentException("Invalid maximum number of characters per line: " + maxCharactersPerLine);
+		}
 		final String dataBase64 = Base64.getEncoder().encodeToString(clearData);
 		final StringBuilder returnString = new StringBuilder();
-		final int fullLines = (int) Math.floor(dataBase64.length() / maxCharactersPerLine);
-		for (int i = 0; i < fullLines; i++) {
-			returnString.append(dataBase64.substring(i * maxCharactersPerLine, (i * maxCharactersPerLine) + maxCharactersPerLine));
-			returnString.append(splitCharacters);
+		for (int lineStart = 0; lineStart < dataBase64.length(); lineStart += maxCharactersPerLine) {
+			// Split characters only between lines, so the result does not depend on the data length being a multiple of the line length
+			if (lineStart > 0 && splitCharacters != null) {
+				returnString.append(splitCharacters);
+			}
+			returnString.append(dataBase64, lineStart, Math.min(dataBase64.length(), lineStart + maxCharactersPerLine));
 		}
-		returnString.append(dataBase64.substring(fullLines * maxCharactersPerLine, (fullLines * maxCharactersPerLine) + (dataBase64.length() % maxCharactersPerLine)));
 		return returnString.toString();
 	}
 
@@ -230,10 +239,10 @@ public class Utilities {
 	 *
 	 * @param value
 	 *            name to check
-	 * @return true if the name is valid, false for null
+	 * @return true if the name is valid, false for null or an empty name
 	 */
 	public static boolean checkForValidUserName(final String value) {
-		return value != null && value.matches("[A-Za-z0-9_-]*");
+		return value != null && value.matches("[A-Za-z0-9_-]+");
 	}
 
 	/**
@@ -459,15 +468,23 @@ public class Utilities {
 	 * Check if an Integer is contained by an interval definition like {@code -1;2-5;8+}
 	 *
 	 * @param intervals
-	 *            interval definitions separated by ';': a single value, a range "a-b", "-b" for up to b or "a+" for a and above
+	 *            interval definitions separated by ';': a single value, a range "a-b", "-b" for up to b or "a+" for a and above.
+	 *            Whitespace and empty definitions are ignored.
 	 * @param item
 	 *            value to check
 	 * @return true if the value is contained in at least one interval
+	 * @throws NumberFormatException
+	 *             if an interval definition is invalid
 	 */
 	public static boolean checkForIntervalContainment(final String intervals, final int item) {
 		if (intervals != null && intervals.length() > 0) {
 			final String[] blockStrings = intervals.split(";");
-			for (final String blockString : blockStrings) {
+			for (String blockString : blockStrings) {
+				// Whitespace like in "1; 2 - 5" is allowed, empty definitions like in "1;;2" are skipped
+				blockString = blockString.replaceAll("\\s+", "");
+				if (blockString.isEmpty()) {
+					continue;
+				}
 				if (blockString.endsWith("+")) {
 					if (Integer.parseInt(blockString.substring(0, blockString.length() - 1)) <= item) {
 						return true;
@@ -813,31 +830,35 @@ public class Utilities {
 	public static String getHumanReadableNumber(final Number value, final String unitTypeSign, final boolean siUnits, final int amountOfSignifiantDigits, final boolean keepTrailingZeros, final Locale locale) {
 		final int unit = siUnits ? 1000 : 1024;
 		final double doubleValue = value.doubleValue();
+		// Negative values get the same unit prefix as their absolute value
+		final double magnitude = Math.abs(doubleValue);
 
-		if (doubleValue < unit && (value instanceof Integer || value instanceof Long)) {
+		final boolean isIntegerValue = value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long
+				|| value instanceof BigInteger || value instanceof AtomicInteger || value instanceof AtomicLong;
+		if (magnitude < unit && isIntegerValue) {
 			return value + getHumanReadableUnitExtension(0, unitTypeSign, siUnits);
 		}
 
 		int exponent = 0;
-		if (doubleValue >= unit && !Double.isInfinite(doubleValue)) {
+		if (magnitude >= unit && !Double.isInfinite(magnitude)) {
 			// "E" is the largest available unit prefix
-			exponent = Math.min((int) (Math.log(doubleValue) / Math.log(unit)), HUMAN_READABLE_MAX_EXPONENT);
+			exponent = Math.min((int) (Math.log(magnitude) / Math.log(unit)), HUMAN_READABLE_MAX_EXPONENT);
 		}
 		double interimValue = doubleValue / Math.pow(unit, exponent);
 
 		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
-		DecimalFormat numberFormat = createHumanReadableNumberFormat(interimValue, amountOfSignifiantDigits, keepTrailingZeros, decimalFormatSymbols);
+		DecimalFormat numberFormat = createHumanReadableNumberFormat(Math.abs(interimValue), amountOfSignifiantDigits, keepTrailingZeros, decimalFormatSymbols);
 
 		if (!Double.isNaN(interimValue) && !Double.isInfinite(interimValue)) {
 			// Rounding may carry over into the next decade or even the next unit prefix (e.g. 999.96 -> "1000.0"),
 			// so the format is chosen by the rounded value instead of the raw value
-			double roundedValue = new BigDecimal(interimValue).setScale(numberFormat.getMaximumFractionDigits(), numberFormat.getRoundingMode()).doubleValue();
-			if (roundedValue >= unit && exponent < HUMAN_READABLE_MAX_EXPONENT) {
+			double roundedMagnitude = new BigDecimal(Math.abs(interimValue)).setScale(numberFormat.getMaximumFractionDigits(), numberFormat.getRoundingMode()).doubleValue();
+			if (roundedMagnitude >= unit && exponent < HUMAN_READABLE_MAX_EXPONENT) {
 				exponent++;
 				interimValue = doubleValue / Math.pow(unit, exponent);
-				roundedValue = roundedValue / unit;
+				roundedMagnitude = roundedMagnitude / unit;
 			}
-			numberFormat = createHumanReadableNumberFormat(roundedValue, amountOfSignifiantDigits, keepTrailingZeros, decimalFormatSymbols);
+			numberFormat = createHumanReadableNumberFormat(roundedMagnitude, amountOfSignifiantDigits, keepTrailingZeros, decimalFormatSymbols);
 		}
 
 		return numberFormat.format(interimValue) + getHumanReadableUnitExtension(exponent, unitTypeSign, siUnits);
@@ -886,11 +907,29 @@ public class Utilities {
 	 * @param unitTypeSign unit sign at the end of the text to remove, e.g. "B" for bytes, may be null
 	 * @param siUnits true for factor 1000 per prefix step, false for factor 1024
 	 * @param locale locale defining the decimal and grouping separator
-	 * @return parsed value as float (may be rounded)
+	 * @return parsed value as float (rounded to about 7 significant digits, so e.g. "16777217" becomes 16777216)
+	 * @throws RuntimeException if the value is blank
+	 * @throws NumberFormatException if the value is no number
+	 * @deprecated float is too imprecise for sizes above 16 MiB, use {@link #parseHumanReadableDouble(String, String, boolean, Locale)}
+	 */
+	@Deprecated
+	public static float parseHumanReadableNumber(final String value, final String unitTypeSign, final boolean siUnits, final Locale locale) {
+		return (float) parseHumanReadableDouble(value, unitTypeSign, siUnits, locale);
+	}
+
+	/**
+	 * Parse a human readable number with optional unit prefix like "1.5 KiB", "2 MB" or "300 k".
+	 * Both SI prefixes (k, M, G, T, P, E) and binary prefixes (Ki, Mi, ...) are accepted, the factor is defined by siUnits.
+	 *
+	 * @param value text to parse
+	 * @param unitTypeSign unit sign at the end of the text to remove, e.g. "B" for bytes, may be null
+	 * @param siUnits true for factor 1000 per prefix step, false for factor 1024
+	 * @param locale locale defining the decimal and grouping separator
+	 * @return parsed value (exact for integer values up to 2^53)
 	 * @throws RuntimeException if the value is blank
 	 * @throws NumberFormatException if the value is no number
 	 */
-	public static float parseHumanReadableNumber(String value, final String unitTypeSign, final boolean siUnits, final Locale locale) {
+	public static double parseHumanReadableDouble(String value, final String unitTypeSign, final boolean siUnits, final Locale locale) {
 		if (isBlank(value)) {
 			throw new RuntimeException("Not a numeric value");
 		} else if (unitTypeSign != null && endsWithIgnoreCase(value, unitTypeSign)) {
@@ -951,8 +990,7 @@ public class Utilities {
 			value = value.substring(0, value.length() - 1).trim();
 		}
 
-		final float numericValue = Float.parseFloat(value) * dimension;
-		return numericValue;
+		return Double.parseDouble(value) * dimension;
 	}
 
 	/**
@@ -964,56 +1002,72 @@ public class Utilities {
 	 * @param unitTypeSign unit sign of the items, e.g. "B" for bytes, may be null
 	 * @param siUnits true for SI unit prefixes (factor 1000), false for binary unit prefixes (factor 1024)
 	 * @param locale locale for the decimal separator
-	 * @return speed per second with unit, or "Done in &lt;1 ms" if the time span is shorter than one millisecond
+	 * @return speed per second with unit like "500.0 B/s" or "1.5 kB/s", or "Done in &lt;1 ms" if the time span is shorter than one millisecond
+	 * @throws IllegalArgumentException if the end time is before the start time
 	 */
 	public static String getHumanReadableSpeed(final LocalDateTime startTime, final LocalDateTime endTime, final long itemsDone, final String unitTypeSign, final boolean siUnits, final Locale locale) {
 		final long milliseconds = Duration.between(startTime, endTime).toMillis();
-		if (milliseconds > 0) {
-			// Floating point division, so fractions of items per second are kept
-			final double itemsPerSecond = itemsDone * 1000.0 / milliseconds;
-
-			final int unit = siUnits ? 1000 : 1024;
-			double interimValue = itemsPerSecond;
-			String unitExtension = "";
-			int maxTrailingDigits = 0;
-			if (interimValue > unit) {
-				// "E" is the largest available unit prefix
-				final int exponent = Math.min((int) (Math.log(interimValue) / Math.log(unit)), HUMAN_READABLE_MAX_EXPONENT);
-				unitExtension = " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1) + (siUnits ? "" : "i");
-				interimValue = interimValue / Math.pow(unit, exponent);
-				maxTrailingDigits = exponent * 3;
-			}
-
-			if (isNotBlank(unitTypeSign)) {
-				unitExtension = unitExtension + unitTypeSign + "/s";
-			} else {
-				unitExtension = unitExtension + "/s";
-			}
-
-			final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
-			final DecimalFormat numberFormat;
-			final int amountOfSignificantDigits = 5;
-
-			int trailingDigits;
-			if (interimValue >= 1000) {
-				trailingDigits = amountOfSignificantDigits - 4;
-			} else if (interimValue >= 100) {
-				trailingDigits = amountOfSignificantDigits - 3;
-			} else if (interimValue >= 10) {
-				trailingDigits = amountOfSignificantDigits - 2;
-			} else if (interimValue >= 1) {
-				trailingDigits = amountOfSignificantDigits - 1;
-			} else {
-				trailingDigits = amountOfSignificantDigits;
-			}
-
-			// Without unit prefix maxTrailingDigits is 0, so the repeat count must not get negative
-			numberFormat = new DecimalFormat("#0.0" + repeat("#", Math.max(0, Math.min(trailingDigits, maxTrailingDigits - 1))), decimalFormatSymbols);
-
-			return numberFormat.format(interimValue) + unitExtension;
-		} else {
+		if (milliseconds < 0) {
+			throw new IllegalArgumentException("End time is before start time");
+		} else if (milliseconds == 0) {
 			return "Done in <1 ms";
 		}
+
+		// Floating point division, so fractions of items per second are kept
+		final double itemsPerSecond = itemsDone * 1000.0 / milliseconds;
+		final int unit = siUnits ? 1000 : 1024;
+		final double magnitude = Math.abs(itemsPerSecond);
+
+		int exponent = 0;
+		if (magnitude >= unit) {
+			// "E" is the largest available unit prefix
+			exponent = Math.min((int) (Math.log(magnitude) / Math.log(unit)), HUMAN_READABLE_MAX_EXPONENT);
+		}
+		double interimValue = itemsPerSecond / Math.pow(unit, exponent);
+
+		final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(locale);
+		DecimalFormat numberFormat = createHumanReadableSpeedFormat(Math.abs(interimValue), exponent, decimalFormatSymbols);
+
+		// Rounding may carry over into the next unit prefix (e.g. 999.9999 k -> "1000.0 k"), like in getHumanReadableNumber
+		final double roundedMagnitude = new BigDecimal(Math.abs(interimValue)).setScale(numberFormat.getMaximumFractionDigits(), numberFormat.getRoundingMode()).doubleValue();
+		if (roundedMagnitude >= unit && exponent < HUMAN_READABLE_MAX_EXPONENT) {
+			exponent++;
+			interimValue = itemsPerSecond / Math.pow(unit, exponent);
+			numberFormat = createHumanReadableSpeedFormat(Math.abs(interimValue), exponent, decimalFormatSymbols);
+		}
+
+		final StringBuilder prefixAndSign = new StringBuilder();
+		if (exponent > 0) {
+			prefixAndSign.append((siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1)).append(siUnits ? "" : "i");
+		}
+		if (isNotBlank(unitTypeSign)) {
+			prefixAndSign.append(unitTypeSign);
+		}
+
+		// The blank separates the number from the unit also without unit prefix (before, "500.0B/s" was returned)
+		return numberFormat.format(interimValue) + (prefixAndSign.length() > 0 ? " " + prefixAndSign : "") + "/s";
+	}
+
+	/**
+	 * Creates the number format for a speed value with 5 significant digits, limited to the precision of the unit prefix.
+	 */
+	private static DecimalFormat createHumanReadableSpeedFormat(final double magnitudeValue, final int exponent, final DecimalFormatSymbols decimalFormatSymbols) {
+		final int amountOfSignificantDigits = 5;
+		final int trailingDigits;
+		if (magnitudeValue >= 1000) {
+			trailingDigits = amountOfSignificantDigits - 4;
+		} else if (magnitudeValue >= 100) {
+			trailingDigits = amountOfSignificantDigits - 3;
+		} else if (magnitudeValue >= 10) {
+			trailingDigits = amountOfSignificantDigits - 2;
+		} else if (magnitudeValue >= 1) {
+			trailingDigits = amountOfSignificantDigits - 1;
+		} else {
+			trailingDigits = amountOfSignificantDigits;
+		}
+		// Without unit prefix maxTrailingDigits is 0, so the repeat count must not get negative
+		final int maxTrailingDigits = exponent * 3;
+		return new DecimalFormat("#0.0" + repeat("#", Math.max(0, Math.min(trailingDigits, maxTrailingDigits - 1))), decimalFormatSymbols);
 	}
 
 	/**
@@ -1160,7 +1214,10 @@ public class Utilities {
 	}
 
 	/**
-	 * Download a file from url
+	 * Download a file from url.
+	 * The data is written into a temp file next to the destination first, so an existing file at the destination is only
+	 * replaced after a successful download and stays untouched otherwise.
+	 * HTTP redirects are followed (also from http to https, but never from https to http).
 	 *
 	 * @param url
 	 *            URL of the file
@@ -1169,25 +1226,81 @@ public class Utilities {
 	 * @param proxy
 	 *            proxy to use, null for a direct connection
 	 * @throws Exception
-	 *             if the download or writing the file fails
+	 *             if the download or writing the file fails, or the server answers with an HTTP error status
 	 */
 	public static void downloadFile(final String url, final String localeDestionationPath, final Proxy proxy) throws Exception {
-		final URLConnection urlConnection = URI.create(url).toURL().openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
-		// Without timeouts an unresponsive server would block forever
-		urlConnection.setConnectTimeout(DOWNLOAD_TIMEOUT_MILLIS);
-		urlConnection.setReadTimeout(DOWNLOAD_TIMEOUT_MILLIS);
-		try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
-				FileOutputStream fileOutputStream = new FileOutputStream(localeDestionationPath)) {
-			IoUtilities.copy(bufferedInputStream, fileOutputStream);
+		final File destinationFile = new File(localeDestionationPath).getAbsoluteFile();
+		final File destinationDirectory = destinationFile.getParentFile();
+		if (destinationDirectory == null) {
+			throw new Exception("Invalid destination file path: " + localeDestionationPath);
+		}
+
+		java.nio.file.Path tempFile = null;
+		try {
+			final URLConnection urlConnection = openDownloadConnection(URI.create(url), proxy);
+			// Temp file in the destination directory, so the final move does not cross file systems
+			tempFile = Files.createTempFile(destinationDirectory.toPath(), destinationFile.getName() + ".", ".download");
+			try (BufferedInputStream bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
+					FileOutputStream fileOutputStream = new FileOutputStream(tempFile.toFile())) {
+				IoUtilities.copy(bufferedInputStream, fileOutputStream);
+			}
+			Files.move(tempFile, destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		} catch (final Exception e) {
-			// Do not leave an incomplete file behind
-			new File(localeDestionationPath).delete();
-			throw new Exception("Cannot download file", e);
+			throw new Exception("Cannot download file: " + e.getMessage(), e);
+		} finally {
+			// Only the incomplete temp file is removed, never an existing destination file
+			if (tempFile != null) {
+				Files.deleteIfExists(tempFile);
+			}
 		}
 	}
 
 	/** Timeout in milliseconds for connecting and for each read of a download */
 	private static final int DOWNLOAD_TIMEOUT_MILLIS = 60_000;
+
+	/** Maximum number of HTTP redirects followed by a download */
+	private static final int DOWNLOAD_MAX_REDIRECTS = 5;
+
+	/**
+	 * Opens a connection for a download. HTTP redirects are followed manually, because HttpURLConnection does not follow
+	 * redirects between http and https and would return the body of the redirect response instead.
+	 */
+	private static URLConnection openDownloadConnection(URI uri, final Proxy proxy) throws Exception {
+		for (int redirectCount = 0; ; redirectCount++) {
+			final URLConnection urlConnection = uri.toURL().openConnection(proxy == null ? Proxy.NO_PROXY : proxy);
+			// Without timeouts an unresponsive server would block forever
+			urlConnection.setConnectTimeout(DOWNLOAD_TIMEOUT_MILLIS);
+			urlConnection.setReadTimeout(DOWNLOAD_TIMEOUT_MILLIS);
+			if (!(urlConnection instanceof HttpURLConnection)) {
+				return urlConnection;
+			}
+
+			final HttpURLConnection httpConnection = (HttpURLConnection) urlConnection;
+			httpConnection.setInstanceFollowRedirects(false);
+			final int responseCode = httpConnection.getResponseCode();
+			if (responseCode >= 200 && responseCode < 300) {
+				return httpConnection;
+			} else if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP
+					|| responseCode == HttpURLConnection.HTTP_SEE_OTHER || responseCode == 307 || responseCode == 308) {
+				final String location = httpConnection.getHeaderField("Location");
+				httpConnection.disconnect();
+				if (isBlank(location)) {
+					throw new Exception("HTTP redirect without location (status " + responseCode + ")");
+				} else if (redirectCount >= DOWNLOAD_MAX_REDIRECTS) {
+					throw new Exception("Too many HTTP redirects");
+				}
+				final URI redirectUri = uri.resolve(location.trim());
+				if ("https".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(redirectUri.getScheme())) {
+					// A downgrade from https would allow manipulation of the downloaded data
+					throw new Exception("HTTP redirect from https to insecure location is not allowed: " + redirectUri);
+				}
+				uri = redirectUri;
+			} else {
+				httpConnection.disconnect();
+				throw new Exception("HTTP error status " + responseCode);
+			}
+		}
+	}
 
 	/**
 	 * Download a file from url
@@ -1293,7 +1406,8 @@ public class Utilities {
 			// URLs without host part like "mailto:..." or relative URLs
 			return null;
 		}
-		return domain.startsWith("www.") ? domain.substring(4) : domain;
+		// Host names are case insensitive, so also "WWW." is removed
+		return startsWithCaseinsensitive(domain, "www.") ? domain.substring(4) : domain;
 	}
 
 	/**
@@ -1337,13 +1451,14 @@ public class Utilities {
 	}
 
 	/**
-	 * Check whether a string is null, empty or contains only whitespace (characters up to U+0020, see {@link String#trim()}).
+	 * Check whether a string is null, empty or contains only whitespace (see {@link Character#isWhitespace(int)}, like
+	 * {@link String#isBlank()} and {@link #isBlank(char[])}).
 	 *
 	 * @param value string to check
 	 * @return true for null, empty or whitespace only
 	 */
 	public static boolean isBlank(final String value) {
-		return value == null || value.length() == 0 || value.trim().length() == 0;
+		return value == null || value.isBlank();
 	}
 
 	/**
@@ -1471,19 +1586,18 @@ public class Utilities {
 	}
 
 	/**
-	 * Close an XMLStreamWriter, errors are only printed to stderr.
+	 * Close an XMLStreamWriter and ignore any error.
 	 * XMLStreamWriter.close() does not close the underlying stream.
 	 *
 	 * @param xmlWriter writer to close, may be null
 	 */
-	public static void closeQuietly(XMLStreamWriter xmlWriter) {
+	public static void closeQuietly(final XMLStreamWriter xmlWriter) {
 		if (xmlWriter != null) {
 			try {
 				xmlWriter.close();
-			} catch (final Exception e) {
-				e.printStackTrace();
+			} catch (@SuppressWarnings("unused") final Exception e) {
+				// Do nothing
 			}
-			xmlWriter = null;
 		}
 	}
 
@@ -1714,17 +1828,14 @@ public class Utilities {
 	 * Prepend blanks at the left of a string to make it fit the given minimum length
 	 *
 	 * @param value
-	 *            string to pad
+	 *            string to pad, may be null
 	 * @param minimumLength
 	 *            minimum length of the result
-	 * @return padded string, unchanged if it is already long enough
+	 * @return padded string, unchanged if it is already long enough, or null for null input
 	 */
 	public static String leftPad(final String value, final int minimumLength) {
-		try {
-			return String.format("%1$" + minimumLength + "s", value);
-		} catch (@SuppressWarnings("unused") final Exception e) {
-			return value;
-		}
+		// No String.format, because it turned null into "null" and a negative length into the left-justify flag
+		return leftPad(value, minimumLength, ' ');
 	}
 
 	/**
@@ -1752,16 +1863,34 @@ public class Utilities {
 	 * Append blanks at the right of a string to make it fit the given minimum length
 	 *
 	 * @param value
-	 *            string to pad
+	 *            string to pad, may be null
 	 * @param minimumLength
 	 *            minimum length of the result
-	 * @return padded string, unchanged if it is already long enough
+	 * @return padded string, unchanged if it is already long enough, or null for null input
 	 */
 	public static String rightPad(final String value, final int minimumLength) {
-		try {
-			return String.format("%1$-" + minimumLength + "s", value);
-		} catch (@SuppressWarnings("unused") final Exception e) {
-			return value;
+		// No String.format, because it turned null into "null"
+		return rightPad(value, minimumLength, ' ');
+	}
+
+	/**
+	 * Append a pad character at the right of a string to make it fit the given minimum length.
+	 *
+	 * @param value string to pad, may be null
+	 * @param size minimum length of the result
+	 * @param padChar character to append
+	 * @return padded string, unchanged if it is already long enough, or null for null input
+	 */
+	public static String rightPad(final String value, final int size, final char padChar) {
+		if (value == null) {
+			return null;
+		} else {
+			final int padsize = size - value.length();
+			if (padsize <= 0) {
+				return value;
+			} else {
+				return value.concat(repeat(padChar, padsize));
+			}
 		}
 	}
 
@@ -1836,16 +1965,14 @@ public class Utilities {
 	 * Read the remaining characters of a reader. The reader is not closed.
 	 *
 	 * @param characterStream reader to read
-	 * @return text of the reader (always a String)
+	 * @return text of the reader
 	 * @throws IOException if reading fails
 	 */
-	public static Object toString(final Reader characterStream) throws IOException {
-		final StringBuilder returnValue = new StringBuilder();
-		int characterInt;
-		while ((characterInt = characterStream.read()) > -1) {
-			returnValue.append((char) characterInt);
-		}
-		return returnValue.toString();
+	public static String toString(final Reader characterStream) throws IOException {
+		// Block transfer instead of reading every single character
+		final StringWriter stringWriter = new StringWriter();
+		characterStream.transferTo(stringWriter);
+		return stringWriter.toString();
 	}
 
 	/**
@@ -1888,23 +2015,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Add a jar file or directory to the system classloader by reflection.
-	 * This only works up to Java 8, because since Java 9 the system classloader is no URLClassLoader anymore.
-	 *
-	 * @param filePath path of the jar file or directory
-	 * @throws IOException if the file cannot be added
-	 */
-	public static void addFileToClasspath(final String filePath) throws IOException {
-		try {
-			final Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-			method.setAccessible(true);
-			method.invoke(ClassLoader.getSystemClassLoader(), new Object[] { URI.create(new File(filePath).toURI().toString()).toURL() });
-		} catch (final Throwable t) {
-			throw new IOException("Error, could not add file to system classloader: " + t.getMessage(), t);
-		}
-	}
-
-	/**
 	 * Shorten a string to a maximum length by cutting off its end and appending a cut sign.
 	 *
 	 * @param value string to shorten, may be null
@@ -1937,11 +2047,14 @@ public class Utilities {
 	 * Shorten a string to a maximum length by replacing its middle part by " ... ".
 	 *
 	 * @param value string to shorten, may be null
-	 * @param maxLength maximum length of the result, should be at least 5
+	 * @param maxLength maximum length of the result, below 5 the end is cut off without cut sign
 	 * @return shortened string, unchanged if it is not longer than maxLength
 	 */
 	public static String shortenStringToMaxLengthCutMiddle(final String value, final int maxLength) {
-		if (value != null && value.length() > maxLength) {
+		if (value != null && value.length() > maxLength && maxLength < 5) {
+			// The cut sign " ... " does not fit (before, a StringIndexOutOfBoundsException was thrown)
+			return value.substring(0, Math.max(0, maxLength));
+		} else if (value != null && value.length() > maxLength) {
 			final int leftLength = (maxLength - 5) / 2;
 			return value.substring(0, leftLength) + " ... " + value.substring(value.length() - ((maxLength - leftLength) - 5));
 		} else {
@@ -1953,11 +2066,14 @@ public class Utilities {
 	 * Shorten a string to a maximum length by cutting off its start and prepending "... ".
 	 *
 	 * @param value string to shorten, may be null
-	 * @param maxLength maximum length of the result, should be at least 4
+	 * @param maxLength maximum length of the result, below 4 the start is cut off without cut sign
 	 * @return shortened string, unchanged if it is not longer than maxLength
 	 */
 	public static String shortenStringToMaxLengthCutLeft(final String value, final int maxLength) {
-		if (value != null && value.length() > maxLength) {
+		if (value != null && value.length() > maxLength && maxLength < 4) {
+			// The cut sign "... " does not fit (before, a StringIndexOutOfBoundsException was thrown)
+			return value.substring(value.length() - Math.max(0, maxLength));
+		} else if (value != null && value.length() > maxLength) {
 			return "... " + value.substring((value.length() - maxLength) + 4);
 		} else {
 			return value;
@@ -1977,7 +2093,8 @@ public class Utilities {
 			final List<String> returnList = new ArrayList<>();
 			final String[] parts = stringList.split(",|;|\\|| |\\n|\\r|\\t");
 			for (final String part : parts) {
-				if (isNotEmpty(part)) {
+				// Blank parts (e.g. only "\f") would become empty items after trimming
+				if (isNotBlank(part)) {
 					returnList.add(part.trim());
 				}
 			}
@@ -2009,14 +2126,15 @@ public class Utilities {
 			}
 			if (separatorRegex.length() == 0) {
 				final List<String> singleItemList = new ArrayList<>();
-				if (isNotEmpty(stringList)) {
+				if (isNotBlank(stringList)) {
 					singleItemList.add(stringList.trim());
 				}
 				return singleItemList;
 			}
 			final String[] parts = stringList.split(separatorRegex.toString());
 			for (final String part : parts) {
-				if (isNotEmpty(part)) {
+				// Blank parts like in "a, ,b" would become empty items after trimming
+				if (isNotBlank(part)) {
 					returnList.add(part.trim());
 				}
 			}
@@ -2267,9 +2385,17 @@ public class Utilities {
 			filePath = homePath + filePath.substring(1);
 		}
 
-		return filePath
-				.replace("${HOME}", homePath)
-				.replace("$HOME", homePath);
+		return replaceHomeVariable(filePath.replace("${HOME}", homePath), homePath);
+	}
+
+	/** "$HOME" not followed by another character of a variable name, so "$HOMEDIR" is not changed */
+	private static final Pattern HOME_VARIABLE_PATTERN = Pattern.compile("\\$HOME(?![A-Za-z0-9_])");
+
+	/**
+	 * Replace the variable "$HOME" by the home path, but not as part of a longer variable name like "$HOMEDIR".
+	 */
+	private static String replaceHomeVariable(final String text, final String homePath) {
+		return HOME_VARIABLE_PATTERN.matcher(text).replaceAll(Matcher.quoteReplacement(homePath));
 	}
 
 	/**
@@ -2312,7 +2438,7 @@ public class Utilities {
 						if (value.startsWith("\"") && value.endsWith("\"")) {
 							value = value.substring(1, value.length() - 1);
 						}
-						value = value.replace("$HOME", userHome);
+						value = replaceHomeVariable(value, userHome);
 						if (Utilities.isNotBlank(value)) {
 							return value;
 						}
@@ -2387,19 +2513,20 @@ public class Utilities {
 	 *
 	 * @param inputStream stream
 	 * @param bytesToSkip number of bytes to skip
-	 * @return number of bytes skipped
-	 * @throws Exception if the stream cannot skip further (e.g. at its end)
+	 * @return number of bytes skipped (0 for a negative number)
+	 * @throws Exception if the stream ends before all bytes are skipped
 	 */
 	public static long skipInputStreamData(final InputStream inputStream, final long bytesToSkip) throws Exception {
-		long bytesSkipped = 0;
-		while (bytesSkipped < bytesToSkip) {
-			final long newBytesSkipped = inputStream.skip(bytesToSkip - bytesSkipped);
-			if (newBytesSkipped == 0) {
-				throw new Exception("Cannot skip data while reading stream");
-			}
-			bytesSkipped += newBytesSkipped;
+		if (bytesToSkip <= 0) {
+			return 0;
 		}
-		return bytesSkipped;
+		try {
+			// skip() may return 0 without being at the end of the stream, skipNBytes() handles this by reading
+			inputStream.skipNBytes(bytesToSkip);
+			return bytesToSkip;
+		} catch (final EOFException e) {
+			throw new Exception("Cannot skip data while reading stream", e);
+		}
 	}
 
 	/**
@@ -2434,107 +2561,79 @@ public class Utilities {
 
 	/**
 	 * Split a text at a delimiter character, which can be escaped by an escape character.
-	 * Escaped delimiters are not split at and are unescaped in the result.
+	 * An escaped delimiter is not split at and becomes the plain delimiter, an escaped escape character becomes the plain
+	 * escape character (so a part may end with the escape character). An escape character before any other character is kept.
 	 *
 	 * @param text text to split, must not be null
 	 * @param delimiterChar delimiter character
-	 * @param escapeChar escape character preceding a delimiter that is part of the data
+	 * @param escapeChar escape character preceding a delimiter or escape character that is part of the data
 	 * @param limit limit like in {@link String#split(String, int)}
 	 * @return parts of the text
 	 */
 	public static String[] split(final String text, final char delimiterChar, final char escapeChar, final int limit) {
-		final String escapeCharString = Character.toString(escapeChar);
-		final String delimiterCharString = Character.toString(delimiterChar);
-		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
-		final String[] returnParts = text.split(splitRegex, limit);
-		for (int i = 0; i < returnParts.length; i++) {
-			// An escaped delimiter becomes the plain delimiter (before, the delimiter was dropped and the escape character kept)
-			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, delimiterCharString);
+		// Parsed character by character, because a regex lookbehind cannot distinguish an escaped delimiter from an escaped escape character
+		final List<String> parts = new ArrayList<>();
+		StringBuilder currentPart = new StringBuilder();
+		for (int i = 0; i < text.length(); i++) {
+			final char nextChar = text.charAt(i);
+			if (nextChar == escapeChar && i + 1 < text.length() && (text.charAt(i + 1) == delimiterChar || text.charAt(i + 1) == escapeChar)) {
+				currentPart.append(text.charAt(i + 1));
+				i++;
+			} else if (nextChar == delimiterChar && (limit <= 0 || parts.size() < limit - 1)) {
+				parts.add(currentPart.toString());
+				currentPart = new StringBuilder();
+			} else {
+				currentPart.append(nextChar);
+			}
 		}
-		return returnParts;
+		parts.add(currentPart.toString());
+
+		if (limit == 0) {
+			// Like String.split: trailing empty parts are removed, but a text without delimiter is kept as single part
+			while (parts.size() > 1 && parts.get(parts.size() - 1).isEmpty()) {
+				parts.remove(parts.size() - 1);
+			}
+			if (parts.size() == 1 && parts.get(0).isEmpty() && text.length() > 0) {
+				parts.clear();
+			}
+		}
+		return parts.toArray(new String[0]);
 	}
 
 	/**
 	 * Split a text at a delimiter character, which can be escaped by an escape character.
-	 * Escaped delimiters are not split at and are unescaped in the result. Trailing empty parts are removed.
+	 * Escaped delimiters and escaped escape characters are unescaped in the result. Trailing empty parts are removed.
 	 *
 	 * @param text text to split, must not be null
 	 * @param delimiterChar delimiter character
-	 * @param escapeChar escape character preceding a delimiter that is part of the data
+	 * @param escapeChar escape character preceding a delimiter or escape character that is part of the data
 	 * @return parts of the text
 	 */
 	public static String[] split(final String text, final char delimiterChar, final char escapeChar) {
-		final String escapeCharString = Character.toString(escapeChar);
-		final String delimiterCharString = Character.toString(delimiterChar);
-		final String splitRegex = "(?<!" + Pattern.quote(escapeCharString) + ")" + Pattern.quote(delimiterCharString);
-		final String[] returnParts = text.split(splitRegex);
-		for (int i = 0; i < returnParts.length; i++) {
-			// An escaped delimiter becomes the plain delimiter (before, the delimiter was dropped and the escape character kept)
-			returnParts[i] = returnParts[i].replace(escapeCharString + delimiterCharString, delimiterCharString);
-		}
-		return returnParts;
+		return split(text, delimiterChar, escapeChar, 0);
 	}
 
 	/**
 	 * Split a command line into arguments at blanks, tabs and linebreaks.
 	 * Like in a shell, quoted parts (single or double quotes) may contain blanks and are part of the surrounding argument,
-	 * e.g. {@code --name="a b"} becomes {@code --name=a b}. Within quotes a backslash escapes the quote character.
+	 * e.g. {@code --name="a b"} becomes {@code --name=a b}.
+	 * Within double quotes a backslash escapes a double quote or a backslash, before any other character it is kept.
+	 * Within single quotes a backslash has no special meaning, so Windows paths like {@code 'C:\Temp\'} can be quoted.
 	 *
 	 * @param argumentLine command line, must not be null
 	 * @return list of arguments
 	 * @throws Exception if a quote is not closed
 	 */
 	public static List<String> parseArguments(final String argumentLine) throws Exception {
-		final List<String> returnList = new ArrayList<>();
-		StringBuilder currentArgument = new StringBuilder();
-		Character enclosingChar = null;
-		boolean escapedNextChar = false;
-		boolean argumentStarted = false;
-		for (final char nextChar : argumentLine.replace("\r\n", "\n").replace("\r", "\n").toCharArray()) {
-			if (enclosingChar != null) {
-				if (escapedNextChar) {
-					if (nextChar != enclosingChar) {
-						currentArgument.append("\\");
-					}
-					currentArgument.append(nextChar);
-					escapedNextChar = false;
-				} else if (nextChar == '\\') {
-					escapedNextChar = true;
-				} else if (nextChar == enclosingChar) {
-					// Like in a shell the quoted part continues the current argument, e.g. --name="a b" becomes --name=a b
-					enclosingChar = null;
-				} else {
-					currentArgument.append(nextChar);
-				}
-			} else {
-				if (nextChar == '\'' || nextChar == '"') {
-					enclosingChar = nextChar;
-					// Also an empty quoted text like "" is an argument
-					argumentStarted = true;
-				} else if (nextChar == ' ' || nextChar == '\n' || nextChar == '\t') {
-					if (argumentStarted) {
-						returnList.add(currentArgument.toString());
-						currentArgument = new StringBuilder();
-						argumentStarted = false;
-					}
-				} else {
-					currentArgument.append(nextChar);
-					argumentStarted = true;
-				}
-			}
-		}
-		if (enclosingChar != null) {
-			throw new Exception("Invalid quotation. Missing closing " + enclosingChar);
-		} else if (argumentStarted) {
-			returnList.add(currentArgument.toString());
-		}
-		return returnList;
+		return parseTokens(argumentLine, ' ', '\n', '\t');
 	}
 
 	/**
 	 * Split a text into tokens at the given delimiter characters.
 	 * Like in a shell, quoted parts (single or double quotes) may contain delimiters and are part of the surrounding
-	 * token, e.g. {@code key="a;b"} becomes {@code key=a;b}. Within quotes a backslash escapes the quote character.
+	 * token, e.g. {@code key="a;b"} becomes {@code key=a;b}.
+	 * Within double quotes a backslash escapes a double quote or a backslash, before any other character it is kept.
+	 * Within single quotes a backslash has no special meaning.
 	 *
 	 * @param line text to split, must not be null
 	 * @param delimiters characters separating the tokens
@@ -2550,12 +2649,14 @@ public class Utilities {
 		for (final char nextChar : line.replace("\r\n", "\n").replace("\r", "\n").toCharArray()) {
 			if (enclosingChar != null) {
 				if (escapedNextChar) {
-					if (nextChar != enclosingChar) {
-						currentArgument.append("\\");
+					// Only a double quote and a backslash can be escaped, so "C:\Temp" keeps its backslash
+					if (nextChar != '"' && nextChar != '\\') {
+						currentArgument.append('\\');
 					}
 					currentArgument.append(nextChar);
 					escapedNextChar = false;
-				} else if (nextChar == '\\') {
+				} else if (nextChar == '\\' && enclosingChar == '"') {
+					// Like in a shell, escaping only works within double quotes
 					escapedNextChar = true;
 				} else if (nextChar == enclosingChar) {
 					// Like in a shell the quoted part continues the current argument, e.g. --name="a b" becomes --name=a b
@@ -2684,7 +2785,8 @@ public class Utilities {
 	 * @param keyStoreFileWithNullPassword
 	 *            PKCS12 keystore file with blank password, replaced by a JKS keystore; files with another password stay unchanged
 	 * @throws Exception
-	 *             if the keystore cannot be converted or written
+	 *             if the keystore cannot be converted or written, or if it contains other entries than certificates
+	 *             (like private keys), which would be lost by the conversion
 	 */
 	public static void convertPkcs12TrustStoreToJKS(final File keyStoreFileWithNullPassword) throws Exception {
 		final KeyStore readKeyStore = KeyStore.getInstance("PKCS12");
@@ -2698,8 +2800,16 @@ public class Utilities {
 		final KeyStore writeKeyStore = KeyStore.getInstance("JKS");
 		writeKeyStore.load(null, null);
 
+		final List<String> aliases = Collections.list(readKeyStore.aliases());
+		for (final String alias : aliases) {
+			if (!readKeyStore.isCertificateEntry(alias)) {
+				// Only trusted certificates are copied, so a private key would be lost when the file is replaced
+				throw new Exception("Keystore contains an entry, which is no trusted certificate, and cannot be converted without data loss: " + alias);
+			}
+		}
+
 		// KeyStore password is null
-		for (final String alias : Collections.list(readKeyStore.aliases())) {
+		for (final String alias : aliases) {
 			writeKeyStore.setCertificateEntry(alias, readKeyStore.getCertificate(alias));
 		}
 		// Create the new keystore data completely before overwriting the file, so the original file is not lost if storing fails
@@ -2728,16 +2838,21 @@ public class Utilities {
 	 * </pre>
 	 *
 	 * @param comment
-	 *            text to fix
-	 * @return text decoded as UTF-8 if a wrong encoding was detected, otherwise the unchanged text
+	 *            text to fix, may be null
+	 * @return text decoded as UTF-8 if a wrong encoding was detected, otherwise the unchanged text (null for null)
 	 */
 	public static String fixStringEncodingIfNeeded(final String comment) {
+		if (comment == null) {
+			return null;
+		}
 		boolean wrongEncodingDetected = false;
 		for (final char nextChar : comment.toCharArray()) {
 			if (nextChar > 0xFF) {
 				// Characters outside of ISO-8859-1 cannot result from wrongly decoded bytes, so the text is correct
 				return comment;
-			} else if (nextChar == 0xC3) {
+			} else if (nextChar >= 0x80) {
+				// Any non-ASCII char may be part of a wrongly decoded UTF-8 sequence (not only 0xC3, but also e.g. 0xC2 for
+				// the degree sign or 0xE2 for the euro sign). Real ISO-8859-1 text is rejected by the strict UTF-8 decoding below.
 				wrongEncodingDetected = true;
 			}
 		}
@@ -2978,7 +3093,7 @@ public class Utilities {
 						if (i + 3 < length) {
 							final String hex = javaEscapedText.substring(i + 2, i + 4);
 							try {
-								final int code = Integer.parseInt(hex, 16);
+								final int code = parseHexDigits(hex);
 								unescapedTextBuilder.append((char) code);
 								i += 3;
 							} catch (final NumberFormatException e) {
@@ -2993,7 +3108,7 @@ public class Utilities {
 						if (i + 5 < length) {
 							final String hex = javaEscapedText.substring(i + 2, i + 6);
 							try {
-								final int code = Integer.parseInt(hex, 16);
+								final int code = parseHexDigits(hex);
 								unescapedTextBuilder.append((char) code);
 								i += 5;
 							} catch (final NumberFormatException e) {
@@ -3009,7 +3124,7 @@ public class Utilities {
 							final String hex = javaEscapedText.substring(i + 2, i + 10);
 							try {
 								// Radix 16 and full code point (before, radix 32 was used and the value was truncated to a char)
-								final int codePoint = Integer.parseInt(hex, 16);
+								final int codePoint = parseHexDigits(hex);
 								if (!Character.isValidCodePoint(codePoint)) {
 									throw new Exception("Invalid unicode code point at character index " + i + " ('" + "\\U" + hex + "')");
 								}
@@ -3032,6 +3147,25 @@ public class Utilities {
 		}
 
 		return unescapedTextBuilder.toString();
+	}
+
+	/**
+	 * Parse hexadecimal digits. Unlike Integer.parseInt(value, 16) no sign is accepted, so "+041" is invalid.
+	 *
+	 * @throws NumberFormatException if the value contains other characters than hex digits or is too long for an int
+	 */
+	private static int parseHexDigits(final String hexDigits) {
+		for (int i = 0; i < hexDigits.length(); i++) {
+			if (Character.digit(hexDigits.charAt(i), 16) < 0) {
+				throw new NumberFormatException("Invalid hex digits: " + hexDigits);
+			}
+		}
+		// Parsed as long, so 8 hex digits above 7FFFFFFF do not overflow before the code point check
+		final long value = Long.parseLong(hexDigits, 16);
+		if (value > Integer.MAX_VALUE) {
+			throw new NumberFormatException("Hex value too big: " + hexDigits);
+		}
+		return (int) value;
 	}
 
 	/**
@@ -3142,7 +3276,7 @@ public class Utilities {
 						if (i + 3 < length) {
 							final String hex = propertiesEscapedText.substring(i + 2, i + 4);
 							try {
-								final int code = Integer.parseInt(hex, 16);
+								final int code = parseHexDigits(hex);
 								unescapedTextBuilder.append((char) code);
 								i += 3;
 							} catch (final NumberFormatException e) {
@@ -3157,7 +3291,7 @@ public class Utilities {
 						if (i + 5 < length) {
 							final String hex = propertiesEscapedText.substring(i + 2, i + 6);
 							try {
-								final int code = Integer.parseInt(hex, 16);
+								final int code = parseHexDigits(hex);
 								unescapedTextBuilder.append((char) code);
 								i += 5;
 							} catch (final NumberFormatException e) {
@@ -3172,7 +3306,7 @@ public class Utilities {
 						if (i + 9 < length) {
 							final String hex = propertiesEscapedText.substring(i + 2, i + 10);
 							try {
-								final int codePoint = Integer.parseInt(hex, 16);
+								final int codePoint = parseHexDigits(hex);
 								if (!Character.isValidCodePoint(codePoint)) {
 									throw new Exception("Invalid unicode code point at character index " + i + " ('" + "\\U" + hex + "')");
 								}
