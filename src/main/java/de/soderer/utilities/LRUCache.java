@@ -84,6 +84,53 @@ public class LRUCache<K, V> {
 	}
 
 	/**
+	 * Check whether a key is cached, without marking its entry as recently used.
+	 *
+	 * @param key
+	 *            key of the entry, may be null
+	 * @return true if the key is cached (also if its value is null)
+	 */
+	public boolean containsKey(final K key) {
+		return internalMap.containsKey(key);
+	}
+
+	/**
+	 * Remove an entry from the cache.
+	 *
+	 * @param key
+	 *            key of the entry, may be null
+	 * @return removed value, or null if the key was not cached
+	 */
+	public V remove(final K key) {
+		return internalMap.remove(key);
+	}
+
+	/**
+	 * Remove all entries from the cache.
+	 */
+	public void clear() {
+		internalMap.clear();
+	}
+
+	/**
+	 * Returns the current number of entries.
+	 *
+	 * @return number of cached entries, never more than {@link #getMaxSize()}
+	 */
+	public int size() {
+		return internalMap.size();
+	}
+
+	/**
+	 * Check whether the cache contains no entries.
+	 *
+	 * @return true if no entry is cached
+	 */
+	public boolean isEmpty() {
+		return internalMap.isEmpty();
+	}
+
+	/**
 	 * LinkedHashMap in access order, which removes the eldest entry when the maximum size is
 	 * exceeded. A static class, so it does not keep a reference to the enclosing cache.
 	 *
