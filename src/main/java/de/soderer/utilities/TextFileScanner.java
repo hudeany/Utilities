@@ -47,7 +47,7 @@ public class TextFileScanner implements Iterator<String> {
 	private CharBuffer buf;
 
 	// Size of internal character buffer
-	private static final int BUFFER_SIZE = 1024; // change to 1024;
+	private static final int BUFFER_SIZE = 1024;
 
 	// The index into the buffer currently held by the Scanner
 	private int position;
@@ -370,9 +370,6 @@ public class TextFileScanner implements Iterator<String> {
 		if (source == null) {
 			throw new NullPointerException("source");
 		}
-		@SuppressWarnings("unused")
-		final
-		String defaultCharsetName = java.nio.charset.Charset.defaultCharset().name();
 		return Channels.newReader(source, java.nio.charset.Charset.defaultCharset().name());
 	}
 
@@ -1225,7 +1222,7 @@ public class TextFileScanner implements Iterator<String> {
 		}
 		clearCaches();
 
-		String result = findWithinHorizon(linePattern, 0);
+		String result = findWithinHorizon(linePattern(), 0);
 		if (result == null) {
 			throw new NoSuchElementException("No line found");
 		}
@@ -1726,7 +1723,8 @@ public class TextFileScanner implements Iterator<String> {
 		final int sufLen = negativeSuffix.length();
 		if ((sufLen > 0) && result.endsWith(negativeSuffix)) {
 			isNegative = true;
-			result = result.substring(result.length() - sufLen, result.length());
+			// Remove the suffix (before, only the suffix itself was kept)
+			result = result.substring(0, result.length() - sufLen);
 		}
 		if (isNegative) {
 			result = "-" + result;
@@ -1906,7 +1904,8 @@ public class TextFileScanner implements Iterator<String> {
 		final int sufLen = negativeSuffix.length();
 		if ((sufLen > 0) && result.endsWith(negativeSuffix)) {
 			isNegative = true;
-			result = result.substring(result.length() - sufLen, result.length());
+			// Remove the suffix (before, only the suffix itself was kept)
+			result = result.substring(0, result.length() - sufLen);
 		}
 		if (result.equals(nanString)) {
 			result = "NaN";

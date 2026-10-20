@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 
 /**
  * When this InputStream is closed, the temporary file or directory is deleted.
@@ -41,15 +43,41 @@ public class TempFileInputStream extends FilterInputStream {
 		this.tempFile = tempFile;
 	}
 
+	/**
+	 * Closes the underlying stream and deletes the temporary file or directory, even if closing the
+	 * stream failed. Closing an already closed stream has no effect.
+	 *
+	 * @throws IOException
+	 *             if closing the underlying stream failed or the temporary data could not be
+	 *             deleted completely. An error of closing the stream takes precedence, a deletion
+	 *             error is then added as suppressed exception.
+	 */
 	@Override
 	public void close() throws IOException {
+		IOException closeException = null;
 		try {
 			super.close();
-		} finally {
-			// Delete the temporary data even if closing the underlying stream failed
-			if (tempFile != null && tempFile.exists()) {
+		} catch (final IOException e) {
+			closeException = e;
+		}
+
+		// Delete the temporary data even if closing the underlying stream failed.
+		// NOFOLLOW_LINKS: a symbolic link with a missing target is deleted, too (File.exists() would return false for it).
+		if (tempFile != null && Files.exists(tempFile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+			try {
 				FileUtilities.delete(tempFile);
+			} catch (final IOException deleteException) {
+				// Before, a deletion error thrown in the finally block replaced the error of closing the stream
+				if (closeException != null) {
+					closeException.addSuppressed(deleteException);
+				} else {
+					closeException = deleteException;
+				}
 			}
+		}
+
+		if (closeException != null) {
+			throw closeException;
 		}
 	}
 }

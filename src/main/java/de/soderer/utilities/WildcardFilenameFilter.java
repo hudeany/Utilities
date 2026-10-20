@@ -196,8 +196,9 @@ public class WildcardFilenameFilter implements FileFilter, FilenameFilter {
 		} else if (caseSensitive) {
 			return false;
 		} else {
-			return Character.toUpperCase(textChar) == Character.toUpperCase(patternChar)
-					|| Character.toLowerCase(textChar) == Character.toLowerCase(patternChar);
+			final char textUpperCase = Character.toUpperCase(textChar);
+			final char patternUpperCase = Character.toUpperCase(patternChar);
+			return textUpperCase == patternUpperCase || Character.toLowerCase(textUpperCase) == Character.toLowerCase(patternUpperCase);
 		}
 	}
 }

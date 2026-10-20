@@ -39,12 +39,13 @@ public class UserError extends Exception {
 	 * Creates a user error with a reason.
 	 *
 	 * @param message message text or language resource key
-	 * @param reason reason of the error
+	 * @param reason reason of the error, null for {@link Reason#Unknown}
 	 */
 	public UserError(final String message, final Reason reason) {
 		super(LangResources.existsKey(message) ? LangResources.get(message) : message);
 
-		this.reason = reason;
+		// getReason() never returns null, so callers can switch over it safely
+		this.reason = reason == null ? Reason.Unknown : reason;
 	}
 
 	/**

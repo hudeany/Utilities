@@ -166,6 +166,8 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			if (characterSize > 1) {
 				final int bomLength = getBomLength(dataStart, encodingData.getFirst());
 				startPosition -= Math.max(0, startPosition - bomLength) % characterSize;
+				// Also end at a character boundary, otherwise the last incomplete character becomes a replacement character
+				length -= length % characterSize;
 			}
 		}
 
@@ -178,12 +180,30 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		if (startPosition == 0) {
 			dataString = decodeByteArray(subdata, encodingData);
 		} else {
-			// Bytes in the middle of the data, which look like a BOM, are no BOM
-			dataString = new String(subdata, getDecodingCharset(encodingData.getFirst()));
+			// Bytes in the middle of the data, which look like a BOM, are no BOM.
+			// The generic UTF-16/UTF-32 charsets take the byte order from a BOM, which a part from the middle does not contain.
+			dataString = new String(subdata, getPartDecodingCharset(encodingData.getFirst(), dataStart));
 		}
 
 		super.readProperties();
 		return dataString;
+	}
+
+	/**
+	 * Charset for decoding a part from the middle of the data. For the generic "UTF-16" and "UTF-32" (and "UnicodeBig",
+	 * "UnicodeLittle") the byte order is taken from the BOM at the start of the data, because the part itself contains
+	 * no BOM and would otherwise always be decoded as big endian.
+	 */
+	private static Charset getPartDecodingCharset(final String encodingName, final byte[] dataStart) {
+		final Charset charset = getDecodingCharset(encodingName);
+		final String charsetName = charset.name().toUpperCase(Locale.ROOT);
+		if ("UTF-16".equals(charsetName)) {
+			return startsWith(dataStart, BOM.UTF_16_LE.getBytes()) ? StandardCharsets.UTF_16LE : StandardCharsets.UTF_16BE;
+		} else if ("UTF-32".equals(charsetName)) {
+			return Charset.forName(startsWith(dataStart, BOM.UTF_32_LE.getBytes()) ? "UTF-32LE" : "UTF-32BE");
+		} else {
+			return charset;
+		}
 	}
 
 	/**
@@ -323,7 +343,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 				return "UTF-16LE-BOM";
 			} else if ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && !encodingData.getSecond()) {
 				return "UTF-16LE";
-			} else if ("UTF-32BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+			} else if (("UTF-32BE".equalsIgnoreCase(encodingData.getFirst()) || "UTF-32".equalsIgnoreCase(encodingData.getFirst())) && encodingData.getSecond()) {
 				return "UTF-32BE-BOM";
 			} else if ("UTF-32LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
 				return "UTF-32LE-BOM";
@@ -356,8 +376,10 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			} else if ("UnicodeLittle".equalsIgnoreCase(encodingData.getFirst()) || ("UTF-16LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond())) {
 				output.write(BOM.UTF_16_LE.getBytes());
 				encoding = "UTF-16LE";
-			} else if ("UTF-32BE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
+			} else if (("UTF-32BE".equalsIgnoreCase(encodingData.getFirst()) || "UTF-32".equalsIgnoreCase(encodingData.getFirst())) && encodingData.getSecond()) {
+				// Java's "UTF-32" encoder writes big endian without BOM, so the BOM is written here
 				output.write(BOM.UTF_32_BE.getBytes());
+				encoding = "UTF-32BE";
 			} else if ("UTF-32LE".equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
 				output.write(BOM.UTF_32_LE.getBytes());
 			} else if (StandardCharsets.UTF_8.name().equalsIgnoreCase(encodingData.getFirst()) && encodingData.getSecond()) {
@@ -380,8 +402,9 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	 * @throws IOException if the encoding is not supported
 	 */
 	public static String decodeByteArray(final byte[] data, final Tuple<String, Boolean> encodingData) throws IOException {
-		final int bomLength = getBomLength(data, encodingData.getFirst());
 		try {
+			// getBomLength() also looks up the charset, so an unsupported encoding must be caught here, too
+			final int bomLength = getBomLength(data, encodingData.getFirst());
 			return new String(data, bomLength, data.length - bomLength, getDecodingCharset(encodingData.getFirst()));
 		} catch (final IllegalArgumentException e) {
 			throw new IOException("Unsupported encoding: " + encodingData.getFirst(), e);

@@ -30,11 +30,11 @@ public class VisibleException extends Exception {
 	 * Creates an exception with a visible message.
 	 *
 	 * @param exceptionMessage technical exception message
-	 * @param visibleMessage message to be shown to the user
+	 * @param visibleMessage message to be shown to the user, null for the default message
 	 */
 	public VisibleException(final String exceptionMessage, final String visibleMessage) {
 		super(exceptionMessage);
-		this.visibleMessage = visibleMessage;
+		setVisibleMessageIfGiven(visibleMessage);
 	}
 
 	/**
@@ -61,22 +61,31 @@ public class VisibleException extends Exception {
 	 *
 	 * @param exceptionMessage technical exception message
 	 * @param throwable cause
-	 * @param visibleMessage message to be shown to the user
+	 * @param visibleMessage message to be shown to the user, null for the default message
 	 */
 	public VisibleException(final String exceptionMessage, final Throwable throwable, final String visibleMessage) {
 		super(exceptionMessage, throwable);
-		this.visibleMessage = visibleMessage;
+		setVisibleMessageIfGiven(visibleMessage);
 	}
 
 	/**
 	 * Creates an exception with a visible message.
 	 *
 	 * @param throwable cause
-	 * @param visibleMessage message to be shown to the user
+	 * @param visibleMessage message to be shown to the user, null for the default message
 	 */
 	public VisibleException(final Throwable throwable, final String visibleMessage) {
 		super(throwable);
-		this.visibleMessage = visibleMessage;
+		setVisibleMessageIfGiven(visibleMessage);
+	}
+
+	/**
+	 * Keeps the default message for null, so {@link #getVisibleMessage()} never returns null
+	 */
+	private void setVisibleMessageIfGiven(final String message) {
+		if (message != null) {
+			visibleMessage = message;
+		}
 	}
 
 	/**

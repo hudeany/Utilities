@@ -1,9 +1,6 @@
 package de.soderer.utilities;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
@@ -135,7 +132,8 @@ public class TextTable {
 	 *            or null for none
 	 */
 	public void addColumn(final String columnName, final String columnNameLine2, final boolean alignRight, final String farbe) {
-		columnNames.get(0).add(columnName);
+		// Null is stored as empty name, otherwise rendering the table fails
+		columnNames.get(0).add(columnName == null ? "" : columnName);
 		columnColors.add(farbe);
 
 		// Insert second line
@@ -186,6 +184,11 @@ public class TextTable {
 		// Adjust existing columns of lines to header lengths
 		for (final List<String> line : content) {
 			line.remove(index);
+		}
+
+		// The next value of the current line must still go to the same column as before
+		if (index < currentColumnIndex) {
+			currentColumnIndex--;
 		}
 	}
 
@@ -616,6 +619,10 @@ public class TextTable {
 	 *             if reading the data fails
 	 */
 	public void loadCsvWithMetadataFile(final byte[] csvWithMetadata) throws IOException {
+		if (csvWithMetadata == null) {
+			throw new IOException("Missing CSV data");
+		}
+
 		columnNames.clear();
 		content.clear();
 		columnColors.clear();
@@ -624,61 +631,90 @@ public class TextTable {
 		currentLineIndex = -1;
 		currentColumnIndex = 0;
 
-		BufferedReader fileReader = null;
-
-		try {
-			fileReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(csvWithMetadata), StandardCharsets.UTF_8));
-			String fileLine = null;
-			while ((fileLine = fileReader.readLine()) != null) {
-				final String[] lineParts = splitCsvLine(fileLine);
-				if (METADATA_HEADER.equals(lineParts[0])) {
-					final List<String> headerLine = new ArrayList<>();
-					columnNames.add(headerLine);
-					for (int i = 1; i < lineParts.length; i++) {
-						headerLine.add(lineParts[i]);
-					}
-				} else if (METADATA_COLOR.equals(lineParts[0])) {
-					for (int i = 1; i < lineParts.length; i++) {
-						if ("null".equalsIgnoreCase(lineParts[i])) {
-							columnColors.add(null);
-						} else {
-							columnColors.add(lineParts[i]);
-						}
-					}
-				} else if (METADATA_RIGHTALIGNMENT.equals(lineParts[0])) {
-					for (int i = 1; i < lineParts.length; i++) {
-						if ("true".equalsIgnoreCase(lineParts[i])) {
-							columnRightAligned.add(true);
-						} else {
-							columnRightAligned.add(false);
-						}
-					}
-				} else {
-					if ("null".equalsIgnoreCase(lineParts[0])) {
-						lineColors.add(null);
+		// Split into records by a quote aware parser, because quoted values may contain line breaks
+		for (final String[] lineParts : splitCsvRecords(new String(csvWithMetadata, StandardCharsets.UTF_8))) {
+			if (lineParts.length == 0) {
+				// Empty line
+				continue;
+			} else if (METADATA_HEADER.equals(lineParts[0])) {
+				final List<String> headerLine = new ArrayList<>();
+				columnNames.add(headerLine);
+				for (int i = 1; i < lineParts.length; i++) {
+					headerLine.add(lineParts[i]);
+				}
+			} else if (METADATA_COLOR.equals(lineParts[0])) {
+				for (int i = 1; i < lineParts.length; i++) {
+					if ("null".equalsIgnoreCase(lineParts[i])) {
+						columnColors.add(null);
 					} else {
-						lineColors.add(lineParts[0]);
-					}
-					final List<String> contentLine = new ArrayList<>();
-					content.add(contentLine);
-					for (int i = 1; i < lineParts.length; i++) {
-						contentLine.add(lineParts[i]);
+						columnColors.add(lineParts[i]);
 					}
 				}
-			}
-		} finally {
-			if (fileReader != null) {
-				try {
-					fileReader.close();
-				} catch (final IOException e) {
-					e.printStackTrace();
+			} else if (METADATA_RIGHTALIGNMENT.equals(lineParts[0])) {
+				for (int i = 1; i < lineParts.length; i++) {
+					columnRightAligned.add("true".equalsIgnoreCase(lineParts[i]));
+				}
+			} else {
+				if ("null".equalsIgnoreCase(lineParts[0])) {
+					lineColors.add(null);
+				} else {
+					lineColors.add(lineParts[0]);
+				}
+				final List<String> contentLine = new ArrayList<>();
+				content.add(contentLine);
+				for (int i = 1; i < lineParts.length; i++) {
+					contentLine.add(lineParts[i]);
 				}
 			}
-			fileReader = null;
 		}
+
+		normalizeLoadedData();
 
 		// New lines are appended after the loaded lines
 		currentLineIndex = content.size() - 1;
+		// The loaded lines are complete, so values must not be added without starting a new line first
+		currentColumnIndex = getColumnCount();
+	}
+
+	/**
+	 * Makes loaded data consistent, so data with missing metadata lines or values can be used like a
+	 * table created by the API: at least one header line, at most two, and all header lines, column
+	 * colors, alignments and data lines with one entry per column.
+	 */
+	private void normalizeLoadedData() {
+		if (columnNames.isEmpty()) {
+			columnNames.add(new ArrayList<>());
+		}
+		while (columnNames.size() > 2) {
+			columnNames.remove(columnNames.size() - 1);
+		}
+		int columnCount = 0;
+		for (final List<String> headerLine : columnNames) {
+			columnCount = Math.max(columnCount, headerLine.size());
+		}
+		for (final List<String> line : content) {
+			columnCount = Math.max(columnCount, line.size());
+		}
+		for (final List<String> headerLine : columnNames) {
+			padList(headerLine, columnCount, "");
+		}
+		for (final List<String> line : content) {
+			padList(line, columnCount, "");
+		}
+		padList(columnColors, columnCount, null);
+		padList(columnRightAligned, columnCount, false);
+		while (columnColors.size() > columnCount) {
+			columnColors.remove(columnColors.size() - 1);
+		}
+		while (columnRightAligned.size() > columnCount) {
+			columnRightAligned.remove(columnRightAligned.size() - 1);
+		}
+	}
+
+	private static <T> void padList(final List<T> list, final int size, final T fillValue) {
+		while (list.size() < size) {
+			list.add(fillValue);
+		}
 	}
 
 	/**
@@ -693,23 +729,27 @@ public class TextTable {
 	}
 
 	/**
-	 * Splits a line of the CSV format written by {@link #toCsvStringWithMetaData()} into its
-	 * unquoted values. Separators within quotes are part of the value, doubled quotes within quotes
-	 * represent a single quote. A trailing separator does not start another value.
+	 * Splits the CSV format written by {@link #toCsvStringWithMetaData()} into records and their
+	 * unquoted values. Separators and line breaks within quotes are part of the value, doubled
+	 * quotes within quotes represent a single quote. A trailing separator does not start another
+	 * value. Records are separated by LF, CRLF or CR.
 	 *
-	 * @param line
-	 *            the CSV line
-	 * @return the values of the line
+	 * @param text
+	 *            the CSV text
+	 * @return the values of each record, an empty array for an empty line
 	 */
-	private static String[] splitCsvLine(final String line) {
+	private static List<String[]> splitCsvRecords(final String text) {
+		final List<String[]> records = new ArrayList<>();
 		final List<String> values = new ArrayList<>();
 		final StringBuilder value = new StringBuilder();
 		boolean withinQuotes = false;
-		for (int i = 0; i < line.length(); i++) {
-			final char nextChar = line.charAt(i);
+		// A leading byte order mark is no part of the data
+		final int start = !text.isEmpty() && text.charAt(0) == '\uFEFF' ? 1 : 0;
+		for (int i = start; i < text.length(); i++) {
+			final char nextChar = text.charAt(i);
 			if (withinQuotes) {
 				if (nextChar == '"') {
-					if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+					if (i + 1 < text.length() && text.charAt(i + 1) == '"') {
 						value.append('"');
 						i++;
 					} else {
@@ -723,14 +763,28 @@ public class TextTable {
 			} else if (nextChar == ';') {
 				values.add(value.toString());
 				value.setLength(0);
+			} else if (nextChar == '\n' || nextChar == '\r') {
+				if (nextChar == '\r' && i + 1 < text.length() && text.charAt(i + 1) == '\n') {
+					i++;
+				}
+				addCsvRecord(records, values, value);
 			} else {
 				value.append(nextChar);
 			}
 		}
+		if (!values.isEmpty() || value.length() > 0) {
+			addCsvRecord(records, values, value);
+		}
+		return records;
+	}
+
+	private static void addCsvRecord(final List<String[]> records, final List<String> values, final StringBuilder value) {
 		if (value.length() > 0) {
 			values.add(value.toString());
 		}
-		return values.toArray(new String[0]);
+		records.add(values.toArray(new String[0]));
+		values.clear();
+		value.setLength(0);
 	}
 
 	/**

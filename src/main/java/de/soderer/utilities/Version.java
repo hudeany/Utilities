@@ -106,15 +106,14 @@ public class Version implements Comparable<Version> {
 			return null;
 		} else {
 			final Matcher matcher = VERSION_IN_TEXT_PATTERN.matcher(data);
-			if (matcher.find()) {
+			while (matcher.find()) {
 				try {
 					return new Version(matcher.group());
 				} catch (@SuppressWarnings("unused") final Exception e) {
-					return null;
+					// A part exceeds the int range (e.g. a build timestamp), so a later version in the text may still be valid
 				}
-			} else {
-				return null;
 			}
+			return null;
 		}
 	}
 
