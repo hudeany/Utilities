@@ -20,7 +20,8 @@ public class LineReader implements Closeable {
 	/** Value returned by read operations at the end of data. */
 	public static final int EOF = -1;
 
-	private PushbackReader pushbackReader = null;
+	/** Null after closing. Volatile, because {@link #close()} may be called from another thread. */
+	private volatile PushbackReader pushbackReader = null;
 
 	private BOM bom = BOM.NONE;
 	private LineBreak globalLineBreakType = LineBreak.Unknown;
@@ -55,60 +56,95 @@ public class LineReader implements Closeable {
 	}
 
 	/**
-	 * Creates a new reader for a stream. A leading BOM is skipped.
+	 * Creates a new reader for a stream. A leading BOM is skipped. The stream is closed by
+	 * {@link #close()}, and also if this constructor fails.
 	 *
 	 * @param inputStream
-	 *            the stream to read from
+	 *            the stream to read from, not null
 	 * @param charset
-	 *            the encoding of the data. For data with UTF-16 or UTF-32 BOM the generic UTF-16 or
-	 *            UTF-32 charset may be used, the byte order is then taken from the BOM.
+	 *            the encoding of the data, not null. For data with UTF-16 or UTF-32 BOM the generic
+	 *            UTF-16 or UTF-32 charset may be used, the byte order is then taken from the BOM.
 	 * @throws IOException
 	 *             if reading the BOM fails or the BOM does not fit the charset
 	 */
-	public LineReader(final InputStream inputStream, Charset charset) throws IOException {
-		final BOMInputStream bomInputStream = new BOMInputStream(inputStream);
-		bomInputStream.skipBOM();
-		bom = bomInputStream.getBOM();
-		if (bom == BOM.UTF_8 && !StandardCharsets.UTF_8.equals(charset)) {
-			throw new IOException("Invalid charset for inputstream with UTF-8 BOM: " + charset.displayName());
-		} else if (bom == BOM.UTF_16_LE) {
-			if (StandardCharsets.UTF_16.equals(charset)) {
-				// The BOM was skipped, so the generic UTF-16 decoder would fall back to big-endian
-				charset = StandardCharsets.UTF_16LE;
-			} else if (!StandardCharsets.UTF_16LE.equals(charset)) {
-				throw new IOException("Invalid charset for inputstream with UTF_16_LE BOM: " + charset.displayName());
-			}
-		} else if (bom == BOM.UTF_16_BE) {
-			if (StandardCharsets.UTF_16.equals(charset)) {
-				charset = StandardCharsets.UTF_16BE;
-			} else if (!StandardCharsets.UTF_16BE.equals(charset)) {
-				throw new IOException("Invalid charset for inputstream with UTF_16_BE BOM: " + charset.displayName());
-			}
-		} else if (bom == BOM.UTF_32_LE) {
-			if ("UTF-32".equals(charset.name())) {
-				// The BOM was skipped, so the generic UTF-32 decoder would fall back to big-endian
-				charset = Charset.forName("UTF-32LE");
-			} else if (!"UTF-32LE".equals(charset.name())) {
-				throw new IOException("Invalid charset for inputstream with UTF_32_LE BOM: " + charset.displayName());
-			}
-		} else if (bom == BOM.UTF_32_BE) {
-			if ("UTF-32".equals(charset.name())) {
-				charset = Charset.forName("UTF-32BE");
-			} else if (!"UTF-32BE".equals(charset.name())) {
-				throw new IOException("Invalid charset for inputstream with UTF_32_BE BOM: " + charset.displayName());
-			}
+	public LineReader(final InputStream inputStream, final Charset charset) throws IOException {
+		if (inputStream == null) {
+			throw new IllegalArgumentException("InputStream must not be null");
+		} else if (charset == null) {
+			// Close the stream, as it would be closed on any other failure of this constructor
+			closeQuietly(inputStream);
+			throw new IllegalArgumentException("Charset must not be null");
 		}
-		pushbackReader = new PushbackReader(new BufferedReader(new InputStreamReader(bomInputStream, charset)));
+
+		final BOMInputStream bomInputStream = new BOMInputStream(inputStream);
+		try {
+			bomInputStream.skipBOM();
+			bom = bomInputStream.getBOM();
+			final Charset effectiveCharset = getCharsetForBom(bom, charset);
+			pushbackReader = new PushbackReader(new BufferedReader(new InputStreamReader(bomInputStream, effectiveCharset)));
+		} catch (final IOException | RuntimeException e) {
+			// Otherwise the stream leaks, because the caller never gets a LineReader to close
+			closeQuietly(bomInputStream);
+			throw e;
+		}
 	}
 
 	/**
-	 * Creates a new reader for a character reader.
+	 * Creates a new reader for a character reader. The reader is closed by {@link #close()}.
 	 *
 	 * @param reader
-	 *            the reader to read from
+	 *            the reader to read from, not null
 	 */
 	public LineReader(final Reader reader) {
+		if (reader == null) {
+			throw new IllegalArgumentException("Reader must not be null");
+		}
 		pushbackReader = new PushbackReader(new BufferedReader(reader));
+	}
+
+	/**
+	 * Checks that the charset fits the BOM and resolves the generic UTF-16/UTF-32 charsets to the
+	 * byte order given by the BOM.
+	 */
+	private static Charset getCharsetForBom(final BOM bom, final Charset charset) throws IOException {
+		if (bom == BOM.UTF_8) {
+			if (!StandardCharsets.UTF_8.equals(charset)) {
+				throw new IOException("Invalid charset for inputstream with UTF-8 BOM: " + charset.displayName());
+			}
+			return charset;
+		} else if (bom == BOM.UTF_16_LE) {
+			if (StandardCharsets.UTF_16.equals(charset)) {
+				// The BOM was skipped, so the generic UTF-16 decoder would fall back to big-endian
+				return StandardCharsets.UTF_16LE;
+			} else if (!StandardCharsets.UTF_16LE.equals(charset)) {
+				throw new IOException("Invalid charset for inputstream with UTF_16_LE BOM: " + charset.displayName());
+			}
+			return charset;
+		} else if (bom == BOM.UTF_16_BE) {
+			if (StandardCharsets.UTF_16.equals(charset)) {
+				return StandardCharsets.UTF_16BE;
+			} else if (!StandardCharsets.UTF_16BE.equals(charset)) {
+				throw new IOException("Invalid charset for inputstream with UTF_16_BE BOM: " + charset.displayName());
+			}
+			return charset;
+		} else if (bom == BOM.UTF_32_LE) {
+			if ("UTF-32".equals(charset.name())) {
+				// The BOM was skipped, so the generic UTF-32 decoder would fall back to big-endian
+				return Charset.forName("UTF-32LE");
+			} else if (!"UTF-32LE".equals(charset.name())) {
+				throw new IOException("Invalid charset for inputstream with UTF_32_LE BOM: " + charset.displayName());
+			}
+			return charset;
+		} else if (bom == BOM.UTF_32_BE) {
+			if ("UTF-32".equals(charset.name())) {
+				return Charset.forName("UTF-32BE");
+			} else if (!"UTF-32BE".equals(charset.name())) {
+				throw new IOException("Invalid charset for inputstream with UTF_32_BE BOM: " + charset.displayName());
+			}
+			return charset;
+		} else {
+			return charset;
+		}
 	}
 
 	/**
@@ -116,70 +152,51 @@ public class LineReader implements Closeable {
 	 *
 	 * @return the next line, or null at the end of data
 	 * @throws IOException
-	 *             if reading fails
+	 *             if reading fails or the reader is closed
 	 */
 	public String readLine() throws IOException {
+		final PushbackReader reader = getOpenReader();
 		latestLineBreakType = LineBreak.Unknown;
 
 		StringBuilder returnValue = null;
 		int nextCharInt;
-		while ((nextCharInt = pushbackReader.read()) != EOF) {
-			final char nextChar = (char) nextCharInt;
-
+		while ((nextCharInt = reader.read()) != EOF) {
 			if (returnValue == null) {
 				returnValue = new StringBuilder();
 			}
 
-			if (nextChar == '\n') {
-				latestLineBreakType = LineBreak.Unix;
-
-				if (globalLineBreakType == LineBreak.Unknown) {
-					globalLineBreakType = LineBreak.Unix;
-				} else if (globalLineBreakType == LineBreak.Mac || globalLineBreakType == LineBreak.Windows) {
-					globalLineBreakType = LineBreak.Mixed;
+			if (nextCharInt == '\n') {
+				registerLineBreak(LineBreak.Unix);
+				break;
+			} else if (nextCharInt == '\r') {
+				final int followingCharInt = reader.read();
+				if (followingCharInt == '\n') {
+					registerLineBreak(LineBreak.Windows);
+				} else {
+					registerLineBreak(LineBreak.Mac);
+					if (followingCharInt != EOF) {
+						// First char of the next line
+						reader.unread(followingCharInt);
+					}
 				}
 				break;
-			} else if (nextChar == '\r') {
-				nextCharInt = pushbackReader.read();
-				if (nextCharInt == EOF) {
-					latestLineBreakType = LineBreak.Mac;
-
-					if (globalLineBreakType == LineBreak.Unknown) {
-						globalLineBreakType = LineBreak.Mac;
-					} else if (globalLineBreakType == LineBreak.Unix || globalLineBreakType == LineBreak.Windows) {
-						globalLineBreakType = LineBreak.Mixed;
-					}
-					break;
-				} else if (((char) nextCharInt) == '\n') {
-					latestLineBreakType = LineBreak.Windows;
-
-					if (globalLineBreakType == LineBreak.Unknown) {
-						globalLineBreakType = LineBreak.Windows;
-					} else if (globalLineBreakType == LineBreak.Unix || globalLineBreakType == LineBreak.Mac) {
-						globalLineBreakType = LineBreak.Mixed;
-					}
-					break;
-				} else {
-					latestLineBreakType = LineBreak.Mac;
-
-					if (globalLineBreakType == LineBreak.Unknown) {
-						globalLineBreakType = LineBreak.Mac;
-					} else if (globalLineBreakType == LineBreak.Unix || globalLineBreakType == LineBreak.Windows) {
-						globalLineBreakType = LineBreak.Mixed;
-					}
-
-					pushbackReader.unread(nextCharInt);
-					break;
-				}
 			} else {
-				returnValue.append(nextChar);
+				returnValue.append((char) nextCharInt);
 			}
 		}
 
-		if (returnValue == null) {
-			return null;
-		} else {
-			return returnValue.toString();
+		return returnValue == null ? null : returnValue.toString();
+	}
+
+	/**
+	 * Sets the latest line break type and updates the global one
+	 */
+	private void registerLineBreak(final LineBreak lineBreakType) {
+		latestLineBreakType = lineBreakType;
+		if (globalLineBreakType == LineBreak.Unknown) {
+			globalLineBreakType = lineBreakType;
+		} else if (globalLineBreakType != lineBreakType) {
+			globalLineBreakType = LineBreak.Mixed;
 		}
 	}
 
@@ -189,21 +206,21 @@ public class LineReader implements Closeable {
 	 * @param charsToSkip
 	 *            the number of characters to skip, nothing is skipped if not positive
 	 * @throws IOException
-	 *             if reading fails or the end of data is reached before all characters were skipped
+	 *             if reading fails, the reader is closed or the end of data is reached before all
+	 *             characters were skipped
 	 */
 	public void skipChars(final long charsToSkip) throws IOException {
-		if (charsToSkip <= 0) {
-			return;
-		}
-		long skipCount = 0;
-		while (true) {
-			if (pushbackReader.read() == EOF) {
+		final PushbackReader reader = getOpenReader();
+		long remaining = charsToSkip;
+		while (remaining > 0) {
+			final long skipped = reader.skip(remaining);
+			if (skipped > 0) {
+				remaining -= skipped;
+			} else if (reader.read() == EOF) {
+				// skip() may return 0 without having reached the end of data, so check by reading a char
 				throw new IOException("No more chars left to skip");
 			} else {
-				skipCount++;
-				if (skipCount == charsToSkip) {
-					break;
-				}
+				remaining--;
 			}
 		}
 	}
@@ -214,13 +231,14 @@ public class LineReader implements Closeable {
 	 */
 	@Override
 	public synchronized void close() {
-		if (pushbackReader != null) {
+		final PushbackReader reader = pushbackReader;
+		if (reader != null) {
+			pushbackReader = null;
 			try {
-				pushbackReader.close();
+				reader.close();
 			} catch (final IOException e) {
 				e.printStackTrace();
 			}
-			pushbackReader = null;
 		}
 	}
 
@@ -229,9 +247,25 @@ public class LineReader implements Closeable {
 	 *
 	 * @return the character read, or {@link #EOF} at the end of data
 	 * @throws IOException
-	 *             if reading fails
+	 *             if reading fails or the reader is closed
 	 */
 	public int readChar() throws IOException {
-		return pushbackReader.read();
+		return getOpenReader().read();
+	}
+
+	private PushbackReader getOpenReader() throws IOException {
+		final PushbackReader reader = pushbackReader;
+		if (reader == null) {
+			throw new IOException("LineReader is closed");
+		}
+		return reader;
+	}
+
+	private static void closeQuietly(final Closeable closeable) {
+		try {
+			closeable.close();
+		} catch (@SuppressWarnings("unused") final IOException e) {
+			// The original error is more important
+		}
 	}
 }

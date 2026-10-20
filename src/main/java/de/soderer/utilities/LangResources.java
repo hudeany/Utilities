@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TreeSet;
@@ -113,6 +114,9 @@ public class LangResources {
 	/** Language codes of all language files found in the classpath (without the root file) */
 	private static List<String> availableLanguages;
 
+	/** The default language code {@link #availableLanguages} was detected with, because the detection depends on it */
+	private static String availableLanguagesDefaultLanguageCode;
+
 	/**
 	 * Texts of the current language, loaded on first use. Always replaced as a
 	 * whole, so concurrent readers never see a partially initialized state.
@@ -140,14 +144,14 @@ public class LangResources {
 	}
 
 	static {
-		// Parameter order of add(): key, English, German, French, Spanish, Italian
+		// Parameter order of addBuiltInText(): key, English, German, French, Spanish, Italian
 		// "yN"/"Yn" contain the localized answer letters (upper case marks the default). Console input has to accept these letters (and should also accept "y")
 		addBuiltInText("cancel",                                    "Cancel", "Abbrechen", "Annuler", "Cancelar", "Annulla");
 		addBuiltInText("canceledByUser",                            "Canceled by user", "Abbruch durch Benutzer", "Annulé par l'utilisateur", "Cancelado por el usuario", "Annullato dall'utente");
-		addBuiltInText("cannotOpenMail",                            "Email client was not found.", "Email client konnte nicht gefunden werden.", "Le client de messagerie est introuvable.", "No se encontró el cliente de correo.", "Il client di posta non è stato trovato.");
+		addBuiltInText("cannotOpenMail",                            "Email client was not found.", "E-Mail-Client konnte nicht gefunden werden.", "Le client de messagerie est introuvable.", "No se encontró el cliente de correo.", "Il client di posta non è stato trovato.");
 		addBuiltInText("close",                                     "Close", "Schließen", "Fermer", "Cerrar", "Chiudi");
 		addBuiltInText("copyToClipboard",                           "Copy to clipboard", "In Zwischenablage kopieren", "Copier dans le presse-papiers", "Copiar al portapapeles", "Copia negli appunti");
-		addBuiltInText("dailyUpdateCheck",                          "Daily update check", "Tägliche Update Prüfung", "Vérification quotidienne des mises à jour", "Comprobación diaria de actualizaciones", "Controllo giornaliero degli aggiornamenti");
+		addBuiltInText("dailyUpdateCheck",                          "Daily update check", "Tägliche Update-Prüfung", "Vérification quotidienne des mises à jour", "Comprobación diaria de actualizaciones", "Controllo giornaliero degli aggiornamenti");
 		addBuiltInText("detailsLess",                               "Details <<<", "Details <<<", "Détails <<<", "Detalles <<<", "Dettagli <<<");
 		addBuiltInText("detailsMore",                               "Details >>>", "Details >>>", "Détails >>>", "Detalles >>>", "Dettagli >>>");
 		addBuiltInText("enterDownloadCredentials",                  "Enter credentials for download", "Bitte Userdaten für den Download eingeben", "Saisissez les identifiants pour le téléchargement", "Introduzca las credenciales para la descarga", "Inserire le credenziali per il download");
@@ -172,7 +176,7 @@ public class LangResources {
 		addBuiltInText("passwordConfirmation",                      "Confirm password", "Passwort bestätigen", "Confirmer le mot de passe", "Confirmar contraseña", "Conferma password");
 		addBuiltInText("restartNow",                                "Restart application now", "Jetzt Anwendung neustarten", "Redémarrer l'application maintenant", "Reiniciar la aplicación ahora", "Riavvia l'applicazione ora");
 		addBuiltInText("showSwingProperties",                       "Show Swing properties", "Swing-Eigenschaften anzeigen", "Afficher les propriétés Swing", "Mostrar propiedades de Swing", "Mostra proprietà Swing");
-		addBuiltInText("sureQuestion",                              "Are you sure?", "Sind sie sich sicher?", "Êtes-vous sûr ?", "¿Está seguro?", "Sei sicuro?");
+		addBuiltInText("sureQuestion",                              "Are you sure?", "Sind Sie sich sicher?", "Êtes-vous sûr ?", "¿Está seguro?", "Sei sicuro?");
 		addBuiltInText("swingProperties",                           "Swing properties", "Swing-Eigenschaften", "Propriétés Swing", "Propiedades de Swing", "Proprietà Swing");
 		addBuiltInText("updateDone",                                "Updated application may be restarted", "Upgedatete Anwendung kann neugestartet werden", "L'application mise à jour peut être redémarrée", "La aplicación actualizada puede reiniciarse", "L'applicazione aggiornata può essere riavviata");
 		addBuiltInText("updateErrorVersionCheck",                   "Update error while checking for new version:\n{0}", "Fehler beim Ermitteln der aktuellsten Version für ein Update der Applikation:\n{0}", "Erreur lors de la recherche d'une nouvelle version pour la mise à jour :\n{0}", "Error al buscar una nueva versión para la actualización:\n{0}", "Errore durante la ricerca di una nuova versione per l'aggiornamento:\n{0}");
@@ -295,8 +299,8 @@ public class LangResources {
 		addBuiltInText("conf.Application.Language",                 "Language", "Sprache", "Langue", "Idioma", "Lingua");
 		addBuiltInText("conf.Application.ProxyConfigurationType",   "Proxy configuration", "Proxy-Konfiguration", "Configuration du proxy", "Configuración del proxy", "Configurazione proxy");
 		addBuiltInText("conf.Application.ProxyUrl",                 "Proxy URL", "Proxy-URL", "URL du proxy", "URL del proxy", "URL del proxy");
-		addBuiltInText("conf.Application.DailyUpdateCheck",         "Daily update check", "Tägliche Update Prüfung", "Vérification quotidienne des mises à jour", "Comprobación diaria de actualizaciones", "Controllo giornaliero degli aggiornamenti");
-		addBuiltInText("conf.Application.NextDailyUpdateCheck",     "Next daily update check", "Nächste tägliche Update-Prüfung", "Próxima comprobación diaria de actualizaciones", "Prochaine vérification quotidienne des mises à jour", "Prossimo controllo giornaliero degli aggiornamenti");
+		addBuiltInText("conf.Application.DailyUpdateCheck",         "Daily update check", "Tägliche Update-Prüfung", "Vérification quotidienne des mises à jour", "Comprobación diaria de actualizaciones", "Controllo giornaliero degli aggiornamenti");
+		addBuiltInText("conf.Application.NextDailyUpdateCheck",     "Next daily update check", "Nächste tägliche Update-Prüfung", "Prochaine vérification quotidienne des mises à jour", "Próxima comprobación diaria de actualizaciones", "Prossimo controllo giornaliero degli aggiornamenti");
 
 		// Publish all texts of the static initializer at once
 		builtInTexts = new BuiltInTexts();
@@ -348,7 +352,8 @@ public class LangResources {
 	/**
 	 * Uses the application's root language file "LanguageProperties.properties"
 	 * (without language suffix) regardless of the JVM's default locale. The
-	 * built-in texts are English in this case.
+	 * built-in texts are English in this case. If the application has no root
+	 * language file, only the built-in English texts are used.
 	 */
 	public static synchronized void enforceDefaultLocale() {
 		languageTexts = loadLanguageTexts(Locale.ROOT);
@@ -400,6 +405,7 @@ public class LangResources {
 				try {
 					index = Integer.parseInt(matcher.group(1));
 				} catch (@SuppressWarnings("unused") final NumberFormatException e) {
+					// Index too large for an int: keep the placeholder unchanged
 					continue;
 				}
 				if (index < arguments.length) {
@@ -488,6 +494,11 @@ public class LangResources {
 		ResourceBundle applicationBundle = null;
 		try {
 			applicationBundle = ResourceBundle.getBundle(BUNDLE_NAME, locale);
+			if (Locale.ROOT.equals(locale) && !Locale.ROOT.equals(applicationBundle.getLocale())) {
+				// Without a root language file, ResourceBundle falls back to the JVM's default locale (e.g. "LanguageProperties_de.properties").
+				// That must not happen for the enforced root locale, because the built-in texts are English then.
+				applicationBundle = null;
+			}
 		} catch (@SuppressWarnings("unused") final MissingResourceException e) {
 			// Application without language files of its own: only the built-in texts are used
 		} catch (final RuntimeException e) {
@@ -515,7 +526,8 @@ public class LangResources {
 	public static synchronized List<String> getAvailableLanguages(final String defaultLanguageCode) {
 		final ClassLoader classLoader = LangResources.class.getClassLoader();
 
-		if (availableLanguages == null) {
+		// The detected locations depend on the default language code, so the cached result is only valid for the same code
+		if (availableLanguages == null || !Objects.equals(availableLanguagesDefaultLanguageCode, defaultLanguageCode)) {
 			// TreeSet keeps the result sorted and free of duplicates
 			final Set<String> languages = new TreeSet<>();
 			boolean unlistableLocationFound = false;
@@ -536,6 +548,7 @@ public class LangResources {
 			}
 
 			availableLanguages = new ArrayList<>(languages);
+			availableLanguagesDefaultLanguageCode = defaultLanguageCode;
 		}
 
 		final Set<String> result = new TreeSet<>(availableLanguages);

@@ -17,6 +17,13 @@ public class LRUCache<K, V> {
 	/** Default maximum number of entries */
 	public static final int DEFAULT_MAX_SIZE = 1000;
 
+	/** Upper limit for the initial capacity, so a large maximum size does not allocate a huge table up front */
+	private static final int MAX_INITIAL_CAPACITY = 1024;
+
+	private static final float LOAD_FACTOR = 0.75F;
+
+	private final int maxSize;
+
 	private final Map<K, V> internalMap;
 
 	/**
@@ -30,17 +37,26 @@ public class LRUCache<K, V> {
 	 * Create a cache with the given maximum number of entries.
 	 *
 	 * @param maxSize
-	 *            maximum number of entries, must not be negative
+	 *            maximum number of entries, must not be negative. 0 creates a cache that never
+	 *            keeps any entry.
+	 * @throws IllegalArgumentException
+	 *             if maxSize is negative
 	 */
 	public LRUCache(final int maxSize) {
-		internalMap = Collections.synchronizedMap(new LinkedHashMap<K, V>(maxSize + 1, .75F, true) {
-			private static final long serialVersionUID = 6658309225064456992L;
+		if (maxSize < 0) {
+			throw new IllegalArgumentException("Maximum size must not be negative: " + maxSize);
+		}
+		this.maxSize = maxSize;
+		internalMap = Collections.synchronizedMap(new LRUMap<>(maxSize));
+	}
 
-			@Override
-			protected boolean removeEldestEntry(final Map.Entry<K, V> eldest) {
-				return size() > maxSize;
-			}
-		});
+	/**
+	 * Returns the maximum number of entries.
+	 *
+	 * @return the maximum size given on creation
+	 */
+	public int getMaxSize() {
+		return maxSize;
 	}
 
 	/**
@@ -65,5 +81,26 @@ public class LRUCache<K, V> {
 	 */
 	public V get(final K key) {
 		return internalMap.get(key);
+	}
+
+	/**
+	 * LinkedHashMap in access order, which removes the eldest entry when the maximum size is
+	 * exceeded. A static class, so it does not keep a reference to the enclosing cache.
+	 */
+	private static final class LRUMap<K, V> extends LinkedHashMap<K, V> {
+		private static final long serialVersionUID = 6658309225064456992L;
+
+		private final int maxSize;
+
+		private LRUMap(final int maxSize) {
+			// Capacity for maxSize entries without rehashing, computed as long to avoid an int overflow for large sizes
+			super((int) Math.min((long) Math.ceil(maxSize / LOAD_FACTOR) + 1, MAX_INITIAL_CAPACITY), LOAD_FACTOR, true);
+			this.maxSize = maxSize;
+		}
+
+		@Override
+		protected boolean removeEldestEntry(final Map.Entry<K, V> eldest) {
+			return size() > maxSize;
+		}
 	}
 }
