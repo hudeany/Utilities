@@ -215,7 +215,8 @@ public class TextUtilities {
 			count++;
 		}
 
-		if (nextLinebreak != -1) {
+		// Only cut if text follows the linebreak (before, "a\n" with 1 line got a "..." although nothing was cut off)
+		if (nextLinebreak != -1 && nextLinebreak < normalizedValue.length() - 1) {
 			final LineBreak originalLineBreakType = detectLinebreakType(value);
 			return normalizeLineBreaks(normalizedValue.substring(0, nextLinebreak + 1), originalLineBreakType) + "...";
 		} else {
@@ -859,7 +860,7 @@ public class TextUtilities {
 	 *
 	 * @param input stream to scan
 	 * @param startIndex number of bytes to skip; positions are counted from the start of the stream
-	 * @return start positions of the lines after startIndex (including 0 if startIndex is 0 or less)
+	 * @return start positions of the lines at or after startIndex (including 0 if startIndex is 0 or less)
 	 * @throws IOException if reading fails
 	 */
 	public static List<Long> scanLineStartIndexes(final InputStream input, final long startIndex) throws IOException {
@@ -870,10 +871,10 @@ public class TextUtilities {
 		if (startIndex <= 0) {
 			returnList.add(0L);
 		} else {
-			// skip() may skip less bytes than requested, so skip until the start index or the end of the stream is reached
+			// skip() may skip less bytes than requested, so skip until the byte before the start index or the end of the stream is reached
 			long skipped = 0;
-			while (skipped < startIndex) {
-				final long newlySkipped = input.skip(startIndex - skipped);
+			while (skipped < startIndex - 1) {
+				final long newlySkipped = input.skip(startIndex - 1 - skipped);
 				if (newlySkipped <= 0) {
 					if (input.read() == EOF) {
 						break;
@@ -881,6 +882,18 @@ public class TextUtilities {
 					skipped++;
 				} else {
 					skipped += newlySkipped;
+				}
+			}
+			// The byte before the start index decides, whether a line starts at the start index (before, such a line start was missed)
+			if (skipped == startIndex - 1) {
+				final int byteBeforeStart = input.read();
+				if (byteBeforeStart != EOF) {
+					skipped++;
+					if ((char) byteBeforeStart == '\n') {
+						returnList.add(skipped);
+					} else {
+						bufferPrevious = byteBeforeStart;
+					}
 				}
 			}
 			position = skipped;
@@ -945,7 +958,8 @@ public class TextUtilities {
 		for (int i = 0; i < originalLines.length; i++) {
 			final String line = originalLines[i];
 			if (line.length() > maximumLength) {
-				result.append(Utilities.join(line.split("(?<=\\G.{" + maximumLength + "})"), "\n"));
+				// Chunks by index: the former split regex ("\\G.{n}") stopped working after characters not matched by '.', like CR or NEL
+				result.append(String.join("\n", chopToChunks(line, maximumLength)));
 			} else {
 				result.append(line);
 			}
@@ -1180,30 +1194,24 @@ public class TextUtilities {
 			return null;
 		}
 
+		// Each line is taken with its own linebreak (LF, CRLF or CR). Before, consecutive linebreaks were grouped wrongly,
+		// so an empty line was removed together with a following matching line.
 		final StringBuilder resultText = new StringBuilder();
-
-		StringBuilder nextLine = new StringBuilder();
-		boolean foundLinebreakStart = false;
-		char lastChar = 'x';
-		for (final char nextChar : text.toCharArray()) {
-			if ((nextChar == '\r' && lastChar != '\r' && lastChar != '\n') || (nextChar == '\n' && (lastChar == '\r' || lastChar != '\n'))) {
-				foundLinebreakStart = true;
-			} else if (foundLinebreakStart) {
-				if (!nextLine.toString().contains(searchLinePart)) {
-					resultText.append(nextLine);
-				}
-				nextLine = new StringBuilder();
-				foundLinebreakStart = false;
+		int lineStart = 0;
+		while (lineStart < text.length()) {
+			int contentEnd = lineStart;
+			while (contentEnd < text.length() && text.charAt(contentEnd) != '\n' && text.charAt(contentEnd) != '\r') {
+				contentEnd++;
 			}
-			nextLine.append(nextChar);
-			lastChar = nextChar;
-		}
-		if (nextLine.length() > 0) {
-			if (!nextLine.toString().contains(searchLinePart)) {
-				resultText.append(nextLine);
+			int lineEnd = contentEnd;
+			if (lineEnd < text.length()) {
+				lineEnd += (text.charAt(lineEnd) == '\r' && lineEnd + 1 < text.length() && text.charAt(lineEnd + 1) == '\n') ? 2 : 1;
 			}
+			if (!text.substring(lineStart, contentEnd).contains(searchLinePart)) {
+				resultText.append(text, lineStart, lineEnd);
+			}
+			lineStart = lineEnd;
 		}
-
 		return resultText.toString();
 	}
 
@@ -1243,7 +1251,8 @@ public class TextUtilities {
 			if (nextChar > 0xFF) {
 				// Characters outside of ISO-8859-1 cannot result from wrongly decoded bytes, so the text is correct
 				return text;
-			} else if (nextChar == 0xC3) {
+			} else if (nextChar >= 0xC2 && nextChar <= 0xF4) {
+				// Lead byte of a UTF-8 multibyte character. Before, only 0xC3 (umlauts) was checked, so e.g. "\u00b0" or "\u20ac" were not fixed.
 				wrongEncodingDetected = true;
 			}
 		}
