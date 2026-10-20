@@ -86,6 +86,11 @@ public class LRUCache<K, V> {
 	/**
 	 * LinkedHashMap in access order, which removes the eldest entry when the maximum size is
 	 * exceeded. A static class, so it does not keep a reference to the enclosing cache.
+	 *
+	 * @param <K>
+	 *            Entry Key Type
+	 * @param <V>
+	 *            Entry Value Type
 	 */
 	private static final class LRUMap<K, V> extends LinkedHashMap<K, V> {
 		private static final long serialVersionUID = 6658309225064456992L;

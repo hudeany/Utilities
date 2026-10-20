@@ -1,45 +1,46 @@
 package de.soderer.utilities;
 
 /**
- * The Class ParameterException.
+ * Signals an invalid or missing parameter, e.g. a command line parameter. Optionally names the
+ * affected parameter.
  */
 public class ParameterException extends Exception {
-
-	/** The Constant serialVersionUID */
 	private static final long serialVersionUID = -4435007822821471026L;
 
-	/** The parameter */
-	private String parameter = null;
+	/** Name of the affected parameter, or null if unknown */
+	private final String parameter;
 
 	/**
-	 * Gets the parameter.
-	 *
-	 * @return the parameter
-	 */
-	public String getParameter() {
-		return parameter;
-	}
-
-	/**
-	 * Instantiates a new parameter exception.
+	 * Creates a new exception without parameter name.
 	 *
 	 * @param errorMessage
 	 *            the error message
 	 */
 	public ParameterException(final String errorMessage) {
 		super(errorMessage);
+		parameter = null;
 	}
 
 	/**
-	 * Instantiates a new parameter exception.
+	 * Creates a new exception for a parameter. The parameter name is appended to the message like
+	 * "message (Parameter: name)", unless it is null.
 	 *
 	 * @param parameter
-	 *            the parameter
+	 *            name of the affected parameter, may be null
 	 * @param errorMessage
 	 *            the error message
 	 */
 	public ParameterException(final String parameter, final String errorMessage) {
-		super(errorMessage + " (Parameter: " + parameter + ")");
+		super(parameter == null ? errorMessage : errorMessage + " (Parameter: " + parameter + ")");
 		this.parameter = parameter;
+	}
+
+	/**
+	 * Returns the name of the affected parameter.
+	 *
+	 * @return the parameter name, or null if unknown
+	 */
+	public String getParameter() {
+		return parameter;
 	}
 }

@@ -264,9 +264,38 @@ public class PropertiesWriterTest {
 	}
 
 	@Test
-	public void testEmptyKeyIsRejected() {
+	public void testNullKeyIsRejected() {
 		try (PropertiesWriter propertiesWriter = new PropertiesWriter(new ByteArrayOutputStream(), true)) {
 			assertThrows(IllegalArgumentException.class, () -> propertiesWriter.writeProperty(null, "value"));
+			assertEquals(0, propertiesWriter.getWrittenProperties());
+		}
+	}
+
+	@Test
+	public void testEmptyKeyIsWritten() throws Exception {
+		// An empty key is valid in .properties files (like "=value") and must survive reading and writing again
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		try (PropertiesWriter propertiesWriter = new PropertiesWriter(outputStream, true)) {
+			propertiesWriter.writeProperty("", "value");
+			assertEquals(1, propertiesWriter.getWrittenProperties());
+		}
+		final byte[] data = outputStream.toByteArray();
+		assertEquals("=value\n", new String(data, StandardCharsets.UTF_8));
+
+		final Properties loaded = new Properties();
+		loaded.load(new ByteArrayInputStream(data));
+		assertEquals("value", loaded.getProperty(""));
+
+		try (PropertiesReader propertiesReader = new PropertiesReader(new ByteArrayInputStream(data))) {
+			assertEquals("value", propertiesReader.read().get(""));
+		}
+	}
+
+	@Test
+	public void testEmptyKeyWithBlankSeparatorIsRejected() {
+		// With a blanks-only separator the value would be read as key
+		try (PropertiesWriter propertiesWriter = new PropertiesWriter(new ByteArrayOutputStream(), true)) {
+			propertiesWriter.setKeyValueSeparator(" ");
 			assertThrows(IllegalArgumentException.class, () -> propertiesWriter.writeProperty("", "value"));
 			assertEquals(0, propertiesWriter.getWrittenProperties());
 		}

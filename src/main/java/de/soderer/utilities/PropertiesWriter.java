@@ -5,9 +5,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import de.soderer.utilities.TextUtilities.LineBreak;
@@ -30,6 +32,9 @@ public class PropertiesWriter implements Closeable {
 
 	/** Byte order mark, which would be removed by some readers at the beginning of a file */
 	private static final char BYTE_ORDER_MARK = '\uFEFF';
+
+	/** Text like a unicode escape ("\" followed by "u" and 4 hex digits), which PropertiesReader would decode in comments */
+	private static final Pattern UNICODE_ESCAPE_TEXT_PATTERN = Pattern.compile("\\\\u[0-9A-Fa-f]{4}");
 
 	private LineBreak linebreakType = LineBreak.Unix;
 	private String keyValueSeparator = "=";
@@ -57,6 +62,9 @@ public class PropertiesWriter implements Closeable {
 	 *            an ISO-8859-1 file with unicode escapes for all non-ASCII characters
 	 */
 	public PropertiesWriter(final OutputStream outputStream, final boolean storeAsUtf8) {
+		if (outputStream == null) {
+			throw new IllegalArgumentException("OutputStream must not be null");
+		}
 		this.outputStream = outputStream;
 		this.storeAsUtf8 = storeAsUtf8;
 		outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream, storeAsUtf8 ? StandardCharsets.UTF_8 : StandardCharsets.ISO_8859_1));
@@ -83,19 +91,40 @@ public class PropertiesWriter implements Closeable {
 	/**
 	 * Sets the line break written after each line.
 	 *
-	 * @param linebreakType line break type, must not be null
+	 * @param linebreakType line break type: Unix, Windows or Mac
+	 * @throws IllegalArgumentException for null or a type that is no single line break (like Unknown or Mixed)
 	 */
 	public void setLinebreakType(final LineBreak linebreakType) {
 		if (linebreakType == null) {
 			throw new IllegalArgumentException("Linebreak type must not be null");
 		}
+		// Throws for types without a defined line break
+		getLinebreakString(linebreakType);
 		this.linebreakType = linebreakType;
+	}
+
+	/**
+	 * Line break chars of a line break type. Defined here, so the written chars do not depend on LineBreak.toString().
+	 */
+	private static String getLinebreakString(final LineBreak linebreakType) {
+		switch (linebreakType) {
+			case Unix:
+				return "\n";
+			case Windows:
+				return "\r\n";
+			case Mac:
+				return "\r";
+			case Mixed:
+			case Unknown:
+			default:
+				throw new IllegalArgumentException("Invalid linebreak type for writing: " + linebreakType);
+		}
 	}
 
 	/**
 	 * Sets the line break written after each line.
 	 *
-	 * @param linebreakTypeParam line break type, must not be null
+	 * @param linebreakTypeParam line break type: Unix, Windows or Mac
 	 * @return this instance for chaining
 	 */
 	public PropertiesWriter withLinebreakType(final LineBreak linebreakTypeParam) {
@@ -142,17 +171,20 @@ public class PropertiesWriter implements Closeable {
 	/**
 	 * Writes a property line with escaped key and value.
 	 *
-	 * @param key key, must not be empty
+	 * @param key key, must not be null. An empty key (valid in .properties files) needs a separator containing '=' or
+	 *            ':', because with a blanks-only separator the value would be read as key.
 	 * @param value value, null is written as empty value
 	 * @throws IllegalStateException if this writer is already closed
-	 * @throws IllegalArgumentException if the key is empty
+	 * @throws IllegalArgumentException if the key is null, or empty with a blanks-only separator
 	 * @throws Exception if the data cannot be written
 	 */
 	public void writeProperty(final String key, final String value) throws Exception {
 		checkNotClosed();
 
-		if (key == null || key.isEmpty()) {
-			throw new IllegalArgumentException("Property key must not be empty");
+		if (key == null) {
+			throw new IllegalArgumentException("Property key must not be null");
+		} else if (key.isEmpty() && keyValueSeparator.trim().isEmpty()) {
+			throw new IllegalArgumentException("Empty property key needs a separator containing '=' or ':'");
 		}
 
 		String escapedValue = escapeValue(value, !storeAsUtf8);
@@ -164,7 +196,7 @@ public class PropertiesWriter implements Closeable {
 		outputWriter.write(escapeKey(key, !storeAsUtf8));
 		outputWriter.write(keyValueSeparator);
 		outputWriter.write(escapedValue);
-		outputWriter.write(linebreakType.toString());
+		outputWriter.write(getLinebreakString(linebreakType));
 
 		writtenProperties++;
 	}
@@ -188,6 +220,9 @@ public class PropertiesWriter implements Closeable {
 	 */
 	public void writeProperties(final Map<String, String> properties, final Map<String, String> comments) throws Exception {
 		checkNotClosed();
+		if (properties == null) {
+			throw new IllegalArgumentException("Properties must not be null");
+		}
 
 		for (final Entry<String, String> propertyEntry : properties.entrySet()) {
 			if (comments != null && comments.get(propertyEntry.getKey()) != null) {
@@ -335,13 +370,17 @@ public class PropertiesWriter implements Closeable {
 	 * Escape a comment line.
 	 * For ISO-8859-1 files only characters not representable in ISO-8859-1 are written as unicode escapes,
 	 * so umlauts etc. stay readable. For UTF-8 files only the byte order mark and unpaired surrogates are escaped.
-	 * PropertiesReader decodes these escapes in comments.
+	 * PropertiesReader decodes these escapes in comments. A backslash starting a text like "A" is escaped
+	 * itself, so that text is not decoded when reading.
 	 */
 	private static String escapeCommentLine(final String commentLine, final boolean utf8) {
 		final StringBuilder result = new StringBuilder(commentLine.length() + 16);
+		final Matcher unicodeEscapeTextMatcher = UNICODE_ESCAPE_TEXT_PATTERN.matcher(commentLine);
 		for (int i = 0; i < commentLine.length(); i++) {
 			final char c = commentLine.charAt(i);
-			if (utf8) {
+			if (c == '\\' && unicodeEscapeTextMatcher.region(i, commentLine.length()).lookingAt()) {
+				appendUnicodeEscape(result, c);
+			} else if (utf8) {
 				if (c == BYTE_ORDER_MARK || isUnpairedSurrogate(commentLine, i)) {
 					appendUnicodeEscape(result, c);
 				} else {
@@ -365,9 +404,13 @@ public class PropertiesWriter implements Closeable {
 	 */
 	public void writeComment(final String comment) throws Exception {
 		checkNotClosed();
+		if (comment == null) {
+			throw new IllegalArgumentException("Comment must not be null");
+		}
 
-		for (final String commentLine : comment.replace("\r\n", "\n").replace("\r", "\n").split("\n")) {
-			outputWriter.write("# " + escapeCommentLine(commentLine, storeAsUtf8) + linebreakType.toString());
+		// Limit -1 keeps trailing empty lines of the comment, which split() would drop otherwise
+		for (final String commentLine : comment.replace("\r\n", "\n").replace("\r", "\n").split("\n", -1)) {
+			outputWriter.write("# " + escapeCommentLine(commentLine, storeAsUtf8) + getLinebreakString(linebreakType));
 		}
 	}
 
@@ -380,7 +423,7 @@ public class PropertiesWriter implements Closeable {
 	public void writeEmptyLine() throws Exception {
 		checkNotClosed();
 
-		outputWriter.write(linebreakType.toString());
+		outputWriter.write(getLinebreakString(linebreakType));
 	}
 
 	private void checkNotClosed() {
@@ -399,14 +442,29 @@ public class PropertiesWriter implements Closeable {
 	}
 
 	/**
-	 * Close this writer and its underlying stream.
+	 * Close this writer and its underlying stream. Closing an already closed writer has no effect.
+	 *
+	 * @throws UncheckedIOException if the buffered data cannot be written (e.g. disk full). The stream is closed
+	 *             anyway.
 	 */
 	@Override
 	public void close() {
+		IOException flushException = null;
+		if (outputWriter != null) {
+			try {
+				// Flushed separately, so a write error of the buffered data is not swallowed like other close errors
+				outputWriter.flush();
+			} catch (final IOException e) {
+				flushException = e;
+			}
+		}
 		closeQuietly(outputWriter);
 		outputWriter = null;
 		closeQuietly(outputStream);
 		outputStream = null;
+		if (flushException != null) {
+			throw new UncheckedIOException("PropertiesWriter could not write all data", flushException);
+		}
 	}
 
 	/**

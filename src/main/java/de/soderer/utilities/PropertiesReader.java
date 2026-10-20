@@ -53,7 +53,7 @@ public class PropertiesReader implements Closeable {
 	 */
 	private boolean firstDuplicateValueWins = false;
 
-	private String pendingCommentLines = "";
+	private String pendingCommentLines = null;
 
 	/**
 	 * Created in read(), so it uses the same key case sensitivity as the read properties
@@ -88,7 +88,14 @@ public class PropertiesReader implements Closeable {
 		}
 
 		this.inputStream = inputStream;
-		final byte[] data = inputStream.readAllBytes();
+		final byte[] data;
+		try {
+			data = inputStream.readAllBytes();
+		} catch (final IOException e) {
+			// The caller gets no reader to close, so the stream is closed here
+			closeQuietly(inputStream);
+			throw e;
+		}
 		String text;
 		Charset detectedEncoding;
 		try {
@@ -128,7 +135,14 @@ public class PropertiesReader implements Closeable {
 		this.inputStream = inputStream;
 		this.encoding = encoding;
 		inputReader = new BufferedReader(new InputStreamReader(inputStream, encoding));
-		skipByteOrderMark(inputReader);
+		try {
+			skipByteOrderMark(inputReader);
+		} catch (final IOException e) {
+			// The caller gets no reader to close, so the stream is closed here
+			closeQuietly(inputReader);
+			closeQuietly(inputStream);
+			throw e;
+		}
 	}
 
 	private static void skipByteOrderMark(final BufferedReader reader) throws IOException {
@@ -231,33 +245,54 @@ public class PropertiesReader implements Closeable {
 			duplicateKeys = new LinkedHashSet<>();
 			emptyLinesBefore = new LinkedHashMap<>();
 		}
-		pendingCommentLines = "";
+		// Null as long as no comment line is pending, so comments consisting of empty lines are kept, too
+		pendingCommentLines = null;
 		int pendingEmptyLines = 0;
 
 		String nextLine;
 		while ((nextLine = inputReader.readLine()) != null) {
-			final String trimmedNextLine = nextLine.trim();
-			if (trimmedNextLine.startsWith("#")
-					|| trimmedNextLine.startsWith("!")) {
-				if (pendingCommentLines.length() > 0) {
+			final String leftTrimmedNextLine = trimLeft(nextLine);
+			if (leftTrimmedNextLine.startsWith("#")
+					|| leftTrimmedNextLine.startsWith("!")) {
+				if (pendingCommentLines == null) {
+					pendingCommentLines = "";
+				} else {
 					pendingCommentLines += "\n";
 				}
-				pendingCommentLines += unescapeComment(trimmedNextLine.substring(1).trim());
-			} else if (trimmedNextLine.length() > 0) {
-				final int separatorIndex = findKeyValueSeparator(nextLine);
-				String key;
-				String value;
-				if (separatorIndex == -1) {
-					key = nextLine.substring(0);
-					value = "";
-				} else {
-					key = nextLine.substring(0, separatorIndex);
-					value = nextLine.substring(separatorIndex + 1);
+				// Only the single blank written by PropertiesWriter after the comment char is removed, so indentation within comments is kept
+				String commentText = leftTrimmedNextLine.substring(1);
+				if (commentText.startsWith(" ")) {
+					commentText = commentText.substring(1);
+				}
+				pendingCommentLines += unescapeComment(commentText.stripTrailing());
+			} else if (leftTrimmedNextLine.equals("\\") && !isAtEndOfData()) {
+				// A line consisting of a continuation backslash only adds nothing, so java.util.Properties treats the
+				// following line as a new line (which may be a comment or an empty line)
+			} else if (leftTrimmedNextLine.length() > 0) {
+				// Join continuation lines to the logical line before splitting it into key and value, because a line break
+				// may also occur within the key (like java.util.Properties allows).
+				// Continuation lines only lose their leading whitespace, trailing whitespace is kept.
+				final StringBuilder logicalLine = new StringBuilder(nextLine);
+				while (endsWithUnescapedBackslash(logicalLine)) {
+					logicalLine.setLength(logicalLine.length() - 1);
+					final String continuationLine = inputReader.readLine();
+					if (continuationLine == null) {
+						// A backslash at the end of data is dropped, like java.util.Properties does
+						break;
+					}
+					logicalLine.append(trimLeft(continuationLine));
 				}
 
-				// Continuation lines only lose their leading whitespace, trailing whitespace is part of the value
-				while (endsWithUnescapedBackslash(value) && (nextLine = inputReader.readLine()) != null) {
-					value = value.substring(0, value.length() - 1) + Utilities.trimLeft(nextLine);
+				final String line = logicalLine.toString();
+				final int separatorIndex = findKeyValueSeparator(line);
+				final String key;
+				final String value;
+				if (separatorIndex == -1) {
+					key = line;
+					value = "";
+				} else {
+					key = line.substring(0, separatorIndex);
+					value = line.substring(separatorIndex + 1);
 				}
 
 				final String unescapedKey = unescapeKey(key);
@@ -265,7 +300,7 @@ public class PropertiesReader implements Closeable {
 
 				// The pending comment belongs to this line, also if the line itself is skipped as duplicate
 				final String commentOfLine = pendingCommentLines;
-				pendingCommentLines = "";
+				pendingCommentLines = null;
 
 				// The pending empty lines belong to this line, also if they were followed by a comment
 				final int emptyLinesOfLine = pendingEmptyLines;
@@ -280,12 +315,12 @@ public class PropertiesReader implements Closeable {
 
 				if (firstDuplicateValueWins && isDuplicateKey) {
 					// Later occurrence of a known key: keep the first value, only adopt a comment the first occurrence is missing
-					if (commentOfLine.length() > 0 && !comments.containsKey(unescapedKey)) {
+					if (commentOfLine != null && !comments.containsKey(unescapedKey)) {
 						comments.put(unescapedKey, commentOfLine);
 					}
 				} else {
 					properties.put(unescapedKey, unescapedValue);
-					if (commentOfLine.length() > 0) {
+					if (commentOfLine != null) {
 						comments.put(unescapedKey, commentOfLine);
 					}
 				}
@@ -299,33 +334,75 @@ public class PropertiesReader implements Closeable {
 		return properties;
 	}
 
-	private static int findKeyValueSeparator(final String nextLine) {
-		boolean escapeNextChar = false;
-		boolean keyStarted = false;
-		boolean keyEnded = false;
-		int charIndex = -1;
-		for (final char nextChar : nextLine.toCharArray()) {
-			charIndex++;
-
-			if (!keyStarted && !Character.isWhitespace(nextChar)) {
-				keyStarted = true;
-			}
-
-			if (escapeNextChar) {
-				escapeNextChar = false;
-			} else if (nextChar == '\\') {
-				escapeNextChar = true;
-			} else if (nextChar == '='
-					|| nextChar == ':') {
-				return charIndex;
-			} else if (keyStarted && !keyEnded && Character.isWhitespace(nextChar)) {
-				keyEnded = true;
-			} else if (keyEnded && !Character.isWhitespace(nextChar)) {
-				return charIndex - 1;
+	/**
+	 * Finds the end of the key like java.util.Properties: the key ends at the first unescaped '=', ':' or whitespace.
+	 * Whitespace after the key may be followed by one '=' or ':', which is then the separator.
+	 *
+	 * @return index of the separator char ('=', ':' or the whitespace ending the key), or -1 if the line contains
+	 *         only a key
+	 */
+	private static int findKeyValueSeparator(final String line) {
+		final int length = line.length();
+		int index = 0;
+		while (index < length && isPropertiesWhitespace(line.charAt(index))) {
+			index++;
+		}
+		while (index < length) {
+			final char nextChar = line.charAt(index);
+			if (nextChar == '\\') {
+				// Escaped char is part of the key
+				index += 2;
+			} else if (nextChar == '=' || nextChar == ':') {
+				return index;
+			} else if (isPropertiesWhitespace(nextChar)) {
+				break;
+			} else {
+				index++;
 			}
 		}
+		if (index >= length) {
+			return -1;
+		}
 
-		return -1;
+		// Whitespace ended the key. An unescaped '=' or ':' after it is the actual separator, anything else starts the value.
+		final int whitespaceIndex = index;
+		while (index < length && isPropertiesWhitespace(line.charAt(index))) {
+			index++;
+		}
+		if (index < length && (line.charAt(index) == '=' || line.charAt(index) == ':')) {
+			return index;
+		} else {
+			return whitespaceIndex;
+		}
+	}
+
+	/**
+	 * Checks without consuming anything, whether there is no more data to read
+	 */
+	private boolean isAtEndOfData() throws IOException {
+		inputReader.mark(1);
+		final boolean atEnd = inputReader.read() == -1;
+		inputReader.reset();
+		return atEnd;
+	}
+
+	/**
+	 * Whitespace as defined by java.util.Properties: blank, tab and form feed. Other Unicode whitespace (like an em
+	 * space) is part of keys and values, as PropertiesWriter does not escape it in UTF-8 files.
+	 */
+	private static boolean isPropertiesWhitespace(final char character) {
+		return character == ' ' || character == '\t' || character == '\f';
+	}
+
+	/**
+	 * Removes leading whitespace as defined by java.util.Properties
+	 */
+	private static String trimLeft(final String text) {
+		int start = 0;
+		while (start < text.length() && isPropertiesWhitespace(text.charAt(start))) {
+			start++;
+		}
+		return text.substring(start);
 	}
 
 	/**
@@ -348,9 +425,9 @@ public class PropertiesReader implements Closeable {
 	 * Trim leading whitespace and trailing whitespace, but keep trailing whitespace that is escaped by a backslash.
 	 */
 	private static String trimKey(final String rawKey) {
-		final String key = Utilities.trimLeft(rawKey);
+		final String key = trimLeft(rawKey);
 		int end = key.length();
-		while (end > 0 && Character.isWhitespace(key.charAt(end - 1)) && !isEscapedAt(key, end - 1)) {
+		while (end > 0 && isPropertiesWhitespace(key.charAt(end - 1)) && !isEscapedAt(key, end - 1)) {
 			end--;
 		}
 		return key.substring(0, end);
@@ -377,7 +454,7 @@ public class PropertiesReader implements Closeable {
 	 */
 	public static String unescapeValue(final String rawValue) throws Exception {
 		try {
-			return Utilities.unescapePropertiesString(Utilities.trimLeft(rawValue));
+			return Utilities.unescapePropertiesString(trimLeft(rawValue));
 		} catch (final Exception e) {
 			throw new Exception("Invalid properties encoded value: " + rawValue, e);
 		}
@@ -397,16 +474,15 @@ public class PropertiesReader implements Closeable {
 		return result.toString();
 	}
 
-	private static boolean endsWithUnescapedBackslash(final String value) {
-		boolean escapeNextChar = false;
-		for (final char nextChar : value.toCharArray()) {
-			if (escapeNextChar) {
-				escapeNextChar = false;
-			} else if (nextChar == '\\') {
-				escapeNextChar = true;
-			}
+	/**
+	 * Whether the text ends with an odd number of backslashes, which marks a continuation line
+	 */
+	private static boolean endsWithUnescapedBackslash(final CharSequence text) {
+		int backslashCount = 0;
+		for (int i = text.length() - 1; i >= 0 && text.charAt(i) == '\\'; i--) {
+			backslashCount++;
 		}
-		return escapeNextChar;
+		return backslashCount % 2 == 1;
 	}
 
 	/**
@@ -474,6 +550,9 @@ public class PropertiesReader implements Closeable {
 	 * @throws Exception if the data contains invalid escapes
 	 */
 	public static Map<String, String> readPropertiesString(final String propertiesString) throws Exception {
+		if (propertiesString == null) {
+			throw new Exception("Invalid empty propertiesString");
+		}
 		// Bytes and reader must use the same charset, otherwise non-ASCII chars become mojibake
 		try (PropertiesReader reader = new PropertiesReader(new ByteArrayInputStream(propertiesString.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8)) {
 			return reader.read();
