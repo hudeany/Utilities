@@ -11,6 +11,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -176,7 +177,8 @@ public class SystemUtilities {
 		resultMap.put("processors.available", Long.toString(runtime.availableProcessors()));
 		resultMap.put("process.id", Integer.toString(SystemUtilities.getProcessId()));
 		resultMap.put("process.uptime", Long.toString(getUptimeInMillis()));
-		resultMap.put("process.starttime", DateUtilities.formatZonedDateTimeWithZuluTimezone(getStarttime().atZone(ZoneId.systemDefault())));
+		// Converted directly from the instant: a detour via LocalDateTime is ambiguous in the hour repeated at the end of daylight saving time
+		resultMap.put("process.starttime", DateUtilities.formatZonedDateTimeWithZuluTimezone(Instant.ofEpochMilli(ManagementFactory.getRuntimeMXBean().getStartTime()).atZone(ZoneId.systemDefault())));
 		resultMap.put("process.javastartuparguments", getJavaStartupArguments().toString());
 		resultMap.put("process.jar", getCurrentlyRunningJarFilePath() == null ? "<unknown>" : getCurrentlyRunningJarFilePath());
 
@@ -224,7 +226,16 @@ public class SystemUtilities {
 			final List<String> data = new ArrayList<>();
 			final ProcessBuilder processBuilder;
 			if (isWindows) {
-				processBuilder = new ProcessBuilder(System.getenv("windir") + "\\system32\\" + "tasklist.exe");
+				// Absolute path, so no other "tasklist.exe" found via PATH or the working directory is started
+				String windowsDirectory = System.getenv("SystemRoot");
+				if (Utilities.isBlank(windowsDirectory)) {
+					windowsDirectory = System.getenv("windir");
+				}
+				if (Utilities.isBlank(windowsDirectory)) {
+					// Without these variables the path would become "null\system32\tasklist.exe"
+					windowsDirectory = "C:\\Windows";
+				}
+				processBuilder = new ProcessBuilder(windowsDirectory + "\\System32\\tasklist.exe");
 			} else {
 				processBuilder = new ProcessBuilder("ps", "-e");
 			}

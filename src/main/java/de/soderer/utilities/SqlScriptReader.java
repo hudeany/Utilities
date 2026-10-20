@@ -9,7 +9,13 @@ import java.nio.charset.Charset;
  * Statements are separated by semicolons. Semicolons within string literals (single quotes, a
  * doubled single quote is an escaped quote) and comments ("--" up to the end of the line and
  * "/* ... *&#47;") do not end a statement. Comments are removed from the statements, empty
- * statements and Oracle's "/" statement terminator lines are skipped.
+ * statements are skipped. A line containing only "/" (Oracle's statement terminator) also ends a
+ * statement.
+ * </p>
+ * <p>
+ * Not supported: backslash escapes within string literals (like MySQL's 'It\'s'), quoted
+ * identifiers containing semicolons or comment markers, dollar quoted strings (PostgreSQL) and
+ * semicolons within PL/SQL blocks.
  * </p>
  */
 public class SqlScriptReader extends BasicReader {
@@ -48,10 +54,33 @@ public class SqlScriptReader extends BasicReader {
 	 *             if a string literal or a multi line comment is not closed, or reading fails
 	 */
 	public String readNextStatement() throws Exception {
-		final StringBuilder nextStatement = new StringBuilder();
+		// Loop instead of recursion for skipped empty statements, so many empty statements cannot cause a StackOverflowError
+		while (true) {
+			final StringBuilder nextStatement = new StringBuilder();
+			final boolean endOfData = readStatementText(nextStatement);
+			final String statement = nextStatement.toString().trim();
+			if (statement.length() > 0 && !"/".equals(statement)) {
+				return statement;
+			} else if (endOfData) {
+				return null;
+			}
+			// else: skip empty statement
+		}
+	}
+
+	/**
+	 * Reads the text of the next statement up to its terminator.
+	 *
+	 * @param nextStatement
+	 *            receives the statement text without comments and terminator
+	 * @return true, if the end of data was reached
+	 */
+	private boolean readStatementText(final StringBuilder nextStatement) throws Exception {
 		boolean withinString = false;
 		boolean withinSingleLineComment = false;
 		boolean withinMultiLineComment = false;
+		// True as long as the current line contains only whitespace (and comments) so far
+		boolean onlyWhitespaceInLine = true;
 
 		Character nextCharacter;
 		while ((nextCharacter = readNextCharacter()) != null) {
@@ -65,6 +94,7 @@ public class SqlScriptReader extends BasicReader {
 					withinSingleLineComment = false;
 					// The comment separates tokens like whitespace, e.g. "SELECT 1--c\nFROM t"
 					appendSeparator(nextStatement);
+					onlyWhitespaceInLine = true;
 				}
 			} else if (withinMultiLineComment) {
 				if (nextCharacter == '*') {
@@ -79,6 +109,7 @@ public class SqlScriptReader extends BasicReader {
 				}
 			} else if (nextCharacter == '\'') {
 				withinString = true;
+				onlyWhitespaceInLine = false;
 				nextStatement.append(nextCharacter);
 			} else if (nextCharacter == '-') {
 				nextCharacter = readNextCharacter();
@@ -86,20 +117,41 @@ public class SqlScriptReader extends BasicReader {
 					withinSingleLineComment = true;
 				} else {
 					reuseCurrentChar();
+					onlyWhitespaceInLine = false;
 					nextStatement.append('-');
 				}
 			} else if (nextCharacter == '/') {
-				nextCharacter = readNextCharacter();
-				if (nextCharacter != null && nextCharacter == '*') {
+				final Character followingCharacter = peek();
+				if (followingCharacter != null && followingCharacter == '*') {
+					readNextCharacter();
 					withinMultiLineComment = true;
+				} else if (onlyWhitespaceInLine) {
+					// Oracle's "/" terminator line, which is not necessarily preceded by a semicolon
+					final StringBuilder blanksAfterSlash = new StringBuilder();
+					Character lineCharacter = peek();
+					while (lineCharacter != null && (lineCharacter == ' ' || lineCharacter == '\t')) {
+						blanksAfterSlash.append(readNextCharacter());
+						lineCharacter = peek();
+					}
+					if (lineCharacter == null || lineCharacter == '\n' || lineCharacter == '\r') {
+						return lineCharacter == null;
+					} else {
+						// Something else follows on the same line, so the slash is a normal character (e.g. a division)
+						nextStatement.append('/').append(blanksAfterSlash);
+						onlyWhitespaceInLine = false;
+					}
 				} else {
-					reuseCurrentChar();
 					nextStatement.append('/');
 				}
 			} else if (nextCharacter == ';') {
-				break;
+				return false;
 			} else {
 				nextStatement.append(nextCharacter);
+				if (nextCharacter == '\n' || nextCharacter == '\r') {
+					onlyWhitespaceInLine = true;
+				} else if (!Character.isWhitespace(nextCharacter)) {
+					onlyWhitespaceInLine = false;
+				}
 			}
 		}
 
@@ -107,17 +159,8 @@ public class SqlScriptReader extends BasicReader {
 			throw new Exception("Unclosed sql string");
 		} else if (withinMultiLineComment) {
 			throw new Exception("Unclosed multiline comment");
-		} else if ("/".equals(nextStatement.toString().trim())) {
-			// Skip empty Oracle statement: "/" is a code sign for finalizing Oracle SQL scripts
-			return readNextStatement();
-		} else if (Utilities.isNotBlank(nextStatement.toString())) {
-			return nextStatement.toString().trim();
-		} else if (nextCharacter == null) {
-			return null;
-		} else {
-			// Skip empty statement
-			return readNextStatement();
 		}
+		return true;
 	}
 
 	/**
