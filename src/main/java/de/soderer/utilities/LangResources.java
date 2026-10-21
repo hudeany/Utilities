@@ -201,6 +201,7 @@ public class LangResources {
 		addBuiltInText("confirmNewHostKey",                         "Unknown host key for {0}:\n{1}\n\nAccept this host key?", "Unbekannter Host-Key für {0}:\n{1}\n\nSoll dieser Host-Key akzeptiert werden?", "Clé d'hôte inconnue pour {0} :\n{1}\n\nAccepter cette clé d'hôte ?", "Clave de host desconocida para {0}:\n{1}\n\n¿Aceptar esta clave de host?", "Chiave host sconosciuta per {0}:\n{1}\n\nAccettare questa chiave host?");
 		addBuiltInText("connect",                                   "Connect", "Verbinden", "Connecter", "Conectar", "Connetti");
 		addBuiltInText("containsHeadersInFirstRow",                 "First row contains column headers", "Erste Zeile enthält Spaltennamen", "La première ligne contient les noms de colonnes", "La primera fila contiene los nombres de columna", "La prima riga contiene i nomi delle colonne");
+		addBuiltInText("copy",                                      "Copy", "Kopieren", "Copier", "Copiar", "Copia");
 		addBuiltInText("createDataFile",                            "Create data file", "Datendatei erstellen", "Créer un fichier de données", "Crear archivo de datos", "Crea file di dati");
 		addBuiltInText("createDesktopLink",                         "Create desktop link", "Desktop-Verknüpfung erstellen", "Créer un raccourci sur le bureau", "Crear acceso directo en el escritorio", "Crea collegamento sul desktop");
 		addBuiltInText("createFolder",                              "Create folder", "Ordner erstellen", "Créer un dossier", "Crear carpeta", "Crea cartella");
@@ -235,6 +236,8 @@ public class LangResources {
 		addBuiltInText("fingerprintSha256",                         "Fingerprint SHA-256", "Fingerprint SHA-256", "Empreinte SHA-256", "Huella digital SHA-256", "Impronta SHA-256");
 		addBuiltInText("fingerprintSha384",                         "Fingerprint SHA-384", "Fingerprint SHA-384", "Empreinte SHA-384", "Huella digital SHA-384", "Impronta SHA-384");
 		addBuiltInText("fingerprintSha512",                         "Fingerprint SHA-512", "Fingerprint SHA-512", "Empreinte SHA-512", "Huella digital SHA-512", "Impronta SHA-512");
+		addBuiltInText("folderCouldNotBeDeleted",                   "The folder could not be deleted:\n{0}\n{1}", "Der Ordner konnte nicht gelöscht werden:\n{0}\n{1}", "Le dossier n'a pas pu être supprimé :\n{0}\n{1}", "No se pudo eliminar la carpeta:\n{0}\n{1}", "Impossibile eliminare la cartella:\n{0}\n{1}");
+		addBuiltInText("folderNotEmpty",                            "The folder is not empty and is not deleted:\n{0}", "Der Ordner ist nicht leer und wird nicht gelöscht:\n{0}", "Le dossier n'est pas vide et n'est pas supprimé :\n{0}", "La carpeta no está vacía y no se elimina:\n{0}", "La cartella non è vuota e non viene eliminata:\n{0}");
 		addBuiltInText("hexColonFormat",                            "Hex format with colons", "Hex-Format mit Doppelpunkten", "Format hexadécimal avec deux-points", "Formato hexadecimal con dos puntos", "Formato esadecimale con due punti");
 		addBuiltInText("hexFormat",                                 "Hex format", "Hex-Format", "Format hexadécimal", "Formato hexadecimal", "Formato esadecimale");
 		addBuiltInText("hostname",                                  "Hostname", "Hostname", "Nom d'hôte", "Nombre de host", "Nome host");
@@ -253,6 +256,7 @@ public class LangResources {
 		addBuiltInText("millis",                                    "milliseconds", "Millisekunden", "millisecondes", "milisegundos", "millisecondi");
 		addBuiltInText("minDuration",                               "Min. duration", "Min. Dauer", "Durée min.", "Duración mín.", "Durata min.");
 		addBuiltInText("minutes",                                   "minutes", "Minuten", "minutes", "minutos", "minuti");
+		addBuiltInText("noFolderSelected",                          "Please select a folder first.", "Bitte zuerst einen Ordner auswählen.", "Veuillez d'abord sélectionner un dossier.", "Seleccione primero una carpeta.", "Selezionare prima una cartella.");
 		addBuiltInText("None",                                      "None", "Keine", "Aucun", "Ninguno", "Nessuno");
 		addBuiltInText("notFound",                                  "Not found", "Nicht gefunden", "Introuvable", "No encontrado", "Non trovato");
 		addBuiltInText("numberOfParallelWorkers",                   "Number of parallel workers", "Anzahl paralleler Worker", "Nombre de workers parallèles", "Número de workers paralelos", "Numero di worker paralleli");
@@ -276,6 +280,7 @@ public class LangResources {
 		addBuiltInText("saveResults",                               "Save results", "Ergebnisse speichern", "Enregistrer les résultats", "Guardar resultados", "Salva risultati");
 		addBuiltInText("saveServerEntry",                           "Save server entry", "Servereintrag speichern", "Enregistrer l'entrée de serveur", "Guardar entrada de servidor", "Salva voce server");
 		addBuiltInText("seconds",                                   "seconds", "Sekunden", "secondes", "segundos", "secondi");
+		addBuiltInText("selectAll",                                 "Select all", "Alles auswählen", "Tout sélectionner", "Seleccionar todo", "Seleziona tutto");
 		addBuiltInText("serverEntries",                             "Server entries", "Servereinträge", "Entrées de serveur", "Entradas de servidor", "Voci server");
 		addBuiltInText("sharename",                                 "Share name", "Freigabename", "Nom du partage", "Nombre del recurso compartido", "Nome condivisione");
 		addBuiltInText("showRuntimeProperties",                     "Show runtime properties", "Laufzeit-Eigenschaften anzeigen", "Afficher les propriétés d'exécution", "Mostrar propiedades de tiempo de ejecución", "Mostra proprietà di runtime");
