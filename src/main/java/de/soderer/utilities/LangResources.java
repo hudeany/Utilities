@@ -185,6 +185,7 @@ public class LangResources {
 		addBuiltInText("usernameRequired",                          "Error:\nUsername is required", "Fehler:\nUsername ist notwendig", "Erreur :\nLe nom d'utilisateur est obligatoire", "Error:\nEl nombre de usuario es obligatorio", "Errore:\nIl nome utente è obbligatorio");
 		addBuiltInText("yes",                                       "Yes", "Ja", "Oui", "Sí", "Sì");
 		addBuiltInText("askEachTime",                               "Ask each time", "Jedes Mal nachfragen", "Demander à chaque fois", "Preguntar cada vez", "Chiedi ogni volta");
+		addBuiltInText("path",                                      "Path", "Pfad", "Chemin", "Ruta", "Percorso");
 
 		// Translations for keys without a built-in fallback in the library
 		addBuiltInText("actionSuccessfullyCompleted",               "Action successfully completed", "Aktion erfolgreich abgeschlossen", "Action terminée avec succès", "Acción completada correctamente", "Azione completata con successo");
