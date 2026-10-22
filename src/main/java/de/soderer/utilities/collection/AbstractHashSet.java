@@ -10,6 +10,13 @@ import java.util.Iterator;
  * <p>
  * {@link #contains(Object)}, {@link #add(Object)}, {@link #remove(Object)}, {@link #removeAll(Collection)}
  * and {@link #retainAll(Collection)} all convert the given items before comparing them with the stored ones.
+ * <p>
+ * {@link #equals(Object)} and {@link #hashCode()} are inherited unchanged: equals() converts the other set's items
+ * via {@link #contains(Object)}, hashCode() works on the stored (converted) items. Comparing with a set that stores
+ * unconverted items is therefore asymmetric and inconsistent with hashCode(): e.g.
+ * {@code caseInsensitiveSet.equals(Set.of("FOO"))} can be true while {@code Set.of("FOO").equals(caseInsensitiveSet)}
+ * is false and both hash codes differ (the same caveat applies to a TreeSet with a case-insensitive comparator).
+ * Do not mix both kinds of sets in equality based contexts, such as keys of a map.
  *
  * @param <V> type of the items
  */
@@ -59,7 +66,7 @@ public abstract class AbstractHashSet<V> extends HashSet<V> {
 
 	@Override
 	public boolean add(final V item) {
-		return super.add(convertItem(item));
+		return super.add(convertItemForStorage(item));
 	}
 
 	@Override
@@ -69,10 +76,10 @@ public abstract class AbstractHashSet<V> extends HashSet<V> {
 
 	@Override
 	public boolean removeAll(final Collection<?> collection) {
-		// Not overriding this would fall back to AbstractCollection's implementation, which checks
-		// collection.contains(ownElement) for each of our (already converted, e.g. lowercased) elements -
-		// against the *unconverted* values in "collection". That silently behaves case-sensitively instead
-		// of routing through convertItem() like every other mutating method here.
+		// Not overriding this would fall back to AbstractSet's implementation. Depending on the sizes it either
+		// calls our remove() per item of "collection" (converted), or checks collection.contains(ownElement) for
+		// each of our (already converted, e.g. lowercased) elements - against the *unconverted* values in
+		// "collection". So the result would silently depend on the collection sizes.
 		//
 		// Building a converted lookup set first and then mutating only via our own iterator (instead of
 		// iterating "collection" directly and calling remove(item) on ourselves inside that loop) also
@@ -112,6 +119,19 @@ public abstract class AbstractHashSet<V> extends HashSet<V> {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * Converts an item that is about to be stored in this set. Used by {@link #add(Object)} (and thereby by all
+	 * methods based on it). Subclasses can override this to reject items that may be looked up but must never
+	 * be stored.
+	 *
+	 * @param item item as given by the caller, may be any object or null
+	 * @return the converted item used for storage, by default the result of {@link #convertItem(Object)}
+	 * @throws ClassCastException if the item must not be stored in this set
+	 */
+	protected V convertItemForStorage(final Object item) {
+		return convertItem(item);
 	}
 
 	/**

@@ -19,6 +19,13 @@ import java.util.function.Function;
  * silently fail to remove an entry that is actually stored under the converted key "foo", even though
  * {@code caseInsensitiveMap.remove("FOO")} works correctly. Iterating via {@link java.util.Iterator} and
  * calling {@code Iterator.remove()} is unaffected, since that always operates on the key as already stored.
+ * <p>
+ * Also note that {@link #equals(Object)} and {@link #hashCode()} are inherited unchanged and work on the stored
+ * (converted) keys. Comparing with a map that stores unconverted keys is therefore asymmetric and inconsistent
+ * with hashCode(): e.g. {@code new HashMap<>(Map.of("FOO", 1)).equals(caseInsensitiveMap)} can be true while
+ * {@code caseInsensitiveMap.equals(thatHashMap)} is false and both hash codes differ (the same caveat applies to
+ * a TreeMap with a case-insensitive comparator). Do not mix both kinds of maps in equality based contexts, such as
+ * keys of another map.
  *
  * @param <K> type of the keys
  * @param <V> type of the values
@@ -96,7 +103,7 @@ public abstract class AbstractHashMap<K, V> extends HashMap<K, V> {
 
 	@Override
 	public V put(final K key, final V value) {
-		return super.put(convertKey(key), value);
+		return super.put(convertKeyForStorage(key), value);
 	}
 
 	@Override
@@ -113,7 +120,7 @@ public abstract class AbstractHashMap<K, V> extends HashMap<K, V> {
 
 	@Override
 	public V computeIfAbsent(final K key, final Function<? super K, ? extends V> mappingFunction) {
-		return super.computeIfAbsent(convertKey(key), mappingFunction);
+		return super.computeIfAbsent(convertKeyForStorage(key), mappingFunction);
 	}
 
 	@Override
@@ -128,7 +135,7 @@ public abstract class AbstractHashMap<K, V> extends HashMap<K, V> {
 
 	@Override
 	public V putIfAbsent(final K key, final V value) {
-		return super.putIfAbsent(convertKey(key), value);
+		return super.putIfAbsent(convertKeyForStorage(key), value);
 	}
 
 	@Override
@@ -148,12 +155,25 @@ public abstract class AbstractHashMap<K, V> extends HashMap<K, V> {
 
 	@Override
 	public V merge(final K key, final V value, final BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
-		return super.merge(convertKey(key), value, remappingFunction);
+		return super.merge(convertKeyForStorage(key), value, remappingFunction);
 	}
 
 	@Override
 	public V compute(final K key, final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
-		return super.compute(convertKey(key), remappingFunction);
+		return super.compute(convertKeyForStorage(key), remappingFunction);
+	}
+
+	/**
+	 * Converts a key that is about to be stored in this map. Used by all methods that may insert a new key
+	 * ({@code put}, {@code putIfAbsent}, {@code computeIfAbsent}, {@code compute}, {@code merge}). Subclasses can
+	 * override this to reject keys that may be looked up but must never be stored.
+	 *
+	 * @param key key as given by the caller, may be any object or null
+	 * @return the converted key used for storage, by default the result of {@link #convertKey(Object)}
+	 * @throws ClassCastException if the key must not be stored in this map
+	 */
+	protected K convertKeyForStorage(final Object key) {
+		return convertKey(key);
 	}
 
 	/**

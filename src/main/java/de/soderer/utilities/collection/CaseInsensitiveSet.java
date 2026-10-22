@@ -1,10 +1,15 @@
 package de.soderer.utilities.collection;
 
 import java.util.Collection;
-import java.util.Locale;
 
 /**
- * Generic String Set that ignores the String case
+ * Generic String Set that ignores the String case.
+ * Items are stored case-folded: each code point is mapped to {@code toLowerCase(toUpperCase(codePoint))}, so two
+ * items are considered the same exactly when {@link String#equalsIgnoreCase(String)} considers them equal. For
+ * most text (and always for ASCII) this is simply the lowercased item, which is what iteration returns.
+ * <p>
+ * Only Strings (and null) can be stored. Lookups with other types never match, storing them throws a
+ * {@link ClassCastException} (only reachable via raw types or unchecked casts).
  */
 public class CaseInsensitiveSet extends AbstractHashSet<String> {
 	private static final long serialVersionUID = 9146520978777587374L;
@@ -36,7 +41,7 @@ public class CaseInsensitiveSet extends AbstractHashSet<String> {
 	}
 
 	/**
-	 * Creates a set containing all Strings of the given collection, lowercased.
+	 * Creates a set containing all Strings of the given collection, case-folded.
 	 *
 	 * @param collection Strings to add to this set
 	 */
@@ -45,11 +50,12 @@ public class CaseInsensitiveSet extends AbstractHashSet<String> {
 	}
 
 	/**
-	 * Creates a set containing all given Strings, lowercased.
+	 * Creates a set containing all given Strings, case-folded.
 	 *
 	 * @param values Strings to add to this set
 	 */
 	public CaseInsensitiveSet(final String[] values) {
+		super(Math.max((int) (values.length / .75f) + 1, 16));
 		for (final String value : values) {
 			add(value);
 		}
@@ -68,9 +74,18 @@ public class CaseInsensitiveSet extends AbstractHashSet<String> {
 		if (item == null) {
 			return null;
 		} else if (item instanceof String) {
-			return ((String) item).toLowerCase(Locale.ROOT);
+			return CaseFolding.fold((String) item);
 		} else {
 			return NON_STRING_ITEM_SENTINEL;
 		}
+	}
+
+	@Override
+	protected String convertItemForStorage(final Object item) {
+		// Never store the lookup sentinel: it would turn into an item that matches every non-String lookup
+		if (item != null && !(item instanceof String)) {
+			throw new ClassCastException("Only String items are allowed in " + getClass().getSimpleName() + ", got " + item.getClass().getName());
+		}
+		return convertItem(item);
 	}
 }

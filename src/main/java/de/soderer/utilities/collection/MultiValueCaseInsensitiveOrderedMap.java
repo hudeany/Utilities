@@ -1,8 +1,12 @@
 package de.soderer.utilities.collection;
 
+import java.util.AbstractCollection;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -37,15 +41,19 @@ public class MultiValueCaseInsensitiveOrderedMap<V> {
 	 *
 	 * @param key key to add the value under
 	 * @param value value to add
-	 * @return a snapshot of the values that were stored under this key before this call, or null if the key
-	 *         was not present before this call. Note this is the previous value *list*, not a single previous
-	 *         value as in the usual Map.put() contract.
+	 * @return true if the key was not present before this call, false if the value was appended to an existing
+	 *         value list. (Previously this returned a copy of the previous value list, which made repeated puts
+	 *         on the same key quadratic in the number of values.)
 	 */
-	public ArrayList<V> put(final String key, final V value) {
-		final ArrayList<V> existingList = map.get(key);
-		final ArrayList<V> previousValue = existingList == null ? null : new ArrayList<>(existingList);
-		map.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
-		return previousValue;
+	public boolean put(final String key, final V value) {
+		ArrayList<V> values = map.get(key);
+		final boolean keyIsNew = (values == null);
+		if (values == null) {
+			values = new ArrayList<>();
+			map.put(key, values);
+		}
+		values.add(value);
+		return keyIsNew;
 	}
 
 	/**
@@ -93,37 +101,79 @@ public class MultiValueCaseInsensitiveOrderedMap<V> {
 	}
 
 	/**
-	 * Returns the entries of this map, with the keys in lowercased form.
-	 * <p>
-	 * Note: the returned view's own {@code remove}/{@code removeAll}/{@code retainAll}/{@code contains} do
-	 * NOT apply case-insensitive key matching - they compare directly against the internally stored
-	 * (already lowercased) keys, since this simply exposes the underlying {@link CaseInsensitiveLinkedMap}'s
-	 * entrySet(). Use this class's own {@link #remove(String, Object)} or {@link #removeAll(String)} instead
-	 * for case-insensitive removal by key.
+	 * Returns a live, read-only view of the entries of this map in key order, with the keys in their stored
+	 * (lowercased) form and unmodifiable value lists, consistent with {@link #get(String)}. Use
+	 * {@link #put(String, Object)}, {@link #remove(String, Object)} and {@link #removeAll(String)} for changes.
 	 *
-	 * @return view of the entries of this map
+	 * @return read-only view of the entries of this map
 	 */
-	public Set<Entry<String, ArrayList<V>>> entrySet() {
-		return map.entrySet();
+	public Set<Entry<String, List<V>>> entrySet() {
+		return new AbstractSet<>() {
+			@Override
+			public Iterator<Entry<String, List<V>>> iterator() {
+				final Iterator<Entry<String, ArrayList<V>>> iterator = map.entrySet().iterator();
+				// remove() is inherited from Iterator and throws UnsupportedOperationException
+				return new Iterator<>() {
+					@Override
+					public boolean hasNext() {
+						return iterator.hasNext();
+					}
+
+					@Override
+					public Entry<String, List<V>> next() {
+						final Entry<String, ArrayList<V>> entry = iterator.next();
+						return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), Collections.unmodifiableList(entry.getValue()));
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return map.size();
+			}
+		};
 	}
 
 	/**
-	 * Returns the value lists of all keys in key order.
+	 * Returns a live, read-only view of the value lists of all keys in key order. The lists are unmodifiable,
+	 * consistent with {@link #get(String)}, so no key can be left behind with an empty value list.
 	 *
-	 * @return view of the value lists of this map
+	 * @return read-only view of the value lists of this map
 	 */
-	public Collection<ArrayList<V>> values() {
-		return map.values();
+	public Collection<List<V>> values() {
+		return new AbstractCollection<>() {
+			@Override
+			public Iterator<List<V>> iterator() {
+				final Iterator<ArrayList<V>> iterator = map.values().iterator();
+				// remove() is inherited from Iterator and throws UnsupportedOperationException
+				return new Iterator<>() {
+					@Override
+					public boolean hasNext() {
+						return iterator.hasNext();
+					}
+
+					@Override
+					public List<V> next() {
+						return Collections.unmodifiableList(iterator.next());
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return map.size();
+			}
+		};
 	}
 
 	/**
-	 * Returns the keys of this map in lowercased form.
+	 * Returns the keys of this map in their stored (lowercased) form.
 	 * <p>
 	 * Note: the returned view's own {@code remove}/{@code removeAll}/{@code retainAll}/{@code contains} do
 	 * NOT apply case-insensitive key matching - they compare directly against the internally stored
 	 * (already lowercased) keys, since this simply exposes the underlying {@link CaseInsensitiveLinkedMap}'s
 	 * keySet(). Use this class's own {@link #remove(String, Object)} or {@link #removeAll(String)} instead
-	 * for case-insensitive removal by key.
+	 * for case-insensitive removal by key. Removing keys via this view removes their whole value list.
 	 *
 	 * @return view of the keys of this map
 	 */

@@ -1,10 +1,10 @@
 package de.soderer.utilities.collection;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,10 +27,12 @@ public class MapUtilities {
 	 */
 	public static <K extends Comparable<K>, V> LinkedHashMap<K, V> sort(final Map<K, V> map) {
 		final LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
-		final List<K> keys = new LinkedList<>(map.keySet());
-		Collections.sort(keys);
-		for (final K key : keys) {
-			returnMap.put(key, map.get(key));
+		// Sort the entries instead of only the keys, so no get() on the source map is needed: get() would
+		// reorder an access-order LinkedHashMap and thereby change the map that is documented as unchanged
+		final List<Entry<K, V>> entries = new ArrayList<>(map.entrySet());
+		entries.sort(Entry.comparingByKey());
+		for (final Entry<K, V> entry : entries) {
+			returnMap.put(entry.getKey(), entry.getValue());
 		}
 		return returnMap;
 	}
@@ -46,10 +48,12 @@ public class MapUtilities {
 	 */
 	public static <K, V> LinkedHashMap<K, V> sort(final Map<K, V> map, final Comparator<K> comparator) {
 		final LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
-		final List<K> keys = new LinkedList<>(map.keySet());
-		Collections.sort(keys, comparator);
-		for (final K key : keys) {
-			returnMap.put(key, map.get(key));
+		// Sort the entries instead of only the keys, so no get() on the source map is needed: get() would
+		// reorder an access-order LinkedHashMap and thereby change the map that is documented as unchanged
+		final List<Entry<K, V>> entries = new ArrayList<>(map.entrySet());
+		entries.sort(Entry.comparingByKey(comparator));
+		for (final Entry<K, V> entry : entries) {
+			returnMap.put(entry.getKey(), entry.getValue());
 		}
 		return returnMap;
 	}
@@ -65,7 +69,7 @@ public class MapUtilities {
 	 */
 	public static <K, V> LinkedHashMap<K, V> sortEntries(final Map<K, V> map, final Comparator<Entry<K, V>> comparator) {
 		final LinkedHashMap<K, V> returnMap = new LinkedHashMap<>();
-		final List<Entry<K, V>> entries = new LinkedList<>(map.entrySet());
+		final List<Entry<K, V>> entries = new ArrayList<>(map.entrySet());
 		Collections.sort(entries, comparator);
 		for (final Entry<K, V> entry : entries) {
 			returnMap.put(entry.getKey(), entry.getValue());
@@ -93,10 +97,12 @@ public class MapUtilities {
 		final
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		final List<K> keys = new LinkedList<>(map.keySet());
-		Collections.sort(keys);
-		for (final K key : keys) {
-			returnMap.put(key, map.get(key));
+		// Sort the entries instead of only the keys, so no get() on the source map is needed: get() would
+		// reorder an access-order LinkedHashMap and thereby change the map that is documented as unchanged
+		final List<Entry<K, V>> entries = new ArrayList<>(map.entrySet());
+		entries.sort(Entry.comparingByKey());
+		for (final Entry<K, V> entry : entries) {
+			returnMap.put(entry.getKey(), entry.getValue());
 		}
 		return returnMap;
 	}
@@ -122,10 +128,12 @@ public class MapUtilities {
 		final
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		final List<K> keys = new LinkedList<>(map.keySet());
-		Collections.sort(keys, comparator);
-		for (final K key : keys) {
-			returnMap.put(key, map.get(key));
+		// Sort the entries instead of only the keys, so no get() on the source map is needed: get() would
+		// reorder an access-order LinkedHashMap and thereby change the map that is documented as unchanged
+		final List<Entry<K, V>> entries = new ArrayList<>(map.entrySet());
+		entries.sort(Entry.comparingByKey(comparator));
+		for (final Entry<K, V> entry : entries) {
+			returnMap.put(entry.getKey(), entry.getValue());
 		}
 		return returnMap;
 	}
@@ -151,7 +159,7 @@ public class MapUtilities {
 		final
 		L returnMap = (L) map.clone();
 		returnMap.clear();
-		final List<Entry<K, V>> entries = new LinkedList<>(map.entrySet());
+		final List<Entry<K, V>> entries = new ArrayList<>(map.entrySet());
 		Collections.sort(entries, comparator);
 		for (final Entry<K, V> entry : entries) {
 			returnMap.put(entry.getKey(), entry.getValue());
@@ -184,8 +192,8 @@ public class MapUtilities {
 	}
 
 	/**
-	 * Formats a map as {@code key=value} entries separated by commas. Keys and values containing a double quote
-	 * or a comma are enclosed in double quotes, contained double quotes are escaped with a backslash.
+	 * Formats a map as {@code key=value} entries separated by commas, see
+	 * {@link #mapToString(Map, char, boolean, char)} for the quoting rules (with double quotes as quote character).
 	 *
 	 * @param map map to format
 	 * @return formatted map
@@ -195,53 +203,69 @@ public class MapUtilities {
 	}
 
 	/**
-	 * Formats a map as {@code key=value} entries separated by the given separator. Null keys and values are
-	 * written as {@code null}. Keys and values containing the quote or the separator character are enclosed in
-	 * quote characters, contained quote characters are escaped with a backslash.
+	 * Formats a map as {@code key=value} entries separated by the given separator.
+	 * <p>
+	 * The output is unambiguous, so it can be parsed back:
+	 * <ul>
+	 * <li>Null keys and values are written as unquoted {@code null}. The String "null" is always quoted, so both
+	 * can be told apart.</li>
+	 * <li>Keys and values containing the quote character, the separator, {@code '='}, a backslash or a line break
+	 * are enclosed in quote characters (all of them if alwaysQuote is true).</li>
+	 * <li>Within quotes, backslashes are escaped as {@code \\} and quote characters as backslash + quote
+	 * character. Unquoted text never contains a backslash.</li>
+	 * </ul>
 	 *
 	 * @param map map to format
 	 * @param textQuoteChar character used to quote keys and values
-	 * @param alwaysQuote true to quote all keys and values, false to quote only where needed
+	 * @param alwaysQuote true to quote all non-null keys and values, false to quote only where needed
 	 * @param entrySeparatorChar character between the entries
 	 * @return formatted map
+	 * @throws IllegalArgumentException if textQuoteChar or entrySeparatorChar is a backslash or {@code '='}, or
+	 *             if both are the same character
 	 */
 	public static String mapToString(final Map<?, ?> map, final char textQuoteChar, final boolean alwaysQuote, final char entrySeparatorChar) {
+		if (textQuoteChar == '\\' || textQuoteChar == '=' || entrySeparatorChar == '\\' || entrySeparatorChar == '=' || textQuoteChar == entrySeparatorChar) {
+			throw new IllegalArgumentException("Invalid textQuoteChar '" + textQuoteChar + "' or entrySeparatorChar '" + entrySeparatorChar + "': both must differ from each other, from backslash and from '='");
+		}
+
 		final StringBuilder returnValue = new StringBuilder();
-
-		final String quoteString = Character.toString(textQuoteChar);
-		final String escapedQuote = "\\" + quoteString;
-		final String entrySeparatorString = Character.toString(entrySeparatorChar);
-
 		for (final Entry<?, ?> entry : map.entrySet()) {
 			if (returnValue.length() > 0) {
 				returnValue.append(entrySeparatorChar);
 			}
-
-			String key;
-			if (entry.getKey() == null) {
-				key = "null";
-			} else {
-				key = entry.getKey().toString();
-			}
-			if (key.contains(quoteString) || key.contains(entrySeparatorString) || alwaysQuote) {
-				key = quoteString + key.replace(quoteString, escapedQuote) + quoteString;
-			}
-			returnValue.append(key);
-
+			appendMapToStringItem(returnValue, entry.getKey(), textQuoteChar, alwaysQuote, entrySeparatorChar);
 			returnValue.append('=');
+			appendMapToStringItem(returnValue, entry.getValue(), textQuoteChar, alwaysQuote, entrySeparatorChar);
+		}
+		return returnValue.toString();
+	}
 
-			String value;
-			if (entry.getValue() == null) {
-				value = "null";
-			} else {
-				value = entry.getValue().toString();
-			}
-			if (value.contains(quoteString) || value.contains(entrySeparatorString) || alwaysQuote) {
-				value = quoteString + value.replace(quoteString, escapedQuote) + quoteString;
-			}
-			returnValue.append(value);
+	private static void appendMapToStringItem(final StringBuilder builder, final Object item, final char textQuoteChar, final boolean alwaysQuote, final char entrySeparatorChar) {
+		if (item == null) {
+			// Never quoted, so it can be distinguished from the quoted String "null"
+			builder.append("null");
+			return;
 		}
 
-		return returnValue.toString();
+		final String text = item.toString();
+		boolean needsQuotes = alwaysQuote || "null".equals(text);
+		for (int i = 0; !needsQuotes && i < text.length(); i++) {
+			final char nextChar = text.charAt(i);
+			needsQuotes = nextChar == textQuoteChar || nextChar == entrySeparatorChar || nextChar == '=' || nextChar == '\\' || nextChar == '\r' || nextChar == '\n';
+		}
+
+		if (!needsQuotes) {
+			builder.append(text);
+		} else {
+			builder.append(textQuoteChar);
+			for (int i = 0; i < text.length(); i++) {
+				final char nextChar = text.charAt(i);
+				if (nextChar == '\\' || nextChar == textQuoteChar) {
+					builder.append('\\');
+				}
+				builder.append(nextChar);
+			}
+			builder.append(textQuoteChar);
+		}
 	}
 }

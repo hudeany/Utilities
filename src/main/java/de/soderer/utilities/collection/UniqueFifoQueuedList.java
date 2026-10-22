@@ -2,6 +2,7 @@ package de.soderer.utilities.collection;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Objects;
 
 /**
  * List that keeps each item only once, in the order of its latest addition, optionally limited to a maximum
@@ -9,8 +10,10 @@ import java.util.LinkedList;
  * oldest items at the front are dropped (e.g. for "recently used" lists).
  * <p>
  * Only {@link #add(Object)}, {@link #addAll(Collection)} and the methods based on them (like {@code offer})
- * apply these rules. Inserting via {@code add(int, Object)}, {@code addFirst}, {@code addLast}, {@code push},
- * {@code offerFirst}, {@code offerLast} or {@code set} bypasses them.
+ * apply these rules. Inserting via {@code add(int, Object)}, {@code addAll(int, Collection)}, {@code addFirst},
+ * {@code addLast}, {@code push}, {@code offerFirst}, {@code offerLast}, {@code set}, {@code listIterator().add()}
+ * or the {@code reversed()} view (Java 21+) bypasses them. Duplicates and an exceeded maximum size caused that way
+ * are cleaned up by the next call of {@link #add(Object)}.
  *
  * @param <T> type of the items
  */
@@ -30,6 +33,7 @@ public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 	 * Creates an empty list with the given maximum size.
 	 *
 	 * @param maxSize maximum number of items to keep, -1 for no limit
+	 * @throws IllegalArgumentException if maxSize is less than -1
 	 */
 	public UniqueFifoQueuedList(final int maxSize) {
 		this(maxSize, null);
@@ -40,33 +44,44 @@ public class UniqueFifoQueuedList<T> extends LinkedList<T> {
 	 *
 	 * @param maxSize maximum number of items to keep, -1 for no limit
 	 * @param initialContent items to add initially, may be null
+	 * @throws IllegalArgumentException if maxSize is less than -1
 	 */
 	public UniqueFifoQueuedList(final int maxSize, final Collection<T> initialContent) {
+		if (maxSize < -1) {
+			throw new IllegalArgumentException("Invalid maxSize " + maxSize + ": must be -1 (no limit) or greater or equal 0");
+		}
 		this.maxSize = maxSize;
 		if (initialContent != null) {
 			addAll(initialContent);
 		}
 	}
 
+	/**
+	 * Appends the item as the latest one. Any existing occurrences of it are removed first, and afterwards the
+	 * oldest items at the front are dropped until the maximum size is kept again.
+	 *
+	 * @param item item to add, may be null
+	 * @return true, or false if maxSize is 0 and therefore nothing is retained
+	 */
 	@Override
 	public boolean add(final T item) {
-		if (contains(item)) {
-			remove(item);
-		} else if (maxSize > -1) {
-			// Evict from the front until there is room for exactly one more entry. Using while (not just a
-			// single eviction) also correctly handles maxSize == 0: previously the eviction condition required
-			// the list to be non-empty first, so the very first add() always slipped one entry in regardless
-			// of the cap, and the list then behaved like maxSize == 1 forever instead of maxSize == 0.
-			while (super.size() >= maxSize && super.size() > 0) {
-				remove(0);
-			}
-			if (maxSize == 0) {
-				// A cap of zero means nothing is ever actually retained
-				return false;
-			}
+		if (maxSize == 0) {
+			// A cap of zero means nothing is ever actually retained
+			return false;
 		}
 
-		return super.add(item);
+		// Remove all occurrences (not only the first one), in case duplicates were inserted via a bypassing method
+		removeIf(existingItem -> Objects.equals(existingItem, item));
+		super.add(item);
+
+		// Trim after adding (instead of making room before), which also repairs an exceeded maximum size that was
+		// caused by a bypassing method
+		if (maxSize > -1) {
+			while (size() > maxSize) {
+				removeFirst();
+			}
+		}
+		return true;
 	}
 
 	@Override

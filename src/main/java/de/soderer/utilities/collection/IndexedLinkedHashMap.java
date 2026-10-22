@@ -1,7 +1,9 @@
 package de.soderer.utilities.collection;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +98,48 @@ public class IndexedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
 	public V merge(final K key, final V value, final BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
 		keyList = null;
 		return super.merge(key, value, remappingFunction);
+	}
+
+	/**
+	 * Removes and returns the first entry in insertion order.
+	 * <p>
+	 * On Java 21+ this overrides {@code SequencedMap.pollFirstEntry()}, whose default implementation removes
+	 * via the entry set iterator and would therefore leave the cached key list stale. Declared without
+	 * {@code @Override} and implemented without calling super, so this class still compiles with --release 17.
+	 *
+	 * @return an unmodifiable snapshot of the removed entry, or null if this map is empty
+	 */
+	public Map.Entry<K, V> pollFirstEntry() {
+		final Iterator<Map.Entry<K, V>> iterator = entrySet().iterator();
+		if (!iterator.hasNext()) {
+			return null;
+		}
+		final Map.Entry<K, V> result = new AbstractMap.SimpleImmutableEntry<>(iterator.next());
+		keyList = null;
+		iterator.remove();
+		return result;
+	}
+
+	/**
+	 * Removes and returns the last entry in insertion order.
+	 * <p>
+	 * On Java 21+ this overrides {@code SequencedMap.pollLastEntry()} for the same reason as
+	 * {@link #pollFirstEntry()}. Without access to the reverse iteration of Java 21 this walks the whole entry
+	 * set (O(n)), which is in line with the O(n) key list rebuild that every mutation of this map causes anyway.
+	 *
+	 * @return an unmodifiable snapshot of the removed entry, or null if this map is empty
+	 */
+	public Map.Entry<K, V> pollLastEntry() {
+		Map.Entry<K, V> lastEntry = null;
+		for (final Map.Entry<K, V> entry : entrySet()) {
+			lastEntry = entry;
+		}
+		if (lastEntry == null) {
+			return null;
+		}
+		final Map.Entry<K, V> result = new AbstractMap.SimpleImmutableEntry<>(lastEntry);
+		remove(result.getKey());
+		return result;
 	}
 
 	@SuppressWarnings("unchecked")

@@ -1,11 +1,15 @@
 package de.soderer.utilities.collection;
 
-import java.util.Locale;
 import java.util.Map;
 
 /**
  * Generic String keyed Map that ignores the String case.
- * Keys are stored lowercased (with {@link Locale#ROOT}), so {@link #keySet()} returns the lowercased keys.
+ * Keys are stored case-folded: each code point is mapped to {@code toLowerCase(toUpperCase(codePoint))}, so two
+ * keys address the same entry exactly when {@link String#equalsIgnoreCase(String)} considers them equal. For
+ * most text (and always for ASCII) this is simply the lowercased key, which is what {@link #keySet()} returns.
+ * <p>
+ * Only String keys (and null) can be stored. Lookups with other key types never match, storing them throws a
+ * {@link ClassCastException} (only reachable via raw types or unchecked casts).
  *
  * @param <V> type of the values
  */
@@ -72,9 +76,18 @@ public class CaseInsensitiveMap<V> extends AbstractHashMap<String, V> {
 		if (key == null) {
 			return null;
 		} else if (key instanceof String) {
-			return ((String) key).toLowerCase(Locale.ROOT);
+			return CaseFolding.fold((String) key);
 		} else {
 			return NON_STRING_KEY_SENTINEL;
 		}
+	}
+
+	@Override
+	protected String convertKeyForStorage(final Object key) {
+		// Never store the lookup sentinel: it would turn into a key that matches every non-String lookup
+		if (key != null && !(key instanceof String)) {
+			throw new ClassCastException("Only String keys are allowed in " + getClass().getSimpleName() + ", got " + key.getClass().getName());
+		}
+		return convertKey(key);
 	}
 }
