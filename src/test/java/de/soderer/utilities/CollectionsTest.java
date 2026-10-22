@@ -37,33 +37,33 @@ public class CollectionsTest {
 	@Test
 	public void testCaseInsensitiveMap() {
 		final CaseInsensitiveMap<String> map = new CaseInsensitiveMap<>();
-		map.put("AbcD123äÄ", "Test1");
-		map.put("abcd123ää", "Test2");
-		map.put("AbcD123äÄ", "Test3");
-		map.put("abcd124ää", "Test4");
-		map.put("AbcD124äÄ", "Test5");
+		map.put("AbcD123\u00E4\u00C4", "Test1");
+		map.put("abcd123\u00E4\u00E4", "Test2");
+		map.put("AbcD123\u00E4\u00C4", "Test3");
+		map.put("abcd124\u00E4\u00E4", "Test4");
+		map.put("AbcD124\u00E4\u00C4", "Test5");
 
-		assertEquals("Test3", map.get("AbcD123äÄ"));
-		assertEquals("Test3", map.get("abcd123ää"));
-		assertEquals("Test5", map.get("abcd124ää"));
-		assertEquals("Test5", map.get("AbcD124äÄ"));
-		assertNull(map.get("AbcD125äÄ"));
+		assertEquals("Test3", map.get("AbcD123\u00E4\u00C4"));
+		assertEquals("Test3", map.get("abcd123\u00E4\u00E4"));
+		assertEquals("Test5", map.get("abcd124\u00E4\u00E4"));
+		assertEquals("Test5", map.get("AbcD124\u00E4\u00C4"));
+		assertNull(map.get("AbcD125\u00E4\u00C4"));
 	}
 
 	@Test
 	public void testCaseInsensitiveSet() {
 		final CaseInsensitiveSet set = new CaseInsensitiveSet();
-		set.add("AbcD123äÄ");
-		set.add("abcd123ää");
-		set.add("AbcD123äÄ");
-		set.add("abcd124ää");
-		set.add("AbcD124äÄ");
+		set.add("AbcD123\u00E4\u00C4");
+		set.add("abcd123\u00E4\u00E4");
+		set.add("AbcD123\u00E4\u00C4");
+		set.add("abcd124\u00E4\u00E4");
+		set.add("AbcD124\u00E4\u00C4");
 
-		assertTrue(set.contains("AbcD123äÄ"));
-		assertTrue(set.contains("abcd123ää"));
-		assertTrue(set.contains("abcd124ää"));
-		assertTrue(set.contains("AbcD124äÄ"));
-		assertFalse(set.contains("AbcD125äÄ"));
+		assertTrue(set.contains("AbcD123\u00E4\u00C4"));
+		assertTrue(set.contains("abcd123\u00E4\u00E4"));
+		assertTrue(set.contains("abcd124\u00E4\u00E4"));
+		assertTrue(set.contains("AbcD124\u00E4\u00C4"));
+		assertFalse(set.contains("AbcD125\u00E4\u00C4"));
 	}
 
 	@Nested
@@ -157,17 +157,17 @@ public class CollectionsTest {
 			final CaseInsensitiveMap<String> map = new CaseInsensitiveMap<>();
 			map.put("s", "s");
 			map.put("i", "i");
-			map.put("Straße", "street");
+			map.put("Stra\u00DFe", "street");
 
 			// Long s (U+017F) and dotless i (U+0131) are equalsIgnoreCase to "s" and "I"
-			assertTrue("ſ".equalsIgnoreCase("s"));
-			assertEquals("s", map.get("ſ"));
-			assertTrue("ı".equalsIgnoreCase("I"));
-			assertEquals("i", map.get("ı"));
+			assertTrue("\u017F".equalsIgnoreCase("s"));
+			assertEquals("s", map.get("\u017F"));
+			assertTrue("\u0131".equalsIgnoreCase("I"));
+			assertEquals("i", map.get("\u0131"));
 
-			// Like equalsIgnoreCase there is no expansion of ß to SS
-			assertEquals("street", map.get("STRAßE"));
-			assertFalse("Straße".equalsIgnoreCase("STRASSE"));
+			// Like equalsIgnoreCase there is no expansion of \u00DF to SS
+			assertEquals("street", map.get("STRA\u00DFE"));
+			assertFalse("Stra\u00DFe".equalsIgnoreCase("STRASSE"));
 			assertNull(map.get("STRASSE"));
 		}
 
@@ -327,8 +327,8 @@ public class CollectionsTest {
 		@Test
 		public void testFoldingMatchesEqualsIgnoreCase() {
 			final CaseInsensitiveSet set = new CaseInsensitiveSet(new String[] { "s", "I" });
-			assertTrue(set.contains("ſ"));
-			assertTrue(set.contains("ı"));
+			assertTrue(set.contains("\u017F"));
+			assertTrue(set.contains("\u0131"));
 		}
 	}
 

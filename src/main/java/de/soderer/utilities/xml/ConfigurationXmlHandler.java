@@ -1,5 +1,6 @@
 package de.soderer.utilities.xml;
 
+import java.io.FilterInputStream;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -43,7 +44,14 @@ public class ConfigurationXmlHandler extends DefaultHandler {
 			saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
 			saxParserFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 			saxParserFactory.setXIncludeAware(false);
-			saxParserFactory.newSAXParser().parse(new InputSource(inputStream), this);
+			// The SAX parser closes its input when done, but the stream belongs to the caller
+			final InputStream nonClosingInputStream = new FilterInputStream(inputStream) {
+				@Override
+				public void close() {
+					// Do not close the caller's stream
+				}
+			};
+			saxParserFactory.newSAXParser().parse(new InputSource(nonClosingInputStream), this);
 		} catch (final Exception ex) {
 			throw new Exception("Error while parsing XmlConfiguration", ex);
 		}

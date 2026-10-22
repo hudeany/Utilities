@@ -108,7 +108,8 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 		}
 
 		if (encodingData == null) {
-			encodingData = detectEncoding(data);
+			// The data is complete, so a multibyte UTF-8 sequence cut off at its end is invalid UTF-8 and not the end of a sample
+			encodingData = detectEncoding(data, true);
 		}
 		dataString = decodeByteArray(data, encodingData);
 
@@ -121,7 +122,8 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	 * The range is moved and shortened to fit into the data, so e.g. a too large start position reads the last bytes.
 	 * If no encoding is given, it is detected from a BOM at the start of the data, then UTF-16 and UTF-32 without BOM
 	 * from the start of the data, otherwise from the part read.
-	 * For UTF-16 and UTF-32 the start position is moved back to the start of a character.
+	 * The part is aligned to character boundaries for UTF-8, UTF-16 and UTF-32: the start position is moved back to the
+	 * start of a character, a character cut off at the end of the part is left out.
 	 *
 	 * @param startPosition position of the first byte to read
 	 * @param length number of bytes to read
@@ -171,10 +173,27 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 			}
 		}
 
-		final byte[] subdata = readBytes(startPosition, length);
+		byte[] subdata = readBytes(startPosition, length);
 		if (encodingData == null) {
-			// A part starting within a multibyte UTF-8 character would otherwise not be detected as UTF-8
-			encodingData = detectEncoding(startPosition > 0 ? skipLeadingUtf8ContinuationBytes(subdata) : subdata);
+			// Up to 3 following bytes complete a UTF-8 character cut off at the end of the part, otherwise e.g. a
+			// Windows-1252 "\u00DF" (0xDF) at the end of the part would look like the start of such a character
+			final int followingLength = (int) Math.min(3, filesize - startPosition - length);
+			final byte[] sampleData = followingLength > 0 ? readBytes(startPosition, length + followingLength) : subdata;
+			// A part starting within a multibyte UTF-8 character would otherwise not be detected as UTF-8.
+			// A sample reaching the end of the data contains its complete end, so a sequence cut off there is invalid.
+			encodingData = detectEncoding(startPosition > 0 ? skipLeadingUtf8ContinuationBytes(sampleData) : sampleData, startPosition + sampleData.length >= filesize);
+		}
+
+		if (length > 0 && isUtf8(encodingData.getFirst())) {
+			// Like for UTF-16 and UTF-32, otherwise a character cut off at the start or end becomes a replacement character
+			final long endPosition = startPosition + length;
+			final long alignedStartPosition = getUtf8CharacterStart(startPosition);
+			final long alignedEndPosition = endPosition < filesize ? getUtf8CharacterStart(endPosition) : endPosition;
+			if (alignedStartPosition != startPosition || alignedEndPosition != endPosition) {
+				startPosition = alignedStartPosition;
+				length = (int) Math.max(0, alignedEndPosition - alignedStartPosition);
+				subdata = readBytes(startPosition, length);
+			}
 		}
 
 		if (startPosition == 0) {
@@ -208,13 +227,53 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 
 	/**
 	 * Detects the encoding of data without given encoding.
+	 *
+	 * @param sampleData data to examine
+	 * @param isCompleteData true if the data ends with the end of the file (or data), see
+	 *            {@link EncodingDetector#detectEncoding(byte[], Charset, boolean)}
 	 */
-	private Tuple<String, Boolean> detectEncoding(final byte[] sampleData) {
+	private Tuple<String, Boolean> detectEncoding(final byte[] sampleData, final boolean isCompleteData) {
 		Charset nonUtf8FallbackCharset = null;
 		if (defaultEncoding != null && !StandardCharsets.UTF_8.name().equalsIgnoreCase(defaultEncoding.getFirst())) {
 			nonUtf8FallbackCharset = Charset.forName(defaultEncoding.getFirst());
 		}
-		return TextUtilities.detectEncoding(sampleData, nonUtf8FallbackCharset);
+		// Not via TextUtilities.detectEncoding(), which always treats the data as a sample that may be cut off
+		final EncodingDetector.DetectionResult result = EncodingDetector.detectEncoding(sampleData, nonUtf8FallbackCharset, isCompleteData);
+		return new Tuple<>(result.charset.name(), result.hasBom);
+	}
+
+	private static boolean isUtf8(final String encodingName) {
+		return StandardCharsets.UTF_8.equals(getDecodingCharset(encodingName));
+	}
+
+	/**
+	 * Returns the start position of the UTF-8 character containing the byte at the given position. If the byte is no
+	 * continuation byte, or no lead byte is found within the preceding 3 bytes (invalid data), the position is returned
+	 * unchanged.
+	 */
+	private long getUtf8CharacterStart(final long position) throws IOException {
+		if (position <= 0 || position >= filesize) {
+			return position;
+		}
+		// A UTF-8 character has at most 3 continuation bytes
+		final long windowStart = Math.max(0, position - 3);
+		final byte[] window = readBytes(windowStart, (int) (position - windowStart + 1));
+		int index = window.length - 1;
+		if (!isUtf8ContinuationByte(window[index])) {
+			return position;
+		}
+		while (index > 0) {
+			index--;
+			if (!isUtf8ContinuationByte(window[index])) {
+				// Only a lead byte (11xxxxxx) starts a multibyte character, an ASCII byte means invalid data
+				return (window[index] & 0xC0) == 0xC0 ? windowStart + index : position;
+			}
+		}
+		return position;
+	}
+
+	private static boolean isUtf8ContinuationByte(final byte value) {
+		return (value & 0xC0) == 0x80;
 	}
 
 	/**
