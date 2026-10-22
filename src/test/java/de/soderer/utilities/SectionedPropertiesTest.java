@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 
 import org.junit.jupiter.api.Test;
 
@@ -100,6 +101,71 @@ public class SectionedPropertiesTest {
 		final SectionedProperties properties = load("[Section]\nKey = v\n");
 		assertEquals("v", properties.getValue("SECTION", "key"));
 		assertEquals("v", properties.getValue(" section ", " KEY "));
+	}
+
+	@Test
+	public void testCaseInsensitiveKeepsSpellingWhenSaving() throws Exception {
+		final SectionedProperties properties = load("GlobalKey = g\n[Database]\nUserName = admin\nPassWord = secret\n");
+		assertEquals("GlobalKey=g\n\n[Database]\nUserName=admin\nPassWord=secret\n\n", save(properties));
+		// Saving and loading again keeps the spelling
+		assertEquals("GlobalKey=g\n\n[Database]\nUserName=admin\nPassWord=secret\n\n", save(roundTrip(properties)));
+		assertEquals("admin", properties.getValue("DATABASE", "username"));
+	}
+
+	@SuppressWarnings("unlikely-arg-type")
+	@Test
+	public void testCaseInsensitiveNamesHaveOriginalSpelling() throws Exception {
+		final SectionedProperties properties = load("GlobalKey = g\n[Database]\nUserName = admin\n");
+		assertEquals(Arrays.asList(null, "Database"), new ArrayList<>(properties.getSectionNames()));
+		assertEquals(Arrays.asList("UserName"), new ArrayList<>(properties.getSectionKeys("DATABASE")));
+		assertEquals(Arrays.asList("GlobalKey"), new ArrayList<>(properties.getSectionKeys(null)));
+		// Lookups in the sets ignore the case
+		assertTrue(properties.getSectionNames().contains("database"));
+		assertTrue(properties.getSectionNames().contains(null));
+		assertTrue(properties.getSectionKeys("Database").contains("USERNAME"));
+		assertFalse(properties.getSectionKeys("Database").contains("missing"));
+		assertFalse(properties.getSectionKeys("Database").contains(Integer.valueOf(1)));
+	}
+
+	@Test
+	public void testCaseInsensitiveFirstSpellingWins() throws Exception {
+		// Repeated sections and keys in other spellings keep the first spelling, the last value wins
+		final SectionedProperties loaded = load("[Db]\nKey = 1\n[DB]\nKEY = 2\nother = 3\n");
+		assertEquals("[Db]\nKey=2\nother=3\n\n", save(loaded));
+
+		final SectionedProperties properties = new SectionedProperties();
+		properties.setValue("MySection", "MyKey", "1");
+		properties.setValue(" MYSECTION ", "mykey", "2");
+		properties.setValue("mysection", "SecondKey", "3");
+		assertEquals("[MySection]\nMyKey=2\nSecondKey=3\n\n", save(properties));
+		assertEquals(Arrays.asList("MySection"), new ArrayList<>(properties.getSectionNames()));
+
+		// Values set after loading keep the loaded spelling
+		loaded.setValue("db", "key", "4");
+		assertEquals("[Db]\nKey=4\nother=3\n\n", save(loaded));
+	}
+
+	@Test
+	public void testCaseInsensitiveRemoveViaLiveSets() throws Exception {
+		final SectionedProperties properties = load("[Database]\nUserName = admin\nPassWord = secret\n[Other]\nx = 1\n");
+		// Removal is case insensitive too
+		assertTrue(properties.getSectionKeys("database").remove("USERNAME"));
+		assertFalse(properties.getSectionKeys("database").remove("USERNAME"));
+		assertNull(properties.getValue("Database", "UserName"));
+		assertEquals("[Database]\nPassWord=secret\n\n[Other]\nx=1\n\n", save(properties));
+
+		// A removed key or section set again gets its new spelling
+		properties.setValue("Database", "USERNAME", "root");
+		assertTrue(properties.getSectionNames().remove("OTHER"));
+		properties.setValue("OTHER", "X", "2");
+		assertEquals("[Database]\nPassWord=secret\nUSERNAME=root\n\n[OTHER]\nX=2\n\n", save(properties));
+
+		// Removal by iterator
+		final Iterator<String> iterator = properties.getSectionNames().iterator();
+		assertEquals("Database", iterator.next());
+		iterator.remove();
+		assertEquals(Arrays.asList("OTHER"), new ArrayList<>(properties.getSectionNames()));
+		assertEquals(1, properties.getSectionNames().size());
 	}
 
 	@Test

@@ -8,6 +8,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -28,7 +30,9 @@ import de.soderer.utilities.collection.CaseInsensitiveLinkedMap;
  * </pre>
  *
  * <p>
- * Keys before the first section belong to the section null. Keys, values and section names are trimmed, so leading
+ * Keys before the first section belong to the section null. With case insensitive keys (the default) section names
+ * and keys are found regardless of their case, but keep the spelling they were first loaded or set with, which is
+ * also used when saving. Keys, values and section names are trimmed, so leading
  * and trailing blanks are not preserved. A key must not be blank, must not contain '=' or line breaks and must not
  * start with '#' or '['. A section name must not contain line breaks. A leading byte order mark is ignored.
  * </p>
@@ -62,6 +66,15 @@ public class SectionedProperties {
 	private Map<String, Map<String, String>> entries = null;
 
 	/**
+	 * Spelling of each section name as first loaded or set. A case insensitive map stores its keys in case folded form,
+	 * so the original spelling is kept here for {@link #getSectionNames()} and for saving.
+	 */
+	private Map<String, String> sectionNameSpellings = null;
+
+	/** Spelling of each key as first loaded or set, per section */
+	private Map<String, Map<String, String>> keySpellings = null;
+
+	/**
 	 * Creates empty properties with case insensitive section names and keys.
 	 */
 	public SectionedProperties() {
@@ -90,6 +103,8 @@ public class SectionedProperties {
 
 		// Read into a new map first, so the current entries are kept, if the data is invalid
 		final Map<String, Map<String, String>> loadedEntries = createMap();
+		final Map<String, String> loadedSectionNameSpellings = createMap();
+		final Map<String, Map<String, String>> loadedKeySpellings = createMap();
 
 		final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 		String rawLine = null;
@@ -106,7 +121,7 @@ public class SectionedProperties {
 				if (line.startsWith(SECTION_PREFIX)) {
 					if (line.endsWith(SECTION_SUFFIX)) {
 						currentSectionName = line.substring(1, line.length() - 1).trim();
-						getOrCreateSection(loadedEntries, currentSectionName);
+						getOrCreateSection(loadedEntries, loadedSectionNameSpellings, loadedKeySpellings, currentSectionName);
 					} else {
 						throw new Exception("Invalid section line (" + lineCount + "): " + rawLine);
 					}
@@ -126,12 +141,15 @@ public class SectionedProperties {
 						throw new Exception("Invalid key at line " + lineCount);
 					}
 
-					getOrCreateSection(loadedEntries, currentSectionName).put(key, value);
+					final Map<String, String> section = getOrCreateSection(loadedEntries, loadedSectionNameSpellings, loadedKeySpellings, currentSectionName);
+					putValue(section, loadedKeySpellings.get(currentSectionName), key, value);
 				}
 			}
 		}
 
 		entries = loadedEntries;
+		sectionNameSpellings = loadedSectionNameSpellings;
+		keySpellings = loadedKeySpellings;
 	}
 
 	private <T> Map<String, T> createMap() {
@@ -142,13 +160,100 @@ public class SectionedProperties {
 		}
 	}
 
-	private Map<String, String> getOrCreateSection(final Map<String, Map<String, String>> sections, final String sectionName) {
+	/**
+	 * Returns a section, creating it if needed. A new section gets the given spelling of its name and an empty key
+	 * spelling map, which also replaces any outdated spellings of a section removed via {@link #getSectionNames()}.
+	 */
+	private Map<String, String> getOrCreateSection(final Map<String, Map<String, String>> sections, final Map<String, String> sectionSpellings,
+			final Map<String, Map<String, String>> sectionKeySpellings, final String sectionName) {
 		Map<String, String> section = sections.get(sectionName);
 		if (section == null) {
 			section = createMap();
 			sections.put(sectionName, section);
+			sectionSpellings.put(sectionName, sectionName);
+			sectionKeySpellings.put(sectionName, createMap());
 		}
 		return section;
+	}
+
+	/**
+	 * Sets a value. A new key gets the given spelling, an existing key keeps its first spelling.
+	 */
+	private static void putValue(final Map<String, String> section, final Map<String, String> spellings, final String key, final String value) {
+		if (!section.containsKey(key)) {
+			spellings.put(key, key);
+		}
+		section.put(key, value);
+	}
+
+	/**
+	 * Returns the spelling of a name as first loaded or set, or the name itself if no spelling is known.
+	 */
+	private static String getSpelling(final Map<String, String> spellings, final String name) {
+		if (spellings == null || name == null) {
+			return name;
+		} else {
+			final String spelling = spellings.get(name);
+			return spelling == null ? name : spelling;
+		}
+	}
+
+	/**
+	 * Live view of the names (keys) of a map, which returns their original spellings. Lookups and removals go through
+	 * the map itself, so they are case insensitive for a case insensitive map (unlike its own key set, which compares
+	 * against the stored case folded keys). Removing a name removes its entry from the map.
+	 */
+	private static Set<String> createSpellingView(final Map<String, ?> map, final Map<String, String> spellings) {
+		return new AbstractSet<>() {
+			@Override
+			public Iterator<String> iterator() {
+				final Iterator<String> nameIterator = map.keySet().iterator();
+				return new Iterator<>() {
+					@Override
+					public boolean hasNext() {
+						return nameIterator.hasNext();
+					}
+
+					@Override
+					public String next() {
+						return getSpelling(spellings, nameIterator.next());
+					}
+
+					@Override
+					public void remove() {
+						nameIterator.remove();
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return map.size();
+			}
+
+			@Override
+			public boolean contains(final Object name) {
+				if (name != null && !(name instanceof String)) {
+					return false;
+				}
+				final String stringName = (String) name;
+				return map.containsKey(stringName);
+			}
+
+			@Override
+			public boolean remove(final Object name) {
+				if (name != null && !(name instanceof String)) {
+					return false;
+				}
+				final String stringName = (String) name;
+				if (map.containsKey(stringName)) {
+					map.remove(stringName);
+					return true;
+				} else {
+					return false;
+				}
+			}
+		};
 	}
 
 	/**
@@ -171,14 +276,14 @@ public class SectionedProperties {
 		// Keys without section must be written before the first section line, otherwise they would be read into that section
 		final Map<String, String> entriesWithoutSection = entries.get(null);
 		if (entriesWithoutSection != null) {
-			writeSectionEntries(writer, entriesWithoutSection);
+			writeSectionEntries(writer, entriesWithoutSection, getKeySpellings(null));
 			writer.write("\n");
 		}
 
 		for (final Entry<String, Map<String, String>> sectionEntry : entries.entrySet()) {
 			if (sectionEntry.getKey() != null) {
-				writer.write(SECTION_PREFIX + sectionEntry.getKey().trim() + SECTION_SUFFIX + "\n");
-				writeSectionEntries(writer, sectionEntry.getValue());
+				writer.write(SECTION_PREFIX + getSpelling(sectionNameSpellings, sectionEntry.getKey()).trim() + SECTION_SUFFIX + "\n");
+				writeSectionEntries(writer, sectionEntry.getValue(), getKeySpellings(sectionEntry.getKey()));
 				writer.write("\n");
 			}
 		}
@@ -186,38 +291,44 @@ public class SectionedProperties {
 		writer.flush();
 	}
 
-	private static void writeSectionEntries(final Writer writer, final Map<String, String> sectionEntries) throws Exception {
+	private Map<String, String> getKeySpellings(final String sectionName) {
+		return keySpellings == null ? null : keySpellings.get(sectionName);
+	}
+
+	private static void writeSectionEntries(final Writer writer, final Map<String, String> sectionEntries, final Map<String, String> sectionKeySpellings) throws Exception {
 		for (final Entry<String, String> keyValueEntry : sectionEntries.entrySet()) {
 			// Trimmed after escaping, so line breaks at the start or end of a value are kept as "\n"
 			final String value = keyValueEntry.getValue() == null ? "" : escapeValue(keyValueEntry.getValue()).trim();
-			writer.write(keyValueEntry.getKey().trim() + KEY_VALUE_SEPARATOR + value + "\n");
+			writer.write(getSpelling(sectionKeySpellings, keyValueEntry.getKey()).trim() + KEY_VALUE_SEPARATOR + value + "\n");
 		}
 	}
 
 	/**
-	 * Names of all sections (including null for keys without section).
+	 * Names of all sections (including null for keys without section) in the spelling they were first loaded or set
+	 * with.
 	 *
-	 * @return live set of section names, or null if nothing was loaded or set yet
+	 * @return live set of section names (removing a name removes the section), or null if nothing was loaded or set yet
 	 */
 	public Set<String> getSectionNames() {
 		if (entries != null) {
-			return entries.keySet();
+			return createSpellingView(entries, sectionNameSpellings);
 		} else {
 			return null;
 		}
 	}
 
 	/**
-	 * Keys of a section.
+	 * Keys of a section in the spelling they were first loaded or set with.
 	 *
 	 * @param sectionName name of the section, or null for keys without section
-	 * @return live set of keys, or null if the section does not exist
+	 * @return live set of keys (removing a key removes its value), or null if the section does not exist
 	 */
 	public Set<String> getSectionKeys(final String sectionName) {
 		if (entries != null) {
-			final Map<String, String> section = entries.get(normalizeSectionName(sectionName));
+			final String normalizedSectionName = normalizeSectionName(sectionName);
+			final Map<String, String> section = entries.get(normalizedSectionName);
 			if (section != null) {
-				return section.keySet();
+				return createSpellingView(section, getKeySpellings(normalizedSectionName));
 			} else {
 				return null;
 			}
@@ -248,7 +359,7 @@ public class SectionedProperties {
 
 	/**
 	 * Sets the value of a key in a section, creating the section if needed. Section name and key are trimmed, like
-	 * they are when saving and loading.
+	 * they are when saving and loading. With case insensitive keys an existing section or key keeps its first spelling.
 	 *
 	 * @param sectionName name of the section, or null for keys without section. Must not contain line breaks.
 	 * @param key the key, must not be blank, contain '=' or line breaks or start with '#' or '['
@@ -271,8 +382,11 @@ public class SectionedProperties {
 
 		if (entries == null) {
 			entries = createMap();
+			sectionNameSpellings = createMap();
+			keySpellings = createMap();
 		}
-		getOrCreateSection(entries, normalizedSectionName).put(normalizedKey, value);
+		final Map<String, String> section = getOrCreateSection(entries, sectionNameSpellings, keySpellings, normalizedSectionName);
+		putValue(section, keySpellings.get(normalizedSectionName), normalizedKey, value);
 	}
 
 	private static String normalizeSectionName(final String sectionName) {
