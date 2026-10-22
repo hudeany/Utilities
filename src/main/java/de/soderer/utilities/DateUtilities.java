@@ -267,17 +267,18 @@ public class DateUtilities {
 		if (stringWithPattern == null) {
 			return null;
 		} else {
+			// Locale.ROOT, so the digits are always ASCII digits (the default locale may use e.g. Arabic-Indic digits)
 			String returnString = stringWithPattern;
-			returnString = returnString.replace("[yyyy]", String.format("%04d", localDateTime.getYear()));
-			returnString = returnString.replace("[YYYY]", String.format("%04d", localDateTime.getYear()));
-			returnString = returnString.replace("[MM]", String.format("%02d", localDateTime.getMonthValue()));
-			returnString = returnString.replace("[dd]", String.format("%02d", localDateTime.getDayOfMonth()));
-			returnString = returnString.replace("[DD]", String.format("%02d", localDateTime.getDayOfMonth()));
-			returnString = returnString.replace("[HH]", String.format("%02d", localDateTime.getHour()));
-			returnString = returnString.replace("[hh]", String.format("%02d", localDateTime.getHour()));
-			returnString = returnString.replace("[mm]", String.format("%02d", localDateTime.getMinute()));
-			returnString = returnString.replace("[SS]", String.format("%02d", localDateTime.getSecond()));
-			returnString = returnString.replace("[ss]", String.format("%02d", localDateTime.getSecond()));
+			returnString = returnString.replace("[yyyy]", String.format(Locale.ROOT, "%04d", localDateTime.getYear()));
+			returnString = returnString.replace("[YYYY]", String.format(Locale.ROOT, "%04d", localDateTime.getYear()));
+			returnString = returnString.replace("[MM]", String.format(Locale.ROOT, "%02d", localDateTime.getMonthValue()));
+			returnString = returnString.replace("[dd]", String.format(Locale.ROOT, "%02d", localDateTime.getDayOfMonth()));
+			returnString = returnString.replace("[DD]", String.format(Locale.ROOT, "%02d", localDateTime.getDayOfMonth()));
+			returnString = returnString.replace("[HH]", String.format(Locale.ROOT, "%02d", localDateTime.getHour()));
+			returnString = returnString.replace("[hh]", String.format(Locale.ROOT, "%02d", localDateTime.getHour()));
+			returnString = returnString.replace("[mm]", String.format(Locale.ROOT, "%02d", localDateTime.getMinute()));
+			returnString = returnString.replace("[SS]", String.format(Locale.ROOT, "%02d", localDateTime.getSecond()));
+			returnString = returnString.replace("[ss]", String.format(Locale.ROOT, "%02d", localDateTime.getSecond()));
 			returnString = returnString.replace("\\[", "[");
 			returnString = returnString.replace("\\]", "]");
 			return returnString;
@@ -333,6 +334,7 @@ public class DateUtilities {
 			return "-" + getShortHumanReadableTimespan(duration.negated(), showMillis, showLeadingZeros);
 		}
 
+		// Leading zeros are formatted with Locale.ROOT, so all digits are ASCII digits like those of the values without leading zeros
 		final StringBuilder returnValue = new StringBuilder();
 
 		final long millis = duration.toMillisPart();
@@ -346,7 +348,7 @@ public class DateUtilities {
 		if (showMillis && millis != 0 && minutes == 0 && hours == 0 && days == 0 && weeks == 0 && years == 0) {
 			returnValue.insert(0, "ms");
 			if (showLeadingZeros) {
-				returnValue.insert(0, String.format("%03d", millis));
+				returnValue.insert(0, String.format(Locale.ROOT, "%03d", millis));
 			} else {
 				returnValue.insert(0, millis);
 			}
@@ -359,7 +361,7 @@ public class DateUtilities {
 			returnValue.insert(0, "s");
 
 			if (showLeadingZeros) {
-				returnValue.insert(0, String.format("%02d", seconds));
+				returnValue.insert(0, String.format(Locale.ROOT, "%02d", seconds));
 			} else {
 				returnValue.insert(0, seconds);
 			}
@@ -371,7 +373,7 @@ public class DateUtilities {
 			}
 			returnValue.insert(0, "m");
 			if (showLeadingZeros) {
-				returnValue.insert(0, String.format("%02d", minutes));
+				returnValue.insert(0, String.format(Locale.ROOT, "%02d", minutes));
 			} else {
 				returnValue.insert(0, minutes);
 			}
@@ -383,7 +385,7 @@ public class DateUtilities {
 			}
 			returnValue.insert(0, "h");
 			if (showLeadingZeros) {
-				returnValue.insert(0, String.format("%02d", hours));
+				returnValue.insert(0, String.format(Locale.ROOT, "%02d", hours));
 			} else {
 				returnValue.insert(0, hours);
 			}
@@ -395,7 +397,7 @@ public class DateUtilities {
 			}
 			returnValue.insert(0, "d");
 			if (showLeadingZeros) {
-				returnValue.insert(0, String.format("%02d", days));
+				returnValue.insert(0, String.format(Locale.ROOT, "%02d", days));
 			} else {
 				returnValue.insert(0, days);
 			}
@@ -407,7 +409,7 @@ public class DateUtilities {
 			}
 			returnValue.insert(0, "w");
 			if (showLeadingZeros) {
-				returnValue.insert(0, String.format("%02d", weeks));
+				returnValue.insert(0, String.format(Locale.ROOT, "%02d", weeks));
 			} else {
 				returnValue.insert(0, weeks);
 			}
@@ -1100,7 +1102,8 @@ public class DateUtilities {
 			return null;
 		} else if (value.contains("-")) {
 			try {
-				return DateUtilities.parseIso8601DateTimeString(value);
+				// The given time zone applies to ISO values without offset too, not only the system default
+				return DateUtilities.parseIso8601DateTimeString(value, timeZone);
 			} catch (@SuppressWarnings("unused") final Exception e1) {
 				try {
 					return parseLocalDateTime(YYYY_MM_DD_HH_MM, value).atZone(timeZone);
