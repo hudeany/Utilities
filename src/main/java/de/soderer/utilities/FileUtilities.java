@@ -960,6 +960,8 @@ public class FileUtilities {
 		}
 
 		if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".csv")
+			|| Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".dsv")
+			|| Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".tsv")
 			|| Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".del")) {
 			fileType.setFileDataType(FileDataType.CSV);
 		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".xls") || Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".xlsx")) {
