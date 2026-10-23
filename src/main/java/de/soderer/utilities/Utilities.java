@@ -1844,28 +1844,38 @@ public class Utilities {
 	/**
 	 * Remove leading whitespace (regex \s) of a string.
 	 *
-	 * @param value string to trim, must not be null
-	 * @return string without leading whitespace
+	 * @param value string to trim, may be null
+	 * @return string without leading whitespace, or null for null input
 	 */
 	public static String trimLeft(final String value) {
-		return value.replaceAll("^\\s+", "");
+		// Null-safe like trim(String) (before, a NullPointerException was thrown)
+		if (value == null) {
+			return null;
+		} else {
+			return value.replaceAll("^\\s+", "");
+		}
 	}
 
 	/**
 	 * Remove trailing whitespace (regex \s) of a string.
 	 *
-	 * @param value string to trim, must not be null
-	 * @return string without trailing whitespace
+	 * @param value string to trim, may be null
+	 * @return string without trailing whitespace, or null for null input
 	 */
 	public static String trimRight(final String value) {
-		return value.replaceAll("\\s+$", "");
+		// Null-safe like trim(String) (before, a NullPointerException was thrown)
+		if (value == null) {
+			return null;
+		} else {
+			return value.replaceAll("\\s+$", "");
+		}
 	}
 
 	/**
 	 * Shorten a string to a maximum length by cutting off its end and appending a cut sign.
 	 *
 	 * @param value string to shorten, may be null
-	 * @param maxLength maximum length of the result including the cut sign
+	 * @param maxLength maximum length of the result including the cut sign; if it is less than the length of the cut sign, the end is cut off without cut sign
 	 * @param cutSign text appended if the string was shortened, null for none
 	 * @return shortened string, unchanged if it is not longer than maxLength
 	 */
@@ -1873,7 +1883,12 @@ public class Utilities {
 		if (value != null && value.length() > maxLength) {
 			// Use the real length of the cut sign (before, always 4 characters were reserved, which only fits the default " ...")
 			final String cutSignToUse = cutSign == null ? "" : cutSign;
-			return value.substring(0, Math.max(0, maxLength - cutSignToUse.length())) + cutSignToUse;
+			if (maxLength < cutSignToUse.length()) {
+				// The cut sign does not fit (before, the result was the complete cut sign and so longer than maxLength)
+				return value.substring(0, Math.max(0, maxLength));
+			} else {
+				return value.substring(0, maxLength - cutSignToUse.length()) + cutSignToUse;
+			}
 		} else {
 			return value;
 		}
