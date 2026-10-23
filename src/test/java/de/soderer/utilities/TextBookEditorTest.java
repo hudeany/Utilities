@@ -15,7 +15,6 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
-import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.textbook.TextBookEditor;
 import de.soderer.utilities.textbook.TextPosition;
 

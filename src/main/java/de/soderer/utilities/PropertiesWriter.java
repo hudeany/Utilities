@@ -12,8 +12,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import de.soderer.utilities.TextUtilities.LineBreak;
-
 /**
  * Writer for .properties files, which are readable by java.util.Properties and {@link PropertiesReader}.
  * <p>

@@ -17,8 +17,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import de.soderer.utilities.TextUtilities.LineBreak;
-
 @SuppressWarnings("static-method")
 public class LineReaderTest {
 	/**

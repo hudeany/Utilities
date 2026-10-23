@@ -14,8 +14,6 @@ import java.nio.file.Files;
 
 import org.junit.jupiter.api.Test;
 
-import de.soderer.utilities.TextUtilities.LineBreak;
-
 @SuppressWarnings("static-method")
 public class TextFilePropertiesReaderTest {
 	private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");

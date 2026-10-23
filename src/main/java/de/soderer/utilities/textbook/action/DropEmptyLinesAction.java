@@ -2,8 +2,8 @@ package de.soderer.utilities.textbook.action;
 
 import java.util.List;
 
+import de.soderer.utilities.LineBreak;
 import de.soderer.utilities.StringUtilities;
-import de.soderer.utilities.TextUtilities.LineBreak;
 
 /**
  * Removes the empty lines (without any character except the line break).

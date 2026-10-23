@@ -3,8 +3,6 @@ package de.soderer.utilities;
 import java.util.HashMap;
 import java.util.Map;
 
-import de.soderer.utilities.TextUtilities.LineBreak;
-
 /**
  * Scanner for statistical properties of a text: number of characters, non whitespace characters, lines and words,
  * the characters used and the type of line breaks.
@@ -32,7 +30,7 @@ public class TextPropertiesReader {
 	 *
 	 * @param dataString text to scan, must not be null when scanning
 	 */
-	public TextPropertiesReader(String dataString) {
+	public TextPropertiesReader(final String dataString) {
 		this.dataString = dataString;
 	}
 
@@ -52,7 +50,7 @@ public class TextPropertiesReader {
 		boolean isWithinWord = false;
 
 		for (int i = 0; i < dataString.length(); i++) {
-			char character = dataString.charAt(i);
+			final char character = dataString.charAt(i);
 
 			foundCharacters.merge(character, 1, Integer::sum);
 

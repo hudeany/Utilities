@@ -30,9 +30,9 @@ import java.util.zip.ZipOutputStream;
 
 import de.soderer.utilities.BOM;
 import de.soderer.utilities.DateUtilities;
+import de.soderer.utilities.LineBreak;
 import de.soderer.utilities.LineReader;
 import de.soderer.utilities.StringUtilities;
-import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.textbook.action.CountBlankLinesAction;
 import de.soderer.utilities.textbook.action.CountEmptyLinesAction;

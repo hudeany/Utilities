@@ -8,8 +8,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import de.soderer.utilities.TextUtilities.LineBreak;
-
 @SuppressWarnings("static-method")
 public class TextPropertiesReaderTest {
 	private static TextPropertiesReader read(final String text) {

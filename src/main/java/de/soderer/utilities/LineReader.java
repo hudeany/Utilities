@@ -10,8 +10,6 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import de.soderer.utilities.TextUtilities.LineBreak;
-
 /**
  * Reader for text lines, which detects the line break types (Unix LF, Windows CRLF, Mac CR) used in
  * the data.

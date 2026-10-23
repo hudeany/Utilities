@@ -18,8 +18,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import de.soderer.utilities.TextUtilities.LineBreak;
-
 public class TextUtilitiesTest {
 	@SuppressWarnings("static-method")
 	@Test
@@ -37,7 +35,7 @@ public class TextUtilitiesTest {
 		assertEquals(LineBreak.Windows, LineBreak.getLineBreakTypeByName("windows"));
 		assertEquals(LineBreak.Unix, LineBreak.getLineBreakTypeByName("UNIX"));
 		assertEquals(LineBreak.Mac, LineBreak.getLineBreakTypeByName("Mac"));
-		assertEquals(LineBreak.Unknown, LineBreak.getLineBreakTypeByName("Mixed"));
+		assertEquals(LineBreak.Unknown, LineBreak.getLineBreakTypeByName("mixed"));
 		assertEquals(LineBreak.Unknown, LineBreak.getLineBreakTypeByName(null));
 	}
 
