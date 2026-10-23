@@ -175,6 +175,7 @@ public class LangResources {
 		addBuiltInText("passwordRequired",                          "Error:\nPassword is required", "Fehler:\nPasswort ist notwendig", "Erreur :\nLe mot de passe est obligatoire", "Error:\nLa contraseña es obligatoria", "Errore:\nLa password è obbligatoria");
 		addBuiltInText("passwordConfirmation",                      "Confirm password", "Passwort bestätigen", "Confirmer le mot de passe", "Confirmar contraseña", "Conferma password");
 		addBuiltInText("restartNow",                                "Restart application now", "Jetzt Anwendung neustarten", "Redémarrer l'application maintenant", "Reiniciar la aplicación ahora", "Riavvia l'applicazione ora");
+		addBuiltInText("retry",                                     "Retry", "Wiederholen", "Réessayer", "Reintentar", "Riprova");
 		addBuiltInText("showSwingProperties",                       "Show Swing properties", "Swing-Eigenschaften anzeigen", "Afficher les propriétés Swing", "Mostrar propiedades de Swing", "Mostra proprietà Swing");
 		addBuiltInText("sureQuestion",                              "Are you sure?", "Sind Sie sich sicher?", "Êtes-vous sûr ?", "¿Está seguro?", "Sei sicuro?");
 		addBuiltInText("swingProperties",                           "Swing properties", "Swing-Eigenschaften", "Propriétés Swing", "Propiedades de Swing", "Proprietà Swing");
