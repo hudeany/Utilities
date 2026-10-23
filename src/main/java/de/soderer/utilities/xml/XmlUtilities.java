@@ -282,14 +282,11 @@ public class XmlUtilities {
 		// The opposite of creating entity ref nodes is expanding them inline
 		dbf.setExpandEntityReferences(!createEntityRefs);
 
-		DocumentBuilder db = null;
-		Document doc = null;
 		try {
-			db = dbf.newDocumentBuilder();
+			final DocumentBuilder db = dbf.newDocumentBuilder();
 			db.setErrorHandler(SILENT_ERROR_HANDLER);
-			doc = db.parse(new InputSource(new StringReader(xmlInput)));
+			final Document doc = db.parse(new InputSource(new StringReader(xmlInput)));
 			return doc;
-
 		} catch (final Exception e) {
 			throw new Exception("Error while parsing xml", e);
 		}
