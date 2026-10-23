@@ -2,7 +2,7 @@ package de.soderer.utilities.textbook.action;
 
 import java.util.List;
 
-import de.soderer.utilities.Utilities;
+import de.soderer.utilities.StringUtilities;
 
 /**
  * Counts the blank lines (containing only whitespace). Lines are not changed.
@@ -16,10 +16,10 @@ public class CountBlankLinesAction implements TextLineAction {
 	public CountBlankLinesAction() {
 		// Nothing to initialize
 	}
-	
+
 	@Override
-	public boolean execute(long overallLineIndex, int pageLineIndex, List<String> pageLines, String lineWithLinebreak) throws Exception {
-		if (Utilities.isBlank(lineWithLinebreak)) {
+	public boolean execute(final long overallLineIndex, final int pageLineIndex, final List<String> pageLines, final String lineWithLinebreak) throws Exception {
+		if (StringUtilities.isBlank(lineWithLinebreak)) {
 			numberOfLines++;
 		}
 		// Counting never changes the page

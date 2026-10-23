@@ -2,8 +2,8 @@ package de.soderer.utilities.textbook.action;
 
 import java.util.List;
 
+import de.soderer.utilities.StringUtilities;
 import de.soderer.utilities.TextUtilities.LineBreak;
-import de.soderer.utilities.Utilities;
 
 /**
  * Counts the empty lines (without any character except the line break). Lines are not changed.
@@ -32,7 +32,7 @@ public class CountEmptyLinesAction implements TextLineAction {
 			lineWithoutLinebreak = lineWithLinebreak;
 		}
 
-		if (Utilities.isEmpty(lineWithoutLinebreak)) {
+		if (StringUtilities.isEmpty(lineWithoutLinebreak)) {
 			numberOfLines++;
 		}
 		// Counting never changes the page

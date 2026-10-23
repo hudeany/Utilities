@@ -27,7 +27,7 @@ public class VersionInfo {
 		Version applicationVersion = APPLICATION_VERSION;
 		if (applicationVersion == null) {
 			final String buildVersionString = readBuildVersion();
-			if (Utilities.isNotBlank(buildVersionString)) {
+			if (StringUtilities.isNotBlank(buildVersionString)) {
 				try {
 					applicationVersion = new Version(buildVersionString);
 				} catch (@SuppressWarnings("unused") final Exception e) {
@@ -95,7 +95,7 @@ public class VersionInfo {
 		try (InputStream buildVersionInputStream = VersionInfo.class.getClassLoader().getResourceAsStream("build.version")) {
 			if (buildVersionInputStream != null) {
 				final String buildVersionString = IoUtilities.toString(buildVersionInputStream, StandardCharsets.UTF_8);
-				if (Utilities.isNotBlank(buildVersionString)) {
+				if (StringUtilities.isNotBlank(buildVersionString)) {
 					return buildVersionString.split("\n")[0].trim();
 				} else {
 					return buildVersionString;

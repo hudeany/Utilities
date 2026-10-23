@@ -2,7 +2,6 @@ package de.soderer.utilities;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -77,48 +76,6 @@ public class UtilitiesTest {
 			assertEquals("R0lGODdhDQAIAIAAAAAAANnZ2SwAAAAADQAIAAACF4SDGQar3xxbJ9p0qa7R0YxwzYxwzYxwzYxwzYxw\nzYxwzaFME1IAADs=", encodedData);
 			final byte[] decodedData = Utilities.decodeBase64(encodedData);
 			assertTrue(Arrays.equals(data, decodedData));
-		} catch (final Exception e) {
-			fail(e.getMessage());
-		}
-	}
-
-	@Test
-	public void test_Empty() {
-		try {
-			assertTrue(Utilities.isEmpty((String) null));
-			assertTrue(Utilities.isEmpty(""));
-			assertFalse(Utilities.isEmpty("."));
-			assertFalse(Utilities.isEmpty("a"));
-			assertFalse(Utilities.isEmpty(" "));
-			assertFalse(Utilities.isEmpty("\t"));
-			assertFalse(Utilities.isEmpty("\n"));
-		} catch (final Exception e) {
-			fail(e.getMessage());
-		}
-	}
-
-	@Test
-	public void test_Blank() {
-		try {
-			assertTrue(Utilities.isBlank((String) null));
-			assertTrue(Utilities.isBlank(""));
-			assertFalse(Utilities.isBlank("."));
-			assertFalse(Utilities.isBlank("a"));
-			assertTrue(Utilities.isBlank(" "));
-			assertTrue(Utilities.isBlank("\t"));
-			assertTrue(Utilities.isBlank("\n"));
-		} catch (final Exception e) {
-			fail(e.getMessage());
-		}
-	}
-
-	@Test
-	public void test_repeat() {
-		try {
-			assertEquals(null, Utilities.repeat(null, 1));
-			assertEquals("", Utilities.repeat("a", 0));
-			assertEquals("a", Utilities.repeat("a", 1));
-			assertEquals("aaa", Utilities.repeat("a", 3));
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}
@@ -422,23 +379,6 @@ public class UtilitiesTest {
 			assertEquals(2, testVersion3.getMinorVersionNumber());
 			assertEquals(1, testVersion3.getMicroVersionNumber());
 			assertEquals("3.2.1", testVersion3.toString());
-		} catch (final Exception e) {
-			fail(e.getMessage());
-		}
-	}
-
-	@Test
-	public void testShortenStringToMaxLength() {
-		try {
-			assertEquals("Abcdefgh", Utilities.shortenStringToMaxLengthCutRight("Abcdefgh", 10));
-			assertEquals("Abc ...", Utilities.shortenStringToMaxLengthCutRight("Abcdefgh", 7));
-			assertEquals("Abc ...", Utilities.shortenStringToMaxLengthCutRight("Abcdefgh1234567890", 7));
-			assertEquals("Abcdefgh", Utilities.shortenStringToMaxLengthCutMiddle("Abcdefgh", 10));
-			assertEquals("A ... h", Utilities.shortenStringToMaxLengthCutMiddle("Abcdefgh", 7));
-			assertEquals("Ab ... 90", Utilities.shortenStringToMaxLengthCutMiddle("Abcdefgh1234567890", 9));
-			assertEquals("Abcdefgh", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh", 10));
-			assertEquals("... fgh", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh", 7));
-			assertEquals("... 890", Utilities.shortenStringToMaxLengthCutLeft("Abcdefgh1234567890", 7));
 		} catch (final Exception e) {
 			fail(e.getMessage());
 		}

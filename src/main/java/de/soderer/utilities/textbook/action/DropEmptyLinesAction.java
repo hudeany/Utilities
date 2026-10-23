@@ -2,8 +2,8 @@ package de.soderer.utilities.textbook.action;
 
 import java.util.List;
 
+import de.soderer.utilities.StringUtilities;
 import de.soderer.utilities.TextUtilities.LineBreak;
-import de.soderer.utilities.Utilities;
 
 /**
  * Removes the empty lines (without any character except the line break).
@@ -32,7 +32,7 @@ public class DropEmptyLinesAction implements TextLineAction {
 			lineWithoutLinebreak = lineWithLinebreak;
 		}
 
-		if (Utilities.isEmpty(lineWithoutLinebreak)) {
+		if (StringUtilities.isEmpty(lineWithoutLinebreak)) {
 			pageLines.remove(pageLineIndex);
 			numberOfDroppedLines++;
 			return true;

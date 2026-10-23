@@ -228,10 +228,10 @@ public class SystemUtilities {
 			if (isWindows) {
 				// Absolute path, so no other "tasklist.exe" found via PATH or the working directory is started
 				String windowsDirectory = System.getenv("SystemRoot");
-				if (Utilities.isBlank(windowsDirectory)) {
+				if (StringUtilities.isBlank(windowsDirectory)) {
 					windowsDirectory = System.getenv("windir");
 				}
-				if (Utilities.isBlank(windowsDirectory)) {
+				if (StringUtilities.isBlank(windowsDirectory)) {
 					// Without these variables the path would become "null\system32\tasklist.exe"
 					windowsDirectory = "C:\\Windows";
 				}
@@ -301,7 +301,7 @@ public class SystemUtilities {
 
 		final List<String> jvmParameters = new ArrayList<>();
 		for (final String argument : inputArguments) {
-			if (!Utilities.isBlank(argument) && !isExcludedJvmParameter(argument)) {
+			if (!StringUtilities.isBlank(argument) && !isExcludedJvmParameter(argument)) {
 				jvmParameters.add(argument);
 			}
 		}
@@ -323,7 +323,7 @@ public class SystemUtilities {
 	 * are extremely rare in these variables.
 	 */
 	private static void removeEnvironmentProvidedOptions(final List<String> arguments, final String environmentValue) {
-		if (Utilities.isBlank(environmentValue)) {
+		if (StringUtilities.isBlank(environmentValue)) {
 			return;
 		} else {
 			for (final String option : environmentValue.trim().split("\\s+")) {

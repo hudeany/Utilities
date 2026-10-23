@@ -63,16 +63,13 @@ public class TempFileInputStream extends FilterInputStream {
 
 		// Delete the temporary data even if closing the underlying stream failed.
 		// NOFOLLOW_LINKS: a symbolic link with a missing target is deleted, too (File.exists() would return false for it).
-		if (tempFile != null && Files.exists(tempFile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
-			try {
-				FileUtilities.delete(tempFile);
-			} catch (final IOException deleteException) {
-				// Before, a deletion error thrown in the finally block replaced the error of closing the stream
-				if (closeException != null) {
-					closeException.addSuppressed(deleteException);
-				} else {
-					closeException = deleteException;
-				}
+		if (tempFile != null && Files.exists(tempFile.toPath(), LinkOption.NOFOLLOW_LINKS) && !FileUtilities.delete(tempFile)) {
+			final IOException deleteException = new IOException("Failed to delete temporary data: " + tempFile.getAbsolutePath());
+			// Before, a deletion error thrown in the finally block replaced the error of closing the stream
+			if (closeException != null) {
+				closeException.addSuppressed(deleteException);
+			} else {
+				closeException = deleteException;
 			}
 		}
 

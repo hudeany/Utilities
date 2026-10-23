@@ -104,7 +104,7 @@ public class TextFilePropertiesReader extends TextPropertiesReader {
 	public String readFileToString() throws Exception {
 		if (data == null) {
 			filesize = file.length();
-			data = Utilities.readFileToByteArray(file);
+			data = FileUtilities.readFileToByteArray(file);
 		}
 
 		if (encodingData == null) {

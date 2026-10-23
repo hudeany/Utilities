@@ -31,6 +31,7 @@ import java.util.zip.ZipOutputStream;
 import de.soderer.utilities.BOM;
 import de.soderer.utilities.DateUtilities;
 import de.soderer.utilities.LineReader;
+import de.soderer.utilities.StringUtilities;
 import de.soderer.utilities.TextUtilities.LineBreak;
 import de.soderer.utilities.Utilities;
 import de.soderer.utilities.textbook.action.CountBlankLinesAction;
@@ -372,7 +373,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * Returns the number of bytes of the text file (or its uncompressed zip entry), including a BOM.
 	 */
 	private static long getTextFileRawDataSize(final File textFile) throws Exception {
-		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
+		if (StringUtilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
 			try (InputStream inputStream = getTextFileRawInputStream(textFile)) {
 				long dataSize = 0;
 				final byte[] buffer = new byte[65536];
@@ -388,7 +389,7 @@ public class TextBookEditor implements AutoCloseable {
 	}
 
 	private static LineReader getTextFileLineReader(final File textFile, final Charset charset) throws Exception {
-		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
+		if (StringUtilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
 			final ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(textFile)), charset);
 			inputStream.getNextEntry();
 			return new LineReader(inputStream, charset);
@@ -403,7 +404,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * going through character decoding/encoding at all.
 	 */
 	private static InputStream getTextFileRawInputStream(final File textFile) throws Exception {
-		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
+		if (StringUtilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
 			final ZipInputStream inputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(textFile)));
 			inputStream.getNextEntry();
 			return inputStream;
@@ -436,7 +437,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * depends on targetFile, which is the file the data ends up in, possibly after moving outputFile there.
 	 */
 	private static OutputStream getTextFileOutputStream(final File outputFile, final File targetFile) throws Exception {
-		if (Utilities.endsWithIgnoreCase(targetFile.getName(), ".zip")) {
+		if (StringUtilities.endsWithIgnoreCase(targetFile.getName(), ".zip")) {
 			final ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile)));
 			outputStream.putNextEntry(new ZipEntry(targetFile.getName().substring(0, targetFile.getName().length() - 4)));
 			return outputStream;
@@ -1208,7 +1209,7 @@ public class TextBookEditor implements AutoCloseable {
 	 * back to scanning (skipping) from the start of the decompressed stream.
 	 */
 	private LineReader openTextFileLineReaderAtByteOffset(final long byteOffset) throws Exception {
-		if (Utilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
+		if (StringUtilities.endsWithIgnoreCase(textFile.getName(), ".zip")) {
 			// The offset is given in bytes, so bytes must be skipped, not characters (which differ for multibyte charsets)
 			final InputStream inputStream = getTextFileRawInputStream(textFile);
 			try {

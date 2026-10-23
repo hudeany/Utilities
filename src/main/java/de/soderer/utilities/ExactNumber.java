@@ -49,7 +49,7 @@ public class ExactNumber {
 	 *             if the text is no valid decimal number
 	 */
 	public ExactNumber(final String valueString) throws Exception {
-		if (Utilities.isBlank(valueString)) {
+		if (StringUtilities.isBlank(valueString)) {
 			value = 0;
 		} else {
 			final Tuple<Long, Integer> data = parseNumber(valueString);
@@ -204,7 +204,7 @@ public class ExactNumber {
 	 *             if the result overflows the internal long value, this number is unchanged then
 	 */
 	public ExactNumber add(final String valueToAdd) throws Exception {
-		if (!Utilities.isBlank(valueToAdd)) {
+		if (!StringUtilities.isBlank(valueToAdd)) {
 			final Tuple<Long, Integer> valueData = parseNumber(valueToAdd);
 			long valueToAddValue = valueData.getFirst();
 			final int valueToAddDimension = valueData.getSecond();

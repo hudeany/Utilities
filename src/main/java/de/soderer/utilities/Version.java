@@ -102,7 +102,7 @@ public class Version implements Comparable<Version> {
 	 * @return the first version found in the text, or null if there is none
 	 */
 	public static Version getFirstFullVersionNumberFromText(final String data) {
-		if (Utilities.isBlank(data)) {
+		if (StringUtilities.isBlank(data)) {
 			return null;
 		} else {
 			final Matcher matcher = VERSION_IN_TEXT_PATTERN.matcher(data);

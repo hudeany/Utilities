@@ -57,8 +57,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-import de.soderer.utilities.TextUtilities;
-import de.soderer.utilities.Utilities;
+import de.soderer.utilities.StringUtilities;
 
 /**
  * Utilities class to work with XML documents.
@@ -237,7 +236,7 @@ public class XmlUtilities {
 	public static Node getSingleXPathNode(final Document document, final String xpathExpression) {
 		if (document == null) {
 			return null;
-		} else if (Utilities.isBlank(xpathExpression)) {
+		} else if (StringUtilities.isBlank(xpathExpression)) {
 			return null;
 		} else {
 			try {
@@ -303,7 +302,7 @@ public class XmlUtilities {
 	public static Document parseXmlStringIngoringDtd(final String xmlInput) throws Exception {
 		if (xmlInput == null) {
 			throw new Exception("XML-Data is null");
-		} else if (Utilities.isBlank(xmlInput)) {
+		} else if (StringUtilities.isBlank(xmlInput)) {
 			throw new Exception("XML-Data is empty");
 		}
 
@@ -1137,7 +1136,7 @@ public class XmlUtilities {
 	 * @throws Exception if the data looks like XML but cannot be parsed
 	 */
 	public static String removeFrameTag(final String data) throws Exception {
-		if (Utilities.isEmpty(data)) {
+		if (StringUtilities.isEmpty(data)) {
 			return data;
 		} else {
 			final String changedData = data.trim();
@@ -1261,17 +1260,17 @@ public class XmlUtilities {
 	 */
 	public static String formatXmlNode(final Node xmlNode, final int indentationLevel) {
 		if (xmlNode.getNodeType() == Node.TEXT_NODE) {
-			if (Utilities.isBlank(xmlNode.getNodeValue())) {
+			if (StringUtilities.isBlank(xmlNode.getNodeValue())) {
 				return "";
 			} else {
 				return escapeTextValue(xmlNode.getNodeValue());
 			}
 		} else if (xmlNode.getNodeType() == Node.COMMENT_NODE) {
-			if (Utilities.isBlank(xmlNode.getNodeValue())) {
+			if (StringUtilities.isBlank(xmlNode.getNodeValue())) {
 				return "";
 			} else {
 				final StringBuilder result = new StringBuilder();
-				result.append(TextUtilities.repeatString("\t", indentationLevel));
+				result.append(StringUtilities.repeat("\t", indentationLevel));
 				result.append("<!--");
 				// Comment content is not escaped in XML
 				result.append(xmlNode.getNodeValue());
@@ -1281,11 +1280,11 @@ public class XmlUtilities {
 		} else if (xmlNode.getNodeType() == Node.CDATA_SECTION_NODE) {
 			return "<![CDATA[" + (xmlNode.getNodeValue() == null ? "" : xmlNode.getNodeValue().replace("]]>", "]]]]><![CDATA[>")) + "]]>";
 		} else if (xmlNode.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {
-			return TextUtilities.repeatString("\t", indentationLevel) + "<?" + xmlNode.getNodeName() + (Utilities.isEmpty(xmlNode.getNodeValue()) ? "" : " " + xmlNode.getNodeValue()) + "?>\n";
+			return StringUtilities.repeat("\t", indentationLevel) + "<?" + xmlNode.getNodeName() + (StringUtilities.isEmpty(xmlNode.getNodeValue()) ? "" : " " + xmlNode.getNodeValue()) + "?>\n";
 		} else if (xmlNode.getNodeType() == Node.DOCUMENT_TYPE_NODE) {
 			final DocumentType documentType = (DocumentType) xmlNode;
 			final StringBuilder result = new StringBuilder();
-			result.append(TextUtilities.repeatString("\t", indentationLevel));
+			result.append(StringUtilities.repeat("\t", indentationLevel));
 			result.append("<!DOCTYPE ");
 			result.append(documentType.getName());
 			if (documentType.getPublicId() != null) {
@@ -1296,7 +1295,7 @@ public class XmlUtilities {
 			} else if (documentType.getSystemId() != null) {
 				result.append(" SYSTEM \"").append(documentType.getSystemId()).append("\"");
 			}
-			if (Utilities.isNotBlank(documentType.getInternalSubset())) {
+			if (StringUtilities.isNotBlank(documentType.getInternalSubset())) {
 				// Entity and element declarations of the document itself must be kept
 				result.append(" [").append(documentType.getInternalSubset()).append("]");
 			}
@@ -1306,13 +1305,13 @@ public class XmlUtilities {
 			return "&" + xmlNode.getNodeName() + ";";
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.CDATA_SECTION_NODE) {
 			// A single CDATA child is written inline, so no whitespace is added to its content
-			return TextUtilities.repeatString("\t", indentationLevel) + "<" + xmlNode.getNodeName() + formatAttributes(xmlNode, indentationLevel) + ">"
+			return StringUtilities.repeat("\t", indentationLevel) + "<" + xmlNode.getNodeName() + formatAttributes(xmlNode, indentationLevel) + ">"
 					+ formatXmlNode(xmlNode.getChildNodes().item(0), 0)
 					+ "</" + xmlNode.getNodeName() + ">\n";
 		} else if (xmlNode.getChildNodes().getLength() == 1 && xmlNode.getChildNodes().item(0).getNodeType() == Node.TEXT_NODE) {
-			if (Utilities.isBlank(xmlNode.getChildNodes().item(0).getNodeValue())) {
+			if (StringUtilities.isBlank(xmlNode.getChildNodes().item(0).getNodeValue())) {
 				final StringBuilder result = new StringBuilder();
-				result.append(TextUtilities.repeatString("\t", indentationLevel));
+				result.append(StringUtilities.repeat("\t", indentationLevel));
 				result.append("<");
 				result.append(xmlNode.getNodeName());
 				result.append(formatAttributes(xmlNode, indentationLevel));
@@ -1320,7 +1319,7 @@ public class XmlUtilities {
 				return result.toString();
 			} else {
 				final StringBuilder result = new StringBuilder();
-				result.append(TextUtilities.repeatString("\t", indentationLevel));
+				result.append(StringUtilities.repeat("\t", indentationLevel));
 				result.append("<");
 				result.append(xmlNode.getNodeName());
 				result.append(formatAttributes(xmlNode, indentationLevel));
@@ -1337,7 +1336,7 @@ public class XmlUtilities {
 				for (int nodeIndex = 0; nodeIndex < xmlNode.getChildNodes().getLength(); nodeIndex++) {
 					final Node xmlSubNode = xmlNode.getChildNodes().item(nodeIndex);
 					if (xmlSubNode.getNodeType() == Node.TEXT_NODE) {
-						if (Utilities.isNotBlank(xmlSubNode.getNodeValue())) {
+						if (StringUtilities.isNotBlank(xmlSubNode.getNodeValue())) {
 							innerXml.append(escapeTextValue(xmlSubNode.getNodeValue()));
 						}
 					} else {
@@ -1347,7 +1346,7 @@ public class XmlUtilities {
 			}
 
 			final StringBuilder result = new StringBuilder();
-			result.append(TextUtilities.repeatString("\t", indentationLevel));
+			result.append(StringUtilities.repeat("\t", indentationLevel));
 			result.append("<");
 			result.append(xmlNode.getNodeName());
 			result.append(formatAttributes(xmlNode, indentationLevel));
@@ -1356,7 +1355,7 @@ public class XmlUtilities {
 			} else {
 				result.append(">\n");
 				result.append(innerXml);
-				result.append(TextUtilities.repeatString("\t", indentationLevel));
+				result.append(StringUtilities.repeat("\t", indentationLevel));
 				result.append("</");
 				result.append(xmlNode.getNodeName());
 				result.append(">\n");
@@ -1401,7 +1400,7 @@ public class XmlUtilities {
 						result.append("\n");
 					}
 					final Node attributeNode = xmlNode.getAttributes().item(attributeIndex);
-					result.append(TextUtilities.repeatString("\t", indentationLevel + 1));
+					result.append(StringUtilities.repeat("\t", indentationLevel + 1));
 					result.append(attributeNode.getNodeName());
 					result.append("=\"");
 					result.append(escapeAttributeValue(attributeNode.getNodeValue()));

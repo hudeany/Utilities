@@ -533,7 +533,7 @@ public class FileUtilities {
 	 *             if reading fails
 	 */
 	public static int getLineCount(final File file) throws IOException {
-		if (Utilities.endsWithIgnoreCase(file.getName(), ".zip")) {
+		if (StringUtilities.endsWithIgnoreCase(file.getName(), ".zip")) {
 			try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(file))) {
 				if (zipInputStream.getNextEntry() == null) {
 					// Zip file without entries
@@ -599,16 +599,17 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Reads the complete content of a file.
+	 * Read the complete content of a file.
 	 *
-	 * @param dataFile
-	 *            the file to read
-	 * @return the file content
-	 * @throws Exception
-	 *             if reading fails
+	 * @param file file to read
+	 * @return file content
+	 * @throws FileNotFoundException if the file does not exist or cannot be opened
+	 * @throws IOException if reading fails
 	 */
-	public static byte[] readFileToByteArray(final File dataFile) throws Exception {
-		return Files.readAllBytes(dataFile.toPath());
+	public static byte[] readFileToByteArray(final File file) throws FileNotFoundException, IOException {
+		try (FileInputStream in = new FileInputStream(file)) {
+			return in.readAllBytes();
+		}
 	}
 
 	/**
@@ -796,7 +797,7 @@ public class FileUtilities {
 	public static String getParentFromPath(final String path) {
 		if (path != null && path.contains("/")) {
 			final String returnPath = path.substring(0, path.lastIndexOf("/"));
-			if (Utilities.isEmpty(returnPath) && path.startsWith("/")) {
+			if (StringUtilities.isEmpty(returnPath) && path.startsWith("/")) {
 				return "/";
 			} else {
 				return returnPath;
@@ -811,28 +812,26 @@ public class FileUtilities {
 	}
 
 	/**
-	 * Deletes a file, or a directory and all of its content recursively. Symbolic links are deleted
-	 * themselves, the link targets are never followed.
+	 * Delete a file or a directory recursively. Symbolic links are deleted themselves, the link targets are never followed.
 	 *
-	 * @param file
-	 *            the file or directory to delete
-	 * @throws IOException
-	 *             if any file or directory cannot be deleted
+	 * @param file file or directory to delete
+	 * @return true if everything was deleted, false if any file could not be deleted (deletion stops at the first failure)
 	 */
-	public static void delete(final File file) throws IOException {
-		// Symbolic links are deleted themselves, but never followed. Otherwise the content of the
-		// link target outside of the deleted directory tree would be deleted, too.
+	public static boolean delete(final File file) {
+		// A symbolic link to a directory must not be followed, otherwise content outside of the deleted tree is deleted
 		if (file.isDirectory() && !Files.isSymbolicLink(file.toPath())) {
-			final File[] entries = file.listFiles();
-			if (entries != null) {
-				for (final File entry : entries) {
-					delete(entry);
+			// listFiles() returns null if the directory cannot be read, so its content cannot be deleted either
+			final File[] subFiles = file.listFiles();
+			if (subFiles == null) {
+				return false;
+			}
+			for (final File subFile : subFiles) {
+				if (!delete(subFile)) {
+					return false;
 				}
 			}
 		}
-		if (!file.delete()) {
-			throw new IOException("Failed to delete " + file);
-		}
+		return file.delete();
 	}
 
 	/**
@@ -942,16 +941,16 @@ public class FileUtilities {
 
 		String filePathWithoutCompressionPart;
 
-		if (Utilities.endsWithIgnoreCase(filePath, ".zip")) {
+		if (StringUtilities.endsWithIgnoreCase(filePath, ".zip")) {
 			fileType.setFileCompressionType(FileCompressionType.ZIP);
 			filePathWithoutCompressionPart = filePath.substring(0, filePath.length() - 4);
-		} else if (Utilities.endsWithIgnoreCase(filePath, ".tar.gz")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePath, ".tar.gz")) {
 			fileType.setFileCompressionType(FileCompressionType.TARGZ);
 			filePathWithoutCompressionPart = filePath.substring(0, filePath.length() - 7);
-		} else if (Utilities.endsWithIgnoreCase(filePath, ".tgz")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePath, ".tgz")) {
 			fileType.setFileCompressionType(FileCompressionType.TGZ);
 			filePathWithoutCompressionPart = filePath.substring(0, filePath.length() - 4);
-		} else if (Utilities.endsWithIgnoreCase(filePath, ".gz")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePath, ".gz")) {
 			fileType.setFileCompressionType(FileCompressionType.GZ);
 			filePathWithoutCompressionPart = filePath.substring(0, filePath.length() - 3);
 		} else {
@@ -959,26 +958,26 @@ public class FileUtilities {
 			filePathWithoutCompressionPart = filePath;
 		}
 
-		if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".csv")
-			|| Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".dsv")
-			|| Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".tsv")
-			|| Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".del")) {
+		if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".csv")
+			|| StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".dsv")
+			|| StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".tsv")
+			|| StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".del")) {
 			fileType.setFileDataType(FileDataType.CSV);
-		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".xls") || Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".xlsx")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".xls") || StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".xlsx")) {
 			fileType.setFileDataType(FileDataType.EXCEL);
-		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".jsn") || Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".json")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".jsn") || StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".json")) {
 			fileType.setFileDataType(FileDataType.JSON);
-		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".yml") || Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".yaml")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".yml") || StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".yaml")) {
 			fileType.setFileDataType(FileDataType.YAML);
-		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".kdbx")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".kdbx")) {
 			fileType.setFileDataType(FileDataType.KDBX);
-		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".ods")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".ods")) {
 			fileType.setFileDataType(FileDataType.ODS);
-		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".sql")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".sql")) {
 			fileType.setFileDataType(FileDataType.SQL);
-		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".vcf")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".vcf")) {
 			fileType.setFileDataType(FileDataType.VCF);
-		} else if (Utilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".xml")) {
+		} else if (StringUtilities.endsWithIgnoreCase(filePathWithoutCompressionPart, ".xml")) {
 			fileType.setFileDataType(FileDataType.XML);
 		} else {
 			fileType.setFileDataType(null);

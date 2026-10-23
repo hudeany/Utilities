@@ -164,8 +164,8 @@ public class FileComparer {
 		final List<String> compareLines2 = ignoreLeadingAndTrailingWhitespaces ? stripLines(lines2) : lines2;
 
 		final StringBuilder result = new StringBuilder();
-		result.append(Utilities.repeat(SOURCE1_SIGN, 3) + " " + sourceName1 + "\n");
-		result.append(Utilities.repeat(SOURCE2_SIGN, 3) + " " + sourceName2 + "\n");
+		result.append(StringUtilities.repeat(SOURCE1_SIGN, 3) + " " + sourceName1 + "\n");
+		result.append(StringUtilities.repeat(SOURCE2_SIGN, 3) + " " + sourceName2 + "\n");
 
 		while (position1 < lines1.size() && position2 < lines2.size()) {
 			if (compareLines1.get(position1).equals(compareLines2.get(position2))) {

@@ -118,7 +118,7 @@ public class TextUtilities {
 	 * @return string of exactly the given length
 	 */
 	public static String trimStringToLengthAlignedRight(final String inputString, final int length) {
-		if (inputString.length() > length) {
+		if (inputString.length() >= length) {
 			// Takes the last characters of length
 			return inputString.subSequence(inputString.length() - length, inputString.length()).toString();
 		} else {
@@ -136,43 +136,12 @@ public class TextUtilities {
 	 * @return string of exactly the given length
 	 */
 	public static String trimStringToLengthAlignedLeft(final String inputString, final int length) {
-		if (inputString.length() > length) {
+		if (inputString.length() >= length) {
 			// Takes the first characters of length
 			return inputString.subSequence(0, length).toString();
 		} else {
 			return String.format("%-" + length + "s", inputString);
 		}
-	}
-
-	/**
-	 * Build a string with repetitions. 0 repetitions returns an empty string.
-	 *
-	 * @param itemString string to be repeated
-	 * @param repeatTimes number of repetitions
-	 * @return repeated string
-	 */
-	public static String repeatString(final String itemString, final int repeatTimes) {
-		return repeatString(itemString, repeatTimes, null);
-	}
-
-	/**
-	 * Build a string with repetitions. 0 repetitions returns an empty string.
-	 * In other cases a glue string is put between the repetitions, which can be left empty.
-	 *
-	 * @param itemString string to be repeated
-	 * @param repeatTimes number of repetitions
-	 * @param separatorString glue string, null for none
-	 * @return repeated string
-	 */
-	public static String repeatString(final String itemString, final int repeatTimes, final String separatorString) {
-		final StringBuilder returnStringBuilder = new StringBuilder();
-		for (int i = 0; i < repeatTimes; i++) {
-			if (separatorString != null && returnStringBuilder.length() > 0) {
-				returnStringBuilder.append(separatorString);
-			}
-			returnStringBuilder.append(itemString);
-		}
-		return returnStringBuilder.toString();
 	}
 
 	/**
@@ -448,7 +417,7 @@ public class TextUtilities {
 	 */
 	public static Tuple<Integer, Integer> searchNextPosition(final String text, final int startPosition, final String searchTextOrPattern, final boolean searchTextIsRegularExpression, final boolean searchCaseSensitive,
 			final boolean searchReversely) {
-		if (Utilities.isBlank(text) || startPosition < 0 || text.length() < startPosition || Utilities.isEmpty(searchTextOrPattern)) {
+		if (StringUtilities.isBlank(text) || startPosition < 0 || text.length() < startPosition || StringUtilities.isEmpty(searchTextOrPattern)) {
 			return null;
 		} else {
 			final String fullText = text;
@@ -637,21 +606,34 @@ public class TextUtilities {
 
 	/**
 	 * Insert some string after a given line (at the start of the next line) into a text.
+	 * If there is no next line (last line or beyond), the string is appended at the end of the text without adding a linebreak.
 	 *
 	 * @param dataString text, must not be null
 	 * @param insertText text to insert
-	 * @param lineNumber 1-based line number, negative values leave the text unchanged
+	 * @param lineNumber 1-based line number, 0 inserts at the start of the text, negative values leave the text unchanged
 	 * @return text with the inserted string
 	 */
 	public static String insertTextAfterLine(final String dataString, final String insertText, final int lineNumber) {
-		if (lineNumber > -1) {
-			final int startIndex = TextUtilities.getStartIndexOfLine(dataString, lineNumber + 1);
-			final StringBuilder dataBuilder = new StringBuilder(dataString);
-			dataBuilder.insert(startIndex, insertText);
-			return dataBuilder.toString();
-		} else {
+		if (lineNumber < 0) {
 			return dataString;
 		}
+
+		final int insertIndex;
+		if (lineNumber == 0) {
+			insertIndex = 0;
+		} else {
+			final int nextLineStartIndex = TextUtilities.getStartIndexOfLine(dataString, lineNumber + 1);
+			// Beyond the last line getStartIndexOfLine returns the start of the last line, so the text was inserted before the last line
+			if (nextLineStartIndex == TextUtilities.getStartIndexOfLine(dataString, lineNumber)) {
+				insertIndex = dataString.length();
+			} else {
+				insertIndex = nextLineStartIndex;
+			}
+		}
+
+		final StringBuilder dataBuilder = new StringBuilder(dataString);
+		dataBuilder.insert(insertIndex, insertText);
+		return dataBuilder.toString();
 	}
 
 	/**
@@ -696,7 +678,7 @@ public class TextUtilities {
 		final StringBuilder result = new StringBuilder();
 		while (matcher.find()) {
 			final int indentionLength = matcher.end() - matcher.start();
-			final String newIndention = Utilities.repeat(replacement, indentionLength / blankCount) + Utilities.repeat(" ", indentionLength % blankCount);
+			final String newIndention = StringUtilities.repeat(replacement, indentionLength / blankCount) + StringUtilities.repeat(" ", indentionLength % blankCount);
 			matcher.appendReplacement(result, Matcher.quoteReplacement(newIndention));
 		}
 		matcher.appendTail(result);
@@ -735,7 +717,7 @@ public class TextUtilities {
 	public static String addLeadingTabs(final String data, final int numberOfTabs) {
 		final Pattern pattern = Pattern.compile("^", Pattern.MULTILINE);
 		final Matcher matcher = pattern.matcher(data);
-		return matcher.replaceAll(Utilities.repeat("\t", numberOfTabs));
+		return matcher.replaceAll(StringUtilities.repeat("\t", numberOfTabs));
 	}
 
 	/**
@@ -943,34 +925,6 @@ public class TextUtilities {
 	}
 
 	/**
-	 * Break all lines after a maximum number of characters by inserting LF linebreaks.
-	 *
-	 * @param dataString text with LF linebreaks, must not be null
-	 * @param maximumLength maximum line length, values less than 1 leave the text unchanged
-	 * @return text with no line longer than maximumLength
-	 */
-	public static String breakLinesAfterMaximumLength(final String dataString, final int maximumLength) {
-		if (maximumLength <= 0) {
-			return dataString;
-		}
-		final String[] originalLines = dataString.split("\n", -1);
-		final StringBuilder result = new StringBuilder();
-		for (int i = 0; i < originalLines.length; i++) {
-			final String line = originalLines[i];
-			if (line.length() > maximumLength) {
-				// Chunks by index: the former split regex ("\\G.{n}") stopped working after characters not matched by '.', like CR or NEL
-				result.append(String.join("\n", chopToChunks(line, maximumLength)));
-			} else {
-				result.append(line);
-			}
-			if (i < originalLines.length - 1) {
-				result.append("\n");
-			}
-		}
-		return result.toString();
-	}
-
-	/**
 	 * Scan a string for the characters used in it.
 	 *
 	 * @param data text, must not be null
@@ -984,59 +938,6 @@ public class TextUtilities {
 			}
 		}
 		return usedCharsList;
-	}
-
-	/**
-	 * Check if a string ends with a stringpart, ignoring case.
-	 *
-	 * @param str text, may be null
-	 * @param suffix suffix to look for, may be null
-	 * @return true if str ends with suffix or both are null
-	 */
-	public static boolean endsWithIgnoreCase(final String str, final String suffix) {
-		if (str == null || suffix == null) {
-			return (str == null && suffix == null);
-		} else if (suffix.length() > str.length()) {
-			return false;
-		} else {
-			final int strOffset = str.length() - suffix.length();
-			return str.regionMatches(true, strOffset, suffix, 0, suffix.length());
-		}
-	}
-
-	/**
-	 * Check if a string starts with a stringpart, ignoring case.
-	 *
-	 * @param str text, may be null
-	 * @param prefix prefix to look for, may be null
-	 * @return true if str starts with prefix or both are null
-	 */
-	public static boolean startsWithIgnoreCase(final String str, final String prefix) {
-		if (str == null || prefix == null) {
-			return (str == null && prefix == null);
-		} else if (prefix.length() > str.length()) {
-			return false;
-		} else {
-			return str.regionMatches(true, 0, prefix, 0, prefix.length());
-		}
-	}
-
-	/**
-	 * Trim a string to a maximum number of characters by replacing its middle part by a cutoff sign.
-	 *
-	 * @param inputString text, may be null
-	 * @param maxLength maximum length of the result, must not be less than the length of the cutoff sign
-	 * @param cutoffSign text replacing the removed middle part, e.g. "..."
-	 * @return shortened text, unchanged if it is not longer than maxLength
-	 */
-	public static String trimStringToMaximumLength(final String inputString, final int maxLength, final String cutoffSign) {
-		if (inputString == null || inputString.length() <= maxLength) {
-			return inputString;
-		} else {
-			final int takeFirstLength = (maxLength - cutoffSign.length()) / 2;
-			final int takeLastLength = maxLength - cutoffSign.length() - takeFirstLength;
-			return inputString.substring(0, takeFirstLength) + cutoffSign + inputString.substring(inputString.length() - takeLastLength);
-		}
 	}
 
 	/**
@@ -1169,7 +1070,7 @@ public class TextUtilities {
 	 * @return trimmed value of the first matching line, or null if not found
 	 */
 	public static String getProsaParameter(final String text, final String parameterName) {
-		if (Utilities.isBlank(text)) {
+		if (StringUtilities.isBlank(text)) {
 			return null;
 		} else {
 			final Pattern parameterPattern = Pattern.compile("^\\s*" + Pattern.quote(parameterName) + "\\s*:(.*)$", Pattern.MULTILINE);
@@ -1357,27 +1258,93 @@ public class TextUtilities {
 	}
 
 	/**
-	 * Break all lines of a text after a maximum number of characters. All lines of the result end with LF.
+	 * Inserts line breaks, so no line of the text is longer than the maximum line length.
+	 * Existing line breaks are kept and start a new line. Words are not respected, lines are broken at any character.
 	 *
-	 * @param text text, must not be null
-	 * @param maxLineLength maximum line length, must be greater than 0
-	 * @return text with no line longer than maxLineLength
-	 * @throws IOException not thrown for string data
+	 * @param text
+	 *            text to break
+	 * @param maximumLinelength
+	 *            maximum number of characters per line, values less than 1 leave the text unchanged
+	 * @param linebreak
+	 *            line break to insert, for example "\n" or "\r\n" (null means "\n")
+	 * @return text with inserted line breaks, or null for null text
 	 */
-	public static String ensureMaximumLineLength(final String text, final int maxLineLength) throws IOException {
-		if (maxLineLength <= 0) {
-			// Avoid an endless loop
-			throw new IllegalArgumentException("Invalid maximum line length: " + maxLineLength);
+	public static String breakTextToMaximumLinelength(final String text, final int maximumLinelength, String linebreak) {
+		if (linebreak == null) {
+			linebreak = "\n";
 		}
-		// StringBuilder instead of String concatenation, which copied the whole text for every line
-		final StringBuilder returnText = new StringBuilder(text.length() + text.length() / maxLineLength + 1);
-		for (String line : getLines(text)) {
-			while (line.length() > maxLineLength) {
-				returnText.append(line, 0, maxLineLength).append('\n');
-				line = line.substring(maxLineLength);
+
+		if (text == null || maximumLinelength < 1) {
+			return text;
+		} else {
+			final StringBuilder returnValue = new StringBuilder(text.length() + text.length() / maximumLinelength * linebreak.length());
+			int currentLineLength = 0;
+			for (final char nextChar : text.toCharArray()) {
+				if (nextChar == '\r' || nextChar == '\n') {
+					// Existing line break starts a new line
+					currentLineLength = 0;
+				} else {
+					if (currentLineLength >= maximumLinelength) {
+						returnValue.append(linebreak);
+						currentLineLength = 0;
+					}
+					currentLineLength++;
+				}
+				returnValue.append(nextChar);
 			}
-			returnText.append(line).append('\n');
+
+			return returnValue.toString();
 		}
-		return returnText.toString();
 	}
+
+	/**
+	 * Break all lines after a maximum number of characters by inserting LF linebreaks.
+	 *
+	 * @param text text with LF linebreaks, must not be null
+	 * @param maximumLineLength maximum line length, values less than 1 leave the text unchanged
+	 * @return text with no line longer than maximumLength
+	 */
+	public static String breakLinesAfterMaximumLength(final String text, final int maximumLineLength) {
+		return breakLinesAfterMaximumLength(text, maximumLineLength, "\n");
+	}
+
+	   /**
+     * Inserts line breaks, so no line of the text is longer than the maximum line length.
+     * Existing line breaks are kept and start a new line. Words are not respected, lines are broken at any character.
+     *
+     * @param text
+     *            text to break
+     * @param maximumLinelength
+     *            maximum number of characters per line, values less than 1 leave the text unchanged
+     * @param linebreak
+     *            line break to insert, for example "\n" or "\r\n" (null means "\n")
+     * @return text with inserted line breaks, or null for null text
+     */
+    public static String breakLinesAfterMaximumLength(final String text, final int maximumLinelength, String linebreak) {
+        if (linebreak == null) {
+            linebreak = "\n";
+        }
+
+        if (text == null || maximumLinelength < 1) {
+            return text;
+        } else {
+            final StringBuilder returnValue = new StringBuilder(text.length() + text.length() / maximumLinelength * linebreak.length());
+            int currentLineLength = 0;
+            for (final char nextChar : text.toCharArray()) {
+                if (nextChar == '\r' || nextChar == '\n') {
+                    // Existing line break starts a new line
+                    currentLineLength = 0;
+                } else {
+                    if (currentLineLength >= maximumLinelength) {
+                        returnValue.append(linebreak);
+                        currentLineLength = 0;
+                    }
+                    currentLineLength++;
+                }
+                returnValue.append(nextChar);
+            }
+
+            return returnValue.toString();
+        }
+    }
 }

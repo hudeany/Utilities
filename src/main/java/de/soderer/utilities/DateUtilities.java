@@ -162,7 +162,7 @@ public class DateUtilities {
 	 *         or "t") or no weekday matches
 	 */
 	public static DayOfWeek getDayOfWeekByNamePart(String weekDayPartString) {
-		if (Utilities.isBlank(weekDayPartString)) {
+		if (StringUtilities.isBlank(weekDayPartString)) {
 			return null;
 		} else {
 			weekDayPartString = weekDayPartString.toLowerCase(Locale.ROOT).trim();
@@ -707,7 +707,7 @@ public class DateUtilities {
 	 *             if the timing definition is invalid
 	 */
 	public static ZonedDateTime calculateNextJobStart(ZonedDateTime calulationStartDateTime, final String timingString, ZoneId zoneId) throws Exception {
-		if (Utilities.isBlank(timingString) || "once".equalsIgnoreCase(timingString.trim())) {
+		if (StringUtilities.isBlank(timingString) || "once".equalsIgnoreCase(timingString.trim())) {
 			return null;
 		}
 
@@ -1288,7 +1288,7 @@ public class DateUtilities {
 	 *             if the value cannot be parsed
 	 */
 	public static ZonedDateTime parseIso8601DateTimeString(final String dateValueString, final ZoneId defaultZoneId) {
-		if (Utilities.isBlank(dateValueString)) {
+		if (StringUtilities.isBlank(dateValueString)) {
 			return null;
 		}
 

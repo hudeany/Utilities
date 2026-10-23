@@ -167,7 +167,7 @@ public class ConfigurationProperties {
 	 */
 	private boolean readKeySet(final String key, final Set<String> keySet) {
 		final String value = properties.getProperty(key);
-		if (Utilities.isNotEmpty(value)) {
+		if (StringUtilities.isNotEmpty(value)) {
 			try {
 				keySet.addAll(parseListValue(value, false));
 			} catch (final Exception e) {
@@ -311,7 +311,7 @@ public class ConfigurationProperties {
 	 */
 	public synchronized int getInteger(final String name) {
 		final String value = properties.getProperty(name);
-		if (Utilities.isNotBlank(value)) {
+		if (StringUtilities.isNotBlank(value)) {
 			return Integer.parseInt(value.trim());
 		} else {
 			return 0;
@@ -327,7 +327,7 @@ public class ConfigurationProperties {
 	 */
 	public synchronized Character getCharacter(final String name) {
 		final String value = properties.getProperty(name);
-		if (Utilities.isNotEmpty(value)) {
+		if (StringUtilities.isNotEmpty(value)) {
 			return value.charAt(0);
 		} else {
 			return null;

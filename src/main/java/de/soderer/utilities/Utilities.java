@@ -8,7 +8,6 @@ import java.io.Closeable;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -541,7 +540,7 @@ public class Utilities {
 	 * @return true for "true", "+", "yes", "y", "ja", "j", "ok", "on" or "an" (case insensitive), otherwise false
 	 */
 	public static boolean interpretAsBool(String value) {
-		if (isNotEmpty(value)) {
+		if (StringUtilities.isNotEmpty(value)) {
 			value = value.trim();
 			return "true".equalsIgnoreCase(value)
 					|| "+".equalsIgnoreCase(value)
@@ -869,9 +868,9 @@ public class Utilities {
 
 	private static String getHumanReadableUnitExtension(final int exponent, final String unitTypeSign, final boolean siUnits) {
 		if (exponent == 0) {
-			return isNotBlank(unitTypeSign) ? " " + unitTypeSign : "";
+			return StringUtilities.isNotBlank(unitTypeSign) ? " " + unitTypeSign : "";
 		} else {
-			return " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1) + (siUnits ? "" : "i") + (isNotBlank(unitTypeSign) ? unitTypeSign : "");
+			return " " + (siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1) + (siUnits ? "" : "i") + (StringUtilities.isNotBlank(unitTypeSign) ? unitTypeSign : "");
 		}
 	}
 
@@ -892,10 +891,10 @@ public class Utilities {
 		if (keepTrailingZeros) {
 			final int fractionDigits = amountOfSignifiantDigits - integerDigits;
 			// Pattern "#0." would always show the decimal separator, e.g. "1000,"
-			return new DecimalFormat(fractionDigits > 0 ? "#0." + repeat("0", fractionDigits) : "#0", decimalFormatSymbols);
+			return new DecimalFormat(fractionDigits > 0 ? "#0." + StringUtilities.repeat("0", fractionDigits) : "#0", decimalFormatSymbols);
 		} else {
 			// At least one decimal is always shown, further ones only up to the amount of significant digits
-			return new DecimalFormat("#0.0" + repeat("#", amountOfSignifiantDigits - integerDigits - 1), decimalFormatSymbols);
+			return new DecimalFormat("#0.0" + StringUtilities.repeat("#", amountOfSignifiantDigits - integerDigits - 1), decimalFormatSymbols);
 		}
 	}
 
@@ -930,9 +929,9 @@ public class Utilities {
 	 * @throws NumberFormatException if the value is no number
 	 */
 	public static double parseHumanReadableDouble(String value, final String unitTypeSign, final boolean siUnits, final Locale locale) {
-		if (isBlank(value)) {
+		if (StringUtilities.isBlank(value)) {
 			throw new RuntimeException("Not a numeric value");
-		} else if (unitTypeSign != null && endsWithIgnoreCase(value, unitTypeSign)) {
+		} else if (unitTypeSign != null && StringUtilities.endsWithIgnoreCase(value, unitTypeSign)) {
 			value = value.substring(0, value.length() - unitTypeSign.length()).trim();
 		}
 
@@ -941,47 +940,47 @@ public class Utilities {
 		value = value.replace(Character.toString(decimalFormatSymbols.getGroupingSeparator()), "").replace(Character.toString(decimalFormatSymbols.getDecimalSeparator()), ".").trim();
 
 		// Binary unit prefixes like "Ki" or "Mi", as created by getHumanReadableNumber (before, they caused a NumberFormatException)
-		if (value.length() > 1 && endsWithIgnoreCase(value, "i") && "kmgtpe".indexOf(Character.toLowerCase(value.charAt(value.length() - 2))) >= 0) {
+		if (value.length() > 1 && StringUtilities.endsWithIgnoreCase(value, "i") && "kmgtpe".indexOf(Character.toLowerCase(value.charAt(value.length() - 2))) >= 0) {
 			value = value.substring(0, value.length() - 1);
 		}
 
 		long dimension = 1;
-		if (endsWithIgnoreCase(value, "k")) {
+		if (StringUtilities.endsWithIgnoreCase(value, "k")) {
 			if (siUnits) {
 				dimension = 1000;
 			} else {
 				dimension = 1024;
 			}
 			value = value.substring(0, value.length() - 1).trim();
-		} else if (endsWithIgnoreCase(value, "M")) {
+		} else if (StringUtilities.endsWithIgnoreCase(value, "M")) {
 			if (siUnits) {
 				dimension = (long) Math.pow(1000, 2);
 			} else {
 				dimension = (long) Math.pow(1024, 2);
 			}
 			value = value.substring(0, value.length() - 1).trim();
-		} else if (endsWithIgnoreCase(value, "G")) {
+		} else if (StringUtilities.endsWithIgnoreCase(value, "G")) {
 			if (siUnits) {
 				dimension = (long) Math.pow(1000, 3);
 			} else {
 				dimension = (long) Math.pow(1024, 3);
 			}
 			value = value.substring(0, value.length() - 1).trim();
-		} else if (endsWithIgnoreCase(value, "T")) {
+		} else if (StringUtilities.endsWithIgnoreCase(value, "T")) {
 			if (siUnits) {
 				dimension = (long) Math.pow(1000, 4);
 			} else {
 				dimension = (long) Math.pow(1024, 4);
 			}
 			value = value.substring(0, value.length() - 1).trim();
-		} else if (endsWithIgnoreCase(value, "P")) {
+		} else if (StringUtilities.endsWithIgnoreCase(value, "P")) {
 			if (siUnits) {
 				dimension = (long) Math.pow(1000, 5);
 			} else {
 				dimension = (long) Math.pow(1024, 5);
 			}
 			value = value.substring(0, value.length() - 1).trim();
-		} else if (endsWithIgnoreCase(value, "E")) {
+		} else if (StringUtilities.endsWithIgnoreCase(value, "E")) {
 			if (siUnits) {
 				dimension = (long) Math.pow(1000, 6);
 			} else {
@@ -1040,7 +1039,7 @@ public class Utilities {
 		if (exponent > 0) {
 			prefixAndSign.append((siUnits ? "kMGTPE" : "KMGTPE").charAt(exponent - 1)).append(siUnits ? "" : "i");
 		}
-		if (isNotBlank(unitTypeSign)) {
+		if (StringUtilities.isNotBlank(unitTypeSign)) {
 			prefixAndSign.append(unitTypeSign);
 		}
 
@@ -1067,7 +1066,7 @@ public class Utilities {
 		}
 		// Without unit prefix maxTrailingDigits is 0, so the repeat count must not get negative
 		final int maxTrailingDigits = exponent * 3;
-		return new DecimalFormat("#0.0" + repeat("#", Math.max(0, Math.min(trailingDigits, maxTrailingDigits - 1))), decimalFormatSymbols);
+		return new DecimalFormat("#0.0" + StringUtilities.repeat("#", Math.max(0, Math.min(trailingDigits, maxTrailingDigits - 1))), decimalFormatSymbols);
 	}
 
 	/**
@@ -1085,7 +1084,7 @@ public class Utilities {
 		// Format the long value itself, a double loses precision for values above 2^53
 		final long interimValue = value.longValue();
 		String unitExtension = "";
-		if (isNotBlank(unitTypeSign)) {
+		if (StringUtilities.isNotBlank(unitTypeSign)) {
 			unitExtension = " " + unitTypeSign;
 		}
 
@@ -1284,7 +1283,7 @@ public class Utilities {
 					|| responseCode == HttpURLConnection.HTTP_SEE_OTHER || responseCode == 307 || responseCode == 308) {
 				final String location = httpConnection.getHeaderField("Location");
 				httpConnection.disconnect();
-				if (isBlank(location)) {
+				if (StringUtilities.isBlank(location)) {
 					throw new Exception("HTTP redirect without location (status " + responseCode + ")");
 				} else if (redirectCount >= DOWNLOAD_MAX_REDIRECTS) {
 					throw new Exception("Too many HTTP redirects");
@@ -1407,27 +1406,7 @@ public class Utilities {
 			return null;
 		}
 		// Host names are case insensitive, so also "WWW." is removed
-		return startsWithCaseinsensitive(domain, "www.") ? domain.substring(4) : domain;
-	}
-
-	/**
-	 * Check whether a string is null or empty.
-	 *
-	 * @param value string to check
-	 * @return true for null or ""
-	 */
-	public static boolean isEmpty(final String value) {
-		return value == null || value.length() == 0;
-	}
-
-	/**
-	 * Check whether a string has at least one character.
-	 *
-	 * @param value string to check
-	 * @return false for null or "", otherwise true
-	 */
-	public static boolean isNotEmpty(final String value) {
-		return !isEmpty(value);
+		return StringUtilities.startsWithIgnoreCase(domain, "www.") ? domain.substring(4) : domain;
 	}
 
 	/**
@@ -1448,37 +1427,6 @@ public class Utilities {
 	 */
 	public static boolean isNotEmpty(final Collection<?> collection) {
 		return !isEmpty(collection);
-	}
-
-	/**
-	 * Check whether a string is null, empty or contains only whitespace (see {@link Character#isWhitespace(int)}, like
-	 * {@link String#isBlank()} and {@link #isBlank(char[])}).
-	 *
-	 * @param value string to check
-	 * @return true for null, empty or whitespace only
-	 */
-	public static boolean isBlank(final String value) {
-		return value == null || value.isBlank();
-	}
-
-	/**
-	 * Check whether a string contains at least one non-whitespace character (see {@link #isBlank(String)}).
-	 *
-	 * @param value string to check
-	 * @return true if the string is not blank
-	 */
-	public static boolean isNotBlank(final String value) {
-		return !isBlank(value);
-	}
-
-	/**
-	 * Check whether a character array is null or empty.
-	 *
-	 * @param value array to check
-	 * @return true for null or an empty array
-	 */
-	public static boolean isEmpty(final char[] value) {
-		return value == null || value.length == 0;
 	}
 
 	/**
@@ -1503,45 +1451,6 @@ public class Utilities {
 		if (array != null) {
 			Arrays.fill(array, (byte) 0);
 		}
-	}
-
-	/**
-	 * Check whether a character array has at least one character.
-	 *
-	 * @param value array to check
-	 * @return false for null or an empty array, otherwise true
-	 */
-	public static boolean isNotEmpty(final char[] value) {
-		return !isEmpty(value);
-	}
-
-	/**
-	 * Check whether a character array is null, empty or contains only whitespace (see {@link Character#isWhitespace(char)}).
-	 *
-	 * @param value array to check
-	 * @return true for null, empty or whitespace only
-	 */
-	public static boolean isBlank(final char[] value) {
-		if (value == null || value.length == 0) {
-			return true;
-		} else {
-			for (final char character : value) {
-				if (!Character.isWhitespace(character)) {
-					return false;
-				}
-			}
-			return true;
-		}
-	}
-
-	/**
-	 * Check whether a character array contains at least one non-whitespace character.
-	 *
-	 * @param value array to check
-	 * @return true if the array is not blank
-	 */
-	public static boolean isNotBlank(final char[] value) {
-		return !isBlank(value);
 	}
 
 	/**
@@ -1598,53 +1507,6 @@ public class Utilities {
 			} catch (@SuppressWarnings("unused") final Exception e) {
 				// Do nothing
 			}
-		}
-	}
-
-	/**
-	 * Build a string by repeating a character.
-	 *
-	 * @param valueChar character to repeat
-	 * @param count number of repetitions, 0 or less for an empty string
-	 * @return repeated characters
-	 */
-	public static String repeat(final char valueChar, final int count) {
-		return repeat(Character.toString(valueChar), count, null);
-	}
-
-	/**
-	 * Build a string by repeating a text.
-	 *
-	 * @param value text to repeat, may be null
-	 * @param count number of repetitions, 0 or less for an empty string
-	 * @return repeated text, or null for null input
-	 */
-	public static String repeat(final String value, final int count) {
-		return repeat(value, count, null);
-	}
-
-	/**
-	 * Build a string by repeating a text with a separator between the repetitions.
-	 *
-	 * @param value text to repeat, may be null
-	 * @param count number of repetitions, 0 or less for an empty string
-	 * @param separatorString separator between the repetitions, null for none
-	 * @return repeated text, or null for null input
-	 */
-	public static String repeat(final String value, final int count, final String separatorString) {
-		if (value == null) {
-			return null;
-		} else if (value.length() == 0 || count == 0) {
-			return "";
-		} else {
-			final StringBuilder returnValue = new StringBuilder();
-			for (int i = 0; i < count; i++) {
-				if (separatorString != null && returnValue.length() > 0) {
-					returnValue.append(separatorString);
-				}
-				returnValue.append(value);
-			}
-			return returnValue.toString();
 		}
 	}
 
@@ -1810,21 +1672,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Read the complete content of a file.
-	 *
-	 * @param file file to read
-	 * @return file content
-	 * @throws FileNotFoundException if the file does not exist or cannot be opened
-	 * @throws IOException if reading fails
-	 */
-	public static byte[] readFileToByteArray(final File file) throws FileNotFoundException, IOException {
-		try (FileInputStream in = new FileInputStream(file)) {
-			// A single read() call may return less data than requested, so read until the end of the stream
-			return in.readAllBytes();
-		}
-	}
-
-	/**
 	 * Prepend blanks at the left of a string to make it fit the given minimum length
 	 *
 	 * @param value
@@ -1854,7 +1701,7 @@ public class Utilities {
 			if (padsize <= 0) {
 				return value;
 			} else {
-				return repeat(padChar, padsize).concat(value);
+				return StringUtilities.repeat(padChar, padsize).concat(value);
 			}
 		}
 	}
@@ -1889,7 +1736,7 @@ public class Utilities {
 			if (padsize <= 0) {
 				return value;
 			} else {
-				return value.concat(repeat(padChar, padsize));
+				return value.concat(StringUtilities.repeat(padChar, padsize));
 			}
 		}
 	}
@@ -1906,7 +1753,7 @@ public class Utilities {
 	public static String trimSimultaneously(final String value, final String surrounding) {
 		if (value == null) {
 			return null;
-		} else if (isEmpty(surrounding)) {
+		} else if (StringUtilities.isEmpty(surrounding)) {
 			return value;
 		} else if (value.length() >= surrounding.length() * 2 && value.startsWith(surrounding) && value.endsWith(surrounding)) {
 			// Length check: a single '"' starts and ends with '"', but must not be trimmed (substring would fail)
@@ -2044,25 +1891,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Shorten a string to a maximum length by replacing its middle part by " ... ".
-	 *
-	 * @param value string to shorten, may be null
-	 * @param maxLength maximum length of the result, below 5 the end is cut off without cut sign
-	 * @return shortened string, unchanged if it is not longer than maxLength
-	 */
-	public static String shortenStringToMaxLengthCutMiddle(final String value, final int maxLength) {
-		if (value != null && value.length() > maxLength && maxLength < 5) {
-			// The cut sign " ... " does not fit (before, a StringIndexOutOfBoundsException was thrown)
-			return value.substring(0, Math.max(0, maxLength));
-		} else if (value != null && value.length() > maxLength) {
-			final int leftLength = (maxLength - 5) / 2;
-			return value.substring(0, leftLength) + " ... " + value.substring(value.length() - ((maxLength - leftLength) - 5));
-		} else {
-			return value;
-		}
-	}
-
-	/**
 	 * Shorten a string to a maximum length by cutting off its start and prepending "... ".
 	 *
 	 * @param value string to shorten, may be null
@@ -2094,7 +1922,7 @@ public class Utilities {
 			final String[] parts = stringList.split(",|;|\\|| |\\n|\\r|\\t");
 			for (final String part : parts) {
 				// Blank parts (e.g. only "\f") would become empty items after trimming
-				if (isNotBlank(part)) {
+				if (StringUtilities.isNotBlank(part)) {
 					returnList.add(part.trim());
 				}
 			}
@@ -2126,7 +1954,7 @@ public class Utilities {
 			}
 			if (separatorRegex.length() == 0) {
 				final List<String> singleItemList = new ArrayList<>();
-				if (isNotBlank(stringList)) {
+				if (StringUtilities.isNotBlank(stringList)) {
 					singleItemList.add(stringList.trim());
 				}
 				return singleItemList;
@@ -2134,38 +1962,11 @@ public class Utilities {
 			final String[] parts = stringList.split(separatorRegex.toString());
 			for (final String part : parts) {
 				// Blank parts like in "a, ,b" would become empty items after trimming
-				if (isNotBlank(part)) {
+				if (StringUtilities.isNotBlank(part)) {
 					returnList.add(part.trim());
 				}
 			}
 			return returnList;
-		}
-	}
-
-	/**
-	 * Check case-insensitively whether a string ends with a suffix, independent of the default locale.
-	 *
-	 * @param data string to check, may be null
-	 * @param suffix suffix to look for, may be null
-	 * @return true if data ends with suffix; true if both are null or only suffix is null; false if only data is null
-	 */
-	public static boolean endsWithIgnoreCase(final String data, final String suffix) {
-		if (data == suffix) {
-			// both null or same object
-			return true;
-		} else if (data == null) {
-			// data is null but suffix is not
-			return false;
-		} else if (suffix == null) {
-			// suffix is null but data is not
-			return true;
-		} else if (data.length() >= suffix.length() && data.regionMatches(true, data.length() - suffix.length(), suffix, 0, suffix.length())) {
-			// regionMatches is independent of the default locale (toLowerCase() fails for 'I' in Turkish locale)
-			// both are set, so ignore the case for standard endsWith-method
-			return true;
-		} else {
-			// anything else
-			return false;
 		}
 	}
 
@@ -2269,29 +2070,6 @@ public class Utilities {
 	}
 
 	/**
-	 * Delete a file or a directory recursively. Symbolic links are deleted themselves, the link targets are never followed.
-	 *
-	 * @param file file or directory to delete
-	 * @return true if everything was deleted, false if any file could not be deleted (deletion stops at the first failure)
-	 */
-	public static boolean delete(final File file) {
-		// A symbolic link to a directory must not be followed, otherwise content outside of the deleted tree is deleted
-		if (file.isDirectory() && !Files.isSymbolicLink(file.toPath())) {
-			// listFiles() returns null if the directory cannot be read, so its content cannot be deleted either
-			final File[] subFiles = file.listFiles();
-			if (subFiles == null) {
-				return false;
-			}
-			for (final File subFile : subFiles) {
-				if (!delete(subFile)) {
-					return false;
-				}
-			}
-		}
-		return file.delete();
-	}
-
-	/**
 	 * Limit a value to a range.
 	 *
 	 * @param minimum lower limit
@@ -2306,22 +2084,6 @@ public class Utilities {
 			return maximum;
 		} else {
 			return value;
-		}
-	}
-
-	/**
-	 * Check case-insensitively whether a string starts with a prefix, independent of the default locale.
-	 *
-	 * @param data string to check, may be null
-	 * @param prefix prefix to look for, may be null
-	 * @return true if data starts with prefix, false if any parameter is null
-	 */
-	public static boolean startsWithCaseinsensitive(final String data, final String prefix) {
-		if (data == null || prefix == null) {
-			return false;
-		} else {
-			// regionMatches is independent of the default locale (toLowerCase() fails for 'I' in Turkish locale)
-			return data.regionMatches(true, 0, prefix, 0, prefix.length());
 		}
 	}
 
@@ -2439,7 +2201,7 @@ public class Utilities {
 							value = value.substring(1, value.length() - 1);
 						}
 						value = replaceHomeVariable(value, userHome);
-						if (Utilities.isNotBlank(value)) {
+						if (StringUtilities.isNotBlank(value)) {
 							return value;
 						}
 					}
@@ -2880,7 +2642,7 @@ public class Utilities {
 	 * @return joined text
 	 */
 	public static String joinNotBlank(final List<String> listOfStrings, final String glue) {
-		return join(listOfStrings.stream().filter(x -> isNotBlank(x)).collect(Collectors.toList()), glue);
+		return join(listOfStrings.stream().filter(x -> StringUtilities.isNotBlank(x)).collect(Collectors.toList()), glue);
 	}
 
 	/**
@@ -2951,46 +2713,6 @@ public class Utilities {
 				}
 			}
 			return false;
-		}
-	}
-
-	/**
-	 * Inserts line breaks, so no line of the text is longer than the maximum line length.
-	 * Existing line breaks are kept and start a new line. Words are not respected, lines are broken at any character.
-	 *
-	 * @param text
-	 *            text to break
-	 * @param maximumLinelength
-	 *            maximum number of characters per line, values less than 1 leave the text unchanged
-	 * @param linebreak
-	 *            line break to insert, for example "\n" or "\r\n" (null means "\n")
-	 * @return text with inserted line breaks, or null for null text
-	 */
-	public static String breakTextToMaximumLinelength(final String text, final int maximumLinelength, String linebreak) {
-		if (linebreak == null) {
-			linebreak = "\n";
-		}
-
-		if (text == null || maximumLinelength < 1) {
-			return text;
-		} else {
-			final StringBuilder returnValue = new StringBuilder(text.length() + text.length() / maximumLinelength * linebreak.length());
-			int currentLineLength = 0;
-			for (final char nextChar : text.toCharArray()) {
-				if (nextChar == '\r' || nextChar == '\n') {
-					// Existing line break starts a new line
-					currentLineLength = 0;
-				} else {
-					if (currentLineLength >= maximumLinelength) {
-						returnValue.append(linebreak);
-						currentLineLength = 0;
-					}
-					currentLineLength++;
-				}
-				returnValue.append(nextChar);
-			}
-
-			return returnValue.toString();
 		}
 	}
 

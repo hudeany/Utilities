@@ -277,7 +277,7 @@ public class TextTable {
 		for (int columnIndex = 0; columnIndex < columnRightAligned.size(); columnIndex++) {
 			boolean isNumeric = true;
 			for (final List<String> line : content) {
-				if (Utilities.isNotBlank(line.get(columnIndex)) && !NumberUtilities.isInteger(line.get(columnIndex))) {
+				if (StringUtilities.isNotBlank(line.get(columnIndex)) && !NumberUtilities.isInteger(line.get(columnIndex))) {
 					isNumeric = false;
 					break;
 				}
@@ -335,7 +335,7 @@ public class TextTable {
 			text.append(columnNamesLines.get(lineIndex) + "\n");
 		}
 		// Remove headerline
-		text.append(TextUtilities.repeatString("-", columnNamesLines.get(0).length()) + "\n");
+		text.append(StringUtilities.repeat("-", columnNamesLines.get(0).length()) + "\n");
 		for (int lineIndex = 0; lineIndex < contentLines.size(); lineIndex++) {
 			text.append(contentLines.get(lineIndex) + "\n");
 		}
@@ -465,7 +465,7 @@ public class TextTable {
 	 */
 	public static String getHtmlHeader(final String title, final boolean mitZeit, final String inlineCssStyleSheet) {
 		return "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n" + "<html>\n" + "<head>\n<title>" + htmlEncodeString(title) + "</title>\n"
-				+ (Utilities.isEmpty(inlineCssStyleSheet) ? "" : inlineCssStyleSheet) + "</head>\n" + "<body>\n" + "<h2>" + htmlEncodeString(title) + "</h2>\n"
+				+ (StringUtilities.isEmpty(inlineCssStyleSheet) ? "" : inlineCssStyleSheet) + "</head>\n" + "<body>\n" + "<h2>" + htmlEncodeString(title) + "</h2>\n"
 				+ (mitZeit ? "<h4>Stand: " + DateUtilities.formatDate(DateUtilities.DD_MM_YYYY_HH_MM_SS, new GregorianCalendar().getTime()) + "</h4>\n" : "");
 	}
 

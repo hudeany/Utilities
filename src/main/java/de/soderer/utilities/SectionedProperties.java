@@ -117,7 +117,7 @@ public class SectionedProperties {
 				rawLine = rawLine.substring(1);
 			}
 			final String line = rawLine.trim();
-			if (Utilities.isNotBlank(line) && !line.startsWith(COMMENT_PREFIX)) {
+			if (StringUtilities.isNotBlank(line) && !line.startsWith(COMMENT_PREFIX)) {
 				if (line.startsWith(SECTION_PREFIX)) {
 					if (line.endsWith(SECTION_SUFFIX)) {
 						currentSectionName = line.substring(1, line.length() - 1).trim();
