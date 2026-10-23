@@ -1113,7 +1113,7 @@ public class TextBookEditor implements AutoCloseable {
 					for (final Page page : pages) {
 						final List<String> newContentLines = page.getNewContentLines();
 						if (newContentLines != null) {
-							final String newDataString = Utilities.join(newContentLines, null);
+							final String newDataString = StringUtilities.join(newContentLines, null);
 							outputStream.write(newDataString.getBytes(byteCharset));
 							skipBytes(inputStream, page.getEndFileIndex() - currentReadIndex);
 							currentReadIndex = page.getEndFileIndex();
@@ -1139,7 +1139,7 @@ public class TextBookEditor implements AutoCloseable {
 					for (final Page page : pages) {
 						final List<String> newContentLines = page.getNewContentLines();
 						if (newContentLines != null) {
-							final String newDataString = Utilities.join(newContentLines, null);
+							final String newDataString = StringUtilities.join(newContentLines, null);
 							outputStream.write(newDataString.getBytes(byteCharset));
 						} else {
 							throw new Exception("Invalid missing page data to write");

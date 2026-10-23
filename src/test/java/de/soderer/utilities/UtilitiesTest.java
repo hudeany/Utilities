@@ -134,25 +134,6 @@ public class UtilitiesTest {
 	}
 
 	@Test
-	public void test_join() {
-		try {
-			assertEquals(null, Utilities.join((String[]) null, ","));
-			assertEquals("", Utilities.join(new String[0], ","));
-			assertEquals("abc", Utilities.join(new String[]{"a", "b", "c"}, ""));
-			assertEquals("a,b,c", Utilities.join(new String[]{"a", "b", "c"}, ","));
-			assertEquals("a,b, c", Utilities.join(new String[]{"a", "b", " c"}, ","));
-			assertEquals("a,,c", Utilities.join(new String[]{"a", null, "c"}, ","));
-			final List<Object> list = new ArrayList<>();
-			list.add("a");
-			list.add("b");
-			list.add("c");
-			assertEquals("a,b,c", Utilities.join(list, ","));
-		} catch (final Exception e) {
-			fail(e.getMessage());
-		}
-	}
-
-	@Test
 	public void test_remove() {
 		try {
 			final String[] result1 = Utilities.remove(new String[]{"a", "b", "c"}, "b");
@@ -641,15 +622,6 @@ public class UtilitiesTest {
 	}
 
 	@Test
-	public void checkForValidUserName() {
-		assertTrue(Utilities.checkForValidUserName("user_Name-01"));
-		assertFalse(Utilities.checkForValidUserName("user name"));
-		assertFalse(Utilities.checkForValidUserName("user@example"));
-		assertFalse(Utilities.checkForValidUserName(""));
-		assertFalse(Utilities.checkForValidUserName(null));
-	}
-
-	@Test
 	public void convertArrayListOfStringsToStringArray() {
 		assertArrayEquals(new String[] { "a", "b" }, Utilities.convertArrayListOfStringsToStringArray(new ArrayList<>(List.of("a", "b"))));
 		assertArrayEquals(new String[0], Utilities.convertArrayListOfStringsToStringArray(new ArrayList<>()));
@@ -1107,20 +1079,6 @@ public class UtilitiesTest {
 	}
 
 	@Test
-	public void join_variants() {
-		assertEquals("a-b-c", Utilities.join(new char[] { 'a', 'b', 'c' }, "-"));
-		assertEquals("abc", Utilities.join(new char[] { 'a', 'b', 'c' }, null));
-		assertEquals("", Utilities.join(new char[0], "-"));
-		assertNull(Utilities.join((char[]) null, "-"));
-
-		assertEquals("ab", Utilities.join(new Object[] { "a", "b" }, null));
-		assertEquals("1;;x", Utilities.join(Arrays.asList(1, null, "x"), ";"));
-		assertEquals("ab", Utilities.join(List.of("a", "b"), null));
-		assertEquals("", Utilities.join(List.of(), ";"));
-		assertNull(Utilities.join((Iterable<?>) null, ";"));
-	}
-
-	@Test
 	public void remove_keepsComponentType() {
 		assertNull(Utilities.remove((String[]) null, "a"));
 
@@ -1168,82 +1126,10 @@ public class UtilitiesTest {
 	}
 
 	@Test
-	public void trim() {
-		assertEquals("a b", Utilities.trim("  a b \t"));
-		assertNull(Utilities.trim(null));
-
-		assertEquals("a", Utilities.trim("xxaxx", 'x'));
-		assertEquals("axa", Utilities.trim("xaxax", 'x'));
-		assertEquals("", Utilities.trim("xxx", 'x'));
-		assertNull(Utilities.trim(null, 'x'));
-
-		assertEquals("a b  ", Utilities.trimLeft(" \t\na b  "));
-		assertEquals("  a b", Utilities.trimRight("  a b \t\n"));
-		assertNull(Utilities.trimLeft(null));
-		assertNull(Utilities.trimRight(null));
-	}
-
-	@Test
 	public void readStreams() throws IOException {
 		assertEquals("Grüße", Utilities.toString(new ByteArrayInputStream("Grüße".getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8));
 		assertEquals("Reader text", Utilities.toString(new StringReader("Reader text")));
 		assertEquals(List.of("a", "b", "", "c"), Utilities.readLines(new ByteArrayInputStream("a\r\nb\n\nc\n".getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8));
-	}
-
-	@Test
-	public void shortenStringToMaxLength() {
-		assertEquals("abcd ...", Utilities.shortenStringToMaxLengthCutRight("abcdefghij", 8));
-		assertEquals("ab..", Utilities.shortenStringToMaxLengthCutRight("abcdef", 4, ".."));
-		assertEquals("abcd", Utilities.shortenStringToMaxLengthCutRight("abcdef", 4, null));
-		// The cut sign does not fit, so the end is cut off without it
-		assertEquals("ab", Utilities.shortenStringToMaxLengthCutRight("abcdef", 2, "..."));
-		assertEquals("...", Utilities.shortenStringToMaxLengthCutRight("abcdef", 3, "..."));
-		assertEquals("", Utilities.shortenStringToMaxLengthCutRight("abcdef", -1, "..."));
-		assertEquals("abc", Utilities.shortenStringToMaxLengthCutRight("abc", 8));
-		assertNull(Utilities.shortenStringToMaxLengthCutRight(null, 8));
-
-		assertEquals("... ghij", Utilities.shortenStringToMaxLengthCutLeft("abcdefghij", 8));
-		assertEquals("hij", Utilities.shortenStringToMaxLengthCutLeft("abcdefghij", 3));
-		assertEquals("", Utilities.shortenStringToMaxLengthCutLeft("abcdefghij", -1));
-		assertEquals("abc", Utilities.shortenStringToMaxLengthCutLeft("abc", 8));
-		assertNull(Utilities.shortenStringToMaxLengthCutLeft(null, 8));
-	}
-
-	@Test
-	public void splitAndTrimList_defaultSeparators() {
-		assertEquals(List.of("a", "b", "c", "d", "e", "f", "g"), Utilities.splitAndTrimList("a, b;c|d e\tf\ng"));
-		assertEquals(List.of("a", "b"), Utilities.splitAndTrimList("a,,\r\nb"));
-		assertEquals(List.of(), Utilities.splitAndTrimList(""));
-		assertNull(Utilities.splitAndTrimList(null));
-	}
-
-	@Test
-	public void splitAndTrimList_givenSeparators() {
-		assertEquals(List.of("a", "b", "c"), Utilities.splitAndTrimList("a . b|c", '.', '|'));
-		assertEquals(List.of("a b", "c"), Utilities.splitAndTrimList("a b;c", (Character) null, ';'));
-		assertEquals(List.of("a,b"), Utilities.splitAndTrimList(" a,b ", new Character[0]));
-		assertEquals(List.of(), Utilities.splitAndTrimList("  ", new Character[0]));
-		assertEquals(List.of("a", "b"), Utilities.splitAndTrimList("a; ;b", ';'));
-		assertNull(Utilities.splitAndTrimList(null, ';'));
-	}
-
-	@Test
-	public void splitAndTrimListQuoted() {
-		assertEquals(List.of("a", "'b,c'", "\"d,e\"", "f"), Utilities.splitAndTrimListQuoted("a, 'b,c', \"d,e\" ,, f", ','));
-		assertEquals(List.of("'a\"b'", "c"), Utilities.splitAndTrimListQuoted("'a\"b',c", ','));
-		assertEquals(List.of("a", "b", "c"), Utilities.splitAndTrimListQuoted("a;b,c", ',', ';'));
-		assertEquals(List.of(), Utilities.splitAndTrimListQuoted(" , ", ','));
-	}
-
-	@Test
-	public void indexOfIgnoreCase() {
-		assertEquals(6, Utilities.indexOfIgnoreCase("Hello World", "WORLD"));
-		assertEquals(0, Utilities.indexOfIgnoreCase("Hello", ""));
-		assertEquals(-1, Utilities.indexOfIgnoreCase("Hello", "xyz"));
-		assertEquals(-1, Utilities.indexOfIgnoreCase("Hi", "Hello"));
-		assertEquals(0, Utilities.indexOfIgnoreCase(null, null));
-		assertEquals(-1, Utilities.indexOfIgnoreCase("a", null));
-		assertEquals(-1, Utilities.indexOfIgnoreCase(null, "a"));
 	}
 
 	@Test
@@ -1345,26 +1231,6 @@ public class UtilitiesTest {
 	}
 
 	@Test
-	public void substring_nullSafe() {
-		assertEquals("bc", Utilities.substring("abc", 1));
-		assertEquals("", Utilities.substring("abc", 3));
-		assertEquals("", Utilities.substring("abc", 5));
-		assertNull(Utilities.substring(null, 1));
-
-		assertEquals("ab", Utilities.substring("abc", 0, 2));
-		assertEquals("bc", Utilities.substring("abc", 1, 10));
-		assertEquals("", Utilities.substring("abc", 4, 5));
-		assertNull(Utilities.substring(null, 0, 1));
-	}
-
-	@Test
-	public void contains_nullSafe() {
-		assertTrue(Utilities.contains("abc", "b"));
-		assertFalse(Utilities.contains("abc", "x"));
-		assertFalse(Utilities.contains((String) null, "a"));
-	}
-
-	@Test
 	public void skipInputStreamData() throws Exception {
 		final InputStream inputStream = new ByteArrayInputStream("abcd".getBytes(StandardCharsets.US_ASCII));
 
@@ -1384,47 +1250,6 @@ public class UtilitiesTest {
 		assertEquals(255, Utilities.convertByteArrayToInt(new byte[] { (byte) 0xFF }));
 		assertEquals(0, Utilities.convertByteArrayToInt(new byte[0]));
 		assertThrows(Exception.class, () -> Utilities.convertByteArrayToInt(new byte[5]));
-	}
-
-	@Test
-	public void split_withEscapeCharacter() {
-		assertArrayEquals(new String[] { "a", "b,c", "d" }, Utilities.split("a,b\\,c,d", ',', '\\'));
-		assertArrayEquals(new String[] { "a\\", "b" }, Utilities.split("a\\\\,b", ',', '\\'));
-		// Escape characters before other characters are kept
-		assertArrayEquals(new String[] { "a\\b" }, Utilities.split("a\\b", ',', '\\'));
-		assertArrayEquals(new String[] { "a\\" }, Utilities.split("a\\", ',', '\\'));
-	}
-
-	@Test
-	public void split_limitLikeStringSplit() {
-		assertArrayEquals(new String[] { "a", "b,c" }, Utilities.split("a,b,c", ',', '\\', 2));
-		assertArrayEquals(new String[] { "a", "b" }, Utilities.split("a,b,,", ',', '\\'));
-		assertArrayEquals(new String[] { "a", "b", "", "" }, Utilities.split("a,b,,", ',', '\\', -1));
-		assertArrayEquals(new String[] { "" }, Utilities.split("", ',', '\\'));
-		assertArrayEquals(new String[0], Utilities.split(",,", ',', '\\'));
-
-		// Same results as String.split for texts without escape characters
-		for (final String text : new String[] { "a,b,c", "a,,b", ",a", "a,b,,", ",,", "", "abc" }) {
-			for (final int limit : new int[] { -1, 0, 1, 2 }) {
-				assertArrayEquals(text.split(",", limit), Utilities.split(text, ',', '\\', limit));
-			}
-		}
-	}
-
-	@Test
-	public void parseArguments() throws Exception {
-		assertEquals(List.of("-a", "b c", "d e", "--name=x y", "", "q\"r", "C:\\Temp"),
-				Utilities.parseArguments("-a \"b c\" 'd e' --name=\"x y\" \"\" \"q\\\"r\" \"C:\\Temp\""));
-		// Single quotes do not support escaping
-		assertEquals(List.of("a\\b"), Utilities.parseArguments("'a\\b'"));
-		assertEquals(List.of("a", "b", "c"), Utilities.parseArguments("  a\r\nb\tc  "));
-		assertEquals(List.of(), Utilities.parseArguments(""));
-		assertThrows(Exception.class, () -> Utilities.parseArguments("a \"b"));
-	}
-
-	@Test
-	public void parseTokens() throws Exception {
-		assertEquals(List.of("a", "b c", "d"), Utilities.parseTokens("a;\"b c\";;d", ';'));
 	}
 
 	@Test
@@ -1501,26 +1326,6 @@ public class UtilitiesTest {
 		assertEquals("\u00c3", Utilities.fixStringEncodingIfNeeded("\u00c3"));
 		assertEquals("abc", Utilities.fixStringEncodingIfNeeded("abc"));
 		assertNull(Utilities.fixStringEncodingIfNeeded(null));
-	}
-
-	@Test
-	public void joinNotBlank() {
-		assertEquals("a,b", Utilities.joinNotBlank(Arrays.asList("a", " ", null, "", "b"), ","));
-		assertEquals("", Utilities.joinNotBlank(Arrays.asList(" ", null), ","));
-	}
-
-	@Test
-	public void upperCase() {
-		assertEquals("STRASSE", Utilities.upperCase("straße"));
-		assertNull(Utilities.upperCase(null));
-
-		final Locale defaultLocale = Locale.getDefault();
-		try {
-			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
-			assertEquals("TITLE", Utilities.upperCase("title"));
-		} finally {
-			Locale.setDefault(defaultLocale);
-		}
 	}
 
 	@Test

@@ -13,7 +13,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import de.soderer.utilities.FileUtilities;
-import de.soderer.utilities.Utilities;
+import de.soderer.utilities.StringUtilities;
 
 /**
  * Part of the lines of a {@link TextBookEditor}. An unedited page is described by its byte range in the text file,
@@ -162,7 +162,7 @@ public class Page {
 			newInterimStorageFile.deleteOnExit();
 			try (ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(newInterimStorageFile)))) {
 				outputStream.putNextEntry(new ZipEntry("InterimStorageFile.tmp"));
-				outputStream.write(Utilities.join(newContentLines, null).getBytes(StandardCharsets.UTF_8));
+				outputStream.write(StringUtilities.join(newContentLines, null).getBytes(StandardCharsets.UTF_8));
 			} catch (final Exception e) {
 				// Keep the content in memory, an incomplete file must not be used
 				newInterimStorageFile.delete();
@@ -212,7 +212,7 @@ public class Page {
 		if (lines == null || isNormalized(lines)) {
 			return lines;
 		}
-		final String text = Utilities.join(lines, null);
+		final String text = StringUtilities.join(lines, null);
 		final List<String> normalizedLines = new ArrayList<>();
 		int lineStart = 0;
 		for (int i = 0; i < text.length(); i++) {

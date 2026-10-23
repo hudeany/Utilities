@@ -1,5 +1,9 @@
 package de.soderer.utilities;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+
 /**
  * Null-safe basic operations on single strings: checks for empty and blank values, comparisons and repetition.
  */
@@ -120,6 +124,69 @@ public class StringUtilities {
 	}
 
 	/**
+	 * Remove leading whitespace (regex \s) of a string.
+	 *
+	 * @param value string to trim, may be null
+	 * @return string without leading whitespace, or null for null input
+	 */
+	public static String trimLeft(final String value) {
+		// Null-safe like trim(String) (before, a NullPointerException was thrown)
+		if (value == null) {
+			return null;
+		} else {
+			return value.replaceAll("^\\s+", "");
+		}
+	}
+
+	/**
+	 * Remove trailing whitespace (regex \s) of a string.
+	 *
+	 * @param value string to trim, may be null
+	 * @return string without trailing whitespace, or null for null input
+	 */
+	public static String trimRight(final String value) {
+		// Null-safe like trim(String) (before, a NullPointerException was thrown)
+		if (value == null) {
+			return null;
+		} else {
+			return value.replaceAll("\\s+$", "");
+		}
+	}
+
+	/**
+	 * Null-safe {@link String#trim()}.
+	 *
+	 * @param value string to trim, may be null
+	 * @return trimmed string, or null for null input
+	 */
+	public static String trim(final String value) {
+		if (value == null) {
+			return null;
+		} else {
+			return value.trim();
+		}
+	}
+
+	/**
+	 * Remove all occurrences of a character at the start and the end of a string.
+	 *
+	 * @param value string to trim, may be null
+	 * @param trimChar character to remove
+	 * @return trimmed string, or null for null input
+	 */
+	public static String trim(String value, final char trimChar) {
+		while (value != null && value.startsWith(Character.toString(trimChar))) {
+			value = value.substring(1);
+		}
+
+		while (value != null && value.endsWith(Character.toString(trimChar))) {
+			value = value.substring(0, value.length() - 1);
+		}
+
+		return value;
+	}
+
+	/**
 	 * Null-safe, case-insensitive comparison of two strings.
 	 * The comparison is independent of the default locale (see {@link String#equalsIgnoreCase(String)}).
 	 *
@@ -172,6 +239,32 @@ public class StringUtilities {
 		} else {
 			final int strOffset = str.length() - suffix.length();
 			return str.regionMatches(true, strOffset, suffix, 0, suffix.length());
+		}
+	}
+
+	/**
+	 * Find the first case-insensitive occurrence of a text, independent of the default locale.
+	 *
+	 * @param data string to search in, may be null
+	 * @param part text to search for, may be null
+	 * @return index of the first occurrence in data, 0 if both are the same object (or null), -1 if not found or only one is null
+	 */
+	public static int indexOfIgnoreCase(final String data, final String part) {
+		if (data == part) {
+			// both null or same object
+			return 0;
+		} else if (data == null || part == null) {
+			// suffix is null but data is not or vice versa
+			return -1;
+		} else {
+			// regionMatches is independent of the default locale and keeps the indexes of the original text
+			// (toLowerCase() may change the text length, e.g. for 'İ', and depends on the default locale)
+			for (int i = 0; i <= data.length() - part.length(); i++) {
+				if (data.regionMatches(true, i, part, 0, part.length())) {
+					return i;
+				}
+			}
+			return -1;
 		}
 	}
 
@@ -257,5 +350,245 @@ public class StringUtilities {
 			lastPartStartIndex++;
 		}
 		return inputString.substring(0, takeFirstLength) + cutoffSign + inputString.substring(lastPartStartIndex);
+	}
+
+	/**
+	 * Shorten a string to a maximum length by cutting off its end and appending a cut sign.
+	 *
+	 * @param value string to shorten, may be null
+	 * @param maxLength maximum length of the result including the cut sign; if it is less than the length of the cut sign, the end is cut off without cut sign
+	 * @param cutSign text appended if the string was shortened, null for none
+	 * @return shortened string, unchanged if it is not longer than maxLength
+	 */
+	public static String shortenStringToMaxLengthCutRight(final String value, final int maxLength, final String cutSign) {
+		if (value != null && value.length() > maxLength) {
+			// Use the real length of the cut sign (before, always 4 characters were reserved, which only fits the default " ...")
+			final String cutSignToUse = cutSign == null ? "" : cutSign;
+			if (maxLength < cutSignToUse.length()) {
+				// The cut sign does not fit (before, the result was the complete cut sign and so longer than maxLength)
+				return value.substring(0, Math.max(0, maxLength));
+			} else {
+				return value.substring(0, maxLength - cutSignToUse.length()) + cutSignToUse;
+			}
+		} else {
+			return value;
+		}
+	}
+
+	/**
+	 * Shorten a string to a maximum length by cutting off its start and prepending "... ".
+	 *
+	 * @param value string to shorten, may be null
+	 * @param maxLength maximum length of the result, below 4 the start is cut off without cut sign
+	 * @return shortened string, unchanged if it is not longer than maxLength
+	 */
+	public static String shortenStringToMaxLengthCutLeft(final String value, final int maxLength) {
+		if (value != null && value.length() > maxLength && maxLength < 4) {
+			// The cut sign "... " does not fit (before, a StringIndexOutOfBoundsException was thrown)
+			return value.substring(value.length() - Math.max(0, maxLength));
+		} else if (value != null && value.length() > maxLength) {
+			return "... " + value.substring((value.length() - maxLength) + 4);
+		} else {
+			return value;
+		}
+	}
+
+	/**
+	 * Shorten a string to a maximum length by cutting off its end and appending " ...".
+	 *
+	 * @param value string to shorten, may be null
+	 * @param maxLength maximum length of the result including the cut sign
+	 * @return shortened string, unchanged if it is not longer than maxLength
+	 */
+	public static String shortenStringToMaxLengthCutRight(final String value, final int maxLength) {
+		return shortenStringToMaxLengthCutRight(value, maxLength, " ...");
+	}
+
+	/**
+	 * Null-safe substring that tolerates a start index behind the end of the text.
+	 *
+	 * @param text text, may be null
+	 * @param startIndex start index, must not be negative
+	 * @return substring, "" if startIndex is greater than the text length, or null for null text
+	 */
+	public static String substring(final String text, final int startIndex) {
+		if (text == null) {
+			return null;
+		} else {
+			if (text.length() < startIndex) {
+				return "";
+			} else {
+				return text.substring(startIndex);
+			}
+		}
+	}
+
+	/**
+	 * Null-safe substring that tolerates indexes behind the end of the text.
+	 *
+	 * @param text text, may be null
+	 * @param startIndex start index (inclusive), must not be negative
+	 * @param endIndex end index (exclusive), cut to the text length
+	 * @return substring, "" if startIndex is greater than the text length, or null for null text
+	 */
+	public static String substring(final String text, final int startIndex, final int endIndex) {
+		if (text == null) {
+			return null;
+		} else {
+			if (text.length() < startIndex) {
+				return "";
+			} else if (text.length() < endIndex) {
+				return text.substring(startIndex);
+			} else {
+				return text.substring(startIndex, endIndex);
+			}
+		}
+	}
+
+	/**
+	 * Null-safe check whether a text contains another text.
+	 *
+	 * @param text text to search in, may be null
+	 * @param searchText text to search for, must not be null
+	 * @return true if contained, false for null text
+	 */
+	public static boolean contains(final String text, final String searchText) {
+		if (text == null) {
+			return false;
+		} else {
+			return text.contains(searchText);
+		}
+	}
+
+	/**
+	 * Join the string representations of array items. Null items are shown as empty strings.
+	 *
+	 * @param array items to join, may be null
+	 * @param glue separator between the items, null for none
+	 * @return joined text, or null for a null array
+	 */
+	public static String join(final Object[] array, String glue) {
+		if (array == null) {
+			return null;
+		} else if (array.length == 0) {
+			return "";
+		} else {
+			if (glue == null) {
+				glue = "";
+			}
+
+			final StringBuilder returnValue = new StringBuilder();
+			boolean isFirst = true;
+			for (Object object : array) {
+				if (!isFirst) {
+					returnValue.append(glue);
+				}
+				if (object == null) {
+					object = "";
+				}
+				returnValue.append(object.toString());
+				isFirst = false;
+			}
+			return returnValue.toString();
+		}
+	}
+
+	/**
+	 * Join characters with a separator.
+	 *
+	 * @param array characters to join, may be null
+	 * @param glue separator between the characters, null for none
+	 * @return joined text, or null for a null array
+	 */
+	public static String join(final char[] array, String glue) {
+		if (array == null) {
+			return null;
+		} else if (array.length == 0) {
+			return "";
+		} else {
+			if (glue == null) {
+				glue = "";
+			}
+
+			final StringBuilder returnValue = new StringBuilder();
+			boolean isFirst = true;
+			for (final char nextChar : array) {
+				if (!isFirst) {
+					returnValue.append(glue);
+				}
+				returnValue.append(nextChar);
+				isFirst = false;
+			}
+			return returnValue.toString();
+		}
+	}
+
+	/**
+	 * Join the string representations of items. Null items are shown as empty strings.
+	 *
+	 * @param iterableObject items to join, may be null
+	 * @param glue separator between the items, null for none
+	 * @return joined text, or null for null items
+	 */
+	public static String join(final Iterable<?> iterableObject, String glue) {
+		if (iterableObject == null) {
+			return null;
+		} else {
+			if (glue == null) {
+				glue = "";
+			}
+
+			final StringBuilder returnValue = new StringBuilder();
+			boolean isFirst = true;
+			for (Object object : iterableObject) {
+				if (!isFirst) {
+					returnValue.append(glue);
+				}
+				if (object == null) {
+					object = "";
+				}
+				returnValue.append(object.toString());
+				isFirst = false;
+			}
+			return returnValue.toString();
+		}
+	}
+
+	/**
+	 * Join all non-blank strings of a list.
+	 *
+	 * @param listOfStrings strings to join, must not be null
+	 * @param glue separator between the strings, null for none
+	 * @return joined text
+	 */
+	public static String joinNotBlank(final List<String> listOfStrings, final String glue) {
+		return join(listOfStrings.stream().filter(x -> StringUtilities.isNotBlank(x)).collect(Collectors.toList()), glue);
+	}
+
+	/**
+	 * Null-safe conversion to upper case, independent of the default locale.
+	 * Locale.ROOT is used, because the default locale changes the result, e.g. "i" becomes the dotted "\u0130" in
+	 * Turkish, which breaks comparisons of keywords, identifiers and file names.
+	 *
+	 * @param value text, may be null
+	 * @return upper case text, or null for null input
+	 */
+	public static String upperCase(final String value) {
+		if (value == null) {
+			return null;
+		} else {
+			return value.toUpperCase(Locale.ROOT);
+		}
+	}
+
+	/**
+	 * Check a simple name string (only letters A-Z and a-z, digits, '_' and '-')
+	 *
+	 * @param value
+	 *            name to check
+	 * @return true if the name is valid, false for null or an empty name
+	 */
+	public static boolean checkForValidUserName(final String value) {
+		return value != null && value.matches("[A-Za-z0-9_-]+");
 	}
 }

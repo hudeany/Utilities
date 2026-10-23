@@ -723,7 +723,7 @@ public class BasicReadAheadReader implements Closeable {
 	 */
 	protected String readUpToNext(final boolean includeEndChar, final Character escapeCharacter, final char... endChars) throws Exception {
 		if (anyCharsAreEqual(endChars)) {
-			throw new Exception("Invalid set of limit characters, includes duplicates: '" + Utilities.join(endChars, "', '") + "'");
+			throw new Exception("Invalid set of limit characters, includes duplicates: '" + StringUtilities.join(endChars, "', '") + "'");
 		} else if (escapeCharacter != null && contains(endChars, escapeCharacter)) {
 			throw new Exception("Invalid escape character is included in limit characters: '" + escapeCharacter + "'");
 		}
