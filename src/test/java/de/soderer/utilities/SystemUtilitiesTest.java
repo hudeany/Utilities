@@ -86,8 +86,9 @@ public class SystemUtilitiesTest {
 		assertEquals(Boolean.toString(SystemUtilities.isUnlimitedKeyStrengthAllowed()), properties.get("cryptography.unlimitedKeyStrength"));
 		// The map is case insensitive
 		assertEquals(properties.get("memory.max"), properties.get("MEMORY.MAX"));
-		// At least the file system of the working directory has a root with storage space information
-		assertTrue(properties.keySet().stream().anyMatch(key -> key.startsWith("storageSpace.") && key.endsWith(".total")), properties.keySet().toString());
+		// At least the file system of the working directory has a root with storage space information.
+		// The case insensitive map may return its keys in lower case, so they are compared in lower case.
+		assertTrue(properties.keySet().stream().map(key -> key.toLowerCase(Locale.ROOT)).anyMatch(key -> key.startsWith("storagespace.") && key.endsWith(".total")), properties.keySet().toString());
 	}
 
 	@Test

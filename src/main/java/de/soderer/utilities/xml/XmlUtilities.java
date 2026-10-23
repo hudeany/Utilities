@@ -139,6 +139,7 @@ public class XmlUtilities {
 	public static Document getEmptyDocument() throws ParserConfigurationException {
 		final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
 		final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+		documentBuilder.setErrorHandler(SILENT_ERROR_HANDLER);
 		final Document document = documentBuilder.newDocument();
 		return document;
 	}
@@ -179,6 +180,7 @@ public class XmlUtilities {
 			try (BufferedInputStream inputStream = new BufferedInputStream(urlConnection.getInputStream())) {
 				final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
 				final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+				documentBuilder.setErrorHandler(SILENT_ERROR_HANDLER);
 				return documentBuilder.parse(new InputSource(inputStream));
 			}
 		} finally {
@@ -199,6 +201,7 @@ public class XmlUtilities {
 		try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file))) {
 			final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			documentBuilder.setErrorHandler(SILENT_ERROR_HANDLER);
 			final Document document = documentBuilder.parse(new InputSource(inputStream));
 			return document;
 		} catch (@SuppressWarnings("unused") final Exception e) {
@@ -217,6 +220,7 @@ public class XmlUtilities {
 		try (BufferedInputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(xmlData))) {
 			final DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
 			final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			documentBuilder.setErrorHandler(SILENT_ERROR_HANDLER);
 			final Document document = documentBuilder.parse(inputStream);
 			return document;
 		} catch (@SuppressWarnings("unused") final Exception e) {
@@ -282,6 +286,7 @@ public class XmlUtilities {
 		Document doc = null;
 		try {
 			db = dbf.newDocumentBuilder();
+			db.setErrorHandler(SILENT_ERROR_HANDLER);
 			doc = db.parse(new InputSource(new StringReader(xmlInput)));
 			return doc;
 
@@ -326,6 +331,7 @@ public class XmlUtilities {
 		Document doc = null;
 		try {
 			db = dbf.newDocumentBuilder();
+			db.setErrorHandler(SILENT_ERROR_HANDLER);
 
 			db.setEntityResolver(new EntityResolver() {
 				@Override
@@ -1410,4 +1416,26 @@ public class XmlUtilities {
 		}
 		return result.toString();
 	}
+
+	/**
+	 * Error handler without console output: the default handler of the JDK prints every fatal error to System.err
+	 * ("[Fatal Error] ..."), although the error is reported to the caller as exception anyway.
+	 * Warnings and recoverable errors are ignored like by the default handler, which only printed them.
+	 */
+	private static final ErrorHandler SILENT_ERROR_HANDLER = new ErrorHandler() {
+		@Override
+		public void warning(final SAXParseException exception) {
+			// Ignored like by the default handler
+		}
+
+		@Override
+		public void error(final SAXParseException exception) {
+			// Ignored like by the default handler (validation errors are handled by ParseErrorHandler)
+		}
+
+		@Override
+		public void fatalError(final SAXParseException exception) throws SAXException {
+			throw exception;
+		}
+	};
 }

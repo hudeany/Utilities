@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -277,7 +279,19 @@ public class ConfigurationPropertiesTest {
 		withTemporaryHome(home -> {
 			final ConfigurationProperties configuration = new ConfigurationProperties(APPLICATION_NAME);
 			configuration.set("broken", "\"unclosed");
-			assertTrue(configuration.getList("broken").isEmpty());
+
+			// The error output is captured, so the expected message does not appear in the build log
+			final PrintStream originalErr = System.err;
+			final ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(errorOutput, true, StandardCharsets.UTF_8));
+			try {
+				assertTrue(configuration.getList("broken").isEmpty());
+			} finally {
+				System.setErr(originalErr);
+			}
+
+			// The unreadable value is reported, not silently lost
+			assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Cannot read list value of configuration key 'broken'"), errorOutput.toString(StandardCharsets.UTF_8));
 		});
 	}
 
