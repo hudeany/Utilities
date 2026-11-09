@@ -840,24 +840,8 @@ public class ConfigurationProperties {
 	 * obsolete key was removed. Subclasses add their own default keys and must call this method.
 	 */
 	public synchronized void setupDefaultConfig() {
-		boolean obsoleteKeyRemoved = false;
-		if (containsKey(CONFIG_KEY_LANGUAGE + ENUM_EXTENSION)) {
-			removeKey(CONFIG_KEY_LANGUAGE + ENUM_EXTENSION);
-			obsoleteKeyRemoved = true;
-		}
 		if (!containsKey(CONFIG_KEY_LANGUAGE)) {
 			set(CONFIG_KEY_LANGUAGE, Locale.getDefault().getLanguage());
-		}
-
-		// TODO: Remove obsolete old legacy key in future
-		if (containsKey("TlsServerCertificateCheck")) {
-			removeKey("TlsServerCertificateCheck");
-			obsoleteKeyRemoved = true;
-		}
-
-		if (obsoleteKeyRemoved) {
-			// Saved after all changes, so the file never contains a partly updated configuration
-			save();
 		}
 	}
 
