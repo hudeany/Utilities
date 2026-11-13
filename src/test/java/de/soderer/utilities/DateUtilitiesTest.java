@@ -914,6 +914,10 @@ public class DateUtilitiesTest {
 		assertEquals(expected, DateUtilities.parseIso8601DateTimeString("2024-01-31T12:34:56+0100", NEW_YORK).toInstant());
 		assertEquals(expected, DateUtilities.parseIso8601DateTimeString("2024-01-31T12:34:56+01", NEW_YORK).toInstant());
 		assertEquals(expected, DateUtilities.parseIso8601DateTimeString("2024-01-31T11:34:56Z", NEW_YORK).toInstant());
+		assertEquals(Instant.parse("2024-01-31T11:34:56.123Z"), DateUtilities.parseIso8601DateTimeString("2024-01-31T11:34:56.123Z", NEW_YORK).toInstant());
+		assertEquals(Instant.parse("2024-01-31T11:34:56.123456Z"), DateUtilities.parseIso8601DateTimeString("2024-01-31T11:34:56.123456Z", NEW_YORK).toInstant());
+		assertEquals(Instant.parse("2024-01-31T11:34:56.123456789Z"), DateUtilities.parseIso8601DateTimeString("2024-01-31T11:34:56.123456789Z", NEW_YORK).toInstant());
+		assertEquals(Instant.parse("2024-01-31T11:34:56.12345678Z"), DateUtilities.parseIso8601DateTimeString("2024-01-31T11:34:56.12345678Z", NEW_YORK).toInstant());
 		assertEquals(expected, DateUtilities.parseIso8601DateTimeString("2024-01-31t11:34:56z", NEW_YORK).toInstant());
 		assertEquals(expected, DateUtilities.parseIso8601DateTimeString("2024-01-31T06:04:56-05:30", NEW_YORK).toInstant());
 		assertEquals(ZoneOffset.ofHoursMinutes(-5, -30), DateUtilities.parseIso8601DateTimeString("2024-01-31T06:04:56-05:30", NEW_YORK).getOffset());
