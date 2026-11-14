@@ -84,6 +84,36 @@ public class XmlUtilities {
 	}
 
 	/**
+	 * TransformerFactory without access to external DTDs and stylesheets (XXE protection for the serialization of DOM trees).
+	 * Implementations not supporting these attributes are used unchanged.
+	 */
+	public static TransformerFactory createSecureTransformerFactory() {
+		final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		try {
+			transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+		} catch (@SuppressWarnings("unused") final Exception e) {
+			// Feature not supported by this implementation
+		}
+		try {
+			transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+			transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+		} catch (@SuppressWarnings("unused") final IllegalArgumentException e) {
+			// Attributes not supported by this implementation
+		}
+		return transformerFactory;
+	}
+
+	/**
+	 * SchemaFactory for XSD validation: no external DTDs, xs:import/xs:include only from local files.
+	 */
+	public static SchemaFactory createSecureSchemaFactory() throws SAXException {
+		final SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+		schemaFactory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+		schemaFactory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "file");
+		return schemaFactory;
+	}
+
+	/**
 	 * Same hardening as {@link #createSecureDocumentBuilderFactory()}, but still allows a DOCTYPE
 	 * declaration to be present (needed e.g. for XHTML documents). External entities and external
 	 * DTDs are still never resolved/loaded, which is what actually prevents XXE.
@@ -490,7 +520,7 @@ public class XmlUtilities {
 		DOMSource source = null;
 
 		try {
-			transformerFactory = TransformerFactory.newInstance();
+			transformerFactory = createSecureTransformerFactory();
 			if (transformerFactory == null) {
 				throw new Exception("TransformerFactory error");
 			}
@@ -556,7 +586,7 @@ public class XmlUtilities {
 
 			if (xsdFileName != null) {
 				// A Schema object validates only against its own grammar, xsi:schemaLocation hints of the data are not loaded
-				final SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+				final SchemaFactory schemaFactory = createSecureSchemaFactory();
 				final File xsdFile = new File(xsdFileName);
 				final StreamSource schemaSource = xsdFile.isFile() ? new StreamSource(xsdFile) : new StreamSource(xsdFileName);
 				final Schema schema = schemaFactory.newSchema(schemaSource);
@@ -692,7 +722,7 @@ public class XmlUtilities {
 		StreamResult result = null;
 
 		try {
-			transformerFactory = TransformerFactory.newInstance();
+			transformerFactory = createSecureTransformerFactory();
 			if (transformerFactory == null) {
 				throw new Exception("TransformerFactory error");
 			}
@@ -743,7 +773,7 @@ public class XmlUtilities {
 		StreamResult result = null;
 
 		try {
-			transformerFactory = TransformerFactory.newInstance();
+			transformerFactory = createSecureTransformerFactory();
 			if (transformerFactory == null) {
 				throw new Exception("TransformerFactory error");
 			}
