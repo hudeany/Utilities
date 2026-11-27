@@ -84,8 +84,10 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * TransformerFactory without access to external DTDs and stylesheets (XXE protection for the serialization of DOM trees).
-	 * Implementations not supporting these attributes are used unchanged.
+	 * Creates a TransformerFactory secured against XML external entity (XXE) attacks: access to external DTDs and
+	 * stylesheets is disabled and secure processing is enabled.
+	 *
+	 * @return new secured TransformerFactory
 	 */
 	public static TransformerFactory createSecureTransformerFactory() {
 		final TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -104,7 +106,11 @@ public class XmlUtilities {
 	}
 
 	/**
-	 * SchemaFactory for XSD validation: no external DTDs, xs:import/xs:include only from local files.
+	 * Creates a W3C XML SchemaFactory secured against XML external entity (XXE) attacks: access to external DTDs and
+	 * schemas is disabled and secure processing is enabled.
+	 *
+	 * @return new secured SchemaFactory
+	 * @throws SAXException if a security feature or property is not supported by the SchemaFactory implementation
 	 */
 	public static SchemaFactory createSecureSchemaFactory() throws SAXException {
 		final SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);

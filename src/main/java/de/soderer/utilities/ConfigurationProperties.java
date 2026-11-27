@@ -95,6 +95,16 @@ public class ConfigurationProperties {
 	private static final char LIST_STRING_QUOTE = '"';
 
 	/**
+	 * Obsolete keys of older versions, removed by {@link #setupDefaultConfig()}
+	 */
+	private static final String[] OBSOLETE_KEYS = {
+			// The selectable languages are no longer stored in the configuration
+			CONFIG_KEY_LANGUAGE + ENUM_EXTENSION,
+			// Replaced by the TLS check configuration
+			"TlsServerCertificateCheck"
+	};
+
+	/**
 	 * Internal keys are managed by this class and are not meant to be edited by the user
 	 * (e.g. hidden in configuration dialogs)
 	 *
@@ -842,6 +852,17 @@ public class ConfigurationProperties {
 	public synchronized void setupDefaultConfig() {
 		if (!containsKey(CONFIG_KEY_LANGUAGE)) {
 			set(CONFIG_KEY_LANGUAGE, Locale.getDefault().getLanguage());
+		}
+
+		boolean obsoleteKeyRemoved = false;
+		for (final String obsoleteKey : OBSOLETE_KEYS) {
+			if (containsKey(obsoleteKey)) {
+				removeKey(obsoleteKey);
+				obsoleteKeyRemoved = true;
+			}
+		}
+		if (obsoleteKeyRemoved) {
+			save();
 		}
 	}
 
